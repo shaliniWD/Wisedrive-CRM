@@ -102,6 +102,28 @@ class Customer(CustomerBase):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+# ==================== TRANSACTION MODELS ====================
+
+class TransactionBase(BaseModel):
+    customer_id: str
+    transaction_type: str  # Comprehensive, Gold, Platinum, Silver
+    order_id: str
+    amount: float
+    payment_date: Optional[str] = None
+    payment_status: str = "PENDING"
+    car_number: Optional[str] = None
+    car_make: Optional[str] = None
+    car_model: Optional[str] = None
+    car_year: Optional[str] = None
+
+class TransactionCreate(TransactionBase):
+    pass
+
+class Transaction(TransactionBase):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 class InspectionBase(BaseModel):
     customer_name: str
     customer_mobile: str
