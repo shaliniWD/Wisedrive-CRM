@@ -430,7 +430,7 @@ export default function LeadsPage() {
                   <td>{lead.city}</td>
                   <td>
                     <div className="flex items-center gap-1">
-                      <span>{lead.assigned_to || '-'}</span>
+                      <span>{lead.assigned_to_name || lead.assigned_to || '-'}</span>
                       <button 
                         onClick={() => openAssignModal(lead)} 
                         className="edit-icon"
