@@ -6,110 +6,194 @@ Recreate WiseDrive CRM (https://crm.wisedrive.com) design with a modern UI. Crea
 - JWT-based custom auth (email/password)
 - Light theme design
 
-## UX Redesign Requirements (Feb 13, 2026)
-1. **Navigation**: Moved from sidebar to horizontal top navigation for more column space
-2. **Date Format**: Changed from DD/MM/YYYY to "13 Feb '26" format everywhere
-3. **Modern 2026 UX**: Matched exact original WiseDrive CRM design
+## V2 Architecture Implementation (Feb 13, 2026)
 
-## Design Elements Implemented (Based on Screenshots)
-- **Header**: Dark blue (#2E3192) with WISEDRIVE logo + yellow bars
-- **Top Nav Tabs**: Leads, Customers, Inspections, Admin, Dashboard
-- **Buttons**: Purple (#6366F1) for Submit/Add/Find, Yellow (#FFD700) for Send Pay Link
-- **Status Badges**: Green (Completed), Yellow (Pending), Purple (Request NewSlot), Blue (Scheduled)
-- **Tables**: Full-width with hover effects, all columns visible
-- **Payment Modal**: Redesigned 3-step flow:
-  - Step 1: Car Details (Yes/No + Vaahan API mock for car lookup + confirmation)
-  - Step 2: Package & Payment (Package selection, Number of cars, Discounts, Payment Summary)
-  - Step 3: Schedule Inspection (City, Date, Time slots, Address, Google Maps placeholder)
-  - Razorpay integration ready (Send Payment Link button)
-  - Conditional flow: If no car details, skip scheduling and go directly to payment
-- **Admin Tab - Employee**: Name, Assigned Cities, Assign City button, Status toggle, Edit
-- **Admin Tab - Digital Ad Meta Data**: Ad Id, Ad Name, City, Language, Campaign Type, Source, Status toggle, Copy/Edit/Delete actions
-- **Admin Tab - Garage Employee**: Grg Owner Name, Grg Employee Name, Grg Name, City, Preferred Language, Phone Number, Status toggle, Edit
-- **Customer Details Modal**: Shows customer info + transaction history table (added Feb 13, 2026)
+### Multi-Country, Multi-Tenant RBAC System
+The CRM has been refactored from V1 monolithic architecture to V2 with:
+- **Multi-Country Support**: India, Malaysia, Thailand, Philippines
+- **Hierarchical Roles**: CEO, Country Head, Sales Head, Sales Lead, Sales Executive, Inspection Head, Inspection Lead, Inspection Coordinator, Report Reviewer, Mechanic, HR Manager
+- **Permission-Based Access Control**: 48 permissions across resources with scopes (all, country, team, own)
+- **Round-Robin Lead Assignment**: Automatic lead distribution within country/team
+- **Audit Logging**: Track lead reassignments and critical actions
+
+### Data Isolation Rules
+1. **Country Isolation**: All queries filtered by user's country_id
+2. **Team Isolation**: Team-level roles see only their team's data
+3. **Own Data**: Sales executives see only their assigned leads
+4. **CEO Exception**: Full access to all data across countries
 
 ## Architecture
-- **Frontend**: React.js with Tailwind CSS, shadcn/ui components
-- **Backend**: FastAPI with Python
+
+### Backend (V2)
+- **Framework**: FastAPI with Python
 - **Database**: MongoDB
 - **Authentication**: JWT-based with bcrypt password hashing
+- **Structure**:
+  - `/app/backend/models/` - Pydantic models (user, organization, lead, customer, inspection, audit)
+  - `/app/backend/services/` - Business logic (rbac, round_robin, audit, seed_v2)
+  - `/app/backend/server.py` - Main FastAPI application with all routes
 
-## User Personas
-1. **Admin Users**: Full access to all modules, can manage employees
-2. **Employee Users**: Can manage leads, customers, inspections assigned to them
+### Frontend
+- **Framework**: React.js with Tailwind CSS, shadcn/ui components
+- **State Management**: React Context API for auth
+- **RBAC Integration**: 
+  - Tab visibility based on user role
+  - Permission-based feature access
+  - Dynamic navigation
 
-## Core Requirements (Static)
-1. Login/Authentication system
-2. Dashboard with analytics
-3. Leads Management (CRUD, filters, status tracking)
-4. Customers Management (CRUD, payment status, details modal with transaction history)
-5. Inspections Management (Scheduled/Unscheduled views)
-6. Admin/Employee Management (status toggles, city assignments)
+## Role-Permission Matrix
+
+| Permission | CEO | Country Head | Sales Head | Sales Exec | HR Manager |
+|------------|-----|--------------|------------|------------|------------|
+| leads.view | ALL | COUNTRY | COUNTRY | OWN | - |
+| leads.edit | ALL | COUNTRY | COUNTRY | OWN | - |
+| leads.reassign | ALL | - | COUNTRY | - | - |
+| customers.view | ALL | COUNTRY | COUNTRY | OWN | - |
+| inspections.view | ALL | COUNTRY | - | - | COUNTRY |
+| users.view | ALL | COUNTRY | TEAM | - | ALL |
+| salary.view | ALL | COUNTRY | TEAM | - | ALL |
+
+## Tab Visibility by Role
+
+| Tab | CEO | Sales Head | Sales Exec | HR Manager |
+|-----|-----|------------|------------|------------|
+| Dashboard | ✓ | ✓ | ✓ | ✓ |
+| Leads | ✓ | ✓ | ✓ | - |
+| Customers | ✓ | ✓ | - | - |
+| Inspections | ✓ | - | - | - |
+| Admin | ✓ | ✓ | - | ✓ |
 
 ## What's Been Implemented
 
-### Backend (Updated Feb 13, 2026)
-- [x] JWT Authentication (login, register, token validation)
-- [x] Leads CRUD API with filtering
-- [x] Customers CRUD API with filtering
-- [x] GET /api/customers/{customer_id} - Get single customer
-- [x] GET /api/transactions/{customer_id} - Get customer transactions
-- [x] POST /api/transactions - Create transaction
-- [x] Inspections CRUD API with filtering
-- [x] Employees CRUD API with status toggle
-- [x] Digital Ads CRUD API with status toggle
-- [x] Garage Employees CRUD API with status toggle
-- [x] Dashboard Stats API
-- [x] Utility APIs (cities, sources, statuses)
-- [x] Seed data endpoint (includes transactions)
+### V2 Backend (Feb 13, 2026)
+- [x] Multi-country data model (countries, departments, roles, teams)
+- [x] 48 permissions with scopes (all, country, team, own)
+- [x] Role-based permission mapping
+- [x] RBAC service for permission checking
+- [x] Round-robin lead assignment service
+- [x] Audit service for logging
+- [x] RBAC-filtered API endpoints (leads, customers, inspections, dashboard)
+- [x] Lead reassignment with mandatory reason
+- [x] User enrichment (role_name, country_name, department_name, team_name)
+- [x] Dashboard stats with RBAC filtering
 
-### Frontend - UX Redesign Complete (Updated Feb 13, 2026)
-- [x] **Horizontal Top Navigation** - Glassmorphism effect, search, notifications, user menu
-- [x] **Split-screen Login Page** - Modern design with branding on left
-- [x] **Dashboard** - Clean stat cards with icons
-- [x] **Leads Page** - Full-width table, inline filters, date format "13 Feb '26", **Edit Lead modal**, **Assign Employee modal**, **Add Reminder modal**
-- [x] **Customers Page** - ID/Date column, payment badges, action menus, **Customer Details Modal**
-- [x] **Customer Details Modal** - Shows customer info (name, mobile, city, status) + transaction history table
-- [x] **Inspections Page** - Scheduled/Unscheduled tabs, report buttons
-- [x] **Admin Page** - Employees, Digital Ad Meta Data, Garage Employee tabs with toggles and modals
-- [x] **Date Utility** - formatDate, formatDateTime, formatTime helpers
+### V2 Frontend (Feb 13, 2026)
+- [x] AuthContext with permissions and visible tabs
+- [x] RBAC-based navigation (TopNavbar)
+- [x] User info display (name, role, country)
+- [x] Leads page with assigned_to_name
+- [x] Lead reassignment modal with reason requirement
+- [x] V2 demo credentials on login page
 
-### Design System
-- [x] Inter + Outfit fonts
-- [x] Primary color: Indigo (#4F46E5)
-- [x] Glassmorphism navbar (bg-white/80 backdrop-blur)
-- [x] Clean badge styles (success, warning, danger, info, purple)
-- [x] Full-width responsive tables
+### V1 Features (Preserved)
+- [x] Customer Details Modal with transaction history
+- [x] Edit Lead Modal
+- [x] Assign Employee Modal (updated for V2)
+- [x] Add Reminder Modal
+- [x] Send Payment Link Modal (3-step flow with mock Vaahan API)
+- [x] Pagination for data tables
+- [x] Ad ID display for FACEBOOK/INSTAGRAM leads
+
+## API Endpoints
+
+### Authentication
+- `POST /api/auth/login` - Login with email/password
+- `GET /api/auth/me` - Get current user with permissions and visible_tabs
+
+### V2 Organization
+- `GET /api/countries` - List countries (filtered by access)
+- `GET /api/departments` - List departments
+- `GET /api/roles` - List roles
+- `GET /api/teams` - List teams (filtered by country)
+
+### V2 Users
+- `GET /api/users` - List users (RBAC filtered)
+- `GET /api/users/{id}` - Get user details
+- `PATCH /api/users/{id}/toggle-status` - Toggle user active status
+- `PATCH /api/users/{id}/toggle-assignment` - Toggle assignment availability
+
+### Leads (RBAC)
+- `GET /api/leads` - List leads (RBAC filtered)
+- `POST /api/leads` - Create lead (auto round-robin assignment)
+- `PUT /api/leads/{id}` - Update lead
+- `POST /api/leads/{id}/reassign` - Reassign lead with reason
+- `GET /api/leads/{id}/reassignment-history` - Get reassignment audit log
+
+### Round Robin
+- `GET /api/round-robin/next/{country_id}` - Get next agent
+- `GET /api/round-robin/stats/{country_id}` - Assignment statistics
+
+### Dashboard
+- `GET /api/dashboard/stats` - Dashboard statistics (RBAC filtered)
+
+## Test Credentials (V2)
+
+| Role | Email | Password |
+|------|-------|----------|
+| CEO | ceo@wisedrive.com | password123 |
+| Sales Executive (India) | salesexec1.in@wisedrive.com | password123 |
+| HR Manager | hr@wisedrive.com | password123 |
+| Country Head (India) | countryhead.in@wisedrive.com | password123 |
+| Sales Head (India) | saleshead.in@wisedrive.com | password123 |
+
+## Seeded Data (V2)
+
+- **Countries**: 4 (India, Malaysia, Thailand, Philippines)
+- **Departments**: 4 (Executive, Sales, Inspection, HR)
+- **Roles**: 11 (CEO, HR Manager, Country Head, etc.)
+- **Permissions**: 48 (across all resources and actions)
+- **Teams**: 5 (Sales Team Alpha/Beta, Inspection Teams)
+- **Users**: 17 (across different roles and countries)
+- **Leads**: 40 (30 India, 10 Malaysia)
+- **Customers**: 15
+- **Inspections**: 20
 
 ## Prioritized Backlog
 
-### P0 - Critical (Done)
-- [x] Authentication system
-- [x] All main modules (Dashboard, Leads, Customers, Inspections, Admin)
-- [x] Customer Details Modal with transaction history
+### P0 - Complete
+- [x] V2 Multi-tenant RBAC architecture
+- [x] Role-based permission system
+- [x] Round-robin lead assignment
+- [x] RBAC-filtered API endpoints
+- [x] Dashboard stats with proper filtering
 
 ### P1 - High Priority (Next)
-- [x] Pagination for data tables (Leads, Customers)
-- [ ] Search/filter persistence across page navigation
+- [ ] Lead Assignment Flow: Complete integration with team selection
+- [ ] Complete HR module for employee and salary management
+- [ ] Audit trail UI for viewing action history
 - [ ] Export data to CSV/Excel
-- [ ] Bulk actions (delete multiple, status update)
 
 ### P2 - Medium Priority
-- [ ] Dashboard charts and graphs (recharts)
-- [ ] Email notifications for reminders
-- [ ] Payment link generation integration
+- [ ] Multi-currency support
+- [ ] Finance tab implementation
+- [ ] Dashboard charts and graphs
 - [ ] Report generation and download
+
+### P3 - Future
+- [ ] Twilio integration for WhatsApp -> CRM lead creation
+- [ ] Razorpay payment integration
+- [ ] Vaahan API for real car lookup
+- [ ] Google Maps for location services
 - [ ] Real-time updates via WebSockets
 
-### P3 - Low Priority (Future)
-- [ ] Dark mode toggle
-- [ ] Mobile responsive improvements
-- [ ] Activity logs/audit trail
-- [ ] Multi-language support
-- [ ] Keyboard shortcuts (Cmd+N for new lead)
+## Technical Notes
 
-## Next Tasks
-1. Add pagination to all data tables
-2. Implement chart visualizations on dashboard
-3. Add export functionality for reports
-4. Implement reminder notification system
+### MongoDB Collections (V2)
+- countries, departments, roles, permissions, role_permissions
+- teams, users, salary_structures
+- leads, lead_reassignment_logs
+- customers, inspections, transactions
+- audit_logs, round_robin_state
+- digital_ads, garage_employees
+
+### RBAC Scope Definitions
+- **ALL**: Access to all data across all countries
+- **COUNTRY**: Access to data within assigned country only
+- **TEAM**: Access to data within assigned team only
+- **OWN**: Access to only own data/assigned items
+
+### Mocked APIs
+- **Vaahan Car Lookup**: Returns mock car data in payment modal
+
+## Last Updated
+February 13, 2026 - V2 Architecture Integration Complete
