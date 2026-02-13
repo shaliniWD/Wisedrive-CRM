@@ -307,40 +307,134 @@ export default function LeadsPage() {
 
       {/* Add/Edit Lead Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-[480px]" data-testid="lead-modal">
-          <DialogHeader>
-            <DialogTitle>{editingLead ? 'Edit Lead' : 'Add Lead'}</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleSubmit}>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-3 gap-3">
+        <DialogContent className="sm:max-w-[550px] p-0 overflow-hidden" data-testid="lead-modal">
+          {/* Modal Header */}
+          <div className="bg-white px-6 py-4 border-b">
+            <div className="flex justify-between items-center">
+              <DialogTitle className="text-lg font-medium">
+                {editingLead ? '91Edit Lead' : 'Add Lead'}
+              </DialogTitle>
+              <button 
+                onClick={() => setIsModalOpen(false)} 
+                className="text-gray-400 hover:text-gray-600"
+                data-testid="close-lead-modal"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="p-6">
+            <div className="grid gap-4">
+              {/* Row 1: Lead Name & Lead Source */}
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <Label className="text-xs">Lead Name</Label>
-                  <Input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="h-9" data-testid="lead-name-input" />
+                  <Label className="text-sm text-gray-700">Lead Name</Label>
+                  <Input 
+                    value={formData.name} 
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="h-10 border-gray-300" 
+                    data-testid="lead-name-input" 
+                  />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">Mobile Number</Label>
-                  <div className="flex">
-                    <span className="inline-flex items-center px-2 bg-gray-100 border border-r-0 rounded-l text-xs">+91</span>
-                    <Input value={formData.mobile} onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
-                      className="rounded-l-none h-9" data-testid="lead-mobile-input" />
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">City</Label>
-                  <Select value={formData.city} onValueChange={(v) => setFormData({ ...formData, city: v })}>
-                    <SelectTrigger className="h-9" data-testid="lead-city-select"><SelectValue placeholder="-- Select --" /></SelectTrigger>
-                    <SelectContent>{cities.map((c) => (<SelectItem key={c} value={c}>{c}</SelectItem>))}</SelectContent>
+                  <Label className="text-sm text-gray-700">Lead Source</Label>
+                  <Select value={formData.source} onValueChange={(v) => setFormData({ ...formData, source: v })}>
+                    <SelectTrigger className="h-10 border-gray-300" data-testid="lead-source-select">
+                      <SelectValue placeholder="-- Select Source --" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {sources.map((s) => (<SelectItem key={s} value={s}>{s}</SelectItem>))}
+                    </SelectContent>
                   </Select>
                 </div>
               </div>
+
+              {/* Row 2: Mobile Number & Service Type */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Label className="text-sm text-gray-700">Mobile Number</Label>
+                  <Input 
+                    value={formData.mobile} 
+                    onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
+                    className="h-10 border-gray-300" 
+                    data-testid="lead-mobile-input" 
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-sm text-gray-700">Service Type</Label>
+                  <Select value={formData.service_type} onValueChange={(v) => setFormData({ ...formData, service_type: v })}>
+                    <SelectTrigger className="h-10 border-gray-300" data-testid="lead-service-select">
+                      <SelectValue placeholder="-- Select Service --" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="INSPECTION">INSPECTION</SelectItem>
+                      <SelectItem value="WARRANTY">WARRANTY</SelectItem>
+                      <SelectItem value="SERVICE">SERVICE</SelectItem>
+                      <SelectItem value="PARTS">PARTS</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Row 3: City & Lead Status */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Label className="text-sm text-gray-700">City</Label>
+                  <Select value={formData.city} onValueChange={(v) => setFormData({ ...formData, city: v })}>
+                    <SelectTrigger className="h-10 border-gray-300" data-testid="lead-city-select">
+                      <SelectValue placeholder="-- Select City --" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {cities.map((c) => (<SelectItem key={c} value={c}>{c}</SelectItem>))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-sm text-gray-700">Lead Status</Label>
+                  <Select value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v })}>
+                    <SelectTrigger className="h-10 border-gray-300" data-testid="lead-status-select">
+                      <SelectValue placeholder="-- Select Status --" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {statuses.map((s) => (<SelectItem key={s} value={s}>{s.replace(/_/g, ' ')}</SelectItem>))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Notes Text */}
+              <div className="space-y-1">
+                <Label className="text-sm text-gray-700">Notes Text</Label>
+                <textarea 
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  className="w-full min-h-[100px] px-3 py-2 border border-gray-300 rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#2E3192] focus:border-transparent"
+                  placeholder="Enter notes..."
+                  data-testid="lead-notes-input"
+                />
+              </div>
             </div>
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-              <Button type="submit" className="btn-purple" disabled={saving} data-testid="save-lead-button">
-                {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Save
-              </Button>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 mt-6">
+              <button 
+                type="submit" 
+                className="px-6 py-2 bg-[#F5A623] text-white rounded hover:bg-[#E09612] text-sm font-medium disabled:opacity-50"
+                disabled={saving}
+                data-testid="update-lead-button"
+              >
+                {saving && <Loader2 className="h-4 w-4 animate-spin mr-2 inline" />}
+                Update
+              </button>
+              <button 
+                type="button" 
+                className="px-6 py-2 bg-[#6366F1] text-white rounded hover:bg-[#5558E3] text-sm font-medium"
+                onClick={() => setIsModalOpen(false)}
+                data-testid="cancel-lead-button"
+              >
+                Cancel
+              </button>
             </div>
           </form>
         </DialogContent>
