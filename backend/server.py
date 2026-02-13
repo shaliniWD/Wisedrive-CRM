@@ -17,13 +17,18 @@ from passlib.context import CryptContext
 # Import V2 models
 from models.user import (
     User, UserCreate, UserUpdate, UserBase, UserWithPermissions,
-    Role, RoleCreate, Permission, RolePermission, SalaryStructure
+    Role, RoleCreate, Permission, RolePermission
 )
-from models.organization import Country, CountryCreate, Department, DepartmentCreate, Team, TeamCreate
+from models.organization import Department, DepartmentCreate, Team, TeamCreate
 from models.lead import Lead, LeadCreate, LeadUpdate, LeadReassignmentLog, LeadReassignRequest
 from models.customer import Customer, CustomerCreate, CustomerUpdate
 from models.inspection import Inspection, InspectionCreate, InspectionUpdate
 from models.audit import AuditLog
+from models.employee import (
+    EmployeeCreate, EmployeeUpdate, SalaryStructureCreate, SalaryStructureUpdate,
+    AttendanceCreate, AttendanceUpdate, DocumentCreate, DocumentUpdate,
+    CountryCreate, CountryUpdate
+)
 
 # Import V2 services
 from services.rbac import RBACService
