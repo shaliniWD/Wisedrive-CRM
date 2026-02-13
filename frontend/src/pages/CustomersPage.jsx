@@ -10,6 +10,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
+import { CustomerDetailsModal } from '@/components/CustomerDetailsModal';
 import { toast } from 'sonner';
 import { Search, Pencil, Loader2 } from 'lucide-react';
 
@@ -20,6 +21,10 @@ export default function CustomersPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [saving, setSaving] = useState(false);
+  
+  // Customer Details Modal state
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [selectedCustomerId, setSelectedCustomerId] = useState(null);
 
   const [search, setSearch] = useState('');
   const [filterCity, setFilterCity] = useState('');
