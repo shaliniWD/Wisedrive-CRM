@@ -183,77 +183,166 @@ export default function InspectionsPage() {
 
       {/* Data Table */}
       <div className="card overflow-hidden">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Inspection Date</th>
-              <th>Customer Details</th>
-              <th>Payment Status</th>
-              <th>Address</th>
-              <th>Inspection Status</th>
-              <th>Mechanic Name</th>
-              <th>Car Details</th>
-              <th>Action</th>
-              <th>Report Edit</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan={9} className="text-center py-12"><Loader2 className="h-6 w-6 animate-spin mx-auto text-[#2E3192]" /></td></tr>
-            ) : inspections.length === 0 ? (
-              <tr><td colSpan={9} className="text-center py-12 text-gray-500">No inspections found</td></tr>
-            ) : (
-              inspections.map((inspection) => (
-                <tr key={inspection.id} data-testid={`inspection-row-${inspection.id}`}>
-                  <td>
-                    <div>{formatDate(inspection.scheduled_date) || '-'}</div>
-                    <div className="text-gray-400 text-xs">{formatTime(inspection.scheduled_time)}</div>
-                  </td>
-                  <td>
-                    <div className="font-medium">{inspection.customer_name}</div>
-                    <div className="text-gray-500 font-mono text-sm">{inspection.customer_mobile}</div>
-                  </td>
-                  <td>
-                    <span className={`status-badge ${inspection.payment_status === 'Completed' ? 'completed' : 'pending'}`}>
-                      {inspection.payment_status}
-                    </span>
-                  </td>
-                  <td>
-                    <span className="text-[#6366F1] cursor-pointer hover:underline">{inspection.city}</span>
-                  </td>
-                  <td>
-                    <span className={statusConfig[inspection.inspection_status]?.class || 'status-badge'}>
-                      {statusConfig[inspection.inspection_status]?.label || inspection.inspection_status}
-                    </span>
-                    <div className="text-xs text-gray-400 mt-1">{formatDateTime(inspection.created_at)}</div>
-                  </td>
-                  <td>{inspection.mechanic_name || '-'}</td>
-                  <td>
-                    <div className="text-[#6366F1] font-mono text-sm">{inspection.car_number}</div>
-                    <div className="text-xs text-gray-400">{inspection.car_details}</div>
-                  </td>
-                  <td>
-                    <button className="btn-purple text-xs px-3 py-1" onClick={() => openEditModal(inspection)} data-testid={`edit-inspection-${inspection.id}`}>
-                      Edit
-                    </button>
-                  </td>
-                  <td>
-                    {inspection.report_url ? (
-                      <div className="flex flex-col gap-1">
-                        <button className="status-badge completed text-xs cursor-pointer">Show Report</button>
-                        <button className="text-[#10B981] text-xs flex items-center gap-1">
-                          <Download className="h-3 w-3" />
+        {activeTab === 'unscheduled' ? (
+          /* Unscheduled Tab Table */
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Order Date</th>
+                <th>Customer Details</th>
+                <th>Payment Status</th>
+                <th>City</th>
+                <th>Inspections Available</th>
+                <th>Car Details</th>
+                <th>Action</th>
+                <th>Report Edit</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={8} className="text-center py-12"><Loader2 className="h-6 w-6 animate-spin mx-auto text-[#2E3192]" /></td></tr>
+              ) : inspections.length === 0 ? (
+                <tr><td colSpan={8} className="text-center py-12 text-gray-500">No unscheduled inspections found</td></tr>
+              ) : (
+                inspections.map((inspection) => (
+                  <tr key={inspection.id} data-testid={`inspection-row-${inspection.id}`}>
+                    <td>
+                      <div className="text-sm">{formatDateTime(inspection.order_date || inspection.created_at)}</div>
+                    </td>
+                    <td>
+                      <div className="font-medium">{inspection.customer_name}</div>
+                      <div className="text-gray-500 font-mono text-sm">{inspection.customer_mobile}</div>
+                    </td>
+                    <td>
+                      <span className={`status-badge ${inspection.payment_status === 'Completed' ? 'completed' : 'pending'}`}>
+                        {inspection.payment_status}
+                      </span>
+                    </td>
+                    <td>{inspection.city}</td>
+                    <td>
+                      <span className="font-semibold text-[#2E3192]">{inspection.inspections_available || 1}</span>
+                    </td>
+                    <td>
+                      <div className="text-[#6366F1] font-mono text-sm cursor-pointer hover:underline">
+                        {inspection.car_number || '-'}
+                      </div>
+                      {inspection.order_id && (
+                        <div className="text-xs text-gray-500">Tr# {inspection.order_id}</div>
+                      )}
+                    </td>
+                    <td>
+                      <button 
+                        className="btn-purple text-xs px-3 py-1" 
+                        onClick={() => openEditModal(inspection)} 
+                        data-testid={`edit-inspection-${inspection.id}`}
+                      >
+                        Edit
+                      </button>
+                    </td>
+                    <td>
+                      <div className="flex items-center gap-2">
+                        <button 
+                          className="px-3 py-1 text-xs bg-[#10B981] text-white rounded hover:bg-[#059669] font-medium"
+                          onClick={() => {
+                            setEditingInspection(inspection);
+                            setFormData({
+                              ...formData,
+                              customer_name: inspection.customer_name,
+                              customer_mobile: inspection.customer_mobile,
+                              city: inspection.city,
+                              car_number: inspection.car_number || '',
+                              payment_status: inspection.payment_status,
+                            });
+                            setIsModalOpen(true);
+                          }}
+                          data-testid={`schedule-inspection-${inspection.id}`}
+                        >
+                          Schedule
+                        </button>
+                        <button className="text-[#10B981] hover:text-[#059669]">
+                          <Download className="h-4 w-4" />
                         </button>
                       </div>
-                    ) : (
-                      <button className="btn-purple text-xs px-3 py-1">Edit Report</button>
-                    )}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        ) : (
+          /* Scheduled Tab Table */
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Inspection Date</th>
+                <th>Customer Details</th>
+                <th>Payment Status</th>
+                <th>Address</th>
+                <th>Inspection Status</th>
+                <th>Mechanic Name</th>
+                <th>Car Details</th>
+                <th>Action</th>
+                <th>Report Edit</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={9} className="text-center py-12"><Loader2 className="h-6 w-6 animate-spin mx-auto text-[#2E3192]" /></td></tr>
+              ) : inspections.length === 0 ? (
+                <tr><td colSpan={9} className="text-center py-12 text-gray-500">No scheduled inspections found</td></tr>
+              ) : (
+                inspections.map((inspection) => (
+                  <tr key={inspection.id} data-testid={`inspection-row-${inspection.id}`}>
+                    <td>
+                      <div>{formatDate(inspection.scheduled_date) || '-'}</div>
+                      <div className="text-gray-400 text-xs">{formatTime(inspection.scheduled_time)}</div>
+                    </td>
+                    <td>
+                      <div className="font-medium">{inspection.customer_name}</div>
+                      <div className="text-gray-500 font-mono text-sm">{inspection.customer_mobile}</div>
+                    </td>
+                    <td>
+                      <span className={`status-badge ${inspection.payment_status === 'Completed' ? 'completed' : 'pending'}`}>
+                        {inspection.payment_status}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="text-[#6366F1] cursor-pointer hover:underline">{inspection.city}</span>
+                    </td>
+                    <td>
+                      <span className={statusConfig[inspection.inspection_status]?.class || 'status-badge'}>
+                        {statusConfig[inspection.inspection_status]?.label || inspection.inspection_status}
+                      </span>
+                      <div className="text-xs text-gray-400 mt-1">{formatDateTime(inspection.created_at)}</div>
+                    </td>
+                    <td>{inspection.mechanic_name || '-'}</td>
+                    <td>
+                      <div className="text-[#6366F1] font-mono text-sm">{inspection.car_number}</div>
+                      <div className="text-xs text-gray-400">{inspection.car_details}</div>
+                    </td>
+                    <td>
+                      <button className="btn-purple text-xs px-3 py-1" onClick={() => openEditModal(inspection)} data-testid={`edit-inspection-${inspection.id}`}>
+                        Edit
+                      </button>
+                    </td>
+                    <td>
+                      {inspection.report_url ? (
+                        <div className="flex flex-col gap-1">
+                          <button className="status-badge completed text-xs cursor-pointer">Show Report</button>
+                          <button className="text-[#10B981] text-xs flex items-center gap-1">
+                            <Download className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button className="btn-purple text-xs px-3 py-1">Edit Report</button>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        )}
       </div>
 
       {/* Edit Modal */}
