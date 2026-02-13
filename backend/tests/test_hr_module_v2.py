@@ -420,9 +420,13 @@ class TestCountriesAPI:
         """CEO should be able to create a country"""
         headers = {"Authorization": f"Bearer {ceo_token}"}
         
+        # Use unique code to avoid conflicts
+        import time
+        unique_code = f"T{int(time.time()) % 100}"
+        
         country_data = {
-            "name": "TEST_Thailand",
-            "code": "TH",
+            "name": f"TEST_Country_{unique_code}",
+            "code": unique_code,
             "currency": "THB",
             "currency_symbol": "฿",
             "phone_code": "+66",
@@ -436,7 +440,7 @@ class TestCountriesAPI:
         )
         assert response.status_code == 200, f"Failed: {response.text}"
         data = response.json()
-        assert data.get("name") == "TEST_Thailand"
+        assert data.get("name") == f"TEST_Country_{unique_code}"
         assert data.get("currency") == "THB"
         assert data.get("currency_symbol") == "฿"
         print(f"SUCCESS: Country created - name={data.get('name')}, currency={data.get('currency')}")
@@ -521,6 +525,8 @@ class TestMechanicNoCRMAccess:
         """Mechanics should have empty visible_tabs (no CRM access)"""
         # This is verified by the TAB_VISIBILITY in rbac.py
         # MECHANIC: [] - empty list means no CRM access
+        import sys
+        sys.path.insert(0, '/app/backend')
         from services.rbac import RBACService
         
         mechanic_tabs = RBACService.TAB_VISIBILITY.get("MECHANIC", [])
