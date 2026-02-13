@@ -96,6 +96,12 @@ export default function CustomersPage() {
     setIsDetailsModalOpen(true);
   };
 
+  // Pagination calculations
+  const totalPages = Math.ceil(customers.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedCustomers = customers.slice(startIndex, endIndex);
+
   return (
     <div className="p-4 space-y-4" data-testid="customers-page">
       {/* Search and Filters Row */}
@@ -105,13 +111,13 @@ export default function CustomersPage() {
           <input
             placeholder="Customer Name / Mobile Number"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
             className="flex-1"
             data-testid="search-input"
           />
         </div>
 
-        <Select value={filterCity} onValueChange={setFilterCity}>
+        <Select value={filterCity} onValueChange={(v) => { setFilterCity(v); setCurrentPage(1); }}>
           <SelectTrigger className="w-[140px] h-10 bg-white" data-testid="filter-city">
             <SelectValue placeholder="-- Select City --" />
           </SelectTrigger>
