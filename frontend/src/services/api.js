@@ -131,9 +131,16 @@ export const hrApi = {
   updateEmployee: (id, data) => axios.put(`${API_URL}/hr/employees/${id}`, data),
   deleteEmployee: (id) => axios.delete(`${API_URL}/hr/employees/${id}`),
   
-  // Salary
+  // Salary Structure
   getEmployeeSalary: (id) => axios.get(`${API_URL}/hr/employees/${id}/salary`),
   saveEmployeeSalary: (id, data) => axios.post(`${API_URL}/hr/employees/${id}/salary`, data),
+  
+  // Salary Payments (History)
+  getSalaryPayments: (id, params) => axios.get(`${API_URL}/hr/employees/${id}/salary-payments`, { params }),
+  saveSalaryPayment: (id, data) => axios.post(`${API_URL}/hr/employees/${id}/salary-payments`, data),
+  
+  // Leave Summary
+  getLeaveSummary: (id, params) => axios.get(`${API_URL}/hr/employees/${id}/leave-summary`, { params }),
   
   // Attendance
   getEmployeeAttendance: (id, params) => axios.get(`${API_URL}/hr/employees/${id}/attendance`, { params }),
@@ -147,6 +154,10 @@ export const hrApi = {
   
   // Audit
   getEmployeeAudit: (id) => axios.get(`${API_URL}/hr/employees/${id}/audit`),
+  
+  // Lead Assignment Control
+  toggleLeadAssignment: (id, data) => axios.patch(`${API_URL}/hr/employees/${id}/lead-assignment`, data),
+  updateWeeklyOff: (id, data) => axios.patch(`${API_URL}/hr/employees/${id}/weekly-off`, data),
   
   // Countries
   getCountries: () => axios.get(`${API_URL}/hr/countries`),
