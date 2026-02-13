@@ -835,21 +835,25 @@ async def seed_data():
         inspection_statuses = ["COMPLETED", "SCHEDULED", "REQUEST_NEWSLOT", "IN_PROGRESS"]
         mechanics = ["V Sai Bharath", "Sridhar Venkatesalu", "Kaliul Rahaman", "Abidali Ali Ansari"]
         for i in range(15):
+            is_scheduled = random.random() > 0.4  # 60% scheduled, 40% unscheduled
             inspection = {
                 "id": str(uuid.uuid4()),
                 "customer_name": f"Inspection Customer {i+1}",
                 "customer_mobile": f"91812325{i:04d}",
-                "address": f"Address {i+1}",
+                "address": f"Address {i+1}, {random.choice(cities)}",
                 "city": random.choice(cities),
                 "payment_status": "Completed" if random.random() > 0.3 else "PENDING",
-                "inspection_status": random.choice(inspection_statuses),
-                "mechanic_name": random.choice(mechanics) if random.random() > 0.2 else None,
+                "inspection_status": random.choice(inspection_statuses) if is_scheduled else None,
+                "mechanic_name": random.choice(mechanics) if is_scheduled and random.random() > 0.2 else None,
                 "car_number": f"KA0{random.randint(1,5)}NC{random.randint(1000,9999)}",
-                "car_details": f"Tr# ORD{random.randint(1000000,9999999)}",
-                "scheduled_date": "2026-02-13" if random.random() > 0.3 else None,
-                "scheduled_time": f"{random.randint(10,18)}:00:00",
+                "order_id": f"ORD{random.randint(1000000,9999999)}",
+                "order_date": datetime.now(timezone.utc).isoformat(),
+                "inspections_available": random.randint(1, 3),
+                "car_details": f"Maruti Swift {random.choice(['VXI', 'ZXI', 'LXI'])} {random.randint(2018, 2024)}",
+                "scheduled_date": "2026-02-13" if is_scheduled else None,
+                "scheduled_time": f"{random.randint(10,18)}:00:00" if is_scheduled else None,
                 "notes": None,
-                "report_url": f"/reports/inspection_{i}.pdf" if random.random() > 0.5 else None,
+                "report_url": f"/reports/inspection_{i}.pdf" if is_scheduled and random.random() > 0.5 else None,
                 "created_at": datetime.now(timezone.utc).isoformat()
             }
             await db.inspections.insert_one(inspection)
