@@ -295,8 +295,14 @@ export default function LeadsPage() {
                   <td>{lead.city}</td>
                   <td>
                     <div className="flex items-center gap-1">
-                      {lead.assigned_to || '-'}
-                      {lead.assigned_to && <Pencil className="h-3 w-3 text-gray-400" />}
+                      <span>{lead.assigned_to || '-'}</span>
+                      <button 
+                        onClick={() => openAssignModal(lead)} 
+                        className="edit-icon"
+                        data-testid={`assign-employee-${lead.id}`}
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </button>
                     </div>
                   </td>
                   <td className="text-sm">
