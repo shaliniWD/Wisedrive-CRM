@@ -478,13 +478,34 @@ export default function LeadsPage() {
                     {lead.payment_link && <div className="font-mono text-xs text-gray-400">{lead.payment_link}</div>}
                   </td>
                   <td>
-                    <button 
-                      className="btn-yellow"
-                      onClick={() => openPaymentModal(lead)}
-                      data-testid={`send-pay-link-${lead.id}`}
-                    >
-                      Send Pay Link
-                    </button>
+                    <div className="space-y-2">
+                      <button 
+                        className="btn-yellow"
+                        onClick={() => openPaymentModal(lead)}
+                        data-testid={`send-pay-link-${lead.id}`}
+                      >
+                        {lead.payment_link ? 'Resend Link' : 'Send Pay Link'}
+                      </button>
+                      
+                      {/* Show copy link option if payment link exists */}
+                      {lead.payment_link && (
+                        <div className="flex items-center gap-2">
+                          <div className="text-xs text-gray-500 truncate max-w-[120px]" title={lead.payment_link}>
+                            {lead.payment_link}
+                          </div>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(lead.payment_link);
+                              toast.success('Payment link copied!');
+                            }}
+                            className="text-xs text-[#6366F1] hover:underline font-medium"
+                            data-testid={`copy-link-${lead.id}`}
+                          >
+                            Copy
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))
