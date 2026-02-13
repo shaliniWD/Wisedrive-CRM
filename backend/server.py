@@ -539,6 +539,96 @@ async def assign_city_to_employee(employee_id: str, city: str, current_user: dic
     await db.users.update_one({"id": employee_id}, {"$set": {"assigned_cities": cities}})
     return {"assigned_cities": cities}
 
+# ==================== DIGITAL ADS ROUTES ====================
+
+@api_router.get("/digital-ads", response_model=List[DigitalAd])
+async def get_digital_ads(current_user: dict = Depends(get_current_user)):
+    ads = await db.digital_ads.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    for ad in ads:
+        if isinstance(ad.get('created_at'), str):
+            ad['created_at'] = datetime.fromisoformat(ad['created_at'].replace('Z', '+00:00'))
+    return ads
+
+@api_router.post("/digital-ads", response_model=DigitalAd)
+async def create_digital_ad(ad_data: DigitalAdCreate, current_user: dict = Depends(get_current_user)):
+    ad_obj = DigitalAd(**ad_data.model_dump())
+    doc = ad_obj.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.digital_ads.insert_one(doc)
+    return ad_obj
+
+@api_router.put("/digital-ads/{ad_id}")
+async def update_digital_ad(ad_id: str, ad_data: DigitalAdCreate, current_user: dict = Depends(get_current_user)):
+    result = await db.digital_ads.update_one(
+        {"id": ad_id},
+        {"$set": ad_data.model_dump()}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Ad not found")
+    return {"message": "Ad updated"}
+
+@api_router.patch("/digital-ads/{ad_id}/toggle-status")
+async def toggle_ad_status(ad_id: str, current_user: dict = Depends(get_current_user)):
+    ad = await db.digital_ads.find_one({"id": ad_id})
+    if not ad:
+        raise HTTPException(status_code=404, detail="Ad not found")
+    
+    new_status = not ad.get("is_active", True)
+    await db.digital_ads.update_one({"id": ad_id}, {"$set": {"is_active": new_status}})
+    return {"is_active": new_status}
+
+@api_router.delete("/digital-ads/{ad_id}")
+async def delete_digital_ad(ad_id: str, current_user: dict = Depends(get_current_user)):
+    result = await db.digital_ads.delete_one({"id": ad_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Ad not found")
+    return {"message": "Ad deleted"}
+
+# ==================== GARAGE EMPLOYEES ROUTES ====================
+
+@api_router.get("/garage-employees", response_model=List[GarageEmployee])
+async def get_garage_employees(current_user: dict = Depends(get_current_user)):
+    employees = await db.garage_employees.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    for emp in employees:
+        if isinstance(emp.get('created_at'), str):
+            emp['created_at'] = datetime.fromisoformat(emp['created_at'].replace('Z', '+00:00'))
+    return employees
+
+@api_router.post("/garage-employees", response_model=GarageEmployee)
+async def create_garage_employee(emp_data: GarageEmployeeCreate, current_user: dict = Depends(get_current_user)):
+    emp_obj = GarageEmployee(**emp_data.model_dump())
+    doc = emp_obj.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.garage_employees.insert_one(doc)
+    return emp_obj
+
+@api_router.put("/garage-employees/{emp_id}")
+async def update_garage_employee(emp_id: str, emp_data: GarageEmployeeCreate, current_user: dict = Depends(get_current_user)):
+    result = await db.garage_employees.update_one(
+        {"id": emp_id},
+        {"$set": emp_data.model_dump()}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Garage employee not found")
+    return {"message": "Garage employee updated"}
+
+@api_router.patch("/garage-employees/{emp_id}/toggle-status")
+async def toggle_garage_employee_status(emp_id: str, current_user: dict = Depends(get_current_user)):
+    emp = await db.garage_employees.find_one({"id": emp_id})
+    if not emp:
+        raise HTTPException(status_code=404, detail="Garage employee not found")
+    
+    new_status = not emp.get("is_active", True)
+    await db.garage_employees.update_one({"id": emp_id}, {"$set": {"is_active": new_status}})
+    return {"is_active": new_status}
+
+@api_router.delete("/garage-employees/{emp_id}")
+async def delete_garage_employee(emp_id: str, current_user: dict = Depends(get_current_user)):
+    result = await db.garage_employees.delete_one({"id": emp_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Garage employee not found")
+    return {"message": "Garage employee deleted"}
+
 # ==================== DASHBOARD ROUTES ====================
 
 @api_router.get("/dashboard/stats", response_model=DashboardStats)
