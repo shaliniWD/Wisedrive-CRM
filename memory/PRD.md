@@ -21,6 +21,7 @@ Recreate WiseDrive CRM (https://crm.wisedrive.com) design with a modern UI. Crea
 - **Admin Tab - Employee**: Name, Assigned Cities, Assign City button, Status toggle, Edit
 - **Admin Tab - Digital Ad Meta Data**: Ad Id, Ad Name, City, Language, Campaign Type, Source, Status toggle, Copy/Edit/Delete actions
 - **Admin Tab - Garage Employee**: Grg Owner Name, Grg Employee Name, Grg Name, City, Preferred Language, Phone Number, Status toggle, Edit
+- **Customer Details Modal**: Shows customer info + transaction history table (added Feb 13, 2026)
 
 ## Architecture
 - **Frontend**: React.js with Tailwind CSS, shadcn/ui components
@@ -36,30 +37,36 @@ Recreate WiseDrive CRM (https://crm.wisedrive.com) design with a modern UI. Crea
 1. Login/Authentication system
 2. Dashboard with analytics
 3. Leads Management (CRUD, filters, status tracking)
-4. Customers Management (CRUD, payment status)
+4. Customers Management (CRUD, payment status, details modal with transaction history)
 5. Inspections Management (Scheduled/Unscheduled views)
 6. Admin/Employee Management (status toggles, city assignments)
 
-## What's Been Implemented (Feb 13, 2026)
+## What's Been Implemented
 
-### Backend
+### Backend (Updated Feb 13, 2026)
 - [x] JWT Authentication (login, register, token validation)
 - [x] Leads CRUD API with filtering
 - [x] Customers CRUD API with filtering
+- [x] GET /api/customers/{customer_id} - Get single customer
+- [x] GET /api/transactions/{customer_id} - Get customer transactions
+- [x] POST /api/transactions - Create transaction
 - [x] Inspections CRUD API with filtering
 - [x] Employees CRUD API with status toggle
+- [x] Digital Ads CRUD API with status toggle
+- [x] Garage Employees CRUD API with status toggle
 - [x] Dashboard Stats API
 - [x] Utility APIs (cities, sources, statuses)
-- [x] Seed data endpoint
+- [x] Seed data endpoint (includes transactions)
 
-### Frontend - UX Redesign Complete
+### Frontend - UX Redesign Complete (Updated Feb 13, 2026)
 - [x] **Horizontal Top Navigation** - Glassmorphism effect, search, notifications, user menu
 - [x] **Split-screen Login Page** - Modern design with branding on left
 - [x] **Dashboard** - Clean stat cards with icons
-- [x] **Leads Page** - Full-width table, inline filters, date format "13 Feb '26"
-- [x] **Customers Page** - ID/Date column, payment badges, action menus
+- [x] **Leads Page** - Full-width table, inline filters, date format "13 Feb '26", Edit Lead modal
+- [x] **Customers Page** - ID/Date column, payment badges, action menus, **Customer Details Modal**
+- [x] **Customer Details Modal** - Shows customer info (name, mobile, city, status) + transaction history table
 - [x] **Inspections Page** - Scheduled/Unscheduled tabs, report buttons
-- [x] **Admin Page** - Employees, Digital Ad Meta, Garage tabs with toggles
+- [x] **Admin Page** - Employees, Digital Ad Meta Data, Garage Employee tabs with toggles and modals
 - [x] **Date Utility** - formatDate, formatDateTime, formatTime helpers
 
 ### Design System
@@ -74,6 +81,7 @@ Recreate WiseDrive CRM (https://crm.wisedrive.com) design with a modern UI. Crea
 ### P0 - Critical (Done)
 - [x] Authentication system
 - [x] All main modules (Dashboard, Leads, Customers, Inspections, Admin)
+- [x] Customer Details Modal with transaction history
 
 ### P1 - High Priority (Next)
 - [ ] Search/filter persistence across page navigation
@@ -86,12 +94,14 @@ Recreate WiseDrive CRM (https://crm.wisedrive.com) design with a modern UI. Crea
 - [ ] Email notifications for reminders
 - [ ] Payment link generation integration
 - [ ] Report generation and download
+- [ ] Real-time updates via WebSockets
 
 ### P3 - Low Priority (Future)
 - [ ] Dark mode toggle
 - [ ] Mobile responsive improvements
 - [ ] Activity logs/audit trail
 - [ ] Multi-language support
+- [ ] Keyboard shortcuts (Cmd+N for new lead)
 
 ## Next Tasks
 1. Add pagination to all data tables
