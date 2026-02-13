@@ -1061,17 +1061,21 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
     """Get dashboard statistics - filtered by RBAC"""
     role_code = current_user.get("role_code", "")
     country_id = current_user.get("country_id")
+    user_id = current_user.get("id")
     
-    # Base filters
-    lead_filter = {}
-    customer_filter = {}
-    inspection_filter = {}
+    # Get RBAC filters for each resource
+    lead_filter = await rbac_service.get_data_filter(user_id, "leads.view")
+    customer_filter = await rbac_service.get_data_filter(user_id, "customers.view")
+    inspection_filter = await rbac_service.get_data_filter(user_id, "inspections.view")
+    
+    # User filter - based on role
     user_filter = {}
-    
-    if role_code != "CEO":
-        lead_filter["country_id"] = country_id
-        customer_filter["country_id"] = country_id
-        inspection_filter["country_id"] = country_id
+    if role_code == "CEO" or role_code == "HR_MANAGER":
+        pass  # No filter for CEO/HR
+    elif role_code in ["COUNTRY_HEAD", "SALES_HEAD", "INSPECTION_HEAD"]:
+        user_filter["country_id"] = country_id
+    else:
+        # Team or own scope - just show country users
         user_filter["country_id"] = country_id
     
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
