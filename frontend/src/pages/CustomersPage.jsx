@@ -244,6 +244,13 @@ export default function CustomersPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Customer Details Modal */}
+      <CustomerDetailsModal
+        isOpen={isDetailsModalOpen}
+        onClose={() => setIsDetailsModalOpen(false)}
+        customerId={selectedCustomerId}
+      />
     </div>
   );
 }
