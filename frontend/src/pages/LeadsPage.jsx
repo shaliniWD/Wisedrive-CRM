@@ -62,24 +62,69 @@ export default function LeadsPage() {
   });
 
   const [paymentFormData, setPaymentFormData] = useState({
-    hasCarDetails: 'Yes',
+    hasCarDetails: 'yes',
     carNo: '',
     carMake: '',
     carModel: '',
     carYear: '',
     fuelType: '',
     carColor: '',
-    inspectionType: '',
+    carConfirmed: false,
+    // Package details
     packageType: '',
-    paymentType: '',
-    discount: '',
+    numberOfCars: '1',
+    discountType: '',
     discountValue: '',
-    customerMobile: '',
+    // Scheduling
     city: '',
-    address: '',
     inspectionDate: '',
     inspectionTime: '',
+    address: '',
+    latitude: '',
+    longitude: '',
+    // Customer
+    customerMobile: '',
+    customerName: '',
   });
+
+  const [carLoading, setCarLoading] = useState(false);
+  const [carError, setCarError] = useState('');
+
+  // Mock Vaahan API call
+  const fetchCarDetails = async (carNumber) => {
+    setCarLoading(true);
+    setCarError('');
+    try {
+      // Simulating API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Mock car data based on car number pattern
+      const mockCarData = {
+        carMake: 'MARUTI SUZUKI INDIA LTD',
+        carModel: 'SWIFT VXI',
+        carYear: '2021',
+        fuelType: 'PETROL',
+        carColor: 'PEARL ARCTIC WHITE',
+        registrationDate: '15/03/2021',
+        ownerName: 'Vehicle Owner',
+      };
+      
+      setPaymentFormData(prev => ({
+        ...prev,
+        carMake: mockCarData.carMake,
+        carModel: mockCarData.carModel,
+        carYear: mockCarData.carYear,
+        fuelType: mockCarData.fuelType,
+        carColor: mockCarData.carColor,
+      }));
+      toast.success('Car details fetched successfully');
+    } catch (error) {
+      setCarError('Failed to fetch car details. Please check the car number.');
+      toast.error('Failed to fetch car details');
+    } finally {
+      setCarLoading(false);
+    }
+  };
 
   const fetchData = useCallback(async () => {
     try {
