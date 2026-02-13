@@ -173,7 +173,13 @@ export default function CustomersPage() {
                       <span className={`status-badge ${customer.payment_status === 'Completed' ? 'completed' : 'pending'}`}>
                         {customer.payment_status}
                       </span>
-                      <div className="text-xs text-[#6366F1] cursor-pointer hover:underline">Details</div>
+                      <div 
+                        className="text-xs text-[#6366F1] cursor-pointer hover:underline"
+                        onClick={() => openDetailsModal(customer.id)}
+                        data-testid={`details-btn-${customer.id}`}
+                      >
+                        Details
+                      </div>
                     </div>
                   </td>
                   <td>
