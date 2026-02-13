@@ -87,6 +87,11 @@ export default function CustomersPage() {
     setIsModalOpen(true);
   };
 
+  const openDetailsModal = (customerId) => {
+    setSelectedCustomerId(customerId);
+    setIsDetailsModalOpen(true);
+  };
+
   return (
     <div className="p-4 space-y-4" data-testid="customers-page">
       {/* Search and Filters Row */}
