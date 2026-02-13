@@ -76,6 +76,7 @@ class LeadBase(BaseModel):
     status: str = "NEW"  # noqa: F811
     reminder_date: Optional[str] = None
     reminder_time: Optional[str] = None
+    reminder_reason: Optional[str] = None
     notes: Optional[str] = None
     service_type: Optional[str] = None
 
