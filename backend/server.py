@@ -787,13 +787,17 @@ async def seed_data():
             has_reminder = random.random() > 0.4
             # Only add payment link for some leads (40% have payment links)
             has_payment_link = random.random() > 0.6
+            # Add ad_id for leads from FACEBOOK or INSTAGRAM sources
+            source = random.choice(sources)
+            has_ad_id = source in ["FACEBOOK", "INSTAGRAM"]
             
             lead = {
                 "id": str(uuid.uuid4()),
                 "name": f"Lead {i+1}",
                 "mobile": f"91900000{i:04d}",
                 "city": random.choice(cities),
-                "source": random.choice(sources),
+                "source": source,
+                "ad_id": f"1202169{random.randint(10000000, 99999999)}" if has_ad_id else None,
                 "status": random.choice(statuses),
                 "assigned_to": random.choice(employees_data)["name"] if random.random() > 0.3 else None,
                 "reminder_date": "2026-02-14" if has_reminder else None,
