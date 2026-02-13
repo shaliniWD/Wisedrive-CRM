@@ -111,7 +111,7 @@ class WiseDriveCRMTester:
 
     def test_dashboard_stats(self):
         """Test dashboard statistics"""
-        success, response = self run_test(
+        success, response = self.run_test(
             "Dashboard Stats",
             "GET",
             "dashboard/stats",
