@@ -230,7 +230,7 @@ async def get_me(current_user: dict = Depends(get_current_user)):
 @api_router.get("/leads", response_model=List[Lead])
 async def get_leads(
     search: Optional[str] = None,
-    status: Optional[str] = None,
+    lead_status: Optional[str] = None,
     city: Optional[str] = None,
     source: Optional[str] = None,
     assigned_to: Optional[str] = None,
@@ -244,8 +244,8 @@ async def get_leads(
             {"name": {"$regex": search, "$options": "i"}},
             {"mobile": {"$regex": search, "$options": "i"}}
         ]
-    if status:
-        query["status"] = status
+    if lead_status:
+        query["status"] = lead_status
     if city:
         query["city"] = city
     if source:
