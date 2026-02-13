@@ -35,13 +35,21 @@ class AuditService:
                 if role:
                     user_role = role.get("name")
         
+        # Clean values - remove MongoDB _id if present
+        clean_old = None
+        clean_new = None
+        if old_values:
+            clean_old = {k: v for k, v in old_values.items() if k != "_id"}
+        if new_values:
+            clean_new = {k: v for k, v in new_values.items() if k != "_id"}
+        
         log_entry = {
             "id": str(uuid.uuid4()),
             "entity_type": entity_type,
             "entity_id": entity_id,
             "action": action,
-            "old_values": old_values,
-            "new_values": new_values,
+            "old_values": clean_old,
+            "new_values": clean_new,
             "user_id": user_id,
             "user_name": user_name,
             "user_role": user_role,
@@ -51,6 +59,7 @@ class AuditService:
         }
         
         await self.db.audit_logs.insert_one(log_entry)
+        log_entry.pop("_id", None)  # Remove _id before returning
         return log_entry
 
     async def get_entity_history(self, entity_type: str, entity_id: str, limit: int = 50):
