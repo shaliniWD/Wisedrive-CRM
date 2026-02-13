@@ -75,6 +75,9 @@ class EmployeeUpdate(BaseModel):
     employment_type: Optional[str] = None
     joining_date: Optional[str] = None
     probation_end_date: Optional[str] = None
+    weekly_off_day: Optional[int] = None
+    is_available_for_leads: Optional[bool] = None
+    lead_assignment_paused_reason: Optional[str] = None
     bank_name: Optional[str] = None
     bank_account_number: Optional[str] = None
     ifsc_code: Optional[str] = None
