@@ -164,13 +164,13 @@ export default function CustomersPage() {
           <tbody>
             {loading ? (
               <tr><td colSpan={6} className="text-center py-12"><Loader2 className="h-6 w-6 animate-spin mx-auto text-[#2E3192]" /></td></tr>
-            ) : customers.length === 0 ? (
+            ) : paginatedCustomers.length === 0 ? (
               <tr><td colSpan={6} className="text-center py-12 text-gray-500">No customers found</td></tr>
             ) : (
-              customers.map((customer, idx) => (
+              paginatedCustomers.map((customer, idx) => (
                 <tr key={customer.id} data-testid={`customer-row-${customer.id}`}>
                   <td>
-                    <div className="font-medium">{3100 + idx}</div>
+                    <div className="font-medium">{3100 + startIndex + idx}</div>
                     <div className="text-gray-400 text-xs">{formatDateTime(customer.created_at)}</div>
                   </td>
                   <td>
@@ -205,6 +205,72 @@ export default function CustomersPage() {
             )}
           </tbody>
         </table>
+        
+        {/* Pagination */}
+        {!loading && customers.length > 0 && (
+          <div className="flex items-center justify-between px-4 py-3 border-t bg-gray-50">
+            <div className="text-sm text-gray-600">
+              Showing {startIndex + 1} to {Math.min(endIndex, customers.length)} of {customers.length} customers
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+                className="px-3 py-1 text-sm border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                First
+              </button>
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1 text-sm border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+              <div className="flex items-center gap-1">
+                {[...Array(Math.min(5, totalPages))].map((_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`px-3 py-1 text-sm border rounded ${
+                        currentPage === pageNum 
+                          ? 'bg-[#2E3192] text-white border-[#2E3192]' 
+                          : 'hover:bg-gray-100'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1 text-sm border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+              <button
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1 text-sm border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Last
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Edit Modal */}
