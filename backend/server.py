@@ -881,6 +881,39 @@ async def seed_data():
             }
             await db.garage_employees.insert_one(grg_doc)
     
+    # Create sample transactions for customers
+    txn_count = await db.transactions.count_documents({})
+    if txn_count < 5:
+        import random
+        # Get existing customer IDs
+        customers_list = await db.customers.find({}, {"id": 1, "_id": 0}).to_list(20)
+        customer_ids = [c["id"] for c in customers_list]
+        
+        if customer_ids:
+            txn_types = ["Comprehensive", "Gold", "Platinum", "Silver"]
+            car_makes = ["Honda", "Toyota", "Maruti", "Hyundai", "Tata"]
+            car_models = ["City", "Innova", "Swift", "Creta", "Nexon"]
+            
+            for i, cust_id in enumerate(customer_ids[:10]):
+                # Create 1-3 transactions per customer
+                num_txns = random.randint(1, 3)
+                for j in range(num_txns):
+                    txn_doc = {
+                        "id": str(uuid.uuid4()),
+                        "customer_id": cust_id,
+                        "transaction_type": random.choice(txn_types),
+                        "order_id": f"ORD{random.randint(1000000, 9999999)}",
+                        "amount": random.choice([999, 1499, 1999, 2499, 2999]),
+                        "payment_date": f"2026-02-{random.randint(1, 13):02d}",
+                        "payment_status": random.choice(["Completed", "PENDING", "Failed"]),
+                        "car_number": f"KA0{random.randint(1,5)}NC{random.randint(1000,9999)}",
+                        "car_make": random.choice(car_makes),
+                        "car_model": random.choice(car_models),
+                        "car_year": str(random.randint(2018, 2024)),
+                        "created_at": datetime.now(timezone.utc).isoformat()
+                    }
+                    await db.transactions.insert_one(txn_doc)
+    
     return {"message": "Data seeded successfully"}
 
 # Include the router in the main app
