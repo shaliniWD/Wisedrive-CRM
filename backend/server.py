@@ -73,10 +73,11 @@ class LeadBase(BaseModel):
     city: str
     source: str = "WEBSITE"
     assigned_to: Optional[str] = None
-    status: str = "NEW"
+    status: str = "NEW"  # noqa: F811
     reminder_date: Optional[str] = None
     reminder_time: Optional[str] = None
     notes: Optional[str] = None
+    service_type: Optional[str] = None
 
 class LeadCreate(LeadBase):
     pass
