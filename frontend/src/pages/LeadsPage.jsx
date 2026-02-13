@@ -410,10 +410,10 @@ export default function LeadsPage() {
           <tbody>
             {loading ? (
               <tr><td colSpan={8} className="text-center py-12"><Loader2 className="h-6 w-6 animate-spin mx-auto text-[#2E3192]" /></td></tr>
-            ) : leads.length === 0 ? (
+            ) : paginatedLeads.length === 0 ? (
               <tr><td colSpan={8} className="text-center py-12 text-gray-500">No leads found</td></tr>
             ) : (
-              leads.map((lead) => (
+              paginatedLeads.map((lead) => (
                 <tr key={lead.id} data-testid={`lead-row-${lead.id}`}>
                   <td>
                     <div className="text-sm">{formatDateTime(lead.created_at)}</div>
