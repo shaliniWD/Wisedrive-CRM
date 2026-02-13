@@ -494,9 +494,20 @@ export default function LeadsPage() {
                             {lead.payment_link}
                           </div>
                           <button
-                            onClick={() => {
-                              navigator.clipboard.writeText(lead.payment_link);
-                              toast.success('Payment link copied!');
+                            onClick={async () => {
+                              try {
+                                await navigator.clipboard.writeText(lead.payment_link);
+                                toast.success('Payment link copied!');
+                              } catch (err) {
+                                // Fallback for environments where clipboard API is not available
+                                const textArea = document.createElement('textarea');
+                                textArea.value = lead.payment_link;
+                                document.body.appendChild(textArea);
+                                textArea.select();
+                                document.execCommand('copy');
+                                document.body.removeChild(textArea);
+                                toast.success('Payment link copied!');
+                              }
                             }}
                             className="text-xs text-[#6366F1] hover:underline font-medium"
                             data-testid={`copy-link-${lead.id}`}
