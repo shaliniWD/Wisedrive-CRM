@@ -1123,10 +1123,30 @@ export default function LeadsPage() {
               </button>
             ) : (
               <button 
-                className="px-8 py-2.5 bg-[#2E3192] text-white rounded hover:bg-[#252880] text-sm font-medium flex items-center gap-2"
-                onClick={() => {
-                  toast.success('Payment link sent to customer!');
-                  setIsPaymentModalOpen(false);
+                className="px-8 py-2.5 bg-[#2E3192] text-white rounded hover:bg-[#252880] text-sm font-medium flex items-center gap-2 disabled:opacity-50"
+                disabled={saving}
+                onClick={async () => {
+                  if (!selectedLead) return;
+                  setSaving(true);
+                  try {
+                    // Generate a mock Razorpay payment link
+                    const paymentLink = `https://rzp.io/l/WD${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+                    
+                    // Update the lead with payment link
+                    await leadsApi.update(selectedLead.id, {
+                      ...selectedLead,
+                      payment_link: paymentLink,
+                      payment_link_sent_at: new Date().toISOString(),
+                    });
+                    
+                    toast.success('Payment link sent to customer!');
+                    setIsPaymentModalOpen(false);
+                    fetchData(); // Refresh the leads list
+                  } catch (error) {
+                    toast.error('Failed to send payment link');
+                  } finally {
+                    setSaving(false);
+                  }
                 }}
                 data-testid="send-payment-link-btn"
               >
