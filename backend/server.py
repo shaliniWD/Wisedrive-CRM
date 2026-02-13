@@ -133,13 +133,16 @@ class InspectionBase(BaseModel):
     address: str
     city: str
     payment_status: str = "PENDING"
-    inspection_status: str = "SCHEDULED"
+    inspection_status: Optional[str] = None
     mechanic_name: Optional[str] = None
     car_number: Optional[str] = None
     car_details: Optional[str] = None
     scheduled_date: Optional[str] = None
     scheduled_time: Optional[str] = None
     notes: Optional[str] = None
+    order_id: Optional[str] = None
+    order_date: Optional[str] = None
+    inspections_available: Optional[int] = 1
 
 class InspectionCreate(InspectionBase):
     pass
