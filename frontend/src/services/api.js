@@ -13,9 +13,16 @@ export const leadsApi = {
 // Customers API
 export const customersApi = {
   getAll: (params) => axios.get(`${API_URL}/customers`, { params }),
+  getById: (id) => axios.get(`${API_URL}/customers/${id}`),
   create: (data) => axios.post(`${API_URL}/customers`, data),
   update: (id, data) => axios.put(`${API_URL}/customers/${id}`, data),
   delete: (id) => axios.delete(`${API_URL}/customers/${id}`),
+};
+
+// Transactions API
+export const transactionsApi = {
+  getByCustomer: (customerId) => axios.get(`${API_URL}/transactions/${customerId}`),
+  create: (data) => axios.post(`${API_URL}/transactions`, data),
 };
 
 // Inspections API
