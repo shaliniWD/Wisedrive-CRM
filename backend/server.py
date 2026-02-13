@@ -791,6 +791,47 @@ async def seed_data():
             }
             await db.inspections.insert_one(inspection)
     
+    # Create sample digital ads
+    ads_count = await db.digital_ads.count_documents({})
+    if ads_count < 5:
+        import random
+        ad_data = [
+            {"ad_id": "120216584515320302", "ad_name": "Pune Hindi", "city": "Pune", "language": "Hindi", "campaign_type": "Instagram", "source": "Facebook", "ad_amount": 5000},
+            {"ad_id": "120216584515340302", "ad_name": "Pune Hindi 6", "city": "Pune", "language": "Hindi", "campaign_type": "Instagram", "source": "Facebook", "ad_amount": 3500},
+            {"ad_id": "120216584515350302", "ad_name": "Pune Hindi 5", "city": "Pune", "language": "Hindi", "campaign_type": "Instagram", "source": "Facebook", "ad_amount": 4200},
+            {"ad_id": "120216584515360302", "ad_name": "Delhi Hindi 4", "city": "Delhi", "language": "Hindi", "campaign_type": "Instagram", "source": "Facebook", "ad_amount": 6000},
+            {"ad_id": "120216584515370302", "ad_name": "Bangalore English", "city": "Bangalore", "language": "English", "campaign_type": "Google", "source": "Google Ads", "ad_amount": 8000},
+            {"ad_id": "120216584515380302", "ad_name": "Mumbai Marathi", "city": "Mumbai", "language": "Marathi", "campaign_type": "Instagram", "source": "Facebook", "ad_amount": 4500},
+        ]
+        for ad in ad_data:
+            ad_doc = {
+                "id": str(uuid.uuid4()),
+                **ad,
+                "is_active": True,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.digital_ads.insert_one(ad_doc)
+    
+    # Create sample garage employees
+    grg_count = await db.garage_employees.count_documents({})
+    if grg_count < 5:
+        grg_data = [
+            {"grg_owner_name": "Rajesh Kumar", "grg_employee_name": "Suresh Mechanic", "grg_name": "Kumar Auto Works", "city": "Bangalore", "preferred_language": "Kannada", "phone_number": "9876543210"},
+            {"grg_owner_name": "Vijay Sharma", "grg_employee_name": "Ramu Technician", "grg_name": "Sharma Motors", "city": "Hyderabad", "preferred_language": "Telugu", "phone_number": "9876543211"},
+            {"grg_owner_name": "Mohammed Ali", "grg_employee_name": "Kaliul Rahaman", "grg_name": "Ali Auto Service", "city": "Chennai", "preferred_language": "Tamil", "phone_number": "9876543212"},
+            {"grg_owner_name": "Pradeep Nair", "grg_employee_name": "DONOTUSE_TEST", "grg_name": "Nair Garage", "city": "Mumbai", "preferred_language": "Hindi", "phone_number": "9876543213"},
+            {"grg_owner_name": "Amit Patel", "grg_employee_name": "Ramesh Worker", "grg_name": "Patel Auto Zone", "city": "Pune", "preferred_language": "Marathi", "phone_number": "9876543214"},
+            {"grg_owner_name": "Sanjay Gupta", "grg_employee_name": "Vinod Kumar", "grg_name": "Gupta Service Center", "city": "Delhi", "preferred_language": "Hindi", "phone_number": "9876543215"},
+        ]
+        for grg in grg_data:
+            grg_doc = {
+                "id": str(uuid.uuid4()),
+                **grg,
+                "is_active": True,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.garage_employees.insert_one(grg_doc)
+    
     return {"message": "Data seeded successfully"}
 
 # Include the router in the main app
