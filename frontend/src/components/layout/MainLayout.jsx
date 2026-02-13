@@ -10,10 +10,10 @@ export const MainLayout = () => {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-slate-50">
+      <div className="flex h-screen items-center justify-center bg-gray-100">
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
-          <p className="text-sm text-slate-500">Loading...</p>
+          <Loader2 className="h-8 w-8 animate-spin text-[#2E3192]" />
+          <p className="text-sm text-gray-500">Loading...</p>
         </div>
       </div>
     );
@@ -24,12 +24,10 @@ export const MainLayout = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50" data-testid="main-layout">
+    <div className="min-h-screen bg-[#f5f5f5]" data-testid="main-layout">
       <TopNavbar />
-      <main className="px-6 py-6 max-w-[1920px] mx-auto">
-        <div className="fade-in">
-          <Outlet />
-        </div>
+      <main>
+        <Outlet />
       </main>
     </div>
   );
