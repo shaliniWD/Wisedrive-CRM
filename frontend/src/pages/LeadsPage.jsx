@@ -444,7 +444,7 @@ export default function LeadsPage() {
                     <div className="space-y-2">
                       {/* Always show Reminder button */}
                       <button 
-                        className="btn-yellow text-sm px-3 py-1"
+                        className="px-3 py-1 text-sm bg-[#6366F1] text-white rounded hover:bg-[#5558E3] font-medium"
                         onClick={() => openReminderModal(lead)}
                         data-testid={`add-reminder-${lead.id}`}
                       >
@@ -474,8 +474,8 @@ export default function LeadsPage() {
                     <div className="text-xs text-gray-400 mt-1">{formatDate(lead.created_at)}</div>
                   </td>
                   <td>
-                    <div className="text-sm">{lead.source}</div>
-                    {lead.payment_link && <div className="font-mono text-xs text-gray-400">{lead.payment_link}</div>}
+                    <div className="text-sm font-medium">{lead.source}</div>
+                    {lead.ad_id && <div className="font-mono text-xs text-gray-500">Ad ID: {lead.ad_id}</div>}
                   </td>
                   <td>
                     <div className="space-y-2">
