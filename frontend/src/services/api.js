@@ -121,3 +121,18 @@ export const seedApi = {
   seed: () => axios.post(`${API_URL}/seed`),
   clearAndSeed: () => axios.post(`${API_URL}/seed/clear`),
 };
+
+// Salary/HR API
+export const salaryApi = {
+  getAll: (params) => axios.get(`${API_URL}/salaries`, { params }),
+  getByUser: (userId) => axios.get(`${API_URL}/salaries/${userId}`),
+  create: (data) => axios.post(`${API_URL}/salaries`, data),
+  update: (id, data) => axios.put(`${API_URL}/salaries/${id}`, data),
+};
+
+// Audit Logs API
+export const auditLogsApi = {
+  getAll: (params) => axios.get(`${API_URL}/audit-logs`, { params }),
+  getByEntity: (entityType, entityId) => axios.get(`${API_URL}/audit-logs/entity/${entityType}/${entityId}`),
+  getStats: () => axios.get(`${API_URL}/audit-logs/stats`),
+};
