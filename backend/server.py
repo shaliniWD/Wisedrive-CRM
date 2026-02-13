@@ -1160,42 +1160,684 @@ async def root():
     return {"message": "WiseDrive CRM V2 API", "version": "2.0.0"}
 
 
-# ==================== HR / SALARY ROUTES ====================
+# ==================== COMPREHENSIVE HR MODULE ====================
 
-class SalaryCreate(BaseModel):
-    user_id: str
-    ctc: float = 0
-    fixed_pay: float = 0
-    variable_pay: float = 0
-    commission_percentage: float = 0
-    per_inspection_payout: float = 0
-    incentive_structure: Optional[dict] = None
-    currency: str = "INR"
-    effective_from: Optional[str] = None
+# -------------------- EMPLOYEE MANAGEMENT --------------------
 
-
-class SalaryUpdate(BaseModel):
-    ctc: Optional[float] = None
-    fixed_pay: Optional[float] = None
-    variable_pay: Optional[float] = None
-    commission_percentage: Optional[float] = None
-    per_inspection_payout: Optional[float] = None
-    incentive_structure: Optional[dict] = None
-    effective_from: Optional[str] = None
-    effective_to: Optional[str] = None
-
-
-@api_router.get("/salaries")
-async def get_salaries(
-    user_id: Optional[str] = None,
+@api_router.get("/hr/employees")
+async def get_hr_employees(
     country_id: Optional[str] = None,
+    department_id: Optional[str] = None,
+    role_id: Optional[str] = None,
+    is_active: Optional[bool] = None,
+    has_crm_access: Optional[bool] = None,
+    search: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
-    """Get salary structures - HR and CEO only"""
+    """Get all employees - Indian HR has full access to all countries"""
+    role_code = current_user.get("role_code", "")
+    user_country = current_user.get("country_id")
+    
+    if role_code not in ["CEO", "HR_MANAGER", "COUNTRY_HEAD"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    query = {}
+    
+    # Indian HR (HR_MANAGER) has full access to all countries
+    # Country Head can only see their country
+    if role_code == "COUNTRY_HEAD":
+        query["country_id"] = user_country
+    elif country_id:
+        query["country_id"] = country_id
+    
+    if department_id:
+        query["department_id"] = department_id
+    if role_id:
+        query["role_id"] = role_id
+    if is_active is not None:
+        query["is_active"] = is_active
+    if has_crm_access is not None:
+        query["has_crm_access"] = has_crm_access
+    if search:
+        query["$or"] = [
+            {"name": {"$regex": search, "$options": "i"}},
+            {"email": {"$regex": search, "$options": "i"}},
+            {"phone": {"$regex": search, "$options": "i"}},
+            {"employee_code": {"$regex": search, "$options": "i"}}
+        ]
+    
+    employees = await db.users.find(query, {"_id": 0, "hashed_password": 0}).sort("created_at", -1).to_list(1000)
+    
+    # Enrich with role, country, department info
+    for emp in employees:
+        if emp.get("role_id"):
+            role = await db.roles.find_one({"id": emp["role_id"]}, {"_id": 0, "name": 1, "code": 1})
+            if role:
+                emp["role_name"] = role.get("name")
+                emp["role_code"] = role.get("code")
+        
+        if emp.get("country_id"):
+            country = await db.countries.find_one({"id": emp["country_id"]}, {"_id": 0, "name": 1, "currency": 1})
+            if country:
+                emp["country_name"] = country.get("name")
+                emp["currency"] = country.get("currency")
+        
+        if emp.get("department_id"):
+            dept = await db.departments.find_one({"id": emp["department_id"]}, {"_id": 0, "name": 1})
+            if dept:
+                emp["department_name"] = dept.get("name")
+        
+        if emp.get("team_id"):
+            team = await db.teams.find_one({"id": emp["team_id"]}, {"_id": 0, "name": 1})
+            if team:
+                emp["team_name"] = team.get("name")
+        
+        # Get latest salary info
+        salary = await db.salary_structures.find_one(
+            {"user_id": emp["id"], "effective_to": None},
+            {"_id": 0, "basic_salary": 1, "net_salary": 1, "price_per_inspection": 1, "employment_type": 1}
+        )
+        if salary:
+            emp["salary_info"] = salary
+        
+        # Get document count
+        doc_count = await db.employee_documents.count_documents({"user_id": emp["id"]})
+        emp["document_count"] = doc_count
+        
+        # Get recent audit count
+        audit_count = await db.audit_logs.count_documents({"entity_id": emp["id"], "entity_type": "employee"})
+        emp["audit_count"] = audit_count
+    
+    return employees
+
+
+@api_router.get("/hr/employees/{employee_id}")
+async def get_hr_employee(employee_id: str, current_user: dict = Depends(get_current_user)):
+    """Get single employee with all details"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER", "COUNTRY_HEAD"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    emp = await db.users.find_one({"id": employee_id}, {"_id": 0, "hashed_password": 0})
+    if not emp:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    # Enrich with related data
+    if emp.get("role_id"):
+        role = await db.roles.find_one({"id": emp["role_id"]}, {"_id": 0, "name": 1, "code": 1})
+        if role:
+            emp["role_name"] = role.get("name")
+            emp["role_code"] = role.get("code")
+    
+    if emp.get("country_id"):
+        country = await db.countries.find_one({"id": emp["country_id"]}, {"_id": 0, "name": 1, "currency": 1, "currency_symbol": 1})
+        if country:
+            emp["country_name"] = country.get("name")
+            emp["currency"] = country.get("currency")
+            emp["currency_symbol"] = country.get("currency_symbol")
+    
+    if emp.get("department_id"):
+        dept = await db.departments.find_one({"id": emp["department_id"]}, {"_id": 0, "name": 1})
+        if dept:
+            emp["department_name"] = dept.get("name")
+    
+    # Get full salary structure
+    emp["salary"] = await db.salary_structures.find_one(
+        {"user_id": employee_id, "effective_to": None},
+        {"_id": 0}
+    )
+    
+    # Get documents
+    emp["documents"] = await db.employee_documents.find(
+        {"user_id": employee_id},
+        {"_id": 0}
+    ).to_list(50)
+    
+    # Get recent attendance (last 30 days)
+    thirty_days_ago = (datetime.now(timezone.utc) - timedelta(days=30)).strftime("%Y-%m-%d")
+    emp["attendance"] = await db.employee_attendance.find(
+        {"user_id": employee_id, "date": {"$gte": thirty_days_ago}},
+        {"_id": 0}
+    ).sort("date", -1).to_list(30)
+    
+    # Get audit history for this employee
+    emp["audit_history"] = await db.audit_logs.find(
+        {"entity_id": employee_id, "entity_type": "employee"},
+        {"_id": 0}
+    ).sort("timestamp", -1).to_list(20)
+    
+    return emp
+
+
+@api_router.post("/hr/employees")
+async def create_hr_employee(emp_data: EmployeeCreate, current_user: dict = Depends(get_current_user)):
+    """Create new employee with CRM access"""
     role_code = current_user.get("role_code", "")
     
     if role_code not in ["CEO", "HR_MANAGER"]:
-        raise HTTPException(status_code=403, detail="Not authorized to view salaries")
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Check if email exists
+    existing = await db.users.find_one({"email": emp_data.email})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already exists")
+    
+    emp_dict = emp_data.model_dump()
+    emp_id = str(uuid.uuid4())
+    
+    # Hash password
+    emp_dict["hashed_password"] = hash_password(emp_dict.pop("password"))
+    emp_dict["id"] = emp_id
+    emp_dict["created_at"] = datetime.now(timezone.utc).isoformat()
+    emp_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
+    emp_dict["created_by"] = current_user["id"]
+    
+    # Generate employee code if not provided
+    if not emp_dict.get("employee_code"):
+        count = await db.users.count_documents({})
+        emp_dict["employee_code"] = f"EMP{str(count + 1).zfill(4)}"
+    
+    # Check if role is mechanic - no CRM access
+    if emp_dict.get("role_id"):
+        role = await db.roles.find_one({"id": emp_dict["role_id"]}, {"_id": 0, "code": 1})
+        if role and role.get("code") == "MECHANIC":
+            emp_dict["has_crm_access"] = False
+    
+    await db.users.insert_one(emp_dict)
+    emp_dict.pop("_id", None)
+    emp_dict.pop("hashed_password", None)
+    
+    # Log audit
+    await audit_service.log(
+        entity_type="employee",
+        entity_id=emp_id,
+        action="create",
+        user_id=current_user["id"],
+        new_values={"name": emp_dict["name"], "email": emp_dict["email"], "role_id": emp_dict.get("role_id")}
+    )
+    
+    return emp_dict
+
+
+@api_router.put("/hr/employees/{employee_id}")
+async def update_hr_employee(employee_id: str, emp_data: EmployeeUpdate, current_user: dict = Depends(get_current_user)):
+    """Update employee"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    existing = await db.users.find_one({"id": employee_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    update_dict = {k: v for k, v in emp_data.model_dump().items() if v is not None}
+    
+    # Handle password update
+    if "password" in update_dict:
+        update_dict["hashed_password"] = hash_password(update_dict.pop("password"))
+    
+    update_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
+    update_dict["updated_by"] = current_user["id"]
+    
+    # Check if changing to mechanic role - remove CRM access
+    if update_dict.get("role_id"):
+        role = await db.roles.find_one({"id": update_dict["role_id"]}, {"_id": 0, "code": 1})
+        if role and role.get("code") == "MECHANIC":
+            update_dict["has_crm_access"] = False
+    
+    await db.users.update_one({"id": employee_id}, {"$set": update_dict})
+    
+    # Log audit
+    await audit_service.log(
+        entity_type="employee",
+        entity_id=employee_id,
+        action="update",
+        user_id=current_user["id"],
+        old_values={"name": existing.get("name")},
+        new_values=update_dict
+    )
+    
+    emp = await db.users.find_one({"id": employee_id}, {"_id": 0, "hashed_password": 0})
+    return emp
+
+
+@api_router.delete("/hr/employees/{employee_id}")
+async def delete_hr_employee(employee_id: str, current_user: dict = Depends(get_current_user)):
+    """Delete employee (soft delete - deactivate)"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    existing = await db.users.find_one({"id": employee_id}, {"_id": 0, "name": 1})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    # Soft delete - deactivate
+    await db.users.update_one(
+        {"id": employee_id},
+        {"$set": {"is_active": False, "has_crm_access": False, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    # Log audit
+    await audit_service.log(
+        entity_type="employee",
+        entity_id=employee_id,
+        action="delete",
+        user_id=current_user["id"],
+        old_values={"name": existing.get("name")}
+    )
+    
+    return {"message": "Employee deactivated"}
+
+
+# -------------------- SALARY MANAGEMENT --------------------
+
+@api_router.get("/hr/employees/{employee_id}/salary")
+async def get_employee_salary(employee_id: str, current_user: dict = Depends(get_current_user)):
+    """Get employee salary structure"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        if current_user.get("id") != employee_id:
+            raise HTTPException(status_code=403, detail="Not authorized")
+    
+    salary = await db.salary_structures.find_one(
+        {"user_id": employee_id, "effective_to": None},
+        {"_id": 0}
+    )
+    
+    if not salary:
+        # Get employee role to determine default structure
+        user = await db.users.find_one({"id": employee_id}, {"_id": 0, "role_id": 1, "employment_type": 1})
+        role_code_emp = None
+        if user and user.get("role_id"):
+            role = await db.roles.find_one({"id": user["role_id"]}, {"_id": 0, "code": 1})
+            role_code_emp = role.get("code") if role else None
+        
+        return {
+            "user_id": employee_id,
+            "employment_type": user.get("employment_type", "full_time") if user else "full_time",
+            "is_freelancer": role_code_emp == "MECHANIC",
+            "currency": "INR"
+        }
+    
+    # Check if freelancer/mechanic
+    user = await db.users.find_one({"id": employee_id}, {"_id": 0, "role_id": 1})
+    if user and user.get("role_id"):
+        role = await db.roles.find_one({"id": user["role_id"]}, {"_id": 0, "code": 1})
+        salary["is_freelancer"] = role.get("code") == "MECHANIC" if role else False
+    
+    return salary
+
+
+@api_router.post("/hr/employees/{employee_id}/salary")
+async def create_employee_salary(employee_id: str, salary_data: SalaryStructureCreate, current_user: dict = Depends(get_current_user)):
+    """Create/Update employee salary structure"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Verify employee exists
+    user = await db.users.find_one({"id": employee_id}, {"_id": 0, "country_id": 1, "role_id": 1})
+    if not user:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    # Close any existing active salary
+    await db.salary_structures.update_many(
+        {"user_id": employee_id, "effective_to": None},
+        {"$set": {"effective_to": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    salary_dict = salary_data.model_dump()
+    salary_dict["user_id"] = employee_id
+    salary_dict["id"] = str(uuid.uuid4())
+    salary_dict["created_at"] = datetime.now(timezone.utc).isoformat()
+    salary_dict["created_by"] = current_user["id"]
+    salary_dict["effective_from"] = salary_dict.get("effective_from") or datetime.now(timezone.utc).isoformat()
+    salary_dict["effective_to"] = None
+    
+    # Get country currency
+    if user.get("country_id"):
+        country = await db.countries.find_one({"id": user["country_id"]}, {"_id": 0, "currency": 1})
+        if country:
+            salary_dict["currency"] = country.get("currency", "INR")
+    
+    # Calculate gross and net salary for full-time employees
+    if salary_dict.get("employment_type") in ["full_time", "part_time"]:
+        salary_dict["gross_salary"] = (
+            salary_dict.get("basic_salary", 0) +
+            salary_dict.get("hra", 0) +
+            salary_dict.get("conveyance_allowance", 0) +
+            salary_dict.get("medical_allowance", 0) +
+            salary_dict.get("special_allowance", 0) +
+            salary_dict.get("variable_pay", 0)
+        )
+        
+        total_deductions = (
+            salary_dict.get("pf_employee", 0) +
+            salary_dict.get("professional_tax", 0) +
+            salary_dict.get("income_tax", 0) +
+            salary_dict.get("other_deductions", 0)
+        )
+        
+        salary_dict["net_salary"] = salary_dict["gross_salary"] - total_deductions
+    
+    await db.salary_structures.insert_one(salary_dict)
+    salary_dict.pop("_id", None)
+    
+    # Log audit
+    await audit_service.log(
+        entity_type="employee",
+        entity_id=employee_id,
+        action="salary_update",
+        user_id=current_user["id"],
+        new_values={"net_salary": salary_dict.get("net_salary"), "basic_salary": salary_dict.get("basic_salary")}
+    )
+    
+    return salary_dict
+
+
+# -------------------- ATTENDANCE --------------------
+
+@api_router.get("/hr/employees/{employee_id}/attendance")
+async def get_employee_attendance(
+    employee_id: str,
+    month: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get employee attendance"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        if current_user.get("id") != employee_id:
+            raise HTTPException(status_code=403, detail="Not authorized")
+    
+    query = {"user_id": employee_id}
+    if month:
+        query["date"] = {"$regex": f"^{month}"}
+    
+    attendance = await db.employee_attendance.find(query, {"_id": 0}).sort("date", -1).to_list(100)
+    
+    # Calculate summary
+    present = sum(1 for a in attendance if a.get("status") == "present")
+    absent = sum(1 for a in attendance if a.get("status") == "absent")
+    half_day = sum(1 for a in attendance if a.get("status") == "half_day")
+    on_leave = sum(1 for a in attendance if a.get("status") == "on_leave")
+    
+    return {
+        "records": attendance,
+        "summary": {
+            "present": present,
+            "absent": absent,
+            "half_day": half_day,
+            "on_leave": on_leave,
+            "total_days": len(attendance)
+        }
+    }
+
+
+@api_router.post("/hr/employees/{employee_id}/attendance")
+async def create_employee_attendance(employee_id: str, att_data: AttendanceCreate, current_user: dict = Depends(get_current_user)):
+    """Create/Update attendance record"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Check if record exists for this date
+    existing = await db.employee_attendance.find_one(
+        {"user_id": employee_id, "date": att_data.date}
+    )
+    
+    att_dict = att_data.model_dump()
+    att_dict["user_id"] = employee_id
+    
+    if existing:
+        # Update existing
+        await db.employee_attendance.update_one(
+            {"user_id": employee_id, "date": att_data.date},
+            {"$set": att_dict}
+        )
+        att_dict["id"] = existing.get("id")
+    else:
+        # Create new
+        att_dict["id"] = str(uuid.uuid4())
+        att_dict["created_at"] = datetime.now(timezone.utc).isoformat()
+        await db.employee_attendance.insert_one(att_dict)
+        att_dict.pop("_id", None)
+    
+    return att_dict
+
+
+# -------------------- DOCUMENTS --------------------
+
+@api_router.get("/hr/employees/{employee_id}/documents")
+async def get_employee_documents(employee_id: str, current_user: dict = Depends(get_current_user)):
+    """Get employee documents"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        if current_user.get("id") != employee_id:
+            raise HTTPException(status_code=403, detail="Not authorized")
+    
+    documents = await db.employee_documents.find(
+        {"user_id": employee_id},
+        {"_id": 0}
+    ).to_list(50)
+    
+    return documents
+
+
+@api_router.post("/hr/employees/{employee_id}/documents")
+async def create_employee_document(employee_id: str, doc_data: DocumentCreate, current_user: dict = Depends(get_current_user)):
+    """Add employee document"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    doc_dict = doc_data.model_dump()
+    doc_dict["user_id"] = employee_id
+    doc_dict["id"] = str(uuid.uuid4())
+    doc_dict["created_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.employee_documents.insert_one(doc_dict)
+    doc_dict.pop("_id", None)
+    
+    # Log audit
+    await audit_service.log(
+        entity_type="employee",
+        entity_id=employee_id,
+        action="document_added",
+        user_id=current_user["id"],
+        new_values={"document_type": doc_dict["document_type"], "document_name": doc_dict["document_name"]}
+    )
+    
+    return doc_dict
+
+
+@api_router.put("/hr/employees/{employee_id}/documents/{document_id}")
+async def update_employee_document(employee_id: str, document_id: str, doc_data: DocumentUpdate, current_user: dict = Depends(get_current_user)):
+    """Update employee document"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    update_dict = {k: v for k, v in doc_data.model_dump().items() if v is not None}
+    
+    await db.employee_documents.update_one(
+        {"id": document_id, "user_id": employee_id},
+        {"$set": update_dict}
+    )
+    
+    doc = await db.employee_documents.find_one({"id": document_id}, {"_id": 0})
+    return doc
+
+
+@api_router.delete("/hr/employees/{employee_id}/documents/{document_id}")
+async def delete_employee_document(employee_id: str, document_id: str, current_user: dict = Depends(get_current_user)):
+    """Delete employee document"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    result = await db.employee_documents.delete_one({"id": document_id, "user_id": employee_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Document not found")
+    
+    return {"message": "Document deleted"}
+
+
+# -------------------- EMPLOYEE AUDIT TRAIL --------------------
+
+@api_router.get("/hr/employees/{employee_id}/audit")
+async def get_employee_audit(employee_id: str, current_user: dict = Depends(get_current_user)):
+    """Get audit trail for specific employee"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER", "COUNTRY_HEAD"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    logs = await db.audit_logs.find(
+        {"entity_id": employee_id, "entity_type": "employee"},
+        {"_id": 0}
+    ).sort("timestamp", -1).to_list(100)
+    
+    return logs
+
+
+# ==================== COUNTRY MANAGEMENT ====================
+
+@api_router.get("/hr/countries")
+async def get_hr_countries(current_user: dict = Depends(get_current_user)):
+    """Get all countries - for login selection and HR management"""
+    countries = await db.countries.find({"is_active": True}, {"_id": 0}).to_list(100)
+    return countries
+
+
+@api_router.get("/hr/countries/all")
+async def get_all_countries(current_user: dict = Depends(get_current_user)):
+    """Get all countries including inactive - for admin"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    countries = await db.countries.find({}, {"_id": 0}).to_list(100)
+    
+    # Get employee count per country
+    for country in countries:
+        count = await db.users.count_documents({"country_id": country["id"]})
+        country["employee_count"] = count
+    
+    return countries
+
+
+@api_router.post("/hr/countries")
+async def create_country(country_data: CountryCreate, current_user: dict = Depends(get_current_user)):
+    """Create new country"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Check if country code exists
+    existing = await db.countries.find_one({"code": country_data.code.upper()})
+    if existing:
+        raise HTTPException(status_code=400, detail="Country code already exists")
+    
+    country_dict = country_data.model_dump()
+    country_dict["id"] = str(uuid.uuid4())
+    country_dict["code"] = country_dict["code"].upper()
+    country_dict["created_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.countries.insert_one(country_dict)
+    country_dict.pop("_id", None)
+    
+    # Log audit
+    await audit_service.log(
+        entity_type="country",
+        entity_id=country_dict["id"],
+        action="create",
+        user_id=current_user["id"],
+        new_values={"name": country_dict["name"], "code": country_dict["code"]}
+    )
+    
+    return country_dict
+
+
+@api_router.put("/hr/countries/{country_id}")
+async def update_country(country_id: str, country_data: CountryUpdate, current_user: dict = Depends(get_current_user)):
+    """Update country"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    existing = await db.countries.find_one({"id": country_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Country not found")
+    
+    update_dict = {k: v for k, v in country_data.model_dump().items() if v is not None}
+    if "code" in update_dict:
+        update_dict["code"] = update_dict["code"].upper()
+    
+    await db.countries.update_one({"id": country_id}, {"$set": update_dict})
+    
+    country = await db.countries.find_one({"id": country_id}, {"_id": 0})
+    return country
+
+
+@api_router.delete("/hr/countries/{country_id}")
+async def delete_country(country_id: str, current_user: dict = Depends(get_current_user)):
+    """Deactivate country"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Check if country has employees
+    emp_count = await db.users.count_documents({"country_id": country_id})
+    if emp_count > 0:
+        raise HTTPException(status_code=400, detail=f"Cannot delete country with {emp_count} employees")
+    
+    await db.countries.update_one({"id": country_id}, {"$set": {"is_active": False}})
+    
+    return {"message": "Country deactivated"}
+
+
+# ==================== PUBLIC COUNTRIES (For Login) ====================
+
+@api_router.get("/countries/login")
+async def get_login_countries():
+    """Get countries for login page - no auth required"""
+    countries = await db.countries.find(
+        {"is_active": True},
+        {"_id": 0, "id": 1, "name": 1, "code": 1, "currency": 1}
+    ).to_list(100)
+    return countries
+
+
+# ==================== LEGACY COMPATIBILITY ====================
+
+# Keep old salary endpoints for backward compatibility
+@api_router.get("/salaries")
+async def get_salaries(
+    user_id: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get salary structures - redirects to new HR endpoint"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
     
     query = {}
     if user_id:
@@ -1203,7 +1845,6 @@ async def get_salaries(
     
     salaries = await db.salary_structures.find(query, {"_id": 0}).to_list(1000)
     
-    # Enrich with user info
     for salary in salaries:
         user = await db.users.find_one({"id": salary["user_id"]}, {"_id": 0, "name": 1, "email": 1, "role_id": 1})
         if user:
@@ -1217,134 +1858,22 @@ async def get_salaries(
     return salaries
 
 
-@api_router.get("/salaries/{user_id}")
-async def get_user_salary(user_id: str, current_user: dict = Depends(get_current_user)):
-    """Get salary for a specific user"""
-    role_code = current_user.get("role_code", "")
-    
-    # Check permission
-    if role_code not in ["CEO", "HR_MANAGER"]:
-        # Others can only view their own salary
-        if current_user.get("id") != user_id:
-            raise HTTPException(status_code=403, detail="Not authorized to view this salary")
-    
-    salary = await db.salary_structures.find_one(
-        {"user_id": user_id, "effective_to": None},  # Get current active salary
-        {"_id": 0}
-    )
-    
-    if not salary:
-        return None
-    
-    # Enrich with user info
-    user = await db.users.find_one({"id": user_id}, {"_id": 0, "name": 1, "email": 1})
-    if user:
-        salary["user_name"] = user.get("name")
-        salary["user_email"] = user.get("email")
-    
-    return salary
-
-
-@api_router.post("/salaries")
-async def create_salary(salary_data: SalaryCreate, current_user: dict = Depends(get_current_user)):
-    """Create salary structure - HR only"""
-    role_code = current_user.get("role_code", "")
-    
-    if role_code not in ["CEO", "HR_MANAGER"]:
-        raise HTTPException(status_code=403, detail="Not authorized to create salaries")
-    
-    # Check if user exists
-    user = await db.users.find_one({"id": salary_data.user_id}, {"_id": 0})
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    # Close any existing active salary
-    await db.salary_structures.update_many(
-        {"user_id": salary_data.user_id, "effective_to": None},
-        {"$set": {"effective_to": datetime.now(timezone.utc).isoformat()}}
-    )
-    
-    salary_dict = salary_data.model_dump()
-    salary_dict["id"] = str(uuid.uuid4())
-    salary_dict["created_at"] = datetime.now(timezone.utc).isoformat()
-    salary_dict["created_by"] = current_user["id"]
-    salary_dict["effective_from"] = salary_dict.get("effective_from") or datetime.now(timezone.utc).isoformat()
-    salary_dict["effective_to"] = None
-    
-    # Get country currency
-    if user.get("country_id"):
-        country = await db.countries.find_one({"id": user["country_id"]}, {"_id": 0, "currency": 1})
-        if country:
-            salary_dict["currency"] = country.get("currency", "INR")
-    
-    await db.salary_structures.insert_one(salary_dict)
-    
-    # Remove MongoDB _id before returning
-    salary_dict.pop("_id", None)
-    
-    # Log audit
-    await audit_service.log(
-        entity_type="salary",
-        entity_id=salary_dict["id"],
-        action="create",
-        user_id=current_user["id"],
-        new_values=salary_dict
-    )
-    
-    return salary_dict
-
-
-@api_router.put("/salaries/{salary_id}")
-async def update_salary(salary_id: str, salary_data: SalaryUpdate, current_user: dict = Depends(get_current_user)):
-    """Update salary structure"""
-    role_code = current_user.get("role_code", "")
-    
-    if role_code not in ["CEO", "HR_MANAGER"]:
-        raise HTTPException(status_code=403, detail="Not authorized to update salaries")
-    
-    existing = await db.salary_structures.find_one({"id": salary_id}, {"_id": 0})
-    if not existing:
-        raise HTTPException(status_code=404, detail="Salary structure not found")
-    
-    update_dict = {k: v for k, v in salary_data.model_dump().items() if v is not None}
-    
-    await db.salary_structures.update_one({"id": salary_id}, {"$set": update_dict})
-    
-    # Log audit
-    await audit_service.log(
-        entity_type="salary",
-        entity_id=salary_id,
-        action="update",
-        user_id=current_user["id"],
-        old_values=existing,
-        new_values=update_dict
-    )
-    
-    salary = await db.salary_structures.find_one({"id": salary_id}, {"_id": 0})
-    return salary
-
-
-# ==================== AUDIT LOG ROUTES ====================
-
 @api_router.get("/audit-logs")
 async def get_audit_logs(
     entity_type: Optional[str] = None,
     entity_id: Optional[str] = None,
     action: Optional[str] = None,
     user_id: Optional[str] = None,
-    start_date: Optional[str] = None,
-    end_date: Optional[str] = None,
     limit: int = 100,
     current_user: dict = Depends(get_current_user)
 ):
-    """Get audit logs - CEO, HR, and Country Head can view"""
+    """Get audit logs"""
     role_code = current_user.get("role_code", "")
     
     if role_code not in ["CEO", "HR_MANAGER", "COUNTRY_HEAD"]:
-        raise HTTPException(status_code=403, detail="Not authorized to view audit logs")
+        raise HTTPException(status_code=403, detail="Not authorized")
     
     query = {}
-    
     if entity_type:
         query["entity_type"] = entity_type
     if entity_id:
@@ -1353,57 +1882,31 @@ async def get_audit_logs(
         query["action"] = action
     if user_id:
         query["user_id"] = user_id
-    if start_date:
-        query["timestamp"] = {"$gte": start_date}
-    if end_date:
-        if "timestamp" in query:
-            query["timestamp"]["$lte"] = end_date
-        else:
-            query["timestamp"] = {"$lte": end_date}
     
     logs = await db.audit_logs.find(query, {"_id": 0}).sort("timestamp", -1).to_list(limit)
-    
-    return logs
-
-
-@api_router.get("/audit-logs/entity/{entity_type}/{entity_id}")
-async def get_entity_audit_logs(
-    entity_type: str,
-    entity_id: str,
-    current_user: dict = Depends(get_current_user)
-):
-    """Get audit history for a specific entity"""
-    logs = await db.audit_logs.find(
-        {"entity_type": entity_type, "entity_id": entity_id},
-        {"_id": 0}
-    ).sort("timestamp", -1).to_list(50)
-    
     return logs
 
 
 @api_router.get("/audit-logs/stats")
 async def get_audit_stats(current_user: dict = Depends(get_current_user)):
-    """Get audit log statistics"""
+    """Get audit statistics"""
     role_code = current_user.get("role_code", "")
     
     if role_code not in ["CEO", "HR_MANAGER"]:
         raise HTTPException(status_code=403, detail="Not authorized")
     
-    # Get counts by entity type
     pipeline = [
         {"$group": {"_id": "$entity_type", "count": {"$sum": 1}}},
         {"$sort": {"count": -1}}
     ]
     entity_stats = await db.audit_logs.aggregate(pipeline).to_list(20)
     
-    # Get counts by action
     pipeline = [
         {"$group": {"_id": "$action", "count": {"$sum": 1}}},
         {"$sort": {"count": -1}}
     ]
     action_stats = await db.audit_logs.aggregate(pipeline).to_list(20)
     
-    # Get recent activity count (last 24 hours)
     yesterday = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
     recent_count = await db.audit_logs.count_documents({"timestamp": {"$gte": yesterday}})
     
