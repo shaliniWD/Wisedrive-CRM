@@ -18,7 +18,9 @@ Recreate WiseDrive CRM (https://crm.wisedrive.com) design with a modern UI. Crea
 - **Status Badges**: Green (Completed), Yellow (Pending), Purple (Request NewSlot), Blue (Scheduled)
 - **Tables**: Full-width with hover effects, all columns visible
 - **Payment Modal**: 3-step stepper (Car Info → Book Inspection → Billing Details)
-- **Admin Tabs**: Employee, Digital Ad Meta Data, Garage Employee
+- **Admin Tab - Employee**: Name, Assigned Cities, Assign City button, Status toggle, Edit
+- **Admin Tab - Digital Ad Meta Data**: Ad Id, Ad Name, City, Language, Campaign Type, Source, Status toggle, Copy/Edit/Delete actions
+- **Admin Tab - Garage Employee**: Grg Owner Name, Grg Employee Name, Grg Name, City, Preferred Language, Phone Number, Status toggle, Edit
 
 ## Architecture
 - **Frontend**: React.js with Tailwind CSS, shadcn/ui components
