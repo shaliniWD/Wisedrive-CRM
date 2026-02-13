@@ -94,7 +94,7 @@ class Employee(EmployeeBase):
 
 # Salary Structure - Indian payroll components
 class SalaryStructureBase(BaseModel):
-    user_id: str
+    user_id: Optional[str] = None  # Set from URL path in API
     employment_type: str = "full_time"  # Determines which fields are relevant
     currency: str = "INR"
     
@@ -163,7 +163,7 @@ class SalaryStructure(SalaryStructureBase):
 
 # Attendance
 class AttendanceBase(BaseModel):
-    user_id: str
+    user_id: Optional[str] = None  # Set from URL path in API
     date: str  # YYYY-MM-DD
     status: str = "present"  # present, absent, half_day, on_leave, holiday, weekend
     check_in_time: Optional[str] = None
@@ -196,7 +196,7 @@ class Attendance(AttendanceBase):
 
 # Onboarding Documents
 class DocumentBase(BaseModel):
-    user_id: str
+    user_id: Optional[str] = None  # Set from URL path in API
     document_type: str  # aadhaar, pan, passport, offer_letter, joining_letter, nda, etc.
     document_name: str
     document_url: Optional[str] = None
