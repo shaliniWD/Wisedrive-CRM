@@ -1143,6 +1143,258 @@ async def root():
     return {"message": "WiseDrive CRM V2 API", "version": "2.0.0"}
 
 
+# ==================== HR / SALARY ROUTES ====================
+
+class SalaryCreate(BaseModel):
+    user_id: str
+    ctc: float = 0
+    fixed_pay: float = 0
+    variable_pay: float = 0
+    commission_percentage: float = 0
+    per_inspection_payout: float = 0
+    incentive_structure: Optional[dict] = None
+    currency: str = "INR"
+    effective_from: Optional[str] = None
+
+
+class SalaryUpdate(BaseModel):
+    ctc: Optional[float] = None
+    fixed_pay: Optional[float] = None
+    variable_pay: Optional[float] = None
+    commission_percentage: Optional[float] = None
+    per_inspection_payout: Optional[float] = None
+    incentive_structure: Optional[dict] = None
+    effective_from: Optional[str] = None
+    effective_to: Optional[str] = None
+
+
+@api_router.get("/salaries")
+async def get_salaries(
+    user_id: Optional[str] = None,
+    country_id: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get salary structures - HR and CEO only"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized to view salaries")
+    
+    query = {}
+    if user_id:
+        query["user_id"] = user_id
+    
+    salaries = await db.salary_structures.find(query, {"_id": 0}).to_list(1000)
+    
+    # Enrich with user info
+    for salary in salaries:
+        user = await db.users.find_one({"id": salary["user_id"]}, {"_id": 0, "name": 1, "email": 1, "role_id": 1})
+        if user:
+            salary["user_name"] = user.get("name")
+            salary["user_email"] = user.get("email")
+            if user.get("role_id"):
+                role = await db.roles.find_one({"id": user["role_id"]}, {"_id": 0, "name": 1})
+                if role:
+                    salary["role_name"] = role.get("name")
+    
+    return salaries
+
+
+@api_router.get("/salaries/{user_id}")
+async def get_user_salary(user_id: str, current_user: dict = Depends(get_current_user)):
+    """Get salary for a specific user"""
+    role_code = current_user.get("role_code", "")
+    
+    # Check permission
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        # Others can only view their own salary
+        if current_user.get("id") != user_id:
+            raise HTTPException(status_code=403, detail="Not authorized to view this salary")
+    
+    salary = await db.salary_structures.find_one(
+        {"user_id": user_id, "effective_to": None},  # Get current active salary
+        {"_id": 0}
+    )
+    
+    if not salary:
+        return None
+    
+    # Enrich with user info
+    user = await db.users.find_one({"id": user_id}, {"_id": 0, "name": 1, "email": 1})
+    if user:
+        salary["user_name"] = user.get("name")
+        salary["user_email"] = user.get("email")
+    
+    return salary
+
+
+@api_router.post("/salaries")
+async def create_salary(salary_data: SalaryCreate, current_user: dict = Depends(get_current_user)):
+    """Create salary structure - HR only"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized to create salaries")
+    
+    # Check if user exists
+    user = await db.users.find_one({"id": salary_data.user_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Close any existing active salary
+    await db.salary_structures.update_many(
+        {"user_id": salary_data.user_id, "effective_to": None},
+        {"$set": {"effective_to": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    salary_dict = salary_data.model_dump()
+    salary_dict["id"] = str(uuid.uuid4())
+    salary_dict["created_at"] = datetime.now(timezone.utc).isoformat()
+    salary_dict["created_by"] = current_user["id"]
+    salary_dict["effective_from"] = salary_dict.get("effective_from") or datetime.now(timezone.utc).isoformat()
+    salary_dict["effective_to"] = None
+    
+    # Get country currency
+    if user.get("country_id"):
+        country = await db.countries.find_one({"id": user["country_id"]}, {"_id": 0, "currency": 1})
+        if country:
+            salary_dict["currency"] = country.get("currency", "INR")
+    
+    await db.salary_structures.insert_one(salary_dict)
+    
+    # Log audit
+    await audit_service.log(
+        entity_type="salary",
+        entity_id=salary_dict["id"],
+        action="create",
+        user_id=current_user["id"],
+        new_values=salary_dict
+    )
+    
+    return salary_dict
+
+
+@api_router.put("/salaries/{salary_id}")
+async def update_salary(salary_id: str, salary_data: SalaryUpdate, current_user: dict = Depends(get_current_user)):
+    """Update salary structure"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized to update salaries")
+    
+    existing = await db.salary_structures.find_one({"id": salary_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Salary structure not found")
+    
+    update_dict = {k: v for k, v in salary_data.model_dump().items() if v is not None}
+    
+    await db.salary_structures.update_one({"id": salary_id}, {"$set": update_dict})
+    
+    # Log audit
+    await audit_service.log(
+        entity_type="salary",
+        entity_id=salary_id,
+        action="update",
+        user_id=current_user["id"],
+        old_values=existing,
+        new_values=update_dict
+    )
+    
+    salary = await db.salary_structures.find_one({"id": salary_id}, {"_id": 0})
+    return salary
+
+
+# ==================== AUDIT LOG ROUTES ====================
+
+@api_router.get("/audit-logs")
+async def get_audit_logs(
+    entity_type: Optional[str] = None,
+    entity_id: Optional[str] = None,
+    action: Optional[str] = None,
+    user_id: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    limit: int = 100,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get audit logs - CEO, HR, and Country Head can view"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER", "COUNTRY_HEAD"]:
+        raise HTTPException(status_code=403, detail="Not authorized to view audit logs")
+    
+    query = {}
+    
+    if entity_type:
+        query["entity_type"] = entity_type
+    if entity_id:
+        query["entity_id"] = entity_id
+    if action:
+        query["action"] = action
+    if user_id:
+        query["user_id"] = user_id
+    if start_date:
+        query["timestamp"] = {"$gte": start_date}
+    if end_date:
+        if "timestamp" in query:
+            query["timestamp"]["$lte"] = end_date
+        else:
+            query["timestamp"] = {"$lte": end_date}
+    
+    logs = await db.audit_logs.find(query, {"_id": 0}).sort("timestamp", -1).to_list(limit)
+    
+    return logs
+
+
+@api_router.get("/audit-logs/entity/{entity_type}/{entity_id}")
+async def get_entity_audit_logs(
+    entity_type: str,
+    entity_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get audit history for a specific entity"""
+    logs = await db.audit_logs.find(
+        {"entity_type": entity_type, "entity_id": entity_id},
+        {"_id": 0}
+    ).sort("timestamp", -1).to_list(50)
+    
+    return logs
+
+
+@api_router.get("/audit-logs/stats")
+async def get_audit_stats(current_user: dict = Depends(get_current_user)):
+    """Get audit log statistics"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Get counts by entity type
+    pipeline = [
+        {"$group": {"_id": "$entity_type", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}}
+    ]
+    entity_stats = await db.audit_logs.aggregate(pipeline).to_list(20)
+    
+    # Get counts by action
+    pipeline = [
+        {"$group": {"_id": "$action", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}}
+    ]
+    action_stats = await db.audit_logs.aggregate(pipeline).to_list(20)
+    
+    # Get recent activity count (last 24 hours)
+    yesterday = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
+    recent_count = await db.audit_logs.count_documents({"timestamp": {"$gte": yesterday}})
+    
+    return {
+        "by_entity": {item["_id"]: item["count"] for item in entity_stats if item["_id"]},
+        "by_action": {item["_id"]: item["count"] for item in action_stats if item["_id"]},
+        "recent_24h": recent_count,
+        "total": await db.audit_logs.count_documents({})
+    }
+
+
 # ==================== SEED DATA ====================
 
 @api_router.post("/seed")
