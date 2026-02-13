@@ -606,6 +606,33 @@ async def delete_digital_ad(ad_id: str, current_user: dict = Depends(get_current
         raise HTTPException(status_code=404, detail="Ad not found")
     return {"message": "Ad deleted"}
 
+# ==================== TRANSACTIONS ROUTES ====================
+
+@api_router.get("/transactions/{customer_id}", response_model=List[Transaction])
+async def get_customer_transactions(customer_id: str, current_user: dict = Depends(get_current_user)):
+    transactions = await db.transactions.find({"customer_id": customer_id}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    for txn in transactions:
+        if isinstance(txn.get('created_at'), str):
+            txn['created_at'] = datetime.fromisoformat(txn['created_at'].replace('Z', '+00:00'))
+    return transactions
+
+@api_router.post("/transactions", response_model=Transaction)
+async def create_transaction(txn_data: TransactionCreate, current_user: dict = Depends(get_current_user)):
+    txn_obj = Transaction(**txn_data.model_dump())
+    doc = txn_obj.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.transactions.insert_one(doc)
+    return txn_obj
+
+@api_router.get("/customers/{customer_id}")
+async def get_customer_by_id(customer_id: str, current_user: dict = Depends(get_current_user)):
+    customer = await db.customers.find_one({"id": customer_id}, {"_id": 0})
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    if isinstance(customer.get('created_at'), str):
+        customer['created_at'] = datetime.fromisoformat(customer['created_at'].replace('Z', '+00:00'))
+    return customer
+
 # ==================== GARAGE EMPLOYEES ROUTES ====================
 
 @api_router.get("/garage-employees", response_model=List[GarageEmployee])
