@@ -207,7 +207,7 @@ export default function InspectionsPage() {
                 inspections.map((inspection) => (
                   <tr key={inspection.id} data-testid={`inspection-row-${inspection.id}`}>
                     <td>
-                      <div className="text-sm">{formatDate(inspection.payment_date || inspection.created_at)}</div>
+                      <div className="text-sm">{formatDate(inspection.payment_date || inspection.order_date || inspection.created_at)}</div>
                     </td>
                     <td>
                       <div className="font-mono text-sm">{inspection.customer_mobile}</div>
