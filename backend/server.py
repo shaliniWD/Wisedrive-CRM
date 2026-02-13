@@ -142,7 +142,13 @@ class InspectionBase(BaseModel):
     notes: Optional[str] = None
     order_id: Optional[str] = None
     order_date: Optional[str] = None
+    payment_date: Optional[str] = None
     inspections_available: Optional[int] = 1
+    package_type: Optional[str] = None
+    total_amount: Optional[float] = 0
+    amount_paid: Optional[float] = 0
+    pending_amount: Optional[float] = 0
+    payment_type: Optional[str] = None  # Full or Partial
 
 class InspectionCreate(InspectionBase):
     pass
