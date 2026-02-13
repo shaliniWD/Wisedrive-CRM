@@ -78,18 +78,18 @@ The CRM has been refactored from V1 monolithic architecture to V2 with:
 - [x] Dashboard stats with RBAC filtering
 
 ### HR Module (Feb 13, 2026)
-- [x] Salary structure CRUD (GET /api/salaries, POST /api/salaries, PUT /api/salaries/{id})
-- [x] Salary listing with employee info (name, email, role)
-- [x] Salary creation creates audit log automatically
-- [x] HR/Salary tab in Admin page (CEO and HR Manager only)
-- [x] Salary modal with CTC, Fixed Pay, Variable Pay, Commission %, Per Inspection fields
-
-### Audit Trail (Feb 13, 2026)
-- [x] Audit logs API (GET /api/audit-logs, GET /api/audit-logs/stats)
-- [x] Audit logs filtering by entity type, action, user
-- [x] Audit stats dashboard (Total Actions, Last 24 Hours, By Entity, By Action)
-- [x] Audit Trail tab in Admin page (CEO and HR Manager only)
-- [x] Action badges (create, update, delete, reassign) with color coding
+- [x] Unified Employee tab (merged Employee, Garage Employee, HR/Salary, Audit Trail)
+- [x] Comprehensive Employee modal with 5 tabs:
+  - Details: Personal info, employment info, bank details, CRM access toggle
+  - Salary: Dynamic form based on role (Full-time: Basic/HRA/Variable/PF/Tax/Net, Mechanic: Price Per Inspection)
+  - Documents: Onboarding documents management with verification status
+  - Attendance: Monthly attendance summary with Present/Absent/Half-Day/Leave
+  - Audit: Per-employee audit trail with action history
+- [x] Countries tab with currency management (symbol, phone code, employee count)
+- [x] HR Manager tab visibility updated (only Admin and Settings - no Dashboard/Leads/Customers)
+- [x] Indian HR full access to employees in all countries
+- [x] Mechanics have no CRM access (empty tab visibility)
+- [x] Employee creation with password and auto-generated employee code
 
 ### V2 Frontend (Feb 13, 2026)
 - [x] AuthContext with permissions and visible tabs
