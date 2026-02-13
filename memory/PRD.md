@@ -41,23 +41,22 @@ Recreate WiseDrive CRM (https://crm.wisedrive.com) design with a modern UI. Crea
 - [x] Utility APIs (cities, sources, statuses)
 - [x] Seed data endpoint
 
-### Frontend
-- [x] Login Page with modern design matching original
-- [x] Dashboard with stats cards and quick actions
-- [x] Leads Page with filters, table, Add/Edit modal
-- [x] Customers Page with filters, payment status badges
-- [x] Inspections Page with Scheduled/Unscheduled tabs
-- [x] Admin Page with Employee, Digital Ad Meta Data, Garage Employee tabs
-- [x] Sidebar navigation with active states
-- [x] Header with user dropdown and logout
-- [x] Protected routes with auth redirects
+### Frontend - UX Redesign Complete
+- [x] **Horizontal Top Navigation** - Glassmorphism effect, search, notifications, user menu
+- [x] **Split-screen Login Page** - Modern design with branding on left
+- [x] **Dashboard** - Clean stat cards with icons
+- [x] **Leads Page** - Full-width table, inline filters, date format "13 Feb '26"
+- [x] **Customers Page** - ID/Date column, payment badges, action menus
+- [x] **Inspections Page** - Scheduled/Unscheduled tabs, report buttons
+- [x] **Admin Page** - Employees, Digital Ad Meta, Garage tabs with toggles
+- [x] **Date Utility** - formatDate, formatDateTime, formatTime helpers
 
 ### Design System
-- [x] Outfit font for headings, Inter for body
-- [x] Primary color: #4F46E5 (Indigo)
-- [x] Light theme with #F8FAFC background
-- [x] Status badges with color coding
-- [x] Modern card-based layouts
+- [x] Inter + Outfit fonts
+- [x] Primary color: Indigo (#4F46E5)
+- [x] Glassmorphism navbar (bg-white/80 backdrop-blur)
+- [x] Clean badge styles (success, warning, danger, info, purple)
+- [x] Full-width responsive tables
 
 ## Prioritized Backlog
 
