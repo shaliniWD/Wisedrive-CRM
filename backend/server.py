@@ -779,36 +779,36 @@ async def seed_data():
     sources = ["FACEBOOK", "GOOGLE", "WEBSITE", "REFERRAL"]
     statuses = ["NEW", "CONTACTED", "INTERESTED", "RNR", "OUT_OF_SERVICE_AREA"]
     
-    leads_count = await db.leads.count_documents({})
-    if leads_count < 10:
-        import random
-        for i in range(20):
-            # Only add reminder for some leads (60% have reminders)
-            has_reminder = random.random() > 0.4
-            # Only add payment link for some leads (40% have payment links)
-            has_payment_link = random.random() > 0.6
-            # Add ad_id for leads from FACEBOOK or INSTAGRAM sources
-            source = random.choice(sources)
-            has_ad_id = source in ["FACEBOOK", "INSTAGRAM"]
-            
-            lead = {
-                "id": str(uuid.uuid4()),
-                "name": f"Lead {i+1}",
-                "mobile": f"91900000{i:04d}",
-                "city": random.choice(cities),
-                "source": source,
-                "ad_id": f"1202169{random.randint(10000000, 99999999)}" if has_ad_id else None,
-                "status": random.choice(statuses),
-                "assigned_to": random.choice(employees_data)["name"] if random.random() > 0.3 else None,
-                "reminder_date": "2026-02-14" if has_reminder else None,
-                "reminder_time": random.choice(["09:00", "10:30", "14:00", "17:00"]) if has_reminder else None,
-                "reminder_reason": random.choice(["RNR", "CALL_BACK", "FOLLOW_UP", "BUSY"]) if has_reminder else None,
-                "notes": random.choice(["Will call back tomorrow", "Customer busy, try later", "Interested in gold package", None]) if has_reminder else None,
-                "payment_link": f"https://rzp.io/l/WD{random.randint(100000, 999999)}" if has_payment_link else None,
-                "payment_link_sent_at": datetime.now(timezone.utc).isoformat() if has_payment_link else None,
-                "created_at": datetime.now(timezone.utc).isoformat()
-            }
-            await db.leads.insert_one(lead)
+    # Always recreate leads to ensure ad_id is set properly
+    await db.leads.delete_many({})
+    import random
+    for i in range(20):
+        # Only add reminder for some leads (60% have reminders)
+        has_reminder = random.random() > 0.4
+        # Only add payment link for some leads (40% have payment links)
+        has_payment_link = random.random() > 0.6
+        # Add ad_id for leads from FACEBOOK or INSTAGRAM sources
+        source = random.choice(sources)
+        has_ad_id = source in ["FACEBOOK", "INSTAGRAM"]
+        
+        lead = {
+            "id": str(uuid.uuid4()),
+            "name": f"Lead {i+1}",
+            "mobile": f"91900000{i:04d}",
+            "city": random.choice(cities),
+            "source": source,
+            "ad_id": f"1202169{random.randint(10000000, 99999999)}" if has_ad_id else None,
+            "status": random.choice(statuses),
+            "assigned_to": random.choice(employees_data)["name"] if random.random() > 0.3 else None,
+            "reminder_date": "2026-02-14" if has_reminder else None,
+            "reminder_time": random.choice(["09:00", "10:30", "14:00", "17:00"]) if has_reminder else None,
+            "reminder_reason": random.choice(["RNR", "CALL_BACK", "FOLLOW_UP", "BUSY"]) if has_reminder else None,
+            "notes": random.choice(["Will call back tomorrow", "Customer busy, try later", "Interested in gold package", None]) if has_reminder else None,
+            "payment_link": f"https://rzp.io/l/WD{random.randint(100000, 999999)}" if has_payment_link else None,
+            "payment_link_sent_at": datetime.now(timezone.utc).isoformat() if has_payment_link else None,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.leads.insert_one(lead)
     
     # Create sample customers
     customers_count = await db.customers.count_documents({})
