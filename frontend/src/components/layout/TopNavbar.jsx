@@ -8,7 +8,7 @@ const tabRouteMap = {
   customers: { name: 'Customers', href: '/customers' },
   inspections: { name: 'Inspections', href: '/inspections' },
   employees: { name: 'Admin', href: '/admin' },
-  dashboard: { name: 'Dashboard', href: '/dashboard' },
+  settings: { name: 'Settings', href: '/settings' },
 };
 
 export const TopNavbar = () => {
