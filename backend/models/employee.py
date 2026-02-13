@@ -29,6 +29,13 @@ class EmployeeBase(BaseModel):
     joining_date: Optional[str] = None
     probation_end_date: Optional[str] = None
     
+    # Weekly Off (rotating off days - 0=Sunday, 1=Monday, ... 6=Saturday)
+    weekly_off_day: int = 0  # Default Sunday
+    
+    # Lead Assignment Control
+    is_available_for_leads: bool = True  # Toggle to stop new lead assignments
+    lead_assignment_paused_reason: Optional[str] = None  # Reason if paused
+    
     # Bank Details (for salary)
     bank_name: Optional[str] = None
     bank_account_number: Optional[str] = None
