@@ -28,7 +28,7 @@ class RBACService:
     # Tab visibility by role code
     TAB_VISIBILITY = {
         CEO: ["leads", "customers", "inspections", "reports", "employees", "settings", "finance"],
-        HR_MANAGER: ["employees", "settings"],
+        HR_MANAGER: ["employees"],  # HR only sees Admin (employees)
         COUNTRY_HEAD: ["leads", "customers", "inspections", "reports", "employees", "settings", "finance"],
         SALES_HEAD: ["leads", "customers", "employees", "finance"],
         INSPECTION_HEAD: ["customers", "inspections", "reports", "employees", "finance"],
