@@ -260,18 +260,6 @@ export default function InspectionsPage() {
             </tbody>
           </table>
         ) : (
-                        </button>
-                        <button className="text-[#10B981] hover:text-[#059669]">
-                          <Download className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        ) : (
           /* Scheduled Tab Table */
           <table className="data-table">
             <thead>
