@@ -5,36 +5,22 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
-import { Search, Plus, X, MoreHorizontal, Pencil, Trash2, Loader2, Send } from 'lucide-react';
+import { Search, Plus, Pencil, Loader2, X } from 'lucide-react';
 
 const statusConfig = {
-  NEW: { label: 'New', class: 'badge-info' },
-  CONTACTED: { label: 'Contacted', class: 'badge-purple' },
-  INTERESTED: { label: 'Interested', class: 'badge-success' },
-  NOT_INTERESTED: { label: 'Not Interested', class: 'badge-slate' },
-  CONVERTED: { label: 'Converted', class: 'badge-success' },
-  RNR: { label: 'RNR', class: 'badge-danger' },
-  OUT_OF_SERVICE_AREA: { label: 'Out of Area', class: 'badge-warning' },
+  NEW: { label: 'New', class: 'status-badge new' },
+  CONTACTED: { label: 'Contacted', class: 'status-badge contacted' },
+  INTERESTED: { label: 'Interested', class: 'status-badge interested' },
+  NOT_INTERESTED: { label: 'Not Interested', class: 'status-badge' },
+  CONVERTED: { label: 'Converted', class: 'status-badge green' },
+  RNR: { label: 'RNR', class: 'status-badge rnr' },
+  OUT_OF_SERVICE_AREA: { label: 'Out of Area', class: 'status-badge out-of-area' },
 };
 
 export default function LeadsPage() {
@@ -45,8 +31,11 @@ export default function LeadsPage() {
   const [statuses, setStatuses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [editingLead, setEditingLead] = useState(null);
+  const [selectedLead, setSelectedLead] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [modalStep, setModalStep] = useState(1);
 
   const [search, setSearch] = useState('');
   const [filterEmployee, setFilterEmployee] = useState('');
@@ -57,6 +46,26 @@ export default function LeadsPage() {
   const [formData, setFormData] = useState({
     name: '', mobile: '', city: '', source: 'WEBSITE', status: 'NEW',
     assigned_to: '', reminder_date: '', reminder_time: '', notes: '',
+  });
+
+  const [paymentFormData, setPaymentFormData] = useState({
+    hasCarDetails: 'Yes',
+    carNo: '',
+    carMake: '',
+    carModel: '',
+    carYear: '',
+    fuelType: '',
+    carColor: '',
+    inspectionType: '',
+    packageType: '',
+    paymentType: '',
+    discount: '',
+    discountValue: '',
+    customerMobile: '',
+    city: '',
+    address: '',
+    inspectionDate: '',
+    inspectionTime: '',
   });
 
   const fetchData = useCallback(async () => {
@@ -126,75 +135,100 @@ export default function LeadsPage() {
     setIsModalOpen(true);
   };
 
+  const openPaymentModal = (lead) => {
+    setSelectedLead(lead);
+    setPaymentFormData({
+      ...paymentFormData,
+      customerMobile: lead.mobile,
+      city: lead.city || '',
+    });
+    setModalStep(1);
+    setIsPaymentModalOpen(true);
+  };
+
   const clearFilters = () => {
     setSearch(''); setFilterEmployee(''); setFilterStatus(''); setFilterCity(''); setFilterSource('');
   };
 
   return (
-    <div className="space-y-5" data-testid="leads-page">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900" style={{ fontFamily: 'Outfit, sans-serif' }}>Leads</h1>
-          <p className="text-slate-500 mt-1">{leads.length.toLocaleString()} total leads</p>
+    <div className="p-4 space-y-4" data-testid="leads-page">
+      {/* Search and Filters Row */}
+      <div className="flex flex-wrap items-center gap-3">
+        {/* Search Bar */}
+        <div className="search-bar flex-1 min-w-[300px]">
+          <Search className="h-4 w-4 text-gray-400 mr-2" />
+          <input
+            placeholder="Customer Name / Mobile Number"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="flex-1"
+            data-testid="search-input"
+          />
         </div>
-        <Button onClick={() => { resetForm(); setIsModalOpen(true); }} className="bg-indigo-600 hover:bg-indigo-700" data-testid="add-lead-button">
-          <Plus className="h-4 w-4 mr-2" /> Add Lead
-        </Button>
-      </div>
 
-      {/* Filters */}
-      <div className="filter-bar">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <Input placeholder="Search by name or mobile..." value={search} onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 h-9 bg-slate-50 border-slate-200" data-testid="search-input" />
-        </div>
+        {/* Filter Dropdowns */}
         <Select value={filterEmployee} onValueChange={setFilterEmployee}>
-          <SelectTrigger className="w-[160px] h-9 bg-slate-50" data-testid="filter-employee">
-            <SelectValue placeholder="Employee" />
+          <SelectTrigger className="w-[160px] h-10 bg-white" data-testid="filter-employee">
+            <SelectValue placeholder="-- Select Employee --" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Employees</SelectItem>
             {employees.map((emp) => (<SelectItem key={emp.id} value={emp.name}>{emp.name}</SelectItem>))}
           </SelectContent>
         </Select>
+
         <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="w-[140px] h-9 bg-slate-50" data-testid="filter-status">
-            <SelectValue placeholder="Status" />
+          <SelectTrigger className="w-[140px] h-10 bg-white" data-testid="filter-status">
+            <SelectValue placeholder="-- Select Status --" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
             {statuses.map((s) => (<SelectItem key={s} value={s}>{s.replace(/_/g, ' ')}</SelectItem>))}
           </SelectContent>
         </Select>
+
         <Select value={filterCity} onValueChange={setFilterCity}>
-          <SelectTrigger className="w-[130px] h-9 bg-slate-50" data-testid="filter-city">
-            <SelectValue placeholder="City" />
+          <SelectTrigger className="w-[140px] h-10 bg-white" data-testid="filter-city">
+            <SelectValue placeholder="-- Select City --" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Cities</SelectItem>
             {cities.map((c) => (<SelectItem key={c} value={c}>{c}</SelectItem>))}
           </SelectContent>
         </Select>
+
         <Select value={filterSource} onValueChange={setFilterSource}>
-          <SelectTrigger className="w-[130px] h-9 bg-slate-50" data-testid="filter-source">
-            <SelectValue placeholder="Source" />
+          <SelectTrigger className="w-[140px] h-10 bg-white" data-testid="filter-source">
+            <SelectValue placeholder="-- Select Source --" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Sources</SelectItem>
             {sources.map((s) => (<SelectItem key={s} value={s}>{s}</SelectItem>))}
           </SelectContent>
         </Select>
-        {(search || filterEmployee || filterStatus || filterCity || filterSource) && (
-          <Button variant="ghost" size="sm" onClick={clearFilters} className="text-slate-500">
-            <X className="h-4 w-4 mr-1" /> Clear
-          </Button>
-        )}
+
+        {/* Action Buttons */}
+        <button className="btn-purple" data-testid="submit-btn">Submit</button>
+        <button className="btn-purple flex items-center gap-1" onClick={() => { resetForm(); setIsModalOpen(true); }} data-testid="add-lead-button">
+          <Plus className="h-4 w-4" /> Add New
+        </button>
+        <button className="btn-purple" onClick={fetchData} data-testid="find-btn">Find</button>
       </div>
 
-      {/* Table */}
-      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+      {/* Leads Count and Quick Filters */}
+      <div className="flex items-center justify-between">
+        <div className="text-lg font-semibold text-gray-800">
+          Leads Count: <span className="text-[#2E3192]">{leads.length.toLocaleString()}</span>
+        </div>
+        <div className="flex gap-3">
+          {['Today', 'This Week', 'This Month', 'This Quarter', 'This Year'].map((period) => (
+            <span key={period} className="quick-filter">{period}</span>
+          ))}
+        </div>
+      </div>
+
+      {/* Data Table */}
+      <div className="card overflow-hidden">
         <table className="data-table">
           <thead>
             <tr>
@@ -205,64 +239,63 @@ export default function LeadsPage() {
               <th>Reminder</th>
               <th>Status</th>
               <th>Source</th>
-              <th className="w-[100px]">Actions</th>
+              <th>Payment Link</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={8} className="text-center py-12"><Loader2 className="h-6 w-6 animate-spin mx-auto text-indigo-600" /></td></tr>
+              <tr><td colSpan={8} className="text-center py-12"><Loader2 className="h-6 w-6 animate-spin mx-auto text-[#2E3192]" /></td></tr>
             ) : leads.length === 0 ? (
-              <tr><td colSpan={8} className="text-center py-12 text-slate-500">No leads found</td></tr>
+              <tr><td colSpan={8} className="text-center py-12 text-gray-500">No leads found</td></tr>
             ) : (
               leads.map((lead) => (
                 <tr key={lead.id} data-testid={`lead-row-${lead.id}`}>
-                  <td className="text-slate-600">{formatDateTime(lead.created_at)}</td>
                   <td>
-                    <div className="font-mono text-sm text-slate-900">{lead.mobile}</div>
-                    <div className="text-slate-500 text-sm">{lead.name}</div>
-                  </td>
-                  <td className="text-slate-700">{lead.city}</td>
-                  <td className="text-slate-600">{lead.assigned_to || <span className="text-slate-400">—</span>}</td>
-                  <td className="text-sm">
-                    {lead.reminder_date ? (
-                      <div className="text-slate-600">
-                        <div>{formatDate(lead.reminder_date)}</div>
-                        <div className="text-slate-400">{formatTime(lead.reminder_time)}</div>
-                      </div>
-                    ) : <span className="text-slate-400">—</span>}
-                  </td>
-                  <td>
-                    <span className={`badge ${statusConfig[lead.status]?.class || 'badge-slate'}`}>
-                      {statusConfig[lead.status]?.label || lead.status}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="text-sm text-slate-700">{lead.source}</div>
-                    {lead.payment_link && <div className="font-mono text-xs text-slate-400 mt-0.5 truncate max-w-[120px]">{lead.payment_link}</div>}
+                    <div className="text-sm">{formatDateTime(lead.created_at)}</div>
                   </td>
                   <td>
                     <div className="flex items-center gap-1">
-                      {lead.payment_link && (
-                        <Button size="sm" className="h-7 px-2 bg-amber-500 hover:bg-amber-600 text-white text-xs">
-                          <Send className="h-3 w-3" />
-                        </Button>
-                      )}
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" data-testid={`lead-actions-${lead.id}`}>
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openEditModal(lead)}>
-                            <Pencil className="h-4 w-4 mr-2" /> Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-rose-600">
-                            <Trash2 className="h-4 w-4 mr-2" /> Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <span className="font-mono">{lead.mobile}</span>
+                      <button onClick={() => openEditModal(lead)} className="edit-icon" data-testid={`edit-lead-${lead.id}`}>
+                        <Pencil className="h-3 w-3" />
+                      </button>
                     </div>
+                    <div className="text-gray-500">{lead.name}</div>
+                  </td>
+                  <td>{lead.city}</td>
+                  <td>
+                    <div className="flex items-center gap-1">
+                      {lead.assigned_to || '-'}
+                      {lead.assigned_to && <Pencil className="h-3 w-3 text-gray-400" />}
+                    </div>
+                  </td>
+                  <td className="text-sm">
+                    {lead.reminder_date ? (
+                      <div>
+                        <div className="text-gray-600">Reminder Set on</div>
+                        <div>{formatDate(lead.reminder_date)} at {formatTime(lead.reminder_time)}</div>
+                        <div className="text-gray-400">RNR</div>
+                      </div>
+                    ) : '-'}
+                  </td>
+                  <td>
+                    <span className={statusConfig[lead.status]?.class || 'status-badge'}>
+                      {statusConfig[lead.status]?.label || lead.status}
+                    </span>
+                    <div className="text-xs text-gray-400 mt-1">{formatDate(lead.created_at)}</div>
+                  </td>
+                  <td>
+                    <div className="text-sm">{lead.source}</div>
+                    {lead.payment_link && <div className="font-mono text-xs text-gray-400">{lead.payment_link}</div>}
+                  </td>
+                  <td>
+                    <button 
+                      className="btn-yellow"
+                      onClick={() => openPaymentModal(lead)}
+                      data-testid={`send-pay-link-${lead.id}`}
+                    >
+                      Send Pay Link
+                    </button>
                   </td>
                 </tr>
               ))
@@ -271,53 +304,241 @@ export default function LeadsPage() {
         </table>
       </div>
 
-      {/* Modal */}
+      {/* Add/Edit Lead Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="sm:max-w-[480px]" data-testid="lead-modal">
           <DialogHeader>
-            <DialogTitle style={{ fontFamily: 'Outfit, sans-serif' }}>{editingLead ? 'Edit Lead' : 'Add New Lead'}</DialogTitle>
+            <DialogTitle>{editingLead ? 'Edit Lead' : 'Add Lead'}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit}>
             <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm">Name *</Label>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Lead Name</Label>
                   <Input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Full name" className="h-9" data-testid="lead-name-input" />
+                    className="h-9" data-testid="lead-name-input" />
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-sm">Mobile *</Label>
+                <div className="space-y-1">
+                  <Label className="text-xs">Mobile Number</Label>
                   <div className="flex">
-                    <span className="inline-flex items-center px-3 bg-slate-100 border border-r-0 border-slate-200 rounded-l-md text-sm text-slate-500">+91</span>
+                    <span className="inline-flex items-center px-2 bg-gray-100 border border-r-0 rounded-l text-xs">+91</span>
                     <Input value={formData.mobile} onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
-                      className="rounded-l-none h-9" placeholder="9876543210" data-testid="lead-mobile-input" />
+                      className="rounded-l-none h-9" data-testid="lead-mobile-input" />
                   </div>
                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm">City *</Label>
+                <div className="space-y-1">
+                  <Label className="text-xs">City</Label>
                   <Select value={formData.city} onValueChange={(v) => setFormData({ ...formData, city: v })}>
-                    <SelectTrigger className="h-9" data-testid="lead-city-select"><SelectValue placeholder="Select city" /></SelectTrigger>
+                    <SelectTrigger className="h-9" data-testid="lead-city-select"><SelectValue placeholder="-- Select --" /></SelectTrigger>
                     <SelectContent>{cities.map((c) => (<SelectItem key={c} value={c}>{c}</SelectItem>))}</SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm">Source</Label>
-                  <Select value={formData.source} onValueChange={(v) => setFormData({ ...formData, source: v })}>
-                    <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                    <SelectContent>{sources.map((s) => (<SelectItem key={s} value={s}>{s}</SelectItem>))}</SelectContent>
                   </Select>
                 </div>
               </div>
             </div>
-            <DialogFooter>
+            <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-              <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700" disabled={saving} data-testid="save-lead-button">
-                {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />} {editingLead ? 'Update' : 'Create'}
+              <Button type="submit" className="btn-purple" disabled={saving} data-testid="save-lead-button">
+                {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Save
               </Button>
-            </DialogFooter>
+            </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Payment And Inspection Modal */}
+      <Dialog open={isPaymentModalOpen} onOpenChange={setIsPaymentModalOpen}>
+        <DialogContent className="sm:max-w-[600px]" data-testid="payment-modal">
+          <DialogHeader>
+            <DialogTitle>Payment And Inspection Modal</DialogTitle>
+          </DialogHeader>
+          
+          <div className="py-4">
+            {/* Step 1: Car Info */}
+            {modalStep === 1 && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <Label className="text-sm">Do you have Car details For Inspection?</Label>
+                  <Select value={paymentFormData.hasCarDetails} onValueChange={(v) => setPaymentFormData({ ...paymentFormData, hasCarDetails: v })}>
+                    <SelectTrigger className="w-[100px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Yes">Yes</SelectItem>
+                      <SelectItem value="No">No</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {paymentFormData.hasCarDetails === 'Yes' && (
+                  <>
+                    <div className="flex items-center gap-3">
+                      <Label className="text-sm w-20">Car No:</Label>
+                      <Input 
+                        value={paymentFormData.carNo} 
+                        onChange={(e) => setPaymentFormData({ ...paymentFormData, carNo: e.target.value })}
+                        className="flex-1"
+                        placeholder="KA48N1000"
+                      />
+                      <button className="btn-yellow">Get Car Data</button>
+                    </div>
+
+                    {paymentFormData.carNo && (
+                      <div className="bg-gray-50 p-4 rounded">
+                        <h4 className="font-medium mb-2">Car Info</h4>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <div><span className="text-gray-500">Make:</span> {paymentFormData.carMake || 'FORD INDIA PVT LTD'}</div>
+                          <div><span className="text-gray-500">Model:</span> {paymentFormData.carModel || '3.2 ENDEAVOUR 4*4'}</div>
+                          <div><span className="text-gray-500">Year:</span> {paymentFormData.carYear || '4/2017'}</div>
+                          <div><span className="text-gray-500">Fuel Type:</span> {paymentFormData.fuelType || 'DIESEL'}</div>
+                          <div><span className="text-gray-500">Color:</span> {paymentFormData.carColor || 'DIAMONDWHITE'}</div>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {paymentFormData.hasCarDetails === 'No' && (
+                  <div className="bg-yellow-50 p-3 rounded text-sm text-yellow-800">
+                    This customer already has unused inspections. Customer details will be available in unscheduled list post payment.
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Step 2: Book Inspection */}
+            {modalStep === 2 && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <Label className="text-xs">City</Label>
+                    <Input value={paymentFormData.city} onChange={(e) => setPaymentFormData({ ...paymentFormData, city: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Customer Mobile Number</Label>
+                    <Input value={paymentFormData.customerMobile} onChange={(e) => setPaymentFormData({ ...paymentFormData, customerMobile: e.target.value })} />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Address</Label>
+                  <textarea 
+                    className="form-input min-h-[80px]" 
+                    value={paymentFormData.address}
+                    onChange={(e) => setPaymentFormData({ ...paymentFormData, address: e.target.value })}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Inspection Date</Label>
+                    <Input type="date" value={paymentFormData.inspectionDate} onChange={(e) => setPaymentFormData({ ...paymentFormData, inspectionDate: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Time</Label>
+                    <Select value={paymentFormData.inspectionTime} onValueChange={(v) => setPaymentFormData({ ...paymentFormData, inspectionTime: v })}>
+                      <SelectTrigger><SelectValue placeholder="-- Select --" /></SelectTrigger>
+                      <SelectContent>
+                        {['09:00', '10:00', '11:00', '12:00', '14:00', '15:00', '16:00', '17:00'].map(t => (
+                          <SelectItem key={t} value={t}>{t}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Billing Details */}
+            {modalStep === 3 && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Inspection Type</Label>
+                    <Select value={paymentFormData.inspectionType} onValueChange={(v) => setPaymentFormData({ ...paymentFormData, inspectionType: v })}>
+                      <SelectTrigger><SelectValue placeholder="-- Select --" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="basic">Basic</SelectItem>
+                        <SelectItem value="comprehensive">Comprehensive</SelectItem>
+                        <SelectItem value="premium">Premium</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Package Type</Label>
+                    <Select value={paymentFormData.packageType} onValueChange={(v) => setPaymentFormData({ ...paymentFormData, packageType: v })}>
+                      <SelectTrigger><SelectValue placeholder="-- Select --" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="silver">Silver</SelectItem>
+                        <SelectItem value="gold">Gold</SelectItem>
+                        <SelectItem value="platinum">Platinum</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Payment Type</Label>
+                    <Select value={paymentFormData.paymentType} onValueChange={(v) => setPaymentFormData({ ...paymentFormData, paymentType: v })}>
+                      <SelectTrigger><SelectValue placeholder="-- Select --" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="full">Full Payment</SelectItem>
+                        <SelectItem value="partial">Partial</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Select Discount</Label>
+                    <Select value={paymentFormData.discount} onValueChange={(v) => setPaymentFormData({ ...paymentFormData, discount: v })}>
+                      <SelectTrigger><SelectValue placeholder="-- Select --" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        <SelectItem value="10">10%</SelectItem>
+                        <SelectItem value="15">15%</SelectItem>
+                        <SelectItem value="20">20%</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Enter Discount Value</Label>
+                    <Input value={paymentFormData.discountValue} onChange={(e) => setPaymentFormData({ ...paymentFormData, discountValue: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Customer Mobile Number</Label>
+                    <Input value={paymentFormData.customerMobile} readOnly className="bg-gray-50" />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Progress Stepper */}
+            <div className="stepper mt-6 pt-4 border-t">
+              <div className="stepper-item">
+                <div className={`stepper-circle ${modalStep >= 1 ? 'active' : 'inactive'}`}>1</div>
+                <span className="text-xs text-gray-600">Car Info</span>
+              </div>
+              <div className={`stepper-line ${modalStep >= 2 ? 'active' : ''}`}></div>
+              <div className="stepper-item">
+                <div className={`stepper-circle ${modalStep >= 2 ? 'active' : 'inactive'}`}>2</div>
+                <span className="text-xs text-gray-600">Book Inspection</span>
+              </div>
+              <div className={`stepper-line ${modalStep >= 3 ? 'active' : ''}`}></div>
+              <div className="stepper-item">
+                <div className={`stepper-circle ${modalStep >= 3 ? 'active' : 'inactive'}`}>3</div>
+                <span className="text-xs text-gray-600">Billing Details</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Modal Footer */}
+          <div className="flex justify-between pt-4 border-t">
+            <button 
+              className="btn-yellow"
+              onClick={() => modalStep > 1 ? setModalStep(modalStep - 1) : setIsPaymentModalOpen(false)}
+            >
+              Back
+            </button>
+            {modalStep < 3 ? (
+              <button className="btn-yellow" onClick={() => setModalStep(modalStep + 1)}>Next</button>
+            ) : (
+              <button className="btn-purple">Send Payment Link</button>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>
