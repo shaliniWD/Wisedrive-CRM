@@ -20,9 +20,9 @@ export const TopNavbar = () => {
     .map(tab => tabRouteMap[tab])
     .filter(Boolean);
   
-  // Always show dashboard if not in list
-  if (!navigation.find(n => n.href === '/dashboard')) {
-    navigation.push(tabRouteMap.dashboard);
+  // Always ensure at least one tab is visible
+  if (navigation.length === 0) {
+    navigation.push({ name: 'Home', href: '/' });
   }
 
   return (
