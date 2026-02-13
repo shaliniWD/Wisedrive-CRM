@@ -122,7 +122,46 @@ export const seedApi = {
   clearAndSeed: () => axios.post(`${API_URL}/seed/clear`),
 };
 
-// Salary/HR API
+// Comprehensive HR API
+export const hrApi = {
+  // Employees
+  getEmployees: (params) => axios.get(`${API_URL}/hr/employees`, { params }),
+  getEmployee: (id) => axios.get(`${API_URL}/hr/employees/${id}`),
+  createEmployee: (data) => axios.post(`${API_URL}/hr/employees`, data),
+  updateEmployee: (id, data) => axios.put(`${API_URL}/hr/employees/${id}`, data),
+  deleteEmployee: (id) => axios.delete(`${API_URL}/hr/employees/${id}`),
+  
+  // Salary
+  getEmployeeSalary: (id) => axios.get(`${API_URL}/hr/employees/${id}/salary`),
+  saveEmployeeSalary: (id, data) => axios.post(`${API_URL}/hr/employees/${id}/salary`, data),
+  
+  // Attendance
+  getEmployeeAttendance: (id, params) => axios.get(`${API_URL}/hr/employees/${id}/attendance`, { params }),
+  saveEmployeeAttendance: (id, data) => axios.post(`${API_URL}/hr/employees/${id}/attendance`, data),
+  
+  // Documents
+  getEmployeeDocuments: (id) => axios.get(`${API_URL}/hr/employees/${id}/documents`),
+  addEmployeeDocument: (id, data) => axios.post(`${API_URL}/hr/employees/${id}/documents`, data),
+  updateEmployeeDocument: (id, docId, data) => axios.put(`${API_URL}/hr/employees/${id}/documents/${docId}`, data),
+  deleteEmployeeDocument: (id, docId) => axios.delete(`${API_URL}/hr/employees/${id}/documents/${docId}`),
+  
+  // Audit
+  getEmployeeAudit: (id) => axios.get(`${API_URL}/hr/employees/${id}/audit`),
+  
+  // Countries
+  getCountries: () => axios.get(`${API_URL}/hr/countries`),
+  getAllCountries: () => axios.get(`${API_URL}/hr/countries/all`),
+  createCountry: (data) => axios.post(`${API_URL}/hr/countries`, data),
+  updateCountry: (id, data) => axios.put(`${API_URL}/hr/countries/${id}`, data),
+  deleteCountry: (id) => axios.delete(`${API_URL}/hr/countries/${id}`),
+};
+
+// Public Countries API (for login)
+export const publicApi = {
+  getLoginCountries: () => axios.get(`${API_URL}/countries/login`),
+};
+
+// Legacy Salary/HR API (for backward compatibility)
 export const salaryApi = {
   getAll: (params) => axios.get(`${API_URL}/salaries`, { params }),
   getByUser: (userId) => axios.get(`${API_URL}/salaries/${userId}`),
