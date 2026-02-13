@@ -607,196 +607,416 @@ export default function LeadsPage() {
 
       {/* Payment And Inspection Modal */}
       <Dialog open={isPaymentModalOpen} onOpenChange={setIsPaymentModalOpen}>
-        <DialogContent className="sm:max-w-[600px]" data-testid="payment-modal">
-          <DialogHeader>
-            <DialogTitle>Payment And Inspection Modal</DialogTitle>
-          </DialogHeader>
-          
-          <div className="py-4">
-            {/* Step 1: Car Info */}
+        <DialogContent className="sm:max-w-[700px] p-0 overflow-hidden max-h-[90vh] overflow-y-auto" data-testid="payment-modal">
+          {/* Modal Header */}
+          <div className="bg-[#2E3192] text-white px-6 py-4 sticky top-0 z-10">
+            <div className="flex justify-between items-center">
+              <DialogTitle className="text-lg font-semibold text-white">
+                Send Payment Link
+              </DialogTitle>
+              <button 
+                onClick={() => setIsPaymentModalOpen(false)} 
+                className="text-white hover:text-gray-200"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            {/* Customer Info */}
+            <div className="text-sm mt-2 opacity-90">
+              Customer: {paymentFormData.customerName} | Mobile: {paymentFormData.customerMobile}
+            </div>
+          </div>
+
+          <div className="p-6">
+            {/* Step 1: Car Details */}
             {modalStep === 1 && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <Label className="text-sm">Do you have Car details For Inspection?</Label>
-                  <Select value={paymentFormData.hasCarDetails} onValueChange={(v) => setPaymentFormData({ ...paymentFormData, hasCarDetails: v })}>
-                    <SelectTrigger className="w-[100px]"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Yes">Yes</SelectItem>
-                      <SelectItem value="No">No</SelectItem>
-                    </SelectContent>
-                  </Select>
+              <div className="space-y-6">
+                <div className="text-lg font-medium text-gray-800 border-b pb-2">
+                  Step 1: Car Details
                 </div>
 
-                {paymentFormData.hasCarDetails === 'Yes' && (
-                  <>
-                    <div className="flex items-center gap-3">
-                      <Label className="text-sm w-20">Car No:</Label>
-                      <Input 
-                        value={paymentFormData.carNo} 
-                        onChange={(e) => setPaymentFormData({ ...paymentFormData, carNo: e.target.value })}
-                        className="flex-1"
-                        placeholder="KA48N1000"
+                {/* Has Car Details Question */}
+                <div className="flex items-center gap-6 py-2">
+                  <Label className="text-sm font-medium text-gray-700">
+                    Does the customer know car details for inspection?
+                  </Label>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input 
+                        type="radio" 
+                        name="hasCarDetails" 
+                        value="yes"
+                        checked={paymentFormData.hasCarDetails === 'yes'}
+                        onChange={() => setPaymentFormData({ ...paymentFormData, hasCarDetails: 'yes', carConfirmed: false })}
+                        className="w-4 h-4 text-[#2E3192]"
                       />
-                      <button className="btn-yellow">Get Car Data</button>
+                      <span className="text-sm">Yes</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input 
+                        type="radio" 
+                        name="hasCarDetails" 
+                        value="no"
+                        checked={paymentFormData.hasCarDetails === 'no'}
+                        onChange={() => setPaymentFormData({ ...paymentFormData, hasCarDetails: 'no', carConfirmed: false })}
+                        className="w-4 h-4 text-[#2E3192]"
+                      />
+                      <span className="text-sm">No</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Car Number Input - Only if Yes */}
+                {paymentFormData.hasCarDetails === 'yes' && (
+                  <div className="space-y-6">
+                    <div className="flex items-end gap-4">
+                      <div className="flex-1 space-y-2">
+                        <Label className="text-sm text-gray-700">Enter Car Registration Number</Label>
+                        <Input 
+                          value={paymentFormData.carNo} 
+                          onChange={(e) => setPaymentFormData({ ...paymentFormData, carNo: e.target.value.toUpperCase() })}
+                          className="h-11 text-lg font-mono uppercase"
+                          placeholder="KA01AB1234"
+                          data-testid="car-number-input"
+                        />
+                      </div>
+                      <button 
+                        className="btn-yellow h-11 px-6 flex items-center gap-2"
+                        onClick={() => fetchCarDetails(paymentFormData.carNo)}
+                        disabled={!paymentFormData.carNo || carLoading}
+                        data-testid="get-car-data-btn"
+                      >
+                        {carLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                        Get Car Data
+                      </button>
                     </div>
 
-                    {paymentFormData.carNo && (
-                      <div className="bg-gray-50 p-4 rounded">
-                        <h4 className="font-medium mb-2">Car Info</h4>
-                        <div className="grid grid-cols-2 gap-2 text-sm">
-                          <div><span className="text-gray-500">Make:</span> {paymentFormData.carMake || 'FORD INDIA PVT LTD'}</div>
-                          <div><span className="text-gray-500">Model:</span> {paymentFormData.carModel || '3.2 ENDEAVOUR 4*4'}</div>
-                          <div><span className="text-gray-500">Year:</span> {paymentFormData.carYear || '4/2017'}</div>
-                          <div><span className="text-gray-500">Fuel Type:</span> {paymentFormData.fuelType || 'DIESEL'}</div>
-                          <div><span className="text-gray-500">Color:</span> {paymentFormData.carColor || 'DIAMONDWHITE'}</div>
+                    {carError && (
+                      <div className="bg-red-50 text-red-700 p-3 rounded text-sm">
+                        {carError}
+                      </div>
+                    )}
+
+                    {/* Car Details Display */}
+                    {paymentFormData.carMake && (
+                      <div className="bg-gray-50 p-5 rounded-lg border">
+                        <h4 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                          <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                          Vehicle Information (from Vaahan)
+                        </h4>
+                        <div className="grid grid-cols-2 gap-y-4 gap-x-8 text-sm">
+                          <div>
+                            <span className="text-gray-500">Make:</span>
+                            <span className="ml-2 font-medium">{paymentFormData.carMake}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Model:</span>
+                            <span className="ml-2 font-medium">{paymentFormData.carModel}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Year:</span>
+                            <span className="ml-2 font-medium">{paymentFormData.carYear}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Fuel Type:</span>
+                            <span className="ml-2 font-medium">{paymentFormData.fuelType}</span>
+                          </div>
+                          <div className="col-span-2">
+                            <span className="text-gray-500">Color:</span>
+                            <span className="ml-2 font-medium">{paymentFormData.carColor}</span>
+                          </div>
+                        </div>
+                        
+                        {/* Confirmation Checkbox */}
+                        <div className="mt-4 pt-4 border-t">
+                          <label className="flex items-center gap-3 cursor-pointer">
+                            <input 
+                              type="checkbox"
+                              checked={paymentFormData.carConfirmed}
+                              onChange={(e) => setPaymentFormData({ ...paymentFormData, carConfirmed: e.target.checked })}
+                              className="w-5 h-5 text-[#2E3192] rounded"
+                            />
+                            <span className="text-sm font-medium">Customer confirms these car details are correct</span>
+                          </label>
                         </div>
                       </div>
                     )}
-                  </>
+                  </div>
                 )}
 
-                {paymentFormData.hasCarDetails === 'No' && (
-                  <div className="bg-yellow-50 p-3 rounded text-sm text-yellow-800">
-                    This customer already has unused inspections. Customer details will be available in unscheduled list post payment.
+                {/* No Car Details Message */}
+                {paymentFormData.hasCarDetails === 'no' && (
+                  <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg">
+                    <div className="flex items-start gap-3">
+                      <div className="w-6 h-6 bg-amber-400 rounded-full flex items-center justify-center text-white text-sm font-bold">!</div>
+                      <div>
+                        <p className="text-amber-800 font-medium">No Car Details Available</p>
+                        <p className="text-amber-700 text-sm mt-1">
+                          Customer will provide car details later. The inspection will appear in the unscheduled list after payment. 
+                          Scheduling can be done once car details are available.
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
             )}
 
-            {/* Step 2: Book Inspection */}
+            {/* Step 2: Package Selection */}
             {modalStep === 2 && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <Label className="text-xs">City</Label>
-                    <Input value={paymentFormData.city} onChange={(e) => setPaymentFormData({ ...paymentFormData, city: e.target.value })} />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Customer Mobile Number</Label>
-                    <Input value={paymentFormData.customerMobile} onChange={(e) => setPaymentFormData({ ...paymentFormData, customerMobile: e.target.value })} />
-                  </div>
+              <div className="space-y-6">
+                <div className="text-lg font-medium text-gray-800 border-b pb-2">
+                  Step 2: Package & Payment Details
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Address</Label>
-                  <textarea 
-                    className="form-input min-h-[80px]" 
-                    value={paymentFormData.address}
-                    onChange={(e) => setPaymentFormData({ ...paymentFormData, address: e.target.value })}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <Label className="text-xs">Inspection Date</Label>
-                    <Input type="date" value={paymentFormData.inspectionDate} onChange={(e) => setPaymentFormData({ ...paymentFormData, inspectionDate: e.target.value })} />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Time</Label>
-                    <Select value={paymentFormData.inspectionTime} onValueChange={(v) => setPaymentFormData({ ...paymentFormData, inspectionTime: v })}>
-                      <SelectTrigger><SelectValue placeholder="-- Select --" /></SelectTrigger>
+
+                {/* Package Selection */}
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-sm text-gray-700">Select Package</Label>
+                    <Select 
+                      value={paymentFormData.packageType || 'select_pkg'} 
+                      onValueChange={(v) => setPaymentFormData({ ...paymentFormData, packageType: v === 'select_pkg' ? '' : v })}
+                    >
+                      <SelectTrigger className="h-11" data-testid="package-select">
+                        <SelectValue placeholder="-- Select Package --" />
+                      </SelectTrigger>
                       <SelectContent>
-                        {['09:00', '10:00', '11:00', '12:00', '14:00', '15:00', '16:00', '17:00'].map(t => (
-                          <SelectItem key={t} value={t}>{t}</SelectItem>
+                        <SelectItem value="select_pkg">-- Select Package --</SelectItem>
+                        <SelectItem value="basic">Basic Inspection - ₹499</SelectItem>
+                        <SelectItem value="silver">Silver Package - ₹999</SelectItem>
+                        <SelectItem value="gold">Gold Package - ₹1,499</SelectItem>
+                        <SelectItem value="platinum">Platinum Package - ₹2,499</SelectItem>
+                        <SelectItem value="comprehensive">Comprehensive - ₹2,999</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm text-gray-700">Number of Cars</Label>
+                    <Select 
+                      value={paymentFormData.numberOfCars} 
+                      onValueChange={(v) => setPaymentFormData({ ...paymentFormData, numberOfCars: v })}
+                    >
+                      <SelectTrigger className="h-11" data-testid="num-cars-select">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {[1, 2, 3, 4, 5].map(n => (
+                          <SelectItem key={n} value={String(n)}>{n} Car{n > 1 ? 's' : ''}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
+
+                {/* Discount Section */}
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-sm text-gray-700">Discount Type</Label>
+                    <Select 
+                      value={paymentFormData.discountType || 'no_discount'} 
+                      onValueChange={(v) => setPaymentFormData({ ...paymentFormData, discountType: v === 'no_discount' ? '' : v })}
+                    >
+                      <SelectTrigger className="h-11" data-testid="discount-type-select">
+                        <SelectValue placeholder="-- Select Discount --" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="no_discount">No Discount</SelectItem>
+                        <SelectItem value="percentage">Percentage (%)</SelectItem>
+                        <SelectItem value="flat">Flat Amount (₹)</SelectItem>
+                        <SelectItem value="coupon">Coupon Code</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {paymentFormData.discountType && paymentFormData.discountType !== 'no_discount' && (
+                    <div className="space-y-2">
+                      <Label className="text-sm text-gray-700">
+                        {paymentFormData.discountType === 'percentage' ? 'Discount Percentage' : 
+                         paymentFormData.discountType === 'flat' ? 'Discount Amount' : 'Coupon Code'}
+                      </Label>
+                      <Input 
+                        value={paymentFormData.discountValue} 
+                        onChange={(e) => setPaymentFormData({ ...paymentFormData, discountValue: e.target.value })}
+                        className="h-11"
+                        placeholder={paymentFormData.discountType === 'percentage' ? 'e.g., 10' : 
+                                   paymentFormData.discountType === 'flat' ? 'e.g., 200' : 'Enter coupon code'}
+                        data-testid="discount-value-input"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Price Summary */}
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                  <h4 className="font-medium text-blue-800 mb-3">Payment Summary</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Package:</span>
+                      <span className="font-medium">{paymentFormData.packageType ? paymentFormData.packageType.charAt(0).toUpperCase() + paymentFormData.packageType.slice(1) : '-'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Number of Cars:</span>
+                      <span className="font-medium">{paymentFormData.numberOfCars}</span>
+                    </div>
+                    {paymentFormData.discountValue && (
+                      <div className="flex justify-between text-green-600">
+                        <span>Discount:</span>
+                        <span>-{paymentFormData.discountType === 'percentage' ? paymentFormData.discountValue + '%' : '₹' + paymentFormData.discountValue}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
 
-            {/* Step 3: Billing Details */}
+            {/* Step 3: Scheduling (Only if car details provided) */}
             {modalStep === 3 && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="space-y-1">
-                    <Label className="text-xs">Inspection Type</Label>
-                    <Select value={paymentFormData.inspectionType} onValueChange={(v) => setPaymentFormData({ ...paymentFormData, inspectionType: v })}>
-                      <SelectTrigger><SelectValue placeholder="-- Select --" /></SelectTrigger>
+              <div className="space-y-6">
+                <div className="text-lg font-medium text-gray-800 border-b pb-2">
+                  Step 3: Schedule Inspection
+                </div>
+
+                {/* City and Date */}
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-sm text-gray-700">City</Label>
+                    <Select 
+                      value={paymentFormData.city || 'select_city'} 
+                      onValueChange={(v) => setPaymentFormData({ ...paymentFormData, city: v === 'select_city' ? '' : v })}
+                    >
+                      <SelectTrigger className="h-11" data-testid="schedule-city-select">
+                        <SelectValue placeholder="-- Select City --" />
+                      </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="basic">Basic</SelectItem>
-                        <SelectItem value="comprehensive">Comprehensive</SelectItem>
-                        <SelectItem value="premium">Premium</SelectItem>
+                        <SelectItem value="select_city">-- Select City --</SelectItem>
+                        {cities.map(c => (
+                          <SelectItem key={c} value={c}>{c}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Package Type</Label>
-                    <Select value={paymentFormData.packageType} onValueChange={(v) => setPaymentFormData({ ...paymentFormData, packageType: v })}>
-                      <SelectTrigger><SelectValue placeholder="-- Select --" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="silver">Silver</SelectItem>
-                        <SelectItem value="gold">Gold</SelectItem>
-                        <SelectItem value="platinum">Platinum</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Payment Type</Label>
-                    <Select value={paymentFormData.paymentType} onValueChange={(v) => setPaymentFormData({ ...paymentFormData, paymentType: v })}>
-                      <SelectTrigger><SelectValue placeholder="-- Select --" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="full">Full Payment</SelectItem>
-                        <SelectItem value="partial">Partial</SelectItem>
-                      </SelectContent>
-                    </Select>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm text-gray-700">Inspection Date</Label>
+                    <Input 
+                      type="date" 
+                      value={paymentFormData.inspectionDate} 
+                      onChange={(e) => setPaymentFormData({ ...paymentFormData, inspectionDate: e.target.value })}
+                      className="h-11"
+                      min={new Date().toISOString().split('T')[0]}
+                      data-testid="schedule-date-input"
+                    />
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="space-y-1">
-                    <Label className="text-xs">Select Discount</Label>
-                    <Select value={paymentFormData.discount} onValueChange={(v) => setPaymentFormData({ ...paymentFormData, discount: v })}>
-                      <SelectTrigger><SelectValue placeholder="-- Select --" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
-                        <SelectItem value="10">10%</SelectItem>
-                        <SelectItem value="15">15%</SelectItem>
-                        <SelectItem value="20">20%</SelectItem>
-                      </SelectContent>
-                    </Select>
+
+                {/* Time Selection */}
+                <div className="space-y-2">
+                  <Label className="text-sm text-gray-700">Preferred Time Slot</Label>
+                  <div className="grid grid-cols-4 gap-3">
+                    {['09:00', '10:00', '11:00', '12:00', '14:00', '15:00', '16:00', '17:00'].map(time => (
+                      <button
+                        key={time}
+                        type="button"
+                        onClick={() => setPaymentFormData({ ...paymentFormData, inspectionTime: time })}
+                        className={`py-2 px-4 rounded border text-sm font-medium transition-all ${
+                          paymentFormData.inspectionTime === time 
+                            ? 'bg-[#2E3192] text-white border-[#2E3192]' 
+                            : 'bg-white text-gray-700 border-gray-300 hover:border-[#2E3192]'
+                        }`}
+                        data-testid={`time-slot-${time}`}
+                      >
+                        {time}
+                      </button>
+                    ))}
                   </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Enter Discount Value</Label>
-                    <Input value={paymentFormData.discountValue} onChange={(e) => setPaymentFormData({ ...paymentFormData, discountValue: e.target.value })} />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Customer Mobile Number</Label>
-                    <Input value={paymentFormData.customerMobile} readOnly className="bg-gray-50" />
+                </div>
+
+                {/* Address / Location */}
+                <div className="space-y-2">
+                  <Label className="text-sm text-gray-700">Inspection Location / Address</Label>
+                  <textarea 
+                    value={paymentFormData.address}
+                    onChange={(e) => setPaymentFormData({ ...paymentFormData, address: e.target.value })}
+                    className="w-full min-h-[80px] px-3 py-2 border border-gray-300 rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#2E3192] focus:border-transparent"
+                    placeholder="Enter complete address for inspection..."
+                    data-testid="schedule-address-input"
+                  />
+                </div>
+
+                {/* Google Maps Placeholder */}
+                <div className="bg-gray-100 rounded-lg p-4 border-2 border-dashed border-gray-300 text-center">
+                  <div className="text-gray-500 text-sm">
+                    <div className="font-medium mb-1">📍 Google Maps Integration</div>
+                    <p>Location picker will be integrated here for precise location selection</p>
                   </div>
                 </div>
               </div>
             )}
 
             {/* Progress Stepper */}
-            <div className="stepper mt-6 pt-4 border-t">
-              <div className="stepper-item">
-                <div className={`stepper-circle ${modalStep >= 1 ? 'active' : 'inactive'}`}>1</div>
-                <span className="text-xs text-gray-600">Car Info</span>
-              </div>
-              <div className={`stepper-line ${modalStep >= 2 ? 'active' : ''}`}></div>
-              <div className="stepper-item">
-                <div className={`stepper-circle ${modalStep >= 2 ? 'active' : 'inactive'}`}>2</div>
-                <span className="text-xs text-gray-600">Book Inspection</span>
-              </div>
-              <div className={`stepper-line ${modalStep >= 3 ? 'active' : ''}`}></div>
-              <div className="stepper-item">
-                <div className={`stepper-circle ${modalStep >= 3 ? 'active' : 'inactive'}`}>3</div>
-                <span className="text-xs text-gray-600">Billing Details</span>
+            <div className="flex items-center justify-center mt-8 pt-6 border-t">
+              <div className="flex items-center gap-2">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${modalStep >= 1 ? 'bg-[#2E3192] text-white' : 'bg-gray-200 text-gray-500'}`}>1</div>
+                <span className={`text-xs ${modalStep >= 1 ? 'text-[#2E3192] font-medium' : 'text-gray-500'}`}>Car Details</span>
+                
+                <div className={`w-16 h-1 mx-2 ${modalStep >= 2 ? 'bg-[#2E3192]' : 'bg-gray-200'}`}></div>
+                
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${modalStep >= 2 ? 'bg-[#2E3192] text-white' : 'bg-gray-200 text-gray-500'}`}>2</div>
+                <span className={`text-xs ${modalStep >= 2 ? 'text-[#2E3192] font-medium' : 'text-gray-500'}`}>Package</span>
+                
+                {paymentFormData.hasCarDetails === 'yes' && (
+                  <>
+                    <div className={`w-16 h-1 mx-2 ${modalStep >= 3 ? 'bg-[#2E3192]' : 'bg-gray-200'}`}></div>
+                    
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${modalStep >= 3 ? 'bg-[#2E3192] text-white' : 'bg-gray-200 text-gray-500'}`}>3</div>
+                    <span className={`text-xs ${modalStep >= 3 ? 'text-[#2E3192] font-medium' : 'text-gray-500'}`}>Schedule</span>
+                  </>
+                )}
               </div>
             </div>
           </div>
 
           {/* Modal Footer */}
-          <div className="flex justify-between pt-4 border-t">
+          <div className="flex justify-between items-center p-6 bg-gray-50 border-t sticky bottom-0">
             <button 
-              className="btn-yellow"
-              onClick={() => modalStep > 1 ? setModalStep(modalStep - 1) : setIsPaymentModalOpen(false)}
+              className="px-6 py-2.5 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm font-medium"
+              onClick={() => {
+                if (modalStep > 1) {
+                  setModalStep(modalStep - 1);
+                } else {
+                  setIsPaymentModalOpen(false);
+                }
+              }}
+              data-testid="payment-back-btn"
             >
-              Back
+              {modalStep === 1 ? 'Cancel' : 'Back'}
             </button>
-            {modalStep < 3 ? (
-              <button className="btn-yellow" onClick={() => setModalStep(modalStep + 1)}>Next</button>
+            
+            {/* Next / Send Payment Link Button */}
+            {(paymentFormData.hasCarDetails === 'yes' && modalStep < 3) || (paymentFormData.hasCarDetails === 'no' && modalStep < 2) ? (
+              <button 
+                className="px-6 py-2.5 bg-[#F5A623] text-white rounded hover:bg-[#E09612] text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={() => setModalStep(modalStep + 1)}
+                disabled={
+                  (modalStep === 1 && paymentFormData.hasCarDetails === 'yes' && !paymentFormData.carConfirmed) ||
+                  (modalStep === 2 && !paymentFormData.packageType)
+                }
+                data-testid="payment-next-btn"
+              >
+                Next Step
+              </button>
             ) : (
-              <button className="btn-purple">Send Payment Link</button>
+              <button 
+                className="px-8 py-2.5 bg-[#2E3192] text-white rounded hover:bg-[#252880] text-sm font-medium flex items-center gap-2"
+                onClick={() => {
+                  toast.success('Payment link sent to customer!');
+                  setIsPaymentModalOpen(false);
+                }}
+                data-testid="send-payment-link-btn"
+              >
+                <span>💳</span> Send Payment Link (Razorpay)
+              </button>
             )}
           </div>
         </DialogContent>
