@@ -441,33 +441,31 @@ export default function LeadsPage() {
                     </div>
                   </td>
                   <td className="text-sm">
-                    {lead.reminder_date ? (
-                      <div>
-                        <div className="text-gray-600">Reminder Set on</div>
-                        <div>{formatDate(lead.reminder_date)} at {formatTime(lead.reminder_time)}</div>
-                        <div className="text-gray-500">{lead.reminder_reason || 'RNR'}</div>
-                        {lead.notes && (
-                          <div className="text-gray-400 text-xs mt-1 flex items-center gap-1">
-                            {lead.notes.length > 30 ? lead.notes.substring(0, 30) + '...' : lead.notes}
-                            <button 
-                              onClick={() => openReminderModal(lead)} 
-                              className="edit-icon"
-                              data-testid={`edit-reminder-${lead.id}`}
-                            >
-                              <Pencil className="h-3 w-3" />
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
+                    <div className="space-y-2">
+                      {/* Always show Reminder button */}
                       <button 
                         className="btn-yellow text-sm px-3 py-1"
                         onClick={() => openReminderModal(lead)}
                         data-testid={`add-reminder-${lead.id}`}
                       >
-                        Reminder
+                        {lead.reminder_date ? 'Edit Reminder' : 'Reminder'}
                       </button>
-                    )}
+                      
+                      {/* Show reminder info if set */}
+                      {lead.reminder_date && (
+                        <div className="text-xs space-y-0.5 bg-gray-50 p-2 rounded">
+                          <div className="text-gray-600 font-medium">
+                            {formatDate(lead.reminder_date)} at {formatTime(lead.reminder_time)}
+                          </div>
+                          <div className="text-gray-500">{lead.reminder_reason || 'Follow Up'}</div>
+                          {lead.notes && (
+                            <div className="text-gray-400 truncate max-w-[150px]" title={lead.notes}>
+                              {lead.notes}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </td>
                   <td>
                     <span className={statusConfig[lead.status]?.class || 'status-badge'}>
