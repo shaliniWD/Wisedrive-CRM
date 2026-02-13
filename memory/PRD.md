@@ -6,6 +6,11 @@ Recreate WiseDrive CRM (https://crm.wisedrive.com) design with a modern UI. Crea
 - JWT-based custom auth (email/password)
 - Light theme design
 
+## UX Redesign Requirements (Feb 13, 2026)
+1. **Navigation**: Moved from sidebar to horizontal top navigation for more column space
+2. **Date Format**: Changed from DD/MM/YYYY to "3 Jan '26" format everywhere
+3. **Modern 2026 UX**: Glassmorphism navbar, cleaner tables, improved spacing
+
 ## Architecture
 - **Frontend**: React.js with Tailwind CSS, shadcn/ui components
 - **Backend**: FastAPI with Python
