@@ -26,6 +26,10 @@ export default function CustomersPage() {
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState(null);
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+
   const [search, setSearch] = useState('');
   const [filterCity, setFilterCity] = useState('');
 
