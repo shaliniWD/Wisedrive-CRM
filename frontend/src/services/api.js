@@ -35,6 +35,24 @@ export const employeesApi = {
   assignCity: (id, city) => axios.patch(`${API_URL}/employees/${id}/assign-city`, null, { params: { city } }),
 };
 
+// Digital Ads API
+export const digitalAdsApi = {
+  getAll: () => axios.get(`${API_URL}/digital-ads`),
+  create: (data) => axios.post(`${API_URL}/digital-ads`, data),
+  update: (id, data) => axios.put(`${API_URL}/digital-ads/${id}`, data),
+  toggleStatus: (id) => axios.patch(`${API_URL}/digital-ads/${id}/toggle-status`),
+  delete: (id) => axios.delete(`${API_URL}/digital-ads/${id}`),
+};
+
+// Garage Employees API
+export const garageEmployeesApi = {
+  getAll: () => axios.get(`${API_URL}/garage-employees`),
+  create: (data) => axios.post(`${API_URL}/garage-employees`, data),
+  update: (id, data) => axios.put(`${API_URL}/garage-employees/${id}`, data),
+  toggleStatus: (id) => axios.patch(`${API_URL}/garage-employees/${id}/toggle-status`),
+  delete: (id) => axios.delete(`${API_URL}/garage-employees/${id}`),
+};
+
 // Dashboard API
 export const dashboardApi = {
   getStats: () => axios.get(`${API_URL}/dashboard/stats`),
