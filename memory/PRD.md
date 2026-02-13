@@ -17,7 +17,12 @@ Recreate WiseDrive CRM (https://crm.wisedrive.com) design with a modern UI. Crea
 - **Buttons**: Purple (#6366F1) for Submit/Add/Find, Yellow (#FFD700) for Send Pay Link
 - **Status Badges**: Green (Completed), Yellow (Pending), Purple (Request NewSlot), Blue (Scheduled)
 - **Tables**: Full-width with hover effects, all columns visible
-- **Payment Modal**: 3-step stepper (Car Info → Book Inspection → Billing Details)
+- **Payment Modal**: Redesigned 3-step flow:
+  - Step 1: Car Details (Yes/No + Vaahan API mock for car lookup + confirmation)
+  - Step 2: Package & Payment (Package selection, Number of cars, Discounts, Payment Summary)
+  - Step 3: Schedule Inspection (City, Date, Time slots, Address, Google Maps placeholder)
+  - Razorpay integration ready (Send Payment Link button)
+  - Conditional flow: If no car details, skip scheduling and go directly to payment
 - **Admin Tab - Employee**: Name, Assigned Cities, Assign City button, Status toggle, Edit
 - **Admin Tab - Digital Ad Meta Data**: Ad Id, Ad Name, City, Language, Campaign Type, Source, Status toggle, Copy/Edit/Delete actions
 - **Admin Tab - Garage Employee**: Grg Owner Name, Grg Employee Name, Grg Name, City, Preferred Language, Phone Number, Status toggle, Edit
