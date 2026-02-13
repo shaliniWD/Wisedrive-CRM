@@ -182,6 +182,16 @@ export default function LoginPage() {
             <p className="mt-6 text-center text-sm text-slate-500">
               Need access? Contact your administrator
             </p>
+
+            {/* Demo Credentials */}
+            <div className="mt-6 p-4 bg-slate-100 rounded-lg" data-testid="demo-credentials">
+              <p className="text-xs font-medium text-slate-600 mb-2">Demo Credentials (V2):</p>
+              <div className="space-y-1 text-xs text-slate-500">
+                <p><span className="font-medium">CEO:</span> ceo@wisedrive.com / password123</p>
+                <p><span className="font-medium">Sales Exec:</span> salesexec1.in@wisedrive.com / password123</p>
+                <p><span className="font-medium">HR:</span> hr@wisedrive.com / password123</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
