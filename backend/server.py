@@ -1232,21 +1232,25 @@ async def get_hr_employees(
             if team:
                 emp["team_name"] = team.get("name")
         
-        # Get latest salary info
+        # Get latest salary info - include gross_salary for full display
         salary = await db.salary_structures.find_one(
             {"user_id": emp["id"], "effective_to": None},
-            {"_id": 0, "basic_salary": 1, "net_salary": 1, "price_per_inspection": 1, "employment_type": 1}
+            {"_id": 0, "basic_salary": 1, "gross_salary": 1, "net_salary": 1, "price_per_inspection": 1, "employment_type": 1}
         )
         if salary:
             emp["salary_info"] = salary
         
-        # Get document count
-        doc_count = await db.employee_documents.count_documents({"user_id": emp["id"]})
-        emp["document_count"] = doc_count
-        
-        # Get recent audit count
+        # Get audit count (for inline audit display)
         audit_count = await db.audit_logs.count_documents({"entity_id": emp["id"], "entity_type": "employee"})
         emp["audit_count"] = audit_count
+        
+        # Get today's attendance status
+        today_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        today_attendance = await db.employee_attendance.find_one(
+            {"user_id": emp["id"], "date": today_date},
+            {"_id": 0, "status": 1}
+        )
+        emp["today_attendance"] = today_attendance.get("status") if today_attendance else None
     
     return employees
 
