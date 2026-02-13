@@ -124,7 +124,7 @@ export default function LeadsPage() {
 
   const resetForm = () => {
     setFormData({ name: '', mobile: '', city: '', source: 'WEBSITE', status: 'NEW',
-      assigned_to: '', reminder_date: '', reminder_time: '', notes: '' });
+      assigned_to: '', reminder_date: '', reminder_time: '', notes: '', service_type: '' });
     setEditingLead(null);
   };
 
@@ -132,7 +132,7 @@ export default function LeadsPage() {
     setEditingLead(lead);
     setFormData({ name: lead.name, mobile: lead.mobile, city: lead.city, source: lead.source,
       status: lead.status, assigned_to: lead.assigned_to || '', reminder_date: lead.reminder_date || '',
-      reminder_time: lead.reminder_time || '', notes: lead.notes || '' });
+      reminder_time: lead.reminder_time || '', notes: lead.notes || '', service_type: lead.service_type || '' });
     setIsModalOpen(true);
   };
 
