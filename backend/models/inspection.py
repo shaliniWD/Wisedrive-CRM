@@ -26,22 +26,48 @@ class InspectionBase(BaseModel):
     amount_paid: float = 0
     pending_amount: float = 0
     payment_status: str = "PENDING"
-    payment_type: Optional[str] = None  # Full, Partial
+    payment_type: Optional[str] = None  # Full or Partial
     payment_date: Optional[str] = None
-    inspection_status: Optional[str] = None  # SCHEDULED, COMPLETED, etc.
+    inspection_status: Optional[str] = None  # SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED
     scheduled_date: Optional[str] = None
     scheduled_time: Optional[str] = None
     mechanic_id: Optional[str] = None
     coordinator_id: Optional[str] = None
     report_reviewer_id: Optional[str] = None
     inspections_available: int = 1
-    report_status: str = "pending"
+    report_status: str = "pending"  # pending, in_review, completed
     report_url: Optional[str] = None
     notes: Optional[str] = None
 
 
 class InspectionCreate(InspectionBase):
     pass
+
+
+class InspectionUpdate(BaseModel):
+    customer_name: Optional[str] = None
+    customer_mobile: Optional[str] = None
+    car_number: Optional[str] = None
+    car_make: Optional[str] = None
+    car_model: Optional[str] = None
+    car_year: Optional[str] = None
+    city: Optional[str] = None
+    address: Optional[str] = None
+    package_type: Optional[str] = None
+    total_amount: Optional[float] = None
+    amount_paid: Optional[float] = None
+    pending_amount: Optional[float] = None
+    payment_status: Optional[str] = None
+    payment_type: Optional[str] = None
+    inspection_status: Optional[str] = None
+    scheduled_date: Optional[str] = None
+    scheduled_time: Optional[str] = None
+    mechanic_id: Optional[str] = None
+    coordinator_id: Optional[str] = None
+    report_reviewer_id: Optional[str] = None
+    report_status: Optional[str] = None
+    report_url: Optional[str] = None
+    notes: Optional[str] = None
 
 
 class Inspection(InspectionBase):
