@@ -13,10 +13,10 @@ async def seed_v2_data(db: AsyncIOMotorDatabase):
     
     # ==================== COUNTRIES ====================
     countries_data = [
-        {"name": "India", "code": "IN", "currency": "INR", "timezone": "Asia/Kolkata"},
-        {"name": "Malaysia", "code": "MY", "currency": "MYR", "timezone": "Asia/Kuala_Lumpur"},
-        {"name": "Thailand", "code": "TH", "currency": "THB", "timezone": "Asia/Bangkok"},
-        {"name": "Philippines", "code": "PH", "currency": "PHP", "timezone": "Asia/Manila"},
+        {"name": "India", "code": "IN", "currency": "INR", "currency_symbol": "₹", "phone_code": "+91", "timezone": "Asia/Kolkata"},
+        {"name": "Malaysia", "code": "MY", "currency": "MYR", "currency_symbol": "RM", "phone_code": "+60", "timezone": "Asia/Kuala_Lumpur"},
+        {"name": "Thailand", "code": "TH", "currency": "THB", "currency_symbol": "฿", "phone_code": "+66", "timezone": "Asia/Bangkok"},
+        {"name": "Philippines", "code": "PH", "currency": "PHP", "currency_symbol": "₱", "phone_code": "+63", "timezone": "Asia/Manila"},
     ]
     
     countries = {}
@@ -32,6 +32,14 @@ async def seed_v2_data(db: AsyncIOMotorDatabase):
             })
             countries[c["code"]] = country_id
         else:
+            # Update existing with new fields
+            await db.countries.update_one(
+                {"code": c["code"]},
+                {"$set": {
+                    "currency_symbol": c.get("currency_symbol", ""),
+                    "phone_code": c.get("phone_code", "")
+                }}
+            )
             countries[c["code"]] = existing["id"]
     
     print(f"Countries seeded: {list(countries.keys())}")
