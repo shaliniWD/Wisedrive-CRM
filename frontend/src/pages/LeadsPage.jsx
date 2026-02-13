@@ -33,9 +33,11 @@ export default function LeadsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [isReminderModalOpen, setIsReminderModalOpen] = useState(false);
   const [editingLead, setEditingLead] = useState(null);
   const [selectedLead, setSelectedLead] = useState(null);
   const [assigningLead, setAssigningLead] = useState(null);
+  const [reminderLead, setReminderLead] = useState(null);
   const [selectedEmployee, setSelectedEmployee] = useState('');
   const [saving, setSaving] = useState(false);
   const [modalStep, setModalStep] = useState(1);
@@ -50,6 +52,13 @@ export default function LeadsPage() {
     name: '', mobile: '', city: '', source: 'WEBSITE', status: 'NEW',
     assigned_to: '', reminder_date: '', reminder_time: '', notes: '',
     service_type: '',
+  });
+
+  const [reminderFormData, setReminderFormData] = useState({
+    reminder_date: '',
+    reminder_time: '',
+    reminder_reason: '',
+    notes: '',
   });
 
   const [paymentFormData, setPaymentFormData] = useState({
