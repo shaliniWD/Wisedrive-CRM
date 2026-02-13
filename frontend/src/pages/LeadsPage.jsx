@@ -76,7 +76,7 @@ export default function LeadsPage() {
       const params = {};
       if (search) params.search = search;
       if (filterEmployee && filterEmployee !== 'all') params.assigned_to = filterEmployee;
-      if (filterStatus && filterStatus !== 'all') params.status = filterStatus;
+      if (filterStatus && filterStatus !== 'all') params.lead_status = filterStatus;
       if (filterCity && filterCity !== 'all') params.city = filterCity;
       if (filterSource && filterSource !== 'all') params.source = filterSource;
 
