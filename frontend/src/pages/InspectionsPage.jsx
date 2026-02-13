@@ -8,20 +8,17 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
-import { Search, X, MoreHorizontal, Pencil, Download, Loader2, FileText, ExternalLink } from 'lucide-react';
+import { Search, Pencil, Download, Loader2 } from 'lucide-react';
 
 const statusConfig = {
-  COMPLETED: { label: 'Completed', class: 'badge-success' },
-  SCHEDULED: { label: 'Scheduled', class: 'badge-info' },
-  IN_PROGRESS: { label: 'In Progress', class: 'badge-warning' },
-  REQUEST_NEWSLOT: { label: 'Request Slot', class: 'badge-purple' },
-  CANCELLED: { label: 'Cancelled', class: 'badge-danger' },
+  COMPLETED: { label: 'Completed', class: 'status-badge completed' },
+  SCHEDULED: { label: 'Scheduled', class: 'status-badge scheduled' },
+  IN_PROGRESS: { label: 'In Progress', class: 'status-badge yellow' },
+  REQUEST_NEWSLOT: { label: 'Request NewSlot', class: 'status-badge request-slot' },
+  CANCELLED: { label: 'Cancelled', class: 'status-badge red' },
 };
 
 export default function InspectionsPage() {
@@ -83,23 +80,12 @@ export default function InspectionsPage() {
         toast.success('Inspection created');
       }
       setIsModalOpen(false);
-      resetForm();
       fetchData();
     } catch (error) {
       toast.error('Failed to save inspection');
     } finally {
       setSaving(false);
     }
-  };
-
-  const resetForm = () => {
-    setFormData({
-      customer_name: '', customer_mobile: '', address: '', city: '',
-      payment_status: 'PENDING', inspection_status: 'SCHEDULED',
-      mechanic_name: '', car_number: '', car_details: '',
-      scheduled_date: '', scheduled_time: '', notes: '',
-    });
-    setEditingInspection(null);
   };
 
   const openEditModal = (inspection) => {
@@ -119,142 +105,149 @@ export default function InspectionsPage() {
   const scheduledCount = inspections.filter(i => i.scheduled_date).length;
 
   return (
-    <div className="space-y-5" data-testid="inspections-page">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900" style={{ fontFamily: 'Outfit, sans-serif' }}>Inspections</h1>
-          <p className="text-slate-500 mt-1">{inspections.length.toLocaleString()} total inspections</p>
+    <div className="p-4 space-y-4" data-testid="inspections-page">
+      {/* Search and Filters Row */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="search-bar flex-1 min-w-[300px]">
+          <Search className="h-4 w-4 text-gray-400 mr-2" />
+          <input
+            placeholder="Customer Name / Mobile Number"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="flex-1"
+            data-testid="search-input"
+          />
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setActiveTab('unscheduled')}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-              activeTab === 'unscheduled' ? 'bg-slate-900 text-white' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
-            }`}
-            data-testid="unscheduled-tab"
-          >
-            Unscheduled ({unscheduledCount})
-          </button>
-          <button
-            onClick={() => setActiveTab('scheduled')}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-              activeTab === 'scheduled' ? 'bg-amber-500 text-white' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
-            }`}
-            data-testid="scheduled-tab"
-          >
-            Scheduled ({scheduledCount})
-          </button>
-        </div>
-      </div>
 
-      {/* Filters */}
-      <div className="filter-bar">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <Input placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 h-9 bg-slate-50 border-slate-200" data-testid="search-input" />
-        </div>
         <Select value={filterCity} onValueChange={setFilterCity}>
-          <SelectTrigger className="w-[150px] h-9 bg-slate-50" data-testid="filter-city">
-            <SelectValue placeholder="City" />
+          <SelectTrigger className="w-[140px] h-10 bg-white" data-testid="filter-city">
+            <SelectValue placeholder="-- Select City --" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Cities</SelectItem>
             {cities.map((c) => (<SelectItem key={c} value={c}>{c}</SelectItem>))}
           </SelectContent>
         </Select>
+
         <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="w-[150px] h-9 bg-slate-50" data-testid="filter-status">
-            <SelectValue placeholder="Status" />
+          <SelectTrigger className="w-[180px] h-10 bg-white" data-testid="filter-status">
+            <SelectValue placeholder="-- Select Insp. Status --" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="SCHEDULED">Scheduled</SelectItem>
             <SelectItem value="COMPLETED">Completed</SelectItem>
             <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-            <SelectItem value="REQUEST_NEWSLOT">Request Slot</SelectItem>
+            <SelectItem value="REQUEST_NEWSLOT">Request NewSlot</SelectItem>
           </SelectContent>
         </Select>
-        {(search || filterCity || filterStatus) && (
-          <Button variant="ghost" size="sm" onClick={() => { setSearch(''); setFilterCity(''); setFilterStatus(''); }} className="text-slate-500">
-            <X className="h-4 w-4 mr-1" /> Clear
-          </Button>
-        )}
+
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-500">Date range:</span>
+          <Input type="date" className="w-[130px] h-10 bg-white" />
+        </div>
+
+        <button className="btn-purple" data-testid="submit-btn">Submit</button>
+        <button className="btn-purple" onClick={fetchData} data-testid="find-btn">Find</button>
       </div>
 
-      {/* Table */}
-      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+      {/* Inspections Count and Tabs */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="text-lg font-semibold text-gray-800">
+            Inspections Count: <span className="text-[#2E3192]">{inspections.length.toLocaleString()}</span>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setActiveTab('unscheduled')}
+              className={`tab-btn ${activeTab === 'unscheduled' ? 'active-dark' : ''}`}
+              data-testid="unscheduled-tab"
+            >
+              Unscheduled ({unscheduledCount})
+            </button>
+            <button
+              onClick={() => setActiveTab('scheduled')}
+              className={`tab-btn ${activeTab === 'scheduled' ? 'active-orange' : ''}`}
+              data-testid="scheduled-tab"
+            >
+              Scheduled ({scheduledCount})
+            </button>
+          </div>
+        </div>
+        <div className="flex gap-3">
+          {['Today', 'This Week', 'This Month', 'This Quarter', 'This Year'].map((period) => (
+            <span key={period} className="quick-filter">{period}</span>
+          ))}
+        </div>
+      </div>
+
+      {/* Data Table */}
+      <div className="card overflow-hidden">
         <table className="data-table">
           <thead>
             <tr>
-              <th>Date</th>
-              <th>Customer</th>
-              <th>Payment</th>
-              <th>Location</th>
-              <th>Status</th>
-              <th>Mechanic</th>
+              <th>Inspection Date</th>
+              <th>Customer Details</th>
+              <th>Payment Status</th>
+              <th>Address</th>
+              <th>Inspection Status</th>
+              <th>Mechanic Name</th>
               <th>Car Details</th>
-              <th className="w-[140px]">Report</th>
+              <th>Action</th>
+              <th>Report Edit</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={8} className="text-center py-12"><Loader2 className="h-6 w-6 animate-spin mx-auto text-indigo-600" /></td></tr>
+              <tr><td colSpan={9} className="text-center py-12"><Loader2 className="h-6 w-6 animate-spin mx-auto text-[#2E3192]" /></td></tr>
             ) : inspections.length === 0 ? (
-              <tr><td colSpan={8} className="text-center py-12 text-slate-500">No inspections found</td></tr>
+              <tr><td colSpan={9} className="text-center py-12 text-gray-500">No inspections found</td></tr>
             ) : (
               inspections.map((inspection) => (
                 <tr key={inspection.id} data-testid={`inspection-row-${inspection.id}`}>
                   <td>
-                    <div className="text-slate-900">{formatDate(inspection.scheduled_date) || '—'}</div>
-                    <div className="text-slate-400 text-xs">{formatTime(inspection.scheduled_time)}</div>
+                    <div>{formatDate(inspection.scheduled_date) || '-'}</div>
+                    <div className="text-gray-400 text-xs">{formatTime(inspection.scheduled_time)}</div>
                   </td>
                   <td>
-                    <div className="font-medium text-slate-900">{inspection.customer_name}</div>
-                    <div className="font-mono text-sm text-slate-500">{inspection.customer_mobile}</div>
+                    <div className="font-medium">{inspection.customer_name}</div>
+                    <div className="text-gray-500 font-mono text-sm">{inspection.customer_mobile}</div>
                   </td>
                   <td>
-                    <span className={`badge ${inspection.payment_status === 'Completed' ? 'badge-success' : 'badge-warning'}`}>
+                    <span className={`status-badge ${inspection.payment_status === 'Completed' ? 'completed' : 'pending'}`}>
                       {inspection.payment_status}
                     </span>
                   </td>
                   <td>
-                    <button className="text-indigo-600 hover:underline text-sm">
-                      {inspection.city}
-                      <ExternalLink className="h-3 w-3 inline ml-1" />
+                    <span className="text-[#6366F1] cursor-pointer hover:underline">{inspection.city}</span>
+                  </td>
+                  <td>
+                    <span className={statusConfig[inspection.inspection_status]?.class || 'status-badge'}>
+                      {statusConfig[inspection.inspection_status]?.label || inspection.inspection_status}
+                    </span>
+                    <div className="text-xs text-gray-400 mt-1">{formatDateTime(inspection.created_at)}</div>
+                  </td>
+                  <td>{inspection.mechanic_name || '-'}</td>
+                  <td>
+                    <div className="text-[#6366F1] font-mono text-sm">{inspection.car_number}</div>
+                    <div className="text-xs text-gray-400">{inspection.car_details}</div>
+                  </td>
+                  <td>
+                    <button className="btn-purple text-xs px-3 py-1" onClick={() => openEditModal(inspection)} data-testid={`edit-inspection-${inspection.id}`}>
+                      Edit
                     </button>
                   </td>
                   <td>
-                    <div className="space-y-1">
-                      <span className={`badge ${statusConfig[inspection.inspection_status]?.class || 'badge-slate'}`}>
-                        {statusConfig[inspection.inspection_status]?.label || inspection.inspection_status}
-                      </span>
-                      <div className="text-xs text-slate-400">{formatDateTime(inspection.created_at)}</div>
-                    </div>
-                  </td>
-                  <td className="text-slate-600">{inspection.mechanic_name || <span className="text-slate-400">—</span>}</td>
-                  <td>
-                    <div className="font-mono text-sm text-indigo-600">{inspection.car_number}</div>
-                    <div className="text-xs text-slate-400 truncate max-w-[120px]">{inspection.car_details}</div>
-                  </td>
-                  <td>
-                    <div className="flex items-center gap-1">
-                      {inspection.report_url ? (
-                        <>
-                          <Button size="sm" className="h-7 px-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs">
-                            <FileText className="h-3 w-3 mr-1" /> View
-                          </Button>
-                          <Button size="sm" variant="outline" className="h-7 w-7 p-0 border-emerald-300">
-                            <Download className="h-3 w-3 text-emerald-600" />
-                          </Button>
-                        </>
-                      ) : (
-                        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => openEditModal(inspection)}>
-                          <Pencil className="h-3 w-3 mr-1" /> Edit
-                        </Button>
-                      )}
-                    </div>
+                    {inspection.report_url ? (
+                      <div className="flex flex-col gap-1">
+                        <button className="status-badge completed text-xs cursor-pointer">Show Report</button>
+                        <button className="text-[#10B981] text-xs flex items-center gap-1">
+                          <Download className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ) : (
+                      <button className="btn-purple text-xs px-3 py-1">Edit Report</button>
+                    )}
                   </td>
                 </tr>
               ))
@@ -263,66 +256,62 @@ export default function InspectionsPage() {
         </table>
       </div>
 
-      {/* Modal */}
+      {/* Edit Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="sm:max-w-[560px]" data-testid="inspection-modal">
           <DialogHeader>
-            <DialogTitle style={{ fontFamily: 'Outfit, sans-serif' }}>{editingInspection ? 'Edit Inspection' : 'New Inspection'}</DialogTitle>
+            <DialogTitle>{editingInspection ? 'Edit Inspection' : 'New Inspection'}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit}>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm">Customer Name *</Label>
-                  <Input value={formData.customer_name} onChange={(e) => setFormData({ ...formData, customer_name: e.target.value })}
-                    className="h-9" data-testid="inspection-name-input" />
+                <div className="space-y-1">
+                  <Label className="text-xs">Customer Name</Label>
+                  <Input value={formData.customer_name} onChange={(e) => setFormData({ ...formData, customer_name: e.target.value })} className="h-9" />
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-sm">Mobile *</Label>
-                  <Input value={formData.customer_mobile} onChange={(e) => setFormData({ ...formData, customer_mobile: e.target.value })}
-                    className="h-9" data-testid="inspection-mobile-input" />
+                <div className="space-y-1">
+                  <Label className="text-xs">Mobile</Label>
+                  <Input value={formData.customer_mobile} onChange={(e) => setFormData({ ...formData, customer_mobile: e.target.value })} className="h-9" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm">City *</Label>
+                <div className="space-y-1">
+                  <Label className="text-xs">City</Label>
                   <Select value={formData.city} onValueChange={(v) => setFormData({ ...formData, city: v })}>
-                    <SelectTrigger className="h-9" data-testid="inspection-city-select"><SelectValue placeholder="Select" /></SelectTrigger>
+                    <SelectTrigger className="h-9"><SelectValue placeholder="Select" /></SelectTrigger>
                     <SelectContent>{cities.map((c) => (<SelectItem key={c} value={c}>{c}</SelectItem>))}</SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-sm">Status</Label>
+                <div className="space-y-1">
+                  <Label className="text-xs">Status</Label>
                   <Select value={formData.inspection_status} onValueChange={(v) => setFormData({ ...formData, inspection_status: v })}>
-                    <SelectTrigger className="h-9" data-testid="inspection-status-select"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="SCHEDULED">Scheduled</SelectItem>
                       <SelectItem value="COMPLETED">Completed</SelectItem>
                       <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                      <SelectItem value="REQUEST_NEWSLOT">Request Slot</SelectItem>
+                      <SelectItem value="REQUEST_NEWSLOT">Request NewSlot</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm">Car Number</Label>
-                  <Input value={formData.car_number} onChange={(e) => setFormData({ ...formData, car_number: e.target.value })}
-                    className="h-9 font-mono" data-testid="inspection-car-input" />
+                <div className="space-y-1">
+                  <Label className="text-xs">Car Number</Label>
+                  <Input value={formData.car_number} onChange={(e) => setFormData({ ...formData, car_number: e.target.value })} className="h-9 font-mono" />
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-sm">Mechanic</Label>
-                  <Input value={formData.mechanic_name} onChange={(e) => setFormData({ ...formData, mechanic_name: e.target.value })}
-                    className="h-9" data-testid="inspection-mechanic-input" />
+                <div className="space-y-1">
+                  <Label className="text-xs">Mechanic</Label>
+                  <Input value={formData.mechanic_name} onChange={(e) => setFormData({ ...formData, mechanic_name: e.target.value })} className="h-9" />
                 </div>
               </div>
             </div>
-            <DialogFooter>
+            <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-              <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700" disabled={saving} data-testid="save-inspection-button">
+              <Button type="submit" className="btn-purple" disabled={saving}>
                 {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Save
               </Button>
-            </DialogFooter>
+            </div>
           </form>
         </DialogContent>
       </Dialog>
