@@ -1713,6 +1713,213 @@ async def get_employee_audit(employee_id: str, current_user: dict = Depends(get_
     return logs
 
 
+# -------------------- SALARY PAYMENTS --------------------
+
+@api_router.get("/hr/employees/{employee_id}/salary-payments")
+async def get_employee_salary_payments(
+    employee_id: str,
+    year: Optional[int] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get salary payment history for employee"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        if current_user.get("id") != employee_id:
+            raise HTTPException(status_code=403, detail="Not authorized")
+    
+    query = {"user_id": employee_id}
+    if year:
+        query["year"] = year
+    
+    payments = await db.salary_payments.find(query, {"_id": 0}).sort([("year", -1), ("month", -1)]).to_list(100)
+    return payments
+
+
+@api_router.post("/hr/employees/{employee_id}/salary-payments")
+async def create_salary_payment(
+    employee_id: str,
+    payment_data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create or update salary payment for a month"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    month = payment_data.get("month")
+    year = payment_data.get("year")
+    
+    if not month or not year:
+        raise HTTPException(status_code=400, detail="Month and year are required")
+    
+    # Check if payment exists for this month
+    existing = await db.salary_payments.find_one({
+        "user_id": employee_id,
+        "month": month,
+        "year": year
+    })
+    
+    payment_data["user_id"] = employee_id
+    
+    if existing:
+        # Update existing
+        await db.salary_payments.update_one(
+            {"user_id": employee_id, "month": month, "year": year},
+            {"$set": payment_data}
+        )
+        payment_data["id"] = existing.get("id")
+    else:
+        # Create new
+        payment_data["id"] = str(uuid.uuid4())
+        payment_data["created_at"] = datetime.now(timezone.utc).isoformat()
+        payment_data["created_by"] = current_user["id"]
+        await db.salary_payments.insert_one(payment_data)
+        payment_data.pop("_id", None)
+    
+    return payment_data
+
+
+# -------------------- LEAVE SUMMARY --------------------
+
+@api_router.get("/hr/employees/{employee_id}/leave-summary")
+async def get_employee_leave_summary(
+    employee_id: str,
+    year: Optional[int] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get leave summary for employee - month-wise"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        if current_user.get("id") != employee_id:
+            raise HTTPException(status_code=403, detail="Not authorized")
+    
+    if not year:
+        year = datetime.now(timezone.utc).year
+    
+    # Get all attendance records for the year
+    start_date = f"{year}-01-01"
+    end_date = f"{year}-12-31"
+    
+    attendance = await db.employee_attendance.find({
+        "user_id": employee_id,
+        "date": {"$gte": start_date, "$lte": end_date}
+    }, {"_id": 0}).to_list(400)
+    
+    # Group by month
+    monthly_summary = {}
+    for i in range(1, 13):
+        monthly_summary[i] = {
+            "month": i,
+            "year": year,
+            "present": 0,
+            "absent": 0,
+            "half_day": 0,
+            "on_leave": 0,
+            "leaves_taken": 0,
+            "working_days": 0
+        }
+    
+    for att in attendance:
+        month = int(att["date"].split("-")[1])
+        status = att.get("status", "present")
+        
+        if status == "present":
+            monthly_summary[month]["present"] += 1
+        elif status == "absent":
+            monthly_summary[month]["absent"] += 1
+            monthly_summary[month]["leaves_taken"] += 1
+        elif status == "half_day":
+            monthly_summary[month]["half_day"] += 1
+            monthly_summary[month]["leaves_taken"] += 0.5
+        elif status == "on_leave":
+            monthly_summary[month]["on_leave"] += 1
+            monthly_summary[month]["leaves_taken"] += 1
+        
+        monthly_summary[month]["working_days"] += 1
+    
+    # Get employee's weekly off day
+    emp = await db.users.find_one({"id": employee_id}, {"_id": 0, "weekly_off_day": 1})
+    weekly_off_day = emp.get("weekly_off_day", 0) if emp else 0
+    
+    # Day names
+    day_names = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+    
+    return {
+        "year": year,
+        "weekly_off_day": weekly_off_day,
+        "weekly_off_day_name": day_names[weekly_off_day],
+        "monthly_summary": list(monthly_summary.values()),
+        "total_leaves_taken": sum(m["leaves_taken"] for m in monthly_summary.values()),
+        "total_present": sum(m["present"] for m in monthly_summary.values())
+    }
+
+
+# -------------------- LEAD ASSIGNMENT CONTROL --------------------
+
+@api_router.patch("/hr/employees/{employee_id}/lead-assignment")
+async def toggle_lead_assignment(
+    employee_id: str,
+    data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Toggle lead assignment for employee"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    is_available = data.get("is_available_for_leads", True)
+    reason = data.get("reason", "")
+    
+    await db.users.update_one(
+        {"id": employee_id},
+        {"$set": {
+            "is_available_for_leads": is_available,
+            "lead_assignment_paused_reason": reason if not is_available else None,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    # Log audit
+    await audit_service.log(
+        entity_type="employee",
+        entity_id=employee_id,
+        action="lead_assignment_toggle",
+        user_id=current_user["id"],
+        new_values={"is_available_for_leads": is_available, "reason": reason}
+    )
+    
+    return {"is_available_for_leads": is_available}
+
+
+@api_router.patch("/hr/employees/{employee_id}/weekly-off")
+async def update_weekly_off(
+    employee_id: str,
+    data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update employee's weekly off day"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    weekly_off_day = data.get("weekly_off_day", 0)  # 0=Sunday, 1=Monday, etc.
+    
+    await db.users.update_one(
+        {"id": employee_id},
+        {"$set": {
+            "weekly_off_day": weekly_off_day,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    return {"weekly_off_day": weekly_off_day}
+
+
 # ==================== COUNTRY MANAGEMENT ====================
 
 @api_router.get("/hr/countries")
