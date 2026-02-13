@@ -1181,7 +1181,7 @@ export default function LeadsPage() {
           {/* Modal Header */}
           <div className="bg-white px-6 py-4 border-b">
             <div className="flex justify-between items-center">
-              <DialogTitle className="text-lg font-medium">Assign Employee</DialogTitle>
+              <DialogTitle className="text-lg font-medium">Reassign Lead</DialogTitle>
               <button 
                 onClick={() => setIsAssignModalOpen(false)} 
                 className="text-gray-400 hover:text-gray-600"
@@ -1194,7 +1194,7 @@ export default function LeadsPage() {
 
           <div className="p-6 space-y-4">
             <div className="space-y-2">
-              <Label className="text-sm text-gray-700">Employee List:</Label>
+              <Label className="text-sm text-gray-700">Assign To:</Label>
               <Select value={selectedEmployee || 'unassigned'} onValueChange={(v) => setSelectedEmployee(v === 'unassigned' ? '' : v)}>
                 <SelectTrigger className="h-10 border-gray-300" data-testid="employee-select">
                   <SelectValue placeholder="-- Select Employee --" />
@@ -1202,8 +1202,25 @@ export default function LeadsPage() {
                 <SelectContent>
                   <SelectItem value="unassigned">-- Select Employee --</SelectItem>
                   {employees.map((emp) => (
-                    <SelectItem key={emp.id} value={emp.name}>{emp.name}</SelectItem>
+                    <SelectItem key={emp.id} value={emp.id}>{emp.name} ({emp.role_name || emp.role})</SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm text-gray-700">Reason for Reassignment: <span className="text-red-500">*</span></Label>
+              <Select value={reassignReason} onValueChange={setReassignReason}>
+                <SelectTrigger className="h-10 border-gray-300" data-testid="reassign-reason-select">
+                  <SelectValue placeholder="-- Select Reason --" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Agent on leave">Agent on leave</SelectItem>
+                  <SelectItem value="Agent unavailable">Agent unavailable</SelectItem>
+                  <SelectItem value="Customer request">Customer request</SelectItem>
+                  <SelectItem value="Better match">Better match for this lead</SelectItem>
+                  <SelectItem value="Workload balancing">Workload balancing</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -1222,11 +1239,11 @@ export default function LeadsPage() {
                 type="button" 
                 className="px-6 py-2 bg-[#F5A623] text-white rounded hover:bg-[#E09612] text-sm font-medium disabled:opacity-50"
                 onClick={handleAssignEmployee}
-                disabled={saving}
+                disabled={saving || !selectedEmployee || !reassignReason}
                 data-testid="save-assign-button"
               >
                 {saving && <Loader2 className="h-4 w-4 animate-spin mr-2 inline" />}
-                Save
+                Reassign
               </button>
             </div>
           </div>
