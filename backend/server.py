@@ -874,14 +874,26 @@ async def get_employees(current_user: dict = Depends(get_current_user)):
     # Get users based on RBAC
     role_code = current_user.get("role_code", "")
     
-    query = {"is_active": True}
+    query = {}
     if role_code != "CEO" and role_code != "HR_MANAGER":
         query["country_id"] = current_user.get("country_id")
     
     users = await db.users.find(query, {"_id": 0, "hashed_password": 0}).to_list(1000)
     
-    # Transform to V1 format
+    # Enrich with role, country, department info
     for user in users:
+        if user.get("role_id"):
+            role = await db.roles.find_one({"id": user["role_id"]}, {"_id": 0, "name": 1, "code": 1})
+            if role:
+                user["role_name"] = role.get("name")
+                user["role_code"] = role.get("code")
+        
+        if user.get("country_id"):
+            country = await db.countries.find_one({"id": user["country_id"]}, {"_id": 0, "name": 1})
+            if country:
+                user["country_name"] = country.get("name")
+        
+        # V1 compatibility
         user["role"] = user.get("role_name", "employee")
         user["assigned_cities"] = []
         if user.get("country_name"):
