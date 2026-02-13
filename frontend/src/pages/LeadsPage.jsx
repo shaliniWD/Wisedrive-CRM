@@ -32,8 +32,11 @@ export default function LeadsPage() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [editingLead, setEditingLead] = useState(null);
   const [selectedLead, setSelectedLead] = useState(null);
+  const [assigningLead, setAssigningLead] = useState(null);
+  const [selectedEmployee, setSelectedEmployee] = useState('');
   const [saving, setSaving] = useState(false);
   const [modalStep, setModalStep] = useState(1);
 
