@@ -42,6 +42,10 @@ export default function LeadsPage() {
   const [saving, setSaving] = useState(false);
   const [modalStep, setModalStep] = useState(1);
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+
   const [search, setSearch] = useState('');
   const [filterEmployee, setFilterEmployee] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
