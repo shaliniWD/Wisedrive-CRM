@@ -1,460 +1,439 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  employeesApi, digitalAdsApi, garageEmployeesApi, utilityApi, 
-  usersApi, salaryApi, auditLogsApi, rolesApi 
-} from '@/services/api';
+import { hrApi, digitalAdsApi, rolesApi, departmentsApi, teamsApi } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Plus, Loader2, Pencil, Trash2, Copy, DollarSign, History, Users, Search, Filter, RefreshCw } from 'lucide-react';
+import { 
+  Plus, Loader2, Pencil, Trash2, Users, Globe, Search, ChevronDown, ChevronUp,
+  FileText, Calendar, DollarSign, History, Eye, X, Check, AlertCircle
+} from 'lucide-react';
 
 export default function AdminPage() {
-  const { user, hasPermission } = useAuth();
+  const { user } = useAuth();
   const [employees, setEmployees] = useState([]);
-  const [digitalAds, setDigitalAds] = useState([]);
-  const [garageEmployees, setGarageEmployees] = useState([]);
-  const [cities, setCities] = useState([]);
+  const [countries, setCountries] = useState([]);
   const [roles, setRoles] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('employee');
+  const [activeTab, setActiveTab] = useState('employees');
   
-  // HR Tab States
-  const [salaries, setSalaries] = useState([]);
-  const [salaryLoading, setSalaryLoading] = useState(false);
-  
-  // Audit Tab States
-  const [auditLogs, setAuditLogs] = useState([]);
-  const [auditStats, setAuditStats] = useState(null);
-  const [auditLoading, setAuditLoading] = useState(false);
-  const [auditFilters, setAuditFilters] = useState({
-    entity_type: '',
-    action: '',
-    user_id: '',
-    limit: 100
-  });
+  // Filters
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterCountry, setFilterCountry] = useState('');
+  const [filterRole, setFilterRole] = useState('');
   
   // Modal states
   const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
-  const [isAdModalOpen, setIsAdModalOpen] = useState(false);
-  const [isGarageModalOpen, setIsGarageModalOpen] = useState(false);
-  const [isCityModalOpen, setIsCityModalOpen] = useState(false);
-  const [isSalaryModalOpen, setIsSalaryModalOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [isCountryModalOpen, setIsCountryModalOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
-  const [selectedCity, setSelectedCity] = useState('');
+  const [selectedCountry, setSelectedCountry] = useState(null);
+  const [saving, setSaving] = useState(false);
+  
+  // Employee modal tabs
+  const [employeeModalTab, setEmployeeModalTab] = useState('details');
+  
+  // Expanded audit rows
+  const [expandedAudit, setExpandedAudit] = useState({});
 
-  // Form states
-  const [employeeForm, setEmployeeForm] = useState({
-    name: '', email: '', password: '', role: 'employee', assigned_cities: [], is_active: true,
-  });
-  
-  const [adForm, setAdForm] = useState({
-    ad_id: '', ad_name: '', city: '', language: '', campaign_type: '', source: '', ad_amount: '',
-  });
-  
-  const [garageForm, setGarageForm] = useState({
-    grg_owner_name: '', grg_employee_name: '', grg_name: '', city: '', preferred_language: '', phone_number: '',
-  });
-  
-  const [salaryForm, setSalaryForm] = useState({
-    user_id: '',
-    ctc: '',
-    fixed_pay: '',
-    variable_pay: '',
-    commission_percentage: '',
-    per_inspection_payout: '',
-    currency: 'INR'
-  });
+  const isHROrCEO = user?.role_code === 'CEO' || user?.role_code === 'HR_MANAGER';
 
   const fetchData = useCallback(async () => {
     try {
-      const [employeesRes, adsRes, garageRes, citiesRes, rolesRes] = await Promise.all([
-        employeesApi.getAll(),
-        digitalAdsApi.getAll(),
-        garageEmployeesApi.getAll(),
-        utilityApi.getCities(),
+      const [rolesRes, deptsRes, teamsRes] = await Promise.all([
         rolesApi.getAll(),
+        departmentsApi.getAll(),
+        teamsApi.getAll(),
       ]);
-      setEmployees(employeesRes.data);
-      setDigitalAds(adsRes.data);
-      setGarageEmployees(garageRes.data);
-      setCities(citiesRes.data);
       setRoles(rolesRes.data);
+      setDepartments(deptsRes.data);
+      setTeams(teamsRes.data);
     } catch (error) {
-      toast.error('Failed to load data');
+      console.error('Failed to load base data:', error);
+    }
+  }, []);
+
+  const fetchEmployees = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = {};
+      if (searchQuery) params.search = searchQuery;
+      if (filterCountry) params.country_id = filterCountry;
+      if (filterRole) params.role_id = filterRole;
+      
+      const response = await hrApi.getEmployees(params);
+      setEmployees(response.data);
+    } catch (error) {
+      if (error.response?.status !== 403) {
+        toast.error('Failed to load employees');
+      }
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [searchQuery, filterCountry, filterRole]);
 
-  const fetchSalaries = useCallback(async () => {
-    setSalaryLoading(true);
+  const fetchCountries = useCallback(async () => {
     try {
-      const response = await salaryApi.getAll();
-      setSalaries(response.data);
+      const response = await hrApi.getAllCountries();
+      setCountries(response.data);
     } catch (error) {
-      if (error.response?.status !== 403) {
-        toast.error('Failed to load salary data');
+      // Try basic countries
+      try {
+        const res = await hrApi.getCountries();
+        setCountries(res.data);
+      } catch (e) {
+        console.error('Failed to load countries');
       }
-    } finally {
-      setSalaryLoading(false);
     }
   }, []);
-
-  const fetchAuditLogs = useCallback(async () => {
-    setAuditLoading(true);
-    try {
-      const params = {};
-      if (auditFilters.entity_type) params.entity_type = auditFilters.entity_type;
-      if (auditFilters.action) params.action = auditFilters.action;
-      if (auditFilters.user_id) params.user_id = auditFilters.user_id;
-      params.limit = auditFilters.limit;
-      
-      const [logsRes, statsRes] = await Promise.all([
-        auditLogsApi.getAll(params),
-        auditLogsApi.getStats()
-      ]);
-      setAuditLogs(logsRes.data);
-      setAuditStats(statsRes.data);
-    } catch (error) {
-      if (error.response?.status !== 403) {
-        toast.error('Failed to load audit logs');
-      }
-    } finally {
-      setAuditLoading(false);
-    }
-  }, [auditFilters]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-  
-  useEffect(() => {
-    if (activeTab === 'hr') {
-      fetchSalaries();
-    } else if (activeTab === 'audit') {
-      fetchAuditLogs();
-    }
-  }, [activeTab, fetchSalaries, fetchAuditLogs]);
+  useEffect(() => { fetchEmployees(); }, [fetchEmployees]);
+  useEffect(() => { fetchCountries(); }, [fetchCountries]);
 
-  // Employee handlers
-  const handleEmployeeSubmit = async (e) => {
-    e.preventDefault();
-    if (!employeeForm.name || !employeeForm.email || !employeeForm.password) {
-      toast.error('Please fill in required fields');
-      return;
-    }
-    setSaving(true);
-    try {
-      await employeesApi.create(employeeForm);
-      toast.success('Employee created');
-      setIsEmployeeModalOpen(false);
-      setEmployeeForm({ name: '', email: '', password: '', role: 'employee', assigned_cities: [], is_active: true });
-      fetchData();
-    } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to save employee');
-    } finally {
-      setSaving(false);
-    }
+  // Toggle audit row expansion
+  const toggleAudit = (empId) => {
+    setExpandedAudit(prev => ({
+      ...prev,
+      [empId]: !prev[empId]
+    }));
   };
 
-  const handleToggleEmployeeStatus = async (employeeId) => {
-    try {
-      await employeesApi.toggleStatus(employeeId);
-      toast.success('Status updated');
-      fetchData();
-    } catch (error) {
-      toast.error('Failed to update status');
-    }
-  };
-
-  const openCityModal = (employee) => {
+  // Open employee modal for create/edit
+  const openEmployeeModal = (employee = null) => {
     setSelectedEmployee(employee);
-    setSelectedCity('');
-    setIsCityModalOpen(true);
+    setEmployeeModalTab('details');
+    setIsEmployeeModalOpen(true);
   };
 
-  const handleAssignCity = async () => {
-    if (!selectedCity) {
-      toast.error('Please select a city');
-      return;
-    }
-    try {
-      await employeesApi.assignCity(selectedEmployee.id, selectedCity);
-      toast.success('City assigned');
-      setIsCityModalOpen(false);
-      fetchData();
-    } catch (error) {
-      toast.error('Failed to assign city');
-    }
-  };
-
-  // Digital Ad handlers
-  const handleAdSubmit = async (e) => {
-    e.preventDefault();
-    if (!adForm.ad_id || !adForm.ad_name || !adForm.city) {
-      toast.error('Please fill in required fields');
-      return;
-    }
-    setSaving(true);
-    try {
-      await digitalAdsApi.create({ ...adForm, ad_amount: adForm.ad_amount ? parseFloat(adForm.ad_amount) : null });
-      toast.success('Ad created');
-      setIsAdModalOpen(false);
-      setAdForm({ ad_id: '', ad_name: '', city: '', language: '', campaign_type: '', source: '', ad_amount: '' });
-      fetchData();
-    } catch (error) {
-      toast.error('Failed to save ad');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleToggleAdStatus = async (adId) => {
-    try {
-      await digitalAdsApi.toggleStatus(adId);
-      toast.success('Status updated');
-      fetchData();
-    } catch (error) {
-      toast.error('Failed to update status');
-    }
-  };
-
-  const handleDeleteAd = async (adId) => {
-    if (!window.confirm('Are you sure you want to delete this ad?')) return;
-    try {
-      await digitalAdsApi.delete(adId);
-      toast.success('Ad deleted');
-      fetchData();
-    } catch (error) {
-      toast.error('Failed to delete ad');
-    }
-  };
-
-  // Garage Employee handlers
-  const handleGarageSubmit = async (e) => {
-    e.preventDefault();
-    if (!garageForm.grg_owner_name || !garageForm.grg_employee_name || !garageForm.city) {
-      toast.error('Please fill in required fields');
-      return;
-    }
-    setSaving(true);
-    try {
-      await garageEmployeesApi.create(garageForm);
-      toast.success('Garage employee created');
-      setIsGarageModalOpen(false);
-      setGarageForm({ grg_owner_name: '', grg_employee_name: '', grg_name: '', city: '', preferred_language: '', phone_number: '' });
-      fetchData();
-    } catch (error) {
-      toast.error('Failed to save garage employee');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleToggleGarageStatus = async (empId) => {
-    try {
-      await garageEmployeesApi.toggleStatus(empId);
-      toast.success('Status updated');
-      fetchData();
-    } catch (error) {
-      toast.error('Failed to update status');
-    }
-  };
-
-  // Salary handlers
-  const openSalaryModal = (employee = null) => {
-    if (employee) {
-      // Edit mode - find existing salary
-      const existingSalary = salaries.find(s => s.user_id === employee.id);
-      setSalaryForm({
-        user_id: employee.id,
-        ctc: existingSalary?.ctc || '',
-        fixed_pay: existingSalary?.fixed_pay || '',
-        variable_pay: existingSalary?.variable_pay || '',
-        commission_percentage: existingSalary?.commission_percentage || '',
-        per_inspection_payout: existingSalary?.per_inspection_payout || '',
-        currency: existingSalary?.currency || 'INR'
-      });
-    } else {
-      setSalaryForm({
-        user_id: '',
-        ctc: '',
-        fixed_pay: '',
-        variable_pay: '',
-        commission_percentage: '',
-        per_inspection_payout: '',
-        currency: 'INR'
-      });
-    }
-    setIsSalaryModalOpen(true);
-  };
-
-  const handleSalarySubmit = async (e) => {
-    e.preventDefault();
-    if (!salaryForm.user_id) {
-      toast.error('Please select an employee');
-      return;
-    }
-    setSaving(true);
-    try {
-      await salaryApi.create({
-        user_id: salaryForm.user_id,
-        ctc: parseFloat(salaryForm.ctc) || 0,
-        fixed_pay: parseFloat(salaryForm.fixed_pay) || 0,
-        variable_pay: parseFloat(salaryForm.variable_pay) || 0,
-        commission_percentage: parseFloat(salaryForm.commission_percentage) || 0,
-        per_inspection_payout: parseFloat(salaryForm.per_inspection_payout) || 0,
-        currency: salaryForm.currency
-      });
-      toast.success('Salary structure saved');
-      setIsSalaryModalOpen(false);
-      fetchSalaries();
-    } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to save salary');
-    } finally {
-      setSaving(false);
-    }
+  // Open country modal for create/edit
+  const openCountryModal = (country = null) => {
+    setSelectedCountry(country);
+    setIsCountryModalOpen(true);
   };
 
   // Format currency
-  const formatCurrency = (amount, currency = 'INR') => {
+  const formatCurrency = (amount, currency = 'INR', symbol = '₹') => {
     if (!amount) return '-';
-    return new Intl.NumberFormat('en-IN', { 
-      style: 'currency', 
-      currency: currency,
-      maximumFractionDigits: 0 
-    }).format(amount);
+    return `${symbol}${new Intl.NumberFormat('en-IN').format(amount)}`;
   };
 
   // Format date
   const formatDate = (dateStr) => {
     if (!dateStr) return '-';
-    return new Date(dateStr).toLocaleString('en-IN', {
+    return new Date(dateStr).toLocaleDateString('en-IN', {
       year: 'numeric',
       month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      day: 'numeric'
     });
   };
 
-  // Get action badge color
-  const getActionBadgeClass = (action) => {
-    switch (action) {
-      case 'create': return 'bg-green-100 text-green-800';
-      case 'update': return 'bg-blue-100 text-blue-800';
-      case 'delete': return 'bg-red-100 text-red-800';
-      case 'reassign': return 'bg-purple-100 text-purple-800';
-      case 'login': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const isHROrCEO = user?.role_code === 'CEO' || user?.role_code === 'HR_MANAGER';
-
-  const tabs = [
-    { id: 'employee', label: 'Employee', icon: Users },
-    { id: 'digital-ad', label: 'Digital Ad Meta Data', icon: null },
-    { id: 'garage', label: 'Garage Employee', icon: null },
-    ...(isHROrCEO ? [
-      { id: 'hr', label: 'HR / Salary', icon: DollarSign },
-      { id: 'audit', label: 'Audit Trail', icon: History },
-    ] : [])
-  ];
-
   return (
     <div className="p-4 space-y-4" data-testid="admin-page">
-      {/* Tabs */}
+      {/* Main Tabs */}
       <div className="card">
-        <div className="flex border-b overflow-x-auto">
-          {tabs.map((tab) => (
+        <div className="flex border-b">
+          <button
+            onClick={() => setActiveTab('employees')}
+            className={`px-6 py-4 text-sm font-medium border-b-2 -mb-px flex items-center gap-2 ${
+              activeTab === 'employees'
+                ? 'border-[#2E3192] text-[#2E3192]'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+            data-testid="employees-tab"
+          >
+            <Users className="h-4 w-4" /> Employees
+          </button>
+          {isHROrCEO && (
             <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-6 py-4 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap flex items-center gap-2 ${
-                activeTab === tab.id
+              onClick={() => setActiveTab('countries')}
+              className={`px-6 py-4 text-sm font-medium border-b-2 -mb-px flex items-center gap-2 ${
+                activeTab === 'countries'
                   ? 'border-[#2E3192] text-[#2E3192]'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
-              data-testid={`${tab.id}-tab`}
+              data-testid="countries-tab"
             >
-              {tab.icon && <tab.icon className="h-4 w-4" />}
-              {tab.label}
+              <Globe className="h-4 w-4" /> Countries
             </button>
-          ))}
+          )}
         </div>
 
-        {/* Employee Tab */}
-        {activeTab === 'employee' && (
+        {/* Employees Tab */}
+        {activeTab === 'employees' && (
+          <div className="p-4">
+            {/* Filters and Actions */}
+            <div className="flex items-center justify-between mb-4 gap-4">
+              <div className="flex items-center gap-3 flex-1">
+                <div className="relative flex-1 max-w-md">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    placeholder="Search by name, email, phone..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10 h-9"
+                    data-testid="employee-search"
+                  />
+                </div>
+                
+                <Select value={filterCountry || 'all'} onValueChange={(v) => setFilterCountry(v === 'all' ? '' : v)}>
+                  <SelectTrigger className="w-40 h-9" data-testid="filter-country">
+                    <SelectValue placeholder="All Countries" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Countries</SelectItem>
+                    {countries.map(c => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={filterRole || 'all'} onValueChange={(v) => setFilterRole(v === 'all' ? '' : v)}>
+                  <SelectTrigger className="w-40 h-9" data-testid="filter-role">
+                    <SelectValue placeholder="All Roles" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Roles</SelectItem>
+                    {roles.map(r => (
+                      <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {isHROrCEO && (
+                <button 
+                  className="btn-purple flex items-center gap-1" 
+                  onClick={() => openEmployeeModal()}
+                  data-testid="add-employee-btn"
+                >
+                  <Plus className="h-4 w-4" /> Add Employee
+                </button>
+              )}
+            </div>
+
+            {/* Employee Table */}
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Employee</th>
+                  <th>Role</th>
+                  <th>Country</th>
+                  <th>Status</th>
+                  <th>Salary Info</th>
+                  <th>Docs</th>
+                  <th>Audit</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr><td colSpan={8} className="text-center py-12"><Loader2 className="h-6 w-6 animate-spin mx-auto text-[#2E3192]" /></td></tr>
+                ) : employees.length === 0 ? (
+                  <tr><td colSpan={8} className="text-center py-12 text-gray-500">No employees found</td></tr>
+                ) : (
+                  employees.map((emp) => (
+                    <React.Fragment key={emp.id}>
+                      <tr data-testid={`employee-row-${emp.id}`}>
+                        <td>
+                          <div>
+                            <span className="font-medium block">{emp.name}</span>
+                            <span className="text-xs text-gray-500">{emp.email}</span>
+                            {emp.employee_code && (
+                              <span className="text-xs text-gray-400 ml-2">({emp.employee_code})</span>
+                            )}
+                          </div>
+                        </td>
+                        <td>
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${
+                            emp.role_code === 'CEO' ? 'bg-purple-100 text-purple-800' :
+                            emp.role_code === 'HR_MANAGER' ? 'bg-blue-100 text-blue-800' :
+                            emp.role_code === 'MECHANIC' ? 'bg-orange-100 text-orange-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {emp.role_name || emp.role_code || '-'}
+                          </span>
+                        </td>
+                        <td>
+                          <span className="text-sm">{emp.country_name || '-'}</span>
+                        </td>
+                        <td>
+                          <div className="flex flex-col gap-1">
+                            <span className={`px-2 py-0.5 rounded text-xs ${emp.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                              {emp.is_active ? 'Active' : 'Inactive'}
+                            </span>
+                            {emp.has_crm_access === false && (
+                              <span className="px-2 py-0.5 rounded text-xs bg-yellow-100 text-yellow-800">No CRM</span>
+                            )}
+                          </div>
+                        </td>
+                        <td>
+                          {emp.salary_info ? (
+                            <div className="text-xs">
+                              {emp.salary_info.employment_type === 'freelancer' || emp.role_code === 'MECHANIC' ? (
+                                <span className="text-green-600 font-medium">
+                                  {formatCurrency(emp.salary_info.price_per_inspection, emp.currency, emp.currency_symbol || '₹')}/inspection
+                                </span>
+                              ) : (
+                                <span className="text-green-600 font-medium">
+                                  {formatCurrency(emp.salary_info.net_salary || emp.salary_info.basic_salary, emp.currency, emp.currency_symbol || '₹')}
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-gray-400">Not set</span>
+                          )}
+                        </td>
+                        <td>
+                          <span className={`px-2 py-1 rounded text-xs ${emp.document_count > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-500'}`}>
+                            {emp.document_count || 0} docs
+                          </span>
+                        </td>
+                        <td>
+                          <button
+                            onClick={() => toggleAudit(emp.id)}
+                            className="flex items-center gap-1 text-xs text-gray-600 hover:text-[#2E3192]"
+                            data-testid={`toggle-audit-${emp.id}`}
+                          >
+                            <History className="h-3 w-3" />
+                            {emp.audit_count || 0}
+                            {expandedAudit[emp.id] ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                          </button>
+                        </td>
+                        <td>
+                          <div className="flex items-center gap-2">
+                            <button
+                              className="text-[#6366F1] hover:text-[#5558E3]"
+                              onClick={() => openEmployeeModal(emp)}
+                              title="View/Edit"
+                              data-testid={`edit-employee-${emp.id}`}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </button>
+                            {isHROrCEO && (
+                              <button
+                                className="text-red-500 hover:text-red-600"
+                                onClick={async () => {
+                                  if (window.confirm(`Deactivate ${emp.name}?`)) {
+                                    try {
+                                      await hrApi.deleteEmployee(emp.id);
+                                      toast.success('Employee deactivated');
+                                      fetchEmployees();
+                                    } catch (e) {
+                                      toast.error('Failed to deactivate');
+                                    }
+                                  }
+                                }}
+                                title="Deactivate"
+                                data-testid={`delete-employee-${emp.id}`}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                      {/* Inline Audit Trail */}
+                      {expandedAudit[emp.id] && (
+                        <tr className="bg-gray-50">
+                          <td colSpan={8} className="p-3">
+                            <EmployeeAuditTrail employeeId={emp.id} />
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Countries Tab */}
+        {activeTab === 'countries' && isHROrCEO && (
           <div className="p-4">
             <div className="flex justify-end mb-4">
-              <button className="btn-purple flex items-center gap-1" onClick={() => setIsEmployeeModalOpen(true)} data-testid="add-employee-button">
-                <Plus className="h-4 w-4" /> Add Employee
+              <button 
+                className="btn-purple flex items-center gap-1" 
+                onClick={() => openCountryModal()}
+                data-testid="add-country-btn"
+              >
+                <Plus className="h-4 w-4" /> Add Country
               </button>
             </div>
 
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Name</th>
-                  <th>Role</th>
                   <th>Country</th>
+                  <th>Code</th>
+                  <th>Currency</th>
+                  <th>Phone Code</th>
+                  <th>Employees</th>
                   <th>Status</th>
-                  <th>Action</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {loading ? (
-                  <tr><td colSpan={5} className="text-center py-12"><Loader2 className="h-6 w-6 animate-spin mx-auto text-[#2E3192]" /></td></tr>
-                ) : employees.length === 0 ? (
-                  <tr><td colSpan={5} className="text-center py-12 text-gray-500">No employees found</td></tr>
+                {countries.length === 0 ? (
+                  <tr><td colSpan={7} className="text-center py-12 text-gray-500">No countries found</td></tr>
                 ) : (
-                  employees.map((employee) => (
-                    <tr key={employee.id} data-testid={`employee-row-${employee.id}`}>
+                  countries.map((country) => (
+                    <tr key={country.id} data-testid={`country-row-${country.id}`}>
+                      <td className="font-medium">{country.name}</td>
+                      <td><span className="px-2 py-1 bg-gray-100 rounded text-sm font-mono">{country.code}</span></td>
                       <td>
-                        <div>
-                          <span className="font-medium block">{employee.name}</span>
-                          <span className="text-xs text-gray-500">{employee.email}</span>
-                        </div>
+                        <span className="flex items-center gap-1">
+                          <span className="text-lg">{country.currency_symbol || '₹'}</span>
+                          <span className="text-sm text-gray-600">{country.currency}</span>
+                        </span>
+                      </td>
+                      <td className="font-mono text-sm">{country.phone_code || '-'}</td>
+                      <td>
+                        <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
+                          {country.employee_count || 0} employees
+                        </span>
                       </td>
                       <td>
-                        <span className="text-sm">{employee.role_name || employee.role}</span>
-                      </td>
-                      <td>
-                        <span className="text-sm">{employee.country_name || '-'}</span>
-                      </td>
-                      <td>
-                        <div className="flex items-center gap-3">
-                          <div 
-                            className={`toggle-switch ${employee.is_active ? 'active' : ''}`}
-                            onClick={() => handleToggleEmployeeStatus(employee.id)}
-                            data-testid={`toggle-status-${employee.id}`}
-                          />
-                          <span className={employee.is_active ? 'text-[#10B981]' : 'text-gray-400'}>
-                            {employee.is_active ? 'Active' : 'Inactive'}
-                          </span>
-                        </div>
+                        <span className={`px-2 py-1 rounded text-xs ${country.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                          {country.is_active ? 'Active' : 'Inactive'}
+                        </span>
                       </td>
                       <td>
                         <div className="flex items-center gap-2">
-                          <button className="btn-purple text-xs px-3 py-1" data-testid={`edit-employee-${employee.id}`}>
-                            Edit
+                          <button
+                            className="text-[#6366F1] hover:text-[#5558E3]"
+                            onClick={() => openCountryModal(country)}
+                            data-testid={`edit-country-${country.id}`}
+                          >
+                            <Pencil className="h-4 w-4" />
                           </button>
-                          {isHROrCEO && (
-                            <button 
-                              className="text-xs px-3 py-1 border border-[#F5A623] text-[#F5A623] rounded hover:bg-[#F5A623] hover:text-white"
-                              onClick={() => openSalaryModal(employee)}
-                              data-testid={`set-salary-${employee.id}`}
+                          {(!country.employee_count || country.employee_count === 0) && (
+                            <button
+                              className="text-red-500 hover:text-red-600"
+                              onClick={async () => {
+                                if (window.confirm(`Delete ${country.name}?`)) {
+                                  try {
+                                    await hrApi.deleteCountry(country.id);
+                                    toast.success('Country deleted');
+                                    fetchCountries();
+                                  } catch (e) {
+                                    toast.error(e.response?.data?.detail || 'Failed to delete');
+                                  }
+                                }
+                              }}
+                              data-testid={`delete-country-${country.id}`}
                             >
-                              <DollarSign className="h-3 w-3 inline mr-1" />
-                              Salary
+                              <Trash2 className="h-4 w-4" />
                             </button>
                           )}
                         </div>
@@ -466,661 +445,883 @@ export default function AdminPage() {
             </table>
           </div>
         )}
-
-        {/* Digital Ad Meta Data Tab */}
-        {activeTab === 'digital-ad' && (
-          <div className="p-4">
-            <div className="flex justify-end mb-4">
-              <button className="btn-purple flex items-center gap-1" onClick={() => setIsAdModalOpen(true)} data-testid="create-ad-button">
-                <Plus className="h-4 w-4" /> Create Ad
-              </button>
-            </div>
-
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Ad Id</th>
-                  <th>Ad Name</th>
-                  <th>City</th>
-                  <th>Language</th>
-                  <th>Campaign Type</th>
-                  <th>Source</th>
-                  <th>Status</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr><td colSpan={8} className="text-center py-12"><Loader2 className="h-6 w-6 animate-spin mx-auto text-[#2E3192]" /></td></tr>
-                ) : digitalAds.length === 0 ? (
-                  <tr><td colSpan={8} className="text-center py-12 text-gray-500">No ads found</td></tr>
-                ) : (
-                  digitalAds.map((ad) => (
-                    <tr key={ad.id} data-testid={`ad-row-${ad.id}`}>
-                      <td className="font-mono text-sm">{ad.ad_id}</td>
-                      <td className="font-medium">{ad.ad_name}</td>
-                      <td>{ad.city}</td>
-                      <td>{ad.language}</td>
-                      <td>{ad.campaign_type}</td>
-                      <td>{ad.source}</td>
-                      <td>
-                        <div className="flex items-center gap-3">
-                          <div 
-                            className={`toggle-switch ${ad.is_active ? 'active' : ''}`}
-                            onClick={() => handleToggleAdStatus(ad.id)}
-                            data-testid={`toggle-ad-${ad.id}`}
-                          />
-                          <span className={ad.is_active ? 'text-[#10B981]' : 'text-gray-400'}>
-                            {ad.is_active ? 'Active' : 'Inactive'}
-                          </span>
-                        </div>
-                      </td>
-                      <td>
-                        <div className="flex items-center gap-2">
-                          <button className="text-gray-400 hover:text-[#6366F1]" title="Copy">
-                            <Copy className="h-4 w-4" />
-                          </button>
-                          <button className="text-gray-400 hover:text-[#6366F1]" title="Edit">
-                            <Pencil className="h-4 w-4" />
-                          </button>
-                          <button 
-                            className="text-gray-400 hover:text-red-500" 
-                            title="Delete"
-                            onClick={() => handleDeleteAd(ad.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* Garage Employee Tab */}
-        {activeTab === 'garage' && (
-          <div className="p-4">
-            <div className="flex justify-end mb-4">
-              <button className="btn-purple flex items-center gap-1" onClick={() => setIsGarageModalOpen(true)} data-testid="add-garage-employee-button">
-                <Plus className="h-4 w-4" /> Add Employee
-              </button>
-            </div>
-
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Grg Owner Name</th>
-                  <th>Grg Employee Name</th>
-                  <th>Grg Name</th>
-                  <th>City</th>
-                  <th>Preferred Language</th>
-                  <th>Phone Number</th>
-                  <th>Status</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr><td colSpan={8} className="text-center py-12"><Loader2 className="h-6 w-6 animate-spin mx-auto text-[#2E3192]" /></td></tr>
-                ) : garageEmployees.length === 0 ? (
-                  <tr><td colSpan={8} className="text-center py-12 text-gray-500">No garage employees found</td></tr>
-                ) : (
-                  garageEmployees.map((emp) => (
-                    <tr key={emp.id} data-testid={`garage-row-${emp.id}`}>
-                      <td className="font-medium">{emp.grg_owner_name}</td>
-                      <td>{emp.grg_employee_name}</td>
-                      <td>{emp.grg_name}</td>
-                      <td>{emp.city}</td>
-                      <td>{emp.preferred_language}</td>
-                      <td className="font-mono">{emp.phone_number}</td>
-                      <td>
-                        <div className="flex items-center gap-3">
-                          <div 
-                            className={`toggle-switch ${emp.is_active ? 'active' : ''}`}
-                            onClick={() => handleToggleGarageStatus(emp.id)}
-                            data-testid={`toggle-garage-${emp.id}`}
-                          />
-                          <span className={emp.is_active ? 'text-[#10B981]' : 'text-gray-400'}>
-                            {emp.is_active ? 'Active' : 'Inactive'}
-                          </span>
-                        </div>
-                      </td>
-                      <td>
-                        <button className="btn-purple text-xs px-3 py-1" data-testid={`edit-garage-${emp.id}`}>
-                          Edit
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* HR / Salary Tab */}
-        {activeTab === 'hr' && isHROrCEO && (
-          <div className="p-4">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Employee Salary Management</h3>
-              <button 
-                className="btn-purple flex items-center gap-1" 
-                onClick={() => openSalaryModal()}
-                data-testid="add-salary-button"
-              >
-                <Plus className="h-4 w-4" /> Add Salary Structure
-              </button>
-            </div>
-
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Employee</th>
-                  <th>Role</th>
-                  <th>CTC</th>
-                  <th>Fixed Pay</th>
-                  <th>Variable Pay</th>
-                  <th>Commission %</th>
-                  <th>Per Inspection</th>
-                  <th>Effective From</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {salaryLoading ? (
-                  <tr><td colSpan={9} className="text-center py-12"><Loader2 className="h-6 w-6 animate-spin mx-auto text-[#2E3192]" /></td></tr>
-                ) : salaries.length === 0 ? (
-                  <tr><td colSpan={9} className="text-center py-12 text-gray-500">No salary structures found. Click "Add Salary Structure" to create one.</td></tr>
-                ) : (
-                  salaries.map((salary) => (
-                    <tr key={salary.id} data-testid={`salary-row-${salary.id}`}>
-                      <td>
-                        <div>
-                          <span className="font-medium block">{salary.user_name}</span>
-                          <span className="text-xs text-gray-500">{salary.user_email}</span>
-                        </div>
-                      </td>
-                      <td><span className="text-sm">{salary.role_name || '-'}</span></td>
-                      <td className="font-medium text-green-600">{formatCurrency(salary.ctc, salary.currency)}</td>
-                      <td>{formatCurrency(salary.fixed_pay, salary.currency)}</td>
-                      <td>{formatCurrency(salary.variable_pay, salary.currency)}</td>
-                      <td>{salary.commission_percentage ? `${salary.commission_percentage}%` : '-'}</td>
-                      <td>{formatCurrency(salary.per_inspection_payout, salary.currency)}</td>
-                      <td className="text-sm text-gray-500">{formatDate(salary.effective_from)}</td>
-                      <td>
-                        <button 
-                          className="text-[#6366F1] hover:text-[#5558E3] text-sm"
-                          onClick={() => {
-                            const emp = employees.find(e => e.id === salary.user_id);
-                            if (emp) openSalaryModal(emp);
-                          }}
-                          data-testid={`edit-salary-${salary.id}`}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* Audit Trail Tab */}
-        {activeTab === 'audit' && isHROrCEO && (
-          <div className="p-4">
-            {/* Audit Stats Summary */}
-            {auditStats && (
-              <div className="grid grid-cols-4 gap-4 mb-6">
-                <div className="bg-blue-50 rounded-lg p-4">
-                  <p className="text-sm text-blue-600 font-medium">Total Actions</p>
-                  <p className="text-2xl font-bold text-blue-800">{auditStats.total}</p>
-                </div>
-                <div className="bg-green-50 rounded-lg p-4">
-                  <p className="text-sm text-green-600 font-medium">Last 24 Hours</p>
-                  <p className="text-2xl font-bold text-green-800">{auditStats.recent_24h}</p>
-                </div>
-                <div className="bg-purple-50 rounded-lg p-4">
-                  <p className="text-sm text-purple-600 font-medium">Lead Actions</p>
-                  <p className="text-2xl font-bold text-purple-800">{auditStats.by_entity?.lead || 0}</p>
-                </div>
-                <div className="bg-orange-50 rounded-lg p-4">
-                  <p className="text-sm text-orange-600 font-medium">Salary Updates</p>
-                  <p className="text-2xl font-bold text-orange-800">{auditStats.by_entity?.salary || 0}</p>
-                </div>
-              </div>
-            )}
-
-            {/* Filters */}
-            <div className="flex items-center gap-4 mb-4 bg-gray-50 p-3 rounded-lg">
-              <Filter className="h-4 w-4 text-gray-500" />
-              <Select 
-                value={auditFilters.entity_type} 
-                onValueChange={(v) => setAuditFilters({...auditFilters, entity_type: v === 'all' ? '' : v})}
-              >
-                <SelectTrigger className="w-40 h-9 bg-white" data-testid="audit-entity-filter">
-                  <SelectValue placeholder="Entity Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Entities</SelectItem>
-                  <SelectItem value="lead">Lead</SelectItem>
-                  <SelectItem value="customer">Customer</SelectItem>
-                  <SelectItem value="inspection">Inspection</SelectItem>
-                  <SelectItem value="user">User</SelectItem>
-                  <SelectItem value="salary">Salary</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select 
-                value={auditFilters.action} 
-                onValueChange={(v) => setAuditFilters({...auditFilters, action: v === 'all' ? '' : v})}
-              >
-                <SelectTrigger className="w-32 h-9 bg-white" data-testid="audit-action-filter">
-                  <SelectValue placeholder="Action" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Actions</SelectItem>
-                  <SelectItem value="create">Create</SelectItem>
-                  <SelectItem value="update">Update</SelectItem>
-                  <SelectItem value="delete">Delete</SelectItem>
-                  <SelectItem value="reassign">Reassign</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <button 
-                className="btn-purple flex items-center gap-1 text-sm"
-                onClick={fetchAuditLogs}
-                data-testid="refresh-audit-logs"
-              >
-                <RefreshCw className="h-4 w-4" /> Refresh
-              </button>
-            </div>
-
-            {/* Audit Logs Table */}
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Timestamp</th>
-                  <th>User</th>
-                  <th>Action</th>
-                  <th>Entity</th>
-                  <th>Details</th>
-                </tr>
-              </thead>
-              <tbody>
-                {auditLoading ? (
-                  <tr><td colSpan={5} className="text-center py-12"><Loader2 className="h-6 w-6 animate-spin mx-auto text-[#2E3192]" /></td></tr>
-                ) : auditLogs.length === 0 ? (
-                  <tr><td colSpan={5} className="text-center py-12 text-gray-500">No audit logs found</td></tr>
-                ) : (
-                  auditLogs.map((log) => (
-                    <tr key={log.id} data-testid={`audit-row-${log.id}`}>
-                      <td className="text-sm text-gray-600">{formatDate(log.timestamp)}</td>
-                      <td>
-                        <div>
-                          <span className="font-medium block">{log.user_name || log.user_id}</span>
-                          <span className="text-xs text-gray-500">{log.user_role}</span>
-                        </div>
-                      </td>
-                      <td>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getActionBadgeClass(log.action)}`}>
-                          {log.action}
-                        </span>
-                      </td>
-                      <td>
-                        <div>
-                          <span className="font-medium block capitalize">{log.entity_type}</span>
-                          <span className="text-xs text-gray-500 font-mono">{log.entity_id?.substring(0, 8)}...</span>
-                        </div>
-                      </td>
-                      <td className="text-sm max-w-xs">
-                        {log.new_values && (
-                          <details className="cursor-pointer">
-                            <summary className="text-blue-600 hover:text-blue-800">View Changes</summary>
-                            <pre className="mt-2 p-2 bg-gray-50 rounded text-xs overflow-auto max-h-32">
-                              {JSON.stringify(log.new_values, null, 2)}
-                            </pre>
-                          </details>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
       </div>
 
-      {/* Add Employee Modal */}
-      <Dialog open={isEmployeeModalOpen} onOpenChange={setIsEmployeeModalOpen}>
-        <DialogContent className="sm:max-w-[440px]" data-testid="employee-modal">
-          <DialogHeader>
-            <DialogTitle>Add Employee</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleEmployeeSubmit}>
-            <div className="grid gap-4 py-4">
-              <div className="space-y-1">
-                <Label className="text-xs">Full Name</Label>
-                <Input value={employeeForm.name} onChange={(e) => setEmployeeForm({ ...employeeForm, name: e.target.value })} className="h-9" placeholder="John Doe" data-testid="employee-name-input" />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Email</Label>
-                <Input type="email" value={employeeForm.email} onChange={(e) => setEmployeeForm({ ...employeeForm, email: e.target.value })} className="h-9" placeholder="john@company.com" data-testid="employee-email-input" />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Password</Label>
-                <Input type="password" value={employeeForm.password} onChange={(e) => setEmployeeForm({ ...employeeForm, password: e.target.value })} className="h-9" placeholder="••••••••" data-testid="employee-password-input" />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Role</Label>
-                <Select value={employeeForm.role} onValueChange={(v) => setEmployeeForm({ ...employeeForm, role: v })}>
-                  <SelectTrigger className="h-9" data-testid="employee-role-select"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="employee">Employee</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setIsEmployeeModalOpen(false)}>Cancel</Button>
-              <Button type="submit" className="btn-purple" disabled={saving} data-testid="save-employee-button">
-                {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Create
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+      {/* Employee Modal */}
+      <EmployeeModal
+        isOpen={isEmployeeModalOpen}
+        onClose={() => setIsEmployeeModalOpen(false)}
+        employee={selectedEmployee}
+        countries={countries}
+        roles={roles}
+        departments={departments}
+        teams={teams}
+        onSave={() => {
+          fetchEmployees();
+          setIsEmployeeModalOpen(false);
+        }}
+        currentTab={employeeModalTab}
+        setCurrentTab={setEmployeeModalTab}
+      />
 
-      {/* Assign City Modal */}
-      <Dialog open={isCityModalOpen} onOpenChange={setIsCityModalOpen}>
-        <DialogContent className="sm:max-w-[380px]" data-testid="assign-city-modal">
+      {/* Country Modal */}
+      <CountryModal
+        isOpen={isCountryModalOpen}
+        onClose={() => setIsCountryModalOpen(false)}
+        country={selectedCountry}
+        onSave={() => {
+          fetchCountries();
+          setIsCountryModalOpen(false);
+        }}
+      />
+    </div>
+  );
+}
+
+// ==================== EMPLOYEE AUDIT TRAIL COMPONENT ====================
+
+function EmployeeAuditTrail({ employeeId }) {
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAudit = async () => {
+      try {
+        const response = await hrApi.getEmployeeAudit(employeeId);
+        setLogs(response.data);
+      } catch (error) {
+        console.error('Failed to load audit');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAudit();
+  }, [employeeId]);
+
+  if (loading) return <div className="text-center py-2"><Loader2 className="h-4 w-4 animate-spin inline" /></div>;
+  if (logs.length === 0) return <div className="text-xs text-gray-500 text-center py-2">No audit history</div>;
+
+  const formatDate = (dateStr) => {
+    return new Date(dateStr).toLocaleString('en-IN', {
+      month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
+  };
+
+  const getActionBadge = (action) => {
+    switch (action) {
+      case 'create': return 'bg-green-100 text-green-800';
+      case 'update': return 'bg-blue-100 text-blue-800';
+      case 'delete': return 'bg-red-100 text-red-800';
+      case 'salary_update': return 'bg-purple-100 text-purple-800';
+      case 'document_added': return 'bg-yellow-100 text-yellow-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  return (
+    <div className="space-y-2 max-h-40 overflow-y-auto">
+      {logs.map((log) => (
+        <div key={log.id} className="flex items-center gap-3 text-xs bg-white p-2 rounded border">
+          <span className="text-gray-500 w-32">{formatDate(log.timestamp)}</span>
+          <span className={`px-2 py-0.5 rounded ${getActionBadge(log.action)}`}>{log.action}</span>
+          <span className="text-gray-600">by {log.user_name || 'System'}</span>
+          {log.new_values && (
+            <span className="text-gray-400 truncate max-w-xs">
+              {JSON.stringify(log.new_values).substring(0, 50)}...
+            </span>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ==================== EMPLOYEE MODAL COMPONENT ====================
+
+function EmployeeModal({ isOpen, onClose, employee, countries, roles, departments, teams, onSave, currentTab, setCurrentTab }) {
+  const [form, setForm] = useState({});
+  const [salaryForm, setSalaryForm] = useState({});
+  const [documents, setDocuments] = useState([]);
+  const [attendance, setAttendance] = useState({ records: [], summary: {} });
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const isEdit = !!employee;
+  const isMechanic = roles.find(r => r.id === form.role_id)?.code === 'MECHANIC';
+
+  useEffect(() => {
+    if (isOpen) {
+      if (employee) {
+        setForm({
+          name: employee.name || '',
+          email: employee.email || '',
+          phone: employee.phone || '',
+          country_id: employee.country_id || '',
+          department_id: employee.department_id || '',
+          team_id: employee.team_id || '',
+          role_id: employee.role_id || '',
+          employment_type: employee.employment_type || 'full_time',
+          employee_code: employee.employee_code || '',
+          joining_date: employee.joining_date || '',
+          date_of_birth: employee.date_of_birth || '',
+          gender: employee.gender || '',
+          address: employee.address || '',
+          city: employee.city || '',
+          bank_name: employee.bank_name || '',
+          bank_account_number: employee.bank_account_number || '',
+          ifsc_code: employee.ifsc_code || '',
+          pan_number: employee.pan_number || '',
+          has_crm_access: employee.has_crm_access !== false,
+          is_active: employee.is_active !== false,
+        });
+        loadEmployeeData(employee.id);
+      } else {
+        setForm({
+          name: '', email: '', phone: '', country_id: '', department_id: '', team_id: '',
+          role_id: '', employment_type: 'full_time', employee_code: '', joining_date: '',
+          date_of_birth: '', gender: '', address: '', city: '', bank_name: '',
+          bank_account_number: '', ifsc_code: '', pan_number: '', has_crm_access: true,
+          is_active: true, password: ''
+        });
+        setSalaryForm({});
+        setDocuments([]);
+        setAttendance({ records: [], summary: {} });
+        setAuditLogs([]);
+      }
+    }
+  }, [isOpen, employee]);
+
+  const loadEmployeeData = async (empId) => {
+    setLoading(true);
+    try {
+      const [salaryRes, docsRes, attRes, auditRes] = await Promise.all([
+        hrApi.getEmployeeSalary(empId).catch(() => ({ data: {} })),
+        hrApi.getEmployeeDocuments(empId).catch(() => ({ data: [] })),
+        hrApi.getEmployeeAttendance(empId).catch(() => ({ data: { records: [], summary: {} } })),
+        hrApi.getEmployeeAudit(empId).catch(() => ({ data: [] })),
+      ]);
+      setSalaryForm(salaryRes.data || {});
+      setDocuments(docsRes.data || []);
+      setAttendance(attRes.data || { records: [], summary: {} });
+      setAuditLogs(auditRes.data || []);
+    } catch (error) {
+      console.error('Failed to load employee data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveDetails = async () => {
+    if (!form.name || !form.email || !form.country_id || !form.role_id) {
+      toast.error('Please fill required fields');
+      return;
+    }
+    if (!isEdit && !form.password) {
+      toast.error('Password is required for new employees');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      if (isEdit) {
+        await hrApi.updateEmployee(employee.id, form);
+        toast.success('Employee updated');
+      } else {
+        await hrApi.createEmployee(form);
+        toast.success('Employee created');
+      }
+      onSave();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to save');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveSalary = async () => {
+    if (!employee) return;
+    
+    setSaving(true);
+    try {
+      await hrApi.saveEmployeeSalary(employee.id, {
+        ...salaryForm,
+        employment_type: form.employment_type || 'full_time'
+      });
+      toast.success('Salary saved');
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to save salary');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const formatCurrency = (val) => val ? parseFloat(val).toLocaleString() : '';
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-hidden p-0" data-testid="employee-modal">
+        <DialogHeader className="px-6 py-4 border-b">
+          <DialogTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-[#2E3192]" />
+            {isEdit ? `Edit Employee: ${employee?.name}` : 'Add New Employee'}
+          </DialogTitle>
+        </DialogHeader>
+
+        <Tabs value={currentTab} onValueChange={setCurrentTab} className="flex-1">
+          <TabsList className="px-6 border-b bg-transparent justify-start">
+            <TabsTrigger value="details" className="data-[state=active]:border-b-2 data-[state=active]:border-[#2E3192]">
+              <Users className="h-4 w-4 mr-1" /> Details
+            </TabsTrigger>
+            {isEdit && (
+              <>
+                <TabsTrigger value="salary" className="data-[state=active]:border-b-2 data-[state=active]:border-[#2E3192]">
+                  <DollarSign className="h-4 w-4 mr-1" /> Salary
+                </TabsTrigger>
+                <TabsTrigger value="documents" className="data-[state=active]:border-b-2 data-[state=active]:border-[#2E3192]">
+                  <FileText className="h-4 w-4 mr-1" /> Documents
+                </TabsTrigger>
+                <TabsTrigger value="attendance" className="data-[state=active]:border-b-2 data-[state=active]:border-[#2E3192]">
+                  <Calendar className="h-4 w-4 mr-1" /> Attendance
+                </TabsTrigger>
+                <TabsTrigger value="audit" className="data-[state=active]:border-b-2 data-[state=active]:border-[#2E3192]">
+                  <History className="h-4 w-4 mr-1" /> Audit
+                </TabsTrigger>
+              </>
+            )}
+          </TabsList>
+
+          <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+            {/* Details Tab */}
+            <TabsContent value="details" className="mt-0 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Label className="text-xs">Full Name <span className="text-red-500">*</span></Label>
+                  <Input value={form.name || ''} onChange={(e) => setForm({...form, name: e.target.value})} className="h-9" data-testid="emp-name" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Email <span className="text-red-500">*</span></Label>
+                  <Input type="email" value={form.email || ''} onChange={(e) => setForm({...form, email: e.target.value})} className="h-9" data-testid="emp-email" />
+                </div>
+                {!isEdit && (
+                  <div className="space-y-1">
+                    <Label className="text-xs">Password <span className="text-red-500">*</span></Label>
+                    <Input type="password" value={form.password || ''} onChange={(e) => setForm({...form, password: e.target.value})} className="h-9" data-testid="emp-password" />
+                  </div>
+                )}
+                <div className="space-y-1">
+                  <Label className="text-xs">Phone</Label>
+                  <Input value={form.phone || ''} onChange={(e) => setForm({...form, phone: e.target.value})} className="h-9" data-testid="emp-phone" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Country <span className="text-red-500">*</span></Label>
+                  <Select value={form.country_id || ''} onValueChange={(v) => setForm({...form, country_id: v})}>
+                    <SelectTrigger className="h-9" data-testid="emp-country"><SelectValue placeholder="Select" /></SelectTrigger>
+                    <SelectContent>
+                      {countries.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Role <span className="text-red-500">*</span></Label>
+                  <Select value={form.role_id || ''} onValueChange={(v) => setForm({...form, role_id: v})}>
+                    <SelectTrigger className="h-9" data-testid="emp-role"><SelectValue placeholder="Select" /></SelectTrigger>
+                    <SelectContent>
+                      {roles.map(r => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Department</Label>
+                  <Select value={form.department_id || ''} onValueChange={(v) => setForm({...form, department_id: v})}>
+                    <SelectTrigger className="h-9" data-testid="emp-dept"><SelectValue placeholder="Select" /></SelectTrigger>
+                    <SelectContent>
+                      {departments.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Employment Type</Label>
+                  <Select value={form.employment_type || 'full_time'} onValueChange={(v) => setForm({...form, employment_type: v})}>
+                    <SelectTrigger className="h-9" data-testid="emp-type"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="full_time">Full Time</SelectItem>
+                      <SelectItem value="part_time">Part Time</SelectItem>
+                      <SelectItem value="freelancer">Freelancer</SelectItem>
+                      <SelectItem value="contractor">Contractor</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Joining Date</Label>
+                  <Input type="date" value={form.joining_date || ''} onChange={(e) => setForm({...form, joining_date: e.target.value})} className="h-9" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Date of Birth</Label>
+                  <Input type="date" value={form.date_of_birth || ''} onChange={(e) => setForm({...form, date_of_birth: e.target.value})} className="h-9" />
+                </div>
+              </div>
+
+              <div className="border-t pt-4 mt-4">
+                <h4 className="text-sm font-medium mb-3">Bank Details</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Bank Name</Label>
+                    <Input value={form.bank_name || ''} onChange={(e) => setForm({...form, bank_name: e.target.value})} className="h-9" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Account Number</Label>
+                    <Input value={form.bank_account_number || ''} onChange={(e) => setForm({...form, bank_account_number: e.target.value})} className="h-9" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">IFSC Code</Label>
+                    <Input value={form.ifsc_code || ''} onChange={(e) => setForm({...form, ifsc_code: e.target.value})} className="h-9" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">PAN Number</Label>
+                    <Input value={form.pan_number || ''} onChange={(e) => setForm({...form, pan_number: e.target.value})} className="h-9" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t pt-4 flex items-center gap-6">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={form.has_crm_access || false} onChange={(e) => setForm({...form, has_crm_access: e.target.checked})} className="rounded" />
+                  <span className="text-sm">Has CRM Access</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={form.is_active || false} onChange={(e) => setForm({...form, is_active: e.target.checked})} className="rounded" />
+                  <span className="text-sm">Active</span>
+                </label>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button variant="outline" onClick={onClose}>Cancel</Button>
+                <Button className="btn-purple" onClick={handleSaveDetails} disabled={saving} data-testid="save-employee-btn">
+                  {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                  {isEdit ? 'Update Employee' : 'Create Employee'}
+                </Button>
+              </div>
+            </TabsContent>
+
+            {/* Salary Tab */}
+            <TabsContent value="salary" className="mt-0 space-y-4">
+              {loading ? (
+                <div className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></div>
+              ) : (
+                <>
+                  {(isMechanic || form.employment_type === 'freelancer') ? (
+                    // Freelancer/Mechanic salary
+                    <div className="space-y-4">
+                      <div className="bg-orange-50 p-4 rounded-lg">
+                        <h4 className="text-sm font-medium text-orange-800 mb-3">Freelancer / Mechanic Compensation</h4>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-1">
+                            <Label className="text-xs">Price Per Inspection</Label>
+                            <Input 
+                              type="number" 
+                              value={salaryForm.price_per_inspection || ''} 
+                              onChange={(e) => setSalaryForm({...salaryForm, price_per_inspection: parseFloat(e.target.value) || 0})} 
+                              className="h-9" 
+                              data-testid="salary-per-inspection"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Commission %</Label>
+                            <Input 
+                              type="number" 
+                              step="0.1"
+                              value={salaryForm.commission_percentage || ''} 
+                              onChange={(e) => setSalaryForm({...salaryForm, commission_percentage: parseFloat(e.target.value) || 0})} 
+                              className="h-9" 
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    // Full-time employee salary
+                    <div className="space-y-4">
+                      <div className="bg-green-50 p-4 rounded-lg">
+                        <h4 className="text-sm font-medium text-green-800 mb-3">Earnings</h4>
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="space-y-1">
+                            <Label className="text-xs">Basic Salary</Label>
+                            <Input type="number" value={salaryForm.basic_salary || ''} onChange={(e) => setSalaryForm({...salaryForm, basic_salary: parseFloat(e.target.value) || 0})} className="h-9" data-testid="salary-basic" />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">HRA</Label>
+                            <Input type="number" value={salaryForm.hra || ''} onChange={(e) => setSalaryForm({...salaryForm, hra: parseFloat(e.target.value) || 0})} className="h-9" />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Conveyance</Label>
+                            <Input type="number" value={salaryForm.conveyance_allowance || ''} onChange={(e) => setSalaryForm({...salaryForm, conveyance_allowance: parseFloat(e.target.value) || 0})} className="h-9" />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Medical Allowance</Label>
+                            <Input type="number" value={salaryForm.medical_allowance || ''} onChange={(e) => setSalaryForm({...salaryForm, medical_allowance: parseFloat(e.target.value) || 0})} className="h-9" />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Special Allowance</Label>
+                            <Input type="number" value={salaryForm.special_allowance || ''} onChange={(e) => setSalaryForm({...salaryForm, special_allowance: parseFloat(e.target.value) || 0})} className="h-9" />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Variable Pay</Label>
+                            <Input type="number" value={salaryForm.variable_pay || ''} onChange={(e) => setSalaryForm({...salaryForm, variable_pay: parseFloat(e.target.value) || 0})} className="h-9" />
+                          </div>
+                        </div>
+                        <div className="mt-3 pt-3 border-t border-green-200">
+                          <div className="flex justify-between">
+                            <span className="font-medium text-green-800">Gross Salary:</span>
+                            <span className="font-bold text-green-800">
+                              ₹{formatCurrency((salaryForm.basic_salary || 0) + (salaryForm.hra || 0) + (salaryForm.conveyance_allowance || 0) + (salaryForm.medical_allowance || 0) + (salaryForm.special_allowance || 0) + (salaryForm.variable_pay || 0))}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="bg-red-50 p-4 rounded-lg">
+                        <h4 className="text-sm font-medium text-red-800 mb-3">Deductions</h4>
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="space-y-1">
+                            <Label className="text-xs">PF (Employee)</Label>
+                            <Input type="number" value={salaryForm.pf_employee || ''} onChange={(e) => setSalaryForm({...salaryForm, pf_employee: parseFloat(e.target.value) || 0})} className="h-9" />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Professional Tax</Label>
+                            <Input type="number" value={salaryForm.professional_tax || ''} onChange={(e) => setSalaryForm({...salaryForm, professional_tax: parseFloat(e.target.value) || 0})} className="h-9" />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Income Tax (TDS)</Label>
+                            <Input type="number" value={salaryForm.income_tax || ''} onChange={(e) => setSalaryForm({...salaryForm, income_tax: parseFloat(e.target.value) || 0})} className="h-9" />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Other Deductions</Label>
+                            <Input type="number" value={salaryForm.other_deductions || ''} onChange={(e) => setSalaryForm({...salaryForm, other_deductions: parseFloat(e.target.value) || 0})} className="h-9" />
+                          </div>
+                        </div>
+                        <div className="mt-3 pt-3 border-t border-red-200">
+                          <div className="flex justify-between">
+                            <span className="font-medium text-red-800">Total Deductions:</span>
+                            <span className="font-bold text-red-800">
+                              ₹{formatCurrency((salaryForm.pf_employee || 0) + (salaryForm.professional_tax || 0) + (salaryForm.income_tax || 0) + (salaryForm.other_deductions || 0))}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="bg-blue-50 p-4 rounded-lg">
+                        <div className="flex justify-between items-center">
+                          <span className="text-lg font-medium text-blue-800">Net Salary:</span>
+                          <span className="text-2xl font-bold text-blue-800">
+                            ₹{formatCurrency(
+                              ((salaryForm.basic_salary || 0) + (salaryForm.hra || 0) + (salaryForm.conveyance_allowance || 0) + (salaryForm.medical_allowance || 0) + (salaryForm.special_allowance || 0) + (salaryForm.variable_pay || 0)) -
+                              ((salaryForm.pf_employee || 0) + (salaryForm.professional_tax || 0) + (salaryForm.income_tax || 0) + (salaryForm.other_deductions || 0))
+                            )}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex justify-end gap-2 pt-4 border-t">
+                    <Button variant="outline" onClick={onClose}>Cancel</Button>
+                    <Button className="btn-purple" onClick={handleSaveSalary} disabled={saving} data-testid="save-salary-btn">
+                      {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                      Save Salary
+                    </Button>
+                  </div>
+                </>
+              )}
+            </TabsContent>
+
+            {/* Documents Tab */}
+            <TabsContent value="documents" className="mt-0">
+              <DocumentsTab employeeId={employee?.id} documents={documents} onUpdate={() => loadEmployeeData(employee?.id)} />
+            </TabsContent>
+
+            {/* Attendance Tab */}
+            <TabsContent value="attendance" className="mt-0">
+              <div className="space-y-4">
+                <div className="grid grid-cols-4 gap-4">
+                  <div className="bg-green-50 p-3 rounded-lg text-center">
+                    <p className="text-2xl font-bold text-green-800">{attendance.summary.present || 0}</p>
+                    <p className="text-xs text-green-600">Present</p>
+                  </div>
+                  <div className="bg-red-50 p-3 rounded-lg text-center">
+                    <p className="text-2xl font-bold text-red-800">{attendance.summary.absent || 0}</p>
+                    <p className="text-xs text-red-600">Absent</p>
+                  </div>
+                  <div className="bg-yellow-50 p-3 rounded-lg text-center">
+                    <p className="text-2xl font-bold text-yellow-800">{attendance.summary.half_day || 0}</p>
+                    <p className="text-xs text-yellow-600">Half Day</p>
+                  </div>
+                  <div className="bg-blue-50 p-3 rounded-lg text-center">
+                    <p className="text-2xl font-bold text-blue-800">{attendance.summary.on_leave || 0}</p>
+                    <p className="text-xs text-blue-600">On Leave</p>
+                  </div>
+                </div>
+
+                <div className="max-h-60 overflow-y-auto">
+                  {attendance.records.length === 0 ? (
+                    <div className="text-center text-gray-500 py-8">No attendance records</div>
+                  ) : (
+                    <table className="data-table text-sm">
+                      <thead>
+                        <tr><th>Date</th><th>Status</th><th>Check In</th><th>Check Out</th><th>Hours</th></tr>
+                      </thead>
+                      <tbody>
+                        {attendance.records.map((att) => (
+                          <tr key={att.id}>
+                            <td>{att.date}</td>
+                            <td>
+                              <span className={`px-2 py-0.5 rounded text-xs ${
+                                att.status === 'present' ? 'bg-green-100 text-green-800' :
+                                att.status === 'absent' ? 'bg-red-100 text-red-800' :
+                                att.status === 'half_day' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-blue-100 text-blue-800'
+                              }`}>
+                                {att.status}
+                              </span>
+                            </td>
+                            <td>{att.check_in_time || '-'}</td>
+                            <td>{att.check_out_time || '-'}</td>
+                            <td>{att.working_hours || '-'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* Audit Tab */}
+            <TabsContent value="audit" className="mt-0">
+              <div className="max-h-80 overflow-y-auto">
+                {auditLogs.length === 0 ? (
+                  <div className="text-center text-gray-500 py-8">No audit history</div>
+                ) : (
+                  <div className="space-y-2">
+                    {auditLogs.map((log) => (
+                      <div key={log.id} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg text-sm">
+                        <div className="flex-shrink-0">
+                          <span className={`px-2 py-1 rounded text-xs ${
+                            log.action === 'create' ? 'bg-green-100 text-green-800' :
+                            log.action === 'update' ? 'bg-blue-100 text-blue-800' :
+                            log.action === 'delete' ? 'bg-red-100 text-red-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {log.action}
+                          </span>
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-gray-700">by <span className="font-medium">{log.user_name || 'System'}</span></p>
+                          <p className="text-xs text-gray-500">{new Date(log.timestamp).toLocaleString()}</p>
+                          {log.new_values && (
+                            <pre className="mt-2 p-2 bg-white rounded text-xs overflow-auto max-h-20">
+                              {JSON.stringify(log.new_values, null, 2)}
+                            </pre>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+          </div>
+        </Tabs>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ==================== DOCUMENTS TAB COMPONENT ====================
+
+function DocumentsTab({ employeeId, documents, onUpdate }) {
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [docForm, setDocForm] = useState({
+    document_type: '',
+    document_name: '',
+    document_number: '',
+    issue_date: '',
+    expiry_date: '',
+  });
+
+  const documentTypes = [
+    { value: 'aadhaar', label: 'Aadhaar Card' },
+    { value: 'pan', label: 'PAN Card' },
+    { value: 'passport', label: 'Passport' },
+    { value: 'driving_license', label: 'Driving License' },
+    { value: 'offer_letter', label: 'Offer Letter' },
+    { value: 'joining_letter', label: 'Joining Letter' },
+    { value: 'nda', label: 'NDA' },
+    { value: 'experience_letter', label: 'Experience Letter' },
+    { value: 'education_certificate', label: 'Education Certificate' },
+    { value: 'other', label: 'Other' },
+  ];
+
+  const handleAddDocument = async () => {
+    if (!docForm.document_type || !docForm.document_name) {
+      toast.error('Please fill required fields');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await hrApi.addEmployeeDocument(employeeId, docForm);
+      toast.success('Document added');
+      setIsAddModalOpen(false);
+      setDocForm({ document_type: '', document_name: '', document_number: '', issue_date: '', expiry_date: '' });
+      onUpdate();
+    } catch (error) {
+      toast.error('Failed to add document');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h4 className="text-sm font-medium">Employee Documents</h4>
+        <Button size="sm" className="btn-purple" onClick={() => setIsAddModalOpen(true)}>
+          <Plus className="h-4 w-4 mr-1" /> Add Document
+        </Button>
+      </div>
+
+      {documents.length === 0 ? (
+        <div className="text-center text-gray-500 py-8">No documents uploaded</div>
+      ) : (
+        <div className="grid grid-cols-2 gap-3">
+          {documents.map((doc) => (
+            <div key={doc.id} className="p-3 border rounded-lg">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="font-medium text-sm">{doc.document_name}</p>
+                  <p className="text-xs text-gray-500">{documentTypes.find(d => d.value === doc.document_type)?.label || doc.document_type}</p>
+                  {doc.document_number && <p className="text-xs text-gray-600 mt-1">#{doc.document_number}</p>}
+                </div>
+                <span className={`px-2 py-0.5 rounded text-xs ${
+                  doc.verification_status === 'verified' ? 'bg-green-100 text-green-800' :
+                  doc.verification_status === 'rejected' ? 'bg-red-100 text-red-800' :
+                  'bg-yellow-100 text-yellow-800'
+                }`}>
+                  {doc.verification_status}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Add Document Modal */}
+      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+        <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
-            <DialogTitle>Assign City</DialogTitle>
+            <DialogTitle>Add Document</DialogTitle>
           </DialogHeader>
-          <div className="py-4">
-            <p className="text-sm text-gray-500 mb-4">
-              Assigning city to <span className="font-medium text-gray-900">{selectedEmployee?.name}</span>
-            </p>
+          <div className="space-y-4 pt-4">
             <div className="space-y-1">
-              <Label className="text-xs">Select City</Label>
-              <Select value={selectedCity} onValueChange={setSelectedCity}>
-                <SelectTrigger className="h-9" data-testid="city-select"><SelectValue placeholder="Choose city" /></SelectTrigger>
-                <SelectContent>{cities.map((c) => (<SelectItem key={c} value={c}>{c}</SelectItem>))}</SelectContent>
+              <Label className="text-xs">Document Type <span className="text-red-500">*</span></Label>
+              <Select value={docForm.document_type} onValueChange={(v) => setDocForm({...docForm, document_type: v})}>
+                <SelectTrigger className="h-9"><SelectValue placeholder="Select" /></SelectTrigger>
+                <SelectContent>
+                  {documentTypes.map(d => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}
+                </SelectContent>
               </Select>
             </div>
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => setIsCityModalOpen(false)}>Cancel</Button>
-            <Button onClick={handleAssignCity} className="btn-purple" data-testid="confirm-assign-city">Assign</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Create Ad Modal */}
-      <Dialog open={isAdModalOpen} onOpenChange={setIsAdModalOpen}>
-        <DialogContent className="sm:max-w-[500px]" data-testid="ad-modal">
-          <DialogHeader>
-            <DialogTitle>Create Ad</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleAdSubmit}>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-xs">Ad ID</Label>
-                  <Input value={adForm.ad_id} onChange={(e) => setAdForm({ ...adForm, ad_id: e.target.value })} className="h-9" placeholder="Ad ID" data-testid="ad-id-input" />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Ad Name</Label>
-                  <Input value={adForm.ad_name} onChange={(e) => setAdForm({ ...adForm, ad_name: e.target.value })} className="h-9" placeholder="Ad Name" data-testid="ad-name-input" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-xs">City</Label>
-                  <Select value={adForm.city} onValueChange={(v) => setAdForm({ ...adForm, city: v })}>
-                    <SelectTrigger className="h-9" data-testid="ad-city-select"><SelectValue placeholder="Select city" /></SelectTrigger>
-                    <SelectContent>{cities.map((c) => (<SelectItem key={c} value={c}>{c}</SelectItem>))}</SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Language</Label>
-                  <Select value={adForm.language} onValueChange={(v) => setAdForm({ ...adForm, language: v })}>
-                    <SelectTrigger className="h-9" data-testid="ad-language-select"><SelectValue placeholder="Select" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="English">English</SelectItem>
-                      <SelectItem value="Hindi">Hindi</SelectItem>
-                      <SelectItem value="Tamil">Tamil</SelectItem>
-                      <SelectItem value="Telugu">Telugu</SelectItem>
-                      <SelectItem value="Kannada">Kannada</SelectItem>
-                      <SelectItem value="Malay">Malay</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-xs">Campaign Type</Label>
-                  <Select value={adForm.campaign_type} onValueChange={(v) => setAdForm({ ...adForm, campaign_type: v })}>
-                    <SelectTrigger className="h-9" data-testid="ad-campaign-select"><SelectValue placeholder="Select" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Awareness">Awareness</SelectItem>
-                      <SelectItem value="Lead Generation">Lead Generation</SelectItem>
-                      <SelectItem value="Conversion">Conversion</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Source</Label>
-                  <Select value={adForm.source} onValueChange={(v) => setAdForm({ ...adForm, source: v })}>
-                    <SelectTrigger className="h-9" data-testid="ad-source-select"><SelectValue placeholder="Select" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="FACEBOOK">Facebook</SelectItem>
-                      <SelectItem value="INSTAGRAM">Instagram</SelectItem>
-                      <SelectItem value="GOOGLE">Google</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Document Name <span className="text-red-500">*</span></Label>
+              <Input value={docForm.document_name} onChange={(e) => setDocForm({...docForm, document_name: e.target.value})} className="h-9" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Document Number</Label>
+              <Input value={docForm.document_number} onChange={(e) => setDocForm({...docForm, document_number: e.target.value})} className="h-9" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Issue Date</Label>
+                <Input type="date" value={docForm.issue_date} onChange={(e) => setDocForm({...docForm, issue_date: e.target.value})} className="h-9" />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">Ad Amount (Optional)</Label>
-                <Input type="number" value={adForm.ad_amount} onChange={(e) => setAdForm({ ...adForm, ad_amount: e.target.value })} className="h-9" placeholder="0.00" data-testid="ad-amount-input" />
+                <Label className="text-xs">Expiry Date</Label>
+                <Input type="date" value={docForm.expiry_date} onChange={(e) => setDocForm({...docForm, expiry_date: e.target.value})} className="h-9" />
               </div>
             </div>
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setIsAdModalOpen(false)}>Cancel</Button>
-              <Button type="submit" className="btn-purple" disabled={saving} data-testid="save-ad-button">
-                {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Create
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>Cancel</Button>
+              <Button className="btn-purple" onClick={handleAddDocument} disabled={saving}>
+                {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                Add Document
               </Button>
             </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Add Garage Employee Modal */}
-      <Dialog open={isGarageModalOpen} onOpenChange={setIsGarageModalOpen}>
-        <DialogContent className="sm:max-w-[500px]" data-testid="garage-modal">
-          <DialogHeader>
-            <DialogTitle>Add Garage Employee</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleGarageSubmit}>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-xs">Grg Owner Name</Label>
-                  <Input value={garageForm.grg_owner_name} onChange={(e) => setGarageForm({ ...garageForm, grg_owner_name: e.target.value })} className="h-9" placeholder="Owner name" data-testid="garage-owner-input" />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Grg Employee Name</Label>
-                  <Input value={garageForm.grg_employee_name} onChange={(e) => setGarageForm({ ...garageForm, grg_employee_name: e.target.value })} className="h-9" placeholder="Employee name" data-testid="garage-employee-input" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-xs">Grg Name</Label>
-                  <Input value={garageForm.grg_name} onChange={(e) => setGarageForm({ ...garageForm, grg_name: e.target.value })} className="h-9" placeholder="Garage name" data-testid="garage-name-input" />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">City</Label>
-                  <Select value={garageForm.city} onValueChange={(v) => setGarageForm({ ...garageForm, city: v })}>
-                    <SelectTrigger className="h-9" data-testid="garage-city-select"><SelectValue placeholder="Select city" /></SelectTrigger>
-                    <SelectContent>{cities.map((c) => (<SelectItem key={c} value={c}>{c}</SelectItem>))}</SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-xs">Preferred Language</Label>
-                  <Select value={garageForm.preferred_language} onValueChange={(v) => setGarageForm({ ...garageForm, preferred_language: v })}>
-                    <SelectTrigger className="h-9" data-testid="garage-language-select"><SelectValue placeholder="Select" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="English">English</SelectItem>
-                      <SelectItem value="Hindi">Hindi</SelectItem>
-                      <SelectItem value="Tamil">Tamil</SelectItem>
-                      <SelectItem value="Telugu">Telugu</SelectItem>
-                      <SelectItem value="Kannada">Kannada</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Phone Number</Label>
-                  <Input value={garageForm.phone_number} onChange={(e) => setGarageForm({ ...garageForm, phone_number: e.target.value })} className="h-9" placeholder="+91 98765 43210" data-testid="garage-phone-input" />
-                </div>
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setIsGarageModalOpen(false)}>Cancel</Button>
-              <Button type="submit" className="btn-purple" disabled={saving} data-testid="save-garage-button">
-                {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Create
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Salary Structure Modal */}
-      <Dialog open={isSalaryModalOpen} onOpenChange={setIsSalaryModalOpen}>
-        <DialogContent className="sm:max-w-[500px]" data-testid="salary-modal">
-          <DialogHeader>
-            <DialogTitle>
-              <DollarSign className="h-5 w-5 inline mr-2 text-green-600" />
-              {salaryForm.user_id ? 'Update Salary Structure' : 'Add Salary Structure'}
-            </DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleSalarySubmit}>
-            <div className="grid gap-4 py-4">
-              <div className="space-y-1">
-                <Label className="text-xs">Employee</Label>
-                <Select 
-                  value={salaryForm.user_id} 
-                  onValueChange={(v) => setSalaryForm({ ...salaryForm, user_id: v })}
-                  disabled={!!salaryForm.user_id}
-                >
-                  <SelectTrigger className="h-9" data-testid="salary-employee-select">
-                    <SelectValue placeholder="Select Employee" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {employees.map((emp) => (
-                      <SelectItem key={emp.id} value={emp.id}>
-                        {emp.name} - {emp.role_name || emp.role}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-xs">CTC (Annual)</Label>
-                  <Input 
-                    type="number" 
-                    value={salaryForm.ctc} 
-                    onChange={(e) => setSalaryForm({ ...salaryForm, ctc: e.target.value })} 
-                    className="h-9" 
-                    placeholder="e.g., 600000"
-                    data-testid="salary-ctc-input"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Currency</Label>
-                  <Select value={salaryForm.currency} onValueChange={(v) => setSalaryForm({ ...salaryForm, currency: v })}>
-                    <SelectTrigger className="h-9" data-testid="salary-currency-select">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="INR">INR (₹)</SelectItem>
-                      <SelectItem value="MYR">MYR (RM)</SelectItem>
-                      <SelectItem value="USD">USD ($)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-xs">Fixed Pay (Monthly)</Label>
-                  <Input 
-                    type="number" 
-                    value={salaryForm.fixed_pay} 
-                    onChange={(e) => setSalaryForm({ ...salaryForm, fixed_pay: e.target.value })} 
-                    className="h-9" 
-                    placeholder="e.g., 40000"
-                    data-testid="salary-fixed-input"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Variable Pay (Monthly)</Label>
-                  <Input 
-                    type="number" 
-                    value={salaryForm.variable_pay} 
-                    onChange={(e) => setSalaryForm({ ...salaryForm, variable_pay: e.target.value })} 
-                    className="h-9" 
-                    placeholder="e.g., 10000"
-                    data-testid="salary-variable-input"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-xs">Commission Percentage (%)</Label>
-                  <Input 
-                    type="number" 
-                    step="0.1"
-                    value={salaryForm.commission_percentage} 
-                    onChange={(e) => setSalaryForm({ ...salaryForm, commission_percentage: e.target.value })} 
-                    className="h-9" 
-                    placeholder="e.g., 2.5"
-                    data-testid="salary-commission-input"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Per Inspection Payout</Label>
-                  <Input 
-                    type="number" 
-                    value={salaryForm.per_inspection_payout} 
-                    onChange={(e) => setSalaryForm({ ...salaryForm, per_inspection_payout: e.target.value })} 
-                    className="h-9" 
-                    placeholder="e.g., 500"
-                    data-testid="salary-inspection-input"
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setIsSalaryModalOpen(false)}>Cancel</Button>
-              <Button type="submit" className="btn-purple" disabled={saving} data-testid="save-salary-button">
-                {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Save Salary
-              </Button>
-            </div>
-          </form>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+// ==================== COUNTRY MODAL COMPONENT ====================
+
+function CountryModal({ isOpen, onClose, country, onSave }) {
+  const [form, setForm] = useState({
+    name: '',
+    code: '',
+    currency: 'INR',
+    currency_symbol: '₹',
+    phone_code: '+91',
+    is_active: true,
+  });
+  const [saving, setSaving] = useState(false);
+
+  const isEdit = !!country;
+
+  useEffect(() => {
+    if (isOpen) {
+      if (country) {
+        setForm({
+          name: country.name || '',
+          code: country.code || '',
+          currency: country.currency || 'INR',
+          currency_symbol: country.currency_symbol || '₹',
+          phone_code: country.phone_code || '+91',
+          is_active: country.is_active !== false,
+        });
+      } else {
+        setForm({
+          name: '',
+          code: '',
+          currency: 'INR',
+          currency_symbol: '₹',
+          phone_code: '+91',
+          is_active: true,
+        });
+      }
+    }
+  }, [isOpen, country]);
+
+  const handleSave = async () => {
+    if (!form.name || !form.code || !form.currency) {
+      toast.error('Please fill required fields');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      if (isEdit) {
+        await hrApi.updateCountry(country.id, form);
+        toast.success('Country updated');
+      } else {
+        await hrApi.createCountry(form);
+        toast.success('Country created');
+      }
+      onSave();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to save');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const currencies = [
+    { code: 'INR', symbol: '₹', name: 'Indian Rupee' },
+    { code: 'MYR', symbol: 'RM', name: 'Malaysian Ringgit' },
+    { code: 'THB', symbol: '฿', name: 'Thai Baht' },
+    { code: 'PHP', symbol: '₱', name: 'Philippine Peso' },
+    { code: 'USD', symbol: '$', name: 'US Dollar' },
+    { code: 'SGD', symbol: 'S$', name: 'Singapore Dollar' },
+  ];
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[400px]" data-testid="country-modal">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Globe className="h-5 w-5 text-[#2E3192]" />
+            {isEdit ? `Edit Country: ${country?.name}` : 'Add New Country'}
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4 pt-4">
+          <div className="space-y-1">
+            <Label className="text-xs">Country Name <span className="text-red-500">*</span></Label>
+            <Input 
+              value={form.name} 
+              onChange={(e) => setForm({...form, name: e.target.value})} 
+              className="h-9" 
+              placeholder="e.g., India"
+              data-testid="country-name"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs">Country Code (ISO) <span className="text-red-500">*</span></Label>
+            <Input 
+              value={form.code} 
+              onChange={(e) => setForm({...form, code: e.target.value.toUpperCase()})} 
+              className="h-9 font-mono" 
+              placeholder="e.g., IN"
+              maxLength={2}
+              data-testid="country-code"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs">Currency <span className="text-red-500">*</span></Label>
+            <Select 
+              value={form.currency} 
+              onValueChange={(v) => {
+                const curr = currencies.find(c => c.code === v);
+                setForm({...form, currency: v, currency_symbol: curr?.symbol || ''});
+              }}
+            >
+              <SelectTrigger className="h-9" data-testid="country-currency">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {currencies.map(c => (
+                  <SelectItem key={c.code} value={c.code}>
+                    {c.symbol} {c.code} - {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs">Phone Code</Label>
+            <Input 
+              value={form.phone_code} 
+              onChange={(e) => setForm({...form, phone_code: e.target.value})} 
+              className="h-9 font-mono" 
+              placeholder="e.g., +91"
+              data-testid="country-phone"
+            />
+          </div>
+
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input 
+              type="checkbox" 
+              checked={form.is_active} 
+              onChange={(e) => setForm({...form, is_active: e.target.checked})} 
+              className="rounded"
+            />
+            <span className="text-sm">Active (available for login)</span>
+          </label>
+
+          <div className="flex justify-end gap-2 pt-4 border-t">
+            <Button variant="outline" onClick={onClose}>Cancel</Button>
+            <Button className="btn-purple" onClick={handleSave} disabled={saving} data-testid="save-country-btn">
+              {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              {isEdit ? 'Update Country' : 'Create Country'}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
