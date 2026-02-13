@@ -796,6 +796,118 @@ export default function LeadsPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Add Reminder Modal */}
+      <Dialog open={isReminderModalOpen} onOpenChange={setIsReminderModalOpen}>
+        <DialogContent className="sm:max-w-[550px] p-0 overflow-hidden" data-testid="reminder-modal">
+          {/* Modal Header */}
+          <div className="bg-white px-6 py-4 border-b">
+            <div className="flex justify-between items-center">
+              <DialogTitle className="text-lg font-medium">Add Reminder</DialogTitle>
+              <button 
+                onClick={() => setIsReminderModalOpen(false)} 
+                className="text-gray-400 hover:text-gray-600"
+                data-testid="close-reminder-modal"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+
+          <div className="p-6 space-y-4">
+            {/* Date, Time, Reason Row */}
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-1">
+                <Label className="text-sm text-gray-700">Select Date</Label>
+                <Input 
+                  type="date"
+                  value={reminderFormData.reminder_date}
+                  onChange={(e) => setReminderFormData({ ...reminderFormData, reminder_date: e.target.value })}
+                  className="h-10 border-gray-300"
+                  placeholder="Select a date"
+                  data-testid="reminder-date-input"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-gray-700">Select Time</Label>
+                <Select 
+                  value={reminderFormData.reminder_time || 'select_time'} 
+                  onValueChange={(v) => setReminderFormData({ ...reminderFormData, reminder_time: v === 'select_time' ? '' : v })}
+                >
+                  <SelectTrigger className="h-10 border-gray-300" data-testid="reminder-time-select">
+                    <SelectValue placeholder="-- Select --" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="select_time">-- Select --</SelectItem>
+                    {['08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', 
+                      '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30',
+                      '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00'].map(t => (
+                      <SelectItem key={t} value={t}>{t}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-gray-700">Select Reason</Label>
+                <Select 
+                  value={reminderFormData.reminder_reason || 'select_reason'} 
+                  onValueChange={(v) => setReminderFormData({ ...reminderFormData, reminder_reason: v === 'select_reason' ? '' : v })}
+                >
+                  <SelectTrigger className="h-10 border-gray-300" data-testid="reminder-reason-select">
+                    <SelectValue placeholder="-- Select Reminder Reason --" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="select_reason">-- Select Reminder Reason --</SelectItem>
+                    <SelectItem value="RNR">RNR (Ring No Response)</SelectItem>
+                    <SelectItem value="CALL_BACK">Call Back Requested</SelectItem>
+                    <SelectItem value="FOLLOW_UP">Follow Up</SelectItem>
+                    <SelectItem value="REQUESTED_CALL_BACK">Requested Call Back</SelectItem>
+                    <SelectItem value="BUSY">Customer Busy</SelectItem>
+                    <SelectItem value="NOT_INTERESTED_NOW">Not Interested Now</SelectItem>
+                    <SelectItem value="THINKING">Customer Thinking</SelectItem>
+                    <SelectItem value="PRICE_CONCERN">Price Concern</SelectItem>
+                    <SelectItem value="OTHER">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Notes */}
+            <div className="space-y-1">
+              <Label className="text-sm text-gray-700">Notes</Label>
+              <textarea 
+                value={reminderFormData.notes}
+                onChange={(e) => setReminderFormData({ ...reminderFormData, notes: e.target.value })}
+                className="w-full min-h-[100px] px-3 py-2 border border-gray-300 rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#2E3192] focus:border-transparent"
+                placeholder="Add notes about the reminder..."
+                data-testid="reminder-notes-input"
+              />
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 pt-4">
+              <button 
+                type="button" 
+                className="px-6 py-2 bg-[#F5A623] text-white rounded hover:bg-[#E09612] text-sm font-medium disabled:opacity-50"
+                onClick={handleSaveReminder}
+                disabled={saving}
+                data-testid="save-reminder-button"
+              >
+                {saving && <Loader2 className="h-4 w-4 animate-spin mr-2 inline" />}
+                Save
+              </button>
+              <button 
+                type="button" 
+                className="px-6 py-2 bg-[#6366F1] text-white rounded hover:bg-[#5558E3] text-sm font-medium"
+                onClick={() => setIsReminderModalOpen(false)}
+                data-testid="cancel-reminder-button"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
