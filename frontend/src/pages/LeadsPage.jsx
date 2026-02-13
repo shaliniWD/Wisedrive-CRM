@@ -692,12 +692,12 @@ export default function LeadsPage() {
           <div className="p-6 space-y-4">
             <div className="space-y-2">
               <Label className="text-sm text-gray-700">Employee List:</Label>
-              <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
+              <Select value={selectedEmployee || 'unassigned'} onValueChange={(v) => setSelectedEmployee(v === 'unassigned' ? '' : v)}>
                 <SelectTrigger className="h-10 border-gray-300" data-testid="employee-select">
                   <SelectValue placeholder="-- Select Employee --" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">-- Select Employee --</SelectItem>
+                  <SelectItem value="unassigned">-- Select Employee --</SelectItem>
                   {employees.map((emp) => (
                     <SelectItem key={emp.id} value={emp.name}>{emp.name}</SelectItem>
                   ))}
