@@ -292,6 +292,27 @@ export default function LeadsPage() {
 
   const clearFilters = () => {
     setSearch(''); setFilterEmployee(''); setFilterStatus(''); setFilterCity(''); setFilterSource('');
+    setCurrentPage(1);
+  };
+
+  // Filter leads based on search
+  const filteredLeads = leads.filter(lead => {
+    const matchesSearch = !search || 
+      lead.name?.toLowerCase().includes(search.toLowerCase()) ||
+      lead.mobile?.includes(search);
+    return matchesSearch;
+  });
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredLeads.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedLeads = filteredLeads.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  const handleFilterChange = (setter) => (value) => {
+    setter(value);
+    setCurrentPage(1);
   };
 
   return (
