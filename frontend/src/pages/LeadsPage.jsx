@@ -150,6 +150,32 @@ export default function LeadsPage() {
     setIsPaymentModalOpen(true);
   };
 
+  const openAssignModal = (lead) => {
+    setAssigningLead(lead);
+    setSelectedEmployee(lead.assigned_to || '');
+    setIsAssignModalOpen(true);
+  };
+
+  const handleAssignEmployee = async () => {
+    if (!assigningLead) return;
+    setSaving(true);
+    try {
+      await leadsApi.update(assigningLead.id, {
+        ...assigningLead,
+        assigned_to: selectedEmployee,
+      });
+      toast.success('Employee assigned successfully');
+      setIsAssignModalOpen(false);
+      setAssigningLead(null);
+      setSelectedEmployee('');
+      fetchData();
+    } catch (error) {
+      toast.error('Failed to assign employee');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const clearFilters = () => {
     setSearch(''); setFilterEmployee(''); setFilterStatus(''); setFilterCity(''); setFilterSource('');
   };
