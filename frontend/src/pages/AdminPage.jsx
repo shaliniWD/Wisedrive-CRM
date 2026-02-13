@@ -7,11 +7,10 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
-import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
-import { Plus, Loader2, MapPin, Users, Megaphone, Wrench } from 'lucide-react';
+import { Plus, Loader2 } from 'lucide-react';
 
 export default function AdminPage() {
   const [employees, setEmployees] = useState([]);
@@ -55,17 +54,13 @@ export default function AdminPage() {
       await employeesApi.create(formData);
       toast.success('Employee created');
       setIsModalOpen(false);
-      resetForm();
+      setFormData({ name: '', email: '', password: '', role: 'employee', assigned_cities: [], is_active: true });
       fetchData();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to save employee');
     } finally {
       setSaving(false);
     }
-  };
-
-  const resetForm = () => {
-    setFormData({ name: '', email: '', password: '', role: 'employee', assigned_cities: [], is_active: true });
   };
 
   const handleToggleStatus = async (employeeId) => {
@@ -100,98 +95,90 @@ export default function AdminPage() {
   };
 
   const tabs = [
-    { id: 'employee', label: 'Employees', icon: Users },
-    { id: 'digital-ad', label: 'Digital Ad Meta', icon: Megaphone },
-    { id: 'garage', label: 'Garage Employees', icon: Wrench },
+    { id: 'employee', label: 'Employee' },
+    { id: 'digital-ad', label: 'Digital Ad Meta Data' },
+    { id: 'garage', label: 'Garage Employee' },
   ];
 
   return (
-    <div className="space-y-5" data-testid="admin-page">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900" style={{ fontFamily: 'Outfit, sans-serif' }}>Admin</h1>
-          <p className="text-slate-500 mt-1">Manage employees and settings</p>
-        </div>
-        {activeTab === 'employee' && (
-          <Button onClick={() => setIsModalOpen(true)} className="bg-indigo-600 hover:bg-indigo-700" data-testid="add-employee-button">
-            <Plus className="h-4 w-4 mr-2" /> Add Employee
-          </Button>
-        )}
-      </div>
-
+    <div className="p-4 space-y-4" data-testid="admin-page">
       {/* Tabs */}
-      <div className="bg-white border border-slate-200 rounded-xl shadow-sm">
-        <div className="flex border-b border-slate-200">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-5 py-4 text-sm font-medium border-b-2 -mb-px transition-colors ${
-                  activeTab === tab.id
-                    ? 'border-indigo-600 text-indigo-700'
-                    : 'border-transparent text-slate-500 hover:text-slate-700'
-                }`}
-                data-testid={`${tab.id}-tab`}
-              >
-                <Icon className="h-4 w-4" />
-                {tab.label}
-              </button>
-            );
-          })}
+      <div className="card">
+        <div className="flex border-b">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-6 py-4 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                activeTab === tab.id
+                  ? 'border-[#2E3192] text-[#2E3192]'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+              data-testid={`${tab.id}-tab`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
 
         {/* Employee Tab */}
         {activeTab === 'employee' && (
-          <div className="p-0">
+          <div className="p-4">
+            <div className="flex justify-end mb-4">
+              <button className="btn-purple flex items-center gap-1" onClick={() => setIsModalOpen(true)} data-testid="add-employee-button">
+                <Plus className="h-4 w-4" /> Add Employee
+              </button>
+            </div>
+
             <table className="data-table">
               <thead>
                 <tr>
                   <th>Name</th>
                   <th>Assigned Cities</th>
-                  <th>Assign</th>
+                  <th>City</th>
                   <th>Status</th>
-                  <th className="w-[100px]">Actions</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={5} className="text-center py-12"><Loader2 className="h-6 w-6 animate-spin mx-auto text-indigo-600" /></td></tr>
+                  <tr><td colSpan={5} className="text-center py-12"><Loader2 className="h-6 w-6 animate-spin mx-auto text-[#2E3192]" /></td></tr>
                 ) : employees.length === 0 ? (
-                  <tr><td colSpan={5} className="text-center py-12 text-slate-500">No employees found</td></tr>
+                  <tr><td colSpan={5} className="text-center py-12 text-gray-500">No employees found</td></tr>
                 ) : (
                   employees.map((employee) => (
                     <tr key={employee.id} data-testid={`employee-row-${employee.id}`}>
-                      <td className="font-medium text-slate-900">{employee.name}</td>
-                      <td className="text-slate-600">
+                      <td className="font-medium">{employee.name}</td>
+                      <td>
                         {employee.assigned_cities?.length > 0 
                           ? employee.assigned_cities.join(', ') 
-                          : <span className="text-slate-400">No cities assigned</span>}
+                          : <span className="text-gray-400">No Cities Assigned</span>}
                       </td>
                       <td>
-                        <Button size="sm" className="h-7 bg-emerald-600 hover:bg-emerald-700 text-xs"
-                          onClick={() => openCityModal(employee)} data-testid={`assign-city-${employee.id}`}>
-                          <MapPin className="h-3 w-3 mr-1" /> Assign City
-                        </Button>
+                        <button 
+                          className="status-badge completed cursor-pointer text-xs"
+                          onClick={() => openCityModal(employee)}
+                          data-testid={`assign-city-${employee.id}`}
+                        >
+                          Assign City
+                        </button>
                       </td>
                       <td>
                         <div className="flex items-center gap-3">
-                          <Switch 
-                            checked={employee.is_active}
-                            onCheckedChange={() => handleToggleStatus(employee.id)}
+                          <div 
+                            className={`toggle-switch ${employee.is_active ? 'active' : ''}`}
+                            onClick={() => handleToggleStatus(employee.id)}
                             data-testid={`toggle-status-${employee.id}`}
                           />
-                          <span className={`text-sm ${employee.is_active ? 'text-emerald-600' : 'text-slate-400'}`}>
+                          <span className={employee.is_active ? 'text-[#10B981]' : 'text-gray-400'}>
                             {employee.is_active ? 'Active' : 'Inactive'}
                           </span>
                         </div>
                       </td>
                       <td>
-                        <Button size="sm" variant="outline" className="h-7 text-xs" data-testid={`edit-employee-${employee.id}`}>
+                        <button className="btn-purple text-xs px-3 py-1" data-testid={`edit-employee-${employee.id}`}>
                           Edit
-                        </Button>
+                        </button>
                       </td>
                     </tr>
                   ))
@@ -201,20 +188,19 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* Other Tabs */}
+        {/* Digital Ad Tab */}
         {activeTab === 'digital-ad' && (
-          <div className="p-12 text-center">
-            <Megaphone className="h-12 w-12 mx-auto text-slate-300 mb-4" />
-            <h3 className="text-lg font-medium text-slate-700">Digital Ad Meta Data</h3>
-            <p className="text-slate-500 mt-2">Configure your digital advertising metadata here</p>
+          <div className="p-12 text-center text-gray-500">
+            <p className="text-lg font-medium">Digital Ad Meta Data</p>
+            <p className="text-sm mt-2">Configure your digital advertising metadata here</p>
           </div>
         )}
 
+        {/* Garage Tab */}
         {activeTab === 'garage' && (
-          <div className="p-12 text-center">
-            <Wrench className="h-12 w-12 mx-auto text-slate-300 mb-4" />
-            <h3 className="text-lg font-medium text-slate-700">Garage Employees</h3>
-            <p className="text-slate-500 mt-2">Manage garage employees and mechanics</p>
+          <div className="p-12 text-center text-gray-500">
+            <p className="text-lg font-medium">Garage Employee Management</p>
+            <p className="text-sm mt-2">Manage garage employees and mechanics</p>
           </div>
         )}
       </div>
@@ -223,27 +209,24 @@ export default function AdminPage() {
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="sm:max-w-[440px]" data-testid="employee-modal">
           <DialogHeader>
-            <DialogTitle style={{ fontFamily: 'Outfit, sans-serif' }}>Add Employee</DialogTitle>
+            <DialogTitle>Add Employee</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit}>
             <div className="grid gap-4 py-4">
-              <div className="space-y-2">
-                <Label className="text-sm">Full Name *</Label>
-                <Input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="h-9" placeholder="John Doe" data-testid="employee-name-input" />
+              <div className="space-y-1">
+                <Label className="text-xs">Full Name</Label>
+                <Input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="h-9" placeholder="John Doe" data-testid="employee-name-input" />
               </div>
-              <div className="space-y-2">
-                <Label className="text-sm">Email *</Label>
-                <Input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="h-9" placeholder="john@company.com" data-testid="employee-email-input" />
+              <div className="space-y-1">
+                <Label className="text-xs">Email</Label>
+                <Input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="h-9" placeholder="john@company.com" data-testid="employee-email-input" />
               </div>
-              <div className="space-y-2">
-                <Label className="text-sm">Password *</Label>
-                <Input type="password" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="h-9" placeholder="••••••••" data-testid="employee-password-input" />
+              <div className="space-y-1">
+                <Label className="text-xs">Password</Label>
+                <Input type="password" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} className="h-9" placeholder="••••••••" data-testid="employee-password-input" />
               </div>
-              <div className="space-y-2">
-                <Label className="text-sm">Role</Label>
+              <div className="space-y-1">
+                <Label className="text-xs">Role</Label>
                 <Select value={formData.role} onValueChange={(v) => setFormData({ ...formData, role: v })}>
                   <SelectTrigger className="h-9" data-testid="employee-role-select"><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -253,12 +236,12 @@ export default function AdminPage() {
                 </Select>
               </div>
             </div>
-            <DialogFooter>
+            <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-              <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700" disabled={saving} data-testid="save-employee-button">
+              <Button type="submit" className="btn-purple" disabled={saving} data-testid="save-employee-button">
                 {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Create
               </Button>
-            </DialogFooter>
+            </div>
           </form>
         </DialogContent>
       </Dialog>
@@ -267,26 +250,24 @@ export default function AdminPage() {
       <Dialog open={isCityModalOpen} onOpenChange={setIsCityModalOpen}>
         <DialogContent className="sm:max-w-[380px]" data-testid="assign-city-modal">
           <DialogHeader>
-            <DialogTitle style={{ fontFamily: 'Outfit, sans-serif' }}>Assign City</DialogTitle>
+            <DialogTitle>Assign City</DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            <p className="text-sm text-slate-500 mb-4">
-              Assigning city to <span className="font-medium text-slate-900">{selectedEmployee?.name}</span>
+            <p className="text-sm text-gray-500 mb-4">
+              Assigning city to <span className="font-medium text-gray-900">{selectedEmployee?.name}</span>
             </p>
-            <div className="space-y-2">
-              <Label className="text-sm">Select City</Label>
+            <div className="space-y-1">
+              <Label className="text-xs">Select City</Label>
               <Select value={selectedCity} onValueChange={setSelectedCity}>
                 <SelectTrigger className="h-9" data-testid="city-select"><SelectValue placeholder="Choose city" /></SelectTrigger>
                 <SelectContent>{cities.map((c) => (<SelectItem key={c} value={c}>{c}</SelectItem>))}</SelectContent>
               </Select>
             </div>
           </div>
-          <DialogFooter>
+          <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => setIsCityModalOpen(false)}>Cancel</Button>
-            <Button onClick={handleAssignCity} className="bg-indigo-600 hover:bg-indigo-700" data-testid="confirm-assign-city">
-              Assign
-            </Button>
-          </DialogFooter>
+            <Button onClick={handleAssignCity} className="btn-purple" data-testid="confirm-assign-city">Assign</Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
