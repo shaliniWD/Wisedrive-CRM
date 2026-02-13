@@ -783,6 +783,11 @@ async def seed_data():
     if leads_count < 10:
         import random
         for i in range(20):
+            # Only add reminder for some leads (60% have reminders)
+            has_reminder = random.random() > 0.4
+            # Only add payment link for some leads (40% have payment links)
+            has_payment_link = random.random() > 0.6
+            
             lead = {
                 "id": str(uuid.uuid4()),
                 "name": f"Lead {i+1}",
@@ -791,10 +796,12 @@ async def seed_data():
                 "source": random.choice(sources),
                 "status": random.choice(statuses),
                 "assigned_to": random.choice(employees_data)["name"] if random.random() > 0.3 else None,
-                "reminder_date": "2026-02-14",
-                "reminder_time": "17:00",
-                "notes": None,
-                "payment_link": f"12023769376950{i:04d}" if random.random() > 0.5 else None,
+                "reminder_date": "2026-02-14" if has_reminder else None,
+                "reminder_time": random.choice(["09:00", "10:30", "14:00", "17:00"]) if has_reminder else None,
+                "reminder_reason": random.choice(["RNR", "CALL_BACK", "FOLLOW_UP", "BUSY"]) if has_reminder else None,
+                "notes": random.choice(["Will call back tomorrow", "Customer busy, try later", "Interested in gold package", None]) if has_reminder else None,
+                "payment_link": f"https://rzp.io/l/WD{random.randint(100000, 999999)}" if has_payment_link else None,
+                "payment_link_sent_at": datetime.now(timezone.utc).isoformat() if has_payment_link else None,
                 "created_at": datetime.now(timezone.utc).isoformat()
             }
             await db.leads.insert_one(lead)
