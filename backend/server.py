@@ -150,6 +150,45 @@ class DashboardStats(BaseModel):
     pending_payments: int
     completed_inspections: int
 
+# ==================== DIGITAL AD MODELS ====================
+
+class DigitalAdBase(BaseModel):
+    ad_id: str
+    ad_name: str
+    city: str
+    language: str
+    campaign_type: str
+    source: str
+    ad_amount: Optional[float] = None
+    is_active: bool = True
+
+class DigitalAdCreate(DigitalAdBase):
+    pass
+
+class DigitalAd(DigitalAdBase):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+# ==================== GARAGE EMPLOYEE MODELS ====================
+
+class GarageEmployeeBase(BaseModel):
+    grg_owner_name: str
+    grg_employee_name: str
+    grg_name: str
+    city: str
+    preferred_language: str
+    phone_number: str
+    is_active: bool = True
+
+class GarageEmployeeCreate(GarageEmployeeBase):
+    pass
+
+class GarageEmployee(GarageEmployeeBase):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 # ==================== AUTH HELPERS ====================
 
 def hash_password(password: str) -> str:
