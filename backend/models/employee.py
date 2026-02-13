@@ -268,3 +268,66 @@ class Country(CountryBase):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+
+# Salary Payment History
+class SalaryPaymentBase(BaseModel):
+    user_id: str
+    month: int  # 1-12
+    year: int
+    
+    # Payment details
+    gross_salary: float = 0
+    total_deductions: float = 0
+    net_salary: float = 0
+    
+    # Attendance summary for this month
+    working_days: int = 0
+    days_present: int = 0
+    days_absent: int = 0
+    days_half_day: int = 0
+    days_on_leave: int = 0
+    leaves_taken: int = 0
+    
+    # For mechanics/freelancers
+    inspections_completed: int = 0
+    price_per_inspection: float = 0
+    total_inspection_pay: float = 0
+    
+    # Payment status
+    payment_status: str = "pending"  # pending, paid, partial
+    payment_date: Optional[str] = None
+    payment_method: Optional[str] = None  # bank_transfer, cash, cheque
+    transaction_reference: Optional[str] = None
+    
+    notes: Optional[str] = None
+    currency: str = "INR"
+
+
+class SalaryPaymentCreate(SalaryPaymentBase):
+    pass
+
+
+class SalaryPaymentUpdate(BaseModel):
+    gross_salary: Optional[float] = None
+    total_deductions: Optional[float] = None
+    net_salary: Optional[float] = None
+    days_present: Optional[int] = None
+    days_absent: Optional[int] = None
+    days_on_leave: Optional[int] = None
+    leaves_taken: Optional[int] = None
+    inspections_completed: Optional[int] = None
+    total_inspection_pay: Optional[float] = None
+    payment_status: Optional[str] = None
+    payment_date: Optional[str] = None
+    payment_method: Optional[str] = None
+    transaction_reference: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class SalaryPayment(SalaryPaymentBase):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_by: Optional[str] = None
