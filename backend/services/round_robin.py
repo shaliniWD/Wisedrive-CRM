@@ -24,12 +24,20 @@ class RoundRobinService:
         if not sales_dept or not sales_exec_role:
             return []
         
+        # Get current day of week (0=Monday in Python, but we store 0=Sunday)
+        today = datetime.now(timezone.utc)
+        # Convert to our format: 0=Sunday, 1=Monday, ..., 6=Saturday
+        day_of_week = (today.weekday() + 1) % 7
+        today_date = today.strftime("%Y-%m-%d")
+        
         query = {
             "country_id": country_id,
             "department_id": sales_dept["id"],
             "role_id": sales_exec_role["id"],
             "is_active": True,
-            "is_available_for_assignment": True
+            "is_available_for_assignment": True,
+            "is_available_for_leads": {"$ne": False},  # Must not be explicitly paused
+            "weekly_off_day": {"$ne": day_of_week}  # Not on weekly off today
         }
         
         if team_id:
@@ -37,10 +45,23 @@ class RoundRobinService:
         
         agents = await self.db.users.find(
             query, 
-            {"_id": 0, "id": 1, "name": 1, "email": 1}
+            {"_id": 0, "id": 1, "name": 1, "email": 1, "weekly_off_day": 1}
         ).sort("name", 1).to_list(100)
         
-        return agents
+        # Filter out agents who are marked absent today
+        available_agents = []
+        for agent in agents:
+            # Check if agent is marked absent today
+            attendance = await self.db.employee_attendance.find_one({
+                "user_id": agent["id"],
+                "date": today_date,
+                "status": {"$in": ["absent", "on_leave"]}
+            })
+            
+            if not attendance:
+                available_agents.append(agent)
+        
+        return available_agents
 
     async def get_next_agent(
         self, 
