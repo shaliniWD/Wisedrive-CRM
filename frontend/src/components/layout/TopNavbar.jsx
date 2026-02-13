@@ -2,17 +2,28 @@ import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
-const navigation = [
-  { name: 'Leads', href: '/leads' },
-  { name: 'Customers', href: '/customers' },
-  { name: 'Inspections', href: '/inspections' },
-  { name: 'Admin', href: '/admin' },
-  { name: 'Dashboard', href: '/dashboard' },
-];
+// Map of tab names to routes
+const tabRouteMap = {
+  leads: { name: 'Leads', href: '/leads' },
+  customers: { name: 'Customers', href: '/customers' },
+  inspections: { name: 'Inspections', href: '/inspections' },
+  employees: { name: 'Admin', href: '/admin' },
+  dashboard: { name: 'Dashboard', href: '/dashboard' },
+};
 
 export const TopNavbar = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, visibleTabs } = useAuth();
   const location = useLocation();
+
+  // Build navigation based on visible tabs
+  const navigation = visibleTabs
+    .map(tab => tabRouteMap[tab])
+    .filter(Boolean);
+  
+  // Always show dashboard if not in list
+  if (!navigation.find(n => n.href === '/dashboard')) {
+    navigation.push(tabRouteMap.dashboard);
+  }
 
   return (
     <header className="wisedrive-header sticky top-0 z-50" data-testid="top-navbar">
@@ -52,10 +63,13 @@ export const TopNavbar = () => {
 
         {/* Right Side - User Info */}
         <div className="flex items-center gap-4">
-          <span className="text-sm text-white/90">{user?.email}</span>
+          <div className="text-right">
+            <span className="text-sm text-white font-medium block">{user?.name}</span>
+            <span className="text-xs text-white/70">{user?.role_name || user?.role} • {user?.country_name}</span>
+          </div>
           <button 
             onClick={logout}
-            className="text-sm text-white/70 hover:text-white"
+            className="text-sm text-white/70 hover:text-white px-3 py-1 rounded border border-white/30 hover:border-white/50"
             data-testid="logout-btn"
           >
             Logout
