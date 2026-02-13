@@ -62,7 +62,7 @@ Recreate WiseDrive CRM (https://crm.wisedrive.com) design with a modern UI. Crea
 - [x] **Horizontal Top Navigation** - Glassmorphism effect, search, notifications, user menu
 - [x] **Split-screen Login Page** - Modern design with branding on left
 - [x] **Dashboard** - Clean stat cards with icons
-- [x] **Leads Page** - Full-width table, inline filters, date format "13 Feb '26", **Edit Lead modal with all fields**
+- [x] **Leads Page** - Full-width table, inline filters, date format "13 Feb '26", **Edit Lead modal**, **Assign Employee modal**
 - [x] **Customers Page** - ID/Date column, payment badges, action menus, **Customer Details Modal**
 - [x] **Customer Details Modal** - Shows customer info (name, mobile, city, status) + transaction history table
 - [x] **Inspections Page** - Scheduled/Unscheduled tabs, report buttons
