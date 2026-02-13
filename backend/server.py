@@ -72,6 +72,7 @@ class LeadBase(BaseModel):
     mobile: str
     city: str
     source: str = "WEBSITE"
+    ad_id: Optional[str] = None
     assigned_to: Optional[str] = None
     status: str = "NEW"  # noqa: F811
     reminder_date: Optional[str] = None
