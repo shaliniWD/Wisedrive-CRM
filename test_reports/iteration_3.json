@@ -1,0 +1,77 @@
+{
+  "summary": "Completed comprehensive testing of WiseDrive CRM V2 RBAC and multi-tenant features. All core functionality working correctly. Found one minor bug in dashboard stats filtering.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {
+        "endpoint": "/api/dashboard/stats",
+        "issue": "Dashboard stats for non-CEO users filter by country_id only, but leads API uses RBAC 'own' scope filtering. Sales Exec sees 30 leads in dashboard but only 21 in leads page.",
+        "priority": "MEDIUM",
+        "fix_suggestion": "Dashboard stats should use rbac_service.get_data_filter() for leads count instead of just country_id filter"
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "passed_tests": [
+    "Backend API - CEO login with ceo@wisedrive.com / password123 (200)",
+    "Backend API - Sales Exec login with salesexec1.in@wisedrive.com / password123 (200)",
+    "Backend API - HR login with hr@wisedrive.com / password123 (200)",
+    "Backend API - Invalid credentials returns 401",
+    "Backend API - CEO visible_tabs includes all tabs (dashboard, leads, customers, inspections, employees, etc.)",
+    "Backend API - Sales Exec visible_tabs only includes dashboard and leads",
+    "Backend API - HR visible_tabs includes dashboard, employees, hr, settings",
+    "Backend API - CEO sees all 40 leads",
+    "Backend API - Sales Exec sees only ~20 own leads (RBAC filtering working)",
+    "Backend API - Leads have assigned_to_name field populated",
+    "Backend API - FACEBOOK/INSTAGRAM leads have ad_id field",
+    "Backend API - Dashboard stats show correct counts (40 leads, 15 customers, 20 inspections)",
+    "Backend API - Lead reassignment requires reason",
+    "Backend API - Sales Exec cannot reassign leads (403)",
+    "Backend API - User info includes name, role_name, country_name",
+    "Frontend - CEO login and navigation works",
+    "Frontend - CEO sees Dashboard, Leads, Customers, Inspections, Admin tabs",
+    "Frontend - CEO sees 40 leads in Leads page",
+    "Frontend - Sales Exec login and navigation works",
+    "Frontend - Sales Exec only sees Dashboard and Leads tabs (RBAC working)",
+    "Frontend - Sales Exec sees 20 leads (own leads only)",
+    "Frontend - HR login and navigation works",
+    "Frontend - HR only sees Dashboard and Admin tabs",
+    "Frontend - Navbar shows user name, role, and country",
+    "Frontend - Assigned To column shows agent names (not IDs)",
+    "Frontend - Ad ID displayed for FACEBOOK/INSTAGRAM source leads",
+    "Frontend - Lead reassignment modal requires reason (button disabled without reason)"
+  ],
+  "test_report_links": [
+    "/app/backend/tests/test_v2_rbac.py",
+    "/app/test_reports/pytest/pytest_results_v2.xml"
+  ],
+  "action_items": [
+    "Fix dashboard stats to use RBAC filtering for leads count (currently shows country-level count instead of user's own leads for Sales Exec)"
+  ],
+  "critical_code_review_comments": [
+    "Dashboard stats endpoint (/api/dashboard/stats) uses country_id filter for non-CEO users, but leads API uses RBAC 'own' scope. This causes inconsistency where Sales Exec sees 30 leads in dashboard but only 21 in leads page."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_v2_rbac.py"
+  ],
+  "success_rate": {
+    "backend": "100% (15/15 tests passed)",
+    "frontend": "100% (all UI tests passed)"
+  },
+  "test_credentials": {
+    "CEO": "ceo@wisedrive.com / password123",
+    "Sales Executive": "salesexec1.in@wisedrive.com / password123",
+    "HR Manager": "hr@wisedrive.com / password123"
+  },
+  "seed_data_creation": "V2 seed data already present: 4 countries, 4 departments, 11 roles, 48 permissions, 5 teams, 17 users, 40 leads, 15 customers, 20 inspections",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "V2 RBAC system fully tested. All login flows work. Tab visibility based on role works correctly. Data filtering for leads works (CEO sees all, Sales Exec sees own). Lead reassignment requires reason. Minor bug: dashboard stats don't use RBAC filtering for leads count.",
+  "mocked_apis": {
+    "Vaahan car lookup API": "MOCKED in LeadsPage.jsx payment modal - returns mock car data"
+  }
+}
