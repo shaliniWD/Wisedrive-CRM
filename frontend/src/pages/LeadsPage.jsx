@@ -671,6 +671,64 @@ export default function LeadsPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Assign Employee Modal */}
+      <Dialog open={isAssignModalOpen} onOpenChange={setIsAssignModalOpen}>
+        <DialogContent className="sm:max-w-[400px] p-0 overflow-hidden" data-testid="assign-employee-modal">
+          {/* Modal Header */}
+          <div className="bg-white px-6 py-4 border-b">
+            <div className="flex justify-between items-center">
+              <DialogTitle className="text-lg font-medium">Assign Employee</DialogTitle>
+              <button 
+                onClick={() => setIsAssignModalOpen(false)} 
+                className="text-gray-400 hover:text-gray-600"
+                data-testid="close-assign-modal"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+
+          <div className="p-6 space-y-4">
+            <div className="space-y-2">
+              <Label className="text-sm text-gray-700">Employee List:</Label>
+              <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
+                <SelectTrigger className="h-10 border-gray-300" data-testid="employee-select">
+                  <SelectValue placeholder="-- Select Employee --" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">-- Select Employee --</SelectItem>
+                  {employees.map((emp) => (
+                    <SelectItem key={emp.id} value={emp.name}>{emp.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 pt-4">
+              <button 
+                type="button" 
+                className="px-6 py-2 bg-[#6366F1] text-white rounded hover:bg-[#5558E3] text-sm font-medium"
+                onClick={() => setIsAssignModalOpen(false)}
+                data-testid="cancel-assign-button"
+              >
+                Cancel
+              </button>
+              <button 
+                type="button" 
+                className="px-6 py-2 bg-[#F5A623] text-white rounded hover:bg-[#E09612] text-sm font-medium disabled:opacity-50"
+                onClick={handleAssignEmployee}
+                disabled={saving}
+                data-testid="save-assign-button"
+              >
+                {saving && <Loader2 className="h-4 w-4 animate-spin mr-2 inline" />}
+                Save
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
