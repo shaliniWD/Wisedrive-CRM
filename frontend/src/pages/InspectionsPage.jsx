@@ -188,14 +188,14 @@ export default function InspectionsPage() {
           <table className="data-table">
             <thead>
               <tr>
-                <th>Order Date</th>
-                <th>Customer Details</th>
+                <th>Payment Date</th>
+                <th>Customer Mobile No.</th>
+                <th>Customer Name</th>
+                <th>Package Type</th>
+                <th>Available Inspections</th>
+                <th>Amount Details</th>
                 <th>Payment Status</th>
-                <th>City</th>
-                <th>Inspections Available</th>
-                <th>Car Details</th>
                 <th>Action</th>
-                <th>Report Edit</th>
               </tr>
             </thead>
             <tbody>
@@ -207,57 +207,59 @@ export default function InspectionsPage() {
                 inspections.map((inspection) => (
                   <tr key={inspection.id} data-testid={`inspection-row-${inspection.id}`}>
                     <td>
-                      <div className="text-sm">{formatDateTime(inspection.order_date || inspection.created_at)}</div>
+                      <div className="text-sm">{formatDate(inspection.payment_date || inspection.created_at)}</div>
+                    </td>
+                    <td>
+                      <div className="font-mono text-sm">{inspection.customer_mobile}</div>
+                      <div className="text-gray-500 text-xs">{inspection.customer_name}</div>
                     </td>
                     <td>
                       <div className="font-medium">{inspection.customer_name}</div>
-                      <div className="text-gray-500 font-mono text-sm">{inspection.customer_mobile}</div>
                     </td>
                     <td>
-                      <span className={`status-badge ${inspection.payment_status === 'Completed' ? 'completed' : 'pending'}`}>
-                        {inspection.payment_status}
-                      </span>
+                      <div className="text-sm">{inspection.package_type || '-'}</div>
                     </td>
-                    <td>{inspection.city}</td>
                     <td>
                       <span className="font-semibold text-[#2E3192]">{inspection.inspections_available || 1}</span>
                     </td>
                     <td>
-                      <div className="text-[#6366F1] font-mono text-sm cursor-pointer hover:underline">
-                        {inspection.car_number || '-'}
+                      <div className="text-xs space-y-0.5">
+                        <div>Total Amount: <span className="font-medium">{inspection.total_amount || 0}</span></div>
+                        <div>Amount Paid: <span className="font-medium text-green-600">{inspection.amount_paid || 0}</span></div>
+                        <div>Pending Amount: <span className="font-medium text-red-600">{inspection.pending_amount || 0}</span></div>
                       </div>
-                      {inspection.order_id && (
-                        <div className="text-xs text-gray-500">Tr# {inspection.order_id}</div>
-                      )}
+                    </td>
+                    <td>
+                      <span className={`status-badge ${inspection.payment_type === 'Full' ? 'completed' : 'pending'}`}>
+                        {inspection.payment_type || 'Full'}
+                      </span>
                     </td>
                     <td>
                       <button 
-                        className="btn-purple text-xs px-3 py-1" 
-                        onClick={() => openEditModal(inspection)} 
-                        data-testid={`edit-inspection-${inspection.id}`}
+                        className="btn-purple text-xs px-3 py-1.5"
+                        onClick={() => {
+                          setEditingInspection(inspection);
+                          setFormData({
+                            ...formData,
+                            customer_name: inspection.customer_name,
+                            customer_mobile: inspection.customer_mobile,
+                            city: inspection.city,
+                            car_number: inspection.car_number || '',
+                            payment_status: inspection.payment_status,
+                          });
+                          setIsModalOpen(true);
+                        }}
+                        data-testid={`schedule-inspection-${inspection.id}`}
                       >
-                        Edit
+                        Schedule Inspection
                       </button>
                     </td>
-                    <td>
-                      <div className="flex items-center gap-2">
-                        <button 
-                          className="px-3 py-1 text-xs bg-[#10B981] text-white rounded hover:bg-[#059669] font-medium"
-                          onClick={() => {
-                            setEditingInspection(inspection);
-                            setFormData({
-                              ...formData,
-                              customer_name: inspection.customer_name,
-                              customer_mobile: inspection.customer_mobile,
-                              city: inspection.city,
-                              car_number: inspection.car_number || '',
-                              payment_status: inspection.payment_status,
-                            });
-                            setIsModalOpen(true);
-                          }}
-                          data-testid={`schedule-inspection-${inspection.id}`}
-                        >
-                          Schedule
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        ) : (
                         </button>
                         <button className="text-[#10B981] hover:text-[#059669]">
                           <Download className="h-4 w-4" />
