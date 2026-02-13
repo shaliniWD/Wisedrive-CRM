@@ -170,12 +170,13 @@ The CRM has been refactored from V1 monolithic architecture to V2 with:
 - [x] Round-robin lead assignment
 - [x] RBAC-filtered API endpoints
 - [x] Dashboard stats with proper filtering
+- [x] HR Module (salary management)
+- [x] Audit Trail (action history logging)
 
 ### P1 - High Priority (Next)
-- [ ] Lead Assignment Flow: Complete integration with team selection
-- [ ] Complete HR module for employee and salary management
-- [ ] Audit trail UI for viewing action history
-- [ ] Export data to CSV/Excel
+- [ ] Lead Assignment Flow: Complete integration with team selection UI
+- [ ] Employee CRUD in Admin (create, edit, delete employees)
+- [ ] Export data to CSV/Excel functionality
 
 ### P2 - Medium Priority
 - [ ] Multi-currency support
