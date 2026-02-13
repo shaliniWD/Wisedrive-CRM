@@ -185,6 +185,44 @@ export default function LeadsPage() {
     }
   };
 
+  const openReminderModal = (lead) => {
+    setReminderLead(lead);
+    setReminderFormData({
+      reminder_date: lead.reminder_date || '',
+      reminder_time: lead.reminder_time || '',
+      reminder_reason: lead.reminder_reason || '',
+      notes: lead.notes || '',
+    });
+    setIsReminderModalOpen(true);
+  };
+
+  const handleSaveReminder = async () => {
+    if (!reminderLead) return;
+    if (!reminderFormData.reminder_date || !reminderFormData.reminder_time) {
+      toast.error('Please select date and time');
+      return;
+    }
+    setSaving(true);
+    try {
+      await leadsApi.update(reminderLead.id, {
+        ...reminderLead,
+        reminder_date: reminderFormData.reminder_date,
+        reminder_time: reminderFormData.reminder_time,
+        reminder_reason: reminderFormData.reminder_reason,
+        notes: reminderFormData.notes,
+      });
+      toast.success('Reminder saved successfully');
+      setIsReminderModalOpen(false);
+      setReminderLead(null);
+      setReminderFormData({ reminder_date: '', reminder_time: '', reminder_reason: '', notes: '' });
+      fetchData();
+    } catch (error) {
+      toast.error('Failed to save reminder');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const clearFilters = () => {
     setSearch(''); setFilterEmployee(''); setFilterStatus(''); setFilterCity(''); setFilterSource('');
   };
