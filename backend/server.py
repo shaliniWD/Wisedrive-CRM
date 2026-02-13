@@ -843,12 +843,20 @@ async def seed_data():
         import random
         inspection_statuses = ["COMPLETED", "SCHEDULED", "REQUEST_NEWSLOT", "IN_PROGRESS"]
         mechanics = ["V Sai Bharath", "Sridhar Venkatesalu", "Kaliul Rahaman", "Abidali Ali Ansari"]
+        package_types = ["Basic 2", "Gold", "Platinum", "Silver", "Comprehensive"]
+        customer_names = ["Amaran", "Priya Sharma", "Rahul Kumar", "Sneha Reddy", "Vikram Singh", "Anjali Patel", "Karthik M", "Divya R", "Arun Kumar", "Meera Nair"]
+        
         for i in range(15):
             is_scheduled = random.random() > 0.4  # 60% scheduled, 40% unscheduled
+            total_amount = random.choice([999, 1300, 1499, 1999, 2499])
+            amount_paid = total_amount if random.random() > 0.3 else random.choice([0, 500, 999])
+            pending_amount = total_amount - amount_paid
+            payment_type = "Full" if pending_amount == 0 else "Partial"
+            
             inspection = {
                 "id": str(uuid.uuid4()),
-                "customer_name": f"Inspection Customer {i+1}",
-                "customer_mobile": f"91812325{i:04d}",
+                "customer_name": random.choice(customer_names),
+                "customer_mobile": f"9177082{random.randint(10000, 99999)}",
                 "address": f"Address {i+1}, {random.choice(cities)}",
                 "city": random.choice(cities),
                 "payment_status": "Completed" if random.random() > 0.3 else "PENDING",
@@ -857,7 +865,13 @@ async def seed_data():
                 "car_number": f"KA0{random.randint(1,5)}NC{random.randint(1000,9999)}",
                 "order_id": f"ORD{random.randint(1000000,9999999)}",
                 "order_date": datetime.now(timezone.utc).isoformat(),
+                "payment_date": f"2026-02-{random.randint(1, 13)}",
                 "inspections_available": random.randint(1, 3),
+                "package_type": random.choice(package_types) if random.random() > 0.3 else None,
+                "total_amount": total_amount,
+                "amount_paid": amount_paid,
+                "pending_amount": pending_amount,
+                "payment_type": payment_type,
                 "car_details": f"Maruti Swift {random.choice(['VXI', 'ZXI', 'LXI'])} {random.randint(2018, 2024)}",
                 "scheduled_date": "2026-02-13" if is_scheduled else None,
                 "scheduled_time": f"{random.randint(10,18)}:00:00" if is_scheduled else None,
