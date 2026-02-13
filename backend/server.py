@@ -1262,6 +1262,9 @@ async def create_salary(salary_data: SalaryCreate, current_user: dict = Depends(
     
     await db.salary_structures.insert_one(salary_dict)
     
+    # Remove MongoDB _id before returning
+    salary_dict.pop("_id", None)
+    
     # Log audit
     await audit_service.log(
         entity_type="salary",
