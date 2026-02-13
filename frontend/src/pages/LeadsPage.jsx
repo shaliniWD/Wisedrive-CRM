@@ -232,21 +232,28 @@ export default function LeadsPage() {
     setIsAssignModalOpen(true);
   };
 
+  const [reassignReason, setReassignReason] = useState('');
+
   const handleAssignEmployee = async () => {
     if (!assigningLead) return;
+    if (!reassignReason) {
+      toast.error('Please provide a reason for reassignment');
+      return;
+    }
     setSaving(true);
     try {
-      await leadsApi.update(assigningLead.id, {
-        ...assigningLead,
-        assigned_to: selectedEmployee,
+      await leadsApi.reassign(assigningLead.id, {
+        new_agent_id: selectedEmployee,
+        reason: reassignReason,
       });
-      toast.success('Employee assigned successfully');
+      toast.success('Lead reassigned successfully');
       setIsAssignModalOpen(false);
       setAssigningLead(null);
       setSelectedEmployee('');
+      setReassignReason('');
       fetchData();
     } catch (error) {
-      toast.error('Failed to assign employee');
+      toast.error(error.response?.data?.detail || 'Failed to reassign lead');
     } finally {
       setSaving(false);
     }
