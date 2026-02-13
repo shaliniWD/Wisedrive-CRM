@@ -46,6 +46,7 @@ export default function LeadsPage() {
   const [formData, setFormData] = useState({
     name: '', mobile: '', city: '', source: 'WEBSITE', status: 'NEW',
     assigned_to: '', reminder_date: '', reminder_time: '', notes: '',
+    service_type: '',
   });
 
   const [paymentFormData, setPaymentFormData] = useState({
