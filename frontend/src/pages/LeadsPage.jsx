@@ -196,10 +196,28 @@ export default function LeadsPage() {
   const openPaymentModal = (lead) => {
     setSelectedLead(lead);
     setPaymentFormData({
-      ...paymentFormData,
-      customerMobile: lead.mobile,
+      hasCarDetails: 'yes',
+      carNo: '',
+      carMake: '',
+      carModel: '',
+      carYear: '',
+      fuelType: '',
+      carColor: '',
+      carConfirmed: false,
+      packageType: '',
+      numberOfCars: '1',
+      discountType: '',
+      discountValue: '',
       city: lead.city || '',
+      inspectionDate: '',
+      inspectionTime: '',
+      address: '',
+      latitude: '',
+      longitude: '',
+      customerMobile: lead.mobile,
+      customerName: lead.name,
     });
+    setCarError('');
     setModalStep(1);
     setIsPaymentModalOpen(true);
   };
