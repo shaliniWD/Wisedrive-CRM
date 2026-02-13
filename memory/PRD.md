@@ -89,8 +89,8 @@ Recreate WiseDrive CRM (https://crm.wisedrive.com) design with a modern UI. Crea
 - [x] Customer Details Modal with transaction history
 
 ### P1 - High Priority (Next)
+- [x] Pagination for data tables (Leads, Customers)
 - [ ] Search/filter persistence across page navigation
-- [ ] Pagination for large datasets
 - [ ] Export data to CSV/Excel
 - [ ] Bulk actions (delete multiple, status update)
 
