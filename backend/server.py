@@ -1709,6 +1709,46 @@ async def delete_hr_employee(employee_id: str, current_user: dict = Depends(get_
     return {"message": "Employee deactivated"}
 
 
+# -------------------- PASSWORD MANAGEMENT --------------------
+
+class PasswordResetRequest(BaseModel):
+    new_password: str
+
+@api_router.post("/hr/employees/{employee_id}/reset-password")
+async def reset_employee_password(employee_id: str, request: PasswordResetRequest, current_user: dict = Depends(get_current_user)):
+    """Reset employee password - HR and CEO only"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Only CEO and HR Manager can reset passwords")
+    
+    # Validate password length
+    if len(request.new_password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    
+    existing = await db.users.find_one({"id": employee_id}, {"_id": 0, "name": 1, "email": 1})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    # Hash and update password
+    hashed_password = hash_password(request.new_password)
+    await db.users.update_one(
+        {"id": employee_id},
+        {"$set": {"hashed_password": hashed_password, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    # Log audit
+    await audit_service.log(
+        entity_type="employee",
+        entity_id=employee_id,
+        action="password_reset",
+        user_id=current_user["id"],
+        new_values={"email": existing.get("email"), "reset_by": current_user.get("name")}
+    )
+    
+    return {"message": f"Password reset successfully for {existing.get('name')}"}
+
+
 # -------------------- SALARY MANAGEMENT --------------------
 
 @api_router.get("/hr/employees/{employee_id}/salary")
