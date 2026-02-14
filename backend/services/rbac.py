@@ -28,18 +28,18 @@ class RBACService:
     
     # Tab visibility by role code
     TAB_VISIBILITY = {
-        CEO: ["leads", "customers", "inspections", "reports", "employees", "settings", "finance"],
-        HR_MANAGER: ["employees"],  # HR only sees Admin (employees)
-        FINANCE_MANAGER: ["finance"],  # Finance Manager only sees Finance tab
-        COUNTRY_HEAD: ["leads", "customers", "inspections", "reports", "employees", "settings", "finance"],
-        SALES_HEAD: ["leads", "customers", "employees"],
-        INSPECTION_HEAD: ["customers", "inspections", "reports", "employees"],
-        SALES_LEAD: ["leads", "customers"],
-        INSPECTION_LEAD: ["customers", "inspections", "reports"],
-        SALES_EXEC: ["leads"],
-        INSPECTION_COORD: ["inspections"],
-        REPORT_REVIEWER: ["inspections", "reports"],
-        MECHANIC: [],  # Mechanics don't have CRM access
+        CEO: ["leads", "customers", "inspections", "reports", "employees", "settings", "finance", "hr"],
+        HR_MANAGER: ["employees", "hr", "finance"],  # HR sees Admin, HR Module, and Finance
+        FINANCE_MANAGER: ["finance", "hr"],  # Finance Manager sees Finance and HR Module (for payroll)
+        COUNTRY_HEAD: ["leads", "customers", "inspections", "reports", "employees", "settings", "finance", "hr"],
+        SALES_HEAD: ["leads", "customers", "employees", "hr"],
+        INSPECTION_HEAD: ["customers", "inspections", "reports", "employees", "hr"],
+        SALES_LEAD: ["leads", "customers", "hr"],
+        INSPECTION_LEAD: ["customers", "inspections", "reports", "hr"],
+        SALES_EXEC: ["leads", "hr"],
+        INSPECTION_COORD: ["inspections", "hr"],
+        REPORT_REVIEWER: ["inspections", "reports", "hr"],
+        MECHANIC: ["hr"],  # Mechanics can access HR for leave/attendance
     }
 
     def __init__(self, db: AsyncIOMotorDatabase):
