@@ -1645,6 +1645,26 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
                 <h4 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
                   <Users className="h-4 w-4 text-blue-500" /> Personal Information
                 </h4>
+                {/* Photo Preview and URL */}
+                <div className="flex items-center gap-4 mb-4">
+                  {form.photo_url ? (
+                    <img src={form.photo_url} alt="Employee" className="h-16 w-16 rounded-full object-cover border-2 border-blue-400" />
+                  ) : (
+                    <div className="h-16 w-16 rounded-full bg-gradient-to-r from-gray-300 to-gray-400 flex items-center justify-center text-white text-xl font-medium">
+                      {form.name?.charAt(0)?.toUpperCase() || '?'}
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <Label className="text-sm font-medium">Photo URL</Label>
+                    <Input 
+                      value={form.photo_url || ''} 
+                      onChange={(e) => setForm({...form, photo_url: e.target.value})} 
+                      className="h-10 mt-1" 
+                      placeholder="https://example.com/photo.jpg"
+                      data-testid="emp-photo-url"
+                    />
+                  </div>
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Full Name <span className="text-red-500">*</span></Label>
