@@ -1797,19 +1797,20 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
   const [selectedCities, setSelectedCities] = useState([]);
   const [leadsSaving, setLeadsSaving] = useState(false);
 
-  // Fetch available cities
+  // Fetch available cities from the employee's country
   useEffect(() => {
-    const fetchCities = async () => {
-      try {
-        const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/cities`);
-        setAvailableCities(response.data || []);
-      } catch (error) {
-        console.error('Failed to load cities:', error);
+    const fetchCities = () => {
+      // Get cities from employee's country
+      const employeeCountry = countries?.find(c => c.id === employee?.country_id);
+      if (employeeCountry?.cities?.length > 0) {
+        setAvailableCities(employeeCountry.cities);
+      } else {
+        // Fallback to default cities if country has none
         setAvailableCities(['Bangalore', 'Hyderabad', 'Chennai', 'Mumbai', 'Delhi', 'Pune', 'Kolkata']);
       }
     };
     fetchCities();
-  }, []);
+  }, [employee?.country_id, countries]);
 
   // Handle leads assignment toggle
   const handleLeadsToggle = async (active) => {
