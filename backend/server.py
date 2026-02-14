@@ -1457,6 +1457,18 @@ async def create_hr_employee(emp_data: EmployeeCreate, current_user: dict = Depe
         count = await db.users.count_documents({})
         emp_dict["employee_code"] = f"EMP{str(count + 1).zfill(4)}"
     
+    # Encrypt bank account number if provided
+    if emp_dict.get("bank_account_number"):
+        encryption_service = get_encryption_service()
+        bank_details = encryption_service.encrypt_bank_details(emp_dict["bank_account_number"])
+        emp_dict["bank_account_number_encrypted"] = bank_details["encrypted"]
+        emp_dict["bank_account_number_masked"] = bank_details["masked"]
+        emp_dict.pop("bank_account_number", None)  # Remove plaintext
+    
+    # Set default payroll_active
+    if "payroll_active" not in emp_dict:
+        emp_dict["payroll_active"] = True
+    
     # Check if role is mechanic - no CRM access
     if emp_dict.get("role_id"):
         role = await db.roles.find_one({"id": emp_dict["role_id"]}, {"_id": 0, "code": 1})
@@ -1466,6 +1478,7 @@ async def create_hr_employee(emp_data: EmployeeCreate, current_user: dict = Depe
     await db.users.insert_one(emp_dict)
     emp_dict.pop("_id", None)
     emp_dict.pop("hashed_password", None)
+    emp_dict.pop("bank_account_number_encrypted", None)  # Don't return encrypted value
     
     # Log audit
     await audit_service.log(
