@@ -12,8 +12,8 @@ import {
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { 
-  Loader2, Clock, DollarSign, Calendar, CheckCircle, XCircle, AlertCircle,
-  Download, Users, PlayCircle, StopCircle, RefreshCw, FileText, Search, Filter
+  Loader2, Clock, IndianRupee, Calendar, CheckCircle, XCircle, AlertCircle,
+  Download, Users, PlayCircle, StopCircle, RefreshCw, FileText, Search, Filter, DollarSign
 } from 'lucide-react';
 
 // ==================== ATTENDANCE DASHBOARD ====================
