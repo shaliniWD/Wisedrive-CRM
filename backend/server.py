@@ -3476,7 +3476,7 @@ async def get_payroll_adjustments(
 # -------------------- PAYSLIP --------------------
 
 @api_router.post("/hr/payroll/{payroll_id}/generate-payslip")
-async def generate_payslip(
+async def generate_hr_payslip(
     payroll_id: str,
     current_user: dict = Depends(get_current_user)
 ):
