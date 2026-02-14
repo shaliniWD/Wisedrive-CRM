@@ -444,11 +444,17 @@ class AttendanceService:
         month: int,
         year: int
     ) -> dict:
-        """Get monthly attendance summary for payroll"""
+        """Get monthly attendance summary for payroll
+        
+        Includes data from both:
+        - attendance_records (session-based)
+        - attendance_overrides (HR manual entries)
+        """
         start_date = f"{year}-{str(month).zfill(2)}-01"
         last_day = calendar.monthrange(year, month)[1]
         end_date = f"{year}-{str(month).zfill(2)}-{last_day}"
         
+        # Get attendance records (session-based)
         records = await self.db.attendance_records.find(
             {
                 "employee_id": employee_id,
@@ -458,36 +464,76 @@ class AttendanceService:
             {"_id": 0}
         ).to_list(31)
         
-        # Calculate summary
+        # Get attendance overrides (HR manual entries)
+        overrides = await self.db.attendance_overrides.find(
+            {
+                "employee_id": employee_id,
+                "date": {"$gte": start_date, "$lte": end_date}
+            },
+            {"_id": 0}
+        ).to_list(31)
+        
+        # Create override map for quick lookup
+        override_map = {o["date"]: o["status"] for o in overrides}
+        
+        # Create record map for quick lookup
+        record_map = {}
+        for r in records:
+            record_map[r["date"]] = r
+        
+        # Calculate summary considering both sources
         present = 0
         pending = 0
-        absent = 0
+        lop_days = 0  # LOP (Loss of Pay) days
         approved = 0
         rejected = 0
+        half_days = 0
         total_minutes = 0
         
-        for r in records:
-            status = r.get("system_status", "ABSENT")
-            override = r.get("hr_override_status")
+        # Process each day of the month
+        for day in range(1, last_day + 1):
+            date_str = f"{year}-{str(month).zfill(2)}-{str(day).zfill(2)}"
             
-            if status == "PRESENT":
-                present += 1
-            elif status == "PENDING":
-                pending += 1
-                if override == "APPROVED":
+            # Check override first (takes precedence)
+            if date_str in override_map:
+                status = override_map[date_str]
+                if status == "present":
+                    present += 1
+                elif status == "lop" or status == "absent":
+                    lop_days += 1
+                elif status == "half_day":
+                    half_days += 1
+                    present += 0.5  # Count half day as 0.5 present
+                elif status == "leave_approved":
                     approved += 1
-                elif override == "REJECTED":
-                    rejected += 1
-            elif status == "ABSENT":
-                absent += 1
+                # Holiday status doesn't count
+                continue
             
-            total_minutes += r.get("total_active_minutes", 0)
+            # Then check session-based records
+            if date_str in record_map:
+                r = record_map[date_str]
+                status = r.get("system_status", "ABSENT")
+                override = r.get("hr_override_status")
+                
+                if status == "PRESENT":
+                    present += 1
+                elif status == "PENDING":
+                    pending += 1
+                    if override == "APPROVED":
+                        approved += 1
+                    elif override == "REJECTED":
+                        rejected += 1
+                        lop_days += 1  # Rejected becomes LOP
+                elif status == "ABSENT":
+                    lop_days += 1
+                
+                total_minutes += r.get("total_active_minutes", 0)
         
         # Working days (excluding Sundays by default, can be enhanced)
         working_days = last_day - self._count_sundays(year, month)
         
-        # Unapproved absent = ABSENT + (PENDING without APPROVED override)
-        unapproved_absent = absent + (pending - approved)
+        # Unapproved absent = LOP + (PENDING without APPROVED override)
+        unapproved_absent = lop_days + max(0, pending - approved)
         
         return {
             "employee_id": employee_id,
@@ -496,7 +542,9 @@ class AttendanceService:
             "working_days": working_days,
             "present_days": present,
             "pending_days": pending,
-            "absent_days": absent,
+            "lop_days": lop_days,  # Changed from absent_days
+            "absent_days": lop_days,  # Keep for backward compatibility
+            "half_days": half_days,
             "approved_days": approved,
             "rejected_days": rejected,
             "unapproved_absent_days": unapproved_absent,
