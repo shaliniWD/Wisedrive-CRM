@@ -498,7 +498,8 @@ class PayrollService:
         if payroll.get("other_deductions", 0) > 0:
             deductions_data.append(["Other Deductions", f"{currency}{payroll['other_deductions']:,.2f}"])
         if payroll.get("attendance_deduction", 0) > 0:
-            deductions_data.append([f"Attendance Deduction ({payroll.get('unapproved_absent_days', 0)} days)", f"{currency}{payroll['attendance_deduction']:,.2f}"])
+            lop_days = payroll.get('lop_days', payroll.get('unapproved_absent_days', 0))
+            deductions_data.append([f"LOP Deduction ({lop_days} days)", f"{currency}{payroll['attendance_deduction']:,.2f}"])
         
         total_deductions = payroll.get("total_statutory_deductions", 0) + payroll.get("attendance_deduction", 0)
         deductions_data.append(["Total Deductions", f"{currency}{total_deductions:,.2f}"])
@@ -531,11 +532,12 @@ class PayrollService:
         elements.append(Spacer(1, 20))
         
         # Attendance Summary
+        lop_days = payroll.get('lop_days', payroll.get('absent_days', 0))
         att_data = [
             ["Attendance Summary", ""],
             ["Working Days", str(payroll.get("working_days_in_month", 0))],
             ["Days Present", str(payroll.get("present_days", 0))],
-            ["Days Absent", str(payroll.get("absent_days", 0))],
+            ["LOP Days", str(lop_days)],
             ["Total Hours Worked", f"{payroll.get('total_hours_worked', 0):.1f} hrs"],
         ]
         att_table = Table(att_data, colWidths=[4*inch, 2.5*inch])
