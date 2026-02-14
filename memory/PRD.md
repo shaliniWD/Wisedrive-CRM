@@ -253,14 +253,13 @@ Vendor Payment → Finance Manager creates with GST/TDS → Submit for Approval 
 ```
 
 ## Last Updated
-February 14, 2026 - **5 New HR Features Complete**: All 5 requested features implemented and verified:
-1. **Employee Photo & ID** - photo_url field in modal with preview, displays in employee table
-2. **"On Leave" Status** - Dynamic status calculation from approved leave requests, amber badge
-3. **Quick Leave Actions** - CalendarPlus (Apply Leave) and List (View Leaves) buttons in Actions column
-4. **Freelancer Role** - FREELANCER added to PRESET_ROLES with pink badge, RBAC service with hr-only access
-5. **"On Leave Today" Card** - Dashboard card with count and expandable employee list
+February 14, 2026 - **HR Module UI Improvements**: 
+1. Removed top mini dashboard cards from HR Module page
+2. Added "On Leave Today" card to employee data table summary section (5 cards now)
+3. Replaced leave action buttons with attendance action button (Clock icon)
+4. Added Quick Attendance modal to mark attendance directly from employee table
 
-Previous: HR Module Enterprise Readiness Complete with 4 mandatory fixes (encryption, RBAC, storage, fields).
+Previous: 5 New HR Features Complete (photo URL, on-leave status, quick leave actions, freelancer role, on leave today card).
 
 ## Platform Architecture v5.0
 
