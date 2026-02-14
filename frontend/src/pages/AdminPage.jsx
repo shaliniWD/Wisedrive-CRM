@@ -508,7 +508,7 @@ export default function AdminPage({ initialTab = 'employees', embedded = false }
                             </button>
                           </td>
                           <td className="px-4 py-4">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1">
                               <button
                                 className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                 onClick={() => openEmployeeModal(emp)}
@@ -517,6 +517,34 @@ export default function AdminPage({ initialTab = 'employees', embedded = false }
                               >
                                 <Eye className="h-4 w-4" />
                               </button>
+                              {emp.is_active && (
+                                <>
+                                  <button
+                                    className="p-2 text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                                    onClick={() => {
+                                      setSelectedEmployee(emp);
+                                      setEmployeeModalTab('leave');
+                                      setIsEmployeeModalOpen(true);
+                                    }}
+                                    title="Apply Leave"
+                                    data-testid={`apply-leave-${emp.id}`}
+                                  >
+                                    <CalendarPlus className="h-4 w-4" />
+                                  </button>
+                                  <button
+                                    className="p-2 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                                    onClick={() => {
+                                      setSelectedEmployee(emp);
+                                      setEmployeeModalTab('leave');
+                                      setIsEmployeeModalOpen(true);
+                                    }}
+                                    title="View Leaves"
+                                    data-testid={`view-leaves-${emp.id}`}
+                                  >
+                                    <List className="h-4 w-4" />
+                                  </button>
+                                </>
+                              )}
                               {isHROrCEO && emp.is_active && (
                                 <button
                                   className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
