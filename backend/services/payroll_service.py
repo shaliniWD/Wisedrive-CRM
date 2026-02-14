@@ -726,3 +726,622 @@ class PayrollService:
         }
         
         await self.db.audit_logs.insert_one(audit)
+    
+    # ==================== BATCH-BASED PAYROLL (NEW GOVERNANCE) ====================
+    
+    async def preview_payroll(
+        self,
+        month: int,
+        year: int,
+        country_id: str,
+        user_id: str
+    ) -> dict:
+        """
+        Generate payroll preview (no DB save).
+        Returns editable data for HR to review before creating batch.
+        """
+        # Get country info
+        country = await self.db.countries.find_one({"id": country_id}, {"_id": 0})
+        if not country:
+            raise ValueError("Country not found")
+        
+        currency = country.get("currency", "INR")
+        currency_symbol = country.get("currency_symbol", "₹")
+        
+        # Get all eligible employees
+        # Criteria: is_active=True, payroll_active=True (if field exists), country_id matches
+        query = {
+            "is_active": True,
+            "country_id": country_id
+        }
+        
+        employees = await self.db.users.find(query, {"_id": 0}).to_list(10000)
+        
+        # Filter employees who joined before month end
+        last_day = calendar.monthrange(year, month)[1]
+        month_end = f"{year}-{str(month).zfill(2)}-{last_day}"
+        
+        eligible_employees = []
+        for emp in employees:
+            join_date = emp.get("joining_date", "")
+            if join_date and join_date <= month_end:
+                eligible_employees.append(emp)
+            elif not join_date:
+                eligible_employees.append(emp)
+        
+        # Check for existing batch
+        existing_batch = await self.db.payroll_batches.find_one({
+            "month": month,
+            "year": year,
+            "country_id": country_id
+        })
+        if existing_batch:
+            raise ValueError(f"Payroll batch already exists for {month}/{year}. Status: {existing_batch.get('status')}")
+        
+        # Calculate payroll preview for each employee
+        preview_records = []
+        total_gross = 0
+        total_statutory = 0
+        total_attendance = 0
+        total_other = 0
+        total_net = 0
+        
+        working_days = calendar.monthrange(year, month)[1] - self._count_sundays(year, month)
+        
+        for emp in eligible_employees:
+            record = await self._calculate_employee_payroll(
+                emp, month, year, working_days, currency, currency_symbol
+            )
+            preview_records.append(record)
+            
+            total_gross += record["gross_salary"]
+            total_statutory += record["total_statutory_deductions"]
+            total_attendance += record["attendance_deduction"]
+            total_other += record["other_deductions"]
+            total_net += record["net_salary"]
+        
+        return {
+            "month": month,
+            "year": year,
+            "country_id": country_id,
+            "country_name": country.get("name"),
+            "currency": currency,
+            "currency_symbol": currency_symbol,
+            "working_days": working_days,
+            "employee_count": len(preview_records),
+            "total_gross": round(total_gross, 2),
+            "total_statutory_deductions": round(total_statutory, 2),
+            "total_attendance_deductions": round(total_attendance, 2),
+            "total_other_deductions": round(total_other, 2),
+            "total_net": round(total_net, 2),
+            "records": preview_records
+        }
+    
+    async def _calculate_employee_payroll(
+        self,
+        employee: dict,
+        month: int,
+        year: int,
+        working_days: int,
+        currency: str,
+        currency_symbol: str
+    ) -> dict:
+        """Calculate payroll for a single employee (for preview/batch creation)"""
+        
+        # Get salary structure
+        salary = await self.db.salary_structures.find_one(
+            {"user_id": employee["id"], "effective_to": None},
+            {"_id": 0}
+        )
+        
+        # Get department name
+        dept_name = None
+        if employee.get("department_id"):
+            dept = await self.db.departments.find_one({"id": employee["department_id"]}, {"_id": 0, "name": 1})
+            dept_name = dept.get("name") if dept else None
+        
+        # Check if mechanic/freelancer
+        is_freelancer = False
+        if employee.get("role_id"):
+            role = await self.db.roles.find_one({"id": employee["role_id"]}, {"_id": 0, "code": 1})
+            is_freelancer = role and role.get("code") == "MECHANIC"
+        
+        # Calculate salary components
+        basic = salary.get("basic_salary", 0) if salary else 0
+        hra = salary.get("hra", 0) if salary else 0
+        conveyance = salary.get("conveyance_allowance", 0) if salary else 0
+        medical = salary.get("medical_allowance", 0) if salary else 0
+        special = salary.get("special_allowance", 0) if salary else 0
+        variable = salary.get("variable_pay", 0) if salary else 0
+        
+        gross = basic + hra + conveyance + medical + special + variable
+        
+        # Statutory deductions (from salary structure)
+        pf_employee = salary.get("pf_employee", 0) if salary else 0
+        pf_employer = salary.get("pf_employer", 0) if salary else 0
+        professional_tax = salary.get("professional_tax", 0) if salary else 0
+        income_tax = salary.get("income_tax", 0) if salary else 0
+        esi = salary.get("esi", 0) if salary else 0
+        other_statutory = salary.get("other_statutory", 0) if salary else 0
+        total_statutory = pf_employee + professional_tax + income_tax + esi + other_statutory
+        
+        # Get attendance summary
+        if self.attendance_service:
+            attendance = await self.attendance_service.get_attendance_summary(
+                employee["id"], month, year
+            )
+        else:
+            attendance = {
+                "working_days": working_days,
+                "present_days": working_days,
+                "pending_days": 0,
+                "absent_days": 0,
+                "approved_leave_days": 0,
+                "unapproved_absent_days": 0,
+                "total_hours_worked": 0
+            }
+        
+        # Calculate attendance deduction
+        # Only unapproved absences deduct salary
+        per_day_salary = gross / working_days if working_days > 0 else 0
+        unapproved_absent = attendance.get("unapproved_absent_days", 0)
+        attendance_deduction = round(per_day_salary * unapproved_absent, 2)
+        
+        # Other deductions (editable - starts at 0)
+        other_deductions = 0
+        
+        # Total deductions
+        total_deductions = total_statutory + attendance_deduction + other_deductions
+        
+        # Net salary
+        net = round(gross - total_deductions, 2)
+        
+        # For freelancers/mechanics
+        inspections = 0
+        price_per_inspection = salary.get("price_per_inspection", 0) if salary else 0
+        inspection_pay = 0
+        if is_freelancer:
+            start_date = f"{year}-{str(month).zfill(2)}-01"
+            last_day = calendar.monthrange(year, month)[1]
+            end_date = f"{year}-{str(month).zfill(2)}-{last_day}"
+            
+            inspections = await self.db.inspections.count_documents({
+                "mechanic_id": employee["id"],
+                "inspection_status": "COMPLETED",
+                "completed_at": {"$gte": start_date, "$lte": end_date + "T23:59:59"}
+            })
+            inspection_pay = inspections * price_per_inspection
+            net = inspection_pay
+        
+        return {
+            "employee_id": employee["id"],
+            "employee_name": employee.get("name", ""),
+            "employee_code": employee.get("employee_code"),
+            "department_name": dept_name,
+            "country_id": employee.get("country_id"),
+            "month": month,
+            "year": year,
+            
+            # Salary snapshot (NOT EDITABLE)
+            "basic_salary": basic,
+            "hra": hra,
+            "conveyance_allowance": conveyance,
+            "medical_allowance": medical,
+            "special_allowance": special,
+            "variable_pay": variable,
+            "gross_salary": gross,
+            
+            # Statutory deductions (EDITABLE)
+            "pf_employee": pf_employee,
+            "pf_employer": pf_employer,
+            "professional_tax": professional_tax,
+            "income_tax": income_tax,
+            "esi": esi,
+            "other_statutory": other_statutory,
+            "total_statutory_deductions": round(total_statutory, 2),
+            
+            # Attendance deduction (AUTO - not editable unless override)
+            "working_days_in_month": working_days,
+            "per_day_salary": round(per_day_salary, 2),
+            "present_days": attendance.get("present_days", 0),
+            "pending_days": attendance.get("pending_days", 0),
+            "absent_days": attendance.get("absent_days", 0),
+            "approved_leave_days": attendance.get("approved_leave_days", 0),
+            "unapproved_absent_days": unapproved_absent,
+            "attendance_deduction": attendance_deduction,
+            "attendance_override": False,
+            "total_hours_worked": attendance.get("total_hours_worked", 0),
+            
+            # Other deductions (EDITABLE)
+            "other_deductions": other_deductions,
+            "other_deductions_reason": None,
+            
+            # Total deductions
+            "total_deductions": round(total_deductions, 2),
+            
+            # Net salary (AUTO CALCULATED)
+            "net_salary": net,
+            
+            # Freelancer
+            "is_freelancer": is_freelancer,
+            "inspections_completed": inspections,
+            "price_per_inspection": price_per_inspection,
+            "total_inspection_pay": inspection_pay,
+            
+            # Currency
+            "currency": currency,
+            "currency_symbol": currency_symbol,
+            
+            # Bank details
+            "bank_name": employee.get("bank_name"),
+            "bank_account_number": employee.get("bank_account_number"),
+            "ifsc_code": employee.get("ifsc_code"),
+        }
+    
+    async def create_batch(
+        self,
+        month: int,
+        year: int,
+        country_id: str,
+        records: List[dict],
+        created_by: str,
+        created_by_name: str
+    ) -> dict:
+        """
+        Create a DRAFT payroll batch with records.
+        Batch can be edited until confirmed.
+        """
+        # Validate no existing batch
+        existing = await self.db.payroll_batches.find_one({
+            "month": month,
+            "year": year,
+            "country_id": country_id
+        })
+        if existing:
+            raise ValueError(f"Batch already exists. ID: {existing.get('id')}, Status: {existing.get('status')}")
+        
+        # Get country info
+        country = await self.db.countries.find_one({"id": country_id}, {"_id": 0})
+        if not country:
+            raise ValueError("Country not found")
+        
+        now = datetime.now(timezone.utc).isoformat()
+        batch_id = str(uuid.uuid4())
+        
+        # Calculate totals
+        total_gross = sum(r.get("gross_salary", 0) for r in records)
+        total_statutory = sum(r.get("total_statutory_deductions", 0) for r in records)
+        total_attendance = sum(r.get("attendance_deduction", 0) for r in records)
+        total_other = sum(r.get("other_deductions", 0) for r in records)
+        total_net = sum(r.get("net_salary", 0) for r in records)
+        
+        # Create batch
+        batch = {
+            "id": batch_id,
+            "month": month,
+            "year": year,
+            "country_id": country_id,
+            "country_name": country.get("name"),
+            "status": "DRAFT",
+            "employee_count": len(records),
+            "total_gross": round(total_gross, 2),
+            "total_statutory_deductions": round(total_statutory, 2),
+            "total_attendance_deductions": round(total_attendance, 2),
+            "total_other_deductions": round(total_other, 2),
+            "total_net": round(total_net, 2),
+            "generated_by": created_by,
+            "generated_by_name": created_by_name,
+            "generated_at": now,
+            "currency": country.get("currency", "INR"),
+            "currency_symbol": country.get("currency_symbol", "₹"),
+            "created_at": now
+        }
+        
+        await self.db.payroll_batches.insert_one(batch)
+        
+        # Create payroll records linked to batch
+        for record in records:
+            record["id"] = str(uuid.uuid4())
+            record["batch_id"] = batch_id
+            record["is_locked"] = False  # Editable in DRAFT
+            record["payment_status"] = "GENERATED"
+            record["generated_at"] = now
+            record["generated_by"] = created_by
+            record["generated_by_name"] = created_by_name
+            record["created_at"] = now
+            record["version"] = 1
+            
+            await self.db.payroll_records.insert_one(record)
+        
+        batch.pop("_id", None)
+        
+        # Log audit
+        await self._log_audit(
+            "payroll_batch", batch_id, "create",
+            created_by, {"month": month, "year": year, "country_id": country_id, "employee_count": len(records)}
+        )
+        
+        return batch
+    
+    async def update_batch_record(
+        self,
+        batch_id: str,
+        record_id: str,
+        updates: dict,
+        updated_by: str,
+        updated_by_name: str
+    ) -> dict:
+        """
+        Update a payroll record in a DRAFT batch.
+        Only certain fields are editable.
+        """
+        # Verify batch is DRAFT
+        batch = await self.db.payroll_batches.find_one({"id": batch_id}, {"_id": 0})
+        if not batch:
+            raise ValueError("Batch not found")
+        if batch.get("status") != "DRAFT":
+            raise ValueError(f"Cannot edit batch in {batch.get('status')} status. Only DRAFT batches are editable.")
+        
+        # Get record
+        record = await self.db.payroll_records.find_one({"id": record_id, "batch_id": batch_id}, {"_id": 0})
+        if not record:
+            raise ValueError("Record not found in this batch")
+        
+        # Only allow updating specific fields
+        allowed_fields = [
+            "pf_employee", "professional_tax", "income_tax", "esi", "other_statutory",
+            "attendance_override", "attendance_deduction", "attendance_override_reason",
+            "other_deductions", "other_deductions_reason"
+        ]
+        
+        update_data = {}
+        for field in allowed_fields:
+            if field in updates and updates[field] is not None:
+                update_data[field] = updates[field]
+        
+        if not update_data:
+            raise ValueError("No valid fields to update")
+        
+        # Recalculate totals
+        pf = update_data.get("pf_employee", record.get("pf_employee", 0))
+        pt = update_data.get("professional_tax", record.get("professional_tax", 0))
+        tds = update_data.get("income_tax", record.get("income_tax", 0))
+        esi = update_data.get("esi", record.get("esi", 0))
+        other_stat = update_data.get("other_statutory", record.get("other_statutory", 0))
+        total_statutory = pf + pt + tds + esi + other_stat
+        
+        attendance_ded = update_data.get("attendance_deduction", record.get("attendance_deduction", 0))
+        other_ded = update_data.get("other_deductions", record.get("other_deductions", 0))
+        
+        total_deductions = total_statutory + attendance_ded + other_ded
+        gross = record.get("gross_salary", 0)
+        net = gross - total_deductions
+        
+        update_data["total_statutory_deductions"] = round(total_statutory, 2)
+        update_data["total_deductions"] = round(total_deductions, 2)
+        update_data["net_salary"] = round(net, 2)
+        update_data["version"] = record.get("version", 1) + 1
+        
+        await self.db.payroll_records.update_one(
+            {"id": record_id},
+            {"$set": update_data}
+        )
+        
+        # Recalculate batch totals
+        await self._recalculate_batch_totals(batch_id)
+        
+        # Get updated record
+        updated_record = await self.db.payroll_records.find_one({"id": record_id}, {"_id": 0})
+        
+        # Log audit
+        await self._log_audit(
+            "payroll_record", record_id, "update",
+            updated_by, {"batch_id": batch_id, "changes": update_data}
+        )
+        
+        return updated_record
+    
+    async def _recalculate_batch_totals(self, batch_id: str):
+        """Recalculate batch totals after record updates"""
+        records = await self.db.payroll_records.find(
+            {"batch_id": batch_id},
+            {"_id": 0}
+        ).to_list(10000)
+        
+        total_gross = sum(r.get("gross_salary", 0) for r in records)
+        total_statutory = sum(r.get("total_statutory_deductions", 0) for r in records)
+        total_attendance = sum(r.get("attendance_deduction", 0) for r in records)
+        total_other = sum(r.get("other_deductions", 0) for r in records)
+        total_net = sum(r.get("net_salary", 0) for r in records)
+        
+        await self.db.payroll_batches.update_one(
+            {"id": batch_id},
+            {"$set": {
+                "employee_count": len(records),
+                "total_gross": round(total_gross, 2),
+                "total_statutory_deductions": round(total_statutory, 2),
+                "total_attendance_deductions": round(total_attendance, 2),
+                "total_other_deductions": round(total_other, 2),
+                "total_net": round(total_net, 2)
+            }}
+        )
+    
+    async def confirm_batch(
+        self,
+        batch_id: str,
+        confirmed_by: str,
+        confirmed_by_name: str,
+        notes: Optional[str] = None
+    ) -> dict:
+        """
+        Confirm a batch (DRAFT → CONFIRMED).
+        Locks all records. Payslips can now be generated.
+        """
+        batch = await self.db.payroll_batches.find_one({"id": batch_id}, {"_id": 0})
+        if not batch:
+            raise ValueError("Batch not found")
+        if batch.get("status") != "DRAFT":
+            raise ValueError(f"Can only confirm DRAFT batches. Current status: {batch.get('status')}")
+        
+        now = datetime.now(timezone.utc).isoformat()
+        
+        # Lock all records
+        await self.db.payroll_records.update_many(
+            {"batch_id": batch_id},
+            {"$set": {"is_locked": True}}
+        )
+        
+        # Update batch status
+        update_data = {
+            "status": "CONFIRMED",
+            "confirmed_by": confirmed_by,
+            "confirmed_by_name": confirmed_by_name,
+            "confirmed_at": now
+        }
+        if notes:
+            update_data["notes"] = notes
+        
+        await self.db.payroll_batches.update_one(
+            {"id": batch_id},
+            {"$set": update_data}
+        )
+        
+        # Log audit
+        await self._log_audit(
+            "payroll_batch", batch_id, "confirm",
+            confirmed_by, {"status": "CONFIRMED", "notes": notes}
+        )
+        
+        batch.update(update_data)
+        return batch
+    
+    async def mark_batch_paid(
+        self,
+        batch_id: str,
+        payment_date: str,
+        payment_mode: str,
+        transaction_reference: str,
+        paid_by: str,
+        paid_by_name: str,
+        notes: Optional[str] = None
+    ) -> dict:
+        """
+        Mark batch as paid (CONFIRMED → CLOSED).
+        No further edits allowed after this.
+        """
+        batch = await self.db.payroll_batches.find_one({"id": batch_id}, {"_id": 0})
+        if not batch:
+            raise ValueError("Batch not found")
+        if batch.get("status") != "CONFIRMED":
+            raise ValueError(f"Can only mark CONFIRMED batches as paid. Current status: {batch.get('status')}")
+        
+        if not transaction_reference:
+            raise ValueError("Transaction reference is required")
+        
+        now = datetime.now(timezone.utc).isoformat()
+        
+        # Update all records in batch
+        await self.db.payroll_records.update_many(
+            {"batch_id": batch_id},
+            {"$set": {
+                "payment_status": "PAID",
+                "payment_date": payment_date,
+                "payment_mode": payment_mode,
+                "transaction_reference": transaction_reference,
+                "payment_by": paid_by,
+                "payment_by_name": paid_by_name,
+                "payment_timestamp": now
+            }}
+        )
+        
+        # Update batch status
+        update_data = {
+            "status": "CLOSED",
+            "closed_by": paid_by,
+            "closed_by_name": paid_by_name,
+            "closed_at": now,
+            "payment_date": payment_date,
+            "payment_mode": payment_mode,
+            "transaction_reference": transaction_reference
+        }
+        if notes:
+            update_data["notes"] = notes
+        
+        await self.db.payroll_batches.update_one(
+            {"id": batch_id},
+            {"$set": update_data}
+        )
+        
+        # Log audit
+        await self._log_audit(
+            "payroll_batch", batch_id, "mark_paid",
+            paid_by, {
+                "status": "CLOSED",
+                "transaction_reference": transaction_reference,
+                "payment_mode": payment_mode,
+                "total_amount": batch.get("total_net")
+            }
+        )
+        
+        batch.update(update_data)
+        return batch
+    
+    async def get_batch(self, batch_id: str) -> Optional[dict]:
+        """Get a batch by ID"""
+        batch = await self.db.payroll_batches.find_one({"id": batch_id}, {"_id": 0})
+        return batch
+    
+    async def get_batch_records(self, batch_id: str) -> List[dict]:
+        """Get all records in a batch"""
+        records = await self.db.payroll_records.find(
+            {"batch_id": batch_id},
+            {"_id": 0}
+        ).sort("employee_name", 1).to_list(10000)
+        return records
+    
+    async def get_batches(
+        self,
+        country_id: Optional[str] = None,
+        status: Optional[str] = None,
+        year: Optional[int] = None
+    ) -> List[dict]:
+        """Get batches with optional filters"""
+        query = {}
+        if country_id:
+            query["country_id"] = country_id
+        if status:
+            query["status"] = status
+        if year:
+            query["year"] = year
+        
+        batches = await self.db.payroll_batches.find(
+            query, {"_id": 0}
+        ).sort([("year", -1), ("month", -1)]).to_list(1000)
+        
+        return batches
+    
+    async def delete_draft_batch(
+        self,
+        batch_id: str,
+        deleted_by: str
+    ) -> bool:
+        """Delete a DRAFT batch (only DRAFT can be deleted)"""
+        batch = await self.db.payroll_batches.find_one({"id": batch_id}, {"_id": 0})
+        if not batch:
+            raise ValueError("Batch not found")
+        if batch.get("status") != "DRAFT":
+            raise ValueError("Only DRAFT batches can be deleted")
+        
+        # Delete all records in batch
+        await self.db.payroll_records.delete_many({"batch_id": batch_id})
+        
+        # Delete batch
+        await self.db.payroll_batches.delete_one({"id": batch_id})
+        
+        # Log audit
+        await self._log_audit(
+            "payroll_batch", batch_id, "delete",
+            deleted_by, {"month": batch.get("month"), "year": batch.get("year")}
+        )
+        
+        return True
