@@ -1263,6 +1263,121 @@ async def root():
 
 # -------------------- EMPLOYEE MANAGEMENT --------------------
 
+@api_router.get("/hr/employees/on-leave-today")
+async def get_employees_on_leave_today(
+    country_id: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get employees who are on leave today"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER", "COUNTRY_HEAD"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    
+    # Get approved leave requests for today
+    leave_query = {
+        "status": "approved",
+        "start_date": {"$lte": today},
+        "end_date": {"$gte": today}
+    }
+    
+    leave_requests = await db.leave_requests.find(leave_query, {"_id": 0}).to_list(1000)
+    
+    # Get employee details for each leave
+    employees_on_leave = []
+    for leave in leave_requests:
+        emp_id = leave.get("employee_id")
+        emp = await db.users.find_one({"id": emp_id}, {"_id": 0, "id": 1, "name": 1, "email": 1, "country_id": 1, "photo_url": 1, "employee_code": 1})
+        
+        if emp:
+            # Filter by country if specified
+            if country_id and emp.get("country_id") != country_id:
+                continue
+            
+            # Get country name
+            country = await db.countries.find_one({"id": emp.get("country_id")}, {"_id": 0, "name": 1})
+            
+            employees_on_leave.append({
+                "id": emp.get("id"),
+                "name": emp.get("name"),
+                "email": emp.get("email"),
+                "employee_code": emp.get("employee_code"),
+                "photo_url": emp.get("photo_url"),
+                "country_name": country.get("name") if country else None,
+                "leave_type": leave.get("leave_type"),
+                "start_date": leave.get("start_date"),
+                "end_date": leave.get("end_date"),
+                "reason": leave.get("reason"),
+                "leave_id": leave.get("id")
+            })
+    
+    return employees_on_leave
+
+
+@api_router.get("/hr/dashboard-stats")
+async def get_hr_dashboard_stats(
+    country_id: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get HR dashboard statistics including employees on leave today"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER", "COUNTRY_HEAD"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    
+    # Base query for employees
+    emp_query = {"is_active": True}
+    if country_id:
+        emp_query["country_id"] = country_id
+    
+    # Total active employees
+    total_employees = await db.users.count_documents(emp_query)
+    
+    # Employees on leave today
+    leave_query = {
+        "status": "approved",
+        "start_date": {"$lte": today},
+        "end_date": {"$gte": today}
+    }
+    leave_requests = await db.leave_requests.find(leave_query, {"_id": 0, "employee_id": 1}).to_list(1000)
+    
+    # Filter by country if needed
+    on_leave_count = 0
+    on_leave_employee_ids = []
+    for leave in leave_requests:
+        emp_id = leave.get("employee_id")
+        if country_id:
+            emp = await db.users.find_one({"id": emp_id, "country_id": country_id}, {"_id": 0, "id": 1})
+            if emp:
+                on_leave_count += 1
+                on_leave_employee_ids.append(emp_id)
+        else:
+            on_leave_count += 1
+            on_leave_employee_ids.append(emp_id)
+    
+    # Exited employees this month
+    month_start = datetime.now(timezone.utc).replace(day=1).strftime("%Y-%m-%d")
+    exited_query = {"employment_status": "exited", "exit_date": {"$gte": month_start}}
+    if country_id:
+        exited_query["country_id"] = country_id
+    exited_this_month = await db.users.count_documents(exited_query)
+    
+    # Countries count
+    countries_count = await db.countries.count_documents({"is_active": {"$ne": False}})
+    
+    return {
+        "total_employees": total_employees,
+        "on_leave_today": on_leave_count,
+        "on_leave_employee_ids": on_leave_employee_ids,
+        "exited_this_month": exited_this_month,
+        "countries": countries_count
+    }
+
+
 @api_router.get("/hr/employees")
 async def get_hr_employees(
     country_id: Optional[str] = None,
