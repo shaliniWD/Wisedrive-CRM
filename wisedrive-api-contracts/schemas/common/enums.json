@@ -1,0 +1,155 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://api.wisedrive.com/schemas/common/enums.json",
+  "title": "Wisedrive Common Enums",
+  "description": "Shared enumeration types used across the platform",
+  
+  "definitions": {
+    "EmploymentType": {
+      "type": "string",
+      "enum": ["full_time", "part_time", "freelancer", "contractor"],
+      "description": "Type of employment"
+    },
+    
+    "EmploymentStatus": {
+      "type": "string",
+      "enum": ["active", "exited"],
+      "description": "Current employment status"
+    },
+    
+    "LeadStatus": {
+      "type": "string",
+      "enum": [
+        "NEW",
+        "HOT",
+        "CONTACTED",
+        "INTERESTED",
+        "NOT_INTERESTED",
+        "CONVERTED",
+        "RNR",
+        "RCB_WHATSAPP",
+        "FOLLOWUP",
+        "OUT_OF_SERVICE_AREA",
+        "LOST"
+      ],
+      "description": "Sales lead status"
+    },
+    
+    "InspectionStatus": {
+      "type": "string",
+      "enum": ["scheduled", "in_progress", "completed", "cancelled"],
+      "description": "Inspection status"
+    },
+    
+    "PaymentStatus": {
+      "type": "string",
+      "enum": ["pending", "submitted", "approved", "paid", "rejected"],
+      "description": "Payment workflow status"
+    },
+    
+    "PaymentType": {
+      "type": "string",
+      "enum": [
+        "salary",
+        "mechanic_payout",
+        "incentive",
+        "vendor",
+        "statutory",
+        "legal",
+        "admin_expense",
+        "operational",
+        "other"
+      ],
+      "description": "Type of payment"
+    },
+    
+    "FuelType": {
+      "type": "string",
+      "enum": ["petrol", "diesel", "cng", "electric", "hybrid"],
+      "description": "Vehicle fuel type"
+    },
+    
+    "TransmissionType": {
+      "type": "string",
+      "enum": ["manual", "automatic"],
+      "description": "Vehicle transmission type"
+    },
+    
+    "AttendanceStatus": {
+      "type": "string",
+      "enum": ["present", "absent", "half_day", "on_leave"],
+      "description": "Daily attendance status"
+    },
+    
+    "DocumentType": {
+      "type": "string",
+      "enum": [
+        "aadhar",
+        "pan",
+        "passport",
+        "driving_license",
+        "bank_statement",
+        "education",
+        "experience",
+        "offer_letter",
+        "other"
+      ],
+      "description": "Employee document type"
+    },
+    
+    "InspectionItemResult": {
+      "type": "string",
+      "enum": ["pass", "fail", "warning", "na"],
+      "description": "Individual inspection item result"
+    },
+    
+    "InspectionCategoryStatus": {
+      "type": "string",
+      "enum": ["good", "warning", "critical"],
+      "description": "Overall category status"
+    },
+    
+    "DTCCategory": {
+      "type": "string",
+      "enum": ["powertrain", "chassis", "body", "network"],
+      "description": "DTC code category (first letter: P, C, B, U)"
+    },
+    
+    "DTCSeverity": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "critical"],
+      "description": "DTC severity level"
+    },
+    
+    "RBACScope": {
+      "type": "string",
+      "enum": ["all", "country", "team", "own"],
+      "description": "Permission scope for RBAC"
+    },
+    
+    "Gender": {
+      "type": "string",
+      "enum": ["male", "female", "other"],
+      "description": "Gender options"
+    },
+    
+    "DayOfWeek": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 6,
+      "description": "Day of week (0=Sunday, 6=Saturday)"
+    },
+    
+    "Currency": {
+      "type": "string",
+      "enum": ["INR", "MYR", "THB", "PHP", "USD"],
+      "description": "Supported currencies"
+    },
+    
+    "Country": {
+      "type": "string",
+      "enum": ["IN", "MY", "TH", "PH"],
+      "description": "Supported country codes"
+    }
+  }
+}
