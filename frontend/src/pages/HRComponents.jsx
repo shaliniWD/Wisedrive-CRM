@@ -1005,7 +1005,7 @@ export function PayrollDashboard({ isHR, isFinance }) {
         <>
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
-              <Button variant="outline" onClick={() => { setView('batches'); setPreviewData(null); setPreviewEdits({}); setPreviewErrors({}); }}>
+              <Button variant="outline" onClick={() => { setView('batches'); setPreviewData(null); setPreviewEdits({}); setPreviewErrors({}); setBatchWorkingDays(null); }}>
                 ← Back to Batches
               </Button>
               <div>
