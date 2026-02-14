@@ -251,6 +251,9 @@ export const attendanceApi = {
   getCalendar: (month, year, countryId, search) => axios.get(`${API_URL}/hr/attendance/calendar`, { 
     params: { month, year, country_id: countryId, search } 
   }),
+  
+  // HR: Update individual day attendance status
+  updateDayStatus: (data) => axios.post(`${API_URL}/hr/attendance/update-day`, data),
 };
 
 export const payrollApi = {
