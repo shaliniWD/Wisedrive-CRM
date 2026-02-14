@@ -1,0 +1,2620 @@
+openapi: 3.0.3
+info:
+  title: Wisedrive Platform API
+  description: |
+    Master API specification for Wisedrive automotive inspection platform.
+    
+    ## Authentication
+    All endpoints require Bearer token authentication unless marked as public.
+    
+    ## Multi-tenancy
+    Platform supports multi-country operations. Country context is determined by:
+    - User's assigned country (from token)
+    - Explicit country_id parameter (for CEO/admin)
+    
+    ## Rate Limiting
+    - Standard: 100 requests/minute
+    - Bulk operations: 10 requests/minute
+    
+  version: 1.0.0
+  contact:
+    name: Wisedrive Platform Team
+    email: platform@wisedrive.com
+  license:
+    name: Proprietary
+    
+servers:
+  - url: https://api.wisedrive.com/v1
+    description: Production
+  - url: https://api-test.wisedrive.com/v1
+    description: Test
+  - url: https://api-dev.wisedrive.com/v1
+    description: Development
+
+tags:
+  - name: Authentication
+    description: User authentication and authorization
+  - name: Employees
+    description: Employee management (HR module)
+  - name: Leads
+    description: Sales lead management
+  - name: Customers
+    description: Customer records
+  - name: Vehicles
+    description: Vehicle information
+  - name: Inspections
+    description: Inspection operations
+  - name: OBD
+    description: OBD scan sessions and DTC codes
+  - name: Payments
+    description: Payment processing
+  - name: Reports
+    description: Inspection reports
+  - name: CarData
+    description: External vehicle data (Invincible Ocean)
+
+paths:
+  # ==================== AUTHENTICATION ====================
+  /auth/login:
+    post:
+      tags: [Authentication]
+      summary: User login
+      operationId: login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/refresh:
+    post:
+      tags: [Authentication]
+      summary: Refresh access token
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+
+  /auth/me:
+    get:
+      tags: [Authentication]
+      summary: Get current user profile
+      operationId: getCurrentUser
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+
+  # ==================== EMPLOYEES ====================
+  /employees:
+    get:
+      tags: [Employees]
+      summary: List employees
+      operationId: listEmployees
+      parameters:
+        - $ref: '#/components/parameters/CountryFilter'
+        - $ref: '#/components/parameters/DepartmentFilter'
+        - $ref: '#/components/parameters/RoleFilter'
+        - $ref: '#/components/parameters/StatusFilter'
+        - $ref: '#/components/parameters/SearchQuery'
+        - $ref: '#/components/parameters/PageNumber'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Employee list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmployeeListResponse'
+    post:
+      tags: [Employees]
+      summary: Create employee
+      operationId: createEmployee
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeeCreateRequest'
+      responses:
+        '201':
+          description: Employee created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Employee'
+
+  /employees/{employee_id}:
+    get:
+      tags: [Employees]
+      summary: Get employee details
+      operationId: getEmployee
+      parameters:
+        - $ref: '#/components/parameters/EmployeeId'
+      responses:
+        '200':
+          description: Employee details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmployeeDetail'
+    put:
+      tags: [Employees]
+      summary: Update employee
+      operationId: updateEmployee
+      parameters:
+        - $ref: '#/components/parameters/EmployeeId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeeUpdateRequest'
+      responses:
+        '200':
+          description: Employee updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Employee'
+
+  /employees/{employee_id}/salary:
+    get:
+      tags: [Employees]
+      summary: Get employee salary structure
+      operationId: getEmployeeSalary
+      parameters:
+        - $ref: '#/components/parameters/EmployeeId'
+      responses:
+        '200':
+          description: Salary structure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalaryStructure'
+    post:
+      tags: [Employees]
+      summary: Save employee salary structure
+      operationId: saveEmployeeSalary
+      parameters:
+        - $ref: '#/components/parameters/EmployeeId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SalaryStructureRequest'
+      responses:
+        '200':
+          description: Salary saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalaryStructure'
+
+  /employees/{employee_id}/attendance:
+    get:
+      tags: [Employees]
+      summary: Get employee attendance records
+      operationId: getEmployeeAttendance
+      parameters:
+        - $ref: '#/components/parameters/EmployeeId'
+        - name: year
+          in: query
+          schema:
+            type: integer
+        - name: month
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Attendance records
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttendanceResponse'
+    post:
+      tags: [Employees]
+      summary: Mark employee attendance
+      operationId: markAttendance
+      parameters:
+        - $ref: '#/components/parameters/EmployeeId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttendanceMarkRequest'
+      responses:
+        '200':
+          description: Attendance marked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttendanceRecord'
+
+  /employees/{employee_id}/documents:
+    get:
+      tags: [Employees]
+      summary: Get employee documents
+      operationId: getEmployeeDocuments
+      parameters:
+        - $ref: '#/components/parameters/EmployeeId'
+      responses:
+        '200':
+          description: Document list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EmployeeDocument'
+    post:
+      tags: [Employees]
+      summary: Add employee document
+      operationId: addEmployeeDocument
+      parameters:
+        - $ref: '#/components/parameters/EmployeeId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeeDocumentRequest'
+      responses:
+        '201':
+          description: Document added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmployeeDocument'
+
+  # ==================== LEADS ====================
+  /leads:
+    get:
+      tags: [Leads]
+      summary: List leads
+      operationId: listLeads
+      parameters:
+        - $ref: '#/components/parameters/CountryFilter'
+        - $ref: '#/components/parameters/LeadStatusFilter'
+        - $ref: '#/components/parameters/AssignedToFilter'
+        - $ref: '#/components/parameters/CityFilter'
+        - $ref: '#/components/parameters/SourceFilter'
+        - $ref: '#/components/parameters/DateFromFilter'
+        - $ref: '#/components/parameters/DateToFilter'
+        - $ref: '#/components/parameters/SearchQuery'
+        - $ref: '#/components/parameters/PageNumber'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Lead list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadListResponse'
+    post:
+      tags: [Leads]
+      summary: Create lead
+      operationId: createLead
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeadCreateRequest'
+      responses:
+        '201':
+          description: Lead created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lead'
+
+  /leads/{lead_id}:
+    get:
+      tags: [Leads]
+      summary: Get lead details
+      operationId: getLead
+      parameters:
+        - $ref: '#/components/parameters/LeadId'
+      responses:
+        '200':
+          description: Lead details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadDetail'
+    put:
+      tags: [Leads]
+      summary: Update lead
+      operationId: updateLead
+      parameters:
+        - $ref: '#/components/parameters/LeadId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeadUpdateRequest'
+      responses:
+        '200':
+          description: Lead updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lead'
+
+  /leads/{lead_id}/status:
+    patch:
+      tags: [Leads]
+      summary: Update lead status (inline)
+      operationId: updateLeadStatus
+      parameters:
+        - $ref: '#/components/parameters/LeadId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeadStatusUpdateRequest'
+      responses:
+        '200':
+          description: Status updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lead'
+
+  /leads/{lead_id}/reassign:
+    post:
+      tags: [Leads]
+      summary: Reassign lead to another employee
+      operationId: reassignLead
+      parameters:
+        - $ref: '#/components/parameters/LeadId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeadReassignRequest'
+      responses:
+        '200':
+          description: Lead reassigned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lead'
+
+  # ==================== CUSTOMERS ====================
+  /customers:
+    get:
+      tags: [Customers]
+      summary: List customers
+      operationId: listCustomers
+      parameters:
+        - $ref: '#/components/parameters/CountryFilter'
+        - $ref: '#/components/parameters/CityFilter'
+        - $ref: '#/components/parameters/SearchQuery'
+        - $ref: '#/components/parameters/PageNumber'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Customer list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerListResponse'
+    post:
+      tags: [Customers]
+      summary: Create customer
+      operationId: createCustomer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerCreateRequest'
+      responses:
+        '201':
+          description: Customer created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+
+  /customers/{customer_id}:
+    get:
+      tags: [Customers]
+      summary: Get customer details
+      operationId: getCustomer
+      parameters:
+        - $ref: '#/components/parameters/CustomerId'
+      responses:
+        '200':
+          description: Customer details with vehicles and transactions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerDetail'
+
+  # ==================== VEHICLES ====================
+  /vehicles:
+    get:
+      tags: [Vehicles]
+      summary: List vehicles
+      operationId: listVehicles
+      parameters:
+        - $ref: '#/components/parameters/CustomerIdFilter'
+        - $ref: '#/components/parameters/SearchQuery'
+        - $ref: '#/components/parameters/PageNumber'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Vehicle list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehicleListResponse'
+    post:
+      tags: [Vehicles]
+      summary: Create vehicle
+      operationId: createVehicle
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VehicleCreateRequest'
+      responses:
+        '201':
+          description: Vehicle created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vehicle'
+
+  /vehicles/{vehicle_id}:
+    get:
+      tags: [Vehicles]
+      summary: Get vehicle details
+      operationId: getVehicle
+      parameters:
+        - $ref: '#/components/parameters/VehicleId'
+      responses:
+        '200':
+          description: Vehicle details with inspection history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehicleDetail'
+
+  /vehicles/lookup/{registration_number}:
+    get:
+      tags: [Vehicles, CarData]
+      summary: Lookup vehicle by registration (uses Invincible Ocean)
+      operationId: lookupVehicle
+      parameters:
+        - name: registration_number
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "KA01AB1234"
+      responses:
+        '200':
+          description: Vehicle data from external source
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehicleLookupResponse'
+
+  # ==================== INSPECTIONS ====================
+  /inspections:
+    get:
+      tags: [Inspections]
+      summary: List inspections
+      operationId: listInspections
+      parameters:
+        - $ref: '#/components/parameters/CountryFilter'
+        - $ref: '#/components/parameters/InspectionStatusFilter'
+        - $ref: '#/components/parameters/MechanicFilter'
+        - $ref: '#/components/parameters/DateFromFilter'
+        - $ref: '#/components/parameters/DateToFilter'
+        - $ref: '#/components/parameters/PageNumber'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Inspection list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InspectionListResponse'
+    post:
+      tags: [Inspections]
+      summary: Create inspection
+      operationId: createInspection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InspectionCreateRequest'
+      responses:
+        '201':
+          description: Inspection created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Inspection'
+
+  /inspections/{inspection_id}:
+    get:
+      tags: [Inspections]
+      summary: Get inspection details
+      operationId: getInspection
+      parameters:
+        - $ref: '#/components/parameters/InspectionId'
+      responses:
+        '200':
+          description: Inspection details with all categories
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InspectionDetail'
+    put:
+      tags: [Inspections]
+      summary: Update inspection
+      operationId: updateInspection
+      parameters:
+        - $ref: '#/components/parameters/InspectionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InspectionUpdateRequest'
+      responses:
+        '200':
+          description: Inspection updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Inspection'
+
+  /inspections/{inspection_id}/assign:
+    post:
+      tags: [Inspections]
+      summary: Assign inspection to mechanic
+      operationId: assignInspection
+      parameters:
+        - $ref: '#/components/parameters/InspectionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InspectionAssignRequest'
+      responses:
+        '200':
+          description: Inspection assigned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Inspection'
+
+  /inspections/{inspection_id}/categories:
+    get:
+      tags: [Inspections]
+      summary: Get inspection categories with results
+      operationId: getInspectionCategories
+      parameters:
+        - $ref: '#/components/parameters/InspectionId'
+      responses:
+        '200':
+          description: Category results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InspectionCategory'
+    post:
+      tags: [Inspections]
+      summary: Save inspection category result
+      operationId: saveInspectionCategory
+      parameters:
+        - $ref: '#/components/parameters/InspectionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InspectionCategoryRequest'
+      responses:
+        '200':
+          description: Category saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InspectionCategory'
+
+  # ==================== OBD ====================
+  /inspections/{inspection_id}/obd:
+    get:
+      tags: [OBD]
+      summary: Get OBD session for inspection
+      operationId: getInspectionOBD
+      parameters:
+        - $ref: '#/components/parameters/InspectionId'
+      responses:
+        '200':
+          description: OBD session data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OBDSession'
+    post:
+      tags: [OBD]
+      summary: Save OBD session for inspection
+      operationId: saveInspectionOBD
+      parameters:
+        - $ref: '#/components/parameters/InspectionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OBDSessionRequest'
+      responses:
+        '201':
+          description: OBD session saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OBDSession'
+
+  /obd/sessions:
+    get:
+      tags: [OBD]
+      summary: List OBD sessions (for analytics)
+      operationId: listOBDSessions
+      parameters:
+        - $ref: '#/components/parameters/VehicleIdFilter'
+        - $ref: '#/components/parameters/DateFromFilter'
+        - $ref: '#/components/parameters/DateToFilter'
+        - $ref: '#/components/parameters/PageNumber'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: OBD session list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OBDSessionListResponse'
+
+  /obd/sessions/{session_id}:
+    get:
+      tags: [OBD]
+      summary: Get OBD session details
+      operationId: getOBDSession
+      parameters:
+        - $ref: '#/components/parameters/OBDSessionId'
+      responses:
+        '200':
+          description: OBD session with DTCs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OBDSessionDetail'
+
+  /obd/dtc-library:
+    get:
+      tags: [OBD]
+      summary: Get DTC code library
+      operationId: getDTCLibrary
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search by code or description
+        - name: category
+          in: query
+          schema:
+            type: string
+            enum: [powertrain, chassis, body, network]
+      responses:
+        '200':
+          description: DTC codes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DTCCode'
+
+  # ==================== PAYMENTS ====================
+  /payments:
+    get:
+      tags: [Payments]
+      summary: List payments
+      operationId: listPayments
+      parameters:
+        - $ref: '#/components/parameters/CountryFilter'
+        - $ref: '#/components/parameters/PaymentStatusFilter'
+        - $ref: '#/components/parameters/PaymentTypeFilter'
+        - $ref: '#/components/parameters/DateFromFilter'
+        - $ref: '#/components/parameters/DateToFilter'
+        - $ref: '#/components/parameters/PageNumber'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Payment list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentListResponse'
+    post:
+      tags: [Payments]
+      summary: Create payment
+      operationId: createPayment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentCreateRequest'
+      responses:
+        '201':
+          description: Payment created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+
+  /payments/{payment_id}:
+    get:
+      tags: [Payments]
+      summary: Get payment details
+      operationId: getPayment
+      parameters:
+        - $ref: '#/components/parameters/PaymentId'
+      responses:
+        '200':
+          description: Payment details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentDetail'
+
+  /payments/razorpay/order:
+    post:
+      tags: [Payments]
+      summary: Create Razorpay order
+      operationId: createRazorpayOrder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RazorpayOrderRequest'
+      responses:
+        '200':
+          description: Razorpay order created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RazorpayOrderResponse'
+
+  /payments/razorpay/verify:
+    post:
+      tags: [Payments]
+      summary: Verify Razorpay payment
+      operationId: verifyRazorpayPayment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RazorpayVerifyRequest'
+      responses:
+        '200':
+          description: Payment verified
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+
+  /payments/razorpay/webhook:
+    post:
+      tags: [Payments]
+      summary: Razorpay webhook handler
+      operationId: handleRazorpayWebhook
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Webhook processed
+
+  # ==================== REPORTS ====================
+  /reports:
+    get:
+      tags: [Reports]
+      summary: List inspection reports
+      operationId: listReports
+      parameters:
+        - $ref: '#/components/parameters/InspectionIdFilter'
+        - $ref: '#/components/parameters/CustomerIdFilter'
+        - $ref: '#/components/parameters/DateFromFilter'
+        - $ref: '#/components/parameters/DateToFilter'
+        - $ref: '#/components/parameters/PageNumber'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Report list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportListResponse'
+
+  /reports/{report_id}:
+    get:
+      tags: [Reports]
+      summary: Get inspection report
+      operationId: getReport
+      parameters:
+        - $ref: '#/components/parameters/ReportId'
+      responses:
+        '200':
+          description: Full inspection report with OBD data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InspectionReport'
+
+  /reports/{report_id}/pdf:
+    get:
+      tags: [Reports]
+      summary: Generate PDF report
+      operationId: getReportPDF
+      parameters:
+        - $ref: '#/components/parameters/ReportId'
+      responses:
+        '200':
+          description: PDF file
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+
+  # ==================== CAR DATA ====================
+  /cardata/lookup:
+    post:
+      tags: [CarData]
+      summary: Lookup vehicle data from Invincible Ocean
+      operationId: lookupCarData
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CarDataLookupRequest'
+      responses:
+        '200':
+          description: Vehicle data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CarDataResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    # Path Parameters
+    EmployeeId:
+      name: employee_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    LeadId:
+      name: lead_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    CustomerId:
+      name: customer_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    VehicleId:
+      name: vehicle_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    InspectionId:
+      name: inspection_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    OBDSessionId:
+      name: session_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PaymentId:
+      name: payment_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ReportId:
+      name: report_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    # Query Parameters - Filters
+    CountryFilter:
+      name: country_id
+      in: query
+      schema:
+        type: string
+        format: uuid
+    DepartmentFilter:
+      name: department_id
+      in: query
+      schema:
+        type: string
+        format: uuid
+    RoleFilter:
+      name: role_id
+      in: query
+      schema:
+        type: string
+        format: uuid
+    StatusFilter:
+      name: status
+      in: query
+      schema:
+        type: string
+        enum: [active, exited, all]
+    LeadStatusFilter:
+      name: status
+      in: query
+      schema:
+        type: string
+        enum: [NEW, HOT, CONTACTED, INTERESTED, NOT_INTERESTED, CONVERTED, RNR, FOLLOWUP, LOST]
+    InspectionStatusFilter:
+      name: status
+      in: query
+      schema:
+        type: string
+        enum: [scheduled, in_progress, completed, cancelled]
+    PaymentStatusFilter:
+      name: status
+      in: query
+      schema:
+        type: string
+        enum: [pending, submitted, approved, paid, rejected]
+    PaymentTypeFilter:
+      name: payment_type
+      in: query
+      schema:
+        type: string
+        enum: [salary, mechanic_payout, incentive, vendor, statutory, legal, admin_expense, operational, other]
+    AssignedToFilter:
+      name: assigned_to
+      in: query
+      schema:
+        type: string
+        format: uuid
+    MechanicFilter:
+      name: mechanic_id
+      in: query
+      schema:
+        type: string
+        format: uuid
+    CityFilter:
+      name: city
+      in: query
+      schema:
+        type: string
+    SourceFilter:
+      name: source
+      in: query
+      schema:
+        type: string
+    CustomerIdFilter:
+      name: customer_id
+      in: query
+      schema:
+        type: string
+        format: uuid
+    VehicleIdFilter:
+      name: vehicle_id
+      in: query
+      schema:
+        type: string
+        format: uuid
+    InspectionIdFilter:
+      name: inspection_id
+      in: query
+      schema:
+        type: string
+        format: uuid
+    DateFromFilter:
+      name: date_from
+      in: query
+      schema:
+        type: string
+        format: date
+    DateToFilter:
+      name: date_to
+      in: query
+      schema:
+        type: string
+        format: date
+    SearchQuery:
+      name: search
+      in: query
+      schema:
+        type: string
+
+    # Pagination
+    PageNumber:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PageSize:
+      name: page_size
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  responses:
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ValidationError'
+
+  schemas:
+    # ==================== COMMON ====================
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+
+    ValidationError:
+      type: object
+      required: [code, message, errors]
+      properties:
+        code:
+          type: string
+          example: "VALIDATION_ERROR"
+        message:
+          type: string
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+
+    PaginationMeta:
+      type: object
+      properties:
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total_count:
+          type: integer
+        total_pages:
+          type: integer
+
+    # ==================== AUTH ====================
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 6
+        country_id:
+          type: string
+          format: uuid
+
+    LoginResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        token_type:
+          type: string
+          default: bearer
+        expires_in:
+          type: integer
+        user:
+          $ref: '#/components/schemas/UserProfile'
+
+    RefreshTokenRequest:
+      type: object
+      required: [refresh_token]
+      properties:
+        refresh_token:
+          type: string
+
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        phone:
+          type: string
+        country_id:
+          type: string
+          format: uuid
+        country_name:
+          type: string
+        department_id:
+          type: string
+          format: uuid
+        department_name:
+          type: string
+        role_id:
+          type: string
+          format: uuid
+        role_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleSummary'
+        permissions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Permission'
+        visible_tabs:
+          type: array
+          items:
+            type: string
+
+    RoleSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        code:
+          type: string
+        level:
+          type: integer
+
+    Permission:
+      type: object
+      properties:
+        name:
+          type: string
+        resource:
+          type: string
+        action:
+          type: string
+        scope:
+          type: string
+          enum: [all, country, team, own]
+
+    # ==================== EMPLOYEE ====================
+    Employee:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        phone:
+          type: string
+        country_id:
+          type: string
+          format: uuid
+        country_name:
+          type: string
+        department_id:
+          type: string
+          format: uuid
+        department_name:
+          type: string
+        role_id:
+          type: string
+          format: uuid
+        role_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleSummary'
+        employment_type:
+          type: string
+          enum: [full_time, part_time, freelancer, contractor]
+        employment_status:
+          type: string
+          enum: [active, exited]
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
+    EmployeeDetail:
+      allOf:
+        - $ref: '#/components/schemas/Employee'
+        - type: object
+          properties:
+            date_of_birth:
+              type: string
+              format: date
+            gender:
+              type: string
+              enum: [male, female, other]
+            address:
+              type: string
+            city:
+              type: string
+            employee_code:
+              type: string
+            joining_date:
+              type: string
+              format: date
+            exit_date:
+              type: string
+              format: date
+            exit_reason:
+              type: string
+            weekly_off_day:
+              type: integer
+              minimum: 0
+              maximum: 6
+            bank_name:
+              type: string
+            bank_account_number:
+              type: string
+            ifsc_code:
+              type: string
+            pan_number:
+              type: string
+            salary_info:
+              $ref: '#/components/schemas/SalaryStructure'
+
+    EmployeeCreateRequest:
+      type: object
+      required: [email, name, password, country_id, role_ids]
+      properties:
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        password:
+          type: string
+          minLength: 6
+        phone:
+          type: string
+        country_id:
+          type: string
+          format: uuid
+        department_id:
+          type: string
+          format: uuid
+        role_id:
+          type: string
+          format: uuid
+        role_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        employment_type:
+          type: string
+          enum: [full_time, part_time, freelancer, contractor]
+
+    EmployeeUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+        country_id:
+          type: string
+          format: uuid
+        department_id:
+          type: string
+          format: uuid
+        role_id:
+          type: string
+          format: uuid
+        role_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        employment_type:
+          type: string
+        employment_status:
+          type: string
+          enum: [active, exited]
+        exit_date:
+          type: string
+          format: date
+        exit_reason:
+          type: string
+
+    EmployeeListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Employee'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    # ==================== SALARY ====================
+    SalaryStructure:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        basic_salary:
+          type: number
+        hra:
+          type: number
+        variable_pay:
+          type: number
+        conveyance:
+          type: number
+        medical:
+          type: number
+        special_allowance:
+          type: number
+        gross_salary:
+          type: number
+        pf_employee:
+          type: number
+        pf_employer:
+          type: number
+        professional_tax:
+          type: number
+        income_tax:
+          type: number
+        other_deductions:
+          type: number
+        total_deductions:
+          type: number
+        net_salary:
+          type: number
+        price_per_inspection:
+          type: number
+        employment_type:
+          type: string
+        effective_from:
+          type: string
+          format: date
+
+    SalaryStructureRequest:
+      type: object
+      properties:
+        basic_salary:
+          type: number
+        hra:
+          type: number
+        variable_pay:
+          type: number
+        conveyance:
+          type: number
+        medical:
+          type: number
+        special_allowance:
+          type: number
+        pf_employee:
+          type: number
+        professional_tax:
+          type: number
+        income_tax:
+          type: number
+        other_deductions:
+          type: number
+        price_per_inspection:
+          type: number
+        employment_type:
+          type: string
+
+    # ==================== ATTENDANCE ====================
+    AttendanceRecord:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        status:
+          type: string
+          enum: [present, absent, half_day, on_leave]
+        check_in:
+          type: string
+          format: date-time
+        check_out:
+          type: string
+          format: date-time
+        notes:
+          type: string
+
+    AttendanceMarkRequest:
+      type: object
+      required: [date, status]
+      properties:
+        date:
+          type: string
+          format: date
+        status:
+          type: string
+          enum: [present, absent, half_day, on_leave]
+        notes:
+          type: string
+
+    AttendanceResponse:
+      type: object
+      properties:
+        records:
+          type: array
+          items:
+            $ref: '#/components/schemas/AttendanceRecord'
+        summary:
+          type: object
+          properties:
+            total_present:
+              type: integer
+            total_absent:
+              type: integer
+            total_half_days:
+              type: integer
+            total_leaves:
+              type: integer
+            total_working_days:
+              type: integer
+
+    # ==================== EMPLOYEE DOCUMENTS ====================
+    EmployeeDocument:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        employee_id:
+          type: string
+          format: uuid
+        document_type:
+          type: string
+          enum: [aadhar, pan, passport, driving_license, bank_statement, education, experience, offer_letter, other]
+        document_name:
+          type: string
+        document_url:
+          type: string
+          format: uri
+        verified:
+          type: boolean
+        uploaded_at:
+          type: string
+          format: date-time
+
+    EmployeeDocumentRequest:
+      type: object
+      required: [document_type, document_name]
+      properties:
+        document_type:
+          type: string
+          enum: [aadhar, pan, passport, driving_license, bank_statement, education, experience, offer_letter, other]
+        document_name:
+          type: string
+        document_url:
+          type: string
+          format: uri
+
+    # ==================== LEAD ====================
+    Lead:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        mobile:
+          type: string
+        email:
+          type: string
+          format: email
+        city:
+          type: string
+        source:
+          type: string
+        ad_id:
+          type: string
+        status:
+          type: string
+          enum: [NEW, HOT, CONTACTED, INTERESTED, NOT_INTERESTED, CONVERTED, RNR, RCB_WHATSAPP, FOLLOWUP, OUT_OF_SERVICE_AREA, LOST]
+        assigned_to:
+          type: string
+          format: uuid
+        assigned_to_name:
+          type: string
+        country_id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+
+    LeadDetail:
+      allOf:
+        - $ref: '#/components/schemas/Lead'
+        - type: object
+          properties:
+            notes:
+              type: string
+            reminder_date:
+              type: string
+              format: date
+            reminder_time:
+              type: string
+            vehicle_info:
+              type: object
+              properties:
+                registration_number:
+                  type: string
+                make:
+                  type: string
+                model:
+                  type: string
+            payment_link:
+              type: string
+            reassignment_history:
+              type: array
+              items:
+                type: object
+                properties:
+                  from_user:
+                    type: string
+                  to_user:
+                    type: string
+                  reason:
+                    type: string
+                  timestamp:
+                    type: string
+                    format: date-time
+
+    LeadCreateRequest:
+      type: object
+      required: [name, mobile, city, source, country_id]
+      properties:
+        name:
+          type: string
+        mobile:
+          type: string
+        email:
+          type: string
+          format: email
+        city:
+          type: string
+        source:
+          type: string
+        ad_id:
+          type: string
+        status:
+          type: string
+          default: NEW
+        assigned_to:
+          type: string
+          format: uuid
+        country_id:
+          type: string
+          format: uuid
+        notes:
+          type: string
+
+    LeadUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        mobile:
+          type: string
+        email:
+          type: string
+        city:
+          type: string
+        source:
+          type: string
+        status:
+          type: string
+        notes:
+          type: string
+        reminder_date:
+          type: string
+          format: date
+        reminder_time:
+          type: string
+
+    LeadStatusUpdateRequest:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [NEW, HOT, CONTACTED, INTERESTED, NOT_INTERESTED, CONVERTED, RNR, RCB_WHATSAPP, FOLLOWUP, OUT_OF_SERVICE_AREA, LOST]
+
+    LeadReassignRequest:
+      type: object
+      required: [assigned_to, reason]
+      properties:
+        assigned_to:
+          type: string
+          format: uuid
+        reason:
+          type: string
+
+    LeadListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Lead'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    # ==================== CUSTOMER ====================
+    Customer:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        mobile:
+          type: string
+        city:
+          type: string
+        address:
+          type: string
+        country_id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+
+    CustomerDetail:
+      allOf:
+        - $ref: '#/components/schemas/Customer'
+        - type: object
+          properties:
+            vehicles:
+              type: array
+              items:
+                $ref: '#/components/schemas/Vehicle'
+            transactions:
+              type: array
+              items:
+                $ref: '#/components/schemas/Transaction'
+            inspections:
+              type: array
+              items:
+                $ref: '#/components/schemas/Inspection'
+
+    CustomerCreateRequest:
+      type: object
+      required: [name, mobile, city, country_id]
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        mobile:
+          type: string
+        city:
+          type: string
+        address:
+          type: string
+        country_id:
+          type: string
+          format: uuid
+
+    CustomerListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Customer'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        customer_id:
+          type: string
+          format: uuid
+        type:
+          type: string
+        amount:
+          type: number
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    # ==================== VEHICLE ====================
+    Vehicle:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        customer_id:
+          type: string
+          format: uuid
+        registration_number:
+          type: string
+        vin:
+          type: string
+        make:
+          type: string
+        model:
+          type: string
+        variant:
+          type: string
+        year:
+          type: integer
+        fuel_type:
+          type: string
+          enum: [petrol, diesel, cng, electric, hybrid]
+        transmission:
+          type: string
+          enum: [manual, automatic]
+        color:
+          type: string
+        odometer:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+
+    VehicleDetail:
+      allOf:
+        - $ref: '#/components/schemas/Vehicle'
+        - type: object
+          properties:
+            inspections:
+              type: array
+              items:
+                $ref: '#/components/schemas/Inspection'
+            obd_sessions:
+              type: array
+              items:
+                $ref: '#/components/schemas/OBDSession'
+            external_data:
+              $ref: '#/components/schemas/CarDataResponse'
+
+    VehicleCreateRequest:
+      type: object
+      required: [customer_id, registration_number]
+      properties:
+        customer_id:
+          type: string
+          format: uuid
+        registration_number:
+          type: string
+        vin:
+          type: string
+        make:
+          type: string
+        model:
+          type: string
+        variant:
+          type: string
+        year:
+          type: integer
+        fuel_type:
+          type: string
+        transmission:
+          type: string
+        color:
+          type: string
+        odometer:
+          type: integer
+
+    VehicleListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Vehicle'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    VehicleLookupResponse:
+      type: object
+      properties:
+        found:
+          type: boolean
+        vehicle:
+          $ref: '#/components/schemas/Vehicle'
+        external_data:
+          $ref: '#/components/schemas/CarDataResponse'
+
+    # ==================== INSPECTION ====================
+    Inspection:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        vehicle_id:
+          type: string
+          format: uuid
+        customer_id:
+          type: string
+          format: uuid
+        mechanic_id:
+          type: string
+          format: uuid
+        mechanic_name:
+          type: string
+        status:
+          type: string
+          enum: [scheduled, in_progress, completed, cancelled]
+        scheduled_date:
+          type: string
+          format: date
+        scheduled_time:
+          type: string
+        location:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+        overall_score:
+          type: integer
+          minimum: 0
+          maximum: 100
+        country_id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+
+    InspectionDetail:
+      allOf:
+        - $ref: '#/components/schemas/Inspection'
+        - type: object
+          properties:
+            vehicle:
+              $ref: '#/components/schemas/Vehicle'
+            customer:
+              $ref: '#/components/schemas/Customer'
+            categories:
+              type: array
+              items:
+                $ref: '#/components/schemas/InspectionCategory'
+            obd_session:
+              $ref: '#/components/schemas/OBDSession'
+            photos:
+              type: array
+              items:
+                type: string
+                format: uri
+
+    InspectionCreateRequest:
+      type: object
+      required: [vehicle_id, customer_id, scheduled_date, country_id]
+      properties:
+        vehicle_id:
+          type: string
+          format: uuid
+        customer_id:
+          type: string
+          format: uuid
+        mechanic_id:
+          type: string
+          format: uuid
+        scheduled_date:
+          type: string
+          format: date
+        scheduled_time:
+          type: string
+        location:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+        country_id:
+          type: string
+          format: uuid
+
+    InspectionUpdateRequest:
+      type: object
+      properties:
+        mechanic_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+        scheduled_date:
+          type: string
+          format: date
+        scheduled_time:
+          type: string
+        location:
+          type: string
+        overall_score:
+          type: integer
+
+    InspectionAssignRequest:
+      type: object
+      required: [mechanic_id]
+      properties:
+        mechanic_id:
+          type: string
+          format: uuid
+
+    InspectionCategory:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        inspection_id:
+          type: string
+          format: uuid
+        category_code:
+          type: string
+        category_name:
+          type: string
+        score:
+          type: integer
+          minimum: 0
+          maximum: 100
+        status:
+          type: string
+          enum: [good, warning, critical]
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InspectionItem'
+        photos:
+          type: array
+          items:
+            type: string
+            format: uri
+        notes:
+          type: string
+
+    InspectionItem:
+      type: object
+      properties:
+        item_code:
+          type: string
+        item_name:
+          type: string
+        result:
+          type: string
+          enum: [pass, fail, warning, na]
+        notes:
+          type: string
+        photo_url:
+          type: string
+          format: uri
+
+    InspectionCategoryRequest:
+      type: object
+      required: [category_code, score]
+      properties:
+        category_code:
+          type: string
+        score:
+          type: integer
+        status:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InspectionItem'
+        photos:
+          type: array
+          items:
+            type: string
+            format: uri
+        notes:
+          type: string
+
+    InspectionListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Inspection'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    # ==================== OBD ====================
+    OBDSession:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        inspection_id:
+          type: string
+          format: uuid
+        vehicle_id:
+          type: string
+          format: uuid
+        vin:
+          type: string
+        protocol:
+          type: string
+          description: OBD protocol used (CAN, UDS, etc.)
+        scanned_at:
+          type: string
+          format: date-time
+        scanned_by:
+          type: string
+          format: uuid
+        ecu_info:
+          type: object
+          properties:
+            manufacturer:
+              type: string
+            hardware_version:
+              type: string
+            software_version:
+              type: string
+        dtc_stored:
+          type: array
+          items:
+            $ref: '#/components/schemas/DTC'
+        dtc_pending:
+          type: array
+          items:
+            $ref: '#/components/schemas/DTC'
+        dtc_permanent:
+          type: array
+          items:
+            $ref: '#/components/schemas/DTC'
+        freeze_frame:
+          type: object
+          additionalProperties: true
+        live_data:
+          type: object
+          additionalProperties: true
+        raw_frames:
+          type: array
+          items:
+            type: string
+          description: Raw OBD frame data for debugging
+
+    OBDSessionRequest:
+      type: object
+      required: [vin, protocol, scanned_at]
+      properties:
+        vin:
+          type: string
+        protocol:
+          type: string
+        ecu_info:
+          type: object
+        dtc_stored:
+          type: array
+          items:
+            $ref: '#/components/schemas/DTCRequest'
+        dtc_pending:
+          type: array
+          items:
+            $ref: '#/components/schemas/DTCRequest'
+        dtc_permanent:
+          type: array
+          items:
+            $ref: '#/components/schemas/DTCRequest'
+        freeze_frame:
+          type: object
+        live_data:
+          type: object
+        raw_frames:
+          type: array
+          items:
+            type: string
+        scanned_at:
+          type: string
+          format: date-time
+
+    OBDSessionDetail:
+      allOf:
+        - $ref: '#/components/schemas/OBDSession'
+        - type: object
+          properties:
+            vehicle:
+              $ref: '#/components/schemas/Vehicle'
+            inspection:
+              $ref: '#/components/schemas/Inspection'
+
+    OBDSessionListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/OBDSession'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    DTC:
+      type: object
+      properties:
+        code:
+          type: string
+          example: "P0301"
+        category:
+          type: string
+          enum: [powertrain, chassis, body, network]
+        description:
+          type: string
+        severity:
+          type: string
+          enum: [low, medium, high, critical]
+        possible_causes:
+          type: array
+          items:
+            type: string
+        recommended_actions:
+          type: array
+          items:
+            type: string
+
+    DTCRequest:
+      type: object
+      required: [code]
+      properties:
+        code:
+          type: string
+        raw_data:
+          type: string
+
+    DTCCode:
+      type: object
+      properties:
+        code:
+          type: string
+        category:
+          type: string
+        description:
+          type: string
+        severity:
+          type: string
+        possible_causes:
+          type: array
+          items:
+            type: string
+        recommended_actions:
+          type: array
+          items:
+            type: string
+
+    # ==================== PAYMENT ====================
+    Payment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        payment_type:
+          type: string
+          enum: [salary, mechanic_payout, incentive, vendor, statutory, legal, admin_expense, operational, other]
+        employee_id:
+          type: string
+          format: uuid
+        employee_name:
+          type: string
+        vendor_name:
+          type: string
+        amount:
+          type: number
+        deductions:
+          type: number
+        final_amount:
+          type: number
+        status:
+          type: string
+          enum: [pending, submitted, approved, paid, rejected]
+        payment_mode:
+          type: string
+        month:
+          type: integer
+        year:
+          type: integer
+        country_id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+
+    PaymentDetail:
+      allOf:
+        - $ref: '#/components/schemas/Payment'
+        - type: object
+          properties:
+            employee:
+              $ref: '#/components/schemas/Employee'
+            gst_percent:
+              type: number
+            gst_amount:
+              type: number
+            tds_percent:
+              type: number
+            tds_amount:
+              type: number
+            invoice_number:
+              type: string
+            proofs:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  url:
+                    type: string
+                  uploaded_at:
+                    type: string
+            approved_by:
+              type: string
+            approved_at:
+              type: string
+              format: date-time
+
+    PaymentCreateRequest:
+      type: object
+      required: [payment_type, amount, country_id]
+      properties:
+        payment_type:
+          type: string
+        employee_id:
+          type: string
+          format: uuid
+        vendor_name:
+          type: string
+        invoice_number:
+          type: string
+        amount:
+          type: number
+        deductions:
+          type: number
+        gst_percent:
+          type: number
+        tds_percent:
+          type: number
+        month:
+          type: integer
+        year:
+          type: integer
+        country_id:
+          type: string
+          format: uuid
+        notes:
+          type: string
+
+    PaymentListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Payment'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    RazorpayOrderRequest:
+      type: object
+      required: [amount, currency]
+      properties:
+        amount:
+          type: integer
+          description: Amount in smallest currency unit (paise for INR)
+        currency:
+          type: string
+          default: INR
+        receipt:
+          type: string
+        notes:
+          type: object
+
+    RazorpayOrderResponse:
+      type: object
+      properties:
+        order_id:
+          type: string
+        amount:
+          type: integer
+        currency:
+          type: string
+        key:
+          type: string
+          description: Razorpay key ID for frontend
+
+    RazorpayVerifyRequest:
+      type: object
+      required: [razorpay_order_id, razorpay_payment_id, razorpay_signature]
+      properties:
+        razorpay_order_id:
+          type: string
+        razorpay_payment_id:
+          type: string
+        razorpay_signature:
+          type: string
+
+    # ==================== REPORT ====================
+    InspectionReport:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        inspection_id:
+          type: string
+          format: uuid
+        inspection:
+          $ref: '#/components/schemas/InspectionDetail'
+        vehicle:
+          $ref: '#/components/schemas/Vehicle'
+        customer:
+          $ref: '#/components/schemas/Customer'
+        overall_score:
+          type: integer
+        overall_status:
+          type: string
+          enum: [excellent, good, fair, poor]
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/InspectionCategory'
+        obd_data:
+          $ref: '#/components/schemas/OBDSession'
+        recommendations:
+          type: array
+          items:
+            type: string
+        generated_at:
+          type: string
+          format: date-time
+        pdf_url:
+          type: string
+          format: uri
+
+    ReportListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/InspectionReport'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    # ==================== CAR DATA ====================
+    CarDataLookupRequest:
+      type: object
+      required: [registration_number]
+      properties:
+        registration_number:
+          type: string
+        include_owner:
+          type: boolean
+          default: false
+        include_insurance:
+          type: boolean
+          default: false
+        include_challan:
+          type: boolean
+          default: false
+
+    CarDataResponse:
+      type: object
+      properties:
+        registration_number:
+          type: string
+        vin:
+          type: string
+        engine_number:
+          type: string
+        make:
+          type: string
+        model:
+          type: string
+        variant:
+          type: string
+        fuel_type:
+          type: string
+        color:
+          type: string
+        manufacturing_year:
+          type: integer
+        registration_date:
+          type: string
+          format: date
+        owner_name:
+          type: string
+        owner_count:
+          type: integer
+        rto:
+          type: string
+        fitness_valid_until:
+          type: string
+          format: date
+        insurance_valid_until:
+          type: string
+          format: date
+        puc_valid_until:
+          type: string
+          format: date
+        hypothecated:
+          type: boolean
+        hypothecated_to:
+          type: string
+        blacklisted:
+          type: boolean
+        challan_pending:
+          type: integer
+        raw_response:
+          type: object
+          description: Original response from Invincible Ocean (for debugging)
+
+security:
+  - bearerAuth: []
