@@ -10,19 +10,26 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Popover, PopoverContent, PopoverTrigger,
+} from '@/components/ui/popover';
 import { toast } from 'sonner';
 import { 
   Search, Plus, Pencil, Loader2, X, Users, TrendingUp, Calendar, 
   Phone, MapPin, Bell, Clock, CreditCard, Copy, ChevronLeft, ChevronRight, Filter,
-  MessageCircle, Link2, ExternalLink, Eye
+  MessageCircle, Link2, ExternalLink, Eye, Flame, ChevronDown, Percent, CalendarDays
 } from 'lucide-react';
 
-// Status Badge Component matching FinancePage style
-const StatusBadge = ({ status }) => {
+// Inline Status Dropdown Component - Click to update status
+const StatusDropdown = ({ lead, statuses, onUpdate }) => {
+  const [open, setOpen] = useState(false);
+  const [updating, setUpdating] = useState(false);
+  
   const config = {
     NEW: { color: 'bg-blue-100 text-blue-800 border-blue-200', label: 'New' },
     CONTACTED: { color: 'bg-purple-100 text-purple-800 border-purple-200', label: 'Contacted' },
     INTERESTED: { color: 'bg-amber-100 text-amber-800 border-amber-200', label: 'Interested' },
+    HOT: { color: 'bg-red-100 text-red-800 border-red-200', label: 'Hot' },
     NOT_INTERESTED: { color: 'bg-gray-100 text-gray-800 border-gray-200', label: 'Not Interested' },
     CONVERTED: { color: 'bg-emerald-100 text-emerald-800 border-emerald-200', label: 'Converted' },
     RNR: { color: 'bg-red-100 text-red-800 border-red-200', label: 'RNR' },
@@ -30,12 +37,56 @@ const StatusBadge = ({ status }) => {
     FOLLOWUP: { color: 'bg-orange-100 text-orange-800 border-orange-200', label: 'Follow Up' },
     OUT_OF_SERVICE_AREA: { color: 'bg-slate-100 text-slate-800 border-slate-200', label: 'Out of Area' },
   };
-  const cfg = config[status] || config.NEW;
+  const cfg = config[lead.status] || config.NEW;
+
+  const handleStatusChange = async (newStatus) => {
+    if (newStatus === lead.status) {
+      setOpen(false);
+      return;
+    }
+    setUpdating(true);
+    try {
+      await leadsApi.update(lead.id, { ...lead, status: newStatus });
+      toast.success(`Status updated to ${config[newStatus]?.label || newStatus}`);
+      onUpdate();
+    } catch (error) {
+      toast.error('Failed to update status');
+    } finally {
+      setUpdating(false);
+      setOpen(false);
+    }
+  };
   
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${cfg.color}`}>
-      {cfg.label}
-    </span>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button 
+          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border cursor-pointer hover:shadow-md transition-all ${cfg.color}`}
+          data-testid={`status-dropdown-${lead.id}`}
+          disabled={updating}
+        >
+          {updating ? <Loader2 className="h-3 w-3 animate-spin" /> : cfg.label}
+          <ChevronDown className="h-3 w-3" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-48 p-1" align="start">
+        <div className="space-y-1">
+          {statuses.map((status) => {
+            const statusCfg = config[status] || { color: 'bg-gray-100 text-gray-800', label: status };
+            return (
+              <button
+                key={status}
+                onClick={() => handleStatusChange(status)}
+                className={`w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-slate-100 flex items-center gap-2 ${lead.status === status ? 'bg-slate-100 font-semibold' : ''}`}
+              >
+                <span className={`w-2 h-2 rounded-full ${statusCfg.color.split(' ')[0]}`}></span>
+                {statusCfg.label}
+              </button>
+            );
+          })}
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 };
 
@@ -52,6 +103,7 @@ const SummaryCard = ({ title, value, icon: Icon, color, onClick, active }) => (
         color?.includes('amber') ? 'from-amber-500 to-amber-600' :
         color?.includes('green') ? 'from-green-500 to-green-600' :
         color?.includes('orange') ? 'from-orange-500 to-orange-600' :
+        color?.includes('red') ? 'from-red-500 to-red-600' :
         'from-gray-500 to-gray-600'
       }`}>
         <Icon className="h-4 w-4 text-white" />
@@ -159,7 +211,9 @@ export default function LeadsPage() {
       setEmployees(employeesRes.data);
       setCities(citiesRes.data);
       setSources(sourcesRes.data);
-      setStatuses(statusesRes.data);
+      // Add HOT status if not present
+      const allStatuses = statusesRes.data.includes('HOT') ? statusesRes.data : ['NEW', 'HOT', ...statusesRes.data.filter(s => s !== 'NEW')];
+      setStatuses(allStatuses);
     } catch (error) {
       toast.error('Failed to load leads');
     } finally {
@@ -214,7 +268,7 @@ export default function LeadsPage() {
     setPaymentFormData({
       hasCarDetails: 'yes', carNo: '', carMake: '', carModel: '', carYear: '',
       fuelType: '', carColor: '', carConfirmed: false, packageType: '',
-      numberOfCars: '1', discountType: '', discountValue: '', city: lead.city || '',
+      numberOfCars: '1', discountType: 'none', discountValue: '', city: lead.city || '',
       inspectionDate: '', inspectionTime: '', address: '', latitude: '',
       longitude: '', customerMobile: lead.mobile, customerName: lead.name,
     });
@@ -281,6 +335,7 @@ export default function LeadsPage() {
 
   // Calculate stats for sales agent dashboard
   const todayNewLeads = leads.filter(l => l.status === 'NEW' && l.created_at?.startsWith(today)).length;
+  const hotLeads = leads.filter(l => l.status === 'HOT' || l.status === 'INTERESTED').length;
   const rcbWhatsappLeads = leads.filter(l => l.status === 'RCB_WHATSAPP' || l.reminder_reason === 'RCB_WHATSAPP').length;
   const followupLeads = leads.filter(l => l.status === 'FOLLOWUP' || l.reminder_date).length;
   const paymentLinkSentLeads = leads.filter(l => l.payment_link).length;
@@ -290,6 +345,8 @@ export default function LeadsPage() {
     let filtered = leads;
     if (activeFilter === 'new_today') {
       filtered = leads.filter(l => l.status === 'NEW' && l.created_at?.startsWith(today));
+    } else if (activeFilter === 'hot') {
+      filtered = leads.filter(l => l.status === 'HOT' || l.status === 'INTERESTED');
     } else if (activeFilter === 'rcb_whatsapp') {
       filtered = leads.filter(l => l.status === 'RCB_WHATSAPP' || l.reminder_reason === 'RCB_WHATSAPP');
     } else if (activeFilter === 'followup') {
@@ -308,8 +365,20 @@ export default function LeadsPage() {
   const endIndex = startIndex + itemsPerPage;
   const paginatedLeads = filteredLeads.slice(startIndex, endIndex);
 
+  // Calculate final amount
+  const calculateFinalAmount = () => {
+    const packages = { basic: 499, silver: 999, gold: 1499, platinum: 2499 };
+    const baseAmount = (packages[paymentFormData.packageType] || 0) * parseInt(paymentFormData.numberOfCars || 1);
+    if (paymentFormData.discountType === 'percent' && paymentFormData.discountValue) {
+      return baseAmount - (baseAmount * parseFloat(paymentFormData.discountValue) / 100);
+    } else if (paymentFormData.discountType === 'amount' && paymentFormData.discountValue) {
+      return baseAmount - parseFloat(paymentFormData.discountValue);
+    }
+    return baseAmount;
+  };
+
   return (
-    <div className="p-4 max-w-full" data-testid="leads-page">
+    <div className="p-5 max-w-[1600px] mx-auto" data-testid="leads-page">
       {/* Page Header */}
       <div className="flex justify-between items-start mb-6">
         <div>
@@ -326,7 +395,7 @@ export default function LeadsPage() {
       </div>
 
       {/* Sales Agent Dashboard - Action-oriented Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-5">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-5">
         <SummaryCard 
           title="New Leads (Today)" 
           value={todayNewLeads} 
@@ -334,6 +403,14 @@ export default function LeadsPage() {
           color="text-blue-700" 
           onClick={() => { setActiveFilter(activeFilter === 'new_today' ? 'all' : 'new_today'); setCurrentPage(1); }}
           active={activeFilter === 'new_today'}
+        />
+        <SummaryCard 
+          title="Hot Leads" 
+          value={hotLeads} 
+          icon={Flame} 
+          color="text-red-600" 
+          onClick={() => { setActiveFilter(activeFilter === 'hot' ? 'all' : 'hot'); setCurrentPage(1); }}
+          active={activeFilter === 'hot'}
         />
         <SummaryCard 
           title="RCB WhatsApp" 
@@ -362,22 +439,22 @@ export default function LeadsPage() {
       </div>
 
       {/* Filters Section */}
-      <div className="bg-white rounded-xl border p-3 mb-5">
+      <div className="bg-white rounded-xl border p-4 mb-5">
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex-1 min-w-[250px] relative">
+          <div className="flex-1 min-w-[280px] relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
               type="text"
               placeholder="Search by name or mobile..."
               value={search}
               onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
-              className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
+              className="w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
               data-testid="search-input"
             />
           </div>
 
           <Select value={filterEmployee || 'all'} onValueChange={(v) => { setFilterEmployee(v === 'all' ? '' : v); setCurrentPage(1); }}>
-            <SelectTrigger className="w-[140px] h-9 bg-white text-sm" data-testid="filter-employee">
+            <SelectTrigger className="w-[150px] h-10 bg-white text-sm" data-testid="filter-employee">
               <SelectValue placeholder="Employee" />
             </SelectTrigger>
             <SelectContent>
@@ -387,7 +464,7 @@ export default function LeadsPage() {
           </Select>
 
           <Select value={filterStatus || 'all'} onValueChange={(v) => { setFilterStatus(v === 'all' ? '' : v); setCurrentPage(1); }}>
-            <SelectTrigger className="w-[130px] h-9 bg-white text-sm" data-testid="filter-status">
+            <SelectTrigger className="w-[140px] h-10 bg-white text-sm" data-testid="filter-status">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -397,7 +474,7 @@ export default function LeadsPage() {
           </Select>
 
           <Select value={filterCity || 'all'} onValueChange={(v) => { setFilterCity(v === 'all' ? '' : v); setCurrentPage(1); }}>
-            <SelectTrigger className="w-[120px] h-9 bg-white text-sm" data-testid="filter-city">
+            <SelectTrigger className="w-[130px] h-10 bg-white text-sm" data-testid="filter-city">
               <SelectValue placeholder="City" />
             </SelectTrigger>
             <SelectContent>
@@ -406,19 +483,9 @@ export default function LeadsPage() {
             </SelectContent>
           </Select>
 
-          <Select value={filterSource || 'all'} onValueChange={(v) => { setFilterSource(v === 'all' ? '' : v); setCurrentPage(1); }}>
-            <SelectTrigger className="w-[120px] h-9 bg-white text-sm" data-testid="filter-source">
-              <SelectValue placeholder="Source" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Sources</SelectItem>
-              {sources.map((s) => (<SelectItem key={s} value={s}>{s}</SelectItem>))}
-            </SelectContent>
-          </Select>
-
           <button 
             onClick={() => { setActiveFilter('all'); fetchData(); }}
-            className="px-3 py-2 border rounded-lg hover:bg-gray-50 font-medium text-sm flex items-center gap-1"
+            className="px-4 py-2.5 border rounded-lg hover:bg-gray-50 font-medium text-sm flex items-center gap-1"
           >
             <Filter className="h-4 w-4" /> Reset
           </button>
@@ -445,14 +512,14 @@ export default function LeadsPage() {
         <table className="w-full">
           <thead>
             <tr className="bg-slate-50 border-b">
-              <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Date</th>
-              <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Lead Details</th>
-              <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">City</th>
-              <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Assigned</th>
-              <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Reminder</th>
-              <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
-              <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Source</th>
-              <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Payment Link</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Date</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Lead Details</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">City</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Assigned</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Reminder</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Source</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Payment Link</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -475,13 +542,13 @@ export default function LeadsPage() {
             ) : (
               paginatedLeads.map((lead) => (
                 <tr key={lead.id} className="hover:bg-slate-50 transition-colors" data-testid={`lead-row-${lead.id}`}>
-                  <td className="px-3 py-3">
+                  <td className="px-4 py-3">
                     <div className="text-sm font-medium text-gray-900">{formatDate(lead.created_at)}</div>
                     <div className="text-xs text-gray-400">{formatTime(lead.created_at)}</div>
                   </td>
-                  <td className="px-3 py-3">
-                    <div className="flex items-center gap-2">
-                      <div className="h-8 w-8 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white font-medium text-xs">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="h-9 w-9 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white font-medium text-sm">
                         {lead.name?.charAt(0)?.toUpperCase()}
                       </div>
                       <div>
@@ -501,13 +568,13 @@ export default function LeadsPage() {
                       </div>
                     </div>
                   </td>
-                  <td className="px-3 py-3">
+                  <td className="px-4 py-3">
                     <span className="inline-flex items-center gap-1 text-sm text-gray-700">
                       <MapPin className="h-3 w-3 text-gray-400" />
                       {lead.city}
                     </span>
                   </td>
-                  <td className="px-3 py-3">
+                  <td className="px-4 py-3">
                     <div className="flex items-center gap-1">
                       <span className="text-sm text-gray-700">{lead.assigned_to_name || lead.assigned_to || '-'}</span>
                       <button 
@@ -519,10 +586,10 @@ export default function LeadsPage() {
                       </button>
                     </div>
                   </td>
-                  <td className="px-3 py-3">
+                  <td className="px-4 py-3">
                     <div className="space-y-1">
                       <button 
-                        className="px-2 py-1 text-xs bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg hover:from-purple-600 hover:to-purple-700 font-medium flex items-center gap-1 shadow-sm"
+                        className="px-2.5 py-1 text-xs bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg hover:from-purple-600 hover:to-purple-700 font-medium flex items-center gap-1 shadow-sm"
                         onClick={() => openReminderModal(lead)}
                         data-testid={`add-reminder-${lead.id}`}
                       >
@@ -539,10 +606,11 @@ export default function LeadsPage() {
                       )}
                     </div>
                   </td>
-                  <td className="px-3 py-3">
-                    <StatusBadge status={lead.status} />
+                  <td className="px-4 py-3">
+                    {/* Clickable Status Dropdown */}
+                    <StatusDropdown lead={lead} statuses={statuses} onUpdate={fetchData} />
                   </td>
-                  <td className="px-3 py-3">
+                  <td className="px-4 py-3">
                     <div className="text-sm font-medium text-gray-700">{lead.source}</div>
                     {lead.ad_id && (
                       <div className="font-mono text-xs text-blue-600 mt-0.5 bg-blue-50 px-1.5 py-0.5 rounded inline-block">
@@ -550,10 +618,10 @@ export default function LeadsPage() {
                       </div>
                     )}
                   </td>
-                  <td className="px-3 py-3">
+                  <td className="px-4 py-3">
                     <div className="space-y-1">
                       <button 
-                        className="px-2 py-1 text-xs bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg hover:from-amber-600 hover:to-amber-700 font-medium flex items-center gap-1 shadow-sm"
+                        className="px-2.5 py-1 text-xs bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg hover:from-amber-600 hover:to-amber-700 font-medium flex items-center gap-1 shadow-sm"
                         onClick={() => openPaymentModal(lead)}
                         data-testid={`send-pay-link-${lead.id}`}
                       >
@@ -592,7 +660,7 @@ export default function LeadsPage() {
         
         {/* Pagination */}
         {!loading && filteredLeads.length > 0 && (
-          <div className="flex items-center justify-between px-3 py-2 border-t bg-slate-50">
+          <div className="flex items-center justify-between px-4 py-3 border-t bg-slate-50">
             <div className="text-sm text-gray-600">
               Showing <span className="font-medium">{startIndex + 1}</span> to <span className="font-medium">{Math.min(endIndex, filteredLeads.length)}</span> of <span className="font-medium">{filteredLeads.length}</span>
             </div>
@@ -600,7 +668,7 @@ export default function LeadsPage() {
               <button
                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
-                className="p-1.5 border rounded-lg hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="p-2 border rounded-lg hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
@@ -611,7 +679,7 @@ export default function LeadsPage() {
                     <button
                       key={pageNum}
                       onClick={() => setCurrentPage(pageNum)}
-                      className={`px-2.5 py-1 text-sm rounded-lg font-medium transition-colors ${
+                      className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-colors ${
                         currentPage === pageNum ? 'bg-blue-600 text-white' : 'hover:bg-white border'
                       }`}
                     >
@@ -623,7 +691,7 @@ export default function LeadsPage() {
               <button
                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                 disabled={currentPage === totalPages}
-                className="p-1.5 border rounded-lg hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="p-2 border rounded-lg hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
@@ -702,9 +770,9 @@ export default function LeadsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Payment Modal */}
+      {/* Payment Modal with Discount and Inspection Schedule */}
       <Dialog open={isPaymentModalOpen} onOpenChange={setIsPaymentModalOpen}>
-        <DialogContent className="sm:max-w-[700px] p-0 overflow-hidden max-h-[90vh] overflow-y-auto" data-testid="payment-modal">
+        <DialogContent className="sm:max-w-[750px] p-0 overflow-hidden max-h-[90vh] overflow-y-auto" data-testid="payment-modal">
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4">
             <DialogTitle className="text-lg font-semibold text-white">Send Payment Link</DialogTitle>
             <div className="text-sm mt-1 text-blue-100">
@@ -713,6 +781,7 @@ export default function LeadsPage() {
           </div>
           <div className="p-6">
             <div className="space-y-6">
+              {/* Step 1: Car Details */}
               {modalStep === 1 && (
                 <>
                   <div className="text-lg font-semibold text-gray-900 pb-2 border-b">Step 1: Car Details</div>
@@ -764,19 +833,22 @@ export default function LeadsPage() {
                   )}
                 </>
               )}
+
+              {/* Step 2: Package, Discount & Inspection Schedule */}
               {modalStep === 2 && (
                 <>
-                  <div className="text-lg font-semibold text-gray-900 pb-2 border-b">Step 2: Package & Payment</div>
+                  <div className="text-lg font-semibold text-gray-900 pb-2 border-b">Step 2: Package & Pricing</div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label className="text-sm">Select Package</Label>
+                      <Label className="text-sm">Select Package *</Label>
                       <Select value={paymentFormData.packageType || 'select'} onValueChange={(v) => setPaymentFormData({ ...paymentFormData, packageType: v === 'select' ? '' : v })}>
-                        <SelectTrigger className="h-11"><SelectValue placeholder="Select Package" /></SelectTrigger>
+                        <SelectTrigger className="h-11" data-testid="package-select"><SelectValue placeholder="Select Package" /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="select">-- Select Package --</SelectItem>
                           <SelectItem value="basic">Basic - ₹499</SelectItem>
                           <SelectItem value="silver">Silver - ₹999</SelectItem>
                           <SelectItem value="gold">Gold - ₹1,499</SelectItem>
+                          <SelectItem value="platinum">Platinum - ₹2,499</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -786,6 +858,86 @@ export default function LeadsPage() {
                         <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
                         <SelectContent>{[1, 2, 3, 4, 5].map(n => <SelectItem key={n} value={String(n)}>{n} Car{n > 1 ? 's' : ''}</SelectItem>)}</SelectContent>
                       </Select>
+                    </div>
+                  </div>
+
+                  {/* Discount Section */}
+                  <div className="bg-amber-50 p-4 rounded-xl border border-amber-200">
+                    <h4 className="font-semibold text-amber-800 mb-3 flex items-center gap-2">
+                      <Percent className="h-4 w-4" /> Discount (Optional)
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-sm">Discount Type</Label>
+                        <Select value={paymentFormData.discountType || 'none'} onValueChange={(v) => setPaymentFormData({ ...paymentFormData, discountType: v, discountValue: '' })}>
+                          <SelectTrigger className="h-10" data-testid="discount-type"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">No Discount</SelectItem>
+                            <SelectItem value="percent">Percentage (%)</SelectItem>
+                            <SelectItem value="amount">Fixed Amount (₹)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {paymentFormData.discountType && paymentFormData.discountType !== 'none' && (
+                        <div className="space-y-2">
+                          <Label className="text-sm">Discount Value</Label>
+                          <Input 
+                            type="number" 
+                            value={paymentFormData.discountValue} 
+                            onChange={(e) => setPaymentFormData({ ...paymentFormData, discountValue: e.target.value })}
+                            className="h-10" 
+                            placeholder={paymentFormData.discountType === 'percent' ? 'e.g., 10' : 'e.g., 100'}
+                            data-testid="discount-value"
+                          />
+                        </div>
+                      )}
+                    </div>
+                    {paymentFormData.packageType && (
+                      <div className="mt-4 pt-4 border-t border-amber-200 flex justify-between items-center">
+                        <span className="text-amber-800 font-medium">Final Amount:</span>
+                        <span className="text-2xl font-bold text-amber-800">₹{calculateFinalAmount().toLocaleString()}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Inspection Schedule Section */}
+                  <div className="bg-blue-50 p-4 rounded-xl border border-blue-200">
+                    <h4 className="font-semibold text-blue-800 mb-3 flex items-center gap-2">
+                      <CalendarDays className="h-4 w-4" /> Inspection Schedule (Optional)
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-sm">Inspection Date</Label>
+                        <Input 
+                          type="date" 
+                          value={paymentFormData.inspectionDate} 
+                          onChange={(e) => setPaymentFormData({ ...paymentFormData, inspectionDate: e.target.value })}
+                          className="h-10" 
+                          data-testid="inspection-date"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm">Inspection Time</Label>
+                        <Select value={paymentFormData.inspectionTime || 'select'} onValueChange={(v) => setPaymentFormData({ ...paymentFormData, inspectionTime: v === 'select' ? '' : v })}>
+                          <SelectTrigger className="h-10" data-testid="inspection-time"><SelectValue placeholder="Select Time" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="select">-- Select Time --</SelectItem>
+                            {['09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '02:00 PM', '03:00 PM', '04:00 PM', '05:00 PM', '06:00 PM'].map(t => 
+                              <SelectItem key={t} value={t}>{t}</SelectItem>
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="space-y-2 mt-4">
+                      <Label className="text-sm">Inspection Address</Label>
+                      <Input 
+                        value={paymentFormData.address} 
+                        onChange={(e) => setPaymentFormData({ ...paymentFormData, address: e.target.value })}
+                        className="h-10" 
+                        placeholder="Enter inspection location address"
+                        data-testid="inspection-address"
+                      />
                     </div>
                   </div>
                 </>
@@ -801,16 +953,25 @@ export default function LeadsPage() {
                 className="bg-gradient-to-r from-amber-500 to-amber-600">Next Step</Button>
             ) : (
               <Button onClick={async () => {
-                if (!selectedLead) return;
+                if (!selectedLead || !paymentFormData.packageType) {
+                  toast.error('Please select a package');
+                  return;
+                }
                 setSaving(true);
                 try {
                   const paymentLink = `https://rzp.io/l/WD${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-                  await leadsApi.update(selectedLead.id, { ...selectedLead, payment_link: paymentLink });
+                  await leadsApi.update(selectedLead.id, { 
+                    ...selectedLead, 
+                    payment_link: paymentLink,
+                    inspection_date: paymentFormData.inspectionDate,
+                    inspection_time: paymentFormData.inspectionTime,
+                    inspection_address: paymentFormData.address,
+                  });
                   toast.success('Payment link sent!');
                   setIsPaymentModalOpen(false);
                   fetchData();
                 } catch { toast.error('Failed'); } finally { setSaving(false); }
-              }} disabled={saving} className="bg-gradient-to-r from-blue-600 to-blue-700">
+              }} disabled={saving || !paymentFormData.packageType} className="bg-gradient-to-r from-blue-600 to-blue-700">
                 {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null} Send Payment Link
               </Button>
             )}
