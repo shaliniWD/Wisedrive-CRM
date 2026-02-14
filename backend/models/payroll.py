@@ -210,10 +210,54 @@ class PayrollBulkGenerateRequest(BaseModel):
     country_id: Optional[str] = None  # Filter by country
 
 
+class PayrollPreviewRequest(BaseModel):
+    """Request to preview payroll (no DB save)"""
+    month: int
+    year: int
+    country_id: str
+
+
+class PayrollRecordUpdate(BaseModel):
+    """Request to update deductions in a DRAFT batch record"""
+    # Statutory deductions (editable)
+    pf_employee: Optional[float] = None
+    professional_tax: Optional[float] = None
+    income_tax: Optional[float] = None
+    esi: Optional[float] = None
+    other_statutory: Optional[float] = None
+    
+    # Attendance override (only if explicitly changing)
+    attendance_override: Optional[bool] = None
+    attendance_deduction: Optional[float] = None
+    attendance_override_reason: Optional[str] = None
+    
+    # Other deductions (editable)
+    other_deductions: Optional[float] = None
+    other_deductions_reason: Optional[str] = None
+
+
+class BatchRecordsUpdateRequest(BaseModel):
+    """Request to update multiple records in a DRAFT batch"""
+    updates: List[Dict]  # List of {record_id: str, ...update fields}
+
+
+class BatchConfirmRequest(BaseModel):
+    """Request to confirm a batch (DRAFT → CONFIRMED)"""
+    notes: Optional[str] = None
+
+
+class BatchMarkPaidRequest(BaseModel):
+    """Request to mark batch as paid (CONFIRMED → CLOSED)"""
+    payment_date: str
+    payment_mode: str
+    transaction_reference: str
+    notes: Optional[str] = None
+
+
 class PayrollRecord(PayrollRecordBase):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat()))
 
 
 # ==================== PAYROLL ADJUSTMENTS ====================
