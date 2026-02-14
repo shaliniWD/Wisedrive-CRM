@@ -47,36 +47,48 @@ class RBACService:
         self._permissions_cache: Dict[str, List[dict]] = {}
 
     async def get_user_permissions(self, user_id: str) -> List[dict]:
-        """Get all permissions for a user based on their role"""
+        """Get all permissions for a user based on their role(s) - supports multiple roles"""
         if user_id in self._permissions_cache:
             return self._permissions_cache[user_id]
         
-        # Get user's role
-        user = await self.db.users.find_one({"id": user_id}, {"_id": 0, "role_id": 1})
+        # Get user's roles (supporting both single role_id and multiple role_ids)
+        user = await self.db.users.find_one({"id": user_id}, {"_id": 0, "role_id": 1, "role_ids": 1})
         if not user:
             return []
         
-        role_id = user.get("role_id")
-        if not role_id:
+        # Collect all role IDs (primary + additional roles)
+        role_ids = []
+        if user.get("role_ids"):
+            role_ids.extend(user["role_ids"])
+        elif user.get("role_id"):
+            role_ids.append(user["role_id"])
+        
+        if not role_ids:
             return []
         
-        # Get role permissions
-        role_perms = await self.db.role_permissions.find(
-            {"role_id": role_id}, {"_id": 0}
-        ).to_list(100)
-        
+        # Get permissions from all roles and aggregate them
         permissions = []
-        for rp in role_perms:
-            perm = await self.db.permissions.find_one(
-                {"id": rp["permission_id"]}, {"_id": 0}
-            )
-            if perm:
-                permissions.append({
-                    "name": perm["name"],
-                    "resource": perm["resource"],
-                    "action": perm["action"],
-                    "scope": rp.get("scope", "own")
-                })
+        seen_perms = set()  # Track unique permissions
+        
+        for role_id in role_ids:
+            role_perms = await self.db.role_permissions.find(
+                {"role_id": role_id}, {"_id": 0}
+            ).to_list(100)
+            
+            for rp in role_perms:
+                perm = await self.db.permissions.find_one(
+                    {"id": rp["permission_id"]}, {"_id": 0}
+                )
+                if perm:
+                    perm_key = f"{perm['name']}_{rp.get('scope', 'own')}"
+                    if perm_key not in seen_perms:
+                        seen_perms.add(perm_key)
+                        permissions.append({
+                            "name": perm["name"],
+                            "resource": perm["resource"],
+                            "action": perm["action"],
+                            "scope": rp.get("scope", "own")
+                        })
         
         self._permissions_cache[user_id] = permissions
         return permissions
