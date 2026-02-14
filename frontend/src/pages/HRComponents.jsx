@@ -651,6 +651,7 @@ export function PayrollDashboard({ isHR, isFinance }) {
       income_tax: record.income_tax || 0,
       esi: record.esi || 0,
       other_statutory: record.other_statutory || 0,
+      attendance_days: record.attendance_days || record.working_days_in_month || 0,
       other_deductions: record.other_deductions || 0,
       other_deductions_reason: record.other_deductions_reason || '',
       attendance_deduction: record.attendance_deduction || 0,
