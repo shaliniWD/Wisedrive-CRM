@@ -358,13 +358,18 @@ export function PayrollDashboard({ isHR, isFinance }) {
   // NumericInput helper - handles "0" value properly (shows empty on focus if value is 0)
   const NumericInput = ({ value, onChange, className, min = 0, max, ...props }) => {
     const [displayValue, setDisplayValue] = useState(value?.toString() || '');
+    const [isFocused, setIsFocused] = useState(false);
     
+    // Only sync from parent when not focused (prevents resetting while typing)
     useEffect(() => {
-      setDisplayValue(value?.toString() || '');
-    }, [value]);
+      if (!isFocused) {
+        setDisplayValue(value?.toString() || '');
+      }
+    }, [value, isFocused]);
     
     const handleFocus = (e) => {
-      if (value === 0 || value === '0') {
+      setIsFocused(true);
+      if (value === 0 || value === '0' || displayValue === '0') {
         setDisplayValue('');
       }
       e.target.select();
@@ -372,11 +377,15 @@ export function PayrollDashboard({ isHR, isFinance }) {
     
     const handleChange = (e) => {
       const newValue = e.target.value;
-      setDisplayValue(newValue);
-      onChange(e);
+      // Only allow numeric input
+      if (newValue === '' || /^\d*$/.test(newValue)) {
+        setDisplayValue(newValue);
+        onChange(e);
+      }
     };
     
     const handleBlur = () => {
+      setIsFocused(false);
       if (displayValue === '' || displayValue === undefined) {
         setDisplayValue('0');
       }
