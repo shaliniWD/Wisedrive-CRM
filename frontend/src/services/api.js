@@ -275,7 +275,10 @@ export const payrollApi = {
   
   // Payslip
   generatePayslip: (payrollId) => axios.post(`${API_URL}/hr/payroll/${payrollId}/generate-payslip`),
-  downloadPayslip: (payrollId) => axios.get(`${API_URL}/hr/payroll/${payrollId}/payslip`),
+  downloadPayslip: (payrollId) => axios.get(`${API_URL}/hr/payroll/${payrollId}/payslip`, { responseType: 'blob' }),
+  
+  // Employee payslips (for employee modal)
+  getEmployeePayslips: (employeeId) => axios.get(`${API_URL}/hr/payroll/employee/${employeeId}/payslips`),
   
   // ==================== BATCH-BASED PAYROLL (NEW GOVERNANCE) ====================
   
