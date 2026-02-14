@@ -1346,6 +1346,16 @@ export default function AdminPage({ initialTab = 'employees', embedded = false }
                                   <Clock className="h-4 w-4" />
                                 </button>
                               )}
+                              {isHROrCEO && (
+                                <button
+                                  className="p-2 text-gray-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                                  onClick={() => openPasswordModal(emp)}
+                                  title="Reset Password"
+                                  data-testid={`reset-password-${emp.id}`}
+                                >
+                                  <Lock className="h-4 w-4" />
+                                </button>
+                              )}
                               {isHROrCEO && emp.is_active && (
                                 <button
                                   className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
