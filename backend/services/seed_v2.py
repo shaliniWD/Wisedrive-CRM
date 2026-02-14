@@ -108,8 +108,8 @@ async def seed_v2_data(db: AsyncIOMotorDatabase):
     print(f"Roles seeded: {list(roles.keys())}")
     
     # ==================== PERMISSIONS ====================
-    resources = ["leads", "customers", "inspections", "reports", "users", "salary", "dashboard", "settings"]
-    actions = ["view", "create", "edit", "delete", "reassign", "export"]
+    resources = ["leads", "customers", "inspections", "reports", "users", "salary", "dashboard", "settings", "finance"]
+    actions = ["view", "create", "edit", "delete", "reassign", "export", "approve"]
     
     permissions = {}
     for resource in resources:
