@@ -7,6 +7,7 @@ export const leadsApi = {
   getAll: (params) => axios.get(`${API_URL}/leads`, { params }),
   create: (data) => axios.post(`${API_URL}/leads`, data),
   update: (id, data) => axios.put(`${API_URL}/leads/${id}`, data),
+  updateStatus: (id, status) => axios.patch(`${API_URL}/leads/${id}/status`, { status }),
   delete: (id) => axios.delete(`${API_URL}/leads/${id}`),
   reassign: (id, data) => axios.post(`${API_URL}/leads/${id}/reassign`, data),
   getReassignmentHistory: (id) => axios.get(`${API_URL}/leads/${id}/reassignment-history`),
