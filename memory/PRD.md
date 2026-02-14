@@ -11,10 +11,16 @@ Recreate WiseDrive CRM (https://crm.wisedrive.com) design with a modern UI. Crea
 ### Full UI/UX Redesign (Feb 14, 2026) ✅ LATEST
 - [x] **Login Page**: Split-screen design with gradient left panel (blue-900 to blue-700), white form card on right, demo credentials section, feature pills
 - [x] **Dashboard Page**: Modern summary cards with gradient icons, Quick Actions section with hover effects, Recent Activity feed, Performance Overview with progress bars, colored stats row
+- [x] **Leads Page**: Redesigned with summary cards, search/filter section, modern table with status badges, pagination (Feb 14, 2026 - Update)
 - [x] **Customers Page**: Summary cards, search/filter section, modern table with avatar initials, status badges, pagination
 - [x] **Inspections Page**: Summary cards, Unscheduled/Scheduled tabs with different table layouts, status badges with icons
 - [x] **Admin Page**: Summary cards, Employees/Countries tabs, employee table with role badges and status indicators, countries table with currency symbols
-- [x] **TopNavbar**: Gradient background (blue-900 to blue-800), logo, navigation links, user avatar, logout button
+- [x] **TopNavbar**: No logo, Dashboard as first tab, gradient background (blue-900 to blue-800), navigation links, user avatar, logout button (Feb 14, 2026 - Update)
+- [x] **Settings Page**: New page with AD ID Mapping tab (Feb 14, 2026 - NEW)
+  - AD ID Mapping table with columns: Ad ID, Ad Name, City, Language, Campaign Type, Source, Active, Action
+  - Create Ad modal with fields: Ad Id, Ad Amount, City, Language, Campaign, Source
+  - Active toggle and action buttons (Edit, Amount, Delete)
+  - **NOTE: Uses localStorage mock - not connected to backend API**
 
 **Design Language Applied:**
 - Gradient buttons (blue-600 to blue-700) with shadow
