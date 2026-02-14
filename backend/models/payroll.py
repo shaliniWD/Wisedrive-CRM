@@ -131,15 +131,16 @@ class PayrollRecordBase(BaseModel):
     
     # Attendance-based deductions - AUTO CALCULATED (not editable unless override)
     # Formula: Per Day Salary = Gross / Working Days
-    # Attendance Deduction = Per Day Salary * Unapproved Absent Days
+    # Attendance Deduction = Per Day Salary * (Working Days - Attendance Days)
     working_days_in_month: int = 0
+    attendance_days: int = 0  # EDITABLE: Actual days worked/attended (must be <= working_days_in_month)
     per_day_salary: float = 0
     unapproved_absent_days: int = 0
     attendance_deduction: float = 0
     attendance_override: bool = False  # If HR manually overrode attendance deduction
     attendance_override_reason: Optional[str] = None
     
-    # Other deductions - EDITABLE
+    # Other deductions - EDITABLE (additional deduction, capped at net pay)
     other_deductions: float = 0
     other_deductions_reason: Optional[str] = None
     
