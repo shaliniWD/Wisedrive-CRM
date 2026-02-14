@@ -219,3 +219,66 @@ export const financeApi = {
   // Payment modes
   getPaymentModes: () => axios.get(`${API_URL}/finance/payment-modes`),
 };
+
+// ==================== HR MODULE APIs ====================
+
+export const attendanceApi = {
+  // Session management
+  startSession: () => axios.post(`${API_URL}/hr/session/start`),
+  heartbeat: () => axios.post(`${API_URL}/hr/session/heartbeat`),
+  endSession: () => axios.post(`${API_URL}/hr/session/end`),
+  
+  // Active sessions (HR view)
+  getActiveSessions: (countryId) => axios.get(`${API_URL}/hr/sessions/active`, { params: { country_id: countryId } }),
+  forceLogout: (sessionId) => axios.post(`${API_URL}/hr/sessions/${sessionId}/force-logout`),
+  
+  // Attendance records
+  getAttendance: (params) => axios.get(`${API_URL}/hr/attendance`, { params }),
+  getAttendanceSummary: (employeeId, month, year) => axios.get(`${API_URL}/hr/attendance/summary/${employeeId}`, { params: { month, year } }),
+  getPendingApprovals: (countryId) => axios.get(`${API_URL}/hr/attendance/pending-approvals`, { params: { country_id: countryId } }),
+  overrideAttendance: (recordId, data) => axios.post(`${API_URL}/hr/attendance/${recordId}/override`, data),
+  calculateDaily: (date) => axios.post(`${API_URL}/hr/attendance/calculate-daily`, null, { params: { date } }),
+};
+
+export const payrollApi = {
+  // Payroll generation
+  generate: (data) => axios.post(`${API_URL}/hr/payroll/generate`, data),
+  generateBulk: (data) => axios.post(`${API_URL}/hr/payroll/generate-bulk`, data),
+  
+  // Payroll records
+  getAll: (params) => axios.get(`${API_URL}/hr/payroll`, { params }),
+  getById: (payrollId) => axios.get(`${API_URL}/hr/payroll/${payrollId}`),
+  getSummary: (month, year, countryId) => axios.get(`${API_URL}/hr/payroll/summary/${month}/${year}`, { params: { country_id: countryId } }),
+  
+  // Payment marking
+  markPaid: (payrollId, data) => axios.post(`${API_URL}/hr/payroll/${payrollId}/mark-paid`, data),
+  
+  // Adjustments
+  createAdjustment: (payrollId, data) => axios.post(`${API_URL}/hr/payroll/${payrollId}/adjustment`, data),
+  getAdjustments: (payrollId) => axios.get(`${API_URL}/hr/payroll/${payrollId}/adjustments`),
+  
+  // Payslip
+  generatePayslip: (payrollId) => axios.post(`${API_URL}/hr/payroll/${payrollId}/generate-payslip`),
+  downloadPayslip: (payrollId) => axios.get(`${API_URL}/hr/payroll/${payrollId}/payslip`),
+};
+
+export const leaveApi = {
+  // Apply for leave
+  apply: (data) => axios.post(`${API_URL}/hr/leave/apply`, data),
+  
+  // My requests & balance
+  getMyRequests: (year, status) => axios.get(`${API_URL}/hr/leave/my-requests`, { params: { year, leave_status: status } }),
+  getMyBalance: (year) => axios.get(`${API_URL}/hr/leave/my-balance`, { params: { year } }),
+  
+  // Approval workflow
+  getPendingApprovals: (countryId, teamId) => axios.get(`${API_URL}/hr/leave/pending-approvals`, { params: { country_id: countryId, team_id: teamId } }),
+  approve: (requestId, data) => axios.post(`${API_URL}/hr/leave/${requestId}/approve`, data),
+  cancel: (requestId, reason) => axios.post(`${API_URL}/hr/leave/${requestId}/cancel`, null, { params: { reason } }),
+  
+  // Employee leave info
+  getEmployeeLeaves: (employeeId, year) => axios.get(`${API_URL}/hr/leave/employee/${employeeId}`, { params: { year } }),
+  getEmployeeBalance: (employeeId, year) => axios.get(`${API_URL}/hr/leave/employee/${employeeId}/balance`, { params: { year } }),
+  
+  // Team summary
+  getTeamSummary: (teamId, countryId) => axios.get(`${API_URL}/hr/leave/team-summary`, { params: { team_id: teamId, country_id: countryId } }),
+};
