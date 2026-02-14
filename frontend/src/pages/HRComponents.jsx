@@ -651,8 +651,8 @@ export function PayrollDashboard({ isHR, isFinance }) {
   const [editingValues, setEditingValues] = useState({});
   const [saving, setSaving] = useState(false);
   
-  // Preview editing states (for absent_days, other_deductions, and batch working_days)
-  const [previewEdits, setPreviewEdits] = useState({});  // { employee_id: { absent_days, other_deductions } }
+  // Preview editing states (for lop_days, other_deductions, and batch working_days)
+  const [previewEdits, setPreviewEdits] = useState({});  // { employee_id: { lop_days, other_deductions } }
   const [previewErrors, setPreviewErrors] = useState({}); // { employee_id: { field: error_message } }
   const [batchWorkingDays, setBatchWorkingDays] = useState(null); // Editable working days for entire batch
 
