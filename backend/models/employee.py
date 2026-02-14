@@ -291,6 +291,7 @@ class CountryUpdate(BaseModel):
     currency_symbol: Optional[str] = None
     phone_code: Optional[str] = None
     is_active: Optional[bool] = None
+    cities: Optional[List[str]] = None  # List of city names
 
 
 class Country(CountryBase):
