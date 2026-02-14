@@ -8,6 +8,7 @@ const tabRouteMap = {
   customers: { name: 'Customers', href: '/customers' },
   inspections: { name: 'Inspections', href: '/inspections' },
   employees: { name: 'Admin', href: '/admin' },
+  finance: { name: 'Finance', href: '/finance' },
   settings: { name: 'Settings', href: '/settings' },
 };
 
