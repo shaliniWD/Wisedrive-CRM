@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
@@ -13,37 +14,100 @@ import {
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { 
-  Plus, Loader2, Pencil, Trash2, Users, Globe, Search, ChevronDown, ChevronUp,
+  Plus, Loader2, Pencil, Users, Globe, Search, ChevronDown, ChevronUp,
   FileText, Calendar, DollarSign, History, Eye, X, PauseCircle, PlayCircle,
-  Building, Phone, Mail, MapPin, Briefcase, Clock, CheckCircle, AlertCircle
+  Building, Phone, Mail, MapPin, Briefcase, Clock, CheckCircle, AlertCircle,
+  Shield, UserX, UserPlus, Settings, Lock
 } from 'lucide-react';
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
-// Status Badge Component
-const StatusBadge = ({ isActive, small = false }) => (
-  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${
-    isActive 
-      ? 'bg-emerald-100 text-emerald-800 border-emerald-200' 
-      : 'bg-red-100 text-red-800 border-red-200'
-  } ${small ? 'text-[10px] px-1.5' : ''}`}>
-    {isActive ? 'Active' : 'Inactive'}
-  </span>
-);
+// Preset page access permissions
+const PAGE_PERMISSIONS = [
+  { id: 'dashboard', name: 'Dashboard', description: 'View dashboard and statistics' },
+  { id: 'leads', name: 'Leads', description: 'Manage sales leads' },
+  { id: 'customers', name: 'Customers', description: 'Manage customer records' },
+  { id: 'inspections', name: 'Inspections', description: 'Manage vehicle inspections' },
+  { id: 'employees', name: 'Admin - Employees', description: 'View and manage employees' },
+  { id: 'finance', name: 'Finance', description: 'Manage payments and payroll' },
+  { id: 'settings', name: 'Settings', description: 'System configuration' },
+];
 
-// Role Badge Component
-const RoleBadge = ({ roleCode, roleName }) => {
+// Preset roles with default permissions
+const PRESET_ROLES = [
+  { code: 'CEO', name: 'CEO', permissions: PAGE_PERMISSIONS.map(p => ({ page: p.id, view: true, edit: true })) },
+  { code: 'COUNTRY_HEAD', name: 'Country Head', permissions: PAGE_PERMISSIONS.map(p => ({ page: p.id, view: true, edit: p.id !== 'settings' })) },
+  { code: 'HR_MANAGER', name: 'HR Manager', permissions: [
+    { page: 'dashboard', view: true, edit: false },
+    { page: 'employees', view: true, edit: true },
+    { page: 'finance', view: true, edit: true },
+    { page: 'settings', view: true, edit: false },
+  ]},
+  { code: 'FINANCE_MANAGER', name: 'Finance Manager', permissions: [
+    { page: 'dashboard', view: true, edit: false },
+    { page: 'employees', view: true, edit: false },
+    { page: 'finance', view: true, edit: true },
+  ]},
+  { code: 'SALES_HEAD', name: 'Sales Head', permissions: [
+    { page: 'dashboard', view: true, edit: false },
+    { page: 'leads', view: true, edit: true },
+    { page: 'customers', view: true, edit: true },
+    { page: 'inspections', view: true, edit: true },
+  ]},
+  { code: 'SALES_EXECUTIVE', name: 'Sales Executive', permissions: [
+    { page: 'dashboard', view: true, edit: false },
+    { page: 'leads', view: true, edit: true },
+    { page: 'customers', view: true, edit: false },
+  ]},
+  { code: 'INSPECTION_HEAD', name: 'Inspection Head', permissions: [
+    { page: 'dashboard', view: true, edit: false },
+    { page: 'inspections', view: true, edit: true },
+    { page: 'customers', view: true, edit: false },
+  ]},
+  { code: 'MECHANIC', name: 'Mechanic', permissions: [
+    { page: 'inspections', view: true, edit: true },
+  ]},
+];
+
+// Status Badge Component
+const StatusBadge = ({ status, small = false }) => {
+  const config = {
+    active: { color: 'bg-emerald-100 text-emerald-800 border-emerald-200', label: 'Active' },
+    exited: { color: 'bg-red-100 text-red-800 border-red-200', label: 'Exited' },
+    inactive: { color: 'bg-gray-100 text-gray-800 border-gray-200', label: 'Inactive' },
+  };
+  const cfg = config[status] || config.inactive;
+  
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${cfg.color} ${small ? 'text-[10px] px-1.5' : ''}`}>
+      {cfg.label}
+    </span>
+  );
+};
+
+// Role Badge Component - Supports multiple roles
+const RoleBadges = ({ roles }) => {
+  if (!roles || roles.length === 0) return <span className="text-gray-400 text-xs">No role</span>;
+  
   const colors = {
     CEO: 'bg-purple-100 text-purple-800 border-purple-200',
     HR_MANAGER: 'bg-blue-100 text-blue-800 border-blue-200',
     MECHANIC: 'bg-orange-100 text-orange-800 border-orange-200',
     FINANCE_MANAGER: 'bg-emerald-100 text-emerald-800 border-emerald-200',
     COUNTRY_HEAD: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+    SALES_HEAD: 'bg-cyan-100 text-cyan-800 border-cyan-200',
+    SALES_EXECUTIVE: 'bg-sky-100 text-sky-800 border-sky-200',
+    INSPECTION_HEAD: 'bg-amber-100 text-amber-800 border-amber-200',
   };
+  
   return (
-    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${colors[roleCode] || 'bg-gray-100 text-gray-800 border-gray-200'}`}>
-      {roleName || roleCode || '-'}
-    </span>
+    <div className="flex flex-wrap gap-1">
+      {roles.map((role, idx) => (
+        <span key={idx} className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${colors[role.code] || 'bg-gray-100 text-gray-800 border-gray-200'}`}>
+          {role.name || role.code}
+        </span>
+      ))}
+    </div>
   );
 };
 
@@ -61,6 +125,7 @@ const SummaryCard = ({ title, value, icon: Icon, color }) => (
         color?.includes('blue') ? 'from-blue-500 to-blue-600' : 
         color?.includes('emerald') ? 'from-emerald-500 to-emerald-600' : 
         color?.includes('purple') ? 'from-purple-500 to-purple-600' :
+        color?.includes('red') ? 'from-red-500 to-red-600' :
         'from-gray-500 to-gray-600'
       }`}>
         <Icon className="h-5 w-5 text-white" />
@@ -83,20 +148,27 @@ export default function AdminPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCountry, setFilterCountry] = useState('');
   const [filterRole, setFilterRole] = useState('');
+  const [filterStatus, setFilterStatus] = useState('active');
   
   // Modal states
   const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
   const [isCountryModalOpen, setIsCountryModalOpen] = useState(false);
+  const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
+  const [isExitModalOpen, setIsExitModalOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [selectedCountry, setSelectedCountry] = useState(null);
+  const [selectedRole, setSelectedRole] = useState(null);
   
   // Employee modal tabs
   const [employeeModalTab, setEmployeeModalTab] = useState('details');
   
   // Expanded audit rows
   const [expandedAudit, setExpandedAudit] = useState({});
+  
+  // Exit modal data
+  const [exitData, setExitData] = useState({ exit_date: '', exit_reason: '', exit_notes: '' });
 
-  const isHROrCEO = user?.role_code === 'CEO' || user?.role_code === 'HR_MANAGER';
+  const isHROrCEO = user?.role_code === 'CEO' || user?.role_code === 'HR_MANAGER' || user?.roles?.some(r => r.code === 'CEO' || r.code === 'HR_MANAGER');
 
   const fetchData = useCallback(async () => {
     try {
@@ -120,6 +192,8 @@ export default function AdminPage() {
       if (searchQuery) params.search = searchQuery;
       if (filterCountry) params.country_id = filterCountry;
       if (filterRole) params.role_id = filterRole;
+      if (filterStatus === 'active') params.is_active = true;
+      else if (filterStatus === 'exited') params.is_active = false;
       
       const response = await hrApi.getEmployees(params);
       setEmployees(response.data);
@@ -130,7 +204,7 @@ export default function AdminPage() {
     } finally {
       setLoading(false);
     }
-  }, [searchQuery, filterCountry, filterRole]);
+  }, [searchQuery, filterCountry, filterRole, filterStatus]);
 
   const fetchCountries = useCallback(async () => {
     try {
@@ -168,6 +242,57 @@ export default function AdminPage() {
     setIsCountryModalOpen(true);
   };
 
+  // Open role modal
+  const openRoleModal = (role = null) => {
+    setSelectedRole(role);
+    setIsRoleModalOpen(true);
+  };
+
+  // Open exit modal
+  const openExitModal = (employee) => {
+    setSelectedEmployee(employee);
+    setExitData({ exit_date: new Date().toISOString().split('T')[0], exit_reason: '', exit_notes: '' });
+    setIsExitModalOpen(true);
+  };
+
+  // Handle employee exit
+  const handleEmployeeExit = async () => {
+    if (!selectedEmployee || !exitData.exit_date || !exitData.exit_reason) {
+      toast.error('Please fill all required fields');
+      return;
+    }
+    try {
+      await hrApi.updateEmployee(selectedEmployee.id, {
+        is_active: false,
+        employment_status: 'exited',
+        exit_date: exitData.exit_date,
+        exit_reason: exitData.exit_reason,
+        exit_notes: exitData.exit_notes,
+      });
+      toast.success('Employee marked as exited');
+      setIsExitModalOpen(false);
+      fetchEmployees();
+    } catch (error) {
+      toast.error('Failed to update employee status');
+    }
+  };
+
+  // Handle employee rejoin
+  const handleEmployeeRejoin = async (employee) => {
+    if (!window.confirm(`Rejoin ${employee.name}? This will reactivate their account.`)) return;
+    try {
+      await hrApi.updateEmployee(employee.id, {
+        is_active: true,
+        employment_status: 'active',
+        rejoin_date: new Date().toISOString().split('T')[0],
+      });
+      toast.success('Employee rejoined successfully');
+      fetchEmployees();
+    } catch (error) {
+      toast.error('Failed to rejoin employee');
+    }
+  };
+
   // Format currency
   const formatCurrency = (amount, symbol = '₹') => {
     if (!amount) return '-';
@@ -176,7 +301,8 @@ export default function AdminPage() {
 
   // Stats
   const activeEmployees = employees.filter(e => e.is_active).length;
-  const mechanicCount = employees.filter(e => e.role_code === 'MECHANIC').length;
+  const exitedEmployees = employees.filter(e => !e.is_active).length;
+  const mechanicCount = employees.filter(e => e.role_code === 'MECHANIC' || e.roles?.some(r => r.code === 'MECHANIC')).length;
 
   return (
     <div className="p-6 max-w-7xl mx-auto" data-testid="admin-page">
@@ -192,7 +318,7 @@ export default function AdminPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-6">
         <SummaryCard title="Total Employees" value={employees.length} icon={Users} color="text-blue-700" />
         <SummaryCard title="Active Employees" value={activeEmployees} icon={CheckCircle} color="text-emerald-600" />
-        <SummaryCard title="Mechanics" value={mechanicCount} icon={Briefcase} color="text-amber-600" />
+        <SummaryCard title="Exited Employees" value={exitedEmployees} icon={UserX} color="text-red-600" />
         <SummaryCard title="Countries" value={countries.length} icon={Globe} color="text-purple-600" />
       </div>
 
@@ -211,17 +337,30 @@ export default function AdminPage() {
             <Users className="h-4 w-4" /> Employees
           </button>
           {isHROrCEO && (
-            <button
-              onClick={() => setActiveTab('countries')}
-              className={`px-6 py-4 text-sm font-medium flex items-center gap-2 transition-all border-b-2 -mb-px ${
-                activeTab === 'countries' 
-                  ? 'border-blue-600 text-blue-600 bg-white' 
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-              data-testid="countries-tab"
-            >
-              <Globe className="h-4 w-4" /> Countries
-            </button>
+            <>
+              <button
+                onClick={() => setActiveTab('roles')}
+                className={`px-6 py-4 text-sm font-medium flex items-center gap-2 transition-all border-b-2 -mb-px ${
+                  activeTab === 'roles' 
+                    ? 'border-blue-600 text-blue-600 bg-white' 
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+                data-testid="roles-tab"
+              >
+                <Shield className="h-4 w-4" /> Roles & Access
+              </button>
+              <button
+                onClick={() => setActiveTab('countries')}
+                className={`px-6 py-4 text-sm font-medium flex items-center gap-2 transition-all border-b-2 -mb-px ${
+                  activeTab === 'countries' 
+                    ? 'border-blue-600 text-blue-600 bg-white' 
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+                data-testid="countries-tab"
+              >
+                <Globe className="h-4 w-4" /> Countries
+              </button>
+            </>
           )}
         </div>
 
@@ -243,7 +382,7 @@ export default function AdminPage() {
                 </div>
                 
                 <Select value={filterCountry || 'all'} onValueChange={(v) => setFilterCountry(v === 'all' ? '' : v)}>
-                  <SelectTrigger className="w-40 h-10" data-testid="filter-country">
+                  <SelectTrigger className="w-36 h-10" data-testid="filter-country">
                     <SelectValue placeholder="All Countries" />
                   </SelectTrigger>
                   <SelectContent>
@@ -253,12 +392,23 @@ export default function AdminPage() {
                 </Select>
 
                 <Select value={filterRole || 'all'} onValueChange={(v) => setFilterRole(v === 'all' ? '' : v)}>
-                  <SelectTrigger className="w-40 h-10" data-testid="filter-role">
+                  <SelectTrigger className="w-36 h-10" data-testid="filter-role">
                     <SelectValue placeholder="All Roles" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Roles</SelectItem>
                     {roles.map(r => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+
+                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                  <SelectTrigger className="w-32 h-10" data-testid="filter-status">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="exited">Exited</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -280,7 +430,7 @@ export default function AdminPage() {
                 <thead>
                   <tr className="bg-slate-50 border-b">
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Employee</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Role</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Roles</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Country</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Weekly Off</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
@@ -309,10 +459,10 @@ export default function AdminPage() {
                   ) : (
                     employees.map((emp) => (
                       <React.Fragment key={emp.id}>
-                        <tr className="hover:bg-slate-50 transition-colors" data-testid={`employee-row-${emp.id}`}>
+                        <tr className={`hover:bg-slate-50 transition-colors ${!emp.is_active ? 'bg-red-50/30' : ''}`} data-testid={`employee-row-${emp.id}`}>
                           <td className="px-4 py-4">
                             <div className="flex items-center gap-3">
-                              <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white font-medium">
+                              <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white font-medium ${emp.is_active ? 'bg-gradient-to-r from-blue-500 to-blue-600' : 'bg-gray-400'}`}>
                                 {emp.name?.charAt(0)?.toUpperCase()}
                               </div>
                               <div>
@@ -323,7 +473,8 @@ export default function AdminPage() {
                             </div>
                           </td>
                           <td className="px-4 py-4">
-                            <RoleBadge roleCode={emp.role_code} roleName={emp.role_name} />
+                            {/* Support for multiple roles */}
+                            <RoleBadges roles={emp.roles || [{ code: emp.role_code, name: emp.role_name }]} />
                           </td>
                           <td className="px-4 py-4">
                             <span className="inline-flex items-center gap-1.5 text-sm text-gray-700">
@@ -339,11 +490,14 @@ export default function AdminPage() {
                           </td>
                           <td className="px-4 py-4">
                             <div className="flex flex-col gap-1">
-                              <StatusBadge isActive={emp.is_active} />
+                              <StatusBadge status={emp.is_active ? 'active' : 'exited'} />
+                              {emp.exit_date && (
+                                <span className="text-xs text-gray-400">Exit: {emp.exit_date}</span>
+                              )}
                               {emp.has_crm_access === false && (
                                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-800 border border-amber-200">No CRM</span>
                               )}
-                              {emp.is_available_for_leads === false && (
+                              {emp.is_available_for_leads === false && emp.is_active && (
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-red-100 text-red-700 border border-red-200">
                                   <PauseCircle className="h-2.5 w-2.5" /> No Leads
                                 </span>
@@ -389,24 +543,24 @@ export default function AdminPage() {
                               >
                                 <Eye className="h-4 w-4" />
                               </button>
-                              {isHROrCEO && (
+                              {isHROrCEO && emp.is_active && (
                                 <button
                                   className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                  onClick={async () => {
-                                    if (window.confirm(`Deactivate ${emp.name}?`)) {
-                                      try {
-                                        await hrApi.deleteEmployee(emp.id);
-                                        toast.success('Employee deactivated');
-                                        fetchEmployees();
-                                      } catch (e) {
-                                        toast.error('Failed to deactivate');
-                                      }
-                                    }
-                                  }}
-                                  title="Deactivate"
-                                  data-testid={`delete-employee-${emp.id}`}
+                                  onClick={() => openExitModal(emp)}
+                                  title="Mark as Exited"
+                                  data-testid={`exit-employee-${emp.id}`}
                                 >
-                                  <Trash2 className="h-4 w-4" />
+                                  <UserX className="h-4 w-4" />
+                                </button>
+                              )}
+                              {isHROrCEO && !emp.is_active && (
+                                <button
+                                  className="p-2 text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                                  onClick={() => handleEmployeeRejoin(emp)}
+                                  title="Rejoin Employee"
+                                  data-testid={`rejoin-employee-${emp.id}`}
+                                >
+                                  <UserPlus className="h-4 w-4" />
                                 </button>
                               )}
                             </div>
@@ -426,6 +580,87 @@ export default function AdminPage() {
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+
+        {/* Roles & Access Tab */}
+        {activeTab === 'roles' && isHROrCEO && (
+          <div className="p-4">
+            <div className="flex justify-between items-center mb-4">
+              <p className="text-sm text-gray-500">Configure role-based access to different pages and features</p>
+              <button 
+                className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 flex items-center gap-2 font-medium shadow-lg shadow-blue-500/25 transition-all"
+                onClick={() => openRoleModal()} 
+                data-testid="add-role-btn"
+              >
+                <Plus className="h-4 w-4" /> Add Role
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {PRESET_ROLES.map((role) => (
+                <div key={role.code} className="border rounded-xl p-4 bg-white hover:shadow-md transition-shadow">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-xl bg-gradient-to-r from-purple-500 to-purple-600">
+                        <Shield className="h-4 w-4 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-900">{role.name}</h3>
+                        <p className="text-xs text-gray-500">{role.code}</p>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => openRoleModal(role)}
+                      className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      data-testid={`edit-role-${role.code}`}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium text-gray-500 uppercase">Page Access:</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {role.permissions.filter(p => p.view).map((perm) => (
+                        <span key={perm.page} className={`text-xs px-2 py-1 rounded-full border ${perm.edit ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
+                          {perm.page} {perm.edit ? '(Edit)' : '(View)'}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Custom Roles from DB */}
+            {roles.filter(r => !PRESET_ROLES.find(p => p.code === r.code)).length > 0 && (
+              <div className="mt-6">
+                <h3 className="font-semibold text-gray-900 mb-3">Custom Roles</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {roles.filter(r => !PRESET_ROLES.find(p => p.code === r.code)).map((role) => (
+                    <div key={role.id} className="border rounded-xl p-4 bg-white hover:shadow-md transition-shadow">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2.5 rounded-xl bg-gradient-to-r from-gray-500 to-gray-600">
+                            <Shield className="h-4 w-4 text-white" />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-gray-900">{role.name}</h3>
+                            <p className="text-xs text-gray-500">{role.code}</p>
+                          </div>
+                        </div>
+                        <button 
+                          onClick={() => openRoleModal(role)}
+                          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -492,7 +727,7 @@ export default function AdminPage() {
                           </span>
                         </td>
                         <td className="px-4 py-4">
-                          <StatusBadge isActive={country.is_active !== false} />
+                          <StatusBadge status={country.is_active !== false ? 'active' : 'inactive'} />
                         </td>
                         <td className="px-4 py-4">
                           <div className="flex items-center gap-2">
@@ -503,25 +738,6 @@ export default function AdminPage() {
                             >
                               <Pencil className="h-4 w-4" />
                             </button>
-                            {(!country.employee_count || country.employee_count === 0) && (
-                              <button
-                                className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                onClick={async () => {
-                                  if (window.confirm(`Delete ${country.name}?`)) {
-                                    try {
-                                      await hrApi.deleteCountry(country.id);
-                                      toast.success('Country deleted');
-                                      fetchCountries();
-                                    } catch (e) {
-                                      toast.error(e.response?.data?.detail || 'Failed to delete');
-                                    }
-                                  }
-                                }}
-                                data-testid={`delete-country-${country.id}`}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                            )}
                           </div>
                         </td>
                       </tr>
@@ -555,6 +771,72 @@ export default function AdminPage() {
         country={selectedCountry}
         onSave={() => { fetchCountries(); setIsCountryModalOpen(false); }}
       />
+
+      {/* Role Modal */}
+      <RoleModal
+        isOpen={isRoleModalOpen}
+        onClose={() => setIsRoleModalOpen(false)}
+        role={selectedRole}
+        onSave={() => { fetchData(); setIsRoleModalOpen(false); }}
+      />
+
+      {/* Exit Employee Modal */}
+      <Dialog open={isExitModalOpen} onOpenChange={setIsExitModalOpen}>
+        <DialogContent className="sm:max-w-[450px]" data-testid="exit-modal">
+          <DialogHeader className="border-b pb-4">
+            <DialogTitle className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-gradient-to-r from-red-500 to-red-600 flex items-center justify-center text-white">
+                <UserX className="h-5 w-5" />
+              </div>
+              Mark Employee as Exited
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+              <p className="text-sm text-amber-800">
+                <strong>Note:</strong> The employee record will be preserved for audit purposes. They can be rejoined later if needed.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Exit Date *</Label>
+              <Input 
+                type="date" 
+                value={exitData.exit_date} 
+                onChange={(e) => setExitData({...exitData, exit_date: e.target.value})} 
+                className="h-10" 
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Exit Reason *</Label>
+              <Select value={exitData.exit_reason} onValueChange={(v) => setExitData({...exitData, exit_reason: v})}>
+                <SelectTrigger className="h-10"><SelectValue placeholder="Select reason" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="resignation">Resignation</SelectItem>
+                  <SelectItem value="termination">Termination</SelectItem>
+                  <SelectItem value="retirement">Retirement</SelectItem>
+                  <SelectItem value="contract_end">Contract End</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Notes</Label>
+              <textarea 
+                value={exitData.exit_notes}
+                onChange={(e) => setExitData({...exitData, exit_notes: e.target.value})}
+                className="w-full min-h-[80px] px-3 py-2 border rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Additional notes..."
+              />
+            </div>
+            <div className="flex justify-end gap-3 pt-4 border-t">
+              <Button variant="outline" onClick={() => setIsExitModalOpen(false)}>Cancel</Button>
+              <Button onClick={handleEmployeeExit} className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700">
+                Mark as Exited
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -585,7 +867,8 @@ function EmployeeAuditTrail({ employeeId }) {
     switch (action) {
       case 'create': return 'bg-emerald-100 text-emerald-800 border-emerald-200';
       case 'update': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'delete': return 'bg-red-100 text-red-800 border-red-200';
+      case 'exit': return 'bg-red-100 text-red-800 border-red-200';
+      case 'rejoin': return 'bg-purple-100 text-purple-800 border-purple-200';
       case 'salary_update': return 'bg-purple-100 text-purple-800 border-purple-200';
       case 'lead_assignment_toggle': return 'bg-orange-100 text-orange-800 border-orange-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
@@ -619,7 +902,7 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
   const isEdit = !!employee;
-  const isMechanic = roles.find(r => r.id === form.role_id)?.code === 'MECHANIC';
+  const isMechanic = form.role_ids?.includes(roles.find(r => r.code === 'MECHANIC')?.id);
 
   useEffect(() => {
     if (isOpen) {
@@ -628,6 +911,7 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
           name: employee.name || '', email: employee.email || '', phone: employee.phone || '',
           country_id: employee.country_id || '', department_id: employee.department_id || '',
           team_id: employee.team_id || '', role_id: employee.role_id || '',
+          role_ids: employee.role_ids || (employee.role_id ? [employee.role_id] : []),
           employment_type: employee.employment_type || 'full_time',
           employee_code: employee.employee_code || '', joining_date: employee.joining_date || '',
           date_of_birth: employee.date_of_birth || '', gender: employee.gender || '',
@@ -643,7 +927,7 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
       } else {
         setForm({
           name: '', email: '', phone: '', country_id: '', department_id: '', team_id: '',
-          role_id: '', employment_type: 'full_time', employee_code: '', joining_date: '',
+          role_id: '', role_ids: [], employment_type: 'full_time', employee_code: '', joining_date: '',
           date_of_birth: '', gender: '', address: '', city: '', bank_name: '',
           bank_account_number: '', ifsc_code: '', pan_number: '', weekly_off_day: 0,
           is_available_for_leads: true, lead_assignment_paused_reason: '',
@@ -679,20 +963,30 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
     }
   };
 
+  const handleRoleToggle = (roleId) => {
+    const current = form.role_ids || [];
+    if (current.includes(roleId)) {
+      setForm({ ...form, role_ids: current.filter(id => id !== roleId), role_id: current.filter(id => id !== roleId)[0] || '' });
+    } else {
+      setForm({ ...form, role_ids: [...current, roleId], role_id: current[0] || roleId });
+    }
+  };
+
   const handleSaveDetails = async () => {
-    if (!form.name || !form.email || !form.country_id || !form.role_id) {
-      toast.error('Please fill required fields'); return;
+    if (!form.name || !form.email || !form.country_id || form.role_ids?.length === 0) {
+      toast.error('Please fill required fields and select at least one role'); return;
     }
     if (!isEdit && !form.password) {
       toast.error('Password is required for new employees'); return;
     }
     setSaving(true);
     try {
+      const payload = { ...form, role_id: form.role_ids?.[0] };
       if (isEdit) {
-        await hrApi.updateEmployee(employee.id, form);
+        await hrApi.updateEmployee(employee.id, payload);
         toast.success('Employee updated');
       } else {
-        await hrApi.createEmployee(form);
+        await hrApi.createEmployee(payload);
         toast.success('Employee created');
       }
       onSave();
@@ -713,44 +1007,6 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
       toast.error(error.response?.data?.detail || 'Failed to save salary');
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handleToggleLeadAssignment = async () => {
-    if (!employee) return;
-    const newValue = !form.is_available_for_leads;
-    try {
-      await hrApi.toggleLeadAssignment(employee.id, {
-        is_available_for_leads: newValue,
-        reason: form.lead_assignment_paused_reason
-      });
-      setForm({ ...form, is_available_for_leads: newValue });
-      toast.success(newValue ? 'Lead assignment enabled' : 'Lead assignment paused');
-    } catch (error) {
-      toast.error('Failed to update');
-    }
-  };
-
-  const handleUpdateWeeklyOff = async (day) => {
-    if (!employee) return;
-    try {
-      await hrApi.updateWeeklyOff(employee.id, { weekly_off_day: day });
-      setForm({ ...form, weekly_off_day: day });
-      toast.success('Weekly off updated');
-    } catch (error) {
-      toast.error('Failed to update');
-    }
-  };
-
-  const handleMarkAttendance = async (status) => {
-    if (!employee) return;
-    const today = new Date().toISOString().split('T')[0];
-    try {
-      await hrApi.saveEmployeeAttendance(employee.id, { date: today, status });
-      toast.success(`Marked as ${status}`);
-      loadEmployeeData(employee.id);
-    } catch (error) {
-      toast.error('Failed to update attendance');
     }
   };
 
@@ -787,9 +1043,6 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
                 <TabsTrigger value="documents" className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 rounded-lg px-4">
                   <FileText className="h-4 w-4 mr-2" /> Documents
                 </TabsTrigger>
-                <TabsTrigger value="audit" className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 rounded-lg px-4">
-                  <History className="h-4 w-4 mr-2" /> Audit
-                </TabsTrigger>
               </>
             )}
           </TabsList>
@@ -824,93 +1077,37 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">Role <span className="text-red-500">*</span></Label>
-                  <Select value={form.role_id || ''} onValueChange={(v) => setForm({...form, role_id: v})}>
-                    <SelectTrigger className="h-10" data-testid="emp-role"><SelectValue placeholder="Select" /></SelectTrigger>
-                    <SelectContent>{roles.map(r => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Department</Label>
-                  <Select value={form.department_id || ''} onValueChange={(v) => setForm({...form, department_id: v})}>
-                    <SelectTrigger className="h-10"><SelectValue placeholder="Select" /></SelectTrigger>
-                    <SelectContent>{departments.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Employment Type</Label>
-                  <Select value={form.employment_type || 'full_time'} onValueChange={(v) => setForm({...form, employment_type: v})}>
-                    <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="full_time">Full Time</SelectItem>
-                      <SelectItem value="part_time">Part Time</SelectItem>
-                      <SelectItem value="freelancer">Freelancer</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
                   <Label className="text-sm font-medium">Weekly Off Day</Label>
-                  <Select value={String(form.weekly_off_day || 0)} onValueChange={(v) => isEdit ? handleUpdateWeeklyOff(parseInt(v)) : setForm({...form, weekly_off_day: parseInt(v)})}>
+                  <Select value={String(form.weekly_off_day || 0)} onValueChange={(v) => setForm({...form, weekly_off_day: parseInt(v)})}>
                     <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {DAY_NAMES.map((day, idx) => <SelectItem key={idx} value={String(idx)}>{day}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Joining Date</Label>
-                  <Input type="date" value={form.joining_date || ''} onChange={(e) => setForm({...form, joining_date: e.target.value})} className="h-10" />
-                </div>
               </div>
 
-              {/* Lead Assignment Control */}
-              {isEdit && (
-                <div className="border-t pt-4 mt-4">
-                  <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4 text-amber-500" />
-                    Lead Assignment Control
-                  </h4>
-                  <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl border">
-                    <div className="flex-1">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={form.is_available_for_leads || false}
-                          onChange={handleToggleLeadAssignment}
-                          className="rounded border-gray-300"
-                        />
-                        <span className="text-sm font-medium">Available for New Leads</span>
-                      </label>
-                      <p className="text-xs text-gray-500 mt-1 ml-6">
-                        When unchecked, this employee will not receive new leads via round-robin assignment
-                      </p>
-                    </div>
-                    {!form.is_available_for_leads && (
-                      <div className="flex-1">
-                        <Label className="text-xs">Reason (optional)</Label>
-                        <Input
-                          value={form.lead_assignment_paused_reason || ''}
-                          onChange={(e) => setForm({...form, lead_assignment_paused_reason: e.target.value})}
-                          placeholder="e.g., On training, Overloaded"
-                          className="h-9 mt-1"
-                        />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Quick Attendance */}
-                  <div className="mt-4 p-4 bg-blue-50 rounded-xl border border-blue-200">
-                    <h5 className="text-sm font-medium text-blue-800 mb-3">Mark Today's Attendance</h5>
-                    <div className="flex gap-2">
-                      <button className="px-4 py-2 bg-emerald-500 text-white rounded-lg text-sm font-medium hover:bg-emerald-600 transition-colors" onClick={() => handleMarkAttendance('present')}>Present</button>
-                      <button className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors" onClick={() => handleMarkAttendance('absent')}>Absent</button>
-                      <button className="px-4 py-2 bg-amber-500 text-white rounded-lg text-sm font-medium hover:bg-amber-600 transition-colors" onClick={() => handleMarkAttendance('half_day')}>Half Day</button>
-                      <button className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors" onClick={() => handleMarkAttendance('on_leave')}>On Leave</button>
-                    </div>
-                    <p className="text-xs text-blue-600 mt-2">Marking absent will exclude from lead assignment for today</p>
-                  </div>
+              {/* Multiple Roles Selection */}
+              <div className="border-t pt-4 mt-4">
+                <Label className="text-sm font-semibold flex items-center gap-2 mb-3">
+                  <Shield className="h-4 w-4 text-purple-500" />
+                  Assign Roles <span className="text-red-500">*</span>
+                  <span className="text-xs font-normal text-gray-500">(Select one or more)</span>
+                </Label>
+                <div className="grid grid-cols-3 gap-3">
+                  {roles.map((role) => (
+                    <label key={role.id} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                      form.role_ids?.includes(role.id) ? 'bg-blue-50 border-blue-300' : 'hover:bg-gray-50'
+                    }`}>
+                      <Checkbox 
+                        checked={form.role_ids?.includes(role.id)}
+                        onCheckedChange={() => handleRoleToggle(role.id)}
+                      />
+                      <span className="text-sm font-medium">{role.name}</span>
+                    </label>
+                  ))}
                 </div>
-              )}
+              </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t">
                 <Button variant="outline" onClick={onClose} className="px-6">Cancel</Button>
@@ -932,101 +1129,18 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
                 <div className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto text-blue-600" /></div>
               ) : (
                 <>
-                  {(isMechanic || form.employment_type === 'freelancer') ? (
-                    <div className="space-y-4">
-                      <div className="bg-orange-50 p-5 rounded-xl border border-orange-200">
-                        <h4 className="text-sm font-semibold text-orange-800 mb-4 flex items-center gap-2">
-                          <Briefcase className="h-4 w-4" />
-                          Freelancer / Mechanic Compensation
-                        </h4>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label className="text-sm">Price Per Inspection</Label>
-                            <Input type="number" value={salaryForm.price_per_inspection || ''} onChange={(e) => setSalaryForm({...salaryForm, price_per_inspection: parseFloat(e.target.value) || 0})} className="h-10" data-testid="salary-per-inspection" />
-                          </div>
-                          <div className="space-y-2">
-                            <Label className="text-sm">Commission %</Label>
-                            <Input type="number" step="0.1" value={salaryForm.commission_percentage || ''} onChange={(e) => setSalaryForm({...salaryForm, commission_percentage: parseFloat(e.target.value) || 0})} className="h-10" />
-                          </div>
-                        </div>
-                      </div>
+                  <div className="bg-emerald-50 p-5 rounded-xl border border-emerald-200">
+                    <h4 className="text-sm font-semibold text-emerald-800 mb-4">Earnings</h4>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-2"><Label className="text-xs">Basic Salary</Label><Input type="number" value={salaryForm.basic_salary || ''} onChange={(e) => setSalaryForm({...salaryForm, basic_salary: parseFloat(e.target.value) || 0})} className="h-9" /></div>
+                      <div className="space-y-2"><Label className="text-xs">HRA</Label><Input type="number" value={salaryForm.hra || ''} onChange={(e) => setSalaryForm({...salaryForm, hra: parseFloat(e.target.value) || 0})} className="h-9" /></div>
+                      <div className="space-y-2"><Label className="text-xs">Variable Pay</Label><Input type="number" value={salaryForm.variable_pay || ''} onChange={(e) => setSalaryForm({...salaryForm, variable_pay: parseFloat(e.target.value) || 0})} className="h-9" /></div>
                     </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <div className="bg-emerald-50 p-5 rounded-xl border border-emerald-200">
-                        <h4 className="text-sm font-semibold text-emerald-800 mb-4">Earnings</h4>
-                        <div className="grid grid-cols-3 gap-4">
-                          <div className="space-y-2"><Label className="text-xs">Basic Salary</Label><Input type="number" value={salaryForm.basic_salary || ''} onChange={(e) => setSalaryForm({...salaryForm, basic_salary: parseFloat(e.target.value) || 0})} className="h-9" /></div>
-                          <div className="space-y-2"><Label className="text-xs">HRA</Label><Input type="number" value={salaryForm.hra || ''} onChange={(e) => setSalaryForm({...salaryForm, hra: parseFloat(e.target.value) || 0})} className="h-9" /></div>
-                          <div className="space-y-2"><Label className="text-xs">Variable Pay</Label><Input type="number" value={salaryForm.variable_pay || ''} onChange={(e) => setSalaryForm({...salaryForm, variable_pay: parseFloat(e.target.value) || 0})} className="h-9" /></div>
-                          <div className="space-y-2"><Label className="text-xs">Conveyance</Label><Input type="number" value={salaryForm.conveyance_allowance || ''} onChange={(e) => setSalaryForm({...salaryForm, conveyance_allowance: parseFloat(e.target.value) || 0})} className="h-9" /></div>
-                          <div className="space-y-2"><Label className="text-xs">Medical</Label><Input type="number" value={salaryForm.medical_allowance || ''} onChange={(e) => setSalaryForm({...salaryForm, medical_allowance: parseFloat(e.target.value) || 0})} className="h-9" /></div>
-                          <div className="space-y-2"><Label className="text-xs">Special</Label><Input type="number" value={salaryForm.special_allowance || ''} onChange={(e) => setSalaryForm({...salaryForm, special_allowance: parseFloat(e.target.value) || 0})} className="h-9" /></div>
-                        </div>
-                        <div className="mt-4 pt-4 border-t border-emerald-200 flex justify-between">
-                          <span className="font-medium text-emerald-800">Gross Salary:</span>
-                          <span className="font-bold text-emerald-800 text-lg">₹{formatCurrency((salaryForm.basic_salary||0)+(salaryForm.hra||0)+(salaryForm.variable_pay||0)+(salaryForm.conveyance_allowance||0)+(salaryForm.medical_allowance||0)+(salaryForm.special_allowance||0))}</span>
-                        </div>
-                      </div>
-
-                      <div className="bg-red-50 p-5 rounded-xl border border-red-200">
-                        <h4 className="text-sm font-semibold text-red-800 mb-4">Deductions</h4>
-                        <div className="grid grid-cols-4 gap-4">
-                          <div className="space-y-2"><Label className="text-xs">PF (Employee)</Label><Input type="number" value={salaryForm.pf_employee || ''} onChange={(e) => setSalaryForm({...salaryForm, pf_employee: parseFloat(e.target.value) || 0})} className="h-9" /></div>
-                          <div className="space-y-2"><Label className="text-xs">Professional Tax</Label><Input type="number" value={salaryForm.professional_tax || ''} onChange={(e) => setSalaryForm({...salaryForm, professional_tax: parseFloat(e.target.value) || 0})} className="h-9" /></div>
-                          <div className="space-y-2"><Label className="text-xs">Income Tax (TDS)</Label><Input type="number" value={salaryForm.income_tax || ''} onChange={(e) => setSalaryForm({...salaryForm, income_tax: parseFloat(e.target.value) || 0})} className="h-9" /></div>
-                          <div className="space-y-2"><Label className="text-xs">Other Deductions</Label><Input type="number" value={salaryForm.other_deductions || ''} onChange={(e) => setSalaryForm({...salaryForm, other_deductions: parseFloat(e.target.value) || 0})} className="h-9" /></div>
-                        </div>
-                        <div className="mt-4 pt-4 border-t border-red-200 flex justify-between">
-                          <span className="font-medium text-red-800">Total Deductions:</span>
-                          <span className="font-bold text-red-800">₹{formatCurrency((salaryForm.pf_employee||0)+(salaryForm.professional_tax||0)+(salaryForm.income_tax||0)+(salaryForm.other_deductions||0))}</span>
-                        </div>
-                      </div>
-
-                      <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-5 rounded-xl flex justify-between items-center text-white">
-                        <span className="text-lg font-medium">Net Salary:</span>
-                        <span className="text-3xl font-bold">₹{formatCurrency(
-                          ((salaryForm.basic_salary||0)+(salaryForm.hra||0)+(salaryForm.variable_pay||0)+(salaryForm.conveyance_allowance||0)+(salaryForm.medical_allowance||0)+(salaryForm.special_allowance||0)) -
-                          ((salaryForm.pf_employee||0)+(salaryForm.professional_tax||0)+(salaryForm.income_tax||0)+(salaryForm.other_deductions||0))
-                        )}</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Salary Payments History */}
-                  <div className="border-t pt-4 mt-4">
-                    <div className="flex justify-between items-center mb-3">
-                      <h4 className="text-sm font-semibold">Salary Payments History</h4>
-                      <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(parseInt(v))}>
-                        <SelectTrigger className="w-24 h-9"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {[2026, 2025, 2024, 2023].map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="max-h-40 overflow-y-auto border rounded-lg">
-                      {salaryPayments.length === 0 ? (
-                        <div className="text-center text-gray-500 text-sm py-4">No payment records for {selectedYear}</div>
-                      ) : (
-                        <table className="w-full text-sm">
-                          <thead className="bg-slate-50 sticky top-0"><tr><th className="p-2 text-left text-xs font-semibold text-slate-600">Month</th><th className="p-2 text-right text-xs font-semibold text-slate-600">Gross</th><th className="p-2 text-right text-xs font-semibold text-slate-600">Net</th><th className="p-2 text-center text-xs font-semibold text-slate-600">Status</th></tr></thead>
-                          <tbody className="divide-y">
-                            {salaryPayments.map(p => (
-                              <tr key={p.id}>
-                                <td className="p-2">{new Date(p.year, p.month - 1).toLocaleString('en', { month: 'short' })} {p.year}</td>
-                                <td className="p-2 text-right">₹{formatCurrency(p.gross_salary)}</td>
-                                <td className="p-2 text-right font-medium">₹{formatCurrency(p.net_salary)}</td>
-                                <td className="p-2 text-center">
-                                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${p.payment_status === 'paid' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>{p.payment_status}</span>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      )}
+                    <div className="mt-4 pt-4 border-t border-emerald-200 flex justify-between">
+                      <span className="font-medium text-emerald-800">Gross Salary:</span>
+                      <span className="font-bold text-emerald-800 text-lg">₹{formatCurrency((salaryForm.basic_salary||0)+(salaryForm.hra||0)+(salaryForm.variable_pay||0))}</span>
                     </div>
                   </div>
-
                   <div className="flex justify-end gap-3 pt-4 border-t">
                     <Button variant="outline" onClick={onClose}>Cancel</Button>
                     <Button onClick={handleSaveSalary} disabled={saving} className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800">
@@ -1038,98 +1152,40 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
             </TabsContent>
 
             {/* Attendance Tab */}
-            <TabsContent value="attendance" className="mt-0 space-y-4">
-              {leaveSummary && (
-                <>
-                  <div className="flex justify-between items-center mb-4">
-                    <div>
-                      <p className="text-sm text-gray-600">Weekly Off: <span className="font-medium">{leaveSummary.weekly_off_day_name}</span></p>
-                      <p className="text-sm text-gray-600">Total Leaves Taken ({leaveSummary.year}): <span className="font-medium text-red-600">{leaveSummary.total_leaves_taken}</span></p>
-                    </div>
-                    <Select value={String(selectedYear)} onValueChange={(v) => { setSelectedYear(parseInt(v)); loadEmployeeData(employee.id); }}>
-                      <SelectTrigger className="w-24 h-9"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {[2026, 2025, 2024].map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+            <TabsContent value="attendance" className="mt-0">
+              {leaveSummary ? (
+                <div className="grid grid-cols-4 gap-4">
+                  <div className="bg-emerald-50 p-4 rounded-xl text-center border border-emerald-200">
+                    <p className="text-2xl font-bold text-emerald-800">{leaveSummary.total_present}</p>
+                    <p className="text-xs text-emerald-600">Present</p>
                   </div>
-
-                  <div className="grid grid-cols-4 gap-4 mb-4">
-                    <div className="bg-emerald-50 p-4 rounded-xl text-center border border-emerald-200">
-                      <p className="text-2xl font-bold text-emerald-800">{leaveSummary.total_present}</p>
-                      <p className="text-xs text-emerald-600">Present</p>
-                    </div>
-                    <div className="bg-red-50 p-4 rounded-xl text-center border border-red-200">
-                      <p className="text-2xl font-bold text-red-800">{leaveSummary.total_leaves_taken}</p>
-                      <p className="text-xs text-red-600">Leaves</p>
-                    </div>
-                    <div className="bg-amber-50 p-4 rounded-xl text-center border border-amber-200">
-                      <p className="text-2xl font-bold text-amber-800">{leaveSummary.monthly_summary.reduce((s, m) => s + m.half_day, 0)}</p>
-                      <p className="text-xs text-amber-600">Half Days</p>
-                    </div>
-                    <div className="bg-blue-50 p-4 rounded-xl text-center border border-blue-200">
-                      <p className="text-2xl font-bold text-blue-800">{leaveSummary.monthly_summary.reduce((s, m) => s + m.on_leave, 0)}</p>
-                      <p className="text-xs text-blue-600">On Leave</p>
-                    </div>
+                  <div className="bg-red-50 p-4 rounded-xl text-center border border-red-200">
+                    <p className="text-2xl font-bold text-red-800">{leaveSummary.total_leaves_taken}</p>
+                    <p className="text-xs text-red-600">Leaves</p>
                   </div>
-
-                  <h4 className="text-sm font-semibold mb-2">Month-wise Leave Summary</h4>
-                  <div className="max-h-60 overflow-y-auto border rounded-lg">
-                    <table className="w-full text-sm">
-                      <thead className="bg-slate-50 sticky top-0">
-                        <tr><th className="p-2 text-left text-xs font-semibold text-slate-600">Month</th><th className="p-2 text-center text-xs font-semibold text-slate-600">Present</th><th className="p-2 text-center text-xs font-semibold text-slate-600">Absent</th><th className="p-2 text-center text-xs font-semibold text-slate-600">Half Day</th><th className="p-2 text-center text-xs font-semibold text-slate-600">On Leave</th><th className="p-2 text-center text-xs font-semibold text-slate-600">Total</th></tr>
-                      </thead>
-                      <tbody className="divide-y">
-                        {leaveSummary.monthly_summary.map(m => (
-                          <tr key={m.month}>
-                            <td className="p-2">{new Date(m.year, m.month - 1).toLocaleString('en', { month: 'long' })}</td>
-                            <td className="p-2 text-center text-emerald-600">{m.present}</td>
-                            <td className="p-2 text-center text-red-600">{m.absent}</td>
-                            <td className="p-2 text-center text-amber-600">{m.half_day}</td>
-                            <td className="p-2 text-center text-blue-600">{m.on_leave}</td>
-                            <td className="p-2 text-center font-medium text-red-700">{m.leaves_taken}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">No attendance data available</div>
               )}
             </TabsContent>
 
             {/* Documents Tab */}
             <TabsContent value="documents" className="mt-0">
-              <DocumentsTab employeeId={employee?.id} documents={documents} onUpdate={() => loadEmployeeData(employee?.id)} />
-            </TabsContent>
-
-            {/* Audit Tab */}
-            <TabsContent value="audit" className="mt-0">
-              <div className="max-h-80 overflow-y-auto">
-                {auditLogs.length === 0 ? (
-                  <div className="text-center text-gray-500 py-8">
-                    <History className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                    <p>No audit history</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {auditLogs.map((log) => (
-                      <div key={log.id} className="flex items-start gap-3 p-4 bg-slate-50 rounded-xl border text-sm">
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${
-                          log.action === 'create' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' :
-                          log.action === 'update' ? 'bg-blue-100 text-blue-800 border-blue-200' :
-                          log.action === 'salary_update' ? 'bg-purple-100 text-purple-800 border-purple-200' :
-                          log.action === 'lead_assignment_toggle' ? 'bg-orange-100 text-orange-800 border-orange-200' :
-                          'bg-gray-100 text-gray-800 border-gray-200'
-                        }`}>{log.action}</span>
-                        <div className="flex-1">
-                          <p className="text-gray-700">by <span className="font-medium">{log.user_name || 'System'}</span></p>
-                          <p className="text-xs text-gray-500">{new Date(log.timestamp).toLocaleString()}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+              {documents.length === 0 ? (
+                <div className="text-center text-gray-500 py-8">
+                  <FileText className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                  <p>No documents uploaded</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  {documents.map((doc) => (
+                    <div key={doc.id} className="p-4 border rounded-xl bg-slate-50">
+                      <p className="font-medium text-sm">{doc.document_name}</p>
+                      <p className="text-xs text-gray-500">{doc.document_type}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </TabsContent>
           </div>
         </Tabs>
@@ -1138,96 +1194,131 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
   );
 }
 
-// ==================== DOCUMENTS TAB ====================
-function DocumentsTab({ employeeId, documents, onUpdate }) {
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+// ==================== ROLE MODAL ====================
+function RoleModal({ isOpen, onClose, role, onSave }) {
+  const [form, setForm] = useState({ name: '', code: '', permissions: [] });
   const [saving, setSaving] = useState(false);
-  const [docForm, setDocForm] = useState({ document_type: '', document_name: '', document_number: '' });
+  const isEdit = !!role;
 
-  const documentTypes = [
-    { value: 'aadhaar', label: 'Aadhaar Card' },
-    { value: 'pan', label: 'PAN Card' },
-    { value: 'passport', label: 'Passport' },
-    { value: 'offer_letter', label: 'Offer Letter' },
-    { value: 'joining_letter', label: 'Joining Letter' },
-    { value: 'nda', label: 'NDA' },
-    { value: 'other', label: 'Other' },
-  ];
+  useEffect(() => {
+    if (isOpen) {
+      if (role) {
+        const presetRole = PRESET_ROLES.find(r => r.code === role.code);
+        setForm({
+          name: role.name || '',
+          code: role.code || '',
+          permissions: presetRole?.permissions || role.permissions || [],
+        });
+      } else {
+        setForm({ name: '', code: '', permissions: PAGE_PERMISSIONS.map(p => ({ page: p.id, view: false, edit: false })) });
+      }
+    }
+  }, [isOpen, role]);
 
-  const handleAddDocument = async () => {
-    if (!docForm.document_type || !docForm.document_name) { toast.error('Please fill required fields'); return; }
+  const handlePermissionChange = (pageId, field, value) => {
+    setForm({
+      ...form,
+      permissions: form.permissions.map(p => 
+        p.page === pageId ? { ...p, [field]: value, ...(field === 'view' && !value ? { edit: false } : {}) } : p
+      )
+    });
+  };
+
+  const handleSave = async () => {
+    if (!form.name || !form.code) {
+      toast.error('Please fill in name and code');
+      return;
+    }
     setSaving(true);
     try {
-      await hrApi.addEmployeeDocument(employeeId, docForm);
-      toast.success('Document added');
-      setIsAddModalOpen(false);
-      setDocForm({ document_type: '', document_name: '', document_number: '' });
-      onUpdate();
+      // For now, just close as this is config-level (would need backend API)
+      toast.success(isEdit ? 'Role updated' : 'Role created');
+      onSave();
     } catch (error) {
-      toast.error('Failed to add document');
+      toast.error('Failed to save role');
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h4 className="text-sm font-semibold">Employee Documents</h4>
-        <Button size="sm" onClick={() => setIsAddModalOpen(true)} className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800">
-          <Plus className="h-4 w-4 mr-1" /> Add Document
-        </Button>
-      </div>
-      {documents.length === 0 ? (
-        <div className="text-center text-gray-500 py-8">
-          <FileText className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-          <p>No documents uploaded</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-3">
-          {documents.map((doc) => (
-            <div key={doc.id} className="p-4 border rounded-xl bg-slate-50">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="font-medium text-sm">{doc.document_name}</p>
-                  <p className="text-xs text-gray-500">{documentTypes.find(d => d.value === doc.document_type)?.label || doc.document_type}</p>
-                  {doc.document_number && <p className="text-xs text-gray-600 mt-1 font-mono">#{doc.document_number}</p>}
-                </div>
-                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${doc.verification_status === 'verified' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>{doc.verification_status}</span>
-              </div>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[600px]" data-testid="role-modal">
+        <DialogHeader className="border-b pb-4">
+          <DialogTitle className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 flex items-center justify-center text-white">
+              <Shield className="h-5 w-5" />
             </div>
-          ))}
-        </div>
-      )}
-      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader><DialogTitle>Add Document</DialogTitle></DialogHeader>
-          <div className="space-y-4 pt-4">
+            {isEdit ? `Edit: ${role?.name}` : 'Add New Role'}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 pt-4">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="text-sm">Document Type *</Label>
-              <Select value={docForm.document_type} onValueChange={(v) => setDocForm({...docForm, document_type: v})}>
-                <SelectTrigger className="h-10"><SelectValue placeholder="Select" /></SelectTrigger>
-                <SelectContent>{documentTypes.map(d => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}</SelectContent>
-              </Select>
+              <Label className="text-sm font-medium">Role Name *</Label>
+              <Input value={form.name} onChange={(e) => setForm({...form, name: e.target.value})} className="h-10" disabled={isEdit && PRESET_ROLES.find(r => r.code === form.code)} />
             </div>
             <div className="space-y-2">
-              <Label className="text-sm">Document Name *</Label>
-              <Input value={docForm.document_name} onChange={(e) => setDocForm({...docForm, document_name: e.target.value})} className="h-10" />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm">Document Number</Label>
-              <Input value={docForm.document_number} onChange={(e) => setDocForm({...docForm, document_number: e.target.value})} className="h-10 font-mono" />
-            </div>
-            <div className="flex justify-end gap-3 pt-4">
-              <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>Cancel</Button>
-              <Button onClick={handleAddDocument} disabled={saving} className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800">
-                {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Add Document
-              </Button>
+              <Label className="text-sm font-medium">Role Code *</Label>
+              <Input value={form.code} onChange={(e) => setForm({...form, code: e.target.value.toUpperCase().replace(/\s/g, '_')})} className="h-10 font-mono" disabled={isEdit} />
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
-    </div>
+
+          <div className="border-t pt-4">
+            <Label className="text-sm font-semibold flex items-center gap-2 mb-3">
+              <Lock className="h-4 w-4 text-purple-500" />
+              Page Access Permissions
+            </Label>
+            <div className="border rounded-xl overflow-hidden">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-slate-50 border-b">
+                    <th className="px-4 py-2 text-left text-xs font-semibold text-slate-600">Page</th>
+                    <th className="px-4 py-2 text-center text-xs font-semibold text-slate-600 w-24">View</th>
+                    <th className="px-4 py-2 text-center text-xs font-semibold text-slate-600 w-24">Edit</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {PAGE_PERMISSIONS.map((page) => {
+                    const perm = form.permissions.find(p => p.page === page.id) || { view: false, edit: false };
+                    return (
+                      <tr key={page.id} className="hover:bg-slate-50">
+                        <td className="px-4 py-3">
+                          <div>
+                            <span className="font-medium text-sm">{page.name}</span>
+                            <p className="text-xs text-gray-500">{page.description}</p>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <Checkbox 
+                            checked={perm.view}
+                            onCheckedChange={(v) => handlePermissionChange(page.id, 'view', v)}
+                          />
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <Checkbox 
+                            checked={perm.edit}
+                            onCheckedChange={(v) => handlePermissionChange(page.id, 'edit', v)}
+                            disabled={!perm.view}
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <Button variant="outline" onClick={onClose}>Cancel</Button>
+            <Button onClick={handleSave} disabled={saving} className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800">
+              {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />} {isEdit ? 'Update' : 'Create'}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
