@@ -247,7 +247,12 @@ Vendor Payment → Finance Manager creates with GST/TDS → Submit for Approval 
 ```
 
 ## Last Updated
-February 14, 2026 - **Employee Salary Structures Complete**: All 19 employees now have salary structures configured with proper earnings (Basic, HRA, Allowances) and statutory deductions (PF, PT, TDS). Payroll preview shows actual calculations with Total Gross ₹11,77,500 and Total Net ₹9,84,937.51 for India.
+February 14, 2026 - **HR Module Enterprise Readiness Complete**: All 4 mandatory fixes implemented and verified:
+1. Employee fields (joining_date, DOB, address, emergency_contact, reporting_manager, payroll_active)
+2. Bank details encryption (AES-256 via Fernet)
+3. Document RBAC (sensitive docs restricted by role)
+4. Storage strategy (S3 configurable via STORAGE_TYPE)
+Fixed security bug: bank_account_number_encrypted no longer exposed in API.
 
 ## Platform Architecture v5.0
 
