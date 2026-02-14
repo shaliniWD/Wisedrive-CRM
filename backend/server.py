@@ -3596,6 +3596,177 @@ async def run_daily_attendance_calculation(
     return result
 
 
+@api_router.get("/hr/attendance/calendar")
+async def get_attendance_calendar(
+    month: int,
+    year: int,
+    country_id: Optional[str] = None,
+    search: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get consolidated attendance calendar data for all employees
+    
+    Returns a calendar-centric view showing:
+    - All employees with their leave status for each day of the month
+    - Working days vs weekends/holidays
+    - Industry-standard color codes for leave statuses
+    """
+    import calendar as cal
+    
+    role_code = current_user.get("role_code", "")
+    
+    # RBAC check
+    if role_code not in ["CEO", "HR_MANAGER", "COUNTRY_HEAD"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    if role_code == "COUNTRY_HEAD":
+        country_id = current_user.get("country_id")
+    
+    # Get employees
+    emp_query = {"is_active": True}
+    if country_id:
+        emp_query["country_id"] = country_id
+    if search:
+        emp_query["$or"] = [
+            {"name": {"$regex": search, "$options": "i"}},
+            {"email": {"$regex": search, "$options": "i"}},
+            {"employee_code": {"$regex": search, "$options": "i"}}
+        ]
+    
+    employees = await db.users.find(
+        emp_query, 
+        {"_id": 0, "id": 1, "name": 1, "email": 1, "employee_code": 1, "photo_url": 1, "weekly_off_day": 1, "country_id": 1}
+    ).sort("name", 1).to_list(500)
+    
+    emp_ids = [e["id"] for e in employees]
+    
+    # Get date range for the month
+    _, last_day = cal.monthrange(year, month)
+    start_date = f"{year}-{str(month).zfill(2)}-01"
+    end_date = f"{year}-{str(month).zfill(2)}-{last_day}"
+    
+    # Get all leave requests for the month (approved and pending)
+    leave_query = {
+        "employee_id": {"$in": emp_ids},
+        "status": {"$in": ["APPROVED", "PENDING"]},
+        "$or": [
+            {"start_date": {"$lte": end_date}, "end_date": {"$gte": start_date}}
+        ]
+    }
+    leaves = await db.leave_requests.find(leave_query, {"_id": 0}).to_list(10000)
+    
+    # Group leaves by employee and date
+    leave_map = {}  # {employee_id: {date: {status, leave_type}}}
+    for leave in leaves:
+        emp_id = leave["employee_id"]
+        if emp_id not in leave_map:
+            leave_map[emp_id] = {}
+        
+        # Expand leave dates
+        leave_start = datetime.strptime(leave["start_date"], "%Y-%m-%d")
+        leave_end = datetime.strptime(leave["end_date"], "%Y-%m-%d")
+        current = leave_start
+        
+        while current <= leave_end:
+            date_str = current.strftime("%Y-%m-%d")
+            # Only include dates in the requested month
+            if start_date <= date_str <= end_date:
+                leave_map[emp_id][date_str] = {
+                    "status": leave["status"].lower(),  # "approved" or "pending"
+                    "leave_type": leave["leave_type"].lower(),  # "casual" or "sick"
+                    "leave_id": leave["id"],
+                    "reason": leave.get("reason", "")
+                }
+            current += timedelta(days=1)
+    
+    # Build calendar data for each employee
+    calendar_data = []
+    day_names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    
+    for emp in employees:
+        emp_weekly_off = emp.get("weekly_off_day", 0)  # 0=Sunday default
+        emp_days = {}
+        
+        for day in range(1, last_day + 1):
+            date_str = f"{year}-{str(month).zfill(2)}-{str(day).zfill(2)}"
+            date_obj = datetime(year, month, day)
+            weekday = date_obj.weekday()  # 0=Monday, 6=Sunday
+            
+            # Check if it's a weekend (Saturday=5, Sunday=6) or employee's weekly off
+            is_weekend = weekday in [5, 6]  # Saturday or Sunday
+            is_weekly_off = weekday == (emp_weekly_off - 1) % 7 if emp_weekly_off > 0 else weekday == 6
+            is_holiday = is_weekend or is_weekly_off
+            
+            # Check for leave status
+            leave_info = leave_map.get(emp["id"], {}).get(date_str)
+            
+            if leave_info:
+                status = leave_info["status"]  # "approved" or "pending"
+                leave_type = leave_info["leave_type"]
+                day_status = f"leave_{status}"  # "leave_approved" or "leave_pending"
+            elif is_holiday:
+                status = "holiday"
+                leave_type = None
+                day_status = "holiday"
+            else:
+                status = "working"
+                leave_type = None
+                day_status = "working"
+            
+            emp_days[date_str] = {
+                "date": date_str,
+                "day": day,
+                "weekday": weekday,
+                "weekday_name": day_names[weekday],
+                "status": day_status,
+                "leave_type": leave_type,
+                "is_weekend": is_weekend,
+                "leave_id": leave_info.get("leave_id") if leave_info else None,
+                "reason": leave_info.get("reason") if leave_info else None
+            }
+        
+        # Count summary
+        working_days = sum(1 for d in emp_days.values() if d["status"] == "working")
+        leave_approved = sum(1 for d in emp_days.values() if d["status"] == "leave_approved")
+        leave_pending = sum(1 for d in emp_days.values() if d["status"] == "leave_pending")
+        holidays = sum(1 for d in emp_days.values() if d["status"] == "holiday")
+        
+        calendar_data.append({
+            "employee_id": emp["id"],
+            "employee_name": emp["name"],
+            "employee_code": emp.get("employee_code"),
+            "email": emp.get("email"),
+            "photo_url": emp.get("photo_url"),
+            "weekly_off_day": emp_weekly_off,
+            "days": emp_days,
+            "summary": {
+                "working_days": working_days,
+                "leave_approved": leave_approved,
+                "leave_pending": leave_pending,
+                "holidays": holidays,
+                "total_days": last_day
+            }
+        })
+    
+    # Get country list for filter
+    countries = await db.countries.find({"is_active": True}, {"_id": 0, "id": 1, "name": 1}).to_list(100)
+    
+    return {
+        "month": month,
+        "year": year,
+        "month_name": datetime(year, month, 1).strftime("%B"),
+        "total_days": last_day,
+        "employees": calendar_data,
+        "countries": countries,
+        "legend": {
+            "working": {"color": "#10B981", "label": "Working Day"},
+            "holiday": {"color": "#94A3B8", "label": "Weekend/Holiday"},
+            "leave_approved": {"color": "#3B82F6", "label": "Leave (Approved)"},
+            "leave_pending": {"color": "#F59E0B", "label": "Leave (Pending)"}
+        }
+    }
+
+
 # ==================== HR MODULE: PAYROLL ====================
 
 @api_router.post("/hr/payroll/generate")
