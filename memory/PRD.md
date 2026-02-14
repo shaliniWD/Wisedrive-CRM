@@ -253,20 +253,23 @@ Vendor Payment → Finance Manager creates with GST/TDS → Submit for Approval 
 ```
 
 ## Last Updated
-February 14, 2026 - **Password Management & Numeric Input Bug Fix v2**:
-1. **Password Reset Feature (HR/CEO Only):**
-   - Added `POST /api/hr/employees/{id}/reset-password` endpoint
-   - Added password reset UI button (Lock icon) in employee actions
-   - Modal shows employee name/email, password input with validation
-   - Audit logging for password reset actions
+February 14, 2026 - **Deployment Bug Fixes**:
+1. **bcrypt/passlib Compatibility Fix:**
+   - Removed passlib dependency (incompatible with bcrypt 4.1+)
+   - Switched to using bcrypt directly for password hashing
+   - Updated `hash_password()` and `verify_password()` in server.py
+   - Updated `seed_v2.py` to use bcrypt directly
 
-2. **Numeric Input "012" Bug Fix (v2):**
-   - Created `NumericInput` component in PayrollDashboard
-   - Properly handles controlled input state with `displayValue`
-   - Clears "0" on focus, shows "0" on blur if empty
-   - Fixed the "012" concatenation issue when typing in Absent Days
+2. **JWT Key Length Fix:**
+   - Increased default JWT_SECRET from 29 bytes to 52 bytes
+   - Eliminates `InsecureKeyLengthWarning` in production
 
-Previous (Feb 14, 2026): Data Cleanup & Numeric Input Bug Fix - Database cleanup, CSS spinner removal, payroll service fixes
+3. **Files Modified:**
+   - `/app/backend/server.py` - bcrypt import, password functions, JWT secret
+   - `/app/backend/services/seed_v2.py` - bcrypt import, hash_password function
+   - `/app/backend/requirements.txt` - removed passlib
+
+Previous (Feb 14, 2026): Password Management & Numeric Input Bug Fix v2
 
 ## Platform Architecture v5.0
 
