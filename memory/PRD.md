@@ -234,10 +234,21 @@ Recreate WiseDrive CRM (https://crm.wisedrive.com) design with a modern UI. Crea
 
 ## API Endpoints
 
+### HR Module V5 (Dec 14, 2025 - New)
+- `POST /api/hr/attendance/update-day` - HR can update attendance status for any employee/day
+  - Body: `{ employee_id, date, status, notes }`
+  - Statuses: `present`, `lop`/`absent`, `half_day`, `leave_approved`, `holiday`
+  - RBAC: CEO, HR_MANAGER only
+  
+- `GET /api/hr/payroll/employee/{id}/payslips` - Get employee's payslips for modal
+  - Returns: List of confirmed payroll records with payslip info
+  - RBAC: CEO, HR_MANAGER, FINANCE_MANAGER, COUNTRY_HEAD
+
 ### Attendance Calendar (Dec 14, 2025 - New)
 - `GET /api/hr/attendance/calendar` - Consolidated calendar view of all employees with leave statuses
   - Query params: `month`, `year`, `country_id`, `search`
   - Returns: `employees[]` with `days{}` containing status for each day
+  - Includes: `lop_days`, `half_days` in summary
   - RBAC: CEO, HR_MANAGER, COUNTRY_HEAD only
 
 ### Admin Sync (Dec 14, 2025 - New)
