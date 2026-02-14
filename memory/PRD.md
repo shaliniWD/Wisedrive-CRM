@@ -247,7 +247,7 @@ Vendor Payment → Finance Manager creates with GST/TDS → Submit for Approval 
 ```
 
 ## Last Updated
-February 14, 2026 - **Payroll Batch Governance Complete**: Implemented manual-controlled payroll workflow with batch lifecycle (DRAFT → CONFIRMED → CLOSED), editable grid, immutable records after confirmation, and audit logging.
+February 14, 2026 - **Employee Salary Structures Complete**: All 19 employees now have salary structures configured with proper earnings (Basic, HRA, Allowances) and statutory deductions (PF, PT, TDS). Payroll preview shows actual calculations with Total Gross ₹11,77,500 and Total Net ₹9,84,937.51 for India.
 
 ## Platform Architecture v5.0
 
