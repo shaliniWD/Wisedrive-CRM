@@ -1305,7 +1305,7 @@ async def get_hr_employees(
             {"employee_code": {"$regex": search, "$options": "i"}}
         ]
     
-    employees = await db.users.find(query, {"_id": 0, "hashed_password": 0}).sort("created_at", -1).to_list(1000)
+    employees = await db.users.find(query, {"_id": 0, "hashed_password": 0, "bank_account_number_encrypted": 0}).sort("created_at", -1).to_list(1000)
     
     # Enrich with role, country, department info
     for emp in employees:
@@ -1378,7 +1378,7 @@ async def get_hr_employee(employee_id: str, current_user: dict = Depends(get_cur
     if role_code not in ["CEO", "HR_MANAGER", "COUNTRY_HEAD"]:
         raise HTTPException(status_code=403, detail="Not authorized")
     
-    emp = await db.users.find_one({"id": employee_id}, {"_id": 0, "hashed_password": 0})
+    emp = await db.users.find_one({"id": employee_id}, {"_id": 0, "hashed_password": 0, "bank_account_number_encrypted": 0})
     if not emp:
         raise HTTPException(status_code=404, detail="Employee not found")
     
