@@ -12,6 +12,7 @@ import CustomersPage from "@/pages/CustomersPage";
 import InspectionsPage from "@/pages/InspectionsPage";
 import AdminPage from "@/pages/AdminPage";
 import FinancePage from "@/pages/FinancePage";
+import SettingsPage from "@/pages/SettingsPage";
 
 // Smart redirect based on visible tabs
 const SmartRedirect = () => {
