@@ -10,6 +10,8 @@ Recreate WiseDrive CRM (https://crm.wisedrive.com) design with a modern UI. Crea
 
 ### Full UI/UX Redesign (Feb 14, 2026) ✅ LATEST
 - [x] **Login Page**: Split-screen design with gradient left panel (blue-900 to blue-700), white form card on right, demo credentials section, feature pills
+  - Added Country selection dropdown at top of form (Feb 14, 2026)
+  - Public /api/auth/countries endpoint for dropdown (India, Malaysia, Thailand, Philippines)
 - [x] **Dashboard Page**: Modern summary cards with gradient icons, Quick Actions section with hover effects, Recent Activity feed, Performance Overview with progress bars, colored stats row
 - [x] **Leads Page**: Redesigned with action-oriented summary cards, search/filter section, modern table with status badges, pagination (Feb 14, 2026 - Update)
   - Summary Cards: New Leads (Today), RCB WhatsApp, Follow Up, Payment Link Sent
