@@ -278,29 +278,6 @@ export default function LoginPage() {
             <p className="mt-6 text-center text-sm text-slate-500">
               Need access? Contact your administrator
             </p>
-
-            {/* Demo Credentials */}
-            <div className="mt-6 p-4 bg-gradient-to-r from-slate-50 to-slate-100 rounded-xl border border-slate-200" data-testid="demo-credentials">
-              <p className="text-xs font-semibold text-slate-600 mb-3 flex items-center gap-2">
-                <Shield className="h-3.5 w-3.5" />
-                Demo Credentials
-              </p>
-              <div className="space-y-2 text-xs">
-                <div className="flex items-center justify-between p-2 bg-white rounded-lg border">
-                  <span className="font-medium text-slate-700">CEO</span>
-                  <span className="text-slate-500 font-mono">kalyan@wisedrive.com</span>
-                </div>
-                <div className="flex items-center justify-between p-2 bg-white rounded-lg border">
-                  <span className="font-medium text-slate-700">HR Manager</span>
-                  <span className="text-slate-500 font-mono">hr@wisedrive.com</span>
-                </div>
-                <div className="flex items-center justify-between p-2 bg-white rounded-lg border">
-                  <span className="font-medium text-slate-700">Finance</span>
-                  <span className="text-slate-500 font-mono">finance@wisedrive.com</span>
-                </div>
-                <p className="text-center text-slate-400 pt-1">Password: password123</p>
-              </div>
-            </div>
           </div>
         </div>
       </div>
