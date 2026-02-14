@@ -217,6 +217,12 @@ Recreate WiseDrive CRM (https://crm.wisedrive.com) design with a modern UI. Crea
   - 6 tabs: Employees, Attendance, Payroll, Leave, Roles, Countries
   - Employee detail modal with sub-tabs (Details, Salary, Attendance, Documents)
   - /admin redirects to /hr
+- [x] **5 New HR Features** (Feb 14, 2026)
+  - Employee photo URL field with preview display in table
+  - Dynamic "On Leave" status for employees with approved leaves
+  - Quick leave action buttons (CalendarPlus, List icons)
+  - Freelancer role with pink badge and hr-only access
+  - "On Leave Today" dashboard card with expandable list
 
 ### P1 - High Priority (Next)
 - [ ] Bulk payment creation for monthly salary processing
