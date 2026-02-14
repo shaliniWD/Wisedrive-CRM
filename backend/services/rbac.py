@@ -9,6 +9,7 @@ class RBACService:
     # Role codes
     CEO = "CEO"
     HR_MANAGER = "HR_MANAGER"
+    FINANCE_MANAGER = "FINANCE_MANAGER"
     COUNTRY_HEAD = "COUNTRY_HEAD"
     SALES_HEAD = "SALES_HEAD"
     INSPECTION_HEAD = "INSPECTION_HEAD"
@@ -29,9 +30,10 @@ class RBACService:
     TAB_VISIBILITY = {
         CEO: ["leads", "customers", "inspections", "reports", "employees", "settings", "finance"],
         HR_MANAGER: ["employees"],  # HR only sees Admin (employees)
+        FINANCE_MANAGER: ["finance"],  # Finance Manager only sees Finance tab
         COUNTRY_HEAD: ["leads", "customers", "inspections", "reports", "employees", "settings", "finance"],
-        SALES_HEAD: ["leads", "customers", "employees", "finance"],
-        INSPECTION_HEAD: ["customers", "inspections", "reports", "employees", "finance"],
+        SALES_HEAD: ["leads", "customers", "employees"],
+        INSPECTION_HEAD: ["customers", "inspections", "reports", "employees"],
         SALES_LEAD: ["leads", "customers"],
         INSPECTION_LEAD: ["customers", "inspections", "reports"],
         SALES_EXEC: ["leads"],
