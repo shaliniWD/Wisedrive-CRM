@@ -1,22 +1,58 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Loader2, Mail, Lock, Eye, EyeOff, Shield, ArrowRight } from 'lucide-react';
+import { Loader2, Mail, Lock, Eye, EyeOff, Shield, ArrowRight, Globe } from 'lucide-react';
+import axios from 'axios';
 
 // Company Logo URL
 const COMPANY_LOGO = "https://customer-assets.emergentagent.com/job_crm-employee-hub/artifacts/6eac372o_Wisedrive%20New%20Logo%20Horizontal%20Blue%20Trans%20BG.png";
 
+const API_URL = process.env.REACT_APP_BACKEND_URL;
+
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [selectedCountry, setSelectedCountry] = useState('');
+  const [countries, setCountries] = useState([]);
+  const [loadingCountries, setLoadingCountries] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+
+  // Fetch countries on component mount
+  useEffect(() => {
+    const fetchCountries = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/api/auth/countries`);
+        setCountries(response.data);
+        // Auto-select first country if available
+        if (response.data.length > 0) {
+          setSelectedCountry(response.data[0].id);
+        }
+      } catch (error) {
+        console.error('Failed to load countries:', error);
+        // Fallback countries if API fails
+        setCountries([
+          { id: 'IN', name: 'India', code: 'IN' },
+          { id: 'MY', name: 'Malaysia', code: 'MY' },
+          { id: 'TH', name: 'Thailand', code: 'TH' },
+          { id: 'PH', name: 'Philippines', code: 'PH' },
+        ]);
+        setSelectedCountry('IN');
+      } finally {
+        setLoadingCountries(false);
+      }
+    };
+    fetchCountries();
+  }, []);
 
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
@@ -28,10 +64,14 @@ export default function LoginPage() {
       toast.error('Please fill in all fields');
       return;
     }
+    if (!selectedCountry) {
+      toast.error('Please select a country');
+      return;
+    }
 
     setIsLoading(true);
     try {
-      await login(email, password);
+      await login(email, password, selectedCountry);
       toast.success('Welcome back!');
       navigate('/dashboard');
     } catch (error) {
@@ -103,6 +143,35 @@ export default function LoginPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
+              {/* Country Selection */}
+              <div className="space-y-2">
+                <Label htmlFor="country" className="text-sm font-medium text-slate-700">
+                  Select Country
+                </Label>
+                <Select 
+                  value={selectedCountry} 
+                  onValueChange={setSelectedCountry}
+                  disabled={loadingCountries}
+                >
+                  <SelectTrigger className="h-12 bg-slate-50 border-slate-200 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-xl" data-testid="country-select">
+                    <div className="flex items-center gap-2">
+                      <Globe className="h-5 w-5 text-slate-400" />
+                      <SelectValue placeholder={loadingCountries ? "Loading..." : "Select a country"} />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {countries.map((country) => (
+                      <SelectItem key={country.id} value={country.id}>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{country.name}</span>
+                          <span className="text-slate-400">({country.code})</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-sm font-medium text-slate-700">
                   Email Address
@@ -170,7 +239,7 @@ export default function LoginPage() {
               <Button
                 type="submit"
                 className="w-full h-12 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium rounded-xl shadow-lg shadow-blue-500/25 transition-all"
-                disabled={isLoading}
+                disabled={isLoading || !selectedCountry}
                 data-testid="login-button"
               >
                 {isLoading ? (
