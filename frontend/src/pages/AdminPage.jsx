@@ -69,6 +69,7 @@ const PRESET_ROLES = [
   { code: 'MECHANIC', name: 'Mechanic', permissions: [
     { page: 'inspections', view: true, edit: true },
   ]},
+  { code: 'FREELANCER', name: 'Freelancer', permissions: [] },  // No CRM access, only receives payments
 ];
 
 // Status Badge Component
@@ -76,6 +77,7 @@ const StatusBadge = ({ status, small = false }) => {
   const config = {
     active: { color: 'bg-emerald-100 text-emerald-800 border-emerald-200', label: 'Active' },
     exited: { color: 'bg-red-100 text-red-800 border-red-200', label: 'Exited' },
+    on_leave: { color: 'bg-amber-100 text-amber-800 border-amber-200', label: 'On Leave' },
     inactive: { color: 'bg-gray-100 text-gray-800 border-gray-200', label: 'Inactive' },
   };
   const cfg = config[status] || config.inactive;
