@@ -187,9 +187,15 @@ Recreate WiseDrive CRM (https://crm.wisedrive.com) design with a modern UI. Crea
 - [x] Modern payslip with company logo
 - [x] Payment proof upload UI
 - [x] Full UI/UX Redesign (all pages match FinancePage style)
+- [x] Multi-role support for employees
+- [x] Inline lead status update
+- [x] Admin page RBAC configuration UI
+- [x] Employee exit/rejoin flow
+- [x] Hot Leads summary card
 
 ### P1 - High Priority (Next)
 - [ ] Bulk payment creation for monthly salary processing
+- [ ] Link salary structure to automatic payment creation
 - [ ] Export payments to CSV/Excel
 - [ ] Lead Assignment Flow with team selection UI
 
