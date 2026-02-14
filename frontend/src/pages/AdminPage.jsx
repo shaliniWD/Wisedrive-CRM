@@ -850,6 +850,12 @@ export default function AdminPage({ initialTab = 'employees', embedded = false }
                           <span className="font-mono text-sm text-gray-600">{country.phone_code || '-'}</span>
                         </td>
                         <td className="px-4 py-4">
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200">
+                            <MapPin className="h-3 w-3 mr-1" />
+                            {country.cities?.length || 0} cities
+                          </span>
+                        </td>
+                        <td className="px-4 py-4">
                           <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
                             {country.employee_count || 0} employees
                           </span>
@@ -1537,6 +1543,12 @@ export default function AdminPage({ initialTab = 'employees', embedded = false }
                         </td>
                         <td className="px-4 py-4">
                           <span className="font-mono text-sm text-gray-600">{country.phone_code || '-'}</span>
+                        </td>
+                        <td className="px-4 py-4">
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200">
+                            <MapPin className="h-3 w-3 mr-1" />
+                            {country.cities?.length || 0} cities
+                          </span>
                         </td>
                         <td className="px-4 py-4">
                           <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
