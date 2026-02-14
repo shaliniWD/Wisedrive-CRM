@@ -986,7 +986,7 @@ export function PayrollDashboard({ isHR, isFinance }) {
                   className="bg-gradient-to-r from-blue-600 to-blue-700"
                   data-testid="generate-payroll-btn"
                 >
-                  <DollarSign className="h-4 w-4 mr-2" /> Generate Payroll
+                  <CurrencyIcon className="h-4 w-4 mr-2" /> Generate Payroll
                 </Button>
               )}
             </div>
@@ -1015,7 +1015,7 @@ export function PayrollDashboard({ isHR, isFinance }) {
                   {batches.length === 0 ? (
                     <tr>
                       <td colSpan={8} className="text-center py-12 text-gray-500">
-                        <DollarSign className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                        <CurrencyIcon className="h-12 w-12 mx-auto mb-3 text-gray-300" />
                         No payroll batches found
                       </td>
                     </tr>
@@ -1285,7 +1285,7 @@ export function PayrollDashboard({ isHR, isFinance }) {
                   className="bg-gradient-to-r from-emerald-600 to-emerald-700"
                   data-testid="mark-paid-btn"
                 >
-                  <DollarSign className="h-4 w-4 mr-2" /> Mark as Paid
+                  <CurrencyIcon className="h-4 w-4 mr-2" /> Mark as Paid
                 </Button>
               )}
             </div>
@@ -1475,7 +1475,7 @@ export function PayrollDashboard({ isHR, isFinance }) {
           <DialogHeader className="border-b pb-4">
             <DialogTitle className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white">
-                <DollarSign className="h-5 w-5" />
+                <CurrencyIcon className="h-5 w-5" />
               </div>
               Generate Payroll
             </DialogTitle>
