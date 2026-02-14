@@ -182,7 +182,40 @@ export default function AdminPage({ initialTab = 'employees', embedded = false }
   const [attendanceEmployee, setAttendanceEmployee] = useState(null);
   const [attendanceData, setAttendanceData] = useState({ date: new Date().toISOString().split('T')[0], status: 'present' });
 
+  // Password reset modal
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [passwordEmployee, setPasswordEmployee] = useState(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [resettingPassword, setResettingPassword] = useState(false);
+
   const isHROrCEO = user?.role_code === 'CEO' || user?.role_code === 'HR_MANAGER' || user?.roles?.some(r => r.code === 'CEO' || r.code === 'HR_MANAGER');
+
+  // Open password reset modal
+  const openPasswordModal = (emp) => {
+    setPasswordEmployee(emp);
+    setNewPassword('');
+    setIsPasswordModalOpen(true);
+  };
+
+  // Handle password reset
+  const handlePasswordReset = async () => {
+    if (!newPassword || newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+    setResettingPassword(true);
+    try {
+      await hrApi.resetPassword(passwordEmployee.id, newPassword);
+      toast.success(`Password reset for ${passwordEmployee.name}`);
+      setIsPasswordModalOpen(false);
+      setPasswordEmployee(null);
+      setNewPassword('');
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to reset password');
+    } finally {
+      setResettingPassword(false);
+    }
+  };
 
   const fetchData = useCallback(async () => {
     try {
