@@ -48,7 +48,7 @@ class TestFinanceEnhanced:
         })
         assert response.status_code == 200, f"Finance Manager login failed: {response.text}"
         data = response.json()
-        self.finance_token = data.get("token")
+        self.finance_token = data.get("access_token")
         self.session.headers.update({"Authorization": f"Bearer {self.finance_token}"})
         return data
     
@@ -60,7 +60,7 @@ class TestFinanceEnhanced:
         })
         assert response.status_code == 200, f"CEO login failed: {response.text}"
         data = response.json()
-        self.ceo_token = data.get("token")
+        self.ceo_token = data.get("access_token")
         self.session.headers.update({"Authorization": f"Bearer {self.ceo_token}"})
         return data
     
@@ -75,7 +75,7 @@ class TestFinanceEnhanced:
     def test_01_finance_manager_login(self):
         """Test Finance Manager India can login"""
         data = self.login_finance_manager()
-        assert "token" in data
+        assert "access_token" in data
         assert data.get("user", {}).get("email") == "finance.in@wisedrive.com"
         print("SUCCESS: Finance Manager India login successful")
     
