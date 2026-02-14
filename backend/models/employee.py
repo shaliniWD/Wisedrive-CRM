@@ -72,6 +72,7 @@ class EmployeeBase(BaseModel):
 class EmployeeCreate(EmployeeBase):
     password: str
     role_ids: List[str] = []  # Optional list of role IDs
+    bank_account_number: Optional[str] = None  # Will be encrypted before storage
 
 
 class EmployeeUpdate(BaseModel):
