@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="12" skipped="0" tests="15" time="6.916" timestamp="2026-02-14T11:14:45.773325+00:00" hostname="agent-env-413b16c3-756c-4bc3-9b35-1048a294ad7c"><testcase classname="backend.tests.test_payroll_batch.TestPayrollBatchWorkflow" name="test_01_login_success" time="0.798" /><testcase classname="backend.tests.test_payroll_batch.TestPayrollBatchWorkflow" name="test_02_get_countries" time="0.448" /><testcase classname="backend.tests.test_payroll_batch.TestPayrollBatchWorkflow" name="test_03_get_payroll_batches" time="0.387"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_payroll_batch.py:75: in test_03_get_payroll_batches
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_payroll_batch.TestPayrollBatchWorkflow" name="test_04_preview_payroll" time="0.412" /><testcase classname="backend.tests.test_payroll_batch.TestPayrollBatchWorkflow" name="test_05_create_batch_workflow" time="0.371"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_payroll_batch.py:166: in test_05_create_batch_workflow
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_payroll_batch.TestPayrollBatchWorkflow" name="test_06_get_batch_details" time="0.373"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_payroll_batch.py:232: in test_06_get_batch_details
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_payroll_batch.TestPayrollBatchWorkflow" name="test_07_edit_draft_record" time="0.406"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_payroll_batch.py:275: in test_07_edit_draft_record
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_payroll_batch.TestPayrollBatchWorkflow" name="test_08_confirm_batch" time="0.375"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_payroll_batch.py:320: in test_08_confirm_batch
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_payroll_batch.TestPayrollBatchWorkflow" name="test_09_cannot_edit_confirmed_batch" time="0.381"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_payroll_batch.py:355: in test_09_cannot_edit_confirmed_batch
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_payroll_batch.TestPayrollBatchWorkflow" name="test_10_mark_batch_paid" time="0.429"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_payroll_batch.py:394: in test_10_mark_batch_paid
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_payroll_batch.TestPayrollBatchWorkflow" name="test_11_generate_payslip_for_confirmed_record" time="0.387"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_payroll_batch.py:427: in test_11_generate_payslip_for_confirmed_record
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_payroll_batch.TestPayrollBatchFilters" name="test_filter_by_country" time="0.410"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_payroll_batch.py:488: in test_filter_by_country
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_payroll_batch.TestPayrollBatchFilters" name="test_filter_by_year" time="0.391"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_payroll_batch.py:502: in test_filter_by_year
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_payroll_batch.TestPayrollBatchFilters" name="test_filter_by_status" time="0.756"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_payroll_batch.py:517: in test_filter_by_status
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_payroll_batch.TestPayrollBatchFilters" name="test_combined_filters" time="0.380"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_payroll_batch.py:533: in test_combined_filters
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase></testsuite></testsuites>
