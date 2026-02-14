@@ -237,6 +237,18 @@ export default function AdminPage({ initialTab = 'employees', embedded = false }
   useEffect(() => { fetchData(); }, [fetchData]);
   useEffect(() => { fetchEmployees(); }, [fetchEmployees]);
   useEffect(() => { fetchCountries(); }, [fetchCountries]);
+  
+  // Fetch employees on leave today
+  const fetchEmployeesOnLeave = useCallback(async () => {
+    try {
+      const response = await hrApi.getEmployeesOnLeaveToday();
+      setEmployeesOnLeave(response.data || []);
+    } catch (e) {
+      console.error('Failed to load employees on leave');
+    }
+  }, []);
+  
+  useEffect(() => { fetchEmployeesOnLeave(); }, [fetchEmployeesOnLeave]);
 
   // Sync activeTab with initialTab when embedded and initialTab changes
   useEffect(() => {
