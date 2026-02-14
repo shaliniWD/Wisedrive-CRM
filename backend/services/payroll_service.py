@@ -830,6 +830,9 @@ class PayrollService:
         if existing_batch:
             raise ValueError(f"Payroll batch already exists for {month}/{year}. Status: {existing_batch.get('status')}")
         
+        # Get pay period
+        pay_period_start, pay_period_end = self._get_pay_period(year, month)
+        
         # Calculate payroll preview for each employee
         preview_records = []
         total_gross = 0
@@ -838,11 +841,16 @@ class PayrollService:
         total_other = 0
         total_net = 0
         
-        working_days = calendar.monthrange(year, month)[1] - self._count_sundays(year, month)
+        # Base working days (will be adjusted per employee based on their weekly off)
+        base_working_days = self._calculate_working_days(year, month, 0)  # Default Sunday off
         
         for emp in eligible_employees:
+            # Calculate working days for this employee (considering their weekly off)
+            employee_weekly_off = emp.get("weekly_off_day", 0)  # 0 = Sunday
+            emp_working_days = self._calculate_working_days(year, month, employee_weekly_off)
+            
             record = await self._calculate_employee_payroll(
-                emp, month, year, working_days, currency, currency_symbol
+                emp, month, year, emp_working_days, currency, currency_symbol
             )
             preview_records.append(record)
             
@@ -859,7 +867,9 @@ class PayrollService:
             "country_name": country.get("name"),
             "currency": currency,
             "currency_symbol": currency_symbol,
-            "working_days": working_days,
+            "pay_period_start": pay_period_start,
+            "pay_period_end": pay_period_end,
+            "working_days": base_working_days,  # Base working days (can vary per employee)
             "employee_count": len(preview_records),
             "total_gross": round(total_gross, 2),
             "total_statutory_deductions": round(total_statutory, 2),
