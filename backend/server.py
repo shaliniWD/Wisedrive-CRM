@@ -138,11 +138,17 @@ class Token(BaseModel):
 # ==================== AUTH HELPERS ====================
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    """Hash password using bcrypt directly"""
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
 
 
 def verify_password(password: str, hashed: str) -> bool:
-    return pwd_context.verify(password, hashed)
+    """Verify password against bcrypt hash"""
+    try:
+        return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
+    except Exception:
+        return False
 
 
 def create_access_token(data: dict) -> str:
