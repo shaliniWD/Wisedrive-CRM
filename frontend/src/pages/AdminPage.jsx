@@ -195,7 +195,7 @@ export default function AdminPage() {
               )}
             </div>
 
-            {/* Employee Table - Updated columns: Employee, Role, Country, Status, Salary Info, Actions, Audit */}
+            {/* Employee Table - Columns: Employee, Role, Country, Weekly Off, Status, Salary Info, Audit, Actions */}
             <table className="data-table">
               <thead>
                 <tr>
@@ -205,8 +205,8 @@ export default function AdminPage() {
                   <th>Weekly Off</th>
                   <th>Status</th>
                   <th>Salary Info</th>
-                  <th>Actions</th>
                   <th>Audit</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
