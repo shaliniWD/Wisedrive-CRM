@@ -14,22 +14,18 @@ const tabRouteMap = {
   settings: { name: 'Settings', href: '/settings' },
 };
 
+// Fixed order for tabs
+const tabOrder = ['dashboard', 'leads', 'customers', 'inspections', 'hr', 'finance', 'settings'];
+
 export const TopNavbar = () => {
   const { user, logout, visibleTabs } = useAuth();
   const location = useLocation();
 
-  // Build navigation - always include dashboard first
-  const navigation = [];
-  
-  // Add Dashboard first (always visible)
-  navigation.push(tabRouteMap.dashboard);
-  
-  // Add other visible tabs
-  visibleTabs.forEach(tab => {
-    if (tab !== 'dashboard' && tabRouteMap[tab]) {
-      navigation.push(tabRouteMap[tab]);
-    }
-  });
+  // Build navigation in fixed order, only including visible tabs
+  const navigation = tabOrder
+    .filter(tab => tab === 'dashboard' || visibleTabs.includes(tab))
+    .map(tab => tabRouteMap[tab])
+    .filter(Boolean);
 
   return (
     <header className="sticky top-0 z-50 bg-gradient-to-r from-blue-900 to-blue-800 shadow-lg" data-testid="top-navbar">
