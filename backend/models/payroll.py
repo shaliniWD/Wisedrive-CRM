@@ -226,13 +226,16 @@ class PayrollRecordUpdate(BaseModel):
     esi: Optional[float] = None
     other_statutory: Optional[float] = None
     
+    # Attendance days (editable) - for prorated salary calculation
+    attendance_days: Optional[int] = None  # Must be <= working_days, >= 0
+    
     # Attendance override (only if explicitly changing)
     attendance_override: Optional[bool] = None
     attendance_deduction: Optional[float] = None
     attendance_override_reason: Optional[str] = None
     
-    # Other deductions (editable)
-    other_deductions: Optional[float] = None
+    # Other deductions (editable) - additional deduction from net salary
+    other_deductions: Optional[float] = None  # Must be >= 0, capped at net pay
     other_deductions_reason: Optional[str] = None
 
 
