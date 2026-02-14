@@ -268,7 +268,13 @@ export const payrollApi = {
   
   // Batch management
   createBatch: (data) => axios.post(`${API_URL}/hr/payroll/batch`, data),
-  getBatches: (params) => axios.get(`${API_URL}/hr/payroll/batches`, { params }),
+  getBatches: (params) => axios.get(`${API_URL}/hr/payroll/batches`, { 
+    params: {
+      country_id: params?.country_id,
+      batch_status: params?.status,  // Map status to batch_status
+      year: params?.year
+    } 
+  }),
   getBatch: (batchId) => axios.get(`${API_URL}/hr/payroll/batch/${batchId}`),
   
   // Update record in DRAFT batch
