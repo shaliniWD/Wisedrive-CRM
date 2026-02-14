@@ -1967,7 +1967,7 @@ export function LeaveManagement({ isHR }) {
 
       {/* Apply Leave Modal */}
       <Dialog open={isApplyModalOpen} onOpenChange={setIsApplyModalOpen}>
-        <DialogContent className="sm:max-w-[450px]" data-testid="apply-leave-modal">
+        <DialogContent className="sm:max-w-[500px]" data-testid="apply-leave-modal">
           <DialogHeader className="border-b pb-4">
             <DialogTitle className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white">
@@ -1977,6 +1977,31 @@ export function LeaveManagement({ isHR }) {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-4">
+            {/* Employee Selection - Only for Country Head/CEO */}
+            {canApplyForOthers && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Select Employee <span className="text-red-500">*</span></Label>
+                <Select 
+                  value={applyForm.employee_id} 
+                  onValueChange={(v) => setApplyForm({...applyForm, employee_id: v})}
+                >
+                  <SelectTrigger className="h-10">
+                    <SelectValue placeholder={loadingEmployees ? "Loading..." : "Select an employee"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {employees.map(emp => (
+                      <SelectItem key={emp.id} value={emp.id}>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{emp.name}</span>
+                          <span className="text-gray-400 text-xs">({emp.employee_code || emp.email})</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            
             <div className="space-y-2">
               <Label className="text-sm font-medium">Leave Type</Label>
               <Select value={applyForm.leave_type} onValueChange={(v) => setApplyForm({...applyForm, leave_type: v})}>
@@ -1989,7 +2014,7 @@ export function LeaveManagement({ isHR }) {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-sm font-medium">From Date</Label>
+                <Label className="text-sm font-medium">From Date <span className="text-red-500">*</span></Label>
                 <Input
                   type="date"
                   value={applyForm.start_date}
