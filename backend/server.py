@@ -2876,7 +2876,7 @@ async def clear_and_seed():
         "countries", "departments", "roles", "permissions", "role_permissions",
         "teams", "users", "leads", "customers", "inspections", "transactions",
         "lead_reassignment_logs", "round_robin_state", "digital_ads", "garage_employees",
-        "audit_logs", "salary_structures"
+        "audit_logs", "salary_structures", "finance_payments", "payment_proofs"
     ]
     
     for collection in collections:
