@@ -56,6 +56,7 @@ function App() {
             <Route path="/inspections" element={<InspectionsPage />} />
             <Route path="/admin" element={<AdminPage />} />
             <Route path="/finance" element={<FinancePage />} />
+            <Route path="/settings" element={<SettingsPage />} />
           </Route>
 
           {/* Default redirect */}
