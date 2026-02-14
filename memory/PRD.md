@@ -363,6 +363,17 @@ Created comprehensive infrastructure documentation in `/app/wisedrive-api-servic
 ### Phase 4: HR Module Phase 1 ✅ COMPLETE (Feb 14, 2026)
 Implemented comprehensive HR Module with Attendance Tracking, Payroll Management, and Leave Management.
 
+**HR Module Consolidation (Feb 14, 2026):**
+- Admin tab fully merged into HR Module
+- 6 unified tabs: Employees, Attendance, Payroll, Leave, Roles, Countries
+- AdminPage.jsx accepts `initialTab` and `embedded` props for reuse
+- HRComponents.jsx: AttendanceDashboard, PayrollDashboard, LeaveManagement
+- /admin route redirects to /hr
+- All original Admin functionality preserved:
+  - Employee management with detail modal (Details, Salary, Attendance, Documents sub-tabs)
+  - Role management with preset roles and custom roles
+  - Country configuration with currency symbols and phone codes
+
 **Attendance Tracking:**
 - Session-based tracking: login/logout timestamps, activity heartbeat every 2 min
 - Server-side inactivity enforcement: auto-logout after 10 min + token blacklisting with TTL
