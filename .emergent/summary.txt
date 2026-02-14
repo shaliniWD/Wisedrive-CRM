@@ -1,0 +1,149 @@
+<analysis>**original_problem_statement:**
+The user's initial goal was to build a scalable, multi-repository, enterprise-grade automotive platform named Wisedrive. The plan pivoted to focus on building out core business modules within the existing monolithic CRM application.
+
+PRODUCT REQUIREMENTS:
+1.  **Phase 1 (HR Module):** Implement a comprehensive HR module. This was initially defined with Attendance, Payroll, Leave, and Admin consolidation. The user later provided a 14-point HR Module Readiness Checklist detailing requirements for employee management, document storage (S3), salary structures, currency handling, bank detail encryption, leave management integration with payroll, and RBAC. Most recently, the user requested 5 additional features for the HR module.
+2.  **Phase 2 (Finance Module):** To be implemented after the HR module. The agent discovered that a functional Finance module already exists.
+3.  **Deployment:** Deploy the application to a  subdomain for staging and testing.
+4.  **Future Phases:** Implement Leads, Inspections, and Customers modules.
+
+**User's preferred language**: English
+
+**what currently exists?**
+The application is a full-stack CRM with a FastAPI backend and a React frontend. The backend for a comprehensive HR Module (Attendance, Payroll, Leave) has been built out. The original  tab has been successfully merged into the new  tab, restoring all previous functionality. A robust, manual, batch-based payroll governance system has been implemented, replacing a previous automatic version. The system now supports a  ->  ->  lifecycle for payroll batches.
+
+Crucially, four mandatory enterprise-readiness fixes have been implemented:
+1.  Core HR fields (DOB, address, reporting manager, etc.) were added to the employee model.
+2.  Bank account numbers are now encrypted at rest using AES-256 ( library).
+3.  Role-based access control (RBAC) has been added to the document download endpoint.
+4.  The backend is configured to support both local (DEV) and S3 (TEST/PROD) storage.
+
+The agent has begun implementing 5 new user-requested features for the HR module.
+
+**Last working item**:
+-   **Last item agent was working:** Implementing 5 new HR features requested by the user:
+    1.  Add employee photo and ID.
+    2.  Add an On Leave status for employees.
+    3.  Add quick leave actions to the employee data table.
+    4.  Create a freelancer role.
+    5.  Add an On Leave Today summary card to the HR dashboard.
+    The agent started by adding the  to the backend model, creating a backend endpoint for , adding a Freelancer role to the frontend constants, and scaffolding the UI for the On Leave Today dashboard card. The work is incomplete.
+-   **Status:** IN PROGRESS
+-   **Agent Testing Done:** N
+-   **Which testing method agent to use?** both
+-   **User Testing Done:** N
+
+**All Pending/In progress Issue list**:
+There are no outstanding blocking issues.
+
+**In progress Task List**:
+-   **Task 1: Complete Implementation of 5 New HR Features (P0)**
+    -   **Where to resume:**
+        1.  **Employee Photo & ID:** Implement the frontend UI for photo upload in the employee modal and display the photo/ID in the main employee table (). Ensure backend endpoints handle file uploads (if necessary) or URL storage.
+        2.  **On Leave Status:** Update the backend  logic to dynamically set an employee's status to On Leave if they have an approved leave for the current day. The frontend status dropdown in  already has the 'on_leave' option.
+        3.  **Quick Leave Actions:** Add Apply Leave and View Leaves buttons to each employee row in the  table, linking them to the appropriate modals/views.
+        4.  **Freelancer Role:** Add the  role to the backend RBAC service () and define its permissions (e.g., no CRM access but available for payroll).
+        5.  **On Leave Today Card:** Complete the data-fetching logic in  to call the new  endpoint and display the count in the summary card.
+    -   **What will be achieved with this?** The HR module will be enhanced with user-requested quality-of-life features and a new user role, making it more complete.
+    -   **Status:** IN PROGRESS
+    -   **Should Test frontend/backend/both after fix?** Both
+    -   **Blocked on something:** None.
+
+**Upcoming and Future Tasks**
+**Upcoming Tasks:**
+-   **P1: Deployment to :**
+    -   Obtain the public Load Balancer IP address or hostname for the DEV environment.
+    -   Provide it to the user so they can configure the  or  record in GoDaddy.
+    -   Confirm that the platform will handle ingress host rule updates and SSL certificate provisioning.
+-   **P2: Full Staging Environment Validation:** Once deployed, perform a full end-to-end test of the HR module against the user's 14-point readiness checklist on the  environment.
+
+**Future Tasks:**
+-   **P3: Core Functional Modules:** Implement Leads, Inspections, and Customer modules.
+-   **P4: OBD Integration:** Integrate the  library.
+-   **P5: External Integrations:** Implement Razorpay and Invincible Ocean clients.
+-   **P6: Monolith to Microservices Migration:** The long-term architectural goal.
+
+**Completed work in this session**
+-   **Fixed Admin/HR Merge:** Successfully merged all  functionalities into the  by refactoring  to be embeddable.
+-   **Implemented Payroll Governance v2:** Replaced automatic payroll with a manual, batch-based system ( ->  -> ) and built the corresponding UI.
+-   **Populated Sample Data:** Set up salary structures for all employees, enabling realistic payroll calculations.
+-   **Implemented Enterprise-Readiness Fixes:**
+    -   Added missing core HR fields to the employee model and UI.
+    -   Implemented AES-256 encryption for bank account numbers.
+    -   Enforced RBAC on sensitive document downloads.
+    -   Ensured payroll generation respects the  flag.
+-   **Verified Finance Module:** Confirmed that a functional Finance module already exists in the application.
+
+**Code Architecture**
+
+
+**Key Technical Concepts**
+-   **Backend:** FastAPI, Pydantic, MongoDB
+-   **Frontend:** React, Shadcn UI, Axios
+-   **Security:** AES-256 encryption for sensitive data ( library), RBAC on API endpoints.
+-   **HR Logic:** Manual batch-based payroll, server-side session management, leave integration with attendance.
+
+**key DB schema**
+-   ****: Contains employee data.  is now encrypted.  is a new field. Contains new fields like , , , , .
+-   ****: (NEW) Tracks payroll generation cycles (uid=0(root) gid=0(root) groups=0(root), , , , ).
+-   ****: Now linked to a . Stores immutable, per-employee payroll data for a confirmed batch.
+
+**changes in tech stack**
+-   Added  for encryption.
+
+**All files of reference**
+-   **/app/frontend/src/pages/HRModulePage.jsx**: Main HR page; needs completion of the On Leave Today card.
+-   **/app/frontend/src/pages/AdminPage.jsx**: Core employee management UI; needs updates for photo upload/display and quick leave actions.
+-   **/app/backend/server.py**: Contains all API endpoints; a new  endpoint was added.
+-   **/app/backend/models/employee.py**: Employee data model; updated with new fields like .
+-   **/app/backend/services/encryption_service.py**: New service for handling bank data encryption/decryption.
+
+**Areas that need refactoring**:
+-   None at this time.
+
+**key api endpoints**
+-   : Create a new payroll batch instance.
+-   : Preview payroll calculations before confirming a batch.
+-   : Create employee (now encrypts bank details).
+-   : Update employee (now encrypts bank details).
+-   : Download an employee document (now with RBAC).
+-   : **(NEW)** Get a list and count of employees on approved leave today.
+
+**Critical Info for New Agent**
+-   **Top Priority:** Your first task is to complete the implementation of the 5 new HR features. Refer to the In progress Task List for detailed steps.
+-   **Security:** Bank account details are now encrypted. You **must** use the  when reading or writing this data. Do not expose decrypted bank numbers in API responses unless absolutely necessary for a specific, secure function (like a fire-and-forget payment export).
+-   **Deployment is Next:** After the features are complete and tested, the user wants to deploy to a staging environment (). Be prepared to ask for the necessary infrastructure details (Load Balancer IP/hostname).
+-   **User Checklist:** The user has a 14-point checklist for the HR module's enterprise-readiness. While most points have been addressed, a final validation on the staging server will be required.
+
+**documents and test reports created in this job**
+-   : Updated with all completed work and new requirements.
+-   : Verified the 4 mandatory enterprise-readiness fixes and a security patch.
+-   : Verified the new Payroll Batch Governance system.
+-   : Verified the fix for the Admin/HR merge.
+
+**Last 10 User Messages and any pending HUMAN messages**
+1.  **User:** Provided a 14-point checklist for HR module readiness before deployment.
+2.  **User:** Requested deployment to  and asked for the necessary IP/hostname for DNS configuration.
+3.  **User:** Reviewed the agent's validation report and approved it, but mandated 4 critical fixes before deployment (missing fields, bank encryption, document RBAC, storage strategy).
+4.  **User:** Approved the implementation of the 4 mandatory fixes.
+5.  **User (LATEST & PENDING):** Requested 5 new features for the HR module: employee photo/ID, On Leave status, quick leave actions, a freelancer role, and an employees on leave today dashboard card.
+
+**Project Health Check:**
+-   **Stable:** The application is no longer in a broken state. Core HR functionality is implemented, and several critical security and data integrity fixes have been applied. New feature development is underway.
+
+**3rd Party Integrations**
+-   **reportlab:** For server-side PDF generation (payslips).
+-   **boto3:** For S3-compatible object storage (configured for TEST/PROD).
+-   **cryptography:** For AES-256 encryption of sensitive database fields.
+
+**Testing status**
+-   **Testing agent used after significant changes:** YES. The agent was used successfully to verify the HR/Admin merge, the new payroll system, and the mandatory enterprise fixes.
+-   **Troubleshoot agent used after agent stuck in loop:** NO
+-   **Test files created:** Yes, the testing agent created pytest files in .
+-   **Known regressions:** None.
+
+**Credentials to test flow:**
+-   **CEO:**  / 
+
+**What agent forgot to execute**
+-   The agent started the implementation of the 5 new HR features but did not complete them. Key backend logic for the Freelancer role permissions and deriving the On Leave status is missing. Frontend work for photo uploads and displaying quick actions is also incomplete.</analysis>
