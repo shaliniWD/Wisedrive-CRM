@@ -1,0 +1,205 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://api.wisedrive.com/schemas/entities/inspection.json",
+  "title": "Inspection",
+  "description": "Vehicle inspection entity schema",
+  "type": "object",
+  
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "vehicle_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "customer_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "mechanic_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "country_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "order_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Related payment order"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["scheduled", "in_progress", "completed", "cancelled"]
+    },
+    "scheduled_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "scheduled_time": {
+      "type": "string",
+      "pattern": "^([01]?[0-9]|2[0-3]):[0-5][0-9]$"
+    },
+    "location": {
+      "type": "string",
+      "description": "Address or location description"
+    },
+    "latitude": {
+      "type": "number",
+      "minimum": -90,
+      "maximum": 90
+    },
+    "longitude": {
+      "type": "number",
+      "minimum": -180,
+      "maximum": 180
+    },
+    "overall_score": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Aggregated inspection score"
+    },
+    "overall_status": {
+      "type": "string",
+      "enum": ["excellent", "good", "fair", "poor"],
+      "description": "Overall vehicle condition"
+    },
+    "categories": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/InspectionCategory"
+      }
+    },
+    "obd_session_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Linked OBD scan session"
+    },
+    "photos": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "uri"
+      },
+      "description": "General inspection photos"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  
+  "definitions": {
+    "InspectionCategory": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "category_code": {
+          "type": "string",
+          "description": "Unique category identifier"
+        },
+        "category_name": {
+          "type": "string"
+        },
+        "order": {
+          "type": "integer",
+          "description": "Display order"
+        },
+        "score": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "status": {
+          "type": "string",
+          "enum": ["good", "warning", "critical"]
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/InspectionItem"
+          }
+        },
+        "photos": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "notes": {
+          "type": "string"
+        },
+        "completed_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["category_code", "category_name"]
+    },
+    
+    "InspectionItem": {
+      "type": "object",
+      "properties": {
+        "item_code": {
+          "type": "string"
+        },
+        "item_name": {
+          "type": "string"
+        },
+        "result": {
+          "type": "string",
+          "enum": ["pass", "fail", "warning", "na"]
+        },
+        "value": {
+          "type": "string",
+          "description": "Measured value if applicable"
+        },
+        "unit": {
+          "type": "string",
+          "description": "Unit of measurement"
+        },
+        "min_threshold": {
+          "type": "number"
+        },
+        "max_threshold": {
+          "type": "number"
+        },
+        "notes": {
+          "type": "string"
+        },
+        "photo_url": {
+          "type": "string",
+          "format": "uri"
+        }
+      },
+      "required": ["item_code", "item_name", "result"]
+    }
+  },
+  
+  "required": ["id", "vehicle_id", "customer_id", "country_id", "status"],
+  
+  "additionalProperties": false
+}
