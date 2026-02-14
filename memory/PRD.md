@@ -431,12 +431,20 @@ Implemented comprehensive HR Module with Attendance Tracking, Payroll Management
 
 **Payroll & Payslip:**
 - Monthly payroll generation from salary structure
-- Attendance-based deductions: (Gross / Working Days) × Unapproved Absent Days
+- Attendance-based deductions: (Gross / Working Days) × Absent Days
 - Payroll records are IMMUTABLE after generation
 - Adjustments via separate `payroll_adjustments` collection
 - Finance Manager payment marking with required transaction reference
 - Server-side PDF payslip generation using ReportLab
 - Storage: Local for DEV, S3-compatible for TEST/PROD (configurable)
+
+**Payroll Preview V2 UI/UX (Feb 14, 2026):** ✅
+- Working Days: Editable input in header (removed from table column), changes trigger batch-wide recalculation
+- Absent Days: Column renamed from "Attendance Days", editable per employee, formula: Present Days = Working Days - Absent Days
+- Other Deductions: Plain editable numeric input (no steppers)
+- Validation: Absent Days >= 0 and <= Working Days
+- Real-time recalculation of Attendance Deduction and Net Salary
+- Net Salary = Gross - Statutory - (Absent_Days/Working_Days × Gross) - Other
 
 **Leave Management v1:**
 - Leave types: Casual Leave (12/year), Sick Leave (12/year)
