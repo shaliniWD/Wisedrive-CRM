@@ -3338,7 +3338,7 @@ async def get_payroll_records(
     month: Optional[int] = None,
     year: Optional[int] = None,
     employee_id: Optional[str] = None,
-    status: Optional[str] = None,
+    payment_status: Optional[str] = None,
     country_id: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
@@ -3355,11 +3355,11 @@ async def get_payroll_records(
     if employee_id:
         records = await payroll_service.get_employee_payroll_history(employee_id, year)
     elif month and year:
-        records = await payroll_service.get_monthly_payroll(month, year, country_id, status)
+        records = await payroll_service.get_monthly_payroll(month, year, country_id, payment_status)
     else:
         # Default to current month
         now = datetime.now(timezone.utc)
-        records = await payroll_service.get_monthly_payroll(now.month, now.year, country_id, status)
+        records = await payroll_service.get_monthly_payroll(now.month, now.year, country_id, payment_status)
     
     return records
 
