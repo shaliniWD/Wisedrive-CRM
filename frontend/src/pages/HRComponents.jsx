@@ -355,6 +355,13 @@ export function AttendanceDashboard({ isHR }) {
 
 // ==================== PAYROLL DASHBOARD (NEW BATCH-BASED GOVERNANCE) ====================
 export function PayrollDashboard({ isHR, isFinance }) {
+  const { user } = useAuth();
+  
+  // Determine currency icon based on user's country (Rupee for Indian users, $ for CEO or others)
+  const isCEO = user?.role_code === 'CEO' || user?.roles?.some(r => r.code === 'CEO');
+  const isIndianUser = user?.country_code === 'IN' || user?.country_name?.toLowerCase().includes('india');
+  const CurrencyIcon = (!isCEO && isIndianUser) ? IndianRupee : DollarSign;
+  
   // NumericInput helper - handles "0" value properly (shows empty on focus if value is 0)
   const NumericInput = ({ value, onChange, className, min = 0, max, ...props }) => {
     const inputRef = useRef(null);
