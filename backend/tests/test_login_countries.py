@@ -124,6 +124,17 @@ class TestLeadsAPI:
             return response.json().get("access_token")
         pytest.skip("Authentication failed")
     
+    @pytest.fixture
+    def india_country_id(self):
+        """Get India country ID"""
+        response = requests.get(f"{BASE_URL}/api/auth/countries")
+        if response.status_code == 200:
+            countries = response.json()
+            india = next((c for c in countries if c["name"] == "India"), None)
+            if india:
+                return india["id"]
+        pytest.skip("Could not get India country ID")
+    
     def test_get_leads(self, auth_token):
         """Test getting leads list"""
         headers = {"Authorization": f"Bearer {auth_token}"}
@@ -156,7 +167,7 @@ class TestLeadsAPI:
             if "payment_link" in lead and lead["payment_link"]:
                 print(f"SUCCESS: Lead has payment_link: {lead['payment_link']}")
     
-    def test_create_lead_with_ad_id(self, auth_token):
+    def test_create_lead_with_ad_id(self, auth_token, india_country_id):
         """Test creating a lead with ad_id field"""
         headers = {"Authorization": f"Bearer {auth_token}"}
         
@@ -166,7 +177,8 @@ class TestLeadsAPI:
             "city": "Bangalore",
             "source": "FACEBOOK",
             "status": "NEW",
-            "ad_id": "TEST_AD_123456"
+            "ad_id": "TEST_AD_123456",
+            "country_id": india_country_id
         }
         
         response = requests.post(f"{BASE_URL}/api/leads", headers=headers, json=lead_data)
@@ -183,7 +195,7 @@ class TestLeadsAPI:
         if lead_id:
             requests.delete(f"{BASE_URL}/api/leads/{lead_id}", headers=headers)
     
-    def test_update_lead_with_payment_link(self, auth_token):
+    def test_update_lead_with_payment_link(self, auth_token, india_country_id):
         """Test updating a lead with payment_link"""
         headers = {"Authorization": f"Bearer {auth_token}"}
         
@@ -193,7 +205,8 @@ class TestLeadsAPI:
             "mobile": "8888888888",
             "city": "Mumbai",
             "source": "GOOGLE",
-            "status": "NEW"
+            "status": "NEW",
+            "country_id": india_country_id
         }
         
         create_response = requests.post(f"{BASE_URL}/api/leads", headers=headers, json=lead_data)
