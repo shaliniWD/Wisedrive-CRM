@@ -703,13 +703,14 @@ export function PayrollDashboard({ isHR, isFinance }) {
       setPreviewData(res.data);
       // Set batch working days (editable at header level)
       setBatchWorkingDays(res.data.working_days);
-      // Initialize preview edits with current values - now using absent_days (defaulting to 0)
+      // Initialize preview edits with current values - now using lop_days
       const initialEdits = {};
       res.data.records.forEach(record => {
-        // Calculate absent days from working days and attendance days
-        const absentDays = (record.working_days_in_month || res.data.working_days) - (record.attendance_days || record.working_days_in_month || res.data.working_days);
+        // Get LOP days from record (or calculate from working - attendance)
+        const lopDays = record.lop_days ?? record.unapproved_absent_days ?? 
+          Math.max(0, (record.working_days_in_month || res.data.working_days) - (record.attendance_days || record.working_days_in_month || res.data.working_days));
         initialEdits[record.employee_id] = {
-          absent_days: Math.max(0, absentDays), // Default to 0 or calculated value
+          lop_days: Math.max(0, lopDays), // Default to 0 or calculated value
           other_deductions: record.other_deductions || 0
         };
       });
@@ -740,13 +741,13 @@ export function PayrollDashboard({ isHR, isFinance }) {
         const gross = record.gross_salary;
         const perDaySalary = workingDays > 0 ? gross / workingDays : 0;
 
-        // Get absent days (from edit or default to 0)
-        let absentDays = previewEdits[record.employee_id]?.absent_days ?? 0;
-        // Cap absent days at working days
-        absentDays = Math.min(Math.max(0, absentDays), workingDays);
+        // Get LOP days (from edit or default to 0)
+        let lopDays = previewEdits[record.employee_id]?.lop_days ?? previewEdits[record.employee_id]?.absent_days ?? 0;
+        // Cap LOP days at working days
+        lopDays = Math.min(Math.max(0, lopDays), workingDays);
         
         // Calculate attendance (present) days
-        const attendanceDays = workingDays - absentDays;
+        const attendanceDays = workingDays - lopDays;
         
         // Calculate attendance deduction
         const attendanceDeduction = Math.round(perDaySalary * absentDays * 100) / 100;
