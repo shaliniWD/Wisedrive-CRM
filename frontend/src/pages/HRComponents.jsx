@@ -23,11 +23,27 @@ export function AttendanceDashboard({ isHR }) {
   const [calendarData, setCalendarData] = useState(null);
   const [countries, setCountries] = useState([]);
   const [filterCountry, setFilterCountry] = useState('');
-  const [filterMonth, setFilterMonth] = useState(new Date().getMonth() + 1);
-  const [filterYear, setFilterYear] = useState(new Date().getFullYear());
+  
+  // Get current date for restrictions
+  const today = new Date();
+  const currentMonth = today.getMonth() + 1;
+  const currentYear = today.getFullYear();
+  
+  const [filterMonth, setFilterMonth] = useState(currentMonth);
+  const [filterYear, setFilterYear] = useState(currentYear);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedEmployee, setSelectedEmployee] = useState(null);
-  const [legend, setLegend] = useState({});
+  
+  // Edit attendance modal state (HR only)
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editData, setEditData] = useState({
+    employee_id: '',
+    employee_name: '',
+    date: '',
+    status: 'present',
+    notes: ''
+  });
+  const [saving, setSaving] = useState(false);
 
   // Debounced search
   const searchTimeout = useRef(null);
@@ -43,7 +59,6 @@ export function AttendanceDashboard({ isHR }) {
       );
       setCalendarData(res.data);
       setCountries(res.data.countries || []);
-      setLegend(res.data.legend || {});
     } catch (e) { 
       console.error('Failed to load calendar data', e);
       toast.error('Failed to load attendance calendar');
@@ -83,11 +98,19 @@ export function AttendanceDashboard({ isHR }) {
     const date = new Date(calendarData.year, calendarData.month - 1, day);
     return date.getDay() === 0 || date.getDay() === 6;
   };
+  
+  // Check if day is in the future
+  const isFutureDay = (day) => {
+    if (!calendarData) return false;
+    const checkDate = new Date(calendarData.year, calendarData.month - 1, day);
+    return checkDate > today;
+  };
 
-  // Get status color class
+  // Get status color class - updated with LOP
   const getStatusColor = (status) => {
     switch (status) {
       case 'working':
+      case 'present':
         return 'bg-emerald-100 text-emerald-800 border-emerald-200';
       case 'holiday':
         return 'bg-slate-100 text-slate-500 border-slate-200';
@@ -95,8 +118,35 @@ export function AttendanceDashboard({ isHR }) {
         return 'bg-blue-100 text-blue-800 border-blue-300';
       case 'leave_pending':
         return 'bg-amber-100 text-amber-800 border-amber-300';
+      case 'lop':
+      case 'absent':
+        return 'bg-red-100 text-red-800 border-red-300';
+      case 'half_day':
+        return 'bg-orange-100 text-orange-800 border-orange-300';
       default:
         return 'bg-gray-100 text-gray-600 border-gray-200';
+    }
+  };
+  
+  // Get status display text
+  const getStatusDisplay = (status) => {
+    switch (status) {
+      case 'working':
+      case 'present':
+        return '✓';
+      case 'holiday':
+        return '-';
+      case 'leave_approved':
+        return 'L';
+      case 'leave_pending':
+        return 'P';
+      case 'lop':
+      case 'absent':
+        return 'A';
+      case 'half_day':
+        return 'H';
+      default:
+        return '?';
     }
   };
 
@@ -115,8 +165,83 @@ export function AttendanceDashboard({ isHR }) {
     if (dayData.status === 'holiday') {
       return `Weekend/Holiday (${dayData.weekday_name})`;
     }
+    if (dayData.status === 'lop' || dayData.status === 'absent') {
+      return `LOP/Absent${dayData.reason ? `: ${dayData.reason}` : ''}`;
+    }
+    if (dayData.status === 'half_day') {
+      return `Half Day${dayData.reason ? `: ${dayData.reason}` : ''}`;
+    }
     return `Working Day (${dayData.weekday_name})`;
   };
+  
+  // HR: Open edit modal for a specific day
+  const handleDayClick = (employee, day) => {
+    if (!isHR) return;
+    if (isFutureDay(day)) {
+      toast.error('Cannot edit future dates');
+      return;
+    }
+    
+    const dateStr = `${calendarData.year}-${String(calendarData.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const dayData = employee.days[dateStr];
+    
+    setEditData({
+      employee_id: employee.employee_id,
+      employee_name: employee.employee_name,
+      date: dateStr,
+      status: dayData?.status === 'working' ? 'present' : (dayData?.status || 'present'),
+      notes: dayData?.reason || ''
+    });
+    setEditModalOpen(true);
+  };
+  
+  // HR: Save attendance update
+  const handleSaveAttendance = async () => {
+    if (!editData.employee_id || !editData.date) return;
+    
+    setSaving(true);
+    try {
+      await attendanceApi.updateDayStatus({
+        employee_id: editData.employee_id,
+        date: editData.date,
+        status: editData.status,
+        notes: editData.notes
+      });
+      toast.success('Attendance updated successfully');
+      setEditModalOpen(false);
+      fetchCalendarData();
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Failed to update attendance');
+    } finally {
+      setSaving(false);
+    }
+  };
+  
+  // Get available months (up to current month for current year, all months for past years)
+  const getAvailableMonths = () => {
+    const months = [];
+    const maxMonth = filterYear === currentYear ? currentMonth : 12;
+    for (let i = 1; i <= maxMonth; i++) {
+      months.push(i);
+    }
+    return months;
+  };
+  
+  // Get available years (current and past, not future)
+  const getAvailableYears = () => {
+    const years = [];
+    for (let y = currentYear; y >= 2024; y--) {
+      years.push(y);
+    }
+    return years;
+  };
+  
+  // When year changes, adjust month if needed
+  useEffect(() => {
+    if (filterYear === currentYear && filterMonth > currentMonth) {
+      setFilterMonth(currentMonth);
+    }
+  }, [filterYear, filterMonth, currentMonth, currentYear]);
 
   return (
     <div className="p-6" data-testid="attendance-dashboard">
@@ -129,6 +254,7 @@ export function AttendanceDashboard({ isHR }) {
           </h2>
           <p className="text-sm text-gray-500">
             Consolidated view of employee attendance and leave status
+            {isHR && <span className="text-blue-600 ml-2">(Click on any day to edit)</span>}
           </p>
         </div>
 
@@ -156,27 +282,27 @@ export function AttendanceDashboard({ isHR }) {
             </SelectContent>
           </Select>
 
-          {/* Month Filter */}
+          {/* Month Filter - restricted to current/past months */}
           <Select value={String(filterMonth)} onValueChange={(v) => setFilterMonth(parseInt(v))}>
             <SelectTrigger className="w-32">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {Array.from({ length: 12 }, (_, i) => (
-                <SelectItem key={i + 1} value={String(i + 1)}>
-                  {new Date(2000, i).toLocaleString('default', { month: 'long' })}
+              {getAvailableMonths().map((m) => (
+                <SelectItem key={m} value={String(m)}>
+                  {new Date(2000, m - 1).toLocaleString('default', { month: 'long' })}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
 
-          {/* Year Filter */}
+          {/* Year Filter - restricted to current/past years */}
           <Select value={String(filterYear)} onValueChange={(v) => setFilterYear(parseInt(v))}>
             <SelectTrigger className="w-24">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {[2024, 2025, 2026].map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+              {getAvailableYears().map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
             </SelectContent>
           </Select>
 
@@ -186,24 +312,32 @@ export function AttendanceDashboard({ isHR }) {
         </div>
       </div>
 
-      {/* Legend */}
+      {/* Legend - Updated with LOP */}
       <div className="flex flex-wrap items-center gap-4 mb-4 p-3 bg-slate-50 rounded-lg border">
         <span className="text-xs font-medium text-gray-500 uppercase">Legend:</span>
         <div className="flex items-center gap-1.5">
-          <span className="w-4 h-4 rounded bg-emerald-100 border border-emerald-200"></span>
-          <span className="text-xs text-gray-600">Working</span>
+          <span className="w-4 h-4 rounded bg-emerald-100 border border-emerald-200 flex items-center justify-center text-[8px]">✓</span>
+          <span className="text-xs text-gray-600">Present</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-4 h-4 rounded bg-slate-100 border border-slate-200"></span>
+          <span className="w-4 h-4 rounded bg-slate-100 border border-slate-200 flex items-center justify-center text-[8px]">-</span>
           <span className="text-xs text-gray-600">Weekend/Holiday</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-4 h-4 rounded bg-blue-100 border border-blue-300"></span>
+          <span className="w-4 h-4 rounded bg-blue-100 border border-blue-300 flex items-center justify-center text-[8px]">L</span>
           <span className="text-xs text-gray-600">Leave (Approved)</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-4 h-4 rounded bg-amber-100 border border-amber-300"></span>
+          <span className="w-4 h-4 rounded bg-amber-100 border border-amber-300 flex items-center justify-center text-[8px]">P</span>
           <span className="text-xs text-gray-600">Leave (Pending)</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="w-4 h-4 rounded bg-red-100 border border-red-300 flex items-center justify-center text-[8px]">A</span>
+          <span className="text-xs text-gray-600">LOP/Absent</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="w-4 h-4 rounded bg-orange-100 border border-orange-300 flex items-center justify-center text-[8px]">H</span>
+          <span className="text-xs text-gray-600">Half Day</span>
         </div>
       </div>
 
@@ -224,13 +358,13 @@ export function AttendanceDashboard({ isHR }) {
                   {getDaysArray().map(day => (
                     <th 
                       key={day} 
-                      className={`px-0.5 py-2 text-center text-xs font-medium min-w-[28px] ${isWeekend(day) ? 'bg-slate-100 text-slate-400' : 'text-slate-600'}`}
+                      className={`px-0.5 py-2 text-center text-xs font-medium min-w-[28px] ${isWeekend(day) ? 'bg-slate-100 text-slate-400' : 'text-slate-600'} ${isFutureDay(day) ? 'opacity-40' : ''}`}
                     >
                       <div className="text-[10px] text-gray-400">{getWeekdayAbbr(day)}</div>
                       <div>{day}</div>
                     </th>
                   ))}
-                  <th className="px-3 py-2 text-center text-xs font-semibold text-slate-600 bg-slate-50 min-w-[80px]">
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-slate-600 bg-slate-50 min-w-[100px]">
                     Summary
                   </th>
                 </tr>
@@ -240,7 +374,6 @@ export function AttendanceDashboard({ isHR }) {
                   <tr 
                     key={employee.employee_id} 
                     className={`hover:bg-slate-50/50 ${selectedEmployee === employee.employee_id ? 'bg-blue-50/50' : ''}`}
-                    onClick={() => setSelectedEmployee(selectedEmployee === employee.employee_id ? null : employee.employee_id)}
                   >
                     {/* Employee Info - Sticky */}
                     <td className="px-3 py-2 sticky left-0 bg-white z-10 border-r">
@@ -269,25 +402,25 @@ export function AttendanceDashboard({ isHR }) {
                     {getDaysArray().map(day => {
                       const dateStr = `${calendarData.year}-${String(calendarData.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                       const dayData = employee.days[dateStr];
+                      const isFuture = isFutureDay(day);
                       if (!dayData) return <td key={day} className="px-0.5 py-1.5"></td>;
                       
                       return (
-                        <td key={day} className="px-0.5 py-1.5 text-center" title={getDayTooltip(employee, day)}>
+                        <td key={day} className="px-0.5 py-1.5 text-center">
                           <div 
-                            className={`w-6 h-6 mx-auto rounded text-[10px] font-medium flex items-center justify-center border cursor-help ${getStatusColor(dayData.status)}`}
+                            onClick={() => !isFuture && handleDayClick(employee, day)}
+                            title={getDayTooltip(employee, day)}
+                            className={`w-6 h-6 mx-auto rounded text-[10px] font-medium flex items-center justify-center border ${getStatusColor(dayData.status)} ${isFuture ? 'opacity-40 cursor-not-allowed' : isHR ? 'cursor-pointer hover:ring-2 hover:ring-blue-400' : 'cursor-help'}`}
                           >
-                            {dayData.status === 'leave_approved' && 'L'}
-                            {dayData.status === 'leave_pending' && 'P'}
-                            {dayData.status === 'holiday' && '-'}
-                            {dayData.status === 'working' && '✓'}
+                            {getStatusDisplay(dayData.status)}
                           </div>
                         </td>
                       );
                     })}
 
-                    {/* Summary Column */}
+                    {/* Summary Column - Updated with LOP count */}
                     <td className="px-3 py-2 text-center bg-slate-50/50 border-l">
-                      <div className="flex items-center justify-center gap-1 text-[10px]">
+                      <div className="flex items-center justify-center gap-1 text-[10px] flex-wrap">
                         <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded font-medium" title="Working Days">
                           {employee.summary.working_days}W
                         </span>
@@ -299,6 +432,11 @@ export function AttendanceDashboard({ isHR }) {
                         {employee.summary.leave_pending > 0 && (
                           <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded font-medium" title="Pending Leaves">
                             {employee.summary.leave_pending}P
+                          </span>
+                        )}
+                        {employee.summary.lop_days > 0 && (
+                          <span className="px-1.5 py-0.5 bg-red-100 text-red-700 rounded font-medium" title="LOP Days">
+                            {employee.summary.lop_days}LOP
                           </span>
                         )}
                       </div>
@@ -326,6 +464,63 @@ export function AttendanceDashboard({ isHR }) {
           <p className="text-sm">Try adjusting your filters or search query</p>
         </div>
       )}
+      
+      {/* HR Edit Attendance Modal */}
+      <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
+        <DialogContent className="sm:max-w-[400px]" data-testid="edit-attendance-modal">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-blue-600" />
+              Update Attendance
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="bg-slate-50 p-3 rounded-lg">
+              <p className="font-medium text-gray-900">{editData.employee_name}</p>
+              <p className="text-sm text-gray-500">{editData.date}</p>
+            </div>
+            
+            <div>
+              <Label className="text-sm font-medium">Status</Label>
+              <Select value={editData.status} onValueChange={(v) => setEditData({...editData, status: v})}>
+                <SelectTrigger className="mt-1.5" data-testid="attendance-status-select">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="present">✓ Present</SelectItem>
+                  <SelectItem value="absent">A - Absent/LOP</SelectItem>
+                  <SelectItem value="half_day">H - Half Day</SelectItem>
+                  <SelectItem value="leave_approved">L - Leave (Approved)</SelectItem>
+                  <SelectItem value="holiday">- Weekend/Holiday</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <Label className="text-sm font-medium">Notes (Optional)</Label>
+              <Input
+                value={editData.notes}
+                onChange={(e) => setEditData({...editData, notes: e.target.value})}
+                placeholder="Add a note..."
+                className="mt-1.5"
+              />
+            </div>
+          </div>
+          
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setEditModalOpen(false)}>Cancel</Button>
+            <Button 
+              onClick={handleSaveAttendance} 
+              disabled={saving}
+              className="bg-gradient-to-r from-blue-600 to-blue-700"
+            >
+              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle className="h-4 w-4 mr-2" />}
+              Save
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
