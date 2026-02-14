@@ -371,6 +371,8 @@ export default function AdminPage({ initialTab = 'employees', embedded = false }
   const openEmployeeModal = (employee = null) => {
     setSelectedEmployee(employee);
     setEmployeeModalTab('details');
+    setPhotoPreview(employee?.photo_url || null);
+    setEmployeeIdError('');
     setIsEmployeeModalOpen(true);
   };
 
