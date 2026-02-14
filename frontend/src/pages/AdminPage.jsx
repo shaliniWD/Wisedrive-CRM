@@ -1558,40 +1558,206 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
           <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
             {/* Details Tab */}
             <TabsContent value="details" className="mt-0 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Full Name <span className="text-red-500">*</span></Label>
-                  <Input value={form.name || ''} onChange={(e) => setForm({...form, name: e.target.value})} className="h-10" data-testid="emp-name" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Email <span className="text-red-500">*</span></Label>
-                  <Input type="email" value={form.email || ''} onChange={(e) => setForm({...form, email: e.target.value})} className="h-10" data-testid="emp-email" />
-                </div>
-                {!isEdit && (
+              {/* Personal Information */}
+              <div className="bg-slate-50 p-4 rounded-xl border">
+                <h4 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+                  <Users className="h-4 w-4 text-blue-500" /> Personal Information
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium">Password <span className="text-red-500">*</span></Label>
-                    <Input type="password" value={form.password || ''} onChange={(e) => setForm({...form, password: e.target.value})} className="h-10" data-testid="emp-password" />
+                    <Label className="text-sm font-medium">Full Name <span className="text-red-500">*</span></Label>
+                    <Input value={form.name || ''} onChange={(e) => setForm({...form, name: e.target.value})} className="h-10" data-testid="emp-name" />
                   </div>
-                )}
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Phone</Label>
-                  <Input value={form.phone || ''} onChange={(e) => setForm({...form, phone: e.target.value})} className="h-10" />
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Email <span className="text-red-500">*</span></Label>
+                    <Input type="email" value={form.email || ''} onChange={(e) => setForm({...form, email: e.target.value})} className="h-10" data-testid="emp-email" />
+                  </div>
+                  {!isEdit && (
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Password <span className="text-red-500">*</span></Label>
+                      <Input type="password" value={form.password || ''} onChange={(e) => setForm({...form, password: e.target.value})} className="h-10" data-testid="emp-password" />
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Phone</Label>
+                    <Input value={form.phone || ''} onChange={(e) => setForm({...form, phone: e.target.value})} className="h-10" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Date of Birth</Label>
+                    <Input type="date" value={form.date_of_birth || ''} onChange={(e) => setForm({...form, date_of_birth: e.target.value})} className="h-10" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Gender</Label>
+                    <Select value={form.gender || ''} onValueChange={(v) => setForm({...form, gender: v})}>
+                      <SelectTrigger className="h-10"><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="male">Male</SelectItem>
+                        <SelectItem value="female">Female</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Country <span className="text-red-500">*</span></Label>
-                  <Select value={form.country_id || ''} onValueChange={(v) => setForm({...form, country_id: v})}>
-                    <SelectTrigger className="h-10" data-testid="emp-country"><SelectValue placeholder="Select" /></SelectTrigger>
-                    <SelectContent>{countries.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
-                  </Select>
+              </div>
+
+              {/* Address */}
+              <div className="bg-slate-50 p-4 rounded-xl border">
+                <h4 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-purple-500" /> Address
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2 col-span-2">
+                    <Label className="text-sm font-medium">Address</Label>
+                    <Input value={form.address || ''} onChange={(e) => setForm({...form, address: e.target.value})} className="h-10" placeholder="Street address" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">City</Label>
+                    <Input value={form.city || ''} onChange={(e) => setForm({...form, city: e.target.value})} className="h-10" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">State</Label>
+                    <Input value={form.state || ''} onChange={(e) => setForm({...form, state: e.target.value})} className="h-10" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Pincode</Label>
+                    <Input value={form.pincode || ''} onChange={(e) => setForm({...form, pincode: e.target.value})} className="h-10" />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Weekly Off Day</Label>
-                  <Select value={String(form.weekly_off_day || 0)} onValueChange={(v) => setForm({...form, weekly_off_day: parseInt(v)})}>
-                    <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {DAY_NAMES.map((day, idx) => <SelectItem key={idx} value={String(idx)}>{day}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+              </div>
+
+              {/* Employment Details */}
+              <div className="bg-blue-50 p-4 rounded-xl border border-blue-200">
+                <h4 className="text-sm font-semibold text-blue-800 mb-3 flex items-center gap-2">
+                  <Building className="h-4 w-4" /> Employment Details
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Country <span className="text-red-500">*</span></Label>
+                    <Select value={form.country_id || ''} onValueChange={(v) => setForm({...form, country_id: v})}>
+                      <SelectTrigger className="h-10" data-testid="emp-country"><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>{countries.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Joining Date</Label>
+                    <Input type="date" value={form.joining_date || ''} onChange={(e) => setForm({...form, joining_date: e.target.value})} className="h-10" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Employment Type</Label>
+                    <Select value={form.employment_type || 'full_time'} onValueChange={(v) => setForm({...form, employment_type: v})}>
+                      <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="full_time">Full Time</SelectItem>
+                        <SelectItem value="part_time">Part Time</SelectItem>
+                        <SelectItem value="contractor">Contractor</SelectItem>
+                        <SelectItem value="freelancer">Freelancer</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Weekly Off Day</Label>
+                    <Select value={String(form.weekly_off_day || 0)} onValueChange={(v) => setForm({...form, weekly_off_day: parseInt(v)})}>
+                      <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {DAY_NAMES.map((day, idx) => <SelectItem key={idx} value={String(idx)}>{day}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Reporting Manager</Label>
+                    <Select value={form.reporting_manager_id || ''} onValueChange={(v) => setForm({...form, reporting_manager_id: v === 'none' ? '' : v})}>
+                      <SelectTrigger className="h-10"><SelectValue placeholder="Select Manager" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        {/* Note: This would need employee list passed in */}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium flex items-center gap-2">
+                      Payroll Active
+                      <span className="text-xs text-gray-500">(Include in payroll)</span>
+                    </Label>
+                    <Select value={form.payroll_active ? 'true' : 'false'} onValueChange={(v) => setForm({...form, payroll_active: v === 'true'})}>
+                      <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="true">Yes</SelectItem>
+                        <SelectItem value="false">No</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Emergency Contact */}
+              <div className="bg-red-50 p-4 rounded-xl border border-red-200">
+                <h4 className="text-sm font-semibold text-red-800 mb-3 flex items-center gap-2">
+                  <Phone className="h-4 w-4" /> Emergency Contact
+                </h4>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Name</Label>
+                    <Input value={form.emergency_contact_name || ''} onChange={(e) => setForm({...form, emergency_contact_name: e.target.value})} className="h-10" placeholder="Contact name" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Phone</Label>
+                    <Input value={form.emergency_contact_phone || ''} onChange={(e) => setForm({...form, emergency_contact_phone: e.target.value})} className="h-10" placeholder="Phone number" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Relation</Label>
+                    <Select value={form.emergency_contact_relation || ''} onValueChange={(v) => setForm({...form, emergency_contact_relation: v})}>
+                      <SelectTrigger className="h-10"><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="spouse">Spouse</SelectItem>
+                        <SelectItem value="parent">Parent</SelectItem>
+                        <SelectItem value="sibling">Sibling</SelectItem>
+                        <SelectItem value="friend">Friend</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bank Details */}
+              <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-200">
+                <h4 className="text-sm font-semibold text-emerald-800 mb-3 flex items-center gap-2">
+                  <CreditCard className="h-4 w-4" /> Bank Details
+                  <span className="text-xs font-normal text-emerald-600">(Encrypted at rest)</span>
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Bank Name</Label>
+                    <Input value={form.bank_name || ''} onChange={(e) => setForm({...form, bank_name: e.target.value})} className="h-10" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Account Holder Name</Label>
+                    <Input value={form.account_holder_name || ''} onChange={(e) => setForm({...form, account_holder_name: e.target.value})} className="h-10" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Account Number</Label>
+                    <Input 
+                      value={form.bank_account_number || ''} 
+                      onChange={(e) => setForm({...form, bank_account_number: e.target.value})} 
+                      className="h-10" 
+                      placeholder={form.bank_account_number_masked || 'Enter account number'}
+                    />
+                    {form.bank_account_number_masked && !form.bank_account_number && (
+                      <span className="text-xs text-gray-500">Current: {form.bank_account_number_masked}</span>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">IFSC Code</Label>
+                    <Input value={form.ifsc_code || ''} onChange={(e) => setForm({...form, ifsc_code: e.target.value.toUpperCase()})} className="h-10" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Branch</Label>
+                    <Input value={form.bank_branch || ''} onChange={(e) => setForm({...form, bank_branch: e.target.value})} className="h-10" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">PAN Number</Label>
+                    <Input value={form.pan_number || ''} onChange={(e) => setForm({...form, pan_number: e.target.value.toUpperCase()})} className="h-10" />
+                  </div>
                 </div>
               </div>
 
