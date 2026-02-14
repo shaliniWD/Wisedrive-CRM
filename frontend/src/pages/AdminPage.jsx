@@ -994,12 +994,20 @@ export default function AdminPage({ initialTab = 'employees', embedded = false }
                   ) : (
                     employees.map((emp) => (
                       <React.Fragment key={emp.id}>
-                        <tr className={`hover:bg-slate-50 transition-colors ${!emp.is_active ? 'bg-red-50/30' : ''}`} data-testid={`employee-row-${emp.id}`}>
+                        <tr className={`hover:bg-slate-50 transition-colors ${!emp.is_active ? 'bg-red-50/30' : emp.employment_status === 'on_leave' ? 'bg-amber-50/30' : ''}`} data-testid={`employee-row-${emp.id}`}>
                           <td className="px-4 py-4">
                             <div className="flex items-center gap-3">
-                              <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white font-medium ${emp.is_active ? 'bg-gradient-to-r from-blue-500 to-blue-600' : 'bg-gray-400'}`}>
-                                {emp.name?.charAt(0)?.toUpperCase()}
-                              </div>
+                              {emp.photo_url ? (
+                                <img 
+                                  src={emp.photo_url} 
+                                  alt={emp.name} 
+                                  className={`h-10 w-10 rounded-full object-cover border-2 ${emp.employment_status === 'on_leave' ? 'border-amber-400' : emp.is_active ? 'border-blue-400' : 'border-gray-300'}`}
+                                />
+                              ) : (
+                                <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white font-medium ${emp.employment_status === 'on_leave' ? 'bg-gradient-to-r from-amber-500 to-amber-600' : emp.is_active ? 'bg-gradient-to-r from-blue-500 to-blue-600' : 'bg-gray-400'}`}>
+                                  {emp.name?.charAt(0)?.toUpperCase()}
+                                </div>
+                              )}
                               <div>
                                 <span className="font-medium text-gray-900 block">{emp.name}</span>
                                 <span className="text-xs text-gray-500">{emp.email}</span>
@@ -1025,7 +1033,10 @@ export default function AdminPage({ initialTab = 'employees', embedded = false }
                           </td>
                           <td className="px-4 py-4">
                             <div className="flex flex-col gap-1">
-                              <StatusBadge status={emp.is_active ? 'active' : 'exited'} />
+                              <StatusBadge status={emp.employment_status === 'on_leave' ? 'on_leave' : (emp.is_active ? 'active' : 'exited')} />
+                              {emp.current_leave_type && (
+                                <span className="text-xs text-amber-600 capitalize">{emp.current_leave_type} leave</span>
+                              )}
                               {emp.exit_date && (
                                 <span className="text-xs text-gray-400">Exit: {emp.exit_date}</span>
                               )}
@@ -1042,7 +1053,7 @@ export default function AdminPage({ initialTab = 'employees', embedded = false }
                           <td className="px-4 py-4">
                             {emp.salary_info ? (
                               <div className="text-xs">
-                                {emp.role_code === 'MECHANIC' || emp.salary_info.employment_type === 'freelancer' ? (
+                                {emp.role_code === 'MECHANIC' || emp.role_code === 'FREELANCER' || emp.salary_info.employment_type === 'freelancer' ? (
                                   <span className="text-emerald-600 font-medium">
                                     {formatCurrency(emp.salary_info.price_per_inspection, emp.currency_symbol || '₹')}/insp
                                   </span>
@@ -1069,7 +1080,7 @@ export default function AdminPage({ initialTab = 'employees', embedded = false }
                             </button>
                           </td>
                           <td className="px-4 py-4">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1">
                               <button
                                 className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                 onClick={() => openEmployeeModal(emp)}
@@ -1078,6 +1089,34 @@ export default function AdminPage({ initialTab = 'employees', embedded = false }
                               >
                                 <Eye className="h-4 w-4" />
                               </button>
+                              {emp.is_active && (
+                                <>
+                                  <button
+                                    className="p-2 text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                                    onClick={() => {
+                                      setSelectedEmployee(emp);
+                                      setEmployeeModalTab('leave');
+                                      setIsEmployeeModalOpen(true);
+                                    }}
+                                    title="Apply Leave"
+                                    data-testid={`apply-leave-${emp.id}`}
+                                  >
+                                    <CalendarPlus className="h-4 w-4" />
+                                  </button>
+                                  <button
+                                    className="p-2 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                                    onClick={() => {
+                                      setSelectedEmployee(emp);
+                                      setEmployeeModalTab('leave');
+                                      setIsEmployeeModalOpen(true);
+                                    }}
+                                    title="View Leaves"
+                                    data-testid={`view-leaves-${emp.id}`}
+                                  >
+                                    <List className="h-4 w-4" />
+                                  </button>
+                                </>
+                              )}
                               {isHROrCEO && emp.is_active && (
                                 <button
                                   className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
