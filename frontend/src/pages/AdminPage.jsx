@@ -2698,6 +2698,87 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
                 )}
               </div>
             </TabsContent>
+            
+            {/* Payslips Tab */}
+            <TabsContent value="payslips" className="mt-0 space-y-4">
+              <div className="bg-blue-50 p-4 rounded-xl border border-blue-200">
+                <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center gap-2">
+                  <FileText className="h-4 w-4" /> Payslips
+                </h4>
+                <p className="text-xs text-blue-600">
+                  Payslips are automatically generated when payroll is confirmed. Download and share with employees.
+                </p>
+              </div>
+              
+              {payslipsLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                </div>
+              ) : employeePayslips.length > 0 ? (
+                <div className="bg-white rounded-xl border overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-slate-50 border-b">
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600">Period</th>
+                        <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600">Gross Salary</th>
+                        <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600">Deductions</th>
+                        <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600">Net Salary</th>
+                        <th className="px-4 py-3 text-center text-xs font-semibold text-slate-600">Status</th>
+                        <th className="px-4 py-3 text-center text-xs font-semibold text-slate-600">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {employeePayslips.map((payslip) => (
+                        <tr key={payslip.id} className="hover:bg-slate-50">
+                          <td className="px-4 py-3 font-medium">
+                            {new Date(2000, payslip.month - 1).toLocaleString('default', { month: 'long' })} {payslip.year}
+                          </td>
+                          <td className="px-4 py-3 text-right text-emerald-600">
+                            {payslip.currency_symbol || '₹'}{payslip.gross_salary?.toLocaleString()}
+                          </td>
+                          <td className="px-4 py-3 text-right text-red-600">
+                            {payslip.currency_symbol || '₹'}{payslip.total_deductions?.toLocaleString()}
+                          </td>
+                          <td className="px-4 py-3 text-right font-semibold text-blue-600">
+                            {payslip.currency_symbol || '₹'}{payslip.net_salary?.toLocaleString()}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                              payslip.payment_status === 'PAID' ? 'bg-emerald-100 text-emerald-700' :
+                              payslip.payment_status === 'CONFIRMED' ? 'bg-blue-100 text-blue-700' :
+                              'bg-amber-100 text-amber-700'
+                            }`}>
+                              {payslip.payment_status}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => handleDownloadPayslip(payslip.id, payslip.month, payslip.year)}
+                              disabled={downloadingPayslip === payslip.id}
+                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            >
+                              {downloadingPayslip === payslip.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Download className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="text-center py-12 text-gray-500">
+                  <FileText className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                  <p className="font-medium">No payslips available</p>
+                  <p className="text-sm">Payslips will appear here after payroll is processed and confirmed.</p>
+                </div>
+              )}
+            </TabsContent>
 
             {/* Documents Tab */}
             <TabsContent value="documents" className="mt-0 space-y-4">
