@@ -257,23 +257,23 @@ const EmployeesTab = ({ isHR }) => {
             />
           </div>
         </div>
-        <Select value={filterCountry} onValueChange={setFilterCountry}>
+        <Select value={filterCountry || "all"} onValueChange={(v) => setFilterCountry(v === "all" ? "" : v)}>
           <SelectTrigger className="w-40">
             <SelectValue placeholder="All Countries" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Countries</SelectItem>
+            <SelectItem value="all">All Countries</SelectItem>
             {countries.map(c => (
               <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
             ))}
           </SelectContent>
         </Select>
-        <Select value={filterRole} onValueChange={setFilterRole}>
+        <Select value={filterRole || "all"} onValueChange={(v) => setFilterRole(v === "all" ? "" : v)}>
           <SelectTrigger className="w-40">
             <SelectValue placeholder="All Roles" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Roles</SelectItem>
+            <SelectItem value="all">All Roles</SelectItem>
             {roles.map(r => (
               <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
             ))}
