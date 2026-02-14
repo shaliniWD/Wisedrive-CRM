@@ -441,6 +441,16 @@ export function PayrollDashboard({ isHR, isFinance }) {
         country_id: generateCountry
       });
       setPreviewData(res.data);
+      // Initialize preview edits with current values
+      const initialEdits = {};
+      res.data.records.forEach(record => {
+        initialEdits[record.employee_id] = {
+          attendance_days: record.attendance_days,
+          other_deductions: record.other_deductions || 0
+        };
+      });
+      setPreviewEdits(initialEdits);
+      setPreviewErrors({});
       setIsGenerateModalOpen(false);
       setView('preview');
     } catch (e) {
@@ -448,6 +458,136 @@ export function PayrollDashboard({ isHR, isFinance }) {
     } finally {
       setGenerating(false);
     }
+  };
+
+  // Handle preview field edit with validation and recalculation
+  const handlePreviewEdit = (employeeId, field, value) => {
+    const record = previewData.records.find(r => r.employee_id === employeeId);
+    if (!record) return;
+
+    // Parse value as integer (no half-days)
+    const numValue = value === '' ? 0 : parseInt(value, 10);
+    if (isNaN(numValue)) return;
+
+    // Update edit state
+    setPreviewEdits(prev => ({
+      ...prev,
+      [employeeId]: {
+        ...prev[employeeId],
+        [field]: numValue
+      }
+    }));
+
+    // Validate
+    const errors = { ...previewErrors };
+    if (!errors[employeeId]) errors[employeeId] = {};
+
+    if (field === 'attendance_days') {
+      if (numValue < 0) {
+        errors[employeeId].attendance_days = 'Must be ≥ 0';
+      } else if (numValue > record.working_days_in_month) {
+        errors[employeeId].attendance_days = `Cannot exceed ${record.working_days_in_month} working days`;
+      } else {
+        delete errors[employeeId].attendance_days;
+      }
+    }
+
+    if (field === 'other_deductions') {
+      // Calculate net before other to validate cap
+      const attendanceDays = previewEdits[employeeId]?.attendance_days ?? record.attendance_days;
+      const perDaySalary = record.gross_salary / record.working_days_in_month;
+      const attendanceDeduction = perDaySalary * (record.working_days_in_month - attendanceDays);
+      const netBeforeOther = record.gross_salary - record.total_statutory_deductions - attendanceDeduction;
+
+      if (numValue < 0) {
+        errors[employeeId].other_deductions = 'Must be ≥ 0';
+      } else if (numValue > netBeforeOther) {
+        errors[employeeId].other_deductions = `Cannot exceed net salary (${formatCurrency(netBeforeOther, record.currency_symbol)})`;
+      } else {
+        delete errors[employeeId].other_deductions;
+      }
+    }
+
+    // Clean up empty error objects
+    if (Object.keys(errors[employeeId]).length === 0) {
+      delete errors[employeeId];
+    }
+    setPreviewErrors(errors);
+
+    // Recalculate preview data
+    recalculatePreview(employeeId, field, numValue);
+  };
+
+  // Recalculate payroll for employee in preview
+  const recalculatePreview = (employeeId, changedField, newValue) => {
+    setPreviewData(prev => {
+      if (!prev) return prev;
+
+      const updatedRecords = prev.records.map(record => {
+        if (record.employee_id !== employeeId) return record;
+
+        const workingDays = record.working_days_in_month;
+        const gross = record.gross_salary;
+        const perDaySalary = workingDays > 0 ? gross / workingDays : 0;
+
+        // Get attendance days (from edit or current)
+        let attendanceDays = changedField === 'attendance_days' 
+          ? newValue 
+          : (previewEdits[employeeId]?.attendance_days ?? record.attendance_days);
+        
+        // Cap attendance days at working days
+        attendanceDays = Math.min(Math.max(0, attendanceDays), workingDays);
+        
+        // Calculate attendance deduction
+        const absentDays = workingDays - attendanceDays;
+        const attendanceDeduction = Math.round(perDaySalary * absentDays * 100) / 100;
+
+        // Get other deductions
+        let otherDeductions = changedField === 'other_deductions'
+          ? newValue
+          : (previewEdits[employeeId]?.other_deductions ?? record.other_deductions);
+        
+        // Cap other deductions at net before other
+        const netBeforeOther = gross - record.total_statutory_deductions - attendanceDeduction;
+        otherDeductions = Math.min(Math.max(0, otherDeductions), netBeforeOther);
+
+        // Calculate totals
+        const totalDeductions = record.total_statutory_deductions + attendanceDeduction + otherDeductions;
+        const netSalary = Math.round((gross - totalDeductions) * 100) / 100;
+
+        return {
+          ...record,
+          attendance_days: attendanceDays,
+          unapproved_absent_days: absentDays,
+          attendance_deduction: attendanceDeduction,
+          other_deductions: otherDeductions,
+          total_deductions: Math.round(totalDeductions * 100) / 100,
+          net_salary: netSalary
+        };
+      });
+
+      // Recalculate batch totals
+      const totalGross = updatedRecords.reduce((sum, r) => sum + r.gross_salary, 0);
+      const totalStatutory = updatedRecords.reduce((sum, r) => sum + r.total_statutory_deductions, 0);
+      const totalAttendance = updatedRecords.reduce((sum, r) => sum + r.attendance_deduction, 0);
+      const totalOther = updatedRecords.reduce((sum, r) => sum + r.other_deductions, 0);
+      const totalNet = updatedRecords.reduce((sum, r) => sum + r.net_salary, 0);
+
+      return {
+        ...prev,
+        records: updatedRecords,
+        total_gross: Math.round(totalGross * 100) / 100,
+        total_statutory_deductions: Math.round(totalStatutory * 100) / 100,
+        total_attendance_deductions: Math.round(totalAttendance * 100) / 100,
+        total_other_deductions: Math.round(totalOther * 100) / 100,
+        total_net: Math.round(totalNet * 100) / 100
+      };
+    });
+  };
+
+  // Check if preview has any validation errors
+  const hasPreviewErrors = () => {
+    return Object.keys(previewErrors).length > 0;
   };
 
   // Create Batch from Preview
