@@ -477,14 +477,14 @@ class TestFinanceEnhanced:
         payment_id = response.json().get("id")
         self.created_payment_ids.append(payment_id)
         
-        # Submit for approval
-        response = self.session.post(f"{BASE_URL}/api/finance/payments/{payment_id}/submit")
-        assert response.status_code == 200
+        # Submit for approval (PATCH method)
+        response = self.session.patch(f"{BASE_URL}/api/finance/payments/{payment_id}/submit")
+        assert response.status_code == 200, f"Submit failed: {response.text}"
         
-        # Login as CEO and approve
+        # Login as CEO and approve (PATCH method)
         self.login_ceo()
         
-        response = self.session.post(f"{BASE_URL}/api/finance/payments/{payment_id}/approve", json={
+        response = self.session.patch(f"{BASE_URL}/api/finance/payments/{payment_id}/approve", json={
             "action": "approve"
         })
         assert response.status_code == 200, f"CEO approval failed: {response.text}"
