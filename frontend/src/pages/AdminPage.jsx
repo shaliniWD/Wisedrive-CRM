@@ -1017,6 +1017,57 @@ export default function AdminPage({ initialTab = 'employees', embedded = false }
             </div>
           </DialogContent>
         </Dialog>
+        
+        {/* Password Reset Modal */}
+        <Dialog open={isPasswordModalOpen} onOpenChange={setIsPasswordModalOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Lock className="h-5 w-5 text-amber-600" />
+                Reset Password
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+                {passwordEmployee?.photo_url ? (
+                  <img src={passwordEmployee.photo_url} alt={passwordEmployee?.name} className="h-12 w-12 rounded-full object-cover" />
+                ) : (
+                  <div className="h-12 w-12 rounded-full bg-amber-500 flex items-center justify-center text-white font-medium text-lg">
+                    {passwordEmployee?.name?.charAt(0)}
+                  </div>
+                )}
+                <div>
+                  <p className="font-medium">{passwordEmployee?.name}</p>
+                  <p className="text-xs text-gray-500">{passwordEmployee?.email}</p>
+                </div>
+              </div>
+              <div>
+                <Label className="text-sm font-medium">New Password</Label>
+                <Input 
+                  type="password" 
+                  value={newPassword} 
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Enter new password (min 6 characters)"
+                  className="mt-1"
+                  data-testid="new-password-input"
+                />
+                <p className="text-xs text-gray-500 mt-1">Password must be at least 6 characters long</p>
+              </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <Button variant="outline" onClick={() => setIsPasswordModalOpen(false)}>Cancel</Button>
+                <Button 
+                  onClick={handlePasswordReset} 
+                  disabled={resettingPassword || newPassword.length < 6}
+                  className="bg-gradient-to-r from-amber-500 to-amber-600" 
+                  data-testid="submit-password-reset"
+                >
+                  {resettingPassword && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                  Reset Password
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
