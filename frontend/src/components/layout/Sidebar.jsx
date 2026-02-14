@@ -12,14 +12,15 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+// Admin merged into HR Module
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Leads', href: '/leads', icon: Users },
   { name: 'Customers', href: '/customers', icon: UserCheck },
   { name: 'Inspections', href: '/inspections', icon: ClipboardCheck },
-  { name: 'Admin', href: '/admin', icon: Settings },
   { name: 'HR Module', href: '/hr', icon: Clock },
   { name: 'Finance', href: '/finance', icon: Wallet },
+  { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
 export const Sidebar = () => {
