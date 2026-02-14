@@ -454,12 +454,12 @@ class LeaveService:
             "employees_on_leave_today": len(on_leave_today),
             "pending_approvals": pending,
             "on_leave_today": [
-                {"employee_id": l["employee_id"], "employee_name": emp_map.get(l["employee_id"], ""), "leave_type": l["leave_type"]}
-                for l in on_leave_today
+                {"employee_id": leave["employee_id"], "employee_name": emp_map.get(leave["employee_id"], ""), "leave_type": leave["leave_type"]}
+                for leave in on_leave_today
             ],
             "upcoming_leaves": [
-                {"employee_id": l["employee_id"], "employee_name": emp_map.get(l["employee_id"], ""), "start_date": l["start_date"], "leave_type": l["leave_type"]}
-                for l in upcoming
+                {"employee_id": leave["employee_id"], "employee_name": emp_map.get(leave["employee_id"], ""), "start_date": leave["start_date"], "leave_type": leave["leave_type"]}
+                for leave in upcoming
             ]
         }
     

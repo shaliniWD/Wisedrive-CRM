@@ -140,7 +140,7 @@ class AttendanceService:
             SECRET_KEY = os.environ.get('JWT_SECRET', 'wisedrive-crm-secret-key-2024')
             payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"], options={"verify_exp": False})
             expires_at = datetime.fromtimestamp(payload.get("exp", 0), tz=timezone.utc).isoformat()
-        except:
+        except Exception:
             # Default expiry: 24 hours from now
             expires_at = (datetime.now(timezone.utc) + timedelta(hours=24)).isoformat()
         
