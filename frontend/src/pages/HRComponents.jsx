@@ -2023,7 +2023,7 @@ export function LeaveManagement({ isHR }) {
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-medium">To Date</Label>
+                <Label className="text-sm font-medium">To Date <span className="text-red-500">*</span></Label>
                 <Input
                   type="date"
                   value={applyForm.end_date}
@@ -2033,12 +2033,12 @@ export function LeaveManagement({ isHR }) {
               </div>
             </div>
             <div className="space-y-2">
-              <Label className="text-sm font-medium">Reason</Label>
+              <Label className="text-sm font-medium">Reason <span className="text-red-500">*</span></Label>
               <textarea
                 value={applyForm.reason}
                 onChange={(e) => setApplyForm({...applyForm, reason: e.target.value})}
                 className="w-full min-h-[80px] px-3 py-2 border rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Reason for leave..."
+                placeholder="Please provide a reason for the leave request..."
               />
             </div>
             <div className="flex justify-end gap-3 pt-4 border-t">
