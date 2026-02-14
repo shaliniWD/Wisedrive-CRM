@@ -357,46 +357,48 @@ export function AttendanceDashboard({ isHR }) {
 export function PayrollDashboard({ isHR, isFinance }) {
   // NumericInput helper - handles "0" value properly (shows empty on focus if value is 0)
   const NumericInput = ({ value, onChange, className, min = 0, max, ...props }) => {
-    const [displayValue, setDisplayValue] = useState(value?.toString() || '');
-    const [isFocused, setIsFocused] = useState(false);
+    const inputRef = useRef(null);
+    const [localValue, setLocalValue] = useState(value?.toString() || '0');
+    const isTypingRef = useRef(false);
     
-    // Only sync from parent when not focused (prevents resetting while typing)
+    // Sync from parent only when not actively typing
     useEffect(() => {
-      if (!isFocused) {
-        setDisplayValue(value?.toString() || '');
+      if (!isTypingRef.current) {
+        setLocalValue(value?.toString() || '0');
       }
-    }, [value, isFocused]);
+    }, [value]);
     
     const handleFocus = (e) => {
-      setIsFocused(true);
-      if (value === 0 || value === '0' || displayValue === '0') {
-        setDisplayValue('');
+      isTypingRef.current = true;
+      if (localValue === '0') {
+        setLocalValue('');
       }
-      e.target.select();
+      setTimeout(() => e.target.select(), 0);
     };
     
     const handleChange = (e) => {
       const newValue = e.target.value;
       // Only allow numeric input
       if (newValue === '' || /^\d*$/.test(newValue)) {
-        setDisplayValue(newValue);
+        setLocalValue(newValue);
+        // Debounce the parent update
         onChange(e);
       }
     };
     
     const handleBlur = () => {
-      setIsFocused(false);
-      if (displayValue === '' || displayValue === undefined) {
-        setDisplayValue('0');
-      }
+      isTypingRef.current = false;
+      const finalValue = localValue === '' ? '0' : localValue;
+      setLocalValue(finalValue);
     };
     
     return (
       <input
+        ref={inputRef}
         type="text"
         inputMode="numeric"
         pattern="[0-9]*"
-        value={displayValue}
+        value={localValue}
         onChange={handleChange}
         onFocus={handleFocus}
         onBlur={handleBlur}
