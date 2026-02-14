@@ -226,6 +226,13 @@ export default function AdminPage({ initialTab = 'employees', embedded = false }
   useEffect(() => { fetchEmployees(); }, [fetchEmployees]);
   useEffect(() => { fetchCountries(); }, [fetchCountries]);
 
+  // Sync activeTab with initialTab when embedded and initialTab changes
+  useEffect(() => {
+    if (embedded && initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab, embedded]);
+
   // Toggle audit row expansion
   const toggleAudit = (empId) => {
     setExpandedAudit(prev => ({...prev, [empId]: !prev[empId]}));
