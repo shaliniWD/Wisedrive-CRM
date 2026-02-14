@@ -1500,9 +1500,9 @@ export function PayrollDashboard({ isHR, isFinance }) {
                 <tr className="bg-slate-50 border-b">
                   <th className="px-3 py-2 text-left text-xs font-semibold text-slate-600 sticky left-0 bg-slate-50">Employee</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600">Gross</th>
-                  <th className="px-3 py-2 text-center text-xs font-semibold text-slate-600 bg-amber-50">Absent</th>
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-slate-600 bg-amber-50">LOP Days</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-red-50">Statutory</th>
-                  <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-amber-50">Attend. Ded.</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-amber-50">LOP Ded.</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600">Other</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-blue-50">Net</th>
                   <th className="px-3 py-2 text-left text-xs font-semibold text-slate-600">Actions</th>
