@@ -278,6 +278,17 @@ export default function AdminPage() {
                           )}
                         </td>
                         <td>
+                          <button
+                            onClick={() => toggleAudit(emp.id)}
+                            className="flex items-center gap-1 text-xs text-gray-600 hover:text-[#2E3192]"
+                            data-testid={`toggle-audit-${emp.id}`}
+                          >
+                            <History className="h-3 w-3" />
+                            {emp.audit_count || 0}
+                            {expandedAudit[emp.id] ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                          </button>
+                        </td>
+                        <td>
                           <div className="flex items-center gap-2">
                             <button
                               className="text-[#6366F1] hover:text-[#5558E3]"
@@ -308,17 +319,6 @@ export default function AdminPage() {
                               </button>
                             )}
                           </div>
-                        </td>
-                        <td>
-                          <button
-                            onClick={() => toggleAudit(emp.id)}
-                            className="flex items-center gap-1 text-xs text-gray-600 hover:text-[#2E3192]"
-                            data-testid={`toggle-audit-${emp.id}`}
-                          >
-                            <History className="h-3 w-3" />
-                            {emp.audit_count || 0}
-                            {expandedAudit[emp.id] ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                          </button>
                         </td>
                       </tr>
                       {/* Inline Audit Trail */}
