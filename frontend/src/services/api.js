@@ -136,6 +136,9 @@ export const hrApi = {
   updateEmployee: (id, data) => axios.put(`${API_URL}/hr/employees/${id}`, data),
   deleteEmployee: (id) => axios.delete(`${API_URL}/hr/employees/${id}`),
   
+  // Password Management
+  resetPassword: (id, newPassword) => axios.post(`${API_URL}/hr/employees/${id}/reset-password`, { new_password: newPassword }),
+  
   // Salary Structure
   getEmployeeSalary: (id) => axios.get(`${API_URL}/hr/employees/${id}/salary`),
   saveEmployeeSalary: (id, data) => axios.post(`${API_URL}/hr/employees/${id}/salary`, data),
