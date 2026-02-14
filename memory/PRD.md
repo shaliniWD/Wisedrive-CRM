@@ -253,29 +253,27 @@ Vendor Payment → Finance Manager creates with GST/TDS → Submit for Approval 
 ```
 
 ## Last Updated
-February 14, 2026 - **Payroll Enhancement Features**:
-1. **Display Working Days:** 
-   - Pay period (start-end) displayed in preview/batch header
-   - Working days count shown in header (calculated from weekends)
-   - Working Days column in preview/batch table (read-only, per-employee)
-   - Considers global weekends (Sat/Sun) + employee-specific weekly off
+February 14, 2026 - **Data Cleanup & Numeric Input Bug Fix**:
+1. **Database Cleanup:**
+   - Removed all test data except 3 login credentials:
+     - CEO: kalyan@wisedrive.com / password123
+     - HR Manager: hr@wisedrive.com / password123
+     - Finance Manager: finance@wisedrive.com / password123
+   - Added 2 test employees with salary structures (John Sales, Mike Mechanic)
+   - Fixed user role_id, country_id, department_id to use UUID format
 
-2. **Editable Attendance Days:**
-   - Attendance Days column editable via numeric input
-   - Validation: integer only, >= 0, <= working_days
-   - Real-time recalculation: Prorated attendance deduction, total deductions, net salary
-   - Formula: Attendance Deduction = (Gross / Working Days) × (Working Days - Attendance Days)
+2. **Numeric Input Bug Fix:**
+   - Removed increment/decrement spinners from all number inputs
+   - Applied CSS globally via `input.jsx` and `index.css`
+   - Auto-select all text on focus for easy value replacement
+   - Clean UI for payroll's "Absent Days" and "Other Deductions" inputs
 
-3. **Editable Other Deductions:**
-   - Other column editable via numeric input
-   - Validation: >= 0, capped at Net Pay (hard block)
-   - Deducted from Net Salary
+3. **Payroll Service Fix:**
+   - Fixed salary structure query (employee_id vs user_id)
+   - Fixed conveyance field name (conveyance vs conveyance_allowance)
+   - Payroll preview now correctly calculates salary for employees with active salary structures
 
-4. **Real-time Batch Totals:**
-   - Total Gross, Total Deductions, Total Net update instantly on edit
-   - Create Batch blocked when validation errors exist
-
-Previous (Feb 14, 2026): Bug Fix - Attendance UI Update (today_attendance badge now displays in employee table)
+Previous (Feb 14, 2026): Payroll Enhancement Features - Working Days display, Editable Attendance Days, Editable Other Deductions, Real-time Batch Totals
 
 ## Platform Architecture v5.0
 
