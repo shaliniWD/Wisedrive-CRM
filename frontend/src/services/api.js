@@ -186,3 +186,35 @@ export const auditLogsApi = {
   getByEntity: (entityType, entityId) => axios.get(`${API_URL}/audit-logs/entity/${entityType}/${entityId}`),
   getStats: () => axios.get(`${API_URL}/audit-logs/stats`),
 };
+
+// Finance API
+export const financeApi = {
+  // Payments
+  getPayments: (params) => axios.get(`${API_URL}/finance/payments`, { params }),
+  getPayment: (id) => axios.get(`${API_URL}/finance/payments/${id}`),
+  createPayment: (data) => axios.post(`${API_URL}/finance/payments`, data),
+  updatePayment: (id, data) => axios.put(`${API_URL}/finance/payments/${id}`, data),
+  deletePayment: (id) => axios.delete(`${API_URL}/finance/payments/${id}`),
+  
+  // Workflow
+  submitForApproval: (id) => axios.patch(`${API_URL}/finance/payments/${id}/submit`),
+  approvePayment: (id, data) => axios.patch(`${API_URL}/finance/payments/${id}/approve`, data),
+  markAsPaid: (id, params) => axios.patch(`${API_URL}/finance/payments/${id}/mark-paid`, null, { params }),
+  
+  // Proofs
+  getProofs: (paymentId) => axios.get(`${API_URL}/finance/payments/${paymentId}/proofs`),
+  addProof: (paymentId, params) => axios.post(`${API_URL}/finance/payments/${paymentId}/proofs`, null, { params }),
+  deleteProof: (paymentId, proofId) => axios.delete(`${API_URL}/finance/payments/${paymentId}/proofs/${proofId}`),
+  
+  // Payslip
+  getPayslip: (paymentId) => axios.get(`${API_URL}/finance/payments/${paymentId}/payslip`),
+  
+  // Summary
+  getSummary: (params) => axios.get(`${API_URL}/finance/summary`, { params }),
+  
+  // Employees for payment
+  getEmployees: (params) => axios.get(`${API_URL}/finance/employees`, { params }),
+  
+  // Payment modes
+  getPaymentModes: () => axios.get(`${API_URL}/finance/payment-modes`),
+};
