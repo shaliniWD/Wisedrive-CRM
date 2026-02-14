@@ -172,6 +172,15 @@ export default function AdminPage({ initialTab = 'employees', embedded = false }
   
   // Exit modal data
   const [exitData, setExitData] = useState({ exit_date: '', exit_reason: '', exit_notes: '' });
+  
+  // On Leave Today data
+  const [employeesOnLeave, setEmployeesOnLeave] = useState([]);
+  const [showOnLeaveList, setShowOnLeaveList] = useState(false);
+  
+  // Quick attendance modal
+  const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
+  const [attendanceEmployee, setAttendanceEmployee] = useState(null);
+  const [attendanceData, setAttendanceData] = useState({ date: new Date().toISOString().split('T')[0], status: 'present' });
 
   const isHROrCEO = user?.role_code === 'CEO' || user?.role_code === 'HR_MANAGER' || user?.roles?.some(r => r.code === 'CEO' || r.code === 'HR_MANAGER');
 
