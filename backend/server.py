@@ -36,6 +36,24 @@ from services.round_robin import RoundRobinService
 from services.audit import AuditService
 from services.seed_v2 import seed_v2_data
 
+# Import HR Module services
+from services.attendance_service import AttendanceService
+from services.payroll_service import PayrollService
+from services.leave_service import LeaveService
+from services.storage_service import get_storage_service
+
+# Import HR Module models
+from models.attendance import (
+    UserSessionCreate, AttendanceOverrideRequest, AttendanceExportRequest
+)
+from models.payroll import (
+    PayrollRecordCreate, PayrollBulkGenerateRequest, PaymentMarkRequest,
+    PayrollAdjustmentCreate, BulkPaymentMarkRequest
+)
+from models.leave import (
+    LeaveRequestCreate, LeaveApprovalRequest, LeaveBalanceCreate
+)
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
