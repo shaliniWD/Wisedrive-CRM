@@ -911,7 +911,7 @@ class PayrollService:
         # Calculate salary components
         basic = salary.get("basic_salary", 0) if salary else 0
         hra = salary.get("hra", 0) if salary else 0
-        conveyance = salary.get("conveyance_allowance", 0) if salary else 0
+        conveyance = salary.get("conveyance", 0) if salary else 0
         medical = salary.get("medical_allowance", 0) if salary else 0
         special = salary.get("special_allowance", 0) if salary else 0
         variable = salary.get("variable_pay", 0) if salary else 0
