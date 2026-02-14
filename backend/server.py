@@ -597,6 +597,36 @@ async def delete_lead(lead_id: str, current_user: dict = Depends(get_current_use
     return {"message": "Lead deleted"}
 
 
+# Pydantic model for status update
+class LeadStatusUpdate(BaseModel):
+    status: str
+
+
+@api_router.patch("/leads/{lead_id}/status")
+async def update_lead_status(lead_id: str, status_data: LeadStatusUpdate, current_user: dict = Depends(get_current_user)):
+    """Inline update of lead status - for quick status changes from the leads table"""
+    existing = await db.leads.find_one({"id": lead_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    
+    # Validate status
+    valid_statuses = ["NEW", "HOT", "CONTACTED", "INTERESTED", "NOT_INTERESTED", 
+                     "CONVERTED", "RNR", "RCB_WHATSAPP", "FOLLOWUP", "OUT_OF_SERVICE_AREA", "LOST"]
+    if status_data.status not in valid_statuses:
+        raise HTTPException(status_code=400, detail=f"Invalid status. Valid statuses: {', '.join(valid_statuses)}")
+    
+    update_dict = {
+        "status": status_data.status,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "updated_by": current_user["id"]
+    }
+    
+    await db.leads.update_one({"id": lead_id}, {"$set": update_dict})
+    
+    lead = await db.leads.find_one({"id": lead_id}, {"_id": 0})
+    return lead
+
+
 @api_router.get("/leads/{lead_id}/reassignment-history")
 async def get_lead_reassignment_history(lead_id: str, current_user: dict = Depends(get_current_user)):
     """Get reassignment history for a lead"""
