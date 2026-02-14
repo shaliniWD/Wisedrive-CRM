@@ -19,6 +19,7 @@ class RBACService:
     INSPECTION_COORD = "INSPECTION_COORD"
     REPORT_REVIEWER = "REPORT_REVIEWER"
     MECHANIC = "MECHANIC"
+    FREELANCER = "FREELANCER"
     
     # Scope levels
     SCOPE_ALL = "all"
@@ -40,6 +41,7 @@ class RBACService:
         INSPECTION_COORD: ["inspections", "hr"],
         REPORT_REVIEWER: ["inspections", "reports", "hr"],
         MECHANIC: ["hr"],  # Mechanics can access HR for leave/attendance
+        FREELANCER: ["hr"],  # Freelancers only access HR for their own leave/attendance/payslips
     }
 
     def __init__(self, db: AsyncIOMotorDatabase):
