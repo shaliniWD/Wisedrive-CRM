@@ -3624,46 +3624,6 @@ async def create_payroll_batch(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@api_router.get("/hr/payroll/batches")
-async def get_payroll_batches(
-    country_id: Optional[str] = None,
-    status: Optional[str] = None,
-    year: Optional[int] = None,
-    current_user: dict = Depends(get_current_user)
-):
-    """Get payroll batches - HR/Finance"""
-    role_code = current_user.get("role_code", "")
-    
-    if role_code not in ["CEO", "HR_MANAGER", "FINANCE_MANAGER", "COUNTRY_HEAD"]:
-        raise HTTPException(status_code=403, detail="Not authorized")
-    
-    batches = await payroll_service.get_batches(country_id, status, year)
-    return batches
-
-
-@api_router.get("/hr/payroll/batch/{batch_id}")
-async def get_payroll_batch(
-    batch_id: str,
-    current_user: dict = Depends(get_current_user)
-):
-    """Get a single batch with records"""
-    role_code = current_user.get("role_code", "")
-    
-    if role_code not in ["CEO", "HR_MANAGER", "FINANCE_MANAGER", "COUNTRY_HEAD"]:
-        raise HTTPException(status_code=403, detail="Not authorized")
-    
-    batch = await payroll_service.get_batch(batch_id)
-    if not batch:
-        raise HTTPException(status_code=404, detail="Batch not found")
-    
-    records = await payroll_service.get_batch_records(batch_id)
-    
-    return {
-        "batch": batch,
-        "records": records
-    }
-
-
 @api_router.put("/hr/payroll/batch/{batch_id}/record/{record_id}")
 async def update_batch_record(
     batch_id: str,
