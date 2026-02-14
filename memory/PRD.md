@@ -140,6 +140,7 @@ Recreate WiseDrive CRM (https://crm.wisedrive.com) design with a modern UI. Crea
 - [x] B2B payment fields (GST/TDS)
 - [x] Modern payslip with company logo
 - [x] Payment proof upload UI
+- [x] Full UI/UX Redesign (all pages match FinancePage style)
 
 ### P1 - High Priority (Next)
 - [ ] Bulk payment creation for monthly salary processing
