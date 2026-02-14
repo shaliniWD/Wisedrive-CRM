@@ -336,11 +336,10 @@ export default function AdminPage({ initialTab = 'employees', embedded = false }
   const handleMarkAttendance = async () => {
     if (!attendanceEmployee) return;
     try {
-      await hrApi.markAttendance({
-        user_id: attendanceEmployee.id,
+      await hrApi.saveEmployeeAttendance(attendanceEmployee.id, {
         date: attendanceData.date,
         status: attendanceData.status,
-        override_reason: 'Manual attendance entry'
+        notes: 'Manual attendance entry'
       });
       toast.success(`Attendance marked as ${attendanceData.status} for ${attendanceEmployee.name}`);
       setIsAttendanceModalOpen(false);
