@@ -59,7 +59,7 @@ class TestEmployeeList:
             "password": "password123",
             "country_code": "IN"
         })
-        token = response.json().get("token")
+        token = response.json().get("access_token")
         return {"Authorization": f"Bearer {token}"}
     
     @pytest.fixture(scope="class")
@@ -92,7 +92,7 @@ class TestSalaryStructure:
             "password": "password123",
             "country_code": "IN"
         })
-        token = response.json().get("token")
+        token = response.json().get("access_token")
         return {"Authorization": f"Bearer {token}"}
     
     @pytest.fixture(scope="class")
@@ -212,7 +212,7 @@ class TestAttendanceLeave:
             "password": "password123",
             "country_code": "IN"
         })
-        token = response.json().get("token")
+        token = response.json().get("access_token")
         return {"Authorization": f"Bearer {token}"}
     
     @pytest.fixture(scope="class")
@@ -322,7 +322,7 @@ class TestLeaveSummary:
             "password": "password123",
             "country_code": "IN"
         })
-        token = response.json().get("token")
+        token = response.json().get("access_token")
         return {"Authorization": f"Bearer {token}"}
     
     @pytest.fixture(scope="class")
@@ -401,7 +401,7 @@ class TestDocumentManagement:
             "password": "password123",
             "country_code": "IN"
         })
-        token = response.json().get("token")
+        token = response.json().get("access_token")
         return {"Authorization": f"Bearer {token}"}
     
     @pytest.fixture(scope="class")
@@ -512,7 +512,7 @@ class TestHRAuthorization:
             "password": "password123",
             "country_code": "IN"
         })
-        token = response.json().get("token")
+        token = response.json().get("access_token")
         return {"Authorization": f"Bearer {token}"}
     
     @pytest.fixture(scope="class")
