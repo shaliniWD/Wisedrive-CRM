@@ -217,7 +217,7 @@ export function AttendanceDashboard({ isHR }) {
                           </div>
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-600">
-                          {new Date(session.login_time).toLocaleTimeString()}
+                          {session.login_time ? new Date(session.login_time).toLocaleTimeString() : '-'}
                         </td>
                         <td className="px-4 py-3 text-sm">
                           {formatDuration(session.active_minutes)}
