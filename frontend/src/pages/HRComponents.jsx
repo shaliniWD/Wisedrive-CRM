@@ -1068,11 +1068,7 @@ export function PayrollDashboard({ isHR, isFinance }) {
                   <span>•</span>
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-indigo-600">Working Days:</span>
-                    <Input
-                      type="number"
-                      min="1"
-                      max="31"
-                      step="1"
+                    <NumericInput
                       value={batchWorkingDays ?? previewData.working_days}
                       onChange={(e) => handleWorkingDaysChange(e.target.value)}
                       className="w-16 h-7 text-center text-sm font-medium border-indigo-300 focus:border-indigo-500"
