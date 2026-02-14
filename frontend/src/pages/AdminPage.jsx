@@ -325,6 +325,31 @@ export default function AdminPage({ initialTab = 'employees', embedded = false }
       toast.error('Failed to rejoin employee');
     }
   };
+  
+  // Handle quick attendance marking
+  const openAttendanceModal = (employee) => {
+    setAttendanceEmployee(employee);
+    setAttendanceData({ date: new Date().toISOString().split('T')[0], status: 'present' });
+    setIsAttendanceModalOpen(true);
+  };
+  
+  const handleMarkAttendance = async () => {
+    if (!attendanceEmployee) return;
+    try {
+      await hrApi.markAttendance({
+        user_id: attendanceEmployee.id,
+        date: attendanceData.date,
+        status: attendanceData.status,
+        override_reason: 'Manual attendance entry'
+      });
+      toast.success(`Attendance marked as ${attendanceData.status} for ${attendanceEmployee.name}`);
+      setIsAttendanceModalOpen(false);
+      setAttendanceEmployee(null);
+      fetchEmployees();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to mark attendance');
+    }
+  };
 
   // Format currency
   const formatCurrency = (amount, symbol = '₹') => {
