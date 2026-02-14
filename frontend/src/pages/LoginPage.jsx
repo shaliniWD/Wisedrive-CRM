@@ -11,8 +11,8 @@ import { toast } from 'sonner';
 import { Loader2, Mail, Lock, Eye, EyeOff, Shield, ArrowRight, Globe } from 'lucide-react';
 import axios from 'axios';
 
-// Company Logo URL - Black version for login
-const COMPANY_LOGO = "https://customer-assets.emergentagent.com/job_crm-ui-refresh-1/artifacts/ao4efiny_Wisedrive%20New%20Logo%20Horizontal%20Black%20Trans%20BG.png";
+// Company Logo URL - New Black version
+const COMPANY_LOGO = "https://customer-assets.emergentagent.com/job_2c212edf-3905-43fa-ae89-0443a9324fc2/artifacts/6sjs7oid_Wisedrvie%20New%20Logo%20Black.png";
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
