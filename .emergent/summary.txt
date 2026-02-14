@@ -1,53 +1,76 @@
 <analysis>**original_problem_statement:**
-The user's initial goal was to build a scalable, multi-repository, enterprise-grade automotive platform named Wisedrive. The plan pivoted to focus on building out core business modules within the existing monolithic CRM application.
+The user's initial goal was to build a scalable automotive platform, Wisedrive. This has since focused on enhancing a monolithic CRM application. The current session addressed multiple user requests following a complex deployment debugging process.
 
-PRODUCT REQUIREMENTS:
-1.  **Phase 1 (HR Module):** A comprehensive HR module has been implemented, including Attendance, Payroll, Leave Management, RBAC, and data encryption.
-2.  **Payroll Enhancements (Iterative):**
-    *   **V1 (Completed):** Implemented initial enhancements to the payroll preview screen.
-    *   **V2 (Completed in this session):** Re-implemented the payroll preview screen UI and logic based on new user requirements.
-3.  **Phase 2 (Finance Module):** A functional Finance module already exists.
-4.  **Deployment:** The application needs to be deployed to a  subdomain for staging.
-5.  **Future Phases:** Implement Leads, Inspections, and Customers modules.
+PRODUCT REQUIREMENTS (from the latest user message):
+1.  **Login Page:** Remove the Demo Credentials section and replace the existing logo with a new one provided by the user.
+2.  **IP-based Country Selection:** Automatically pre-fill the country on the login page based on the user's IP, but only if it matches a country in the database.
+3.  **Dynamic Currency Symbol:** In the payroll module, display '₹' for users in India and '$' as a default for others (e.g., CEO).
+4.  **Enhanced Leave Application:** Allow a Country Head to select an employee when applying for leave on their behalf.
+5.  **Leave RBAC:** The Country Head role should apply for leaves, and the HR Manager should approve them.
+6.  **Countries Tab RBAC:** Only the CEO login should be able to see and edit the Countries tab.
+7.  **Attendance Tab Rework:** Completely redesign the attendance tab, removing the existing session-based logic and replacing it with an employee-wise calendar view showing leave statuses.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The application is a full-stack CRM with a FastAPI backend and a React frontend. The HR module is feature-rich, with employee management, attendance, and payroll. The Payroll Preview screen has been successfully updated to meet the user's latest (V2) requirements. This new UI allows editing a batch-wide Working Days value in the header and editing individual Absent Days per employee, with all salary calculations happening in real-time on the frontend. The feature has been tested and is working correctly.
+The application is a full-stack CRM with FastAPI and React. In this session, the agent addressed a complex deployment issue where the production URL () was pointing to an outdated database. To fix this, a new admin endpoint () was created to allow the user to seed the production database. The agent also fixed deployment build errors related to / version conflicts.
+
+Following the deployment fixes, the user provided a list of 7 new features and UI changes. The agent has implemented the first 6 of these requests, including UI changes to the login page, payroll, leave management, and role-based access control for various features. The final and most significant task, a complete rework of the Attendance tab, has not been started.
 
 **Last working item**:
--   **Last item agent was working:** Following the successful implementation of the Payroll V2 features, the user's last message explicitly requested to proceed with the deployment to . The agent's next step is to obtain the necessary Load Balancer information to facilitate this.
--   **Status:** NOT STARTED
--   **Agent Testing Done:** N/A
--   **Which testing method agent to use?** The  will likely be required.
--   **User Testing Done:** N/A
+-   **Last item agent was working:** Implementing the list of 7 new features requested by the user. The agent had just finished the 6th item: restricting the Countries tab access to the CEO role by updating the frontend tab-rendering logic in . The next step is to begin the 7th item.
+-   **Status:** IN PROGRESS
+-   **Agent Testing Done:** N
+-   **Which testing method agent to use?** Frontend testing agent and manual screenshots after the final task (Attendance rework) is complete.
+-   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
-There are no pending bugs or issues.
+-   **Issue 1: Production Database Seeding (P0)**
+    -   **Description:** The production environment () uses a separate MongoDB Atlas instance with old data. The agent created an endpoint () to fix this, but the user must deploy the latest code and then call this endpoint to see any of the new changes and data corrections.
+    -   **Status:** BLOCKED (waiting on user to deploy and trigger the reset endpoint).
+    -   **Why fix this issue:** This is a critical blocker. Until this is done, the user will not see *any* of the agent's work on the production staging URL.
 
 **In progress Task List**:
-None.
+-   **Task 1: Complete User Request Batch (P0)**
+    -   **Where to resume:** The agent needs to start work on the final remaining item from the user's list of 7 requests: Rework the Attendance tab. This involves removing the existing session-based logic from  and replacing it with a new employee-wise calendar view.
+    -   **What will be achieved with this?** The application's attendance functionality will match the user's new requirements for a more intuitive, calendar-based visualization.
+    -   **Status:** IN PROGRESS
+    -   **Should Test frontend/backend/both after fix?** Both.
+    -   **Blocked on something:** No.
 
 **Upcoming and Future Tasks**
 **Upcoming Tasks:**
-*   **P0: Deployment to :**
-    *   Obtain the public Load Balancer IP/hostname.
-    *   Provide it to the user for DNS configuration.
-*   **P1: Full Staging Environment Validation:** Once deployed, perform end-to-end testing of the HR module against the user's 14-point readiness checklist on the  environment.
+*   **P0: Finalize and Test the 7-item feature batch:** Once the Attendance tab is reworked, perform a full end-to-end test of all 7 new features.
+*   **P1: Full Staging Validation:** After the user confirms the production DB is reset, perform the 14-point HR readiness checklist on .
 
 **Future Tasks:**
-*   **P2:** Implement Leads, Inspections, and Customer modules.
-*   **P3:** Integrate the  library.
-*   **P4:** Implement Razorpay and Invincible Ocean clients.
-*   **P5:** Plan the migration from a monolith to a microservices architecture.
+*   Implement Leads, Inspections, and Customer modules.
+*   Integrate the  library.
+*   Implement Razorpay and Invincible Ocean clients.
+*   Plan the migration from a monolith to a microservices architecture.
 
 **Completed work in this session**
--   **Re-implemented Payroll Preview UI/UX (V2):**
-    -   **Working Days:** Removed the Working Days column from the employee table and made the value in the summary header an editable numeric input that recalculates the entire payroll batch on change.
-    -   **Absent Days:** Renamed the Attendance Days column to Absent Days and implemented it as a simple, editable numeric input.
-    -   **Real-time Recalculation:** Implemented client-side logic in  to handle real-time salary recalculations when Working Days or Absent Days are modified. The formula used is .
-    -   **UI Simplification:** Ensured all editable numeric inputs are plain, without  steppers.
--   **Testing:** Successfully verified the new payroll preview functionality end-to-end using manual testing (screenshots) and the , which reported 100% pass rates for both frontend and backend tests.
+-   **Deployment & DB Sync:**
+    -   Fixed deployment build failures by removing  and using  directly.
+    -   Created a secure admin endpoint () to allow the user to seed the production MongoDB Atlas database.
+-   **Login Page Overhaul:**
+    -   Removed the hardcoded Demo Credentials section from .
+    -   Replaced the old logo with the new user-provided logo.
+    -   Implemented IP-based lookup to pre-fill the country on the login page.
+-   **Payroll UI Enhancements:**
+    -   Implemented a dynamic currency icon ( or ) in  based on the logged-in user's country.
+-   **Leave Management Rework:**
+    -   Updated the Apply Leave modal in  to include an employee selector, visible to the Country Head role.
+    -   Updated the backend () and  to allow applying for leave on behalf of another employee.
+-   **RBAC Implementation:**
+    -   Restricted visibility of the Countries tab in  to the CEO role.
+    -   Implemented a fixed display order for the main navigation tabs in .
+-   **Employee Management Features:**
+    -   Added a file upload component for employee photos in .
+    -   Added a manual Employee ID field with duplicate ID validation.
+    -   Added a Leads Management tab to the employee modal to control lead flow and assign cities.
+-   **Bug Fixes:**
+    -   Fixed a recurring bug with numeric inputs in the payroll preview where users could not type multiple digits.
 
 **Earlier issues found/mentioned but not fixed**
 -   None.
@@ -59,66 +82,71 @@ None.
 
 
 **Key Technical Concepts**
--   **Backend:** FastAPI, Pydantic, MongoDB
--   **Frontend:** React, Shadcn UI, Axios. Heavy client-side state management in  for real-time calculations.
--   **Payroll Logic:** The frontend now takes user input for Absent Days and converts it to  before sending it to the existing backend endpoints, avoiding major backend logic changes. A batch-wide, editable Working Days value is now managed on the client to perform all calculations.
+-   **Frontend:** Extensive use of React hooks (, , ) for complex state management in large components. Conditional rendering is heavily used for RBAC.
+-   **Backend:** Direct usage of  for password hashing. A critical admin endpoint was added for database seeding to handle environment differences.
+-   **Deployment Strategy:** The session highlighted a critical difference between local/preview environments and a production-like environment with a separate, managed database (MongoDB Atlas). The solution was to create a data-seeding mechanism via a secure API endpoint.
 
 **key DB schema**
--   ****: Stores employee data.
--   ****: Tracks payroll runs, month, year, and status.
--   ****: Detailed payroll data for each employee in a batch.
+-   ****: Now contains  (boolean) and  (array of strings) to manage lead assignments.
+-   ****: Includes  to track who submitted a leave request, enabling on-behalf submissions.
 
 **changes in tech stack**
--   None.
+-   The  library was removed from the backend dependencies and replaced with direct usage of  to resolve deployment errors.
 
 **All files of reference**
--   **/app/frontend/src/components/PayrollDashboard.jsx**: The primary frontend component that was heavily refactored to implement the new payroll preview UI and real-time calculation logic.
--   **/app/backend/services/payroll_service.py**: The core backend service for payroll calculations. No changes were required in this session as the frontend adapts the data to fit the existing API contract.
--   **/app/backend/server.py**: Defines the API endpoints for payroll. No changes were made.
--   **/app/memory/PRD.md**: Updated to reflect the completion of the V2 payroll task.
+-   **/app/frontend/src/pages/AdminPage.jsx**: Heavily modified to add the Leads Management tab, photo upload, employee ID field, and password reset UI.
+-   **/app/frontend/src/pages/HRComponents.jsx**: Heavily modified for the leave management rework, payroll currency icon, and the numeric input bug fix.
+-   **/app/backend/server.py**: Core file for this session. Modified to fix deployment errors, add the critical  endpoint, and update leave/RBAC logic.
+-   **/app/frontend/src/pages/LoginPage.jsx**: UI updated with a new logo, removal of demo credentials, and IP-based country detection logic.
 
 **Areas that need refactoring**:
--    is complex due to extensive client-side calculation logic. It could be broken down into smaller, more focused components.
--    remains a very large component that would benefit from refactoring.
+-   ****: This component is excessively large and contains the  as a nested function, making it very difficult to maintain. It should be broken down into multiple smaller files and components.
+-   ****: This file contains several large, distinct components (, , ). They should be extracted into their own component files for better organization and readability.
 
 **key api endpoints**
--   : Generates the initial payroll preview.
--   : Updates an entire payroll batch.
--   : Creates the final payroll batch from the preview.
+-   : **(New & Critical)** An admin-only endpoint created to seed the production database with correct user data, bypassing environment differences.
+-   : **(Updated)** Modified to accept an optional  to allow authorized users (Country Head) to apply for leave on behalf of others.
+-   : **(Updated)** Now accepts an  array to save city preferences for lead assignments.
+-   : **(New)** Allows HR/CEO to reset an employee's password.
 
 **Critical Info for New Agent**
--   **Payroll V2 is Complete:** The user's request to overhaul the payroll preview screen has been fully implemented, tested, and verified.
--   **Next Priority is Deployment:** The immediate next task, as confirmed by the user, is to deploy the application to the  staging environment. Your first action should be to determine the Load Balancer IP/hostname and communicate it to the user for DNS setup.
--   **Client-Side Logic:** Be aware that most of the new payroll calculation logic resides on the client-side in . The backend's role is primarily to provide the initial data and persist the final, user-approved batch.
+-   **Start with Attendance Rework:** Your immediate priority is to implement the user's final request: rework the Attendance tab into a calendar-based view. This will involve significant changes in .
+-   **Production Data is Separate:** The most important context is that the user's staging URL () uses a different database (MongoDB Atlas) than the one you are developing against (localhost). Do not assume your local data changes will appear on their URL. The user must deploy your code and then call  to see the updated data. Remind the user of this if they report data discrepancies.
+-   **Component Complexity:** Be aware that  and  are very large and complex files. Changes may have unintended side effects. Tread carefully and test thoroughly.
 
 **documents and test reports created in this job**
--    (Updated)
--    (Test report for Payroll V2 enhancements)
+-    (Updated multiple times)
+-   
 
 **Last 10 User Messages and any pending HUMAN messages**
--   **User:** Approved the plan to implement the Payroll V2 changes.
--   **Agent:** Implemented the changes to the Payroll Preview UI and logic.
--   **Agent:** Tested the new features with screenshots, showing that editing Working Days and Absent Days correctly recalculated salaries in real time.
--   **Agent:** Ran the , which confirmed all features were working as expected with 100% pass rates.
--   **Agent:** Finished the task and presented the next steps.
--   **User:** Responded with Deployment to crmdev.wisedrive.com - obtain Load Balancer IP/hostname for DNS configuration, making this the next clear priority.
+-   **User:** Provided a list of 7 new features/fixes to implement, starting with removing demo credentials from the login page and ending with a complete rework of the attendance tab. (This is the current task list).
+-   **User:** Confirmed that  is still showing old data and that they have re-linked the domain.
+-   **User:** Provided deployment error logs (/ issue).
+-   **User:** Reported that changes (DB cleanup, password reset) were not visible on .
+-   **User:** Approved the previous work and requested to move on to the full staging validation.
+-   **User:** Reported the 012 numeric input bug and requested the password reset feature.
+-   **User:** Confirmed the SSL issue was resolved and requested a database cleanup.
 
 **Project Health Check:**
--   **Healthy:** The application is stable, and the most recent feature development was completed successfully.
+-   **Broken:** The **Attendance** feature is considered broken as it does not meet the user's new requirements and is pending a complete rework.
+-   **Mocked:** None.
 
 **3rd Party Integrations**
+-   **bcrypt:** Used directly for password hashing.
 -   **reportlab:** For PDF generation.
 -   **boto3:** For S3-compatible object storage.
 -   **cryptography:** For AES-256 encryption.
 
 **Testing status**
--   **Testing agent used after significant changes:** YES. The Payroll V2 feature was thoroughly validated by the testing agent.
+-   **Testing agent used after significant changes:** YES (on a previous feature set).
 -   **Troubleshoot agent used after agent stuck in loop:** NO
 -   **Test files created:** None.
--   **Known regressions:** None.
+-   **Known regressions:** A numeric input bug fix caused a regression where only single digits could be entered. This was subsequently fixed, but should be re-verified.
 
 **Credentials to test flow:**
 -   **CEO:**  / 
+-   **HR Manager:**  / 
+-   **Finance Manager:**  / 
 
 **What agent forgot to execute**
--   The agent did not forget to execute any tasks. All work was performed according to the user's prioritized requests.</analysis>
+-   The agent has correctly prioritized the user's requests and is mid-way through the latest batch. The final, most complex task of reworking the attendance tab is pending but has not been forgotten.</analysis>
