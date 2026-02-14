@@ -1902,17 +1902,17 @@ async def get_employee_leave_summary(
     
     for att in attendance:
         month = int(att["date"].split("-")[1])
-        status = att.get("status", "present")
+        att_status = att.get("status", "present")
         
-        if status == "present":
+        if att_status == "present":
             monthly_summary[month]["present"] += 1
-        elif status == "absent":
+        elif att_status == "absent":
             monthly_summary[month]["absent"] += 1
             monthly_summary[month]["leaves_taken"] += 1
-        elif status == "half_day":
+        elif att_status == "half_day":
             monthly_summary[month]["half_day"] += 1
             monthly_summary[month]["leaves_taken"] += 0.5
-        elif status == "on_leave":
+        elif att_status == "on_leave":
             monthly_summary[month]["on_leave"] += 1
             monthly_summary[month]["leaves_taken"] += 1
         
