@@ -253,13 +253,17 @@ Vendor Payment → Finance Manager creates with GST/TDS → Submit for Approval 
 ```
 
 ## Last Updated
-February 14, 2026 - **HR Module UI Improvements**: 
+February 14, 2026 - **Bug Fix: Attendance UI Update**: 
+- **Fixed:** Attendance marking now updates the employee table immediately without requiring manual page refresh
+- **Root Cause:** The `today_attendance` field was returned by the backend but not displayed in the UI
+- **Solution:** Added color-coded "Today: status" badges in the Status column (present=green, absent=red, half_day=amber, late=orange, on_leave=gray)
+- **Verification:** Testing agent confirmed 100% pass rate for both backend and frontend
+
+Previous (Feb 14, 2026):
 1. Removed top mini dashboard cards from HR Module page
 2. Added "On Leave Today" card to employee data table summary section (5 cards now)
 3. Replaced leave action buttons with attendance action button (Clock icon)
 4. Added Quick Attendance modal to mark attendance directly from employee table
-
-Previous: 5 New HR Features Complete (photo URL, on-leave status, quick leave actions, freelancer role, on leave today card).
 
 ## Platform Architecture v5.0
 
