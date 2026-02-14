@@ -1858,6 +1858,50 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
       setLeadsSaving(false);
     }
   };
+  
+  // Fetch employee payslips
+  const fetchEmployeePayslips = async () => {
+    if (!employee?.id) return;
+    setPayslipsLoading(true);
+    try {
+      const response = await payrollApi.getEmployeePayslips(employee.id);
+      setEmployeePayslips(response.data || []);
+    } catch (error) {
+      console.error('Failed to load payslips:', error);
+      setEmployeePayslips([]);
+    } finally {
+      setPayslipsLoading(false);
+    }
+  };
+  
+  // Fetch payslips when tab changes to payslips
+  useEffect(() => {
+    if (currentTab === 'payslips' && employee?.id) {
+      fetchEmployeePayslips();
+    }
+  }, [currentTab, employee?.id]);
+  
+  // Download payslip PDF
+  const handleDownloadPayslip = async (payslipId, month, year) => {
+    setDownloadingPayslip(payslipId);
+    try {
+      const response = await payrollApi.downloadPayslip(payslipId);
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Payslip_${employee.name}_${month}_${year}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success('Payslip downloaded');
+    } catch (error) {
+      toast.error('Failed to download payslip');
+    } finally {
+      setDownloadingPayslip(null);
+    }
+  };
 
   // Handle photo file selection
   const handlePhotoSelect = async (e) => {
