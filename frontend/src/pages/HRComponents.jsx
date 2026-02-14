@@ -1338,13 +1338,13 @@ export function PayrollDashboard({ isHR, isFinance }) {
                   <th className="px-3 py-2 text-left text-xs font-semibold text-slate-600 sticky left-0 bg-slate-50">Employee</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600">Gross</th>
                   <th className="px-3 py-2 text-center text-xs font-semibold text-slate-600 bg-amber-50">
-                    <span>Absent Days</span>
+                    <span>LOP Days</span>
                   </th>
                   <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-red-50">PF</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-red-50">PT</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-red-50">TDS</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-red-50">ESI</th>
-                  <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-amber-50">Attend. Ded.</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-amber-50">LOP Deduction</th>
                   <th className="px-3 py-2 text-center text-xs font-semibold text-slate-600 bg-gray-100">
                     <span>Other Deductions</span>
                   </th>
@@ -1369,13 +1369,13 @@ export function PayrollDashboard({ isHR, isFinance }) {
                     <td className="px-3 py-2 bg-amber-50/50">
                       <div className="flex flex-col items-center">
                         <NumericInput
-                          value={previewEdits[record.employee_id]?.absent_days ?? 0}
-                          onChange={(e) => handlePreviewEdit(record.employee_id, 'absent_days', e.target.value)}
-                          className={`w-16 h-7 text-center text-xs ${previewErrors[record.employee_id]?.absent_days ? 'border-red-500 bg-red-50' : ''}`}
-                          data-testid={`absent-days-${record.employee_id}`}
+                          value={previewEdits[record.employee_id]?.lop_days ?? previewEdits[record.employee_id]?.absent_days ?? 0}
+                          onChange={(e) => handlePreviewEdit(record.employee_id, 'lop_days', e.target.value)}
+                          className={`w-16 h-7 text-center text-xs ${previewErrors[record.employee_id]?.lop_days ? 'border-red-500 bg-red-50' : ''}`}
+                          data-testid={`lop-days-${record.employee_id}`}
                         />
-                        {previewErrors[record.employee_id]?.absent_days && (
-                          <span className="text-[10px] text-red-600 mt-0.5">{previewErrors[record.employee_id].absent_days}</span>
+                        {previewErrors[record.employee_id]?.lop_days && (
+                          <span className="text-[10px] text-red-600 mt-0.5">{previewErrors[record.employee_id].lop_days}</span>
                         )}
                       </div>
                     </td>
