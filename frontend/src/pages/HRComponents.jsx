@@ -1250,8 +1250,7 @@ export function PayrollDashboard({ isHR, isFinance }) {
                 <tr className="bg-slate-50 border-b">
                   <th className="px-3 py-2 text-left text-xs font-semibold text-slate-600 sticky left-0 bg-slate-50">Employee</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600">Gross</th>
-                  <th className="px-3 py-2 text-center text-xs font-semibold text-slate-600 bg-indigo-50">Working</th>
-                  <th className="px-3 py-2 text-center text-xs font-semibold text-slate-600 bg-amber-50">Attended</th>
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-slate-600 bg-amber-50">Absent</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-red-50">Statutory</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-amber-50">Attend. Ded.</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600">Other</th>
@@ -1277,12 +1276,7 @@ export function PayrollDashboard({ isHR, isFinance }) {
                       {formatCurrency(record.gross_salary, record.currency_symbol)}
                     </td>
                     
-                    {/* Working Days (read-only) */}
-                    <td className="px-3 py-2 text-center bg-indigo-50/50 text-indigo-700 font-medium">
-                      {record.working_days_in_month || '-'}
-                    </td>
-                    
-                    {/* Attendance Days */}
+                    {/* Absent Days */}
                     {editingRecord === record.id && selectedBatch.status === 'DRAFT' ? (
                       <td className="px-2 py-1 bg-amber-50/50">
                         <Input
@@ -1290,17 +1284,23 @@ export function PayrollDashboard({ isHR, isFinance }) {
                           min="0"
                           max={record.working_days_in_month}
                           step="1"
-                          value={editingValues.attendance_days ?? record.attendance_days}
-                          onChange={(e) => setEditingValues({
-                            ...editingValues, 
-                            attendance_days: parseInt(e.target.value, 10) || 0
-                          })}
+                          value={editingValues.absent_days ?? record.unapproved_absent_days ?? 0}
+                          onChange={(e) => {
+                            const absentDays = parseInt(e.target.value, 10) || 0;
+                            const workingDays = record.working_days_in_month || 0;
+                            const attendanceDays = workingDays - absentDays;
+                            setEditingValues({
+                              ...editingValues, 
+                              absent_days: absentDays,
+                              attendance_days: Math.max(0, attendanceDays)
+                            });
+                          }}
                           className="h-6 text-xs w-14 text-center"
                         />
                       </td>
                     ) : (
                       <td className="px-3 py-2 text-center bg-amber-50/50 text-amber-700 font-medium">
-                        {record.attendance_days ?? '-'}
+                        {record.unapproved_absent_days ?? (record.working_days_in_month - (record.attendance_days || 0)) ?? 0}
                       </td>
                     )}
                     
