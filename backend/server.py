@@ -2129,6 +2129,733 @@ async def get_audit_stats(current_user: dict = Depends(get_current_user)):
     }
 
 
+# ==================== COMPREHENSIVE FINANCE MODULE ====================
+
+from models.finance import (
+    PaymentCreate, PaymentUpdate, PaymentApproval, PayslipData,
+    PAYMENT_STATUS_PENDING, PAYMENT_STATUS_SUBMITTED, PAYMENT_STATUS_APPROVED,
+    PAYMENT_STATUS_REJECTED, PAYMENT_STATUS_PAID, PAYMENT_MODES
+)
+
+
+@api_router.get("/finance/payments")
+async def get_finance_payments(
+    country_id: Optional[str] = None,
+    employee_id: Optional[str] = None,
+    payment_type: Optional[str] = None,
+    status: Optional[str] = None,
+    month: Optional[int] = None,
+    year: Optional[int] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all payments - filtered by role access"""
+    role_code = current_user.get("role_code", "")
+    user_country = current_user.get("country_id")
+    
+    # Check permission
+    if role_code not in ["CEO", "COUNTRY_HEAD", "FINANCE_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized to view finance data")
+    
+    query = {}
+    
+    # Apply country filter based on role
+    if role_code == "CEO":
+        if country_id:
+            query["country_id"] = country_id
+    else:
+        # Finance Manager and Country Head can only see their country
+        query["country_id"] = user_country
+    
+    if employee_id:
+        query["employee_id"] = employee_id
+    if payment_type:
+        query["payment_type"] = payment_type
+    if status:
+        query["status"] = status
+    if month:
+        query["month"] = month
+    if year:
+        query["year"] = year
+    
+    payments = await db.finance_payments.find(query, {"_id": 0}).sort([("year", -1), ("month", -1), ("created_at", -1)]).to_list(1000)
+    
+    # Enrich with employee details
+    for payment in payments:
+        if payment.get("employee_id"):
+            emp = await db.users.find_one(
+                {"id": payment["employee_id"]},
+                {"_id": 0, "name": 1, "email": 1, "employee_code": 1, "role_id": 1}
+            )
+            if emp:
+                payment["employee_name"] = emp.get("name")
+                payment["employee_email"] = emp.get("email")
+                payment["employee_code"] = emp.get("employee_code")
+                # Get role
+                if emp.get("role_id"):
+                    role = await db.roles.find_one({"id": emp["role_id"]}, {"_id": 0, "name": 1, "code": 1})
+                    if role:
+                        payment["employee_role"] = role.get("name")
+                        payment["employee_role_code"] = role.get("code")
+        
+        # Get proof count
+        proof_count = await db.payment_proofs.count_documents({"payment_id": payment["id"]})
+        payment["proof_count"] = proof_count
+        
+        # Get approver name
+        if payment.get("approved_by"):
+            approver = await db.users.find_one({"id": payment["approved_by"]}, {"_id": 0, "name": 1})
+            if approver:
+                payment["approved_by_name"] = approver.get("name")
+        
+        if payment.get("submitted_by"):
+            submitter = await db.users.find_one({"id": payment["submitted_by"]}, {"_id": 0, "name": 1})
+            if submitter:
+                payment["submitted_by_name"] = submitter.get("name")
+    
+    return payments
+
+
+@api_router.get("/finance/payments/{payment_id}")
+async def get_finance_payment(payment_id: str, current_user: dict = Depends(get_current_user)):
+    """Get single payment details"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "COUNTRY_HEAD", "FINANCE_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    payment = await db.finance_payments.find_one({"id": payment_id}, {"_id": 0})
+    if not payment:
+        raise HTTPException(status_code=404, detail="Payment not found")
+    
+    # Enrich with employee details
+    if payment.get("employee_id"):
+        emp = await db.users.find_one(
+            {"id": payment["employee_id"]},
+            {"_id": 0, "name": 1, "email": 1, "employee_code": 1, "role_id": 1, "department_id": 1,
+             "bank_name": 1, "bank_account_number": 1, "ifsc_code": 1, "pan_number": 1}
+        )
+        if emp:
+            payment["employee"] = emp
+            if emp.get("role_id"):
+                role = await db.roles.find_one({"id": emp["role_id"]}, {"_id": 0, "name": 1, "code": 1})
+                if role:
+                    payment["employee"]["role_name"] = role.get("name")
+                    payment["employee"]["role_code"] = role.get("code")
+            if emp.get("department_id"):
+                dept = await db.departments.find_one({"id": emp["department_id"]}, {"_id": 0, "name": 1})
+                if dept:
+                    payment["employee"]["department_name"] = dept.get("name")
+    
+    # Get proofs
+    payment["proofs"] = await db.payment_proofs.find({"payment_id": payment_id}, {"_id": 0}).to_list(20)
+    
+    return payment
+
+
+@api_router.post("/finance/payments")
+async def create_finance_payment(payment_data: PaymentCreate, current_user: dict = Depends(get_current_user)):
+    """Create a new payment record"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "FINANCE_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized to create payments")
+    
+    # Verify employee exists
+    emp = await db.users.find_one({"id": payment_data.employee_id}, {"_id": 0, "country_id": 1, "role_id": 1})
+    if not emp:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    # Check country access for Finance Manager
+    if role_code == "FINANCE_MANAGER":
+        if emp.get("country_id") != current_user.get("country_id"):
+            raise HTTPException(status_code=403, detail="Cannot create payment for employee in different country")
+    
+    # Check for duplicate payment
+    existing = await db.finance_payments.find_one({
+        "employee_id": payment_data.employee_id,
+        "month": payment_data.month,
+        "year": payment_data.year,
+        "payment_type": payment_data.payment_type
+    })
+    if existing:
+        raise HTTPException(status_code=400, detail=f"Payment already exists for {payment_data.month}/{payment_data.year}")
+    
+    payment_dict = payment_data.model_dump()
+    payment_dict["id"] = str(uuid.uuid4())
+    payment_dict["country_id"] = emp.get("country_id")
+    payment_dict["created_at"] = datetime.now(timezone.utc).isoformat()
+    payment_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
+    payment_dict["created_by"] = current_user["id"]
+    payment_dict["status"] = PAYMENT_STATUS_PENDING
+    
+    # Get country currency
+    if emp.get("country_id"):
+        country = await db.countries.find_one({"id": emp["country_id"]}, {"_id": 0, "currency": 1, "currency_symbol": 1})
+        if country:
+            payment_dict["currency"] = country.get("currency", "INR")
+    
+    await db.finance_payments.insert_one(payment_dict)
+    payment_dict.pop("_id", None)
+    
+    # Log audit
+    await audit_service.log(
+        entity_type="finance_payment",
+        entity_id=payment_dict["id"],
+        action="create",
+        user_id=current_user["id"],
+        new_values={"employee_id": payment_dict["employee_id"], "amount": payment_dict["net_amount"], "month": payment_dict["month"], "year": payment_dict["year"]}
+    )
+    
+    return payment_dict
+
+
+@api_router.put("/finance/payments/{payment_id}")
+async def update_finance_payment(payment_id: str, payment_data: PaymentUpdate, current_user: dict = Depends(get_current_user)):
+    """Update a payment record"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "FINANCE_MANAGER", "COUNTRY_HEAD"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    existing = await db.finance_payments.find_one({"id": payment_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Payment not found")
+    
+    # Finance Manager cannot edit approved or paid payments
+    if role_code == "FINANCE_MANAGER" and existing.get("status") in [PAYMENT_STATUS_APPROVED, PAYMENT_STATUS_PAID]:
+        raise HTTPException(status_code=403, detail="Cannot edit approved or paid payments")
+    
+    update_dict = {k: v for k, v in payment_data.model_dump().items() if v is not None}
+    update_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.finance_payments.update_one({"id": payment_id}, {"$set": update_dict})
+    
+    # Log audit
+    await audit_service.log(
+        entity_type="finance_payment",
+        entity_id=payment_id,
+        action="update",
+        user_id=current_user["id"],
+        old_values={"status": existing.get("status")},
+        new_values=update_dict
+    )
+    
+    payment = await db.finance_payments.find_one({"id": payment_id}, {"_id": 0})
+    return payment
+
+
+@api_router.patch("/finance/payments/{payment_id}/submit")
+async def submit_payment_for_approval(payment_id: str, current_user: dict = Depends(get_current_user)):
+    """Submit payment for approval by Country Manager"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "FINANCE_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    existing = await db.finance_payments.find_one({"id": payment_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Payment not found")
+    
+    if existing.get("status") != PAYMENT_STATUS_PENDING:
+        raise HTTPException(status_code=400, detail="Payment is not in pending status")
+    
+    await db.finance_payments.update_one(
+        {"id": payment_id},
+        {"$set": {
+            "status": PAYMENT_STATUS_SUBMITTED,
+            "submitted_by": current_user["id"],
+            "submitted_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    # Log audit
+    await audit_service.log(
+        entity_type="finance_payment",
+        entity_id=payment_id,
+        action="submit_for_approval",
+        user_id=current_user["id"]
+    )
+    
+    return {"status": PAYMENT_STATUS_SUBMITTED, "message": "Payment submitted for approval"}
+
+
+@api_router.patch("/finance/payments/{payment_id}/approve")
+async def approve_payment(payment_id: str, approval_data: PaymentApproval, current_user: dict = Depends(get_current_user)):
+    """Approve or reject payment - Country Manager only"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "COUNTRY_HEAD"]:
+        raise HTTPException(status_code=403, detail="Only Country Manager or CEO can approve payments")
+    
+    existing = await db.finance_payments.find_one({"id": payment_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Payment not found")
+    
+    if existing.get("status") != PAYMENT_STATUS_SUBMITTED:
+        raise HTTPException(status_code=400, detail="Payment must be submitted for approval first")
+    
+    # Country Head can only approve payments in their country
+    if role_code == "COUNTRY_HEAD":
+        if existing.get("country_id") != current_user.get("country_id"):
+            raise HTTPException(status_code=403, detail="Cannot approve payment from different country")
+    
+    if approval_data.action == "approve":
+        new_status = PAYMENT_STATUS_APPROVED
+        update_data = {
+            "status": new_status,
+            "approved_by": current_user["id"],
+            "approved_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+    elif approval_data.action == "reject":
+        new_status = PAYMENT_STATUS_REJECTED
+        update_data = {
+            "status": new_status,
+            "approved_by": current_user["id"],
+            "approved_at": datetime.now(timezone.utc).isoformat(),
+            "rejection_reason": approval_data.reason,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+    else:
+        raise HTTPException(status_code=400, detail="Invalid action. Use 'approve' or 'reject'")
+    
+    await db.finance_payments.update_one({"id": payment_id}, {"$set": update_data})
+    
+    # Log audit
+    await audit_service.log(
+        entity_type="finance_payment",
+        entity_id=payment_id,
+        action=f"payment_{approval_data.action}",
+        user_id=current_user["id"],
+        new_values={"status": new_status, "reason": approval_data.reason}
+    )
+    
+    return {"status": new_status, "message": f"Payment {approval_data.action}d successfully"}
+
+
+@api_router.patch("/finance/payments/{payment_id}/mark-paid")
+async def mark_payment_paid(
+    payment_id: str,
+    payment_mode: str,
+    transaction_reference: Optional[str] = None,
+    payment_date: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Mark payment as paid after approval"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "FINANCE_MANAGER", "COUNTRY_HEAD"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    existing = await db.finance_payments.find_one({"id": payment_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Payment not found")
+    
+    if existing.get("status") != PAYMENT_STATUS_APPROVED:
+        raise HTTPException(status_code=400, detail="Payment must be approved before marking as paid")
+    
+    update_data = {
+        "status": PAYMENT_STATUS_PAID,
+        "payment_mode": payment_mode,
+        "transaction_reference": transaction_reference,
+        "payment_date": payment_date or datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.finance_payments.update_one({"id": payment_id}, {"$set": update_data})
+    
+    # Log audit
+    await audit_service.log(
+        entity_type="finance_payment",
+        entity_id=payment_id,
+        action="payment_completed",
+        user_id=current_user["id"],
+        new_values={"payment_mode": payment_mode, "transaction_reference": transaction_reference}
+    )
+    
+    return {"status": PAYMENT_STATUS_PAID, "message": "Payment marked as paid"}
+
+
+@api_router.delete("/finance/payments/{payment_id}")
+async def delete_finance_payment(payment_id: str, current_user: dict = Depends(get_current_user)):
+    """Delete a payment - only pending payments can be deleted"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "FINANCE_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    existing = await db.finance_payments.find_one({"id": payment_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Payment not found")
+    
+    if existing.get("status") != PAYMENT_STATUS_PENDING:
+        raise HTTPException(status_code=400, detail="Only pending payments can be deleted")
+    
+    # Delete proofs first
+    await db.payment_proofs.delete_many({"payment_id": payment_id})
+    await db.finance_payments.delete_one({"id": payment_id})
+    
+    # Log audit
+    await audit_service.log(
+        entity_type="finance_payment",
+        entity_id=payment_id,
+        action="delete",
+        user_id=current_user["id"]
+    )
+    
+    return {"message": "Payment deleted"}
+
+
+# -------------------- PAYMENT PROOFS --------------------
+
+@api_router.get("/finance/payments/{payment_id}/proofs")
+async def get_payment_proofs(payment_id: str, current_user: dict = Depends(get_current_user)):
+    """Get payment proofs/receipts"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "COUNTRY_HEAD", "FINANCE_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    proofs = await db.payment_proofs.find({"payment_id": payment_id}, {"_id": 0}).to_list(20)
+    return proofs
+
+
+@api_router.post("/finance/payments/{payment_id}/proofs")
+async def add_payment_proof(
+    payment_id: str,
+    file_name: str,
+    file_url: str,
+    file_type: str = "image",
+    current_user: dict = Depends(get_current_user)
+):
+    """Add payment proof/receipt"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "FINANCE_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Verify payment exists
+    payment = await db.finance_payments.find_one({"id": payment_id}, {"_id": 0})
+    if not payment:
+        raise HTTPException(status_code=404, detail="Payment not found")
+    
+    proof = {
+        "id": str(uuid.uuid4()),
+        "payment_id": payment_id,
+        "file_name": file_name,
+        "file_url": file_url,
+        "file_type": file_type,
+        "uploaded_by": current_user["id"],
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.payment_proofs.insert_one(proof)
+    proof.pop("_id", None)
+    
+    return proof
+
+
+@api_router.delete("/finance/payments/{payment_id}/proofs/{proof_id}")
+async def delete_payment_proof(payment_id: str, proof_id: str, current_user: dict = Depends(get_current_user)):
+    """Delete payment proof"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "FINANCE_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    result = await db.payment_proofs.delete_one({"id": proof_id, "payment_id": payment_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Proof not found")
+    
+    return {"message": "Proof deleted"}
+
+
+# -------------------- PAYSLIP GENERATION --------------------
+
+@api_router.get("/finance/payments/{payment_id}/payslip")
+async def generate_payslip(payment_id: str, current_user: dict = Depends(get_current_user)):
+    """Generate payslip data for PDF generation"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "COUNTRY_HEAD", "FINANCE_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    payment = await db.finance_payments.find_one({"id": payment_id}, {"_id": 0})
+    if not payment:
+        raise HTTPException(status_code=404, detail="Payment not found")
+    
+    # Get employee details
+    emp = await db.users.find_one({"id": payment["employee_id"]}, {"_id": 0})
+    if not emp:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    # Get role
+    role_name = "Employee"
+    role_code_emp = ""
+    if emp.get("role_id"):
+        role = await db.roles.find_one({"id": emp["role_id"]}, {"_id": 0, "name": 1, "code": 1})
+        if role:
+            role_name = role.get("name", "Employee")
+            role_code_emp = role.get("code", "")
+    
+    # Get department
+    dept_name = ""
+    if emp.get("department_id"):
+        dept = await db.departments.find_one({"id": emp["department_id"]}, {"_id": 0, "name": 1})
+        if dept:
+            dept_name = dept.get("name", "")
+    
+    # Get country currency
+    currency = "INR"
+    currency_symbol = "₹"
+    if payment.get("country_id"):
+        country = await db.countries.find_one({"id": payment["country_id"]}, {"_id": 0, "currency": 1, "currency_symbol": 1})
+        if country:
+            currency = country.get("currency", "INR")
+            currency_symbol = country.get("currency_symbol", "₹")
+    
+    # Get salary structure for detailed breakdown
+    salary_structure = await db.salary_structures.find_one(
+        {"user_id": payment["employee_id"], "effective_to": None},
+        {"_id": 0}
+    )
+    
+    is_mechanic = role_code_emp == "MECHANIC" or payment.get("payment_type") == "mechanic_payout"
+    
+    payslip_data = {
+        # Company info
+        "company_name": "WiseDrive Technologies",
+        "company_address": "Bangalore, India",
+        
+        # Employee info
+        "employee_name": emp.get("name", ""),
+        "employee_code": emp.get("employee_code", ""),
+        "employee_email": emp.get("email", ""),
+        "department": dept_name,
+        "designation": role_name,
+        
+        # Bank details
+        "bank_name": emp.get("bank_name"),
+        "account_number": emp.get("bank_account_number"),
+        "ifsc_code": emp.get("ifsc_code"),
+        "pan_number": emp.get("pan_number"),
+        
+        # Payment period
+        "month": payment["month"],
+        "year": payment["year"],
+        "payment_date": payment.get("payment_date"),
+        
+        # For salary payments
+        "is_mechanic": is_mechanic,
+        "basic_salary": salary_structure.get("basic_salary", 0) if salary_structure else 0,
+        "hra": salary_structure.get("hra", 0) if salary_structure else 0,
+        "conveyance_allowance": salary_structure.get("conveyance_allowance", 0) if salary_structure else 0,
+        "medical_allowance": salary_structure.get("medical_allowance", 0) if salary_structure else 0,
+        "special_allowance": salary_structure.get("special_allowance", 0) if salary_structure else 0,
+        "variable_pay": salary_structure.get("variable_pay", 0) if salary_structure else 0,
+        "gross_salary": payment.get("gross_amount", 0),
+        
+        # Deductions
+        "pf_employee": salary_structure.get("pf_employee", 0) if salary_structure else 0,
+        "professional_tax": salary_structure.get("professional_tax", 0) if salary_structure else 0,
+        "income_tax": salary_structure.get("income_tax", 0) if salary_structure else 0,
+        "other_deductions": salary_structure.get("other_deductions", 0) if salary_structure else 0,
+        "total_deductions": payment.get("deductions", 0),
+        
+        # Net
+        "net_salary": payment.get("net_amount", 0),
+        
+        # For mechanic payouts
+        "inspections_count": payment.get("inspections_count", 0),
+        "rate_per_inspection": payment.get("rate_per_inspection", 0),
+        "total_inspection_pay": payment.get("inspections_count", 0) * payment.get("rate_per_inspection", 0),
+        "bonus_amount": payment.get("bonus_amount", 0),
+        
+        # Payment info
+        "payment_mode": payment.get("payment_mode"),
+        "transaction_reference": payment.get("transaction_reference"),
+        
+        # Currency
+        "currency": currency,
+        "currency_symbol": currency_symbol,
+        
+        # Status
+        "status": payment.get("status")
+    }
+    
+    return payslip_data
+
+
+# -------------------- FINANCE SUMMARY / DASHBOARD --------------------
+
+@api_router.get("/finance/summary")
+async def get_finance_summary(
+    country_id: Optional[str] = None,
+    month: Optional[int] = None,
+    year: Optional[int] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get finance summary/dashboard data"""
+    role_code = current_user.get("role_code", "")
+    user_country = current_user.get("country_id")
+    
+    if role_code not in ["CEO", "COUNTRY_HEAD", "FINANCE_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Default to current month/year
+    if not month:
+        month = datetime.now(timezone.utc).month
+    if not year:
+        year = datetime.now(timezone.utc).year
+    
+    # Build query with country filter
+    query = {"month": month, "year": year}
+    emp_query = {}
+    
+    if role_code == "CEO":
+        if country_id:
+            query["country_id"] = country_id
+            emp_query["country_id"] = country_id
+    else:
+        query["country_id"] = user_country
+        emp_query["country_id"] = user_country
+    
+    # Get total employees
+    total_employees = await db.users.count_documents({**emp_query, "is_active": True})
+    
+    # Get payment counts and amounts
+    payments = await db.finance_payments.find(query, {"_id": 0}).to_list(1000)
+    
+    total_payments = len(payments)
+    total_amount = sum(p.get("net_amount", 0) for p in payments)
+    
+    # By status
+    pending = [p for p in payments if p.get("status") == PAYMENT_STATUS_PENDING]
+    submitted = [p for p in payments if p.get("status") == PAYMENT_STATUS_SUBMITTED]
+    approved = [p for p in payments if p.get("status") == PAYMENT_STATUS_APPROVED]
+    paid = [p for p in payments if p.get("status") == PAYMENT_STATUS_PAID]
+    rejected = [p for p in payments if p.get("status") == PAYMENT_STATUS_REJECTED]
+    
+    # By payment type
+    salary_payments = [p for p in payments if p.get("payment_type") == "salary"]
+    mechanic_payouts = [p for p in payments if p.get("payment_type") == "mechanic_payout"]
+    
+    # Monthly trend (last 6 months)
+    monthly_trend = []
+    for i in range(6):
+        m = month - i
+        y = year
+        if m <= 0:
+            m += 12
+            y -= 1
+        
+        trend_query = {"month": m, "year": y}
+        if role_code != "CEO":
+            trend_query["country_id"] = user_country
+        elif country_id:
+            trend_query["country_id"] = country_id
+        
+        trend_payments = await db.finance_payments.find(trend_query, {"_id": 0, "net_amount": 1, "status": 1}).to_list(1000)
+        paid_trend = [p for p in trend_payments if p.get("status") == PAYMENT_STATUS_PAID]
+        
+        monthly_trend.append({
+            "month": m,
+            "year": y,
+            "total_amount": sum(p.get("net_amount", 0) for p in paid_trend),
+            "count": len(paid_trend)
+        })
+    
+    return {
+        "total_employees": total_employees,
+        "total_payments_this_month": total_payments,
+        "total_amount_this_month": total_amount,
+        "pending_approvals": len(submitted),  # Waiting for Country Manager approval
+        "pending_payments": len(pending),
+        "approved_payments": len(approved),
+        "paid_payments": len(paid),
+        "rejected_payments": len(rejected),
+        "salary_payments_count": len(salary_payments),
+        "salary_payments_amount": sum(p.get("net_amount", 0) for p in salary_payments),
+        "mechanic_payouts_count": len(mechanic_payouts),
+        "mechanic_payouts_amount": sum(p.get("net_amount", 0) for p in mechanic_payouts),
+        "status_breakdown": {
+            "pending": len(pending),
+            "submitted": len(submitted),
+            "approved": len(approved),
+            "paid": len(paid),
+            "rejected": len(rejected)
+        },
+        "monthly_trend": list(reversed(monthly_trend)),
+        "current_month": month,
+        "current_year": year
+    }
+
+
+@api_router.get("/finance/employees")
+async def get_finance_employees(
+    country_id: Optional[str] = None,
+    search: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get employees for payment creation"""
+    role_code = current_user.get("role_code", "")
+    user_country = current_user.get("country_id")
+    
+    if role_code not in ["CEO", "COUNTRY_HEAD", "FINANCE_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    query = {"is_active": True}
+    
+    if role_code == "CEO":
+        if country_id:
+            query["country_id"] = country_id
+    else:
+        query["country_id"] = user_country
+    
+    if search:
+        query["$or"] = [
+            {"name": {"$regex": search, "$options": "i"}},
+            {"email": {"$regex": search, "$options": "i"}},
+            {"employee_code": {"$regex": search, "$options": "i"}}
+        ]
+    
+    employees = await db.users.find(query, {"_id": 0, "hashed_password": 0}).to_list(500)
+    
+    # Enrich with role and salary info
+    for emp in employees:
+        if emp.get("role_id"):
+            role = await db.roles.find_one({"id": emp["role_id"]}, {"_id": 0, "name": 1, "code": 1})
+            if role:
+                emp["role_name"] = role.get("name")
+                emp["role_code"] = role.get("code")
+        
+        # Get salary structure
+        salary = await db.salary_structures.find_one(
+            {"user_id": emp["id"], "effective_to": None},
+            {"_id": 0, "gross_salary": 1, "net_salary": 1, "price_per_inspection": 1, "employment_type": 1}
+        )
+        if salary:
+            emp["salary_info"] = salary
+    
+    return employees
+
+
+@api_router.get("/finance/payment-modes")
+async def get_payment_modes():
+    """Get available payment modes"""
+    return [
+        {"code": "bank_transfer", "name": "Bank Transfer"},
+        {"code": "neft", "name": "NEFT"},
+        {"code": "rtgs", "name": "RTGS"},
+        {"code": "imps", "name": "IMPS"},
+        {"code": "upi", "name": "UPI"},
+        {"code": "cheque", "name": "Cheque"},
+        {"code": "cash", "name": "Cash"},
+        {"code": "other", "name": "Other"},
+    ]
+
+
 # ==================== SEED DATA ====================
 
 @api_router.post("/seed")
