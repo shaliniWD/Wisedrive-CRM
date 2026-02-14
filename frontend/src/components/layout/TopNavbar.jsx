@@ -3,13 +3,12 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { LogOut, LayoutDashboard } from 'lucide-react';
 
-// Map of tab names to routes
+// Map of tab names to routes - Admin merged into HR Module
 const tabRouteMap = {
   dashboard: { name: 'Dashboard', href: '/dashboard' },
   leads: { name: 'Leads', href: '/leads' },
   customers: { name: 'Customers', href: '/customers' },
   inspections: { name: 'Inspections', href: '/inspections' },
-  employees: { name: 'Admin', href: '/admin' },
   hr: { name: 'HR Module', href: '/hr' },
   finance: { name: 'Finance', href: '/finance' },
   settings: { name: 'Settings', href: '/settings' },
