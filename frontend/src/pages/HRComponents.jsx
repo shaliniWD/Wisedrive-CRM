@@ -442,11 +442,15 @@ export function PayrollDashboard({ isHR, isFinance }) {
         country_id: generateCountry
       });
       setPreviewData(res.data);
-      // Initialize preview edits with current values
+      // Set batch working days (editable at header level)
+      setBatchWorkingDays(res.data.working_days);
+      // Initialize preview edits with current values - now using absent_days (defaulting to 0)
       const initialEdits = {};
       res.data.records.forEach(record => {
+        // Calculate absent days from working days and attendance days
+        const absentDays = (record.working_days_in_month || res.data.working_days) - (record.attendance_days || record.working_days_in_month || res.data.working_days);
         initialEdits[record.employee_id] = {
-          attendance_days: record.attendance_days,
+          absent_days: Math.max(0, absentDays), // Default to 0 or calculated value
           other_deductions: record.other_deductions || 0
         };
       });
