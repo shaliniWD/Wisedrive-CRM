@@ -2260,37 +2260,53 @@ async def create_finance_payment(payment_data: PaymentCreate, current_user: dict
     if role_code not in ["CEO", "FINANCE_MANAGER"]:
         raise HTTPException(status_code=403, detail="Not authorized to create payments")
     
-    # Verify employee exists
-    emp = await db.users.find_one({"id": payment_data.employee_id}, {"_id": 0, "country_id": 1, "role_id": 1})
-    if not emp:
-        raise HTTPException(status_code=404, detail="Employee not found")
+    # B2B payment types don't require employee
+    b2b_types = ["vendor", "statutory", "legal"]
+    is_b2b = payment_data.payment_type in b2b_types
     
-    # Check country access for Finance Manager
-    if role_code == "FINANCE_MANAGER":
-        if emp.get("country_id") != current_user.get("country_id"):
-            raise HTTPException(status_code=403, detail="Cannot create payment for employee in different country")
+    country_id = current_user.get("country_id")
     
-    # Check for duplicate payment
-    existing = await db.finance_payments.find_one({
-        "employee_id": payment_data.employee_id,
-        "month": payment_data.month,
-        "year": payment_data.year,
-        "payment_type": payment_data.payment_type
-    })
-    if existing:
-        raise HTTPException(status_code=400, detail=f"Payment already exists for {payment_data.month}/{payment_data.year}")
+    if not is_b2b:
+        # Verify employee exists for non-B2B payments
+        if not payment_data.employee_id:
+            raise HTTPException(status_code=400, detail="Employee ID is required for this payment type")
+        
+        emp = await db.users.find_one({"id": payment_data.employee_id}, {"_id": 0, "country_id": 1, "role_id": 1})
+        if not emp:
+            raise HTTPException(status_code=404, detail="Employee not found")
+        
+        # Check country access for Finance Manager
+        if role_code == "FINANCE_MANAGER":
+            if emp.get("country_id") != current_user.get("country_id"):
+                raise HTTPException(status_code=403, detail="Cannot create payment for employee in different country")
+        
+        country_id = emp.get("country_id")
+        
+        # Check for duplicate payment (only for employee payments)
+        existing = await db.finance_payments.find_one({
+            "employee_id": payment_data.employee_id,
+            "month": payment_data.month,
+            "year": payment_data.year,
+            "payment_type": payment_data.payment_type
+        })
+        if existing:
+            raise HTTPException(status_code=400, detail=f"Payment already exists for {payment_data.month}/{payment_data.year}")
+    else:
+        # For B2B, vendor_name is required
+        if not payment_data.vendor_name:
+            raise HTTPException(status_code=400, detail="Vendor name is required for B2B payments")
     
     payment_dict = payment_data.model_dump()
     payment_dict["id"] = str(uuid.uuid4())
-    payment_dict["country_id"] = emp.get("country_id")
+    payment_dict["country_id"] = country_id
     payment_dict["created_at"] = datetime.now(timezone.utc).isoformat()
     payment_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
     payment_dict["created_by"] = current_user["id"]
     payment_dict["status"] = PAYMENT_STATUS_PENDING
     
     # Get country currency
-    if emp.get("country_id"):
-        country = await db.countries.find_one({"id": emp["country_id"]}, {"_id": 0, "currency": 1, "currency_symbol": 1})
+    if country_id:
+        country = await db.countries.find_one({"id": country_id}, {"_id": 0, "currency": 1, "currency_symbol": 1})
         if country:
             payment_dict["currency"] = country.get("currency", "INR")
     
@@ -2303,7 +2319,14 @@ async def create_finance_payment(payment_data: PaymentCreate, current_user: dict
         entity_id=payment_dict["id"],
         action="create",
         user_id=current_user["id"],
-        new_values={"employee_id": payment_dict["employee_id"], "amount": payment_dict["net_amount"], "month": payment_dict["month"], "year": payment_dict["year"]}
+        new_values={
+            "employee_id": payment_dict.get("employee_id"),
+            "vendor_name": payment_dict.get("vendor_name"),
+            "payment_type": payment_dict["payment_type"],
+            "amount": payment_dict["net_amount"],
+            "month": payment_dict["month"],
+            "year": payment_dict["year"]
+        }
     )
     
     return payment_dict
