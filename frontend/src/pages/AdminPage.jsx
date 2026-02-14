@@ -2770,6 +2770,111 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
                 </div>
               )}
             </TabsContent>
+
+            {/* Leads Management Tab */}
+            <TabsContent value="leads" className="mt-0 space-y-4">
+              <div className="bg-slate-50 p-4 rounded-xl border">
+                <h4 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
+                  <Users className="h-4 w-4 text-blue-500" /> Lead Assignment Settings
+                </h4>
+                
+                {/* Lead Active Toggle */}
+                <div className="bg-white p-4 rounded-lg border mb-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h5 className="font-medium text-slate-800">Lead Assignment Status</h5>
+                      <p className="text-sm text-gray-500 mt-1">
+                        {leadsActive 
+                          ? 'This employee is receiving leads from the system' 
+                          : 'Lead flow is currently paused for this employee'}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Button
+                        variant={leadsActive ? "outline" : "default"}
+                        size="sm"
+                        disabled={leadsSaving}
+                        onClick={() => handleLeadsToggle(false)}
+                        className={!leadsActive ? "bg-red-600 hover:bg-red-700" : ""}
+                        data-testid="leads-inactive-btn"
+                      >
+                        {leadsSaving && !leadsActive && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
+                        <PauseCircle className="h-4 w-4 mr-1" /> Inactive
+                      </Button>
+                      <Button
+                        variant={leadsActive ? "default" : "outline"}
+                        size="sm"
+                        disabled={leadsSaving}
+                        onClick={() => handleLeadsToggle(true)}
+                        className={leadsActive ? "bg-emerald-600 hover:bg-emerald-700" : ""}
+                        data-testid="leads-active-btn"
+                      >
+                        {leadsSaving && leadsActive && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
+                        <PlayCircle className="h-4 w-4 mr-1" /> Active
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* City Selection */}
+                <div className="bg-white p-4 rounded-lg border">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <h5 className="font-medium text-slate-800">Assigned Cities</h5>
+                      <p className="text-sm text-gray-500 mt-1">
+                        Select which cities' leads this employee should receive
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      disabled={leadsSaving}
+                      onClick={saveAssignedCities}
+                      className="bg-gradient-to-r from-blue-600 to-blue-700"
+                      data-testid="save-cities-btn"
+                    >
+                      {leadsSaving && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
+                      Save Cities
+                    </Button>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-2 mt-4">
+                    {availableCities.map((city) => (
+                      <label
+                        key={city}
+                        className={`flex items-center gap-2 p-3 border rounded-lg cursor-pointer transition-all ${
+                          selectedCities.includes(city)
+                            ? 'bg-blue-50 border-blue-400 text-blue-700'
+                            : 'bg-white hover:bg-gray-50'
+                        }`}
+                      >
+                        <Checkbox
+                          checked={selectedCities.includes(city)}
+                          onCheckedChange={() => handleCityToggle(city)}
+                          data-testid={`city-${city.toLowerCase().replace(/\s/g, '-')}`}
+                        />
+                        <span className="text-sm font-medium">{city}</span>
+                      </label>
+                    ))}
+                  </div>
+
+                  {selectedCities.length > 0 && (
+                    <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <p className="text-xs text-blue-700 font-medium">
+                        Selected: {selectedCities.join(', ')}
+                      </p>
+                    </div>
+                  )}
+
+                  {selectedCities.length === 0 && (
+                    <div className="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
+                      <p className="text-xs text-amber-700">
+                        No cities selected. Employee will receive leads from all cities.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </TabsContent>
           </div>
         </Tabs>
       </DialogContent>
