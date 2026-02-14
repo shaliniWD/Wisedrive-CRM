@@ -167,13 +167,14 @@ class PayrollService:
             # Attendance
             "working_days_in_month": working_days,
             "per_day_salary": round(per_day_salary, 2),
-            "unapproved_absent_days": unapproved_absent,
+            "lop_days": unapproved_absent,  # LOP days (replaces unapproved_absent_days in UI)
+            "unapproved_absent_days": unapproved_absent,  # Keep for backward compatibility
             "attendance_deduction": round(attendance_deduction, 2),
             
             # Attendance summary
             "present_days": attendance.get("present_days", 0),
             "pending_days": attendance.get("pending_days", 0),
-            "absent_days": attendance.get("absent_days", 0),
+            "absent_days": attendance.get("absent_days", 0),  # Keep for compatibility
             "approved_days": attendance.get("approved_days", 0),
             "total_hours_worked": attendance.get("total_hours_worked", 0),
             
