@@ -353,264 +353,860 @@ export function AttendanceDashboard({ isHR }) {
   );
 }
 
-// ==================== PAYROLL DASHBOARD ====================
+// ==================== PAYROLL DASHBOARD (NEW BATCH-BASED GOVERNANCE) ====================
 export function PayrollDashboard({ isHR, isFinance }) {
+  // View states
+  const [view, setView] = useState('batches'); // batches, preview, batch-detail
   const [loading, setLoading] = useState(true);
-  const [payrollRecords, setPayrollRecords] = useState([]);
-  const [summary, setSummary] = useState(null);
+  
+  // Data states
+  const [batches, setBatches] = useState([]);
   const [countries, setCountries] = useState([]);
+  const [previewData, setPreviewData] = useState(null);
+  const [selectedBatch, setSelectedBatch] = useState(null);
+  const [batchRecords, setBatchRecords] = useState([]);
+  
+  // Filter states
   const [filterCountry, setFilterCountry] = useState('');
-  const [filterMonth, setFilterMonth] = useState(new Date().getMonth() + 1);
   const [filterYear, setFilterYear] = useState(new Date().getFullYear());
-  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterBatchStatus, setFilterBatchStatus] = useState('all');
+  
+  // Generate modal states
+  const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
+  const [generateMonth, setGenerateMonth] = useState(new Date().getMonth() + 1);
+  const [generateYear, setGenerateYear] = useState(new Date().getFullYear());
+  const [generateCountry, setGenerateCountry] = useState('');
   const [generating, setGenerating] = useState(false);
+  
+  // Payment modal states
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [paymentData, setPaymentData] = useState({
+    payment_date: new Date().toISOString().split('T')[0],
+    payment_mode: 'BANK_TRANSFER',
+    transaction_reference: '',
+    notes: ''
+  });
+  
+  // Editing states
+  const [editingRecord, setEditingRecord] = useState(null);
+  const [editingValues, setEditingValues] = useState({});
+  const [saving, setSaving] = useState(false);
 
   const fetchCountries = useCallback(async () => {
     try {
       const res = await hrApi.getAllCountries();
       setCountries(res.data || []);
+      if (res.data?.length > 0 && !filterCountry) {
+        setFilterCountry(res.data[0].id);
+        setGenerateCountry(res.data[0].id);
+      }
     } catch (e) { console.error('Failed to load countries'); }
-  }, []);
+  }, [filterCountry]);
 
-  const fetchPayroll = useCallback(async () => {
+  const fetchBatches = useCallback(async () => {
     setLoading(true);
     try {
-      const [recordsRes, summaryRes] = await Promise.all([
-        payrollApi.getAll({
-          month: filterMonth,
-          year: filterYear,
-          country_id: filterCountry || undefined,
-          status: filterStatus !== 'all' ? filterStatus : undefined
-        }),
-        payrollApi.getSummary(filterMonth, filterYear, filterCountry || undefined)
-      ]);
-      setPayrollRecords(recordsRes.data || []);
-      setSummary(summaryRes.data);
+      const res = await payrollApi.getBatches({
+        country_id: filterCountry || undefined,
+        year: filterYear,
+        status: filterBatchStatus !== 'all' ? filterBatchStatus : undefined
+      });
+      setBatches(res.data || []);
     } catch (e) { 
-      console.error('Failed to load payroll');
-      setPayrollRecords([]);
+      console.error('Failed to load batches');
+      setBatches([]);
     } finally { 
       setLoading(false); 
     }
-  }, [filterMonth, filterYear, filterCountry, filterStatus]);
+  }, [filterCountry, filterYear, filterBatchStatus]);
 
   useEffect(() => { fetchCountries(); }, [fetchCountries]);
-  useEffect(() => { fetchPayroll(); }, [fetchPayroll]);
+  useEffect(() => { if (view === 'batches') fetchBatches(); }, [fetchBatches, view]);
 
-  const handleGenerateBulk = async () => {
-    if (!window.confirm(`Generate payroll for ${filterMonth}/${filterYear}?`)) return;
+  // Generate Payroll Preview
+  const handleGeneratePreview = async () => {
+    if (!generateCountry) {
+      toast.error('Please select a country');
+      return;
+    }
     setGenerating(true);
     try {
-      await payrollApi.generateBulk({
-        month: filterMonth,
-        year: filterYear,
-        country_id: filterCountry || undefined
+      const res = await payrollApi.preview({
+        month: generateMonth,
+        year: generateYear,
+        country_id: generateCountry
       });
-      toast.success('Payroll generated');
-      fetchPayroll();
-    } catch (e) { 
-      toast.error(e.response?.data?.detail || 'Failed to generate payroll'); 
-    } finally { 
-      setGenerating(false); 
+      setPreviewData(res.data);
+      setIsGenerateModalOpen(false);
+      setView('preview');
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Failed to generate preview');
+    } finally {
+      setGenerating(false);
     }
   };
 
-  const handleMarkPaid = async (payrollId) => {
+  // Create Batch from Preview
+  const handleCreateBatch = async () => {
+    if (!previewData) return;
+    if (!window.confirm('Create payroll batch? Records can be edited before confirmation.')) return;
+    
+    setGenerating(true);
     try {
-      await payrollApi.markPaid(payrollId, { 
-        payment_date: new Date().toISOString().split('T')[0],
-        payment_method: 'bank_transfer'
+      const res = await payrollApi.createBatch({
+        month: previewData.month,
+        year: previewData.year,
+        country_id: previewData.country_id,
+        records: previewData.records
       });
-      toast.success('Marked as paid');
-      fetchPayroll();
-    } catch (e) { toast.error('Failed to mark paid'); }
+      toast.success('Batch created successfully');
+      setPreviewData(null);
+      setSelectedBatch(res.data);
+      fetchBatches();
+      // Fetch batch details
+      const batchRes = await payrollApi.getBatch(res.data.id);
+      setBatchRecords(batchRes.data.records || []);
+      setView('batch-detail');
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Failed to create batch');
+    } finally {
+      setGenerating(false);
+    }
   };
 
-  const handleGeneratePayslip = async (payrollId) => {
+  // Open batch detail
+  const handleViewBatch = async (batch) => {
+    setLoading(true);
     try {
-      const res = await payrollApi.generatePayslip(payrollId);
+      const res = await payrollApi.getBatch(batch.id);
+      setSelectedBatch(res.data.batch);
+      setBatchRecords(res.data.records || []);
+      setView('batch-detail');
+    } catch (e) {
+      toast.error('Failed to load batch');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Start editing a record
+  const handleStartEdit = (record) => {
+    setEditingRecord(record.id);
+    setEditingValues({
+      pf_employee: record.pf_employee || 0,
+      professional_tax: record.professional_tax || 0,
+      income_tax: record.income_tax || 0,
+      esi: record.esi || 0,
+      other_statutory: record.other_statutory || 0,
+      other_deductions: record.other_deductions || 0,
+      other_deductions_reason: record.other_deductions_reason || '',
+      attendance_deduction: record.attendance_deduction || 0,
+      attendance_override: record.attendance_override || false,
+      attendance_override_reason: record.attendance_override_reason || ''
+    });
+  };
+
+  // Save edited record
+  const handleSaveEdit = async () => {
+    if (!selectedBatch || !editingRecord) return;
+    setSaving(true);
+    try {
+      await payrollApi.updateBatchRecord(selectedBatch.id, editingRecord, editingValues);
+      toast.success('Record updated');
+      // Refresh batch
+      const res = await payrollApi.getBatch(selectedBatch.id);
+      setSelectedBatch(res.data.batch);
+      setBatchRecords(res.data.records || []);
+      setEditingRecord(null);
+      setEditingValues({});
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Failed to update');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Cancel edit
+  const handleCancelEdit = () => {
+    setEditingRecord(null);
+    setEditingValues({});
+  };
+
+  // Confirm batch
+  const handleConfirmBatch = async () => {
+    if (!selectedBatch) return;
+    if (!window.confirm('Confirm this batch? Records will be locked and payslips can be generated.')) return;
+    
+    try {
+      await payrollApi.confirmBatch(selectedBatch.id, { notes: 'Confirmed by HR' });
+      toast.success('Batch confirmed');
+      // Refresh
+      const res = await payrollApi.getBatch(selectedBatch.id);
+      setSelectedBatch(res.data.batch);
+      setBatchRecords(res.data.records || []);
+      fetchBatches();
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Failed to confirm batch');
+    }
+  };
+
+  // Mark batch as paid
+  const handleMarkPaid = async () => {
+    if (!selectedBatch || !paymentData.transaction_reference) {
+      toast.error('Transaction reference is required');
+      return;
+    }
+    
+    try {
+      await payrollApi.markBatchPaid(selectedBatch.id, paymentData);
+      toast.success('Batch marked as paid and closed');
+      setIsPaymentModalOpen(false);
+      // Refresh
+      const res = await payrollApi.getBatch(selectedBatch.id);
+      setSelectedBatch(res.data.batch);
+      setBatchRecords(res.data.records || []);
+      fetchBatches();
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Failed to mark paid');
+    }
+  };
+
+  // Delete draft batch
+  const handleDeleteBatch = async () => {
+    if (!selectedBatch) return;
+    if (!window.confirm('Delete this DRAFT batch? This cannot be undone.')) return;
+    
+    try {
+      await payrollApi.deleteBatch(selectedBatch.id);
+      toast.success('Batch deleted');
+      setSelectedBatch(null);
+      setBatchRecords([]);
+      setView('batches');
+      fetchBatches();
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Failed to delete');
+    }
+  };
+
+  // Generate payslip for a record (only after CONFIRMED)
+  const handleGeneratePayslip = async (recordId) => {
+    try {
+      const res = await payrollApi.generatePayslip(recordId);
       toast.success('Payslip generated');
-      if (res.data?.payslip_url) {
-        window.open(res.data.payslip_url, '_blank');
+      if (res.data?.payslip_path) {
+        // Refresh batch to get updated payslip_path
+        const batchRes = await payrollApi.getBatch(selectedBatch.id);
+        setBatchRecords(batchRes.data.records || []);
       }
-    } catch (e) { toast.error('Failed to generate payslip'); }
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Failed to generate payslip');
+    }
   };
 
   const formatCurrency = (amount, symbol = '₹') => {
-    if (!amount) return '-';
+    if (amount === null || amount === undefined) return '-';
     return `${symbol}${new Intl.NumberFormat('en-IN').format(amount)}`;
+  };
+
+  const getStatusBadge = (status) => {
+    const config = {
+      'DRAFT': 'bg-amber-100 text-amber-700 border-amber-200',
+      'CONFIRMED': 'bg-blue-100 text-blue-700 border-blue-200',
+      'CLOSED': 'bg-emerald-100 text-emerald-700 border-emerald-200',
+    };
+    return config[status] || config.DRAFT;
+  };
+
+  // Calculate net for preview editing
+  const calculateNet = (record, values) => {
+    const gross = record.gross_salary || 0;
+    const statutory = (values.pf_employee || 0) + (values.professional_tax || 0) + 
+                     (values.income_tax || 0) + (values.esi || 0) + (values.other_statutory || 0);
+    const attendance = values.attendance_deduction || 0;
+    const other = values.other_deductions || 0;
+    return gross - statutory - attendance - other;
   };
 
   return (
     <div className="p-6" data-testid="payroll-dashboard">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        {/* Summary Cards */}
-        {summary && (
-          <div className="flex gap-4">
-            <div className="px-4 py-2 bg-blue-50 rounded-lg border border-blue-200">
-              <span className="text-xs text-blue-600 block">Total Payroll</span>
-              <span className="font-bold text-blue-800">{formatCurrency(summary.total_gross)}</span>
+      {/* ========== BATCHES LIST VIEW ========== */}
+      {view === 'batches' && (
+        <>
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">Payroll Batches</h2>
+              <p className="text-sm text-gray-500">Manage monthly payroll batches</p>
             </div>
-            <div className="px-4 py-2 bg-emerald-50 rounded-lg border border-emerald-200">
-              <span className="text-xs text-emerald-600 block">Paid</span>
-              <span className="font-bold text-emerald-800">{summary.paid_count || 0}</span>
-            </div>
-            <div className="px-4 py-2 bg-amber-50 rounded-lg border border-amber-200">
-              <span className="text-xs text-amber-600 block">Pending</span>
-              <span className="font-bold text-amber-800">{summary.pending_count || 0}</span>
+            
+            <div className="flex items-center gap-3">
+              <Select value={filterCountry || 'all'} onValueChange={(v) => setFilterCountry(v === 'all' ? '' : v)}>
+                <SelectTrigger className="w-36" data-testid="filter-country">
+                  <SelectValue placeholder="All Countries" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Countries</SelectItem>
+                  {countries.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              
+              <Select value={String(filterYear)} onValueChange={(v) => setFilterYear(parseInt(v))}>
+                <SelectTrigger className="w-24">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[2023, 2024, 2025, 2026].map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+                </SelectContent>
+              </Select>
+
+              <Select value={filterBatchStatus} onValueChange={setFilterBatchStatus}>
+                <SelectTrigger className="w-32">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="DRAFT">Draft</SelectItem>
+                  <SelectItem value="CONFIRMED">Confirmed</SelectItem>
+                  <SelectItem value="CLOSED">Closed</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {isHR && (
+                <Button
+                  onClick={() => setIsGenerateModalOpen(true)}
+                  className="bg-gradient-to-r from-blue-600 to-blue-700"
+                  data-testid="generate-payroll-btn"
+                >
+                  <DollarSign className="h-4 w-4 mr-2" /> Generate Payroll
+                </Button>
+              )}
             </div>
           </div>
-        )}
 
-        {/* Filters & Actions */}
-        <div className="flex items-center gap-3">
-          <Select value={filterCountry || 'all'} onValueChange={(v) => setFilterCountry(v === 'all' ? '' : v)}>
-            <SelectTrigger className="w-36">
-              <SelectValue placeholder="All Countries" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Countries</SelectItem>
-              {countries.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          
-          <Select value={String(filterMonth)} onValueChange={(v) => setFilterMonth(parseInt(v))}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Array.from({ length: 12 }, (_, i) => (
-                <SelectItem key={i + 1} value={String(i + 1)}>
-                  {new Date(2000, i).toLocaleString('default', { month: 'long' })}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          
-          <Select value={String(filterYear)} onValueChange={(v) => setFilterYear(parseInt(v))}>
-            <SelectTrigger className="w-24">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {[2023, 2024, 2025].map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
-            </SelectContent>
-          </Select>
-
-          <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="w-28">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="paid">Paid</SelectItem>
-            </SelectContent>
-          </Select>
-
-          {isHR && (
-            <Button
-              onClick={handleGenerateBulk}
-              disabled={generating}
-              className="bg-gradient-to-r from-blue-600 to-blue-700"
-            >
-              {generating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <DollarSign className="h-4 w-4 mr-2" />}
-              Generate Payroll
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {/* Payroll Table */}
-      {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-        </div>
-      ) : (
-        <div className="border rounded-xl overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-slate-50 border-b">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600">Employee</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600">Period</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600">Gross</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600">Deductions</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600">Net Pay</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {payrollRecords.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="text-center py-12 text-gray-500">
-                    <DollarSign className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                    No payroll records found
-                  </td>
-                </tr>
-              ) : (
-                payrollRecords.map((record) => (
-                  <tr key={record.id} className="hover:bg-slate-50">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-medium">
-                          {record.employee_name?.charAt(0)}
-                        </div>
-                        <div>
-                          <span className="font-medium block">{record.employee_name}</span>
-                          <span className="text-xs text-gray-500">{record.employee_code}</span>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-sm">
-                      {new Date(2000, record.month - 1).toLocaleString('default', { month: 'short' })} {record.year}
-                    </td>
-                    <td className="px-4 py-3 text-right text-sm font-medium text-emerald-600">
-                      {formatCurrency(record.gross_salary)}
-                    </td>
-                    <td className="px-4 py-3 text-right text-sm text-red-600">
-                      {formatCurrency(record.total_deductions)}
-                    </td>
-                    <td className="px-4 py-3 text-right text-sm font-bold">
-                      {formatCurrency(record.net_salary)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                        record.status === 'paid' 
-                          ? 'bg-emerald-100 text-emerald-700' 
-                          : 'bg-amber-100 text-amber-700'
-                      }`}>
-                        {record.status === 'paid' ? 'Paid' : 'Pending'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        {record.status !== 'paid' && isFinance && (
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            </div>
+          ) : (
+            <div className="border rounded-xl overflow-hidden">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-slate-50 border-b">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600">Period</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600">Country</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600">Employees</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600">Total Gross</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600">Total Net</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600">Status</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600">Generated</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {batches.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="text-center py-12 text-gray-500">
+                        <DollarSign className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                        No payroll batches found
+                      </td>
+                    </tr>
+                  ) : (
+                    batches.map((batch) => (
+                      <tr key={batch.id} className="hover:bg-slate-50" data-testid={`batch-row-${batch.id}`}>
+                        <td className="px-4 py-3">
+                          <span className="font-medium">
+                            {new Date(2000, batch.month - 1).toLocaleString('default', { month: 'long' })} {batch.year}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm">{batch.country_name}</td>
+                        <td className="px-4 py-3 text-right text-sm">{batch.employee_count}</td>
+                        <td className="px-4 py-3 text-right text-sm font-medium text-emerald-600">
+                          {formatCurrency(batch.total_gross, batch.currency_symbol)}
+                        </td>
+                        <td className="px-4 py-3 text-right text-sm font-bold">
+                          {formatCurrency(batch.total_net, batch.currency_symbol)}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getStatusBadge(batch.status)}`}>
+                            {batch.status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-xs text-gray-500">
+                          {batch.generated_at ? new Date(batch.generated_at).toLocaleDateString() : '-'}
+                          <br />
+                          <span className="text-gray-400">by {batch.generated_by_name}</span>
+                        </td>
+                        <td className="px-4 py-3">
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handleMarkPaid(record.id)}
-                            className="text-emerald-600"
+                            onClick={() => handleViewBatch(batch)}
+                            data-testid={`view-batch-${batch.id}`}
                           >
-                            <CheckCircle className="h-4 w-4 mr-1" /> Pay
+                            View Details
                           </Button>
-                        )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ========== PREVIEW VIEW (EDITABLE GRID) ========== */}
+      {view === 'preview' && previewData && (
+        <>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <Button variant="outline" onClick={() => { setView('batches'); setPreviewData(null); }}>
+                ← Back to Batches
+              </Button>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Payroll Preview - {new Date(2000, previewData.month - 1).toLocaleString('default', { month: 'long' })} {previewData.year}
+                </h2>
+                <p className="text-sm text-gray-500">{previewData.country_name} • {previewData.employee_count} employees • {previewData.working_days} working days</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-4">
+              <div className="flex gap-3">
+                <div className="px-3 py-1.5 bg-emerald-50 rounded-lg border border-emerald-200">
+                  <span className="text-xs text-emerald-600 block">Total Gross</span>
+                  <span className="font-bold text-emerald-800">{formatCurrency(previewData.total_gross, previewData.currency_symbol)}</span>
+                </div>
+                <div className="px-3 py-1.5 bg-blue-50 rounded-lg border border-blue-200">
+                  <span className="text-xs text-blue-600 block">Total Net</span>
+                  <span className="font-bold text-blue-800">{formatCurrency(previewData.total_net, previewData.currency_symbol)}</span>
+                </div>
+              </div>
+              
+              <Button
+                onClick={handleCreateBatch}
+                disabled={generating}
+                className="bg-gradient-to-r from-blue-600 to-blue-700"
+                data-testid="create-batch-btn"
+              >
+                {generating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle className="h-4 w-4 mr-2" />}
+                Create Batch
+              </Button>
+            </div>
+          </div>
+
+          <div className="border rounded-xl overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-slate-50 border-b">
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-slate-600 sticky left-0 bg-slate-50">Employee</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600">Gross</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-red-50">PF</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-red-50">PT</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-red-50">TDS</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-red-50">ESI</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-amber-50">Attendance</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-gray-100">Other</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-blue-50">Net Salary</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {previewData.records.map((record) => (
+                  <tr key={record.employee_id} className="hover:bg-slate-50">
+                    <td className="px-3 py-2 sticky left-0 bg-white">
+                      <div className="flex items-center gap-2">
+                        <div className="h-7 w-7 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-medium">
+                          {record.employee_name?.charAt(0)}
+                        </div>
+                        <div>
+                          <span className="font-medium text-xs block">{record.employee_name}</span>
+                          <span className="text-[10px] text-gray-500">{record.unapproved_absent_days} absent days</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-3 py-2 text-right font-medium text-emerald-600">{formatCurrency(record.gross_salary, record.currency_symbol)}</td>
+                    <td className="px-3 py-2 text-right bg-red-50/50 text-red-600">{formatCurrency(record.pf_employee, record.currency_symbol)}</td>
+                    <td className="px-3 py-2 text-right bg-red-50/50 text-red-600">{formatCurrency(record.professional_tax, record.currency_symbol)}</td>
+                    <td className="px-3 py-2 text-right bg-red-50/50 text-red-600">{formatCurrency(record.income_tax, record.currency_symbol)}</td>
+                    <td className="px-3 py-2 text-right bg-red-50/50 text-red-600">{formatCurrency(record.esi, record.currency_symbol)}</td>
+                    <td className="px-3 py-2 text-right bg-amber-50/50 text-amber-600">{formatCurrency(record.attendance_deduction, record.currency_symbol)}</td>
+                    <td className="px-3 py-2 text-right bg-gray-100/50">{formatCurrency(record.other_deductions, record.currency_symbol)}</td>
+                    <td className="px-3 py-2 text-right bg-blue-50/50 font-bold text-blue-800">{formatCurrency(record.net_salary, record.currency_symbol)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+
+      {/* ========== BATCH DETAIL VIEW ========== */}
+      {view === 'batch-detail' && selectedBatch && (
+        <>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <Button variant="outline" onClick={() => { setView('batches'); setSelectedBatch(null); setBatchRecords([]); }}>
+                ← Back to Batches
+              </Button>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  {new Date(2000, selectedBatch.month - 1).toLocaleString('default', { month: 'long' })} {selectedBatch.year} - {selectedBatch.country_name}
+                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getStatusBadge(selectedBatch.status)}`}>
+                    {selectedBatch.status}
+                  </span>
+                </h2>
+                <p className="text-sm text-gray-500">{selectedBatch.employee_count} employees</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              {/* Summary Cards */}
+              <div className="flex gap-2">
+                <div className="px-3 py-1.5 bg-emerald-50 rounded-lg border border-emerald-200">
+                  <span className="text-xs text-emerald-600 block">Gross</span>
+                  <span className="font-bold text-emerald-800 text-sm">{formatCurrency(selectedBatch.total_gross, selectedBatch.currency_symbol)}</span>
+                </div>
+                <div className="px-3 py-1.5 bg-red-50 rounded-lg border border-red-200">
+                  <span className="text-xs text-red-600 block">Deductions</span>
+                  <span className="font-bold text-red-800 text-sm">
+                    {formatCurrency((selectedBatch.total_statutory_deductions || 0) + (selectedBatch.total_attendance_deductions || 0) + (selectedBatch.total_other_deductions || 0), selectedBatch.currency_symbol)}
+                  </span>
+                </div>
+                <div className="px-3 py-1.5 bg-blue-50 rounded-lg border border-blue-200">
+                  <span className="text-xs text-blue-600 block">Net</span>
+                  <span className="font-bold text-blue-800 text-sm">{formatCurrency(selectedBatch.total_net, selectedBatch.currency_symbol)}</span>
+                </div>
+              </div>
+
+              {/* Action Buttons based on status */}
+              {selectedBatch.status === 'DRAFT' && isHR && (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={handleDeleteBatch}
+                    className="text-red-600 border-red-300 hover:bg-red-50"
+                  >
+                    <XCircle className="h-4 w-4 mr-1" /> Delete
+                  </Button>
+                  <Button
+                    onClick={handleConfirmBatch}
+                    className="bg-gradient-to-r from-blue-600 to-blue-700"
+                    data-testid="confirm-batch-btn"
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" /> Confirm Batch
+                  </Button>
+                </>
+              )}
+              
+              {selectedBatch.status === 'CONFIRMED' && isHR && (
+                <Button
+                  onClick={() => setIsPaymentModalOpen(true)}
+                  className="bg-gradient-to-r from-emerald-600 to-emerald-700"
+                  data-testid="mark-paid-btn"
+                >
+                  <DollarSign className="h-4 w-4 mr-2" /> Mark as Paid
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Records Table */}
+          <div className="border rounded-xl overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-slate-50 border-b">
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-slate-600 sticky left-0 bg-slate-50">Employee</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600">Gross</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-red-50">Statutory</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-amber-50">Attendance</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600">Other</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-blue-50">Net</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-slate-600">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {batchRecords.map((record) => (
+                  <tr key={record.id} className={`hover:bg-slate-50 ${editingRecord === record.id ? 'bg-yellow-50' : ''}`}>
+                    <td className="px-3 py-2 sticky left-0 bg-white">
+                      <div className="flex items-center gap-2">
+                        <div className="h-7 w-7 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-medium">
+                          {record.employee_name?.charAt(0)}
+                        </div>
+                        <div>
+                          <span className="font-medium text-xs block">{record.employee_name}</span>
+                          <span className="text-[10px] text-gray-500">{record.employee_code}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-3 py-2 text-right font-medium text-emerald-600">
+                      {formatCurrency(record.gross_salary, record.currency_symbol)}
+                    </td>
+                    
+                    {/* Statutory Deductions */}
+                    {editingRecord === record.id ? (
+                      <td className="px-2 py-1 bg-red-50/50">
+                        <div className="flex flex-col gap-1">
+                          <Input
+                            type="number"
+                            value={editingValues.pf_employee}
+                            onChange={(e) => setEditingValues({...editingValues, pf_employee: parseFloat(e.target.value) || 0})}
+                            className="h-6 text-xs w-20"
+                            placeholder="PF"
+                          />
+                          <Input
+                            type="number"
+                            value={editingValues.professional_tax}
+                            onChange={(e) => setEditingValues({...editingValues, professional_tax: parseFloat(e.target.value) || 0})}
+                            className="h-6 text-xs w-20"
+                            placeholder="PT"
+                          />
+                          <Input
+                            type="number"
+                            value={editingValues.income_tax}
+                            onChange={(e) => setEditingValues({...editingValues, income_tax: parseFloat(e.target.value) || 0})}
+                            className="h-6 text-xs w-20"
+                            placeholder="TDS"
+                          />
+                        </div>
+                      </td>
+                    ) : (
+                      <td className="px-3 py-2 text-right bg-red-50/50 text-red-600">
+                        {formatCurrency(record.total_statutory_deductions, record.currency_symbol)}
+                      </td>
+                    )}
+                    
+                    {/* Attendance Deduction */}
+                    {editingRecord === record.id ? (
+                      <td className="px-2 py-1 bg-amber-50/50">
+                        <Input
+                          type="number"
+                          value={editingValues.attendance_deduction}
+                          onChange={(e) => setEditingValues({
+                            ...editingValues, 
+                            attendance_deduction: parseFloat(e.target.value) || 0,
+                            attendance_override: true,
+                            attendance_override_reason: 'Manual override by HR'
+                          })}
+                          className="h-6 text-xs w-20"
+                        />
+                      </td>
+                    ) : (
+                      <td className="px-3 py-2 text-right bg-amber-50/50 text-amber-600">
+                        {formatCurrency(record.attendance_deduction, record.currency_symbol)}
+                        {record.attendance_override && <span className="text-[10px] block text-amber-500">*overridden</span>}
+                      </td>
+                    )}
+                    
+                    {/* Other Deductions */}
+                    {editingRecord === record.id ? (
+                      <td className="px-2 py-1">
+                        <Input
+                          type="number"
+                          value={editingValues.other_deductions}
+                          onChange={(e) => setEditingValues({...editingValues, other_deductions: parseFloat(e.target.value) || 0})}
+                          className="h-6 text-xs w-20"
+                        />
+                      </td>
+                    ) : (
+                      <td className="px-3 py-2 text-right">
+                        {formatCurrency(record.other_deductions, record.currency_symbol)}
+                      </td>
+                    )}
+                    
+                    {/* Net Salary */}
+                    <td className="px-3 py-2 text-right bg-blue-50/50 font-bold text-blue-800">
+                      {editingRecord === record.id 
+                        ? formatCurrency(calculateNet(record, editingValues), record.currency_symbol)
+                        : formatCurrency(record.net_salary, record.currency_symbol)
+                      }
+                    </td>
+                    
+                    {/* Actions */}
+                    <td className="px-3 py-2">
+                      {selectedBatch.status === 'DRAFT' && isHR && (
+                        editingRecord === record.id ? (
+                          <div className="flex gap-1">
+                            <Button size="sm" variant="outline" onClick={handleSaveEdit} disabled={saving} className="h-7 text-xs">
+                              {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Save'}
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={handleCancelEdit} className="h-7 text-xs">Cancel</Button>
+                          </div>
+                        ) : (
+                          <Button size="sm" variant="ghost" onClick={() => handleStartEdit(record)} className="h-7 text-xs">
+                            Edit
+                          </Button>
+                        )
+                      )}
+                      {selectedBatch.status === 'CONFIRMED' && (
                         <Button
                           size="sm"
                           variant="ghost"
                           onClick={() => handleGeneratePayslip(record.id)}
+                          className="h-7 text-xs"
                         >
-                          <FileText className="h-4 w-4 mr-1" /> Payslip
+                          <FileText className="h-3 w-3 mr-1" /> Payslip
                         </Button>
-                      </div>
+                      )}
+                      {selectedBatch.status === 'CLOSED' && record.payslip_path && (
+                        <span className="text-xs text-emerald-600">✓ Paid</span>
+                      )}
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
+
+      {/* ========== GENERATE PAYROLL MODAL ========== */}
+      <Dialog open={isGenerateModalOpen} onOpenChange={setIsGenerateModalOpen}>
+        <DialogContent className="sm:max-w-[400px]" data-testid="generate-payroll-modal">
+          <DialogHeader className="border-b pb-4">
+            <DialogTitle className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white">
+                <DollarSign className="h-5 w-5" />
+              </div>
+              Generate Payroll
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Country *</Label>
+              <Select value={generateCountry} onValueChange={setGenerateCountry}>
+                <SelectTrigger className="h-10" data-testid="select-country">
+                  <SelectValue placeholder="Select Country" />
+                </SelectTrigger>
+                <SelectContent>
+                  {countries.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Month</Label>
+                <Select value={String(generateMonth)} onValueChange={(v) => setGenerateMonth(parseInt(v))}>
+                  <SelectTrigger className="h-10">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 12 }, (_, i) => (
+                      <SelectItem key={i + 1} value={String(i + 1)}>
+                        {new Date(2000, i).toLocaleString('default', { month: 'long' })}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Year</Label>
+                <Select value={String(generateYear)} onValueChange={(v) => setGenerateYear(parseInt(v))}>
+                  <SelectTrigger className="h-10">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[2024, 2025, 2026].map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-3 pt-4 border-t">
+              <Button variant="outline" onClick={() => setIsGenerateModalOpen(false)}>Cancel</Button>
+              <Button
+                onClick={handleGeneratePreview}
+                disabled={generating || !generateCountry}
+                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+              >
+                {generating && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                Preview Payroll
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ========== PAYMENT MODAL ========== */}
+      <Dialog open={isPaymentModalOpen} onOpenChange={setIsPaymentModalOpen}>
+        <DialogContent className="sm:max-w-[400px]" data-testid="payment-modal">
+          <DialogHeader className="border-b pb-4">
+            <DialogTitle className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 flex items-center justify-center text-white">
+                <CheckCircle className="h-5 w-5" />
+              </div>
+              Mark Batch as Paid
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-sm text-blue-800">
+                <strong>Total Amount:</strong> {selectedBatch && formatCurrency(selectedBatch.total_net, selectedBatch.currency_symbol)}
+              </p>
+              <p className="text-xs text-blue-600 mt-1">
+                This will mark all {selectedBatch?.employee_count} records as paid and close the batch.
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Payment Date *</Label>
+              <Input
+                type="date"
+                value={paymentData.payment_date}
+                onChange={(e) => setPaymentData({...paymentData, payment_date: e.target.value})}
+                className="h-10"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Payment Mode *</Label>
+              <Select value={paymentData.payment_mode} onValueChange={(v) => setPaymentData({...paymentData, payment_mode: v})}>
+                <SelectTrigger className="h-10">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="BANK_TRANSFER">Bank Transfer</SelectItem>
+                  <SelectItem value="NEFT">NEFT</SelectItem>
+                  <SelectItem value="RTGS">RTGS</SelectItem>
+                  <SelectItem value="IMPS">IMPS</SelectItem>
+                  <SelectItem value="UPI">UPI</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Transaction Reference *</Label>
+              <Input
+                value={paymentData.transaction_reference}
+                onChange={(e) => setPaymentData({...paymentData, transaction_reference: e.target.value})}
+                className="h-10"
+                placeholder="Enter transaction reference"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Notes</Label>
+              <textarea
+                value={paymentData.notes}
+                onChange={(e) => setPaymentData({...paymentData, notes: e.target.value})}
+                className="w-full min-h-[60px] px-3 py-2 border rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Optional notes..."
+              />
+            </div>
+            
+            <div className="flex justify-end gap-3 pt-4 border-t">
+              <Button variant="outline" onClick={() => setIsPaymentModalOpen(false)}>Cancel</Button>
+              <Button
+                onClick={handleMarkPaid}
+                disabled={!paymentData.transaction_reference}
+                className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800"
+              >
+                <CheckCircle className="h-4 w-4 mr-2" /> Confirm Payment
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
