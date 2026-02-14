@@ -3556,14 +3556,14 @@ async def apply_for_leave(
 @api_router.get("/hr/leave/my-requests")
 async def get_my_leave_requests(
     year: Optional[int] = None,
-    status: Optional[str] = None,
+    leave_status: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
     """Get current user's leave requests"""
     requests = await leave_service.get_employee_leaves(
         employee_id=current_user["id"],
         year=year,
-        status=status
+        status=leave_status
     )
     
     return requests
