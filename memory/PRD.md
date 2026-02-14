@@ -247,7 +247,7 @@ Vendor Payment → Finance Manager creates with GST/TDS → Submit for Approval 
 ```
 
 ## Last Updated
-February 14, 2026 - **Phase 1 Complete: API Contract Design** for Wisedrive Platform Architecture v5.0
+February 14, 2026 - **HR Module Consolidation Complete**: Admin tab merged into HR Module with 6 unified tabs (Employees, Attendance, Payroll, Leave, Roles, Countries)
 
 ## Platform Architecture v5.0
 
