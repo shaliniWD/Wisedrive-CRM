@@ -50,6 +50,7 @@ async def seed_v2_data(db: AsyncIOMotorDatabase):
         {"name": "Sales", "code": "SALES", "description": "Sales Department"},
         {"name": "Inspection", "code": "INSPECTION", "description": "Inspection Department"},
         {"name": "Human Resources", "code": "HR", "description": "HR Department"},
+        {"name": "Finance", "code": "FINANCE", "description": "Finance Department"},
     ]
     
     departments = {}
