@@ -3725,11 +3725,13 @@ async def get_attendance_calendar(
                 "reason": leave_info.get("reason") if leave_info else None
             }
         
-        # Count summary
-        working_days = sum(1 for d in emp_days.values() if d["status"] == "working")
+        # Count summary - include LOP days
+        working_days = sum(1 for d in emp_days.values() if d["status"] in ["working", "present"])
         leave_approved = sum(1 for d in emp_days.values() if d["status"] == "leave_approved")
         leave_pending = sum(1 for d in emp_days.values() if d["status"] == "leave_pending")
         holidays = sum(1 for d in emp_days.values() if d["status"] == "holiday")
+        lop_days = sum(1 for d in emp_days.values() if d["status"] in ["lop", "absent"])
+        half_days = sum(1 for d in emp_days.values() if d["status"] == "half_day")
         
         calendar_data.append({
             "employee_id": emp["id"],
@@ -3744,6 +3746,8 @@ async def get_attendance_calendar(
                 "leave_approved": leave_approved,
                 "leave_pending": leave_pending,
                 "holidays": holidays,
+                "lop_days": lop_days,
+                "half_days": half_days,
                 "total_days": last_day
             }
         })
@@ -3759,11 +3763,96 @@ async def get_attendance_calendar(
         "employees": calendar_data,
         "countries": countries,
         "legend": {
-            "working": {"color": "#10B981", "label": "Working Day"},
+            "working": {"color": "#10B981", "label": "Present"},
             "holiday": {"color": "#94A3B8", "label": "Weekend/Holiday"},
             "leave_approved": {"color": "#3B82F6", "label": "Leave (Approved)"},
-            "leave_pending": {"color": "#F59E0B", "label": "Leave (Pending)"}
+            "leave_pending": {"color": "#F59E0B", "label": "Leave (Pending)"},
+            "lop": {"color": "#EF4444", "label": "LOP/Absent"},
+            "half_day": {"color": "#F97316", "label": "Half Day"}
         }
+    }
+
+
+class AttendanceDayUpdate(BaseModel):
+    employee_id: str
+    date: str
+    status: str  # present, absent/lop, half_day, leave_approved, holiday
+    notes: Optional[str] = None
+
+
+@api_router.post("/hr/attendance/update-day")
+async def update_attendance_day(
+    data: AttendanceDayUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    """HR: Update attendance status for a specific employee on a specific day
+    
+    Status options:
+    - present: Employee was present (working day)
+    - absent/lop: Loss of Pay - employee was absent without approved leave
+    - half_day: Half day present
+    - leave_approved: Approved leave (manual override)
+    - holiday: Mark as holiday/weekly off
+    """
+    role_code = current_user.get("role_code", "")
+    
+    # Only HR_MANAGER can update attendance
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Only HR Manager can update attendance")
+    
+    # Validate date is not in the future
+    try:
+        check_date = datetime.strptime(data.date, "%Y-%m-%d")
+        if check_date.date() > datetime.now(timezone.utc).date():
+            raise HTTPException(status_code=400, detail="Cannot update attendance for future dates")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+    
+    # Validate employee exists
+    employee = await db.users.find_one({"id": data.employee_id}, {"_id": 0, "id": 1, "name": 1})
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    # Normalize status
+    status = data.status.lower()
+    if status == "absent":
+        status = "lop"
+    
+    valid_statuses = ["present", "lop", "half_day", "leave_approved", "holiday"]
+    if status not in valid_statuses:
+        raise HTTPException(status_code=400, detail=f"Invalid status. Must be one of: {valid_statuses}")
+    
+    now = datetime.now(timezone.utc).isoformat()
+    
+    # Upsert attendance override record
+    await db.attendance_overrides.update_one(
+        {
+            "employee_id": data.employee_id,
+            "date": data.date
+        },
+        {
+            "$set": {
+                "employee_id": data.employee_id,
+                "date": data.date,
+                "status": status,
+                "notes": data.notes,
+                "updated_by": current_user["id"],
+                "updated_by_name": current_user.get("name", ""),
+                "updated_at": now
+            },
+            "$setOnInsert": {
+                "id": str(uuid.uuid4()),
+                "created_at": now
+            }
+        },
+        upsert=True
+    )
+    
+    return {
+        "message": "Attendance updated successfully",
+        "employee_id": data.employee_id,
+        "date": data.date,
+        "status": status
     }
 
 
