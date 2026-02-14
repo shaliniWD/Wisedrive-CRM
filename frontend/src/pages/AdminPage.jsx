@@ -1354,20 +1354,140 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
             </TabsContent>
 
             {/* Documents Tab */}
-            <TabsContent value="documents" className="mt-0">
+            <TabsContent value="documents" className="mt-0 space-y-4">
+              {/* Upload Document Section */}
+              <div className="bg-blue-50 p-4 rounded-xl border border-blue-200">
+                <h4 className="text-sm font-semibold text-blue-800 mb-3 flex items-center gap-2">
+                  <FileText className="h-4 w-4" /> Upload New Document
+                </h4>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-2">
+                    <Label className="text-xs">Document Type</Label>
+                    <Select value={docForm.document_type || ''} onValueChange={(v) => setDocForm({...docForm, document_type: v})}>
+                      <SelectTrigger className="h-9"><SelectValue placeholder="Select type" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="aadhar">Aadhar Card</SelectItem>
+                        <SelectItem value="pan">PAN Card</SelectItem>
+                        <SelectItem value="passport">Passport</SelectItem>
+                        <SelectItem value="driving_license">Driving License</SelectItem>
+                        <SelectItem value="bank_statement">Bank Statement</SelectItem>
+                        <SelectItem value="education">Education Certificate</SelectItem>
+                        <SelectItem value="experience">Experience Letter</SelectItem>
+                        <SelectItem value="offer_letter">Offer Letter</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">Document Name</Label>
+                    <Input 
+                      value={docForm.document_name || ''} 
+                      onChange={(e) => setDocForm({...docForm, document_name: e.target.value})}
+                      placeholder="e.g., Aadhar Card - John" 
+                      className="h-9" 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">Document URL / Reference</Label>
+                    <Input 
+                      value={docForm.document_url || ''} 
+                      onChange={(e) => setDocForm({...docForm, document_url: e.target.value})}
+                      placeholder="https://..." 
+                      className="h-9" 
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end mt-3">
+                  <Button 
+                    size="sm"
+                    onClick={async () => {
+                      if (!employee || !docForm.document_type || !docForm.document_name) {
+                        toast.error('Please fill document type and name');
+                        return;
+                      }
+                      try {
+                        await hrApi.addEmployeeDocument(employee.id, docForm);
+                        toast.success('Document added');
+                        setDocForm({ document_type: '', document_name: '', document_url: '' });
+                        loadEmployeeData(employee.id);
+                      } catch (error) {
+                        toast.error('Failed to add document');
+                      }
+                    }}
+                    className="bg-gradient-to-r from-blue-600 to-blue-700"
+                  >
+                    <Plus className="h-4 w-4 mr-1" /> Add Document
+                  </Button>
+                </div>
+              </div>
+
+              {/* Document List */}
               {documents.length === 0 ? (
-                <div className="text-center text-gray-500 py-8">
+                <div className="text-center text-gray-500 py-8 border rounded-xl">
                   <FileText className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                  <p>No documents uploaded</p>
+                  <p>No documents uploaded yet</p>
+                  <p className="text-xs mt-1">Use the form above to add onboarding documents</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-3">
-                  {documents.map((doc) => (
-                    <div key={doc.id} className="p-4 border rounded-xl bg-slate-50">
-                      <p className="font-medium text-sm">{doc.document_name}</p>
-                      <p className="text-xs text-gray-500">{doc.document_type}</p>
-                    </div>
-                  ))}
+                <div className="border rounded-xl overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-slate-50 border-b">
+                        <th className="px-4 py-2 text-left text-xs font-semibold text-slate-600">Document Type</th>
+                        <th className="px-4 py-2 text-left text-xs font-semibold text-slate-600">Name</th>
+                        <th className="px-4 py-2 text-left text-xs font-semibold text-slate-600">Uploaded</th>
+                        <th className="px-4 py-2 text-left text-xs font-semibold text-slate-600">Status</th>
+                        <th className="px-4 py-2 text-center text-xs font-semibold text-slate-600">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {documents.map((doc) => (
+                        <tr key={doc.id} className="hover:bg-slate-50">
+                          <td className="px-4 py-3">
+                            <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                              <FileText className="h-3 w-3" />
+                              {doc.document_type?.replace(/_/g, ' ').toUpperCase()}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 font-medium">{doc.document_name}</td>
+                          <td className="px-4 py-3 text-gray-500 text-xs">
+                            {doc.uploaded_at ? new Date(doc.uploaded_at).toLocaleDateString() : '-'}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                              doc.verified ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
+                            }`}>
+                              {doc.verified ? 'Verified' : 'Pending'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <div className="flex justify-center gap-1">
+                              {doc.document_url && (
+                                <a href={doc.document_url} target="_blank" rel="noopener noreferrer" className="p-1.5 text-blue-600 hover:bg-blue-50 rounded">
+                                  <Eye className="h-4 w-4" />
+                                </a>
+                              )}
+                              <button 
+                                onClick={async () => {
+                                  if (!window.confirm('Delete this document?')) return;
+                                  try {
+                                    await hrApi.deleteEmployeeDocument(employee.id, doc.id);
+                                    toast.success('Document deleted');
+                                    loadEmployeeData(employee.id);
+                                  } catch (error) {
+                                    toast.error('Failed to delete');
+                                  }
+                                }}
+                                className="p-1.5 text-red-600 hover:bg-red-50 rounded"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </TabsContent>
