@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { hrApi, rolesApi, departmentsApi, teamsApi } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -17,7 +17,7 @@ import {
   Plus, Loader2, Pencil, Users, Globe, Search, ChevronDown, ChevronUp,
   FileText, Calendar, DollarSign, History, Eye, X, PauseCircle, PlayCircle,
   Building, Phone, Mail, MapPin, Briefcase, Clock, CheckCircle, AlertCircle,
-  Shield, UserX, UserPlus, Settings, Lock, CreditCard
+  Shield, UserX, UserPlus, Settings, Lock, CreditCard, Upload, Trash2, Camera
 } from 'lucide-react';
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
