@@ -3,10 +3,11 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 
 const Input = React.forwardRef(({ className, type, onFocus, ...props }, ref) => {
-  // Handle clearing 0 value on focus for number inputs
+  // Handle selecting all text on focus for number inputs with value 0
   const handleFocus = (e) => {
-    if (type === "number" && e.target.value === "0") {
-      e.target.value = "";
+    if (type === "number") {
+      // Select all text so user can immediately type to replace
+      e.target.select();
     }
     if (onFocus) {
       onFocus(e);
