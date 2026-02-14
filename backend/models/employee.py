@@ -71,6 +71,7 @@ class EmployeeUpdate(BaseModel):
     department_id: Optional[str] = None
     team_id: Optional[str] = None
     role_id: Optional[str] = None
+    role_ids: Optional[List[str]] = None  # Multiple roles support
     date_of_birth: Optional[str] = None
     gender: Optional[str] = None
     address: Optional[str] = None
@@ -79,8 +80,13 @@ class EmployeeUpdate(BaseModel):
     pincode: Optional[str] = None
     employee_code: Optional[str] = None
     employment_type: Optional[str] = None
+    employment_status: Optional[str] = None  # active, exited
     joining_date: Optional[str] = None
     probation_end_date: Optional[str] = None
+    exit_date: Optional[str] = None
+    exit_reason: Optional[str] = None
+    exit_notes: Optional[str] = None
+    rejoin_date: Optional[str] = None
     weekly_off_day: Optional[int] = None
     is_available_for_leads: Optional[bool] = None
     lead_assignment_paused_reason: Optional[str] = None
