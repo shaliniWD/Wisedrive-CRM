@@ -253,27 +253,20 @@ Vendor Payment → Finance Manager creates with GST/TDS → Submit for Approval 
 ```
 
 ## Last Updated
-February 14, 2026 - **Data Cleanup & Numeric Input Bug Fix**:
-1. **Database Cleanup:**
-   - Removed all test data except 3 login credentials:
-     - CEO: kalyan@wisedrive.com / password123
-     - HR Manager: hr@wisedrive.com / password123
-     - Finance Manager: finance@wisedrive.com / password123
-   - Added 2 test employees with salary structures (John Sales, Mike Mechanic)
-   - Fixed user role_id, country_id, department_id to use UUID format
+February 14, 2026 - **Password Management & Numeric Input Bug Fix v2**:
+1. **Password Reset Feature (HR/CEO Only):**
+   - Added `POST /api/hr/employees/{id}/reset-password` endpoint
+   - Added password reset UI button (Lock icon) in employee actions
+   - Modal shows employee name/email, password input with validation
+   - Audit logging for password reset actions
 
-2. **Numeric Input Bug Fix:**
-   - Removed increment/decrement spinners from all number inputs
-   - Applied CSS globally via `input.jsx` and `index.css`
-   - Auto-select all text on focus for easy value replacement
-   - Clean UI for payroll's "Absent Days" and "Other Deductions" inputs
+2. **Numeric Input "012" Bug Fix (v2):**
+   - Created `NumericInput` component in PayrollDashboard
+   - Properly handles controlled input state with `displayValue`
+   - Clears "0" on focus, shows "0" on blur if empty
+   - Fixed the "012" concatenation issue when typing in Absent Days
 
-3. **Payroll Service Fix:**
-   - Fixed salary structure query (employee_id vs user_id)
-   - Fixed conveyance field name (conveyance vs conveyance_allowance)
-   - Payroll preview now correctly calculates salary for employees with active salary structures
-
-Previous (Feb 14, 2026): Payroll Enhancement Features - Working Days display, Editable Attendance Days, Editable Other Deductions, Real-time Batch Totals
+Previous (Feb 14, 2026): Data Cleanup & Numeric Input Bug Fix - Database cleanup, CSS spinner removal, payroll service fixes
 
 ## Platform Architecture v5.0
 
