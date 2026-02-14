@@ -13,7 +13,8 @@ class EmployeeBase(BaseModel):
     country_id: str
     department_id: Optional[str] = None
     team_id: Optional[str] = None
-    role_id: str
+    role_id: str  # Primary role ID (for backward compatibility)
+    role_ids: List[str] = []  # Multiple roles support
     
     # Personal Info
     date_of_birth: Optional[str] = None
@@ -26,8 +27,13 @@ class EmployeeBase(BaseModel):
     # Employment Info
     employee_code: Optional[str] = None
     employment_type: str = "full_time"  # full_time, part_time, freelancer, contractor
+    employment_status: str = "active"  # active, exited
     joining_date: Optional[str] = None
     probation_end_date: Optional[str] = None
+    exit_date: Optional[str] = None
+    exit_reason: Optional[str] = None
+    exit_notes: Optional[str] = None
+    rejoin_date: Optional[str] = None
     
     # Weekly Off (rotating off days - 0=Sunday, 1=Monday, ... 6=Saturday)
     weekly_off_day: int = 0  # Default Sunday
