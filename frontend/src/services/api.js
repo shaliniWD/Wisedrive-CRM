@@ -241,7 +241,7 @@ export const attendanceApi = {
 };
 
 export const payrollApi = {
-  // Payroll generation
+  // Payroll generation (legacy - kept for backward compatibility)
   generate: (data) => axios.post(`${API_URL}/hr/payroll/generate`, data),
   generateBulk: (data) => axios.post(`${API_URL}/hr/payroll/generate-bulk`, data),
   
@@ -250,7 +250,7 @@ export const payrollApi = {
   getById: (payrollId) => axios.get(`${API_URL}/hr/payroll/${payrollId}`),
   getSummary: (month, year, countryId) => axios.get(`${API_URL}/hr/payroll/summary/${month}/${year}`, { params: { country_id: countryId } }),
   
-  // Payment marking
+  // Payment marking (legacy)
   markPaid: (payrollId, data) => axios.post(`${API_URL}/hr/payroll/${payrollId}/mark-paid`, data),
   
   // Adjustments
@@ -260,6 +260,24 @@ export const payrollApi = {
   // Payslip
   generatePayslip: (payrollId) => axios.post(`${API_URL}/hr/payroll/${payrollId}/generate-payslip`),
   downloadPayslip: (payrollId) => axios.get(`${API_URL}/hr/payroll/${payrollId}/payslip`),
+  
+  // ==================== BATCH-BASED PAYROLL (NEW GOVERNANCE) ====================
+  
+  // Preview payroll (no DB save)
+  preview: (data) => axios.post(`${API_URL}/hr/payroll/preview`, data),
+  
+  // Batch management
+  createBatch: (data) => axios.post(`${API_URL}/hr/payroll/batch`, data),
+  getBatches: (params) => axios.get(`${API_URL}/hr/payroll/batches`, { params }),
+  getBatch: (batchId) => axios.get(`${API_URL}/hr/payroll/batch/${batchId}`),
+  
+  // Update record in DRAFT batch
+  updateBatchRecord: (batchId, recordId, data) => axios.put(`${API_URL}/hr/payroll/batch/${batchId}/record/${recordId}`, data),
+  
+  // Batch lifecycle
+  confirmBatch: (batchId, data) => axios.post(`${API_URL}/hr/payroll/batch/${batchId}/confirm`, data || {}),
+  markBatchPaid: (batchId, data) => axios.post(`${API_URL}/hr/payroll/batch/${batchId}/mark-paid`, data),
+  deleteBatch: (batchId) => axios.delete(`${API_URL}/hr/payroll/batch/${batchId}`),
 };
 
 export const leaveApi = {
