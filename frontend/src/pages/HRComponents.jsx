@@ -1633,14 +1633,35 @@ export function LeaveManagement({ isHR }) {
   const [filterYear, setFilterYear] = useState(new Date().getFullYear());
   const [filterStatus, setFilterStatus] = useState('all');
   
-  // Apply form state
+  // Employee list for Country Head to apply on behalf
+  const [employees, setEmployees] = useState([]);
+  const [loadingEmployees, setLoadingEmployees] = useState(false);
+  
+  // Check if user is Country Head (can apply leave for others)
+  const isCountryHead = user?.role_code === 'COUNTRY_HEAD' || user?.roles?.some(r => r.code === 'COUNTRY_HEAD');
+  const isCEO = user?.role_code === 'CEO' || user?.roles?.some(r => r.code === 'CEO');
+  const canApplyForOthers = isCountryHead || isCEO;
+  
+  // Apply form state - now includes employee_id for Country Head
   const [applyForm, setApplyForm] = useState({
+    employee_id: '',
     leave_type: 'casual',
     start_date: '',
     end_date: '',
     reason: ''
   });
   const [applying, setApplying] = useState(false);
+
+  // Fetch employees for Country Head dropdown
+  useEffect(() => {
+    if (canApplyForOthers && isApplyModalOpen) {
+      setLoadingEmployees(true);
+      hrApi.getEmployees({ is_active: true })
+        .then(res => setEmployees(res.data || []))
+        .catch(() => setEmployees([]))
+        .finally(() => setLoadingEmployees(false));
+    }
+  }, [canApplyForOthers, isApplyModalOpen]);
 
   const fetchMyData = useCallback(async () => {
     try {
@@ -1668,17 +1689,28 @@ export function LeaveManagement({ isHR }) {
   }, [fetchMyData, fetchPendingApprovals]);
 
   const handleApply = async () => {
+    // Validation
+    if (canApplyForOthers && !applyForm.employee_id) {
+      toast.error('Please select an employee');
+      return;
+    }
     if (!applyForm.start_date || !applyForm.end_date || !applyForm.reason) {
       toast.error('Please fill all fields');
       return;
     }
     setApplying(true);
     try {
-      await leaveApi.apply(applyForm);
+      const payload = { ...applyForm };
+      // If applying for self, remove employee_id
+      if (!canApplyForOthers) {
+        delete payload.employee_id;
+      }
+      await leaveApi.apply(payload);
       toast.success('Leave request submitted');
       setIsApplyModalOpen(false);
-      setApplyForm({ leave_type: 'casual', start_date: '', end_date: '', reason: '' });
+      setApplyForm({ employee_id: '', leave_type: 'casual', start_date: '', end_date: '', reason: '' });
       fetchMyData();
+      fetchPendingApprovals();
     } catch (e) {
       toast.error(e.response?.data?.detail || 'Failed to apply');
     } finally {
