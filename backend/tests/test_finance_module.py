@@ -39,12 +39,15 @@ class TestFinanceAuth:
     
     def test_finance_manager_visible_tabs(self):
         """Finance Manager should only see Finance tab"""
-        response = requests.post(f"{BASE_URL}/api/auth/login", json=FINANCE_MANAGER_IN)
-        assert response.status_code == 200
-        data = response.json()
+        token = get_token(FINANCE_MANAGER_IN)
+        assert token, "Login failed"
         
-        # visible_tabs is included in user object
-        tabs = data.get("user", {}).get("visible_tabs", [])
+        # Get visible_tabs from /api/auth/me endpoint
+        headers = {"Authorization": f"Bearer {token}"}
+        response = requests.get(f"{BASE_URL}/api/auth/me", headers=headers)
+        assert response.status_code == 200
+        
+        tabs = response.json().get("visible_tabs", [])
         print(f"Finance Manager visible tabs: {tabs}")
         assert "finance" in tabs, "Finance tab should be visible"
         assert "leads" not in tabs, "Leads tab should NOT be visible"
@@ -61,21 +64,27 @@ class TestFinanceAuth:
     
     def test_country_head_visible_tabs(self):
         """Country Head should see Finance tab among others"""
-        response = requests.post(f"{BASE_URL}/api/auth/login", json=COUNTRY_HEAD_IN)
-        assert response.status_code == 200
-        data = response.json()
+        token = get_token(COUNTRY_HEAD_IN)
+        assert token, "Login failed"
         
-        tabs = data.get("user", {}).get("visible_tabs", [])
+        headers = {"Authorization": f"Bearer {token}"}
+        response = requests.get(f"{BASE_URL}/api/auth/me", headers=headers)
+        assert response.status_code == 200
+        
+        tabs = response.json().get("visible_tabs", [])
         print(f"Country Head visible tabs: {tabs}")
         assert "finance" in tabs, "Finance tab should be visible for Country Head"
     
     def test_ceo_visible_tabs(self):
         """CEO should see Finance tab"""
-        response = requests.post(f"{BASE_URL}/api/auth/login", json=CEO)
-        assert response.status_code == 200
-        data = response.json()
+        token = get_token(CEO)
+        assert token, "Login failed"
         
-        tabs = data.get("user", {}).get("visible_tabs", [])
+        headers = {"Authorization": f"Bearer {token}"}
+        response = requests.get(f"{BASE_URL}/api/auth/me", headers=headers)
+        assert response.status_code == 200
+        
+        tabs = response.json().get("visible_tabs", [])
         print(f"CEO visible tabs: {tabs}")
         assert "finance" in tabs, "Finance tab should be visible for CEO"
 
