@@ -593,6 +593,13 @@ export function PayrollDashboard({ isHR, isFinance }) {
   // Create Batch from Preview
   const handleCreateBatch = async () => {
     if (!previewData) return;
+    
+    // Check for validation errors
+    if (hasPreviewErrors()) {
+      toast.error('Please fix validation errors before creating batch');
+      return;
+    }
+    
     if (!window.confirm('Create payroll batch? Records can be edited before confirmation.')) return;
     
     setGenerating(true);
@@ -605,6 +612,8 @@ export function PayrollDashboard({ isHR, isFinance }) {
       });
       toast.success('Batch created successfully');
       setPreviewData(null);
+      setPreviewEdits({});
+      setPreviewErrors({});
       setSelectedBatch(res.data);
       fetchBatches();
       // Fetch batch details
