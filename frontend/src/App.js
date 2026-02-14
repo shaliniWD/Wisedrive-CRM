@@ -1,6 +1,6 @@
 import "@/App.css";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { MainLayout } from "@/components/layout";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -12,6 +12,32 @@ import CustomersPage from "@/pages/CustomersPage";
 import InspectionsPage from "@/pages/InspectionsPage";
 import AdminPage from "@/pages/AdminPage";
 import FinancePage from "@/pages/FinancePage";
+
+// Smart redirect based on visible tabs
+const SmartRedirect = () => {
+  const { visibleTabs, loading } = useAuth();
+  
+  if (loading) return null;
+  
+  // Map tab names to routes
+  const tabRouteMap = {
+    leads: '/leads',
+    customers: '/customers',
+    inspections: '/inspections',
+    employees: '/admin',
+    finance: '/finance',
+    settings: '/settings',
+  };
+  
+  // Find the first visible tab and redirect there
+  if (visibleTabs && visibleTabs.length > 0) {
+    const firstTab = visibleTabs[0];
+    const route = tabRouteMap[firstTab] || '/dashboard';
+    return <Navigate to={route} replace />;
+  }
+  
+  return <Navigate to="/dashboard" replace />;
+};
 
 function App() {
   return (
@@ -32,8 +58,8 @@ function App() {
           </Route>
 
           {/* Default redirect */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/" element={<SmartRedirect />} />
+          <Route path="*" element={<SmartRedirect />} />
         </Routes>
       </BrowserRouter>
       <Toaster position="top-right" richColors />
