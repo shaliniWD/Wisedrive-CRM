@@ -1,0 +1,258 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://api.wisedrive.com/schemas/entities/obd-session.json",
+  "title": "OBDSession",
+  "description": "OBD scan session data schema",
+  "type": "object",
+  
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique session identifier"
+    },
+    "inspection_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Related inspection ID"
+    },
+    "vehicle_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Related vehicle ID"
+    },
+    "vin": {
+      "type": "string",
+      "minLength": 17,
+      "maxLength": 17,
+      "pattern": "^[A-HJ-NPR-Z0-9]{17}$",
+      "description": "Vehicle Identification Number"
+    },
+    "protocol": {
+      "type": "string",
+      "description": "OBD protocol used (CAN, UDS, KWP2000, etc.)"
+    },
+    "scanned_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp of scan"
+    },
+    "scanned_by": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Mechanic who performed scan"
+    },
+    "ecu_info": {
+      "type": "object",
+      "properties": {
+        "manufacturer": {
+          "type": "string"
+        },
+        "hardware_version": {
+          "type": "string"
+        },
+        "software_version": {
+          "type": "string"
+        },
+        "calibration_id": {
+          "type": "string"
+        },
+        "cvn": {
+          "type": "string",
+          "description": "Calibration Verification Number"
+        }
+      },
+      "description": "ECU metadata"
+    },
+    "dtc_stored": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/DTC"
+      },
+      "description": "Stored/confirmed DTCs"
+    },
+    "dtc_pending": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/DTC"
+      },
+      "description": "Pending DTCs (not yet confirmed)"
+    },
+    "dtc_permanent": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/DTC"
+      },
+      "description": "Permanent DTCs (cannot be cleared)"
+    },
+    "freeze_frame": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Freeze frame data captured at DTC trigger"
+    },
+    "live_data": {
+      "type": "object",
+      "properties": {
+        "engine_rpm": {
+          "type": "number"
+        },
+        "vehicle_speed": {
+          "type": "number"
+        },
+        "coolant_temp": {
+          "type": "number"
+        },
+        "fuel_pressure": {
+          "type": "number"
+        },
+        "intake_manifold_pressure": {
+          "type": "number"
+        },
+        "timing_advance": {
+          "type": "number"
+        },
+        "intake_air_temp": {
+          "type": "number"
+        },
+        "maf_air_flow": {
+          "type": "number"
+        },
+        "throttle_position": {
+          "type": "number"
+        },
+        "oxygen_sensor_voltage": {
+          "type": "number"
+        },
+        "fuel_system_status": {
+          "type": "string"
+        },
+        "calculated_load": {
+          "type": "number"
+        },
+        "short_term_fuel_trim": {
+          "type": "number"
+        },
+        "long_term_fuel_trim": {
+          "type": "number"
+        },
+        "battery_voltage": {
+          "type": "number"
+        }
+      },
+      "additionalProperties": true,
+      "description": "Live sensor data at time of scan"
+    },
+    "raw_frames": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Raw OBD frame data for debugging/analysis"
+    },
+    "mil_status": {
+      "type": "boolean",
+      "description": "Malfunction Indicator Lamp status"
+    },
+    "dtc_count": {
+      "type": "integer",
+      "description": "Total DTC count reported"
+    },
+    "readiness_monitors": {
+      "type": "object",
+      "properties": {
+        "misfire": {
+          "type": "string",
+          "enum": ["complete", "incomplete", "not_supported"]
+        },
+        "fuel_system": {
+          "type": "string",
+          "enum": ["complete", "incomplete", "not_supported"]
+        },
+        "components": {
+          "type": "string",
+          "enum": ["complete", "incomplete", "not_supported"]
+        },
+        "catalyst": {
+          "type": "string",
+          "enum": ["complete", "incomplete", "not_supported"]
+        },
+        "heated_catalyst": {
+          "type": "string",
+          "enum": ["complete", "incomplete", "not_supported"]
+        },
+        "evaporative_system": {
+          "type": "string",
+          "enum": ["complete", "incomplete", "not_supported"]
+        },
+        "secondary_air": {
+          "type": "string",
+          "enum": ["complete", "incomplete", "not_supported"]
+        },
+        "oxygen_sensor": {
+          "type": "string",
+          "enum": ["complete", "incomplete", "not_supported"]
+        },
+        "oxygen_sensor_heater": {
+          "type": "string",
+          "enum": ["complete", "incomplete", "not_supported"]
+        },
+        "egr_system": {
+          "type": "string",
+          "enum": ["complete", "incomplete", "not_supported"]
+        }
+      },
+      "description": "OBD-II readiness monitor status"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  
+  "definitions": {
+    "DTC": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "pattern": "^[PCBU][0-9A-F]{4}$",
+          "description": "DTC code (e.g., P0301, C0045)"
+        },
+        "category": {
+          "type": "string",
+          "enum": ["powertrain", "chassis", "body", "network"],
+          "description": "DTC category based on first letter"
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description"
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["low", "medium", "high", "critical"]
+        },
+        "possible_causes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "recommended_actions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "raw_data": {
+          "type": "string",
+          "description": "Raw bytes from OBD response"
+        }
+      },
+      "required": ["code"]
+    }
+  },
+  
+  "required": ["id", "vehicle_id", "vin", "scanned_at"],
+  
+  "additionalProperties": false
+}
