@@ -1576,6 +1576,7 @@ export default function AdminPage({ initialTab = 'employees', embedded = false }
         onSave={() => { fetchEmployees(); setIsEmployeeModalOpen(false); }}
         currentTab={employeeModalTab}
         setCurrentTab={setEmployeeModalTab}
+        allEmployees={employees}
       />
 
       {/* Country Modal */}
