@@ -41,6 +41,7 @@ from services.attendance_service import AttendanceService
 from services.payroll_service import PayrollService
 from services.leave_service import LeaveService
 from services.storage_service import get_storage_service
+from services.encryption_service import get_encryption_service
 
 # Import HR Module models
 from models.attendance import (
