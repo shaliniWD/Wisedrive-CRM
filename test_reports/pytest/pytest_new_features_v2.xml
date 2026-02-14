@@ -1,100 +1,11 @@
-<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="17" failures="0" skipped="0" tests="17" time="1.391" timestamp="2026-02-14T20:07:03.274537+00:00" hostname="agent-env-272c3ebd-ee69-430d-9d53-0d59d9a2e54b"><testcase classname="backend.tests.test_new_features_v2.TestAuth" name="test_hr_login" time="0.269"><error message="failed on setup with &quot;assert 403 == 200&#10; +  where 403 = &lt;Response [403]&gt;.status_code&quot;">backend/tests/test_new_features_v2.py:27: in hr_token
-    assert countries_res.status_code == 200
-E   assert 403 == 200
-E    +  where 403 = &lt;Response [403]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_new_features_v2.TestAuth" name="test_ceo_login" time="0.137"><error message="failed on setup with &quot;AttributeError: 'str' object has no attribute 'get'&quot;">backend/tests/test_new_features_v2.py:46: in ceo_token
-    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend/tests/test_new_features_v2.py:46: in &lt;genexpr&gt;
-    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
-                                          ^^^^^
-E   AttributeError: 'str' object has no attribute 'get'</error></testcase><testcase classname="backend.tests.test_new_features_v2.TestAttendanceCalendar" name="test_get_attendance_calendar" time="0.159"><error message="failed on setup with &quot;AttributeError: 'str' object has no attribute 'get'&quot;">backend/tests/test_new_features_v2.py:75: in hr_headers
-    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend/tests/test_new_features_v2.py:75: in &lt;genexpr&gt;
-    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
-                                          ^^^^^
-E   AttributeError: 'str' object has no attribute 'get'</error></testcase><testcase classname="backend.tests.test_new_features_v2.TestAttendanceCalendar" name="test_calendar_has_lop_in_legend" time="0.000"><error message="failed on setup with &quot;AttributeError: 'str' object has no attribute 'get'&quot;">backend/tests/test_new_features_v2.py:75: in hr_headers
-    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend/tests/test_new_features_v2.py:75: in &lt;genexpr&gt;
-    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
-                                          ^^^^^
-E   AttributeError: 'str' object has no attribute 'get'</error></testcase><testcase classname="backend.tests.test_new_features_v2.TestAttendanceCalendar" name="test_calendar_employee_summary_has_lop_days" time="0.000"><error message="failed on setup with &quot;AttributeError: 'str' object has no attribute 'get'&quot;">backend/tests/test_new_features_v2.py:75: in hr_headers
-    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend/tests/test_new_features_v2.py:75: in &lt;genexpr&gt;
-    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
-                                          ^^^^^
-E   AttributeError: 'str' object has no attribute 'get'</error></testcase><testcase classname="backend.tests.test_new_features_v2.TestAttendanceCalendar" name="test_calendar_search_filter" time="0.000"><error message="failed on setup with &quot;AttributeError: 'str' object has no attribute 'get'&quot;">backend/tests/test_new_features_v2.py:75: in hr_headers
-    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend/tests/test_new_features_v2.py:75: in &lt;genexpr&gt;
-    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
-                                          ^^^^^
-E   AttributeError: 'str' object has no attribute 'get'</error></testcase><testcase classname="backend.tests.test_new_features_v2.TestAttendanceUpdate" name="test_update_attendance_to_lop" time="0.155"><error message="failed on setup with &quot;AttributeError: 'str' object has no attribute 'get'&quot;">backend/tests/test_new_features_v2.py:172: in hr_headers
-    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend/tests/test_new_features_v2.py:172: in &lt;genexpr&gt;
-    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
-                                          ^^^^^
-E   AttributeError: 'str' object has no attribute 'get'</error></testcase><testcase classname="backend.tests.test_new_features_v2.TestAttendanceUpdate" name="test_update_attendance_to_present" time="0.000"><error message="failed on setup with &quot;AttributeError: 'str' object has no attribute 'get'&quot;">backend/tests/test_new_features_v2.py:172: in hr_headers
-    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend/tests/test_new_features_v2.py:172: in &lt;genexpr&gt;
-    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
-                                          ^^^^^
-E   AttributeError: 'str' object has no attribute 'get'</error></testcase><testcase classname="backend.tests.test_new_features_v2.TestAttendanceUpdate" name="test_update_attendance_to_half_day" time="0.000"><error message="failed on setup with &quot;AttributeError: 'str' object has no attribute 'get'&quot;">backend/tests/test_new_features_v2.py:172: in hr_headers
-    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend/tests/test_new_features_v2.py:172: in &lt;genexpr&gt;
-    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
-                                          ^^^^^
-E   AttributeError: 'str' object has no attribute 'get'</error></testcase><testcase classname="backend.tests.test_new_features_v2.TestAttendanceUpdate" name="test_cannot_update_future_date" time="0.000"><error message="failed on setup with &quot;AttributeError: 'str' object has no attribute 'get'&quot;">backend/tests/test_new_features_v2.py:172: in hr_headers
-    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend/tests/test_new_features_v2.py:172: in &lt;genexpr&gt;
-    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
-                                          ^^^^^
-E   AttributeError: 'str' object has no attribute 'get'</error></testcase><testcase classname="backend.tests.test_new_features_v2.TestAttendanceUpdate" name="test_absent_normalizes_to_lop" time="0.001"><error message="failed on setup with &quot;AttributeError: 'str' object has no attribute 'get'&quot;">backend/tests/test_new_features_v2.py:172: in hr_headers
-    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend/tests/test_new_features_v2.py:172: in &lt;genexpr&gt;
-    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
-                                          ^^^^^
-E   AttributeError: 'str' object has no attribute 'get'</error></testcase><testcase classname="backend.tests.test_new_features_v2.TestCityMaster" name="test_get_countries_with_cities" time="0.131"><error message="failed on setup with &quot;AttributeError: 'str' object has no attribute 'get'&quot;">backend/tests/test_new_features_v2.py:307: in ceo_headers
-    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend/tests/test_new_features_v2.py:307: in &lt;genexpr&gt;
-    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
-                                          ^^^^^
-E   AttributeError: 'str' object has no attribute 'get'</error></testcase><testcase classname="backend.tests.test_new_features_v2.TestCityMaster" name="test_update_country_with_cities" time="0.000"><error message="failed on setup with &quot;AttributeError: 'str' object has no attribute 'get'&quot;">backend/tests/test_new_features_v2.py:307: in ceo_headers
-    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend/tests/test_new_features_v2.py:307: in &lt;genexpr&gt;
-    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
-                                          ^^^^^
-E   AttributeError: 'str' object has no attribute 'get'</error></testcase><testcase classname="backend.tests.test_new_features_v2.TestEmployeePayslips" name="test_get_employee_payslips_endpoint_exists" time="0.115"><error message="failed on setup with &quot;AttributeError: 'str' object has no attribute 'get'&quot;">backend/tests/test_new_features_v2.py:375: in hr_headers
-    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend/tests/test_new_features_v2.py:375: in &lt;genexpr&gt;
-    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
-                                          ^^^^^
-E   AttributeError: 'str' object has no attribute 'get'</error></testcase><testcase classname="backend.tests.test_new_features_v2.TestEmployeePayslips" name="test_payslips_sorted_by_date_desc" time="0.000"><error message="failed on setup with &quot;AttributeError: 'str' object has no attribute 'get'&quot;">backend/tests/test_new_features_v2.py:375: in hr_headers
-    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend/tests/test_new_features_v2.py:375: in &lt;genexpr&gt;
-    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
-                                          ^^^^^
-E   AttributeError: 'str' object has no attribute 'get'</error></testcase><testcase classname="backend.tests.test_new_features_v2.TestRBACForNewEndpoints" name="test_sales_cannot_access_attendance_calendar" time="0.127"><error message="failed on setup with &quot;AttributeError: 'str' object has no attribute 'get'&quot;">backend/tests/test_new_features_v2.py:453: in sales_headers
-    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend/tests/test_new_features_v2.py:453: in &lt;genexpr&gt;
-    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
-                                          ^^^^^
-E   AttributeError: 'str' object has no attribute 'get'</error></testcase><testcase classname="backend.tests.test_new_features_v2.TestRBACForNewEndpoints" name="test_sales_cannot_update_attendance" time="0.000"><error message="failed on setup with &quot;AttributeError: 'str' object has no attribute 'get'&quot;">backend/tests/test_new_features_v2.py:453: in sales_headers
-    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend/tests/test_new_features_v2.py:453: in &lt;genexpr&gt;
-    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
-                                          ^^^^^
-E   AttributeError: 'str' object has no attribute 'get'</error></testcase></testsuite></testsuites>
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="17" tests="20" time="4.409" timestamp="2026-02-14T20:08:18.165380+00:00" hostname="agent-env-272c3ebd-ee69-430d-9d53-0d59d9a2e54b"><testcase classname="backend.tests.test_new_features_v2.TestAuth" name="test_hr_login" time="0.663"><failure message="AssertionError: HR login failed&#10;assert None is not None">backend/tests/test_new_features_v2.py:62: in test_hr_login
+    assert token is not None, "HR login failed"
+E   AssertionError: HR login failed
+E   assert None is not None</failure></testcase><testcase classname="backend.tests.test_new_features_v2.TestAuth" name="test_ceo_login" time="0.500"><failure message="AssertionError: CEO login failed&#10;assert None is not None">backend/tests/test_new_features_v2.py:68: in test_ceo_login
+    assert token is not None, "CEO login failed"
+E   AssertionError: CEO login failed
+E   assert None is not None</failure></testcase><testcase classname="backend.tests.test_new_features_v2.TestAttendanceCalendar" name="test_get_attendance_calendar" time="0.461"><skipped type="pytest.skip" message="HR login failed">/app/backend/tests/test_new_features_v2.py:83: HR login failed</skipped></testcase><testcase classname="backend.tests.test_new_features_v2.TestAttendanceCalendar" name="test_calendar_has_lop_in_legend" time="0.000"><skipped type="pytest.skip" message="HR login failed">/app/backend/tests/test_new_features_v2.py:106: HR login failed</skipped></testcase><testcase classname="backend.tests.test_new_features_v2.TestAttendanceCalendar" name="test_calendar_has_half_day_in_legend" time="0.000"><skipped type="pytest.skip" message="HR login failed">/app/backend/tests/test_new_features_v2.py:123: HR login failed</skipped></testcase><testcase classname="backend.tests.test_new_features_v2.TestAttendanceCalendar" name="test_calendar_employee_summary_has_lop_days" time="0.000"><skipped type="pytest.skip" message="HR login failed">/app/backend/tests/test_new_features_v2.py:138: HR login failed</skipped></testcase><testcase classname="backend.tests.test_new_features_v2.TestAttendanceCalendar" name="test_calendar_search_filter" time="0.000"><skipped type="pytest.skip" message="HR login failed">/app/backend/tests/test_new_features_v2.py:156: HR login failed</skipped></testcase><testcase classname="backend.tests.test_new_features_v2.TestAttendanceUpdate" name="test_update_attendance_to_lop" time="0.504"><skipped type="pytest.skip" message="HR login failed">/app/backend/tests/test_new_features_v2.py:198: HR login failed</skipped></testcase><testcase classname="backend.tests.test_new_features_v2.TestAttendanceUpdate" name="test_update_attendance_to_present" time="0.000"><skipped type="pytest.skip" message="HR login failed">/app/backend/tests/test_new_features_v2.py:223: HR login failed</skipped></testcase><testcase classname="backend.tests.test_new_features_v2.TestAttendanceUpdate" name="test_update_attendance_to_half_day" time="0.000"><skipped type="pytest.skip" message="HR login failed">/app/backend/tests/test_new_features_v2.py:243: HR login failed</skipped></testcase><testcase classname="backend.tests.test_new_features_v2.TestAttendanceUpdate" name="test_cannot_update_future_date" time="0.000"><skipped type="pytest.skip" message="HR login failed">/app/backend/tests/test_new_features_v2.py:263: HR login failed</skipped></testcase><testcase classname="backend.tests.test_new_features_v2.TestAttendanceUpdate" name="test_absent_normalizes_to_lop" time="0.000"><skipped type="pytest.skip" message="HR login failed">/app/backend/tests/test_new_features_v2.py:283: HR login failed</skipped></testcase><testcase classname="backend.tests.test_new_features_v2.TestAttendanceUpdate" name="test_verify_lop_in_calendar_after_update" time="0.000"><skipped type="pytest.skip" message="HR login failed">/app/backend/tests/test_new_features_v2.py:304: HR login failed</skipped></testcase><testcase classname="backend.tests.test_new_features_v2.TestCityMaster" name="test_get_countries_with_cities" time="0.453"><skipped type="pytest.skip" message="CEO login failed">/app/backend/tests/test_new_features_v2.py:337: CEO login failed</skipped></testcase><testcase classname="backend.tests.test_new_features_v2.TestCityMaster" name="test_update_country_with_cities" time="0.000"><skipped type="pytest.skip" message="CEO login failed">/app/backend/tests/test_new_features_v2.py:355: CEO login failed</skipped></testcase><testcase classname="backend.tests.test_new_features_v2.TestEmployeePayslips" name="test_get_employee_payslips_endpoint_exists" time="0.469"><skipped type="pytest.skip" message="HR login failed">/app/backend/tests/test_new_features_v2.py:416: HR login failed</skipped></testcase><testcase classname="backend.tests.test_new_features_v2.TestEmployeePayslips" name="test_payslips_sorted_by_date_desc" time="0.000"><skipped type="pytest.skip" message="HR login failed">/app/backend/tests/test_new_features_v2.py:444: HR login failed</skipped></testcase><testcase classname="backend.tests.test_new_features_v2.TestRBACForNewEndpoints" name="test_sales_cannot_access_attendance_calendar" time="0.753"><failure message="AssertionError: Sales should not access calendar: 401&#10;assert 401 == 403&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_new_features_v2.py:517: in test_sales_cannot_access_attendance_calendar
+    assert response.status_code == 403, f"Sales should not access calendar: {response.status_code}"
+E   AssertionError: Sales should not access calendar: 401
+E   assert 401 == 403
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_new_features_v2.TestRBACForNewEndpoints" name="test_sales_cannot_update_attendance" time="0.487"><skipped type="pytest.skip" message="HR login failed">/app/backend/tests/test_new_features_v2.py:520: HR login failed</skipped></testcase><testcase classname="backend.tests.test_new_features_v2.TestRBACForNewEndpoints" name="test_sales_cannot_access_employee_payslips" time="0.000"><skipped type="pytest.skip" message="HR login failed">/app/backend/tests/test_new_features_v2.py:540: HR login failed</skipped></testcase></testsuite></testsuites>
