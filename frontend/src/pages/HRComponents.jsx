@@ -465,7 +465,88 @@ export function PayrollDashboard({ isHR, isFinance }) {
     }
   };
 
-  // Handle preview field edit with validation and recalculation
+  // Handle batch-level working days change
+  const handleWorkingDaysChange = (value) => {
+    const numValue = value === '' ? 0 : parseInt(value, 10);
+    if (isNaN(numValue) || numValue < 1) return;
+    
+    setBatchWorkingDays(numValue);
+    
+    // Recalculate all employee records with new working days
+    setPreviewData(prev => {
+      if (!prev) return prev;
+
+      const updatedRecords = prev.records.map(record => {
+        const workingDays = numValue;
+        const gross = record.gross_salary;
+        const perDaySalary = workingDays > 0 ? gross / workingDays : 0;
+
+        // Get absent days (from edit or default to 0)
+        let absentDays = previewEdits[record.employee_id]?.absent_days ?? 0;
+        // Cap absent days at working days
+        absentDays = Math.min(Math.max(0, absentDays), workingDays);
+        
+        // Calculate attendance (present) days
+        const attendanceDays = workingDays - absentDays;
+        
+        // Calculate attendance deduction
+        const attendanceDeduction = Math.round(perDaySalary * absentDays * 100) / 100;
+
+        // Get other deductions
+        let otherDeductions = previewEdits[record.employee_id]?.other_deductions ?? record.other_deductions ?? 0;
+        
+        // Cap other deductions at net before other
+        const netBeforeOther = gross - record.total_statutory_deductions - attendanceDeduction;
+        otherDeductions = Math.min(Math.max(0, otherDeductions), Math.max(0, netBeforeOther));
+
+        // Calculate totals
+        const totalDeductions = record.total_statutory_deductions + attendanceDeduction + otherDeductions;
+        const netSalary = Math.round((gross - totalDeductions) * 100) / 100;
+
+        return {
+          ...record,
+          working_days_in_month: workingDays,
+          attendance_days: attendanceDays,
+          unapproved_absent_days: absentDays,
+          attendance_deduction: attendanceDeduction,
+          per_day_salary: Math.round(perDaySalary * 100) / 100,
+          other_deductions: otherDeductions,
+          total_deductions: Math.round(totalDeductions * 100) / 100,
+          net_salary: netSalary
+        };
+      });
+
+      // Recalculate batch totals
+      const totalGross = updatedRecords.reduce((sum, r) => sum + r.gross_salary, 0);
+      const totalStatutory = updatedRecords.reduce((sum, r) => sum + r.total_statutory_deductions, 0);
+      const totalAttendance = updatedRecords.reduce((sum, r) => sum + r.attendance_deduction, 0);
+      const totalOther = updatedRecords.reduce((sum, r) => sum + r.other_deductions, 0);
+      const totalNet = updatedRecords.reduce((sum, r) => sum + r.net_salary, 0);
+
+      return {
+        ...prev,
+        working_days: numValue,
+        records: updatedRecords,
+        total_gross: Math.round(totalGross * 100) / 100,
+        total_statutory_deductions: Math.round(totalStatutory * 100) / 100,
+        total_attendance_deductions: Math.round(totalAttendance * 100) / 100,
+        total_other_deductions: Math.round(totalOther * 100) / 100,
+        total_net: Math.round(totalNet * 100) / 100
+      };
+    });
+
+    // Re-validate absent days for all employees
+    const newErrors = {};
+    Object.keys(previewEdits).forEach(employeeId => {
+      const absentDays = previewEdits[employeeId]?.absent_days ?? 0;
+      if (absentDays > numValue) {
+        newErrors[employeeId] = { absent_days: `Cannot exceed ${numValue} working days` };
+      }
+    });
+    setPreviewErrors(newErrors);
+  };
+
+  // Handle preview field edit with validation and recalculation (now uses absent_days)
   const handlePreviewEdit = (employeeId, field, value) => {
     const record = previewData.records.find(r => r.employee_id === employeeId);
     if (!record) return;
@@ -487,21 +568,23 @@ export function PayrollDashboard({ isHR, isFinance }) {
     const errors = { ...previewErrors };
     if (!errors[employeeId]) errors[employeeId] = {};
 
-    if (field === 'attendance_days') {
+    const workingDays = batchWorkingDays || record.working_days_in_month;
+
+    if (field === 'absent_days') {
       if (numValue < 0) {
-        errors[employeeId].attendance_days = 'Must be ≥ 0';
-      } else if (numValue > record.working_days_in_month) {
-        errors[employeeId].attendance_days = `Cannot exceed ${record.working_days_in_month} working days`;
+        errors[employeeId].absent_days = 'Must be ≥ 0';
+      } else if (numValue > workingDays) {
+        errors[employeeId].absent_days = `Cannot exceed ${workingDays} working days`;
       } else {
-        delete errors[employeeId].attendance_days;
+        delete errors[employeeId].absent_days;
       }
     }
 
     if (field === 'other_deductions') {
       // Calculate net before other to validate cap
-      const attendanceDays = previewEdits[employeeId]?.attendance_days ?? record.attendance_days;
-      const perDaySalary = record.gross_salary / record.working_days_in_month;
-      const attendanceDeduction = perDaySalary * (record.working_days_in_month - attendanceDays);
+      const absentDays = field === 'absent_days' ? numValue : (previewEdits[employeeId]?.absent_days ?? 0);
+      const perDaySalary = record.gross_salary / workingDays;
+      const attendanceDeduction = perDaySalary * absentDays;
       const netBeforeOther = record.gross_salary - record.total_statutory_deductions - attendanceDeduction;
 
       if (numValue < 0) {
