@@ -305,6 +305,18 @@ wisedrive-api-services/
 - **Migration Framework**: Version-tracked schema changes with rollback
 - **Integration Wrappers**: Razorpay (signature verification), Invincible Ocean (caching), OBD (VIN validation)
 
+## Phase 3 Confirmation Answers
+
+| Question | Answer | Details |
+|----------|--------|---------|
+| **1. Namespace isolation** | ✅ Separate namespaces | `wd-dev`, `wd-test`, `wd-prod` with NetworkPolicies blocking cross-namespace |
+| **2. Auto DB backup before PROD migration** | ✅ YES - Mandatory | Init container creates backup, migration only runs after backup succeeds |
+| **3. HPA enabled** | ✅ YES | CPU (70%), Memory (80%), Request rate metrics |
+| **4. Max pod scaling limit** | ✅ Defined | api-services: 3-10 pods, crm-web: 2-6 pods |
+| **5. Rate limiting at gateway** | ✅ YES - NGINX Ingress | 100 rps default, endpoint-specific limits |
+
+See: `docs/infrastructure/KUBERNETES_CONFIGURATION.md` for full configuration.
+
 ### Phase 3: Infrastructure Setup ✅ COMPLETE
 Created comprehensive infrastructure documentation in `/app/wisedrive-api-services/docs/`:
 
