@@ -4615,6 +4615,149 @@ async def admin_reset_users():
     }
 
 
+@api_router.post("/admin/sync-users")
+async def admin_sync_users():
+    """Sync users - adds missing users without deleting existing ones (safe for production)
+    
+    This is a NON-DESTRUCTIVE operation that:
+    - Checks if each user email already exists
+    - Only creates users that don't exist
+    - Preserves all existing data
+    """
+    
+    # Get role IDs
+    ceo_role = await db.roles.find_one({"code": "CEO"}, {"_id": 0, "id": 1})
+    hr_role = await db.roles.find_one({"code": "HR_MANAGER"}, {"_id": 0, "id": 1})
+    finance_role = await db.roles.find_one({"code": "FINANCE_MANAGER"}, {"_id": 0, "id": 1})
+    sales_role = await db.roles.find_one({"code": "SALES_EXECUTIVE"}, {"_id": 0, "id": 1})
+    mechanic_role = await db.roles.find_one({"code": "MECHANIC"}, {"_id": 0, "id": 1})
+    
+    # Get country/dept IDs
+    india = await db.countries.find_one({"code": "IN"}, {"_id": 0, "id": 1})
+    exec_dept = await db.departments.find_one({"code": "EXEC"}, {"_id": 0, "id": 1})
+    hr_dept = await db.departments.find_one({"code": "HR"}, {"_id": 0, "id": 1})
+    finance_dept = await db.departments.find_one({"code": "FINANCE"}, {"_id": 0, "id": 1})
+    sales_dept = await db.departments.find_one({"code": "SALES"}, {"_id": 0, "id": 1})
+    inspection_dept = await db.departments.find_one({"code": "INSPECTION"}, {"_id": 0, "id": 1})
+    
+    # Hash password
+    password_hash = hash_password("password123")
+    now = datetime.now(timezone.utc).isoformat()
+    
+    # Users to ensure exist
+    required_users = [
+        {
+            "email": "kalyan@wisedrive.com",
+            "name": "Kalyan",
+            "role_id": ceo_role["id"] if ceo_role else None,
+            "country_id": india["id"] if india else None,
+            "department_id": exec_dept["id"] if exec_dept else None,
+            "employee_code": "WD-CEO-001",
+        },
+        {
+            "email": "hr@wisedrive.com",
+            "name": "HR Manager",
+            "role_id": hr_role["id"] if hr_role else None,
+            "country_id": india["id"] if india else None,
+            "department_id": hr_dept["id"] if hr_dept else None,
+            "employee_code": "WD-HR-001",
+        },
+        {
+            "email": "finance@wisedrive.com",
+            "name": "Finance Manager",
+            "role_id": finance_role["id"] if finance_role else None,
+            "country_id": india["id"] if india else None,
+            "department_id": finance_dept["id"] if finance_dept else None,
+            "employee_code": "WD-FIN-001",
+        },
+        {
+            "email": "john.sales@wisedrive.com",
+            "name": "John Sales",
+            "role_id": sales_role["id"] if sales_role else None,
+            "country_id": india["id"] if india else None,
+            "department_id": sales_dept["id"] if sales_dept else None,
+            "employee_code": "WD-SE-001",
+        },
+        {
+            "email": "mike.mechanic@wisedrive.com",
+            "name": "Mike Mechanic",
+            "role_id": mechanic_role["id"] if mechanic_role else None,
+            "country_id": india["id"] if india else None,
+            "department_id": inspection_dept["id"] if inspection_dept else None,
+            "employee_code": "WD-MC-001",
+        },
+    ]
+    
+    created_users = []
+    skipped_users = []
+    
+    for user_data in required_users:
+        # Check if user already exists
+        existing = await db.users.find_one({"email": user_data["email"]})
+        
+        if existing:
+            skipped_users.append(user_data["email"])
+            continue
+        
+        # Create new user
+        user = {
+            "id": str(uuid.uuid4()),
+            "email": user_data["email"],
+            "hashed_password": password_hash,
+            "name": user_data["name"],
+            "role_id": user_data["role_id"],
+            "country_id": user_data["country_id"],
+            "department_id": user_data["department_id"],
+            "employee_code": user_data["employee_code"],
+            "phone": "+919876543210",
+            "is_active": True,
+            "joining_date": "2024-01-01",
+            "created_at": now,
+            "updated_at": now
+        }
+        
+        await db.users.insert_one(user)
+        created_users.append(user_data["email"])
+        
+        # Create default salary structure for new employees
+        if user_data["role_id"] != mechanic_role.get("id") if mechanic_role else None:
+            salary = {
+                "id": str(uuid.uuid4()),
+                "user_id": user["id"],
+                "basic_salary": 30000,
+                "hra": 15000,
+                "variable_pay": 5000,
+                "conveyance": 1600,
+                "medical": 1250,
+                "special_allowance": 2150,
+                "gross_salary": 55000,
+                "other_allowance": 0,
+                "pf_employee": 1800,
+                "pf_employer": 1800,
+                "esi_employee": 0,
+                "esi_employer": 0,
+                "professional_tax": 200,
+                "income_tax": 0,
+                "effective_from": "2024-01-01",
+                "is_active": True,
+                "currency": "INR",
+                "currency_symbol": "₹",
+                "created_at": now,
+                "updated_at": now
+            }
+            await db.salary_structures.insert_one(salary)
+    
+    return {
+        "message": "User sync completed",
+        "created_count": len(created_users),
+        "created_users": created_users,
+        "skipped_count": len(skipped_users),
+        "skipped_users": skipped_users,
+        "note": "Skipped users already exist in the database",
+        "default_password": "password123"
+    }
+
+
 # Include the router in the main app
 app.include_router(api_router)
 
