@@ -213,6 +213,10 @@ Recreate WiseDrive CRM (https://crm.wisedrive.com) design with a modern UI. Crea
 - [x] Admin page RBAC configuration UI
 - [x] Employee exit/rejoin flow
 - [x] Hot Leads summary card
+- [x] **HR Module Consolidation** - Admin tab merged into HR Module (Feb 14, 2026)
+  - 6 tabs: Employees, Attendance, Payroll, Leave, Roles, Countries
+  - Employee detail modal with sub-tabs (Details, Salary, Attendance, Documents)
+  - /admin redirects to /hr
 
 ### P1 - High Priority (Next)
 - [ ] Bulk payment creation for monthly salary processing
