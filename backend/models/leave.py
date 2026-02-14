@@ -103,6 +103,7 @@ class LeaveRequestBase(BaseModel):
 
 
 class LeaveRequestCreate(BaseModel):
+    employee_id: Optional[str] = None  # Optional - for Country Head/CEO applying on behalf
     leave_type: str  # CASUAL or SICK
     start_date: str
     end_date: str
