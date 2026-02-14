@@ -6,7 +6,9 @@ import {
   UserCheck, 
   ClipboardCheck, 
   Settings,
-  ChevronRight
+  ChevronRight,
+  Clock,
+  Wallet
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -16,6 +18,8 @@ const navigation = [
   { name: 'Customers', href: '/customers', icon: UserCheck },
   { name: 'Inspections', href: '/inspections', icon: ClipboardCheck },
   { name: 'Admin', href: '/admin', icon: Settings },
+  { name: 'HR Module', href: '/hr', icon: Clock },
+  { name: 'Finance', href: '/finance', icon: Wallet },
 ];
 
 export const Sidebar = () => {
