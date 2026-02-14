@@ -125,6 +125,10 @@ export const seedApi = {
 
 // Comprehensive HR API
 export const hrApi = {
+  // Dashboard Stats
+  getDashboardStats: (countryId) => axios.get(`${API_URL}/hr/dashboard-stats`, { params: { country_id: countryId } }),
+  getEmployeesOnLeaveToday: (countryId) => axios.get(`${API_URL}/hr/employees/on-leave-today`, { params: { country_id: countryId } }),
+  
   // Employees
   getEmployees: (params) => axios.get(`${API_URL}/hr/employees`, { params }),
   getEmployee: (id) => axios.get(`${API_URL}/hr/employees/${id}`),
