@@ -3504,7 +3504,7 @@ async def get_payroll_records(
 @api_router.get("/hr/payroll/batches")
 async def get_payroll_batches(
     country_id: Optional[str] = None,
-    status: Optional[str] = None,
+    batch_status: Optional[str] = None,
     year: Optional[int] = None,
     current_user: dict = Depends(get_current_user)
 ):
@@ -3514,7 +3514,7 @@ async def get_payroll_batches(
     if role_code not in ["CEO", "HR_MANAGER", "FINANCE_MANAGER", "COUNTRY_HEAD"]:
         raise HTTPException(status_code=403, detail="Not authorized")
     
-    batches = await payroll_service.get_batches(country_id, status, year)
+    batches = await payroll_service.get_batches(country_id, batch_status, year)
     return batches
 
 
