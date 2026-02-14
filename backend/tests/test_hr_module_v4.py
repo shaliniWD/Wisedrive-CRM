@@ -24,7 +24,7 @@ class TestHRModuleAuth:
             "country_code": "IN"
         })
         assert response.status_code == 200, f"CEO login failed: {response.text}"
-        return response.json().get("token")
+        return response.json().get("access_token")
     
     @pytest.fixture(scope="class")
     def hr_token(self):
@@ -35,7 +35,7 @@ class TestHRModuleAuth:
             "country_code": "IN"
         })
         assert response.status_code == 200, f"HR login failed: {response.text}"
-        return response.json().get("token")
+        return response.json().get("access_token")
     
     def test_ceo_login(self, ceo_token):
         """Verify CEO can login"""
