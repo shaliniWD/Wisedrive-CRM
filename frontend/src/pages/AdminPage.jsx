@@ -1827,7 +1827,7 @@ function EmployeeAuditTrail({ employeeId }) {
 }
 
 // ==================== EMPLOYEE MODAL ====================
-function EmployeeModal({ isOpen, onClose, employee, countries, roles, departments, teams, onSave, currentTab, setCurrentTab }) {
+function EmployeeModal({ isOpen, onClose, employee, countries, roles, departments, teams, onSave, currentTab, setCurrentTab, allEmployees = [] }) {
   const [form, setForm] = useState({});
   const [salaryForm, setSalaryForm] = useState({});
   const [documents, setDocuments] = useState([]);
@@ -1839,6 +1839,74 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  
+  // Photo upload
+  const photoInputRef = useRef(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  
+  // Employee ID validation
+  const [employeeIdError, setEmployeeIdError] = useState('');
+
+  // Handle photo file selection
+  const handlePhotoSelect = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+    
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB');
+      return;
+    }
+    
+    setUploadingPhoto(true);
+    try {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = reader.result;
+        setPhotoPreview(base64);
+        setForm(prev => ({ ...prev, photo_url: base64 }));
+        setUploadingPhoto(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      toast.error('Failed to process image');
+      setUploadingPhoto(false);
+    }
+  };
+
+  // Remove photo
+  const handleRemovePhoto = () => {
+    setPhotoPreview(null);
+    setForm(prev => ({ ...prev, photo_url: '' }));
+    if (photoInputRef.current) {
+      photoInputRef.current.value = '';
+    }
+  };
+
+  // Validate employee ID for duplicates
+  const validateEmployeeId = (empId) => {
+    if (!empId) {
+      setEmployeeIdError('');
+      return true;
+    }
+    
+    const duplicate = allEmployees.find(emp => 
+      emp.employee_code === empId && emp.id !== employee?.id
+    );
+    
+    if (duplicate) {
+      setEmployeeIdError(`Employee ID "${empId}" already exists for ${duplicate.name}`);
+      return false;
+    }
+    
+    setEmployeeIdError('');
+    return true;
+  };
 
   const isEdit = !!employee;
   const isMechanic = form.role_ids?.includes(roles.find(r => r.code === 'MECHANIC')?.id);
@@ -1846,7 +1914,9 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
   useEffect(() => {
     if (isOpen) {
       setDocForm({ document_type: '', document_name: '', document_url: '' });
+      setEmployeeIdError('');
       if (employee) {
+        setPhotoPreview(employee.photo_url || null);
         setForm({
           name: employee.name || '', email: employee.email || '', phone: employee.phone || '',
           photo_url: employee.photo_url || '',
@@ -1876,6 +1946,7 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
         });
         loadEmployeeData(employee.id);
       } else {
+        setPhotoPreview(null);
         setForm({
           name: '', email: '', phone: '', photo_url: '', country_id: '', department_id: '', team_id: '',
           role_id: '', role_ids: [], employment_type: 'full_time', employee_code: '', joining_date: '',
