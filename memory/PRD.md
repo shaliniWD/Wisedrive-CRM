@@ -247,12 +247,14 @@ Vendor Payment → Finance Manager creates with GST/TDS → Submit for Approval 
 ```
 
 ## Last Updated
-February 14, 2026 - **HR Module Enterprise Readiness Complete**: All 4 mandatory fixes implemented and verified:
-1. Employee fields (joining_date, DOB, address, emergency_contact, reporting_manager, payroll_active)
-2. Bank details encryption (AES-256 via Fernet)
-3. Document RBAC (sensitive docs restricted by role)
-4. Storage strategy (S3 configurable via STORAGE_TYPE)
-Fixed security bug: bank_account_number_encrypted no longer exposed in API.
+February 14, 2026 - **5 New HR Features Complete**: All 5 requested features implemented and verified:
+1. **Employee Photo & ID** - photo_url field in modal with preview, displays in employee table
+2. **"On Leave" Status** - Dynamic status calculation from approved leave requests, amber badge
+3. **Quick Leave Actions** - CalendarPlus (Apply Leave) and List (View Leaves) buttons in Actions column
+4. **Freelancer Role** - FREELANCER added to PRESET_ROLES with pink badge, RBAC service with hr-only access
+5. **"On Leave Today" Card** - Dashboard card with count and expandable employee list
+
+Previous: HR Module Enterprise Readiness Complete with 4 mandatory fixes (encryption, RBAC, storage, fields).
 
 ## Platform Architecture v5.0
 
