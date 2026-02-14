@@ -551,6 +551,18 @@ export default function AdminPage({ initialTab = 'employees', embedded = false }
                           <td className="px-4 py-4">
                             <div className="flex flex-col gap-1">
                               <StatusBadge status={emp.employment_status === 'on_leave' ? 'on_leave' : (emp.is_active ? 'active' : 'exited')} />
+                              {emp.today_attendance && emp.is_active && (
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border ${
+                                  emp.today_attendance === 'present' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
+                                  emp.today_attendance === 'absent' ? 'bg-red-100 text-red-700 border-red-200' :
+                                  emp.today_attendance === 'half_day' ? 'bg-amber-100 text-amber-700 border-amber-200' :
+                                  emp.today_attendance === 'late' ? 'bg-orange-100 text-orange-700 border-orange-200' :
+                                  'bg-gray-100 text-gray-700 border-gray-200'
+                                }`} data-testid={`today-attendance-${emp.id}`}>
+                                  <Clock className="h-2.5 w-2.5" />
+                                  Today: {emp.today_attendance.replace('_', ' ')}
+                                </span>
+                              )}
                               {emp.current_leave_type && (
                                 <span className="text-xs text-amber-600 capitalize">{emp.current_leave_type} leave</span>
                               )}
@@ -1163,6 +1175,18 @@ export default function AdminPage({ initialTab = 'employees', embedded = false }
                           <td className="px-4 py-4">
                             <div className="flex flex-col gap-1">
                               <StatusBadge status={emp.employment_status === 'on_leave' ? 'on_leave' : (emp.is_active ? 'active' : 'exited')} />
+                              {emp.today_attendance && emp.is_active && (
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border ${
+                                  emp.today_attendance === 'present' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
+                                  emp.today_attendance === 'absent' ? 'bg-red-100 text-red-700 border-red-200' :
+                                  emp.today_attendance === 'half_day' ? 'bg-amber-100 text-amber-700 border-amber-200' :
+                                  emp.today_attendance === 'late' ? 'bg-orange-100 text-orange-700 border-orange-200' :
+                                  'bg-gray-100 text-gray-700 border-gray-200'
+                                }`} data-testid={`today-attendance-${emp.id}`}>
+                                  <Clock className="h-2.5 w-2.5" />
+                                  Today: {emp.today_attendance.replace('_', ' ')}
+                                </span>
+                              )}
                               {emp.current_leave_type && (
                                 <span className="text-xs text-amber-600 capitalize">{emp.current_leave_type} leave</span>
                               )}
