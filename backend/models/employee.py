@@ -61,6 +61,7 @@ class EmployeeBase(BaseModel):
 
 class EmployeeCreate(EmployeeBase):
     password: str
+    role_ids: List[str] = []  # Optional list of role IDs
 
 
 class EmployeeUpdate(BaseModel):
