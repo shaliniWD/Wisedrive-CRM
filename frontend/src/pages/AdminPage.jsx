@@ -2009,26 +2009,87 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
                 <h4 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
                   <Users className="h-4 w-4 text-blue-500" /> Personal Information
                 </h4>
-                {/* Photo Preview and URL */}
-                <div className="flex items-center gap-4 mb-4">
-                  {form.photo_url ? (
-                    <img src={form.photo_url} alt="Employee" className="h-16 w-16 rounded-full object-cover border-2 border-blue-400" />
-                  ) : (
-                    <div className="h-16 w-16 rounded-full bg-gradient-to-r from-gray-300 to-gray-400 flex items-center justify-center text-white text-xl font-medium">
-                      {form.name?.charAt(0)?.toUpperCase() || '?'}
+                {/* Photo Upload and Employee ID */}
+                <div className="flex items-start gap-6 mb-4">
+                  {/* Photo Upload */}
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="relative">
+                      {(photoPreview || form.photo_url) ? (
+                        <img 
+                          src={photoPreview || form.photo_url} 
+                          alt="Employee" 
+                          className="h-20 w-20 rounded-full object-cover border-2 border-blue-400" 
+                        />
+                      ) : (
+                        <div className="h-20 w-20 rounded-full bg-gradient-to-r from-gray-300 to-gray-400 flex items-center justify-center text-white text-2xl font-medium">
+                          {form.name?.charAt(0)?.toUpperCase() || '?'}
+                        </div>
+                      )}
+                      {uploadingPhoto && (
+                        <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center">
+                          <Loader2 className="h-6 w-6 animate-spin text-white" />
+                        </div>
+                      )}
                     </div>
-                  )}
-                  <div className="flex-1">
-                    <Label className="text-sm font-medium">Photo URL</Label>
-                    <Input 
-                      value={form.photo_url || ''} 
-                      onChange={(e) => setForm({...form, photo_url: e.target.value})} 
-                      className="h-10 mt-1" 
-                      placeholder="https://example.com/photo.jpg"
-                      data-testid="emp-photo-url"
+                    <input
+                      type="file"
+                      ref={photoInputRef}
+                      accept="image/*"
+                      onChange={handlePhotoSelect}
+                      className="hidden"
                     />
+                    <div className="flex gap-1">
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => photoInputRef.current?.click()}
+                        className="text-xs h-7 px-2"
+                        data-testid="upload-photo-btn"
+                      >
+                        <Upload className="h-3 w-3 mr-1" />
+                        {(photoPreview || form.photo_url) ? 'Change' : 'Upload'}
+                      </Button>
+                      {(photoPreview || form.photo_url) && (
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm"
+                          onClick={handleRemovePhoto}
+                          className="text-xs h-7 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          data-testid="remove-photo-btn"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
+                    <span className="text-[10px] text-gray-400">Max 5MB</span>
+                  </div>
+                  
+                  {/* Employee ID */}
+                  <div className="flex-1 space-y-2">
+                    <Label className="text-sm font-medium">Employee ID</Label>
+                    <Input 
+                      value={form.employee_code || ''} 
+                      onChange={(e) => {
+                        const value = e.target.value.toUpperCase();
+                        setForm({...form, employee_code: value});
+                        validateEmployeeId(value);
+                      }}
+                      className={`h-10 ${employeeIdError ? 'border-red-500' : ''}`}
+                      placeholder="e.g., EMP-001"
+                      data-testid="emp-employee-code"
+                    />
+                    {employeeIdError && (
+                      <p className="text-xs text-red-600 flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {employeeIdError}
+                      </p>
+                    )}
+                    <p className="text-[10px] text-gray-400">Unique identifier for the employee</p>
                   </div>
                 </div>
+                
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Full Name <span className="text-red-500">*</span></Label>
