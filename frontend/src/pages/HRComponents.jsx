@@ -606,7 +606,7 @@ export function PayrollDashboard({ isHR, isFinance }) {
     recalculatePreview(employeeId, field, numValue);
   };
 
-  // Recalculate payroll for employee in preview
+  // Recalculate payroll for employee in preview (now uses absent_days)
   const recalculatePreview = (employeeId, changedField, newValue) => {
     setPreviewData(prev => {
       if (!prev) return prev;
@@ -614,20 +614,22 @@ export function PayrollDashboard({ isHR, isFinance }) {
       const updatedRecords = prev.records.map(record => {
         if (record.employee_id !== employeeId) return record;
 
-        const workingDays = record.working_days_in_month;
+        const workingDays = batchWorkingDays || record.working_days_in_month;
         const gross = record.gross_salary;
         const perDaySalary = workingDays > 0 ? gross / workingDays : 0;
 
-        // Get attendance days (from edit or current)
-        let attendanceDays = changedField === 'attendance_days' 
+        // Get absent days (from edit or default to 0)
+        let absentDays = changedField === 'absent_days' 
           ? newValue 
-          : (previewEdits[employeeId]?.attendance_days ?? record.attendance_days);
+          : (previewEdits[employeeId]?.absent_days ?? 0);
         
-        // Cap attendance days at working days
-        attendanceDays = Math.min(Math.max(0, attendanceDays), workingDays);
+        // Cap absent days at working days
+        absentDays = Math.min(Math.max(0, absentDays), workingDays);
         
-        // Calculate attendance deduction
-        const absentDays = workingDays - attendanceDays;
+        // Calculate attendance (present) days: Present = Working - Absent
+        const attendanceDays = workingDays - absentDays;
+        
+        // Calculate attendance deduction based on absent days
         const attendanceDeduction = Math.round(perDaySalary * absentDays * 100) / 100;
 
         // Get other deductions
@@ -637,7 +639,7 @@ export function PayrollDashboard({ isHR, isFinance }) {
         
         // Cap other deductions at net before other
         const netBeforeOther = gross - record.total_statutory_deductions - attendanceDeduction;
-        otherDeductions = Math.min(Math.max(0, otherDeductions), netBeforeOther);
+        otherDeductions = Math.min(Math.max(0, otherDeductions), Math.max(0, netBeforeOther));
 
         // Calculate totals
         const totalDeductions = record.total_statutory_deductions + attendanceDeduction + otherDeductions;
@@ -645,6 +647,7 @@ export function PayrollDashboard({ isHR, isFinance }) {
 
         return {
           ...record,
+          working_days_in_month: workingDays,
           attendance_days: attendanceDays,
           unapproved_absent_days: absentDays,
           attendance_deduction: attendanceDeduction,
