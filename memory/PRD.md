@@ -126,6 +126,21 @@ Recreate WiseDrive CRM (https://crm.wisedrive.com) design with a modern UI. Crea
 - [x] Lead Assignment Control toggle
 - [x] Attendance/Leave tracking with month-wise summary
 - [x] Salary Info: gross for permanent, price per inspection for mechanics
+- [x] **Salary Structure with Deductions (V4 Restored)**:
+  - Earnings: Basic Salary, HRA, Variable Pay, Conveyance, Medical, Special Allowance
+  - Deductions: PF (Employee), Professional Tax, Income Tax (TDS), Other Deductions
+  - Gross Salary vs Net Salary (Take Home) calculation
+- [x] **Quick Leave Actions (V4 Restored)**:
+  - Mark Today as Leave button
+  - Mark Tomorrow as Leave button
+- [x] **Monthly Leave Summary (V4 Restored)**:
+  - Year selector (2024, 2025, 2026)
+  - Present Days, Leaves Taken, Half Days, Working Days counts
+  - Monthly breakdown table
+- [x] **Documents Management (V4 Restored)**:
+  - Upload form: Document Type (Aadhar, PAN, etc.), Name, URL
+  - Document list with View/Delete actions
+  - Verified/Pending status badges
 
 ### V2 Architecture (Feb 13, 2026) ✅
 - [x] Multi-country support: India, Malaysia, Thailand, Philippines
