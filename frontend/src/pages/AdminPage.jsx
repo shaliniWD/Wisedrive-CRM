@@ -3012,16 +3012,20 @@ function RoleModal({ isOpen, onClose, role, onSave }) {
 
 // ==================== COUNTRY MODAL ====================
 function CountryModal({ isOpen, onClose, country, onSave }) {
-  const [form, setForm] = useState({ name: '', code: '', currency: 'INR', currency_symbol: '₹', phone_code: '+91', is_active: true });
+  const [form, setForm] = useState({ name: '', code: '', currency: 'INR', currency_symbol: '₹', phone_code: '+91', is_active: true, cities: [] });
   const [saving, setSaving] = useState(false);
+  const [newCity, setNewCity] = useState('');
   const isEdit = !!country;
 
   useEffect(() => {
     if (isOpen) {
       setForm(country ? {
         name: country.name || '', code: country.code || '', currency: country.currency || 'INR',
-        currency_symbol: country.currency_symbol || '₹', phone_code: country.phone_code || '+91', is_active: country.is_active !== false
-      } : { name: '', code: '', currency: 'INR', currency_symbol: '₹', phone_code: '+91', is_active: true });
+        currency_symbol: country.currency_symbol || '₹', phone_code: country.phone_code || '+91', 
+        is_active: country.is_active !== false,
+        cities: country.cities || []
+      } : { name: '', code: '', currency: 'INR', currency_symbol: '₹', phone_code: '+91', is_active: true, cities: [] });
+      setNewCity('');
     }
   }, [isOpen, country]);
 
@@ -3038,6 +3042,22 @@ function CountryModal({ isOpen, onClose, country, onSave }) {
       setSaving(false);
     }
   };
+  
+  // Add new city to list
+  const handleAddCity = () => {
+    if (!newCity.trim()) return;
+    if (form.cities.includes(newCity.trim())) {
+      toast.error('City already exists');
+      return;
+    }
+    setForm({ ...form, cities: [...form.cities, newCity.trim()] });
+    setNewCity('');
+  };
+  
+  // Remove city from list
+  const handleRemoveCity = (cityToRemove) => {
+    setForm({ ...form, cities: form.cities.filter(c => c !== cityToRemove) });
+  };
 
   const currencies = [
     { code: 'INR', symbol: '₹', name: 'Indian Rupee' },
@@ -3049,7 +3069,7 @@ function CountryModal({ isOpen, onClose, country, onSave }) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[450px]" data-testid="country-modal">
+      <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto" data-testid="country-modal">
         <DialogHeader className="border-b pb-4">
           <DialogTitle className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 flex items-center justify-center text-white">
@@ -3059,29 +3079,95 @@ function CountryModal({ isOpen, onClose, country, onSave }) {
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-4 pt-4">
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Country Name *</Label>
-            <Input value={form.name} onChange={(e) => setForm({...form, name: e.target.value})} className="h-10" data-testid="country-name" />
+          {/* Basic Info */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Country Name *</Label>
+              <Input value={form.name} onChange={(e) => setForm({...form, name: e.target.value})} className="h-10" data-testid="country-name" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Country Code (ISO) *</Label>
+              <Input value={form.code} onChange={(e) => setForm({...form, code: e.target.value.toUpperCase()})} className="h-10 font-mono" maxLength={2} data-testid="country-code" />
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Country Code (ISO) *</Label>
-            <Input value={form.code} onChange={(e) => setForm({...form, code: e.target.value.toUpperCase()})} className="h-10 font-mono" maxLength={2} data-testid="country-code" />
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Currency *</Label>
+              <Select value={form.currency} onValueChange={(v) => { const curr = currencies.find(c => c.code === v); setForm({...form, currency: v, currency_symbol: curr?.symbol || ''}); }}>
+                <SelectTrigger className="h-10" data-testid="country-currency"><SelectValue /></SelectTrigger>
+                <SelectContent>{currencies.map(c => <SelectItem key={c.code} value={c.code}>{c.symbol} {c.code} - {c.name}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Phone Code</Label>
+              <Input value={form.phone_code} onChange={(e) => setForm({...form, phone_code: e.target.value})} className="h-10 font-mono" data-testid="country-phone" />
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Currency *</Label>
-            <Select value={form.currency} onValueChange={(v) => { const curr = currencies.find(c => c.code === v); setForm({...form, currency: v, currency_symbol: curr?.symbol || ''}); }}>
-              <SelectTrigger className="h-10" data-testid="country-currency"><SelectValue /></SelectTrigger>
-              <SelectContent>{currencies.map(c => <SelectItem key={c.code} value={c.code}>{c.symbol} {c.code} - {c.name}</SelectItem>)}</SelectContent>
-            </Select>
+          
+          {/* Cities Section */}
+          <div className="space-y-3 pt-3 border-t">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-purple-600" />
+                Cities ({form.cities.length})
+              </Label>
+            </div>
+            
+            {/* Add City Input */}
+            <div className="flex gap-2">
+              <Input 
+                value={newCity} 
+                onChange={(e) => setNewCity(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleAddCity()}
+                placeholder="Enter city name..."
+                className="h-9"
+                data-testid="new-city-input"
+              />
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm" 
+                onClick={handleAddCity}
+                className="h-9 px-3"
+                data-testid="add-city-btn"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            {/* City Tags */}
+            {form.cities.length > 0 ? (
+              <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-2 bg-slate-50 rounded-lg">
+                {form.cities.map((city, index) => (
+                  <span 
+                    key={index} 
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border border-purple-200 text-purple-700 rounded-full text-xs font-medium"
+                  >
+                    <MapPin className="h-3 w-3" />
+                    {city}
+                    <button 
+                      type="button"
+                      onClick={() => handleRemoveCity(city)}
+                      className="ml-0.5 hover:text-red-600 transition-colors"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-gray-500 text-center py-3 bg-slate-50 rounded-lg">
+                No cities added yet. Add cities for leads management.
+              </p>
+            )}
           </div>
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Phone Code</Label>
-            <Input value={form.phone_code} onChange={(e) => setForm({...form, phone_code: e.target.value})} className="h-10 font-mono" data-testid="country-phone" />
-          </div>
-          <label className="flex items-center gap-2 cursor-pointer">
+          
+          <label className="flex items-center gap-2 cursor-pointer pt-2">
             <input type="checkbox" checked={form.is_active} onChange={(e) => setForm({...form, is_active: e.target.checked})} className="rounded border-gray-300" />
             <span className="text-sm">Active (available for login)</span>
           </label>
+          
           <div className="flex justify-end gap-3 pt-4 border-t">
             <Button variant="outline" onClick={onClose}>Cancel</Button>
             <Button onClick={handleSave} disabled={saving} className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800" data-testid="save-country-btn">
