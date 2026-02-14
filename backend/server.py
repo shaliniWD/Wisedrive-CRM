@@ -3532,6 +3532,191 @@ async def download_payslip(
     }
 
 
+# ==================== HR MODULE: PAYROLL BATCH GOVERNANCE ====================
+
+@api_router.post("/hr/payroll/preview")
+async def preview_payroll(
+    data: PayrollPreviewRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Preview payroll for a month/year/country - HR only (no DB save)"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Only HR can preview payroll")
+    
+    try:
+        preview = await payroll_service.preview_payroll(
+            month=data.month,
+            year=data.year,
+            country_id=data.country_id,
+            user_id=current_user["id"]
+        )
+        return preview
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@api_router.post("/hr/payroll/batch")
+async def create_payroll_batch(
+    data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create a DRAFT payroll batch with records - HR only"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Only HR can create payroll batches")
+    
+    try:
+        batch = await payroll_service.create_batch(
+            month=data.get("month"),
+            year=data.get("year"),
+            country_id=data.get("country_id"),
+            records=data.get("records", []),
+            created_by=current_user["id"],
+            created_by_name=current_user.get("name", "")
+        )
+        return batch
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@api_router.get("/hr/payroll/batches")
+async def get_payroll_batches(
+    country_id: Optional[str] = None,
+    status: Optional[str] = None,
+    year: Optional[int] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get payroll batches - HR/Finance"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER", "FINANCE_MANAGER", "COUNTRY_HEAD"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    batches = await payroll_service.get_batches(country_id, status, year)
+    return batches
+
+
+@api_router.get("/hr/payroll/batch/{batch_id}")
+async def get_payroll_batch(
+    batch_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get a single batch with records"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER", "FINANCE_MANAGER", "COUNTRY_HEAD"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    batch = await payroll_service.get_batch(batch_id)
+    if not batch:
+        raise HTTPException(status_code=404, detail="Batch not found")
+    
+    records = await payroll_service.get_batch_records(batch_id)
+    
+    return {
+        "batch": batch,
+        "records": records
+    }
+
+
+@api_router.put("/hr/payroll/batch/{batch_id}/record/{record_id}")
+async def update_batch_record(
+    batch_id: str,
+    record_id: str,
+    data: PayrollRecordUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update a record in a DRAFT batch - HR only"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Only HR can edit payroll records")
+    
+    try:
+        record = await payroll_service.update_batch_record(
+            batch_id=batch_id,
+            record_id=record_id,
+            updates=data.model_dump(exclude_none=True),
+            updated_by=current_user["id"],
+            updated_by_name=current_user.get("name", "")
+        )
+        return record
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@api_router.post("/hr/payroll/batch/{batch_id}/confirm")
+async def confirm_payroll_batch(
+    batch_id: str,
+    data: BatchConfirmRequest = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Confirm a batch (DRAFT → CONFIRMED) - HR only"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Only HR can confirm payroll batches")
+    
+    try:
+        batch = await payroll_service.confirm_batch(
+            batch_id=batch_id,
+            confirmed_by=current_user["id"],
+            confirmed_by_name=current_user.get("name", ""),
+            notes=data.notes if data else None
+        )
+        return batch
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@api_router.post("/hr/payroll/batch/{batch_id}/mark-paid")
+async def mark_batch_paid(
+    batch_id: str,
+    data: BatchMarkPaidRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Mark batch as paid (CONFIRMED → CLOSED) - HR only"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Only HR can mark batches as paid")
+    
+    try:
+        batch = await payroll_service.mark_batch_paid(
+            batch_id=batch_id,
+            payment_date=data.payment_date,
+            payment_mode=data.payment_mode,
+            transaction_reference=data.transaction_reference,
+            paid_by=current_user["id"],
+            paid_by_name=current_user.get("name", ""),
+            notes=data.notes
+        )
+        return batch
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@api_router.delete("/hr/payroll/batch/{batch_id}")
+async def delete_draft_batch(
+    batch_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Delete a DRAFT batch - HR only"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Only HR can delete batches")
+    
+    try:
+        await payroll_service.delete_draft_batch(batch_id, current_user["id"])
+        return {"message": "Batch deleted successfully"}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 # ==================== HR MODULE: LEAVE MANAGEMENT ====================
 
 @api_router.post("/hr/leave/apply")
