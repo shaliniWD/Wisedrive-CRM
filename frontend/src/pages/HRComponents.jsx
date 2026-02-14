@@ -1130,10 +1130,7 @@ export function PayrollDashboard({ isHR, isFinance }) {
                   <th className="px-3 py-2 text-left text-xs font-semibold text-slate-600 sticky left-0 bg-slate-50">Employee</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600">Gross</th>
                   <th className="px-3 py-2 text-center text-xs font-semibold text-slate-600 bg-amber-50">
-                    <div className="flex flex-col items-center">
-                      <span>Absent Days</span>
-                      <span className="text-[10px] text-amber-600 font-normal">(Editable)</span>
-                    </div>
+                    <span>Absent Days</span>
                   </th>
                   <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-red-50">PF</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-red-50">PT</th>
@@ -1141,10 +1138,7 @@ export function PayrollDashboard({ isHR, isFinance }) {
                   <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-red-50">ESI</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-amber-50">Attend. Ded.</th>
                   <th className="px-3 py-2 text-center text-xs font-semibold text-slate-600 bg-gray-100">
-                    <div className="flex flex-col items-center">
-                      <span>Other</span>
-                      <span className="text-[10px] text-gray-500 font-normal">(Editable)</span>
-                    </div>
+                    <span>Other Deductions</span>
                   </th>
                   <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-blue-50">Net Salary</th>
                 </tr>
