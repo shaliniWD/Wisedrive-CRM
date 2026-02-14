@@ -2,140 +2,125 @@
 The user's initial goal was to build a scalable, multi-repository, enterprise-grade automotive platform named Wisedrive. The plan pivoted to focus on building out core business modules within the existing monolithic CRM application.
 
 PRODUCT REQUIREMENTS:
-1.  **Phase 1 (HR Module):** Implement a comprehensive HR module. This was initially defined with Attendance, Payroll, Leave, and Admin consolidation. The user later provided a 14-point HR Module Readiness Checklist detailing requirements for employee management, document storage (S3), salary structures, currency handling, bank detail encryption, leave management integration with payroll, and RBAC. The user recently requested several functional and UI updates.
-2.  **Phase 2 (Finance Module):** To be implemented after the HR module. The agent discovered that a functional Finance module already exists.
-3.  **Deployment:** Deploy the application to a  subdomain for staging and testing.
-4.  **Future Phases:** Implement Leads, Inspections, and Customers modules.
+1.  **Phase 1 (HR Module):** A comprehensive HR module has been implemented, including Attendance, Payroll, Leave Management, RBAC, and data encryption, based on a 14-point readiness checklist.
+2.  **Payroll Enhancements (Iterative):**
+    *   **V1 (Completed):** The agent implemented an initial set of enhancements to the payroll preview screen, including displaying working days and making Attendance Days and Other deductions editable with real-time recalculations.
+    *   **V2 (New Request):** The user has immediately requested a new set of UI and logic changes for the same payroll preview screen, which is the immediate next task.
+3.  **Phase 2 (Finance Module):** A functional Finance module already exists.
+4.  **Deployment:** The application needs to be deployed to a  subdomain for staging.
+5.  **Future Phases:** Implement Leads, Inspections, and Customers modules.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The application is a full-stack CRM with a FastAPI backend and a React frontend. A comprehensive HR Module is in place, featuring employee management (CRUD), a manual batch-based payroll system, and attendance tracking. Key enterprise-readiness features like AES-256 encryption for bank details and Role-Based Access Control (RBAC) are implemented.
-
-Most recently, the agent implemented several UI/UX changes based on user feedback:
-*   The mini-dashboard from the top of the HR module page was removed.
-*   An On Leave Today summary card was added to the employee data table view.
-*   The employee action buttons were changed from Leave actions to a single Mark Attendance action, which opens a modal to record attendance.
-
-However, a bug was introduced during this last implementation.
+The application is a full-stack CRM with a FastAPI backend and a React frontend. The HR module is feature-rich, with employee management, attendance tracking, and a batch-based payroll system. The payroll preview screen was just enhanced to include editable Attendance Days and Other Deductions with live recalculation of salaries. These features were successfully implemented and tested.
 
 **Last working item**:
--   **Last item agent was working:** The agent was investigating a bug reported by the user. After marking an employee's attendance via the new modal, the change is not reflected in the employee data table.
--   **Status:** IN PROGRESS
--   **Agent Testing Done:** N
+-   **Last item agent was working:** The agent had just received a new set of requirements from the user to overhaul the UI and logic of the Payroll Preview screen, immediately after completing and testing the first version of the enhancements.
+-   **Status:** NOT STARTED
+-   **Agent Testing Done:** N/A
 -   **Which testing method agent to use?** both
--   **User Testing Done:** Y
+-   **User Testing Done:** N/A
 
 **All Pending/In progress Issue list**:
--   **Issue 1: Attendance update not reflected in UI (P0)**
-    -   **Description:** When an admin marks an employee's attendance using the new attendance modal in the  data table, the API call succeeds, but the table UI does not update to show the new attendance status. The page needs to be manually refreshed to see the change.
-    -   **Attempted fixes:** None yet. The agent had just received the bug report.
-    -   **Next debug checklist:**
-        1.  **File:** 
-        2.  **Method:** Check the  function.
-        3.  **Action:** Verify if there is a mechanism to refetch the employee list or update the component's state after the  API call returns a successful response. The current implementation likely calls the API but does not trigger a re-render of the table with the fresh data.
-        4.  **File:** 
-        5.  **Method:** Check the logs for the  endpoint to confirm it's behaving as expected, although the agent's initial  test suggests it is.
-    -   **Why fix this issue and what will be achieved with the fix?** Fixing this will provide immediate visual feedback to the user, making the attendance marking feature usable and complete as per the user's request.
-    -   **Status:** IN PROGRESS
-    -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?** Both
-    -   **Blocked on other issue:** None
+There are no pending bugs or issues. The current focus is on implementing a new set of feature requests.
 
 **In progress Task List**:
-None. All focus is on the P0 bug.
+None.
 
 **Upcoming and Future Tasks**
 **Upcoming Tasks:**
--   **P1: Deployment to :**
-    -   Obtain the public Load Balancer IP address or hostname for the DEV environment.
-    -   Provide it to the user so they can configure the  or  record in GoDaddy.
-    -   Confirm that the platform will handle ingress host rule updates and SSL certificate provisioning.
--   **P2: Full Staging Environment Validation:** Once deployed, perform a full end-to-end test of the HR module against the user's 14-point readiness checklist on the  environment.
+*   **P0: Re-implement Payroll Preview UI/UX Changes:**
+    *   **Requirement 1 (Working Days):** Remove the Working Days column from the employee table. The Working Days display in the summary header must become an editable numeric input. Changing this value should trigger a payroll recalculation for the entire batch.
+    *   **Requirement 2 (Absent Days):** Rename the Attendance Days table column to Absent Days. It should be a simple editable numeric input. On edit, payroll must recalculate using the formula: .
+    *   **Requirement 3 (Other Deductions):** The Other column should remain an editable, plain numeric input for additional deductions.
+*   **P1: Deployment to :**
+    *   Obtain the public Load Balancer IP/hostname.
+    *   Provide it to the user for DNS configuration.
+*   **P2: Full Staging Environment Validation:** Once deployed, perform end-to-end testing of the HR module against the user's 14-point readiness checklist on the  environment.
 
 **Future Tasks:**
--   **P3: Core Functional Modules:** Implement Leads, Inspections, and Customer modules.
--   **P4: OBD Integration:** Integrate the  library.
--   **P5: External Integrations:** Implement Razorpay and Invincible Ocean clients.
--   **P6: Monolith to Microservices Migration:** The long-term architectural goal.
+*   **P3:** Implement Leads, Inspections, and Customer modules.
+*   **P4:** Integrate the  library.
+*   **P5:** Implement Razorpay and Invincible Ocean clients.
+*   **P6:** Plan the migration from a monolith to a microservices architecture.
 
 **Completed work in this session**
--   **Implemented 5 New HR Features:**
-    -   Added  to the employee model and the employee creation/edit modal.
-    -   Added logic to dynamically calculate and display an On Leave status.
-    -   Added a Freelancer role to backend RBAC () and frontend constants.
-    -   Created an On Leave Today summary card and expandable list on the HR dashboard.
-    -   Added Quick Leave action buttons (later replaced).
--   **Refactored HR UI based on User Feedback:**
-    -   Removed the top mini-dashboard from .
-    -   Moved the summary cards into  and added a new On Leave Today card.
-    -   Replaced the newly added Quick Leave action buttons with a Mark Attendance button and associated modal.
-    -   Created and wired up the frontend  API call in .
+-   **Fixed Attendance UI Bug:** Resolved an issue where the employee data table in  did not automatically update after marking an employee's attendance. The fix involved displaying the  status in the UI.
+-   **Implemented Payroll Preview Enhancements (V1):**
+    -   Added No. of Working Days display to the payroll preview header and table.
+    -   Made the Attendance Days column editable with real-time, client-side recalculation of prorated salary.
+    -   Made the Other deductions column editable with real-time updates to net pay.
+-   **Testing:** Both the bug fix and the V1 payroll enhancements were successfully verified using the .
+
+**Earlier issues found/mentioned but not fixed**
+-   None.
+
+**Known issue recurrence from previous fork**
+-   None.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
 -   **Backend:** FastAPI, Pydantic, MongoDB
--   **Frontend:** React, Shadcn UI, Axios
--   **Security:** AES-256 encryption for sensitive data ( library), RBAC on API endpoints.
--   **State Management:** React state (, ) is used for managing UI and data. The current bug is likely a state management issue.
+-   **Frontend:** React, Shadcn UI, Axios for API calls.
+-   **Payroll Logic:** The system uses a combination of client-side state management for real-time UI updates and backend validation/persistence. The immediate task requires significant changes to this logic in both  and .
 
 **key DB schema**
--   ****: Contains employee data.  is encrypted.  is a new field.
--   ****: Tracks payroll generation cycles (uid=0(root) gid=0(root) groups=0(root), , , ).
--   ****: Stores attendance records for each employee.
+-   ****: Stores employee data, including .
+-   ****: Tracks payroll runs, month, year, and status.
+-   ****: Detailed payroll data for each employee in a batch, including , , and calculated salary components.
 
 **changes in tech stack**
--   None in this session.
+-   None.
 
 **All files of reference**
--   **/app/frontend/src/pages/AdminPage.jsx**: The location of the attendance data table and the bug related to UI updates.
--   **/app/frontend/src/services/api.js**: Contains the  API function.
--   **/app/backend/server.py**: Contains the backend API endpoint for marking attendance.
--   **/app/frontend/src/pages/HRModulePage.jsx**: The parent page for the HR module.
+-   **/app/frontend/src/components/PayrollDashboard.jsx**: The primary frontend component that needs to be refactored to meet the new UI/UX requirements for payroll preview.
+-   **/app/backend/services/payroll_service.py**: The core backend service where payroll calculation logic must be updated to support editable Working Days and the new Absent Days logic.
+-   **/app/backend/server.py**: Defines the API endpoints for payroll that may need adjustments.
+-   **/app/backend/models/payroll.py**: Pydantic models for payroll data structures.
 
 **Areas that need refactoring**:
--    has become very large and complex (>1200 lines). It handles logic for both embedded (dashboard) and standalone views, multiple modals (Edit, Exit, Attendance), and data fetching. It should be broken down into smaller, more manageable components (e.g., , , ).
+-    is becoming complex with extensive client-side logic. It should be broken down into smaller components (, ) to improve maintainability.
+-    remains a very large component that could be refactored.
 
 **key api endpoints**
--   : Marks attendance for an employee.
--   : Get a list and count of employees on approved leave today.
--   : Get summary statistics for the HR dashboard.
--   : Fetches all employees; now includes dynamic on_leave status.
+-   : Generates a payroll preview. Its response and the logic behind it will need updates.
+-   : Updates an entire batch. The logic will need to handle the new data structure from the updated preview screen.
 
 **Critical Info for New Agent**
--   **Top Priority:** Your first and only task is to fix the bug where the employee data table doesn't update after marking attendance. The problem is almost certainly in the frontend state management within . After the  API call succeeds, you need to trigger a re-fetch of the employee data or update the local state to ensure the table re-renders with the correct information.
--   **User Feedback is Key:** The user is actively testing and providing feedback. After fixing the bug, ensure the implemented solution is robust before finishing.
--   **Deployment is Next:** Once this bug is fixed and verified, the next priority is deploying the application to the  staging environment.
+-   **Top Priority:** Your first task is to implement the user's **new** set of requirements for the payroll preview screen. The user wants to change the features that were just built and tested.
+-   **Discard Previous Logic:** The just-completed logic for Attendance Days is now being replaced. The new core logic is based on user input for **Absent Days**.
+-   **Key Changes Required:**
+    1.  **Working Days:** Move this from a table column to a single, **editable** field in the summary header. This will act as the master input for the entire batch calculation.
+    2.  **Attendance -> Absent:** The Attendance Days column becomes Absent Days. It is an input field. The salary proration factor will now be .
+    3.  **UI Simplification:** Remove all  stepper controls from the numeric inputs in the table. Use plain inputs.
 
 **documents and test reports created in this job**
--   : Updated with the completion of the 5 HR features and the subsequent UI refactor.
--   : (Generated by agent) Verified the 5 new HR features before the UI refactor.
+-   
+-    (Attendance bug fix test)
+-    (Payroll V1 enhancements test)
 
 **Last 10 User Messages and any pending HUMAN messages**
-- **User:** remove the mini dashboard in HR module.
-- **User:** add one more box to the mini dashboard in the data table for the employees on leave
-- **User:** the new action buttons added for employee attendence are not fulfilling the requirement.
-- **User:** add new action button just to add attendence.
-- **User (LATEST & PENDING):** there is a bug while updating employee attendence in the dateable
+- The last user message contains a detailed list of new requirements for changing the Payroll Preview screen's UI and behavior, rendering the just-completed work obsolete.
 
 **Project Health Check:**
--   **Broken:** The application has a functional regression. The newly added attendance marking feature is not providing the necessary UI feedback, making it difficult to use.
+-   **Healthy:** The application is stable. The current task is a feature change request, not a bug fix.
 
 **3rd Party Integrations**
--   **reportlab:** For server-side PDF generation (payslips).
--   **boto3:** For S3-compatible object storage (configured for TEST/PROD).
--   **cryptography:** For AES-256 encryption of sensitive database fields.
+-   **reportlab:** For PDF generation.
+-   **boto3:** For S3-compatible object storage.
+-   **cryptography:** For AES-256 encryption.
 
 **Testing status**
--   **Testing agent used after significant changes:** YES, for the initial 5 features.
+-   **Testing agent used after significant changes:** YES (for the work that is now being replaced).
 -   **Troubleshoot agent used after agent stuck in loop:** NO
--   **Test files created:** No new test files in this session.
--   **Known regressions:** Yes, the employee data table does not update after marking attendance.
+-   **Test files created:** None in the last session.
+-   **Known regressions:** None.
 
 **Credentials to test flow:**
 -   **CEO:**  / 
 
 **What agent forgot to execute**
--   The agent did not implement a state update or data re-fetching mechanism in  after a successful call to the  API. This caused the UI to become stale, leading to the bug reported by the user.</analysis>
+-   The agent did not forget anything. The user has submitted a new set of requirements that changes the direction of the work.</analysis>
