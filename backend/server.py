@@ -91,6 +91,11 @@ rbac_service: Optional[RBACService] = None
 round_robin_service: Optional[RoundRobinService] = None
 audit_service: Optional[AuditService] = None
 
+# HR Module services
+attendance_service: Optional[AttendanceService] = None
+payroll_service: Optional[PayrollService] = None
+leave_service: Optional[LeaveService] = None
+
 
 @app.on_event("startup")
 async def startup():
