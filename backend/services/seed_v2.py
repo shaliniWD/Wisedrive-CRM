@@ -74,6 +74,7 @@ async def seed_v2_data(db: AsyncIOMotorDatabase):
         {"name": "CEO", "code": "CEO", "level": 1, "department_code": "EXEC", "description": "Chief Executive Officer - Global Super Admin"},
         {"name": "HR Manager", "code": "HR_MANAGER", "level": 2, "department_code": "HR", "description": "Human Resources Manager"},
         {"name": "Country Head", "code": "COUNTRY_HEAD", "level": 2, "department_code": "EXEC", "description": "Country Head - Full country access"},
+        {"name": "Finance Manager", "code": "FINANCE_MANAGER", "level": 3, "department_code": "FINANCE", "description": "Finance Manager - Country-level finance access"},
         {"name": "Sales Head", "code": "SALES_HEAD", "level": 3, "department_code": "SALES", "description": "Head of Sales Department"},
         {"name": "Inspection Head", "code": "INSPECTION_HEAD", "level": 3, "department_code": "INSPECTION", "description": "Head of Inspection Department"},
         {"name": "Sales Lead", "code": "SALES_LEAD", "level": 4, "department_code": "SALES", "description": "Sales Team Leader"},
