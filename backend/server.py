@@ -169,6 +169,12 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 
 # ==================== AUTH ROUTES ====================
 
+@api_router.get("/auth/countries")
+async def get_login_countries():
+    """Get all active countries for login selection - public endpoint"""
+    countries = await db.countries.find({"is_active": True}, {"_id": 0, "id": 1, "name": 1, "code": 1}).to_list(100)
+    return countries
+
 @api_router.post("/auth/login", response_model=Token)
 async def login(credentials: UserLogin):
     """Login with email and password"""
