@@ -185,6 +185,17 @@ Recreate WiseDrive CRM (https://crm.wisedrive.com) design with a modern UI. Crea
 
 ## API Endpoints
 
+### Attendance Calendar (Dec 14, 2025 - New)
+- `GET /api/hr/attendance/calendar` - Consolidated calendar view of all employees with leave statuses
+  - Query params: `month`, `year`, `country_id`, `search`
+  - Returns: `employees[]` with `days{}` containing status for each day
+  - RBAC: CEO, HR_MANAGER, COUNTRY_HEAD only
+
+### Admin Sync (Dec 14, 2025 - New)
+- `POST /api/admin/sync-users` - Safe sync that adds missing users without deleting (non-destructive)
+  - Returns: `created_count`, `created_users[]`, `skipped_count`, `skipped_users[]`
+  - Idempotent: Can be run multiple times safely
+
 ### CRM V4 Endpoints (New)
 - `PATCH /api/leads/{lead_id}/status` - Inline status update for leads
 - `GET /api/auth/me` - Returns user with `roles` array for multi-role support
@@ -207,11 +218,11 @@ Recreate WiseDrive CRM (https://crm.wisedrive.com) design with a modern UI. Crea
 
 | Role | Email | Password |
 |------|-------|----------|
-| CEO | ceo@wisedrive.com | password123 |
-| Country Head (India) | countryhead.in@wisedrive.com | password123 |
-| Finance Manager (India) | finance.in@wisedrive.com | password123 |
-| Finance Manager (Malaysia) | finance.my@wisedrive.com | password123 |
+| CEO | kalyan@wisedrive.com | password123 |
 | HR Manager | hr@wisedrive.com | password123 |
+| Finance Manager | finance@wisedrive.com | password123 |
+| Sales Executive | john.sales@wisedrive.com | password123 |
+| Mechanic | mike.mechanic@wisedrive.com | password123 |
 
 ## Seeded Data
 
