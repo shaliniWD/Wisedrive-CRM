@@ -699,6 +699,53 @@ class PayrollService:
         c = calendar.Calendar()
         return sum(1 for day in c.itermonthdays2(year, month) if day[0] != 0 and day[1] == 6)
     
+    def _count_saturdays(self, year: int, month: int) -> int:
+        """Count Saturdays in a month"""
+        c = calendar.Calendar()
+        return sum(1 for day in c.itermonthdays2(year, month) if day[0] != 0 and day[1] == 5)
+    
+    def _count_weekday_occurrences(self, year: int, month: int, weekday: int) -> int:
+        """Count occurrences of a specific weekday (0=Monday, 6=Sunday) in a month"""
+        c = calendar.Calendar()
+        return sum(1 for day in c.itermonthdays2(year, month) if day[0] != 0 and day[1] == weekday)
+    
+    def _calculate_working_days(self, year: int, month: int, employee_weekly_off: int = 0) -> int:
+        """
+        Calculate working days for a month considering:
+        - Global weekends: Saturday (5) and Sunday (6)
+        - Employee-specific weekly off day (0=Sunday, 1=Monday, ..., 6=Saturday)
+        
+        Note: If employee's weekly off is already Saturday or Sunday, don't double-count.
+        """
+        total_days = calendar.monthrange(year, month)[1]
+        
+        # Global weekends (Saturday=5, Sunday=6 in Python weekday)
+        saturdays = self._count_weekday_occurrences(year, month, 5)
+        sundays = self._count_weekday_occurrences(year, month, 6)
+        
+        # Employee's weekly off (0=Sunday in the app, 1=Monday, etc.)
+        # Convert to Python weekday: app Sunday(0) = Python 6, app Monday(1) = Python 0, etc.
+        # App stores: 0=Sunday, 1=Monday, 2=Tuesday, 3=Wednesday, 4=Thursday, 5=Friday, 6=Saturday
+        # Python weekday: 0=Monday, 1=Tuesday, 2=Wednesday, 3=Thursday, 4=Friday, 5=Saturday, 6=Sunday
+        
+        python_weekday_map = {0: 6, 1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5}  # app day -> python weekday
+        employee_weekly_off_python = python_weekday_map.get(employee_weekly_off, 6)  # Default Sunday
+        
+        # Count employee's additional weekly off (if not already a global weekend)
+        additional_off = 0
+        if employee_weekly_off_python not in [5, 6]:  # Not Saturday or Sunday
+            additional_off = self._count_weekday_occurrences(year, month, employee_weekly_off_python)
+        
+        working_days = total_days - saturdays - sundays - additional_off
+        return max(working_days, 0)
+    
+    def _get_pay_period(self, year: int, month: int) -> tuple:
+        """Get pay period start and end dates for a month"""
+        last_day = calendar.monthrange(year, month)[1]
+        start_date = f"{year}-{str(month).zfill(2)}-01"
+        end_date = f"{year}-{str(month).zfill(2)}-{last_day}"
+        return start_date, end_date
+    
     async def _log_audit(
         self,
         entity_type: str,
