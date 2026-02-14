@@ -905,6 +905,64 @@ export default function AdminPage({ initialTab = 'employees', embedded = false }
             </div>
           </DialogContent>
         </Dialog>
+        
+        {/* Quick Attendance Modal */}
+        <Dialog open={isAttendanceModalOpen} onOpenChange={setIsAttendanceModalOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5 text-emerald-600" />
+                Mark Attendance
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+                {attendanceEmployee?.photo_url ? (
+                  <img src={attendanceEmployee.photo_url} alt={attendanceEmployee?.name} className="h-12 w-12 rounded-full object-cover" />
+                ) : (
+                  <div className="h-12 w-12 rounded-full bg-blue-500 flex items-center justify-center text-white font-medium text-lg">
+                    {attendanceEmployee?.name?.charAt(0)}
+                  </div>
+                )}
+                <div>
+                  <p className="font-medium">{attendanceEmployee?.name}</p>
+                  <p className="text-xs text-gray-500">{attendanceEmployee?.email}</p>
+                </div>
+              </div>
+              <div>
+                <Label className="text-sm font-medium">Date</Label>
+                <Input 
+                  type="date" 
+                  value={attendanceData.date} 
+                  onChange={(e) => setAttendanceData({...attendanceData, date: e.target.value})}
+                  className="mt-1"
+                  data-testid="attendance-date"
+                />
+              </div>
+              <div>
+                <Label className="text-sm font-medium">Status</Label>
+                <Select value={attendanceData.status} onValueChange={(v) => setAttendanceData({...attendanceData, status: v})}>
+                  <SelectTrigger className="mt-1" data-testid="attendance-status">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="present">Present</SelectItem>
+                    <SelectItem value="absent">Absent</SelectItem>
+                    <SelectItem value="half_day">Half Day</SelectItem>
+                    <SelectItem value="late">Late</SelectItem>
+                    <SelectItem value="on_leave">On Leave</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <Button variant="outline" onClick={() => setIsAttendanceModalOpen(false)}>Cancel</Button>
+                <Button onClick={handleMarkAttendance} className="bg-gradient-to-r from-emerald-500 to-emerald-600" data-testid="submit-attendance">
+                  Mark Attendance
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
