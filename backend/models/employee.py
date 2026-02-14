@@ -17,6 +17,7 @@ class EmployeeBase(BaseModel):
     role_ids: List[str] = []  # Multiple roles support
     
     # Personal Info
+    photo_url: Optional[str] = None  # Employee photo URL
     date_of_birth: Optional[str] = None
     gender: Optional[str] = None
     address: Optional[str] = None
@@ -25,9 +26,9 @@ class EmployeeBase(BaseModel):
     pincode: Optional[str] = None
     
     # Employment Info
-    employee_code: Optional[str] = None
+    employee_code: Optional[str] = None  # Auto-generated or manual Employee ID
     employment_type: str = "full_time"  # full_time, part_time, freelancer, contractor
-    employment_status: str = "active"  # active, exited
+    employment_status: str = "active"  # active, exited, on_leave
     joining_date: Optional[str] = None
     probation_end_date: Optional[str] = None
     exit_date: Optional[str] = None
