@@ -3146,7 +3146,7 @@ async def get_attendance_records(
     employee_id: Optional[str] = None,
     month: Optional[int] = None,
     year: Optional[int] = None,
-    status: Optional[str] = None,
+    attendance_status: Optional[str] = None,
     country_id: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
@@ -3178,8 +3178,8 @@ async def get_attendance_records(
             last_day = calendar.monthrange(year, month)[1]
             end_date = f"{year}-{str(month).zfill(2)}-{last_day}"
             query["date"] = {"$gte": start_date, "$lte": end_date}
-        if status:
-            query["system_status"] = status
+        if attendance_status:
+            query["system_status"] = attendance_status
         
         records = await db.attendance_records.find(query, {"_id": 0}).sort("date", -1).to_list(10000)
     
