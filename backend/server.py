@@ -100,10 +100,25 @@ leave_service: Optional[LeaveService] = None
 @app.on_event("startup")
 async def startup():
     global rbac_service, round_robin_service, audit_service
+    global attendance_service, payroll_service, leave_service
+    
     rbac_service = RBACService(db)
     round_robin_service = RoundRobinService(db)
     audit_service = AuditService(db)
-    logger.info("WiseDrive CRM V2 started")
+    
+    # Initialize HR Module services
+    storage_service = get_storage_service()
+    attendance_service = AttendanceService(db)
+    payroll_service = PayrollService(db, attendance_service, storage_service)
+    leave_service = LeaveService(db)
+    
+    # Create TTL index for token blacklist (auto-expire entries)
+    try:
+        await db.token_blacklist.create_index("expires_at", expireAfterSeconds=0)
+    except Exception:
+        pass  # Index may already exist
+    
+    logger.info("WiseDrive CRM V2 started with HR Module")
 
 
 # ==================== AUTH MODELS ====================
