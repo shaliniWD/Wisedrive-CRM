@@ -54,10 +54,16 @@ class UserBase(BaseModel):
     phone: Optional[str] = None
     country_id: str
     department_id: str
-    role_id: str
+    role_id: str  # Primary role ID (for backward compatibility)
+    role_ids: List[str] = []  # Multiple roles support
     team_id: Optional[str] = None
     reports_to: Optional[str] = None
     employment_type: str = "fulltime"  # fulltime, freelancer, contract
+    employment_status: str = "active"  # active, exited
+    exit_date: Optional[str] = None
+    exit_reason: Optional[str] = None
+    exit_notes: Optional[str] = None
+    rejoin_date: Optional[str] = None
     is_active: bool = True
     is_available_for_assignment: bool = True
     profile_image: Optional[str] = None
