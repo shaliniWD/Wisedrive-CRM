@@ -2030,18 +2030,6 @@ async def delete_country(country_id: str, current_user: dict = Depends(get_curre
     return {"message": "Country deactivated"}
 
 
-# ==================== PUBLIC COUNTRIES (For Login) ====================
-
-@api_router.get("/countries/login")
-async def get_login_countries():
-    """Get countries for login page - no auth required"""
-    countries = await db.countries.find(
-        {"is_active": True},
-        {"_id": 0, "id": 1, "name": 1, "code": 1, "currency": 1}
-    ).to_list(100)
-    return countries
-
-
 # ==================== LEGACY COMPATIBILITY ====================
 
 # Keep old salary endpoints for backward compatibility
