@@ -2084,6 +2084,9 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
                 <TabsTrigger value="attendance" className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 rounded-lg px-4">
                   <Calendar className="h-4 w-4 mr-2" /> Attendance
                 </TabsTrigger>
+                <TabsTrigger value="payslips" className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 rounded-lg px-4">
+                  <FileText className="h-4 w-4 mr-2" /> Payslips
+                </TabsTrigger>
                 <TabsTrigger value="documents" className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 rounded-lg px-4">
                   <FileText className="h-4 w-4 mr-2" /> Documents
                 </TabsTrigger>
