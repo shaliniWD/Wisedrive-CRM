@@ -247,7 +247,7 @@ Vendor Payment → Finance Manager creates with GST/TDS → Submit for Approval 
 ```
 
 ## Last Updated
-February 14, 2026 - **HR Module Consolidation Complete**: Admin tab merged into HR Module with 6 unified tabs (Employees, Attendance, Payroll, Leave, Roles, Countries)
+February 14, 2026 - **Payroll Batch Governance Complete**: Implemented manual-controlled payroll workflow with batch lifecycle (DRAFT → CONFIRMED → CLOSED), editable grid, immutable records after confirmation, and audit logging.
 
 ## Platform Architecture v5.0
 
