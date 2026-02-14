@@ -360,5 +360,56 @@ Created comprehensive infrastructure documentation in `/app/wisedrive-api-servic
 - `config/environments/.env.test`
 - `config/environments/.env.prod`
 
-### Phase 4: OBD Integration - NEXT
-### Phase 5: External Integrations - PENDING
+### Phase 4: HR Module Phase 1 ✅ COMPLETE (Feb 14, 2026)
+Implemented comprehensive HR Module with Attendance Tracking, Payroll Management, and Leave Management.
+
+**Attendance Tracking:**
+- Session-based tracking: login/logout timestamps, activity heartbeat every 2 min
+- Server-side inactivity enforcement: auto-logout after 10 min + token blacklisting with TTL
+- Midnight session handling: splits sessions crossing midnight into separate daily records
+- Daily attendance calculation at 00:30 AM: ≥9 hrs = PRESENT, <9 hrs = PENDING, 0 = ABSENT
+- HR override workflow for PENDING attendance records
+- Active sessions dashboard with Force Logout capability
+- Monthly attendance export capability
+
+**Payroll & Payslip:**
+- Monthly payroll generation from salary structure
+- Attendance-based deductions: (Gross / Working Days) × Unapproved Absent Days
+- Payroll records are IMMUTABLE after generation
+- Adjustments via separate `payroll_adjustments` collection
+- Finance Manager payment marking with required transaction reference
+- Server-side PDF payslip generation using ReportLab
+- Storage: Local for DEV, S3-compatible for TEST/PROD (configurable)
+
+**Leave Management v1:**
+- Leave types: Casual Leave (12/year), Sick Leave (12/year)
+- Leave balance tracking with automatic deduction on approval
+- Leave request workflow: Apply → Pending → Approved/Rejected
+- Manager/HR approval capability
+- Team leave summary with on-leave-today and upcoming leaves
+
+**RBAC Enforcement:**
+- HR/CEO only: Generate payroll, Force logout, Override attendance, Run daily calculation
+- Finance/CEO only: Mark payments as paid
+- Manager/HR: Approve/Reject leave requests
+- All employees: View own data, Apply for leave
+
+**New Files:**
+- `/app/backend/models/attendance.py` - Session, AttendanceRecord models
+- `/app/backend/models/payroll.py` - PayrollRecord, PayrollAdjustment models
+- `/app/backend/models/leave.py` - LeaveRequest, LeaveBalance models
+- `/app/backend/services/attendance_service.py` - Attendance calculation, session management
+- `/app/backend/services/payroll_service.py` - Payroll generation, payment marking, payslip PDF
+- `/app/backend/services/leave_service.py` - Leave requests, balance tracking, approvals
+- `/app/backend/services/storage_service.py` - Local/S3 storage abstraction for payslips
+- `/app/frontend/src/pages/HRModulePage.jsx` - HR Module UI with 3 tabs
+
+**New API Endpoints:**
+- `/api/hr/session/*` - Session management (start, heartbeat, end)
+- `/api/hr/sessions/active` - Active sessions list
+- `/api/hr/attendance/*` - Attendance records, summary, approvals, override
+- `/api/hr/payroll/*` - Payroll records, generation, payment marking, payslip
+- `/api/hr/leave/*` - Leave requests, balance, approvals
+
+### Phase 5: Finance Module - NEXT
+### Phase 6: External Integrations (Razorpay, Invincible Ocean) - PENDING
