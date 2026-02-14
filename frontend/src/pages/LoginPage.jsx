@@ -24,19 +24,41 @@ export default function LoginPage() {
   const [loadingCountries, setLoadingCountries] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [ipCountryDetected, setIpCountryDetected] = useState(false);
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
-  // Fetch countries on component mount
+  // Fetch countries and detect IP-based country
   useEffect(() => {
-    const fetchCountries = async () => {
+    const fetchCountriesAndDetectIP = async () => {
       try {
-        const response = await axios.get(`${API_URL}/api/auth/countries`);
-        setCountries(response.data);
-        // Auto-select first country if available
-        if (response.data.length > 0) {
-          setSelectedCountry(response.data[0].id);
+        // Fetch available countries from backend
+        const countriesResponse = await axios.get(`${API_URL}/api/auth/countries`);
+        const availableCountries = countriesResponse.data;
+        setCountries(availableCountries);
+        
+        // Try to detect country from IP using free IP geolocation API
+        try {
+          const ipResponse = await axios.get('https://ipapi.co/json/', { timeout: 3000 });
+          const detectedCountryCode = ipResponse.data?.country_code;
+          
+          if (detectedCountryCode) {
+            // Find matching country in available countries
+            const matchingCountry = availableCountries.find(
+              c => c.code === detectedCountryCode || c.id === detectedCountryCode
+            );
+            
+            if (matchingCountry) {
+              setSelectedCountry(matchingCountry.id);
+              setIpCountryDetected(true);
+              console.log(`Country auto-detected from IP: ${matchingCountry.name}`);
+            }
+          }
+        } catch (ipError) {
+          console.log('IP detection failed, using default country selection');
         }
+        
+        // If no IP detection or no match, don't auto-select (let user choose)
       } catch (error) {
         console.error('Failed to load countries:', error);
         // Fallback countries if API fails
@@ -46,12 +68,11 @@ export default function LoginPage() {
           { id: 'TH', name: 'Thailand', code: 'TH' },
           { id: 'PH', name: 'Philippines', code: 'PH' },
         ]);
-        setSelectedCountry('IN');
       } finally {
         setLoadingCountries(false);
       }
     };
-    fetchCountries();
+    fetchCountriesAndDetectIP();
   }, []);
 
   if (isAuthenticated) {
