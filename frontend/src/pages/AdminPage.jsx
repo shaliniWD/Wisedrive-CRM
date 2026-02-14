@@ -893,6 +893,7 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
   const [form, setForm] = useState({});
   const [salaryForm, setSalaryForm] = useState({});
   const [documents, setDocuments] = useState([]);
+  const [docForm, setDocForm] = useState({ document_type: '', document_name: '', document_url: '' });
   const [attendance, setAttendance] = useState({ records: [], summary: {} });
   const [leaveSummary, setLeaveSummary] = useState(null);
   const [salaryPayments, setSalaryPayments] = useState([]);
@@ -906,6 +907,7 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
 
   useEffect(() => {
     if (isOpen) {
+      setDocForm({ document_type: '', document_name: '', document_url: '' });
       if (employee) {
         setForm({
           name: employee.name || '', email: employee.email || '', phone: employee.phone || '',
