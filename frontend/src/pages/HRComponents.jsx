@@ -877,19 +877,19 @@ export function PayrollDashboard({ isHR, isFinance }) {
         const gross = record.gross_salary;
         const perDaySalary = workingDays > 0 ? gross / workingDays : 0;
 
-        // Get absent days (from edit or default to 0)
-        let absentDays = changedField === 'absent_days' 
+        // Get LOP days (from edit or default to 0)
+        let lopDays = (changedField === 'lop_days' || changedField === 'absent_days')
           ? newValue 
-          : (previewEdits[employeeId]?.absent_days ?? 0);
+          : (previewEdits[employeeId]?.lop_days ?? previewEdits[employeeId]?.absent_days ?? 0);
         
-        // Cap absent days at working days
-        absentDays = Math.min(Math.max(0, absentDays), workingDays);
+        // Cap LOP days at working days
+        lopDays = Math.min(Math.max(0, lopDays), workingDays);
         
-        // Calculate attendance (present) days: Present = Working - Absent
-        const attendanceDays = workingDays - absentDays;
+        // Calculate attendance (present) days: Present = Working - LOP
+        const attendanceDays = workingDays - lopDays;
         
-        // Calculate attendance deduction based on absent days
-        const attendanceDeduction = Math.round(perDaySalary * absentDays * 100) / 100;
+        // Calculate LOP deduction based on LOP days
+        const attendanceDeduction = Math.round(perDaySalary * lopDays * 100) / 100;
 
         // Get other deductions
         let otherDeductions = changedField === 'other_deductions'
@@ -908,7 +908,8 @@ export function PayrollDashboard({ isHR, isFinance }) {
           ...record,
           working_days_in_month: workingDays,
           attendance_days: attendanceDays,
-          unapproved_absent_days: absentDays,
+          lop_days: lopDays,
+          unapproved_absent_days: lopDays,  // Keep for backward compatibility
           attendance_deduction: attendanceDeduction,
           other_deductions: otherDeductions,
           total_deductions: Math.round(totalDeductions * 100) / 100,
