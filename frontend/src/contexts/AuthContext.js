@@ -1,9 +1,12 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
 const AuthContext = createContext(null);
 
 const API_URL = process.env.REACT_APP_BACKEND_URL + '/api';
+
+// Heartbeat interval (2 minutes)
+const HEARTBEAT_INTERVAL = 2 * 60 * 1000;
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -11,6 +14,7 @@ export const AuthProvider = ({ children }) => {
   const [visibleTabs, setVisibleTabs] = useState([]);
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
+  const heartbeatIntervalRef = useRef(null);
 
   useEffect(() => {
     if (token) {
@@ -19,6 +23,13 @@ export const AuthProvider = ({ children }) => {
     } else {
       setLoading(false);
     }
+    
+    return () => {
+      // Cleanup heartbeat on unmount
+      if (heartbeatIntervalRef.current) {
+        clearInterval(heartbeatIntervalRef.current);
+      }
+    };
   }, [token]);
 
   const fetchUser = async () => {
@@ -36,6 +47,42 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Start session tracking for attendance
+  const startSessionTracking = async () => {
+    try {
+      await axios.post(`${API_URL}/hr/session/start`);
+      
+      // Start heartbeat
+      heartbeatIntervalRef.current = setInterval(async () => {
+        try {
+          await axios.post(`${API_URL}/hr/session/heartbeat`);
+        } catch (error) {
+          if (error.response?.status === 401) {
+            // Session expired due to inactivity
+            console.log('Session expired due to inactivity');
+            logout();
+          }
+        }
+      }, HEARTBEAT_INTERVAL);
+    } catch (error) {
+      console.error('Failed to start session tracking:', error);
+    }
+  };
+
+  // End session tracking
+  const endSessionTracking = async () => {
+    try {
+      await axios.post(`${API_URL}/hr/session/end`);
+    } catch (error) {
+      console.error('Failed to end session:', error);
+    }
+    
+    if (heartbeatIntervalRef.current) {
+      clearInterval(heartbeatIntervalRef.current);
+      heartbeatIntervalRef.current = null;
+    }
+  };
+
   const login = async (email, password, countryId) => {
     const response = await axios.post(`${API_URL}/auth/login`, { email, password, country_id: countryId });
     const { access_token, user: userData } = response.data;
@@ -48,10 +95,17 @@ export const AuthProvider = ({ children }) => {
     setUser(fullUserData);
     setPermissions(fullUserData.permissions || []);
     setVisibleTabs(fullUserData.visible_tabs || []);
+    
+    // Start session tracking for attendance
+    startSessionTracking();
+    
     return fullUserData;
   };
 
-  const logout = () => {
+  const logout = async () => {
+    // End session tracking before logout
+    await endSessionTracking();
+    
     localStorage.removeItem('token');
     delete axios.defaults.headers.common['Authorization'];
     setToken(null);
