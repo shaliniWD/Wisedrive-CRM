@@ -6,6 +6,13 @@ from enum import Enum
 import uuid
 
 
+class PayrollBatchStatus(str, Enum):
+    """Payroll batch lifecycle: DRAFT → CONFIRMED → CLOSED"""
+    DRAFT = "DRAFT"           # Editable, not yet locked
+    CONFIRMED = "CONFIRMED"   # Locked, ready for payment, payslips can be generated
+    CLOSED = "CLOSED"         # Paid and closed, no further changes
+
+
 class PayrollStatus(str, Enum):
     GENERATED = "GENERATED"
     PENDING = "PENDING"
@@ -27,6 +34,63 @@ class AdjustmentType(str, Enum):
     DEDUCTION = "DEDUCTION"
     CORRECTION = "CORRECTION"
     REIMBURSEMENT = "REIMBURSEMENT"
+
+
+# ==================== PAYROLL BATCH ====================
+
+class PayrollBatchBase(BaseModel):
+    """Payroll batch for grouping records by month/year/country"""
+    month: int  # 1-12
+    year: int
+    country_id: str
+    country_name: Optional[str] = None
+    
+    status: str = PayrollBatchStatus.DRAFT.value
+    
+    # Summary stats
+    employee_count: int = 0
+    total_gross: float = 0
+    total_statutory_deductions: float = 0
+    total_attendance_deductions: float = 0
+    total_other_deductions: float = 0
+    total_net: float = 0
+    
+    # Generation metadata
+    generated_by: Optional[str] = None
+    generated_by_name: Optional[str] = None
+    generated_at: Optional[str] = None
+    
+    # Confirmation metadata
+    confirmed_by: Optional[str] = None
+    confirmed_by_name: Optional[str] = None
+    confirmed_at: Optional[str] = None
+    
+    # Payment/Close metadata
+    closed_by: Optional[str] = None
+    closed_by_name: Optional[str] = None
+    closed_at: Optional[str] = None
+    payment_date: Optional[str] = None
+    payment_mode: Optional[str] = None
+    transaction_reference: Optional[str] = None
+    
+    # Currency
+    currency: str = "INR"
+    currency_symbol: str = "₹"
+    
+    notes: Optional[str] = None
+
+
+class PayrollBatchCreate(BaseModel):
+    """Request to create a payroll batch"""
+    month: int
+    year: int
+    country_id: str
+
+
+class PayrollBatch(PayrollBatchBase):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 
 # ==================== PAYROLL RECORDS ====================
