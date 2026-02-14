@@ -313,6 +313,489 @@ export default function AdminPage({ initialTab = 'employees', embedded = false }
   const exitedEmployees = employees.filter(e => !e.is_active).length;
   const mechanicCount = employees.filter(e => e.role_code === 'MECHANIC' || e.roles?.some(r => r.code === 'MECHANIC')).length;
 
+  // When embedded, only render the content for the specified tab (no header, no tabs nav)
+  if (embedded) {
+    return (
+      <div data-testid="admin-page-embedded">
+        {/* Employees Tab Content */}
+        {activeTab === 'employees' && (
+          <div className="p-4">
+            {/* Summary Cards for embedded view */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+              <SummaryCard title="Total Employees" value={employees.length} icon={Users} color="text-blue-700" />
+              <SummaryCard title="Active Employees" value={activeEmployees} icon={CheckCircle} color="text-emerald-600" />
+              <SummaryCard title="Exited Employees" value={exitedEmployees} icon={UserX} color="text-red-600" />
+              <SummaryCard title="Countries" value={countries.length} icon={Globe} color="text-purple-600" />
+            </div>
+            
+            {/* Filters */}
+            <div className="flex items-center justify-between mb-4 gap-4">
+              <div className="flex items-center gap-3 flex-1">
+                <div className="relative flex-1 max-w-md">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    placeholder="Search by name, email, phone..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10 h-10"
+                    data-testid="employee-search"
+                  />
+                </div>
+                
+                <Select value={filterCountry || 'all'} onValueChange={(v) => setFilterCountry(v === 'all' ? '' : v)}>
+                  <SelectTrigger className="w-36 h-10" data-testid="filter-country">
+                    <SelectValue placeholder="All Countries" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Countries</SelectItem>
+                    {countries.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+
+                <Select value={filterRole || 'all'} onValueChange={(v) => setFilterRole(v === 'all' ? '' : v)}>
+                  <SelectTrigger className="w-36 h-10" data-testid="filter-role">
+                    <SelectValue placeholder="All Roles" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Roles</SelectItem>
+                    {roles.map(r => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+
+                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                  <SelectTrigger className="w-32 h-10" data-testid="filter-status">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="exited">Exited</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {isHROrCEO && (
+                <button 
+                  className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 flex items-center gap-2 font-medium shadow-lg shadow-blue-500/25 transition-all"
+                  onClick={() => openEmployeeModal()} 
+                  data-testid="add-employee-btn"
+                >
+                  <Plus className="h-4 w-4" /> Add Employee
+                </button>
+              )}
+            </div>
+
+            {/* Employee Table */}
+            <div className="border rounded-xl overflow-hidden">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-slate-50 border-b">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Employee</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Roles</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Country</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Weekly Off</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Salary</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Audit</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {loading ? (
+                    <tr>
+                      <td colSpan={8} className="text-center py-12">
+                        <div className="flex items-center justify-center gap-2">
+                          <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+                          <span className="text-gray-500">Loading employees...</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : employees.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="text-center py-12">
+                        <Users className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                        <p className="text-gray-500">No employees found</p>
+                      </td>
+                    </tr>
+                  ) : (
+                    employees.map((emp) => (
+                      <React.Fragment key={emp.id}>
+                        <tr className={`hover:bg-slate-50 transition-colors ${!emp.is_active ? 'bg-red-50/30' : ''}`} data-testid={`employee-row-${emp.id}`}>
+                          <td className="px-4 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white font-medium ${emp.is_active ? 'bg-gradient-to-r from-blue-500 to-blue-600' : 'bg-gray-400'}`}>
+                                {emp.name?.charAt(0)?.toUpperCase()}
+                              </div>
+                              <div>
+                                <span className="font-medium text-gray-900 block">{emp.name}</span>
+                                <span className="text-xs text-gray-500">{emp.email}</span>
+                                {emp.employee_code && <span className="text-xs text-gray-400 ml-2">({emp.employee_code})</span>}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4">
+                            <RoleBadges roles={emp.roles || [{ code: emp.role_code, name: emp.role_name }]} />
+                          </td>
+                          <td className="px-4 py-4">
+                            <span className="inline-flex items-center gap-1.5 text-sm text-gray-700">
+                              <MapPin className="h-3.5 w-3.5 text-gray-400" />
+                              {emp.country_name || '-'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4">
+                            <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-100 text-xs text-gray-600">
+                              <Clock className="h-3 w-3" />
+                              {DAY_NAMES[emp.weekly_off_day || 0]}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4">
+                            <div className="flex flex-col gap-1">
+                              <StatusBadge status={emp.is_active ? 'active' : 'exited'} />
+                              {emp.exit_date && (
+                                <span className="text-xs text-gray-400">Exit: {emp.exit_date}</span>
+                              )}
+                              {emp.has_crm_access === false && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-800 border border-amber-200">No CRM</span>
+                              )}
+                              {emp.is_available_for_leads === false && emp.is_active && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-red-100 text-red-700 border border-red-200">
+                                  <PauseCircle className="h-2.5 w-2.5" /> No Leads
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 py-4">
+                            {emp.salary_info ? (
+                              <div className="text-xs">
+                                {emp.role_code === 'MECHANIC' || emp.salary_info.employment_type === 'freelancer' ? (
+                                  <span className="text-emerald-600 font-medium">
+                                    {formatCurrency(emp.salary_info.price_per_inspection, emp.currency_symbol || '₹')}/insp
+                                  </span>
+                                ) : (
+                                  <span className="text-emerald-600 font-medium">
+                                    {formatCurrency(emp.salary_info.gross_salary || emp.salary_info.basic_salary, emp.currency_symbol || '₹')}
+                                    <span className="text-gray-400 font-normal ml-1">gross</span>
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-xs text-gray-400">Not set</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-4">
+                            <button
+                              onClick={() => toggleAudit(emp.id)}
+                              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-gray-600 hover:bg-gray-100 transition-colors"
+                              data-testid={`toggle-audit-${emp.id}`}
+                            >
+                              <History className="h-3.5 w-3.5" />
+                              {emp.audit_count || 0}
+                              {expandedAudit[emp.id] ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                            </button>
+                          </td>
+                          <td className="px-4 py-4">
+                            <div className="flex items-center gap-2">
+                              <button
+                                className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                onClick={() => openEmployeeModal(emp)}
+                                title="View/Edit"
+                                data-testid={`edit-employee-${emp.id}`}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </button>
+                              {isHROrCEO && emp.is_active && (
+                                <button
+                                  className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                  onClick={() => openExitModal(emp)}
+                                  title="Mark as Exited"
+                                  data-testid={`exit-employee-${emp.id}`}
+                                >
+                                  <UserX className="h-4 w-4" />
+                                </button>
+                              )}
+                              {isHROrCEO && !emp.is_active && (
+                                <button
+                                  className="p-2 text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                                  onClick={() => handleEmployeeRejoin(emp)}
+                                  title="Rejoin Employee"
+                                  data-testid={`rejoin-employee-${emp.id}`}
+                                >
+                                  <UserPlus className="h-4 w-4" />
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                        {expandedAudit[emp.id] && (
+                          <tr className="bg-slate-50">
+                            <td colSpan={8} className="p-4">
+                              <EmployeeAuditTrail employeeId={emp.id} />
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Roles Tab Content */}
+        {activeTab === 'roles' && isHROrCEO && (
+          <div className="p-4">
+            <div className="flex justify-between items-center mb-4">
+              <p className="text-sm text-gray-500">Configure role-based access to different pages and features</p>
+              <button 
+                className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 flex items-center gap-2 font-medium shadow-lg shadow-blue-500/25 transition-all"
+                onClick={() => openRoleModal()} 
+                data-testid="add-role-btn"
+              >
+                <Plus className="h-4 w-4" /> Add Role
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {PRESET_ROLES.map((role) => (
+                <div key={role.code} className="border rounded-xl p-4 bg-white hover:shadow-md transition-shadow">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-xl bg-gradient-to-r from-purple-500 to-purple-600">
+                        <Shield className="h-4 w-4 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-900">{role.name}</h3>
+                        <p className="text-xs text-gray-500">{role.code}</p>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => openRoleModal(role)}
+                      className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      data-testid={`edit-role-${role.code}`}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium text-gray-500 uppercase">Page Access:</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {role.permissions.filter(p => p.view).map((perm) => (
+                        <span key={perm.page} className={`text-xs px-2 py-1 rounded-full border ${perm.edit ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
+                          {perm.page} {perm.edit ? '(Edit)' : '(View)'}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {roles.filter(r => !PRESET_ROLES.find(p => p.code === r.code)).length > 0 && (
+              <div className="mt-6">
+                <h3 className="font-semibold text-gray-900 mb-3">Custom Roles</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {roles.filter(r => !PRESET_ROLES.find(p => p.code === r.code)).map((role) => (
+                    <div key={role.id} className="border rounded-xl p-4 bg-white hover:shadow-md transition-shadow">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2.5 rounded-xl bg-gradient-to-r from-gray-500 to-gray-600">
+                            <Shield className="h-4 w-4 text-white" />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-gray-900">{role.name}</h3>
+                            <p className="text-xs text-gray-500">{role.code}</p>
+                          </div>
+                        </div>
+                        <button 
+                          onClick={() => openRoleModal(role)}
+                          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Countries Tab Content */}
+        {activeTab === 'countries' && isHROrCEO && (
+          <div className="p-4">
+            <div className="flex justify-end mb-4">
+              <button 
+                className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 flex items-center gap-2 font-medium shadow-lg shadow-blue-500/25 transition-all"
+                onClick={() => openCountryModal()} 
+                data-testid="add-country-btn"
+              >
+                <Plus className="h-4 w-4" /> Add Country
+              </button>
+            </div>
+
+            <div className="border rounded-xl overflow-hidden">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-slate-50 border-b">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Country</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Code</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Currency</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Phone Code</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Employees</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {countries.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="text-center py-12">
+                        <Globe className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                        <p className="text-gray-500">No countries found</p>
+                      </td>
+                    </tr>
+                  ) : (
+                    countries.map((country) => (
+                      <tr key={country.id} className="hover:bg-slate-50 transition-colors" data-testid={`country-row-${country.id}`}>
+                        <td className="px-4 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 flex items-center justify-center text-white font-medium">
+                              {country.code?.charAt(0)}
+                            </div>
+                            <span className="font-medium text-gray-900">{country.name}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-4">
+                          <span className="px-2.5 py-1 bg-gray-100 rounded-lg text-sm font-mono">{country.code}</span>
+                        </td>
+                        <td className="px-4 py-4">
+                          <span className="flex items-center gap-2">
+                            <span className="text-lg">{country.currency_symbol || '₹'}</span>
+                            <span className="text-sm text-gray-600">{country.currency}</span>
+                          </span>
+                        </td>
+                        <td className="px-4 py-4">
+                          <span className="font-mono text-sm text-gray-600">{country.phone_code || '-'}</span>
+                        </td>
+                        <td className="px-4 py-4">
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                            {country.employee_count || 0} employees
+                          </span>
+                        </td>
+                        <td className="px-4 py-4">
+                          <StatusBadge status={country.is_active !== false ? 'active' : 'inactive'} />
+                        </td>
+                        <td className="px-4 py-4">
+                          <div className="flex items-center gap-2">
+                            <button 
+                              className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              onClick={() => openCountryModal(country)} 
+                              data-testid={`edit-country-${country.id}`}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* All Modals - needed for embedded mode too */}
+        <EmployeeModal
+          isOpen={isEmployeeModalOpen}
+          onClose={() => setIsEmployeeModalOpen(false)}
+          employee={selectedEmployee}
+          countries={countries}
+          roles={roles}
+          departments={departments}
+          teams={teams}
+          onSave={() => { fetchEmployees(); setIsEmployeeModalOpen(false); }}
+          currentTab={employeeModalTab}
+          setCurrentTab={setEmployeeModalTab}
+        />
+
+        <CountryModal
+          isOpen={isCountryModalOpen}
+          onClose={() => setIsCountryModalOpen(false)}
+          country={selectedCountry}
+          onSave={() => { fetchCountries(); setIsCountryModalOpen(false); }}
+        />
+
+        <RoleModal
+          isOpen={isRoleModalOpen}
+          onClose={() => setIsRoleModalOpen(false)}
+          role={selectedRole}
+          onSave={() => { fetchData(); setIsRoleModalOpen(false); }}
+        />
+
+        <Dialog open={isExitModalOpen} onOpenChange={setIsExitModalOpen}>
+          <DialogContent className="sm:max-w-[450px]" data-testid="exit-modal">
+            <DialogHeader className="border-b pb-4">
+              <DialogTitle className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-gradient-to-r from-red-500 to-red-600 flex items-center justify-center text-white">
+                  <UserX className="h-5 w-5" />
+                </div>
+                Mark Employee as Exited
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 pt-4">
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                <p className="text-sm text-amber-800">
+                  <strong>Note:</strong> The employee record will be preserved for audit purposes. They can be rejoined later if needed.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Exit Date *</Label>
+                <Input 
+                  type="date" 
+                  value={exitData.exit_date} 
+                  onChange={(e) => setExitData({...exitData, exit_date: e.target.value})} 
+                  className="h-10" 
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Exit Reason *</Label>
+                <Select value={exitData.exit_reason} onValueChange={(v) => setExitData({...exitData, exit_reason: v})}>
+                  <SelectTrigger className="h-10"><SelectValue placeholder="Select reason" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="resignation">Resignation</SelectItem>
+                    <SelectItem value="termination">Termination</SelectItem>
+                    <SelectItem value="retirement">Retirement</SelectItem>
+                    <SelectItem value="contract_end">Contract End</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Notes</Label>
+                <textarea 
+                  value={exitData.exit_notes}
+                  onChange={(e) => setExitData({...exitData, exit_notes: e.target.value})}
+                  className="w-full min-h-[80px] px-3 py-2 border rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Additional notes..."
+                />
+              </div>
+              <div className="flex justify-end gap-3 pt-4 border-t">
+                <Button variant="outline" onClick={() => setIsExitModalOpen(false)}>Cancel</Button>
+                <Button onClick={handleEmployeeExit} className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700">
+                  Mark as Exited
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+    );
+  }
+
+  // Standard full-page render (not embedded)
   return (
     <div className="p-6 max-w-7xl mx-auto" data-testid="admin-page">
       {/* Page Header */}
@@ -378,6 +861,7 @@ export default function AdminPage({ initialTab = 'employees', embedded = false }
           <div className="p-4">
             {/* Filters */}
             <div className="flex items-center justify-between mb-4 gap-4">
+
               <div className="flex items-center gap-3 flex-1">
                 <div className="relative flex-1 max-w-md">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
