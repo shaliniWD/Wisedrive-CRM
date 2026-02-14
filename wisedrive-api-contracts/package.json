@@ -1,0 +1,45 @@
+{
+  "name": "wisedrive-api-contracts",
+  "version": "1.0.0",
+  "description": "Wisedrive Platform API Contracts - Single source of truth for all APIs",
+  "main": "index.js",
+  "scripts": {
+    "validate": "npx @redocly/cli lint openapi/*.yaml",
+    "validate:schema": "npx ajv-cli validate -s schemas/common/enums.json -d schemas/entities/*.json",
+    "generate:typescript": "npx openapi-generator-cli generate -i openapi/wisedrive-api-v1.yaml -g typescript-axios -o generated/typescript --additional-properties=supportsES6=true,npmName=@wisedrive/api-client,npmVersion=1.0.0",
+    "generate:python": "npx openapi-generator-cli generate -i openapi/wisedrive-api-v1.yaml -g python -o generated/python --additional-properties=packageName=wisedrive_api",
+    "generate:kotlin": "npx openapi-generator-cli generate -i openapi/wisedrive-api-v1.yaml -g kotlin -o generated/kotlin --additional-properties=packageName=com.wisedrive.api",
+    "generate:swift": "npx openapi-generator-cli generate -i openapi/wisedrive-api-v1.yaml -g swift5 -o generated/swift",
+    "generate:all": "npm run generate:typescript && npm run generate:python && npm run generate:kotlin && npm run generate:swift",
+    "docs:serve": "npx @redocly/cli preview-docs openapi/wisedrive-api-v1.yaml",
+    "docs:build": "npx @redocly/cli build-docs openapi/wisedrive-api-v1.yaml -o docs/api-reference.html",
+    "test:contracts": "jest --config jest.config.js",
+    "lint": "eslint .",
+    "prepare": "husky install"
+  },
+  "keywords": [
+    "wisedrive",
+    "api",
+    "contracts",
+    "openapi",
+    "automotive",
+    "inspection"
+  ],
+  "author": "Wisedrive Platform Team",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "@openapitools/openapi-generator-cli": "^2.7.0",
+    "@redocly/cli": "^1.5.0",
+    "ajv-cli": "^5.0.0",
+    "eslint": "^8.50.0",
+    "husky": "^8.0.0",
+    "jest": "^29.7.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wisedrive/wisedrive-api-contracts.git"
+  }
+}
