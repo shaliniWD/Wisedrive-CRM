@@ -96,12 +96,23 @@ class PaymentUpdate(BaseModel):
     inspections_count: Optional[int] = None
     rate_per_inspection: Optional[float] = None
     bonus_amount: Optional[float] = None
+    # B2B fields
+    actual_amount: Optional[float] = None
+    gst_percentage: Optional[float] = None
+    gst_amount: Optional[float] = None
+    tds_percentage: Optional[float] = None
+    tds_amount: Optional[float] = None
+    invoice_number: Optional[str] = None
+    invoice_date: Optional[str] = None
+    vendor_name: Optional[str] = None
+    # Payment info
     payment_mode: Optional[str] = None
     payment_date: Optional[str] = None
     transaction_reference: Optional[str] = None
     bank_name: Optional[str] = None
     account_number: Optional[str] = None
     status: Optional[str] = None
+    description: Optional[str] = None
     notes: Optional[str] = None
 
 
