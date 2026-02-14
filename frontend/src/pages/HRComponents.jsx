@@ -1074,7 +1074,21 @@ export function PayrollDashboard({ isHR, isFinance }) {
                     {selectedBatch.status}
                   </span>
                 </h2>
-                <p className="text-sm text-gray-500">{selectedBatch.employee_count} employees</p>
+                <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-gray-500">
+                  <span>{selectedBatch.employee_count} employees</span>
+                  {selectedBatch.pay_period_start && selectedBatch.pay_period_end && (
+                    <>
+                      <span>•</span>
+                      <span className="font-medium text-slate-600">Pay Period: {selectedBatch.pay_period_start} to {selectedBatch.pay_period_end}</span>
+                    </>
+                  )}
+                  {selectedBatch.working_days && (
+                    <>
+                      <span>•</span>
+                      <span className="font-medium text-indigo-600">{selectedBatch.working_days} working days</span>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
             
