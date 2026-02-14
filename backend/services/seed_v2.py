@@ -1,11 +1,15 @@
 """Database seeding for WiseDrive CRM V2"""
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from datetime import datetime, timezone
-from passlib.context import CryptContext
+import bcrypt
 import uuid
 import random
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def hash_password(password: str) -> str:
+    """Hash password using bcrypt directly"""
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
 
 
 async def seed_v2_data(db: AsyncIOMotorDatabase):
