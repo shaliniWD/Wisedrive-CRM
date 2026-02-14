@@ -170,8 +170,8 @@ class TestHRModuleV3:
         
         emp_id = employees[0]["id"]
         
-        # Update weekly off day to Sunday (0)
-        response = requests.put(
+        # Update weekly off day to Sunday (0) - using PATCH method
+        response = requests.patch(
             f"{BASE_URL}/api/hr/employees/{emp_id}/weekly-off",
             headers=self.get_ceo_headers(),
             json={"weekly_off_day": 0}
@@ -191,8 +191,8 @@ class TestHRModuleV3:
         
         emp_id = employees[0]["id"]
         
-        # Toggle lead assignment off
-        response = requests.put(
+        # Toggle lead assignment off - using PATCH method
+        response = requests.patch(
             f"{BASE_URL}/api/hr/employees/{emp_id}/lead-assignment",
             headers=self.get_ceo_headers(),
             json={"is_available_for_leads": False, "reason": "Testing"}
@@ -201,7 +201,7 @@ class TestHRModuleV3:
         print(f"✓ Toggled lead assignment off for employee {emp_id}")
         
         # Toggle back on
-        response = requests.put(
+        response = requests.patch(
             f"{BASE_URL}/api/hr/employees/{emp_id}/lead-assignment",
             headers=self.get_ceo_headers(),
             json={"is_available_for_leads": True}
@@ -383,27 +383,43 @@ class TestHRModuleV3:
 
 
 class TestRBACTabVisibility:
-    """Test RBAC tab visibility configuration"""
+    """Test RBAC tab visibility via API"""
     
-    def test_rbac_hr_manager_tabs(self):
-        """Verify RBAC configuration for HR Manager"""
-        # This tests the TAB_VISIBILITY constant in rbac.py
-        # HR_MANAGER should only have ["employees"] - NOT settings
-        from backend.services.rbac import RBACService
+    def test_rbac_hr_manager_tabs_via_api(self):
+        """Verify HR Manager tabs via API - should NOT include settings"""
+        response = requests.post(f"{BASE_URL}/api/auth/login", json={
+            "email": "hr@wisedrive.com",
+            "password": "password123"
+        })
+        assert response.status_code == 200
+        token = response.json().get("access_token")
         
-        hr_tabs = RBACService.TAB_VISIBILITY.get("HR_MANAGER", [])
-        assert "employees" in hr_tabs, f"HR Manager should have employees tab. Got: {hr_tabs}"
-        assert "settings" not in hr_tabs, f"HR Manager should NOT have settings tab. Got: {hr_tabs}"
-        print(f"✓ RBAC HR_MANAGER tabs: {hr_tabs}")
+        response = requests.get(f"{BASE_URL}/api/auth/me", headers={"Authorization": f"Bearer {token}"})
+        assert response.status_code == 200
+        data = response.json()
+        visible_tabs = data.get("visible_tabs", [])
+        
+        assert "employees" in visible_tabs, f"HR Manager should have employees tab. Got: {visible_tabs}"
+        assert "settings" not in visible_tabs, f"HR Manager should NOT have settings tab. Got: {visible_tabs}"
+        print(f"✓ RBAC HR_MANAGER tabs via API: {visible_tabs}")
     
-    def test_rbac_ceo_tabs(self):
-        """Verify RBAC configuration for CEO"""
-        from backend.services.rbac import RBACService
+    def test_rbac_ceo_tabs_via_api(self):
+        """Verify CEO tabs via API - should include settings"""
+        response = requests.post(f"{BASE_URL}/api/auth/login", json={
+            "email": "ceo@wisedrive.com",
+            "password": "password123"
+        })
+        assert response.status_code == 200
+        token = response.json().get("access_token")
         
-        ceo_tabs = RBACService.TAB_VISIBILITY.get("CEO", [])
-        assert "settings" in ceo_tabs, f"CEO should have settings tab. Got: {ceo_tabs}"
-        assert "employees" in ceo_tabs, f"CEO should have employees tab. Got: {ceo_tabs}"
-        print(f"✓ RBAC CEO tabs: {ceo_tabs}")
+        response = requests.get(f"{BASE_URL}/api/auth/me", headers={"Authorization": f"Bearer {token}"})
+        assert response.status_code == 200
+        data = response.json()
+        visible_tabs = data.get("visible_tabs", [])
+        
+        assert "settings" in visible_tabs, f"CEO should have settings tab. Got: {visible_tabs}"
+        assert "employees" in visible_tabs, f"CEO should have employees tab. Got: {visible_tabs}"
+        print(f"✓ RBAC CEO tabs via API: {visible_tabs}")
 
 
 if __name__ == "__main__":
