@@ -4052,6 +4052,50 @@ async def get_payroll_summary(
     return summary
 
 
+@api_router.get("/hr/payroll/employee/{employee_id}/payslips")
+async def get_employee_payslips(
+    employee_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all payslips for an employee (for employee modal)
+    
+    Returns list of confirmed payroll records with payslip info.
+    """
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER", "FINANCE_MANAGER", "COUNTRY_HEAD"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Get all payroll records for the employee that have been confirmed or paid
+    payslips = await db.payroll_records.find(
+        {
+            "employee_id": employee_id,
+            "status": {"$in": ["CONFIRMED", "PAID", "GENERATED"]}
+        },
+        {"_id": 0}
+    ).sort([("year", -1), ("month", -1)]).to_list(100)
+    
+    # Format for frontend
+    formatted = []
+    for p in payslips:
+        formatted.append({
+            "id": p.get("id"),
+            "month": p.get("month"),
+            "year": p.get("year"),
+            "gross_salary": p.get("gross_salary", 0),
+            "total_deductions": (p.get("total_statutory_deductions", 0) + 
+                               p.get("attendance_deduction", 0) + 
+                               p.get("other_deductions", 0)),
+            "net_salary": p.get("net_salary", 0),
+            "currency_symbol": p.get("currency_symbol", "₹"),
+            "payment_status": p.get("payment_status", "GENERATED"),
+            "generated_at": p.get("generated_at"),
+            "batch_id": p.get("batch_id")
+        })
+    
+    return formatted
+
+
 @api_router.post("/hr/payroll/{payroll_id}/mark-paid")
 async def mark_payroll_paid(
     payroll_id: str,
