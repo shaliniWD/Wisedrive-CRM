@@ -184,23 +184,24 @@ class TestPasswordReset:
     
     def test_finance_cannot_reset_password(self):
         """Test Finance Manager cannot reset passwords (403 Forbidden)"""
-        token = self.get_token(self.finance_email, self.password)
-        assert token is not None
+        finance_token = self.get_token(self.finance_email, self.password)
+        assert finance_token is not None
         
-        # Get employees
+        # Use CEO to get employees (Finance can't view employees)
+        ceo_token = self.get_token(self.ceo_email, self.password)
         response = requests.get(f"{BASE_URL}/api/hr/employees", headers={
-            "Authorization": f"Bearer {token}"
+            "Authorization": f"Bearer {ceo_token}"
         })
         employees = response.json()
         
-        # Try to reset any employee's password
+        # Try to reset any employee's password using Finance token
         target_employee = employees[0] if employees else None
         assert target_employee is not None
         
         response = requests.post(
             f"{BASE_URL}/api/hr/employees/{target_employee['id']}/reset-password",
             json={"new_password": "shouldfail123"},
-            headers={"Authorization": f"Bearer {token}"}
+            headers={"Authorization": f"Bearer {finance_token}"}
         )
         assert response.status_code == 403
         print(f"SUCCESS: Finance Manager correctly denied password reset (403)")
