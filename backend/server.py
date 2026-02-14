@@ -3714,23 +3714,34 @@ async def get_attendance_calendar(
             # Check if it's a weekend (Saturday=5, Sunday=6) or employee's weekly off
             is_weekend = weekday in [5, 6]  # Saturday or Sunday
             is_weekly_off = weekday == (emp_weekly_off - 1) % 7 if emp_weekly_off > 0 else weekday == 6
-            is_holiday = is_weekend or is_weekly_off
+            is_holiday_default = is_weekend or is_weekly_off
             
-            # Check for leave status
+            # Check for HR override first (takes precedence)
+            override_info = override_map.get(emp["id"], {}).get(date_str)
             leave_info = leave_map.get(emp["id"], {}).get(date_str)
             
-            if leave_info:
+            # Priority: Override > Leave > Default (holiday/working)
+            if override_info:
+                day_status = override_info["status"]
+                leave_type = None
+                reason = override_info.get("notes", "")
+                leave_id = None
+            elif leave_info:
                 status = leave_info["status"]  # "approved" or "pending"
                 leave_type = leave_info["leave_type"]
                 day_status = f"leave_{status}"  # "leave_approved" or "leave_pending"
-            elif is_holiday:
-                status = "holiday"
-                leave_type = None
+                reason = leave_info.get("reason", "")
+                leave_id = leave_info.get("leave_id")
+            elif is_holiday_default:
                 day_status = "holiday"
-            else:
-                status = "working"
                 leave_type = None
+                reason = None
+                leave_id = None
+            else:
                 day_status = "working"
+                leave_type = None
+                reason = None
+                leave_id = None
             
             emp_days[date_str] = {
                 "date": date_str,
@@ -3740,8 +3751,9 @@ async def get_attendance_calendar(
                 "status": day_status,
                 "leave_type": leave_type,
                 "is_weekend": is_weekend,
-                "leave_id": leave_info.get("leave_id") if leave_info else None,
-                "reason": leave_info.get("reason") if leave_info else None
+                "leave_id": leave_id,
+                "reason": reason,
+                "is_override": override_info is not None
             }
         
         # Count summary - include LOP days
