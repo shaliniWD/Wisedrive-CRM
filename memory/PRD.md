@@ -378,6 +378,20 @@ Implemented comprehensive HR Module with Attendance Tracking, Payroll Management
   - Role management with preset roles and custom roles
   - Country configuration with currency symbols and phone codes
 
+**Payroll Batch Governance (Feb 14, 2026):**
+- NEW manual-controlled payroll workflow (no automatic cron)
+- Batch lifecycle: DRAFT → CONFIRMED → CLOSED
+- Preview payroll before creating batch (no DB save)
+- Editable grid in DRAFT with columns: Employee, Gross, PF, PT, TDS, ESI, Attendance, Other, Net
+- Statutory deductions stored as separate fields (PF, PT, TDS, ESI, Other)
+- Attendance deduction formula: (Gross / Working Days) × Unapproved Absent Days
+- Approved leaves do NOT deduct salary
+- Records become immutable after batch is CONFIRMED
+- Payslips generated only after CONFIRMED status
+- Payment marking transitions CONFIRMED → CLOSED
+- Audit logging for all batch operations
+- Country-specific payroll (different statutory rules per country)
+
 **Attendance Tracking:**
 - Session-based tracking: login/logout timestamps, activity heartbeat every 2 min
 - Server-side inactivity enforcement: auto-logout after 10 min + token blacklisting with TTL
