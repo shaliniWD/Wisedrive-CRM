@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="17" failures="0" skipped="0" tests="17" time="1.391" timestamp="2026-02-14T20:07:03.274537+00:00" hostname="agent-env-272c3ebd-ee69-430d-9d53-0d59d9a2e54b"><testcase classname="backend.tests.test_new_features_v2.TestAuth" name="test_hr_login" time="0.269"><error message="failed on setup with &quot;assert 403 == 200&#10; +  where 403 = &lt;Response [403]&gt;.status_code&quot;">backend/tests/test_new_features_v2.py:27: in hr_token
+    assert countries_res.status_code == 200
+E   assert 403 == 200
+E    +  where 403 = &lt;Response [403]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_new_features_v2.TestAuth" name="test_ceo_login" time="0.137"><error message="failed on setup with &quot;AttributeError: 'str' object has no attribute 'get'&quot;">backend/tests/test_new_features_v2.py:46: in ceo_token
+    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/test_new_features_v2.py:46: in &lt;genexpr&gt;
+    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
+                                          ^^^^^
+E   AttributeError: 'str' object has no attribute 'get'</error></testcase><testcase classname="backend.tests.test_new_features_v2.TestAttendanceCalendar" name="test_get_attendance_calendar" time="0.159"><error message="failed on setup with &quot;AttributeError: 'str' object has no attribute 'get'&quot;">backend/tests/test_new_features_v2.py:75: in hr_headers
+    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/test_new_features_v2.py:75: in &lt;genexpr&gt;
+    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
+                                          ^^^^^
+E   AttributeError: 'str' object has no attribute 'get'</error></testcase><testcase classname="backend.tests.test_new_features_v2.TestAttendanceCalendar" name="test_calendar_has_lop_in_legend" time="0.000"><error message="failed on setup with &quot;AttributeError: 'str' object has no attribute 'get'&quot;">backend/tests/test_new_features_v2.py:75: in hr_headers
+    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/test_new_features_v2.py:75: in &lt;genexpr&gt;
+    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
+                                          ^^^^^
+E   AttributeError: 'str' object has no attribute 'get'</error></testcase><testcase classname="backend.tests.test_new_features_v2.TestAttendanceCalendar" name="test_calendar_employee_summary_has_lop_days" time="0.000"><error message="failed on setup with &quot;AttributeError: 'str' object has no attribute 'get'&quot;">backend/tests/test_new_features_v2.py:75: in hr_headers
+    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/test_new_features_v2.py:75: in &lt;genexpr&gt;
+    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
+                                          ^^^^^
+E   AttributeError: 'str' object has no attribute 'get'</error></testcase><testcase classname="backend.tests.test_new_features_v2.TestAttendanceCalendar" name="test_calendar_search_filter" time="0.000"><error message="failed on setup with &quot;AttributeError: 'str' object has no attribute 'get'&quot;">backend/tests/test_new_features_v2.py:75: in hr_headers
+    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/test_new_features_v2.py:75: in &lt;genexpr&gt;
+    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
+                                          ^^^^^
+E   AttributeError: 'str' object has no attribute 'get'</error></testcase><testcase classname="backend.tests.test_new_features_v2.TestAttendanceUpdate" name="test_update_attendance_to_lop" time="0.155"><error message="failed on setup with &quot;AttributeError: 'str' object has no attribute 'get'&quot;">backend/tests/test_new_features_v2.py:172: in hr_headers
+    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/test_new_features_v2.py:172: in &lt;genexpr&gt;
+    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
+                                          ^^^^^
+E   AttributeError: 'str' object has no attribute 'get'</error></testcase><testcase classname="backend.tests.test_new_features_v2.TestAttendanceUpdate" name="test_update_attendance_to_present" time="0.000"><error message="failed on setup with &quot;AttributeError: 'str' object has no attribute 'get'&quot;">backend/tests/test_new_features_v2.py:172: in hr_headers
+    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/test_new_features_v2.py:172: in &lt;genexpr&gt;
+    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
+                                          ^^^^^
+E   AttributeError: 'str' object has no attribute 'get'</error></testcase><testcase classname="backend.tests.test_new_features_v2.TestAttendanceUpdate" name="test_update_attendance_to_half_day" time="0.000"><error message="failed on setup with &quot;AttributeError: 'str' object has no attribute 'get'&quot;">backend/tests/test_new_features_v2.py:172: in hr_headers
+    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/test_new_features_v2.py:172: in &lt;genexpr&gt;
+    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
+                                          ^^^^^
+E   AttributeError: 'str' object has no attribute 'get'</error></testcase><testcase classname="backend.tests.test_new_features_v2.TestAttendanceUpdate" name="test_cannot_update_future_date" time="0.000"><error message="failed on setup with &quot;AttributeError: 'str' object has no attribute 'get'&quot;">backend/tests/test_new_features_v2.py:172: in hr_headers
+    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/test_new_features_v2.py:172: in &lt;genexpr&gt;
+    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
+                                          ^^^^^
+E   AttributeError: 'str' object has no attribute 'get'</error></testcase><testcase classname="backend.tests.test_new_features_v2.TestAttendanceUpdate" name="test_absent_normalizes_to_lop" time="0.001"><error message="failed on setup with &quot;AttributeError: 'str' object has no attribute 'get'&quot;">backend/tests/test_new_features_v2.py:172: in hr_headers
+    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/test_new_features_v2.py:172: in &lt;genexpr&gt;
+    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
+                                          ^^^^^
+E   AttributeError: 'str' object has no attribute 'get'</error></testcase><testcase classname="backend.tests.test_new_features_v2.TestCityMaster" name="test_get_countries_with_cities" time="0.131"><error message="failed on setup with &quot;AttributeError: 'str' object has no attribute 'get'&quot;">backend/tests/test_new_features_v2.py:307: in ceo_headers
+    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/test_new_features_v2.py:307: in &lt;genexpr&gt;
+    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
+                                          ^^^^^
+E   AttributeError: 'str' object has no attribute 'get'</error></testcase><testcase classname="backend.tests.test_new_features_v2.TestCityMaster" name="test_update_country_with_cities" time="0.000"><error message="failed on setup with &quot;AttributeError: 'str' object has no attribute 'get'&quot;">backend/tests/test_new_features_v2.py:307: in ceo_headers
+    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/test_new_features_v2.py:307: in &lt;genexpr&gt;
+    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
+                                          ^^^^^
+E   AttributeError: 'str' object has no attribute 'get'</error></testcase><testcase classname="backend.tests.test_new_features_v2.TestEmployeePayslips" name="test_get_employee_payslips_endpoint_exists" time="0.115"><error message="failed on setup with &quot;AttributeError: 'str' object has no attribute 'get'&quot;">backend/tests/test_new_features_v2.py:375: in hr_headers
+    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/test_new_features_v2.py:375: in &lt;genexpr&gt;
+    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
+                                          ^^^^^
+E   AttributeError: 'str' object has no attribute 'get'</error></testcase><testcase classname="backend.tests.test_new_features_v2.TestEmployeePayslips" name="test_payslips_sorted_by_date_desc" time="0.000"><error message="failed on setup with &quot;AttributeError: 'str' object has no attribute 'get'&quot;">backend/tests/test_new_features_v2.py:375: in hr_headers
+    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/test_new_features_v2.py:375: in &lt;genexpr&gt;
+    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
+                                          ^^^^^
+E   AttributeError: 'str' object has no attribute 'get'</error></testcase><testcase classname="backend.tests.test_new_features_v2.TestRBACForNewEndpoints" name="test_sales_cannot_access_attendance_calendar" time="0.127"><error message="failed on setup with &quot;AttributeError: 'str' object has no attribute 'get'&quot;">backend/tests/test_new_features_v2.py:453: in sales_headers
+    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/test_new_features_v2.py:453: in &lt;genexpr&gt;
+    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
+                                          ^^^^^
+E   AttributeError: 'str' object has no attribute 'get'</error></testcase><testcase classname="backend.tests.test_new_features_v2.TestRBACForNewEndpoints" name="test_sales_cannot_update_attendance" time="0.000"><error message="failed on setup with &quot;AttributeError: 'str' object has no attribute 'get'&quot;">backend/tests/test_new_features_v2.py:453: in sales_headers
+    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/test_new_features_v2.py:453: in &lt;genexpr&gt;
+    india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
+                                          ^^^^^
+E   AttributeError: 'str' object has no attribute 'get'</error></testcase></testsuite></testsuites>
