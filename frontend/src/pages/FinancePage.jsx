@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import { financeApi, countriesApi } from '../services/api';
 import { toast } from 'sonner';
 import { 
