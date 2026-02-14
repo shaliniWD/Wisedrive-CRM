@@ -315,6 +315,7 @@ async def seed_v2_data(db: AsyncIOMotorDatabase):
             "department_id": departments.get(
                 "EXEC" if u["role_code"] in ["CEO", "COUNTRY_HEAD"] else 
                 "HR" if u["role_code"] == "HR_MANAGER" else
+                "FINANCE" if u["role_code"] == "FINANCE_MANAGER" else
                 "SALES" if "SALES" in u["role_code"] else "INSPECTION"
             ),
             "role_id": roles.get(u["role_code"]),
@@ -323,6 +324,7 @@ async def seed_v2_data(db: AsyncIOMotorDatabase):
             "employment_type": "fulltime",
             "is_active": True,
             "is_available_for_assignment": u["role_code"] == "SALES_EXEC",
+            "has_crm_access": u["role_code"] != "MECHANIC",
             "created_at": datetime.now(timezone.utc).isoformat(),
             "updated_at": datetime.now(timezone.utc).isoformat()
         })
