@@ -1510,6 +1510,23 @@ async def update_hr_employee(employee_id: str, emp_data: EmployeeUpdate, current
     if "password" in update_dict:
         update_dict["hashed_password"] = hash_password(update_dict.pop("password"))
     
+    # Encrypt bank account number if provided
+    if "bank_account_number" in update_dict:
+        encryption_service = get_encryption_service()
+        bank_details = encryption_service.encrypt_bank_details(update_dict["bank_account_number"])
+        update_dict["bank_account_number_encrypted"] = bank_details["encrypted"]
+        update_dict["bank_account_number_masked"] = bank_details["masked"]
+        update_dict.pop("bank_account_number", None)  # Remove plaintext
+        
+        # Log bank details update for audit
+        await audit_service.log(
+            entity_type="employee",
+            entity_id=employee_id,
+            action="bank_details_update",
+            user_id=current_user["id"],
+            new_values={"bank_account_masked": bank_details["masked"]}
+        )
+    
     update_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
     update_dict["updated_by"] = current_user["id"]
     
@@ -1528,10 +1545,10 @@ async def update_hr_employee(employee_id: str, emp_data: EmployeeUpdate, current
         action="update",
         user_id=current_user["id"],
         old_values={"name": existing.get("name")},
-        new_values=update_dict
+        new_values={k: v for k, v in update_dict.items() if k not in ["hashed_password", "bank_account_number_encrypted"]}
     )
     
-    emp = await db.users.find_one({"id": employee_id}, {"_id": 0, "hashed_password": 0})
+    emp = await db.users.find_one({"id": employee_id}, {"_id": 0, "hashed_password": 0, "bank_account_number_encrypted": 0})
     return emp
 
 
