@@ -1933,6 +1933,14 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
     if (!isEdit && !form.password) {
       toast.error('Password is required for new employees'); return;
     }
+    // Validate employee ID for duplicates
+    if (form.employee_code) {
+      const isValid = await validateEmployeeId(form.employee_code);
+      if (!isValid) {
+        toast.error('Please fix employee ID validation error');
+        return;
+      }
+    }
     setSaving(true);
     try {
       const payload = { ...form, role_id: form.role_ids?.[0] };
