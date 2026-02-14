@@ -370,12 +370,56 @@ export default function AdminPage({ initialTab = 'employees', embedded = false }
         {activeTab === 'employees' && (
           <div className="p-4">
             {/* Summary Cards for embedded view */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
               <SummaryCard title="Total Employees" value={employees.length} icon={Users} color="text-blue-700" />
               <SummaryCard title="Active Employees" value={activeEmployees} icon={CheckCircle} color="text-emerald-600" />
               <SummaryCard title="Exited Employees" value={exitedEmployees} icon={UserX} color="text-red-600" />
+              <div 
+                className={`bg-white rounded-xl border p-4 cursor-pointer hover:shadow-md transition-shadow ${showOnLeaveList ? 'ring-2 ring-amber-400' : ''}`}
+                onClick={() => setShowOnLeaveList(!showOnLeaveList)}
+                data-testid="on-leave-today-card"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500">On Leave Today</p>
+                    <p className="text-2xl font-bold text-amber-600">{employeesOnLeave.length}</p>
+                    <p className="text-xs text-gray-400 mt-1">Click to view</p>
+                  </div>
+                  <div className="h-10 w-10 rounded-full bg-amber-100 flex items-center justify-center">
+                    <Calendar className="h-5 w-5 text-amber-600" />
+                  </div>
+                </div>
+              </div>
               <SummaryCard title="Countries" value={countries.length} icon={Globe} color="text-purple-600" />
             </div>
+            
+            {/* On Leave Today Expandable Section */}
+            {showOnLeaveList && employeesOnLeave.length > 0 && (
+              <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl p-4">
+                <h3 className="font-semibold text-amber-800 mb-3 flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  Employees On Leave Today ({employeesOnLeave.length})
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {employeesOnLeave.map(emp => (
+                    <div key={emp.id} className="bg-white p-3 rounded-lg border flex items-center gap-3">
+                      {emp.photo_url ? (
+                        <img src={emp.photo_url} alt={emp.name} className="h-10 w-10 rounded-full object-cover" />
+                      ) : (
+                        <div className="h-10 w-10 rounded-full bg-amber-500 flex items-center justify-center text-white font-medium">
+                          {emp.name?.charAt(0)}
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-900 truncate">{emp.name}</p>
+                        <p className="text-xs text-gray-500 capitalize">{emp.leave_type || 'Leave'}</p>
+                        <p className="text-xs text-amber-600">{emp.start_date} to {emp.end_date}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             
             {/* Filters */}
             <div className="flex items-center justify-between mb-4 gap-4">
