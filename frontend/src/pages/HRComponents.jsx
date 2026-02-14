@@ -16,124 +16,138 @@ import {
   Download, Users, PlayCircle, StopCircle, RefreshCw, FileText, Search, Filter, DollarSign
 } from 'lucide-react';
 
-// ==================== ATTENDANCE DASHBOARD ====================
+// ==================== ATTENDANCE CALENDAR DASHBOARD ====================
 export function AttendanceDashboard({ isHR }) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [activeSessions, setActiveSessions] = useState([]);
-  const [attendanceRecords, setAttendanceRecords] = useState([]);
-  const [pendingApprovals, setPendingApprovals] = useState([]);
+  const [calendarData, setCalendarData] = useState(null);
   const [countries, setCountries] = useState([]);
   const [filterCountry, setFilterCountry] = useState('');
   const [filterMonth, setFilterMonth] = useState(new Date().getMonth() + 1);
   const [filterYear, setFilterYear] = useState(new Date().getFullYear());
-  const [view, setView] = useState('active'); // active, records, approvals
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [legend, setLegend] = useState({});
 
-  const fetchCountries = useCallback(async () => {
-    try {
-      const res = await hrApi.getAllCountries();
-      setCountries(res.data || []);
-    } catch (e) { console.error('Failed to load countries'); }
-  }, []);
-
-  const fetchActiveSessions = useCallback(async () => {
-    try {
-      const res = await attendanceApi.getActiveSessions(filterCountry || undefined);
-      setActiveSessions(res.data || []);
-    } catch (e) { console.error('Failed to load sessions'); }
-  }, [filterCountry]);
-
-  const fetchAttendanceRecords = useCallback(async () => {
-    try {
-      const res = await attendanceApi.getAttendance({ 
-        month: filterMonth, 
-        year: filterYear, 
-        country_id: filterCountry || undefined 
-      });
-      setAttendanceRecords(res.data || []);
-    } catch (e) { console.error('Failed to load attendance'); }
-  }, [filterMonth, filterYear, filterCountry]);
-
-  const fetchPendingApprovals = useCallback(async () => {
-    if (!isHR) return;
-    try {
-      const res = await attendanceApi.getPendingApprovals(filterCountry || undefined);
-      setPendingApprovals(res.data || []);
-    } catch (e) { console.error('Failed to load approvals'); }
-  }, [filterCountry, isHR]);
-
-  useEffect(() => { fetchCountries(); }, [fetchCountries]);
+  // Debounced search
+  const searchTimeout = useRef(null);
   
-  useEffect(() => {
+  const fetchCalendarData = useCallback(async () => {
     setLoading(true);
-    Promise.all([fetchActiveSessions(), fetchAttendanceRecords(), fetchPendingApprovals()])
-      .finally(() => setLoading(false));
-  }, [fetchActiveSessions, fetchAttendanceRecords, fetchPendingApprovals]);
-
-  const handleForceLogout = async (sessionId) => {
-    if (!window.confirm('Force logout this session?')) return;
     try {
-      await attendanceApi.forceLogout(sessionId);
-      toast.success('Session ended');
-      fetchActiveSessions();
-    } catch (e) { toast.error('Failed to end session'); }
+      const res = await attendanceApi.getCalendar(
+        filterMonth, 
+        filterYear, 
+        filterCountry || undefined, 
+        searchQuery || undefined
+      );
+      setCalendarData(res.data);
+      setCountries(res.data.countries || []);
+      setLegend(res.data.legend || {});
+    } catch (e) { 
+      console.error('Failed to load calendar data', e);
+      toast.error('Failed to load attendance calendar');
+    } finally {
+      setLoading(false);
+    }
+  }, [filterMonth, filterYear, filterCountry, searchQuery]);
+
+  useEffect(() => { 
+    fetchCalendarData(); 
+  }, [fetchCalendarData]);
+
+  // Handle search with debounce
+  const handleSearchChange = (value) => {
+    if (searchTimeout.current) clearTimeout(searchTimeout.current);
+    searchTimeout.current = setTimeout(() => {
+      setSearchQuery(value);
+    }, 400);
   };
 
-  const handleOverride = async (recordId, status, notes) => {
-    try {
-      await attendanceApi.overrideAttendance(recordId, { status, notes });
-      toast.success('Attendance updated');
-      fetchPendingApprovals();
-      fetchAttendanceRecords();
-    } catch (e) { toast.error('Failed to update'); }
+  // Generate array of day numbers for calendar header
+  const getDaysArray = () => {
+    if (!calendarData) return [];
+    return Array.from({ length: calendarData.total_days }, (_, i) => i + 1);
   };
 
-  const formatDuration = (minutes) => {
-    if (!minutes) return '-';
-    const hrs = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return `${hrs}h ${mins}m`;
+  // Get weekday name abbreviation
+  const getWeekdayAbbr = (day) => {
+    if (!calendarData) return '';
+    const date = new Date(calendarData.year, calendarData.month - 1, day);
+    return date.toLocaleDateString('en', { weekday: 'short' }).charAt(0);
+  };
+
+  // Check if day is weekend (Saturday or Sunday)
+  const isWeekend = (day) => {
+    if (!calendarData) return false;
+    const date = new Date(calendarData.year, calendarData.month - 1, day);
+    return date.getDay() === 0 || date.getDay() === 6;
+  };
+
+  // Get status color class
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'working':
+        return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+      case 'holiday':
+        return 'bg-slate-100 text-slate-500 border-slate-200';
+      case 'leave_approved':
+        return 'bg-blue-100 text-blue-800 border-blue-300';
+      case 'leave_pending':
+        return 'bg-amber-100 text-amber-800 border-amber-300';
+      default:
+        return 'bg-gray-100 text-gray-600 border-gray-200';
+    }
+  };
+
+  // Get tooltip text for day
+  const getDayTooltip = (employee, day) => {
+    const dateStr = `${calendarData.year}-${String(calendarData.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const dayData = employee.days[dateStr];
+    if (!dayData) return '';
+    
+    if (dayData.status === 'leave_approved') {
+      return `Approved ${dayData.leave_type === 'casual' ? 'Casual' : 'Sick'} Leave${dayData.reason ? `: ${dayData.reason}` : ''}`;
+    }
+    if (dayData.status === 'leave_pending') {
+      return `Pending ${dayData.leave_type === 'casual' ? 'Casual' : 'Sick'} Leave${dayData.reason ? `: ${dayData.reason}` : ''}`;
+    }
+    if (dayData.status === 'holiday') {
+      return `Weekend/Holiday (${dayData.weekday_name})`;
+    }
+    return `Working Day (${dayData.weekday_name})`;
   };
 
   return (
     <div className="p-6" data-testid="attendance-dashboard">
-      {/* View Tabs */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex gap-2">
-          <Button
-            variant={view === 'active' ? 'default' : 'outline'}
-            onClick={() => setView('active')}
-            className="gap-2"
-          >
-            <PlayCircle className="h-4 w-4" /> Active Sessions
-          </Button>
-          <Button
-            variant={view === 'records' ? 'default' : 'outline'}
-            onClick={() => setView('records')}
-            className="gap-2"
-          >
-            <Clock className="h-4 w-4" /> Records
-          </Button>
-          {isHR && (
-            <Button
-              variant={view === 'approvals' ? 'default' : 'outline'}
-              onClick={() => setView('approvals')}
-              className="gap-2"
-            >
-              <AlertCircle className="h-4 w-4" /> Pending Approvals
-              {pendingApprovals.length > 0 && (
-                <span className="ml-1 px-2 py-0.5 bg-red-500 text-white text-xs rounded-full">
-                  {pendingApprovals.length}
-                </span>
-              )}
-            </Button>
-          )}
+      {/* Header with Filters */}
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <Calendar className="h-5 w-5 text-blue-600" />
+            Attendance Calendar
+          </h2>
+          <p className="text-sm text-gray-500">
+            Consolidated view of employee attendance and leave status
+          </p>
         </div>
 
-        {/* Filters */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              type="text"
+              placeholder="Search employee..."
+              onChange={(e) => handleSearchChange(e.target.value)}
+              className="pl-9 w-56"
+              data-testid="search-employee"
+            />
+          </div>
+
+          {/* Country Filter */}
           <Select value={filterCountry || 'all'} onValueChange={(v) => setFilterCountry(v === 'all' ? '' : v)}>
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="w-40" data-testid="filter-country">
               <SelectValue placeholder="All Countries" />
             </SelectTrigger>
             <SelectContent>
@@ -141,213 +155,176 @@ export function AttendanceDashboard({ isHR }) {
               {countries.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
             </SelectContent>
           </Select>
-          
-          {view === 'records' && (
-            <>
-              <Select value={String(filterMonth)} onValueChange={(v) => setFilterMonth(parseInt(v))}>
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Array.from({ length: 12 }, (_, i) => (
-                    <SelectItem key={i + 1} value={String(i + 1)}>
-                      {new Date(2000, i).toLocaleString('default', { month: 'long' })}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={String(filterYear)} onValueChange={(v) => setFilterYear(parseInt(v))}>
-                <SelectTrigger className="w-24">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {[2023, 2024, 2025].map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </>
-          )}
-          
-          <Button variant="outline" size="icon" onClick={() => {
-            fetchActiveSessions();
-            fetchAttendanceRecords();
-            fetchPendingApprovals();
-          }}>
+
+          {/* Month Filter */}
+          <Select value={String(filterMonth)} onValueChange={(v) => setFilterMonth(parseInt(v))}>
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {Array.from({ length: 12 }, (_, i) => (
+                <SelectItem key={i + 1} value={String(i + 1)}>
+                  {new Date(2000, i).toLocaleString('default', { month: 'long' })}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Year Filter */}
+          <Select value={String(filterYear)} onValueChange={(v) => setFilterYear(parseInt(v))}>
+            <SelectTrigger className="w-24">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[2024, 2025, 2026].map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+            </SelectContent>
+          </Select>
+
+          <Button variant="outline" size="icon" onClick={fetchCalendarData} data-testid="refresh-btn">
             <RefreshCw className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
+      {/* Legend */}
+      <div className="flex flex-wrap items-center gap-4 mb-4 p-3 bg-slate-50 rounded-lg border">
+        <span className="text-xs font-medium text-gray-500 uppercase">Legend:</span>
+        <div className="flex items-center gap-1.5">
+          <span className="w-4 h-4 rounded bg-emerald-100 border border-emerald-200"></span>
+          <span className="text-xs text-gray-600">Working</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="w-4 h-4 rounded bg-slate-100 border border-slate-200"></span>
+          <span className="text-xs text-gray-600">Weekend/Holiday</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="w-4 h-4 rounded bg-blue-100 border border-blue-300"></span>
+          <span className="text-xs text-gray-600">Leave (Approved)</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="w-4 h-4 rounded bg-amber-100 border border-amber-300"></span>
+          <span className="text-xs text-gray-600">Leave (Pending)</span>
+        </div>
+      </div>
+
       {loading ? (
-        <div className="flex items-center justify-center py-12">
+        <div className="flex items-center justify-center py-16">
           <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
         </div>
-      ) : (
-        <>
-          {/* Active Sessions View */}
-          {view === 'active' && (
-            <div className="border rounded-xl overflow-hidden">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-slate-50 border-b">
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600">Employee</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600">Login Time</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600">Duration</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600">Last Activity</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600">Status</th>
-                    {isHR && <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600">Actions</th>}
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {activeSessions.length === 0 ? (
-                    <tr>
-                      <td colSpan={isHR ? 6 : 5} className="text-center py-12 text-gray-500">
-                        <PlayCircle className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                        No active sessions
-                      </td>
-                    </tr>
-                  ) : (
-                    activeSessions.map((session) => (
-                      <tr key={session.id} className="hover:bg-slate-50">
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-3">
-                            <div className="h-8 w-8 rounded-full bg-emerald-500 flex items-center justify-center text-white text-sm font-medium">
-                              {session.employee_name?.charAt(0)}
-                            </div>
-                            <span className="font-medium">{session.employee_name}</span>
+      ) : calendarData && calendarData.employees.length > 0 ? (
+        <div className="border rounded-xl overflow-hidden bg-white">
+          {/* Calendar Grid */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-slate-50 border-b">
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-slate-600 sticky left-0 bg-slate-50 z-10 min-w-[200px]">
+                    Employee
+                  </th>
+                  {getDaysArray().map(day => (
+                    <th 
+                      key={day} 
+                      className={`px-0.5 py-2 text-center text-xs font-medium min-w-[28px] ${isWeekend(day) ? 'bg-slate-100 text-slate-400' : 'text-slate-600'}`}
+                    >
+                      <div className="text-[10px] text-gray-400">{getWeekdayAbbr(day)}</div>
+                      <div>{day}</div>
+                    </th>
+                  ))}
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-slate-600 bg-slate-50 min-w-[80px]">
+                    Summary
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {calendarData.employees.map((employee) => (
+                  <tr 
+                    key={employee.employee_id} 
+                    className={`hover:bg-slate-50/50 ${selectedEmployee === employee.employee_id ? 'bg-blue-50/50' : ''}`}
+                    onClick={() => setSelectedEmployee(selectedEmployee === employee.employee_id ? null : employee.employee_id)}
+                  >
+                    {/* Employee Info - Sticky */}
+                    <td className="px-3 py-2 sticky left-0 bg-white z-10 border-r">
+                      <div className="flex items-center gap-2">
+                        {employee.photo_url ? (
+                          <img 
+                            src={employee.photo_url} 
+                            alt={employee.employee_name} 
+                            className="h-8 w-8 rounded-full object-cover border"
+                          />
+                        ) : (
+                          <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-medium">
+                            {employee.employee_name?.charAt(0)}
                           </div>
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-600">
-                          {session.login_time ? new Date(session.login_time).toLocaleTimeString() : '-'}
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          {formatDuration(session.active_minutes)}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-600">
-                          {session.last_activity ? new Date(session.last_activity).toLocaleTimeString() : '-'}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-100 text-emerald-700 text-xs rounded-full">
-                            <span className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                            Active
-                          </span>
-                        </td>
-                        {isHR && (
-                          <td className="px-4 py-3">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleForceLogout(session.id)}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                            >
-                              <StopCircle className="h-4 w-4 mr-1" /> End
-                            </Button>
-                          </td>
                         )}
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
+                        <div>
+                          <span className="font-medium text-sm block truncate max-w-[140px]" title={employee.employee_name}>
+                            {employee.employee_name}
+                          </span>
+                          <span className="text-[10px] text-gray-400">{employee.employee_code || employee.email}</span>
+                        </div>
+                      </div>
+                    </td>
 
-          {/* Records View */}
-          {view === 'records' && (
-            <div className="border rounded-xl overflow-hidden">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-slate-50 border-b">
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600">Employee</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600">Date</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600">Login</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600">Logout</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600">Active Time</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {attendanceRecords.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="text-center py-12 text-gray-500">
-                        <Clock className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                        No attendance records found
-                      </td>
-                    </tr>
-                  ) : (
-                    attendanceRecords.map((record) => (
-                      <tr key={record.id} className="hover:bg-slate-50">
-                        <td className="px-4 py-3 font-medium">{record.employee_name}</td>
-                        <td className="px-4 py-3 text-sm">{record.date}</td>
-                        <td className="px-4 py-3 text-sm text-gray-600">{record.login_time || '-'}</td>
-                        <td className="px-4 py-3 text-sm text-gray-600">{record.logout_time || '-'}</td>
-                        <td className="px-4 py-3 text-sm">{formatDuration(record.active_minutes)}</td>
-                        <td className="px-4 py-3">
-                          <StatusBadge status={record.status} />
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* Pending Approvals View */}
-          {view === 'approvals' && isHR && (
-            <div className="border rounded-xl overflow-hidden">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-slate-50 border-b">
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600">Employee</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600">Date</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600">Issue</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600">Active Time</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {pendingApprovals.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="text-center py-12 text-gray-500">
-                        <CheckCircle className="h-12 w-12 mx-auto mb-3 text-emerald-300" />
-                        No pending approvals
-                      </td>
-                    </tr>
-                  ) : (
-                    pendingApprovals.map((record) => (
-                      <tr key={record.id} className="hover:bg-slate-50">
-                        <td className="px-4 py-3 font-medium">{record.employee_name}</td>
-                        <td className="px-4 py-3 text-sm">{record.date}</td>
-                        <td className="px-4 py-3 text-sm text-amber-600">{record.issue || 'Needs review'}</td>
-                        <td className="px-4 py-3 text-sm">{formatDuration(record.active_minutes)}</td>
-                        <td className="px-4 py-3">
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="text-emerald-600 border-emerald-300 hover:bg-emerald-50"
-                              onClick={() => handleOverride(record.id, 'present', 'Approved by HR')}
-                            >
-                              <CheckCircle className="h-4 w-4 mr-1" /> Approve
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="text-red-600 border-red-300 hover:bg-red-50"
-                              onClick={() => handleOverride(record.id, 'absent', 'Rejected by HR')}
-                            >
-                              <XCircle className="h-4 w-4 mr-1" /> Reject
-                            </Button>
+                    {/* Day Cells */}
+                    {getDaysArray().map(day => {
+                      const dateStr = `${calendarData.year}-${String(calendarData.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                      const dayData = employee.days[dateStr];
+                      if (!dayData) return <td key={day} className="px-0.5 py-1.5"></td>;
+                      
+                      return (
+                        <td key={day} className="px-0.5 py-1.5 text-center" title={getDayTooltip(employee, day)}>
+                          <div 
+                            className={`w-6 h-6 mx-auto rounded text-[10px] font-medium flex items-center justify-center border cursor-help ${getStatusColor(dayData.status)}`}
+                          >
+                            {dayData.status === 'leave_approved' && 'L'}
+                            {dayData.status === 'leave_pending' && 'P'}
+                            {dayData.status === 'holiday' && '-'}
+                            {dayData.status === 'working' && '✓'}
                           </div>
                         </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </>
+                      );
+                    })}
+
+                    {/* Summary Column */}
+                    <td className="px-3 py-2 text-center bg-slate-50/50 border-l">
+                      <div className="flex items-center justify-center gap-1 text-[10px]">
+                        <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded font-medium" title="Working Days">
+                          {employee.summary.working_days}W
+                        </span>
+                        {employee.summary.leave_approved > 0 && (
+                          <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded font-medium" title="Approved Leaves">
+                            {employee.summary.leave_approved}L
+                          </span>
+                        )}
+                        {employee.summary.leave_pending > 0 && (
+                          <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded font-medium" title="Pending Leaves">
+                            {employee.summary.leave_pending}P
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Footer Stats */}
+          <div className="px-4 py-3 bg-slate-50 border-t flex items-center justify-between text-sm">
+            <span className="text-gray-500">
+              {calendarData.month_name} {calendarData.year} • {calendarData.employees.length} employees
+            </span>
+            <span className="text-gray-500">
+              Total Days: {calendarData.total_days}
+            </span>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center py-16 text-gray-500">
+          <Users className="h-12 w-12 text-gray-300 mb-3" />
+          <p className="font-medium">No employees found</p>
+          <p className="text-sm">Try adjusting your filters or search query</p>
+        </div>
       )}
     </div>
   );
