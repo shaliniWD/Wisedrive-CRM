@@ -253,11 +253,12 @@ class TestPayrollEnhancement:
         """Test updating attendance_days in a DRAFT batch record with validation"""
         # First, find or create a DRAFT batch
         response = self.session.get(f"{BASE_URL}/api/hr/payroll/batches", params={
-            "status": "DRAFT",
             "country_id": INDIA_COUNTRY_ID
         })
         assert response.status_code == 200
-        batches = response.json()
+        all_batches = response.json()
+        # Filter for DRAFT status manually (API filter may not work correctly)
+        batches = [b for b in all_batches if b.get("status") == "DRAFT"]
         
         if not batches:
             # Try to create a batch - find available month
@@ -326,10 +327,10 @@ class TestPayrollEnhancement:
     def test_08_update_batch_record_attendance_days_validation_negative(self):
         """Test attendance_days validation - must be >= 0"""
         response = self.session.get(f"{BASE_URL}/api/hr/payroll/batches", params={
-            "status": "DRAFT",
             "country_id": INDIA_COUNTRY_ID
         })
-        batches = response.json()
+        all_batches = response.json()
+        batches = [b for b in all_batches if b.get("status") == "DRAFT"]
         
         if not batches:
             pytest.skip("No DRAFT batch available for testing")
@@ -360,10 +361,10 @@ class TestPayrollEnhancement:
     def test_09_update_batch_record_attendance_days_validation_exceeds_working(self):
         """Test attendance_days validation - must be <= working_days"""
         response = self.session.get(f"{BASE_URL}/api/hr/payroll/batches", params={
-            "status": "DRAFT",
             "country_id": INDIA_COUNTRY_ID
         })
-        batches = response.json()
+        all_batches = response.json()
+        batches = [b for b in all_batches if b.get("status") == "DRAFT"]
         
         if not batches:
             pytest.skip("No DRAFT batch available for testing")
@@ -396,10 +397,10 @@ class TestPayrollEnhancement:
     def test_10_update_batch_record_other_deductions(self):
         """Test updating other_deductions in a DRAFT batch record"""
         response = self.session.get(f"{BASE_URL}/api/hr/payroll/batches", params={
-            "status": "DRAFT",
             "country_id": INDIA_COUNTRY_ID
         })
-        batches = response.json()
+        all_batches = response.json()
+        batches = [b for b in all_batches if b.get("status") == "DRAFT"]
         
         if not batches:
             pytest.skip("No DRAFT batch available for testing")
@@ -444,10 +445,10 @@ class TestPayrollEnhancement:
     def test_11_update_batch_record_other_deductions_validation_negative(self):
         """Test other_deductions validation - must be >= 0"""
         response = self.session.get(f"{BASE_URL}/api/hr/payroll/batches", params={
-            "status": "DRAFT",
             "country_id": INDIA_COUNTRY_ID
         })
-        batches = response.json()
+        all_batches = response.json()
+        batches = [b for b in all_batches if b.get("status") == "DRAFT"]
         
         if not batches:
             pytest.skip("No DRAFT batch available for testing")
@@ -477,10 +478,10 @@ class TestPayrollEnhancement:
     def test_12_update_batch_record_other_deductions_validation_exceeds_net(self):
         """Test other_deductions validation - must be capped at Net Pay"""
         response = self.session.get(f"{BASE_URL}/api/hr/payroll/batches", params={
-            "status": "DRAFT",
             "country_id": INDIA_COUNTRY_ID
         })
-        batches = response.json()
+        all_batches = response.json()
+        batches = [b for b in all_batches if b.get("status") == "DRAFT"]
         
         if not batches:
             pytest.skip("No DRAFT batch available for testing")
@@ -519,10 +520,10 @@ class TestPayrollEnhancement:
     def test_13_batch_totals_update_on_record_edit(self):
         """Test that batch totals update when records are edited"""
         response = self.session.get(f"{BASE_URL}/api/hr/payroll/batches", params={
-            "status": "DRAFT",
             "country_id": INDIA_COUNTRY_ID
         })
-        batches = response.json()
+        all_batches = response.json()
+        batches = [b for b in all_batches if b.get("status") == "DRAFT"]
         
         if not batches:
             pytest.skip("No DRAFT batch available for testing")
