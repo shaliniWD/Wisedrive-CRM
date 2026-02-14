@@ -749,8 +749,8 @@ export function PayrollDashboard({ isHR, isFinance }) {
         // Calculate attendance (present) days
         const attendanceDays = workingDays - lopDays;
         
-        // Calculate attendance deduction
-        const attendanceDeduction = Math.round(perDaySalary * absentDays * 100) / 100;
+        // Calculate LOP deduction
+        const attendanceDeduction = Math.round(perDaySalary * lopDays * 100) / 100;
 
         // Get other deductions
         let otherDeductions = previewEdits[record.employee_id]?.other_deductions ?? record.other_deductions ?? 0;
@@ -767,7 +767,8 @@ export function PayrollDashboard({ isHR, isFinance }) {
           ...record,
           working_days_in_month: workingDays,
           attendance_days: attendanceDays,
-          unapproved_absent_days: absentDays,
+          lop_days: lopDays,
+          unapproved_absent_days: lopDays,  // Keep for backward compatibility
           attendance_deduction: attendanceDeduction,
           per_day_salary: Math.round(perDaySalary * 100) / 100,
           other_deductions: otherDeductions,
@@ -795,18 +796,18 @@ export function PayrollDashboard({ isHR, isFinance }) {
       };
     });
 
-    // Re-validate absent days for all employees
+    // Re-validate LOP days for all employees
     const newErrors = {};
     Object.keys(previewEdits).forEach(employeeId => {
-      const absentDays = previewEdits[employeeId]?.absent_days ?? 0;
-      if (absentDays > numValue) {
-        newErrors[employeeId] = { absent_days: `Cannot exceed ${numValue} working days` };
+      const lopDays = previewEdits[employeeId]?.lop_days ?? previewEdits[employeeId]?.absent_days ?? 0;
+      if (lopDays > numValue) {
+        newErrors[employeeId] = { lop_days: `Cannot exceed ${numValue} working days` };
       }
     });
     setPreviewErrors(newErrors);
   };
 
-  // Handle preview field edit with validation and recalculation (now uses absent_days)
+  // Handle preview field edit with validation and recalculation (now uses lop_days)
   const handlePreviewEdit = (employeeId, field, value) => {
     const record = previewData.records.find(r => r.employee_id === employeeId);
     if (!record) return;
