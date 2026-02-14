@@ -269,7 +269,7 @@ export default function LoginPage() {
               <div className="space-y-2 text-xs">
                 <div className="flex items-center justify-between p-2 bg-white rounded-lg border">
                   <span className="font-medium text-slate-700">CEO</span>
-                  <span className="text-slate-500 font-mono">ceo@wisedrive.com</span>
+                  <span className="text-slate-500 font-mono">kalyan@wisedrive.com</span>
                 </div>
                 <div className="flex items-center justify-between p-2 bg-white rounded-lg border">
                   <span className="font-medium text-slate-700">HR Manager</span>
@@ -277,7 +277,7 @@ export default function LoginPage() {
                 </div>
                 <div className="flex items-center justify-between p-2 bg-white rounded-lg border">
                   <span className="font-medium text-slate-700">Finance</span>
-                  <span className="text-slate-500 font-mono">finance.manager.in@wisedrive.com</span>
+                  <span className="text-slate-500 font-mono">finance@wisedrive.com</span>
                 </div>
                 <p className="text-center text-slate-400 pt-1">Password: password123</p>
               </div>
