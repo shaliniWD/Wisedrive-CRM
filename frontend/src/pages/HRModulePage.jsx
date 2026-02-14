@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Users, Clock, DollarSign, Calendar, Shield, Globe } from 'lucide-react';
+import { Users, Clock, DollarSign, Calendar, Shield, Globe, IndianRupee } from 'lucide-react';
 import { hrApi } from '@/services/api';
 
 // Import the full AdminPage content
@@ -18,6 +18,11 @@ export default function HRModulePage() {
   const isHR = ['CEO', 'HR_MANAGER'].includes(roleCode);
   const isFinance = ['CEO', 'FINANCE_MANAGER'].includes(roleCode);
   const isHROrFinance = isHR || isFinance || ['COUNTRY_HEAD'].includes(roleCode);
+  const isCEO = roleCode === 'CEO';  // Only CEO can access Countries
+  
+  // Currency icon based on user country
+  const isIndianUser = user?.country_code === 'IN' || user?.country_name?.toLowerCase().includes('india');
+  const PayrollIcon = (!isCEO && isIndianUser) ? IndianRupee : DollarSign;
 
   // Fetch employees on leave today
   const fetchEmployeesOnLeave = useCallback(async () => {
