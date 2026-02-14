@@ -829,21 +829,21 @@ export function PayrollDashboard({ isHR, isFinance }) {
 
     const workingDays = batchWorkingDays || record.working_days_in_month;
 
-    if (field === 'absent_days') {
+    if (field === 'lop_days' || field === 'absent_days') {
       if (numValue < 0) {
-        errors[employeeId].absent_days = 'Must be ≥ 0';
+        errors[employeeId].lop_days = 'Must be ≥ 0';
       } else if (numValue > workingDays) {
-        errors[employeeId].absent_days = `Cannot exceed ${workingDays} working days`;
+        errors[employeeId].lop_days = `Cannot exceed ${workingDays} working days`;
       } else {
-        delete errors[employeeId].absent_days;
+        delete errors[employeeId].lop_days;
       }
     }
 
     if (field === 'other_deductions') {
       // Calculate net before other to validate cap
-      const absentDays = field === 'absent_days' ? numValue : (previewEdits[employeeId]?.absent_days ?? 0);
+      const lopDays = field === 'lop_days' ? numValue : (previewEdits[employeeId]?.lop_days ?? previewEdits[employeeId]?.absent_days ?? 0);
       const perDaySalary = record.gross_salary / workingDays;
-      const attendanceDeduction = perDaySalary * absentDays;
+      const attendanceDeduction = perDaySalary * lopDays;
       const netBeforeOther = record.gross_salary - record.total_statutory_deductions - attendanceDeduction;
 
       if (numValue < 0) {
@@ -865,7 +865,7 @@ export function PayrollDashboard({ isHR, isFinance }) {
     recalculatePreview(employeeId, field, numValue);
   };
 
-  // Recalculate payroll for employee in preview (now uses absent_days)
+  // Recalculate payroll for employee in preview (now uses lop_days)
   const recalculatePreview = (employeeId, changedField, newValue) => {
     setPreviewData(prev => {
       if (!prev) return prev;
