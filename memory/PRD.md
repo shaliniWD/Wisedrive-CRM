@@ -243,4 +243,35 @@ Vendor Payment → Finance Manager creates with GST/TDS → Submit for Approval 
 ```
 
 ## Last Updated
-February 14, 2026 - CRM V4 Features: Multi-role support, Inline lead status editing, RBAC configuration UI, Employee exit/rejoin flow
+February 14, 2026 - **Phase 1 Complete: API Contract Design** for Wisedrive Platform Architecture v5.0
+
+## Platform Architecture v5.0
+
+### Phase 1: API Contract Design ✅ COMPLETE
+Created `/app/wisedrive-api-contracts/` repository with:
+- **OpenAPI 3.0 Specification** (`openapi/wisedrive-api-v1.yaml`)
+  - 50+ API endpoints defined
+  - All entities covered: Employee, Lead, Customer, Vehicle, Inspection, OBD, Payment, Report, CarData
+  - Authentication flows
+  - Razorpay integration endpoints
+  - Invincible Ocean integration endpoints
+  
+- **JSON Schemas** (`schemas/`)
+  - Common enums (LeadStatus, PaymentType, DTCCategory, etc.)
+  - Entity schemas (Employee, Inspection, OBDSession)
+  
+- **Documentation** (`docs/`)
+  - API Architecture design
+  - Versioning policy
+  - Dependency mapping
+  
+- **SDK Generation** (configured)
+  - TypeScript SDK for web apps
+  - Python SDK for backend
+  - Kotlin SDK for Android
+  - Swift SDK for iOS
+
+### Phase 2: Backend Architecture - NEXT
+### Phase 3: Infrastructure Setup - PENDING
+### Phase 4: OBD Integration - PENDING
+### Phase 5: External Integrations - PENDING
