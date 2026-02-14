@@ -35,7 +35,7 @@ def get_hr_token():
         "country_id": india['id']
     })
     if response.status_code == 200:
-        return response.json().get("token")
+        return response.json().get("access_token")
     return None
 
 def get_ceo_token():
@@ -49,7 +49,7 @@ def get_ceo_token():
         "country_id": india['id']
     })
     if response.status_code == 200:
-        return response.json().get("token")
+        return response.json().get("access_token")
     return None
 
 
@@ -481,7 +481,7 @@ class TestRBACForNewEndpoints:
             "country_id": india['id']
         })
         if response.status_code == 200:
-            token = response.json().get("token")
+            token = response.json().get("access_token")
             return {"Authorization": f"Bearer {token}"}
         return None
     
