@@ -821,7 +821,7 @@ export default function AdminPage({ initialTab = 'employees', embedded = false }
                 <tbody className="divide-y divide-gray-100">
                   {countries.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="text-center py-12">
+                      <td colSpan={8} className="text-center py-12">
                         <Globe className="h-12 w-12 text-gray-300 mx-auto mb-3" />
                         <p className="text-gray-500">No countries found</p>
                       </td>
@@ -1510,7 +1510,7 @@ export default function AdminPage({ initialTab = 'employees', embedded = false }
                 <tbody className="divide-y divide-gray-100">
                   {countries.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="text-center py-12">
+                      <td colSpan={8} className="text-center py-12">
                         <Globe className="h-12 w-12 text-gray-300 mx-auto mb-3" />
                         <p className="text-gray-500">No countries found</p>
                       </td>
