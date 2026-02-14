@@ -1234,21 +1234,123 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
             </TabsContent>
 
             {/* Attendance Tab */}
-            <TabsContent value="attendance" className="mt-0">
-              {leaveSummary ? (
-                <div className="grid grid-cols-4 gap-4">
-                  <div className="bg-emerald-50 p-4 rounded-xl text-center border border-emerald-200">
-                    <p className="text-2xl font-bold text-emerald-800">{leaveSummary.total_present}</p>
-                    <p className="text-xs text-emerald-600">Present</p>
-                  </div>
-                  <div className="bg-red-50 p-4 rounded-xl text-center border border-red-200">
-                    <p className="text-2xl font-bold text-red-800">{leaveSummary.total_leaves_taken}</p>
-                    <p className="text-xs text-red-600">Leaves</p>
-                  </div>
+            <TabsContent value="attendance" className="mt-0 space-y-4">
+              {/* Quick Leave Actions */}
+              <div className="bg-amber-50 p-4 rounded-xl border border-amber-200">
+                <h4 className="text-sm font-semibold text-amber-800 mb-3 flex items-center gap-2">
+                  <Calendar className="h-4 w-4" /> Quick Leave Actions
+                </h4>
+                <div className="flex gap-3">
+                  <Button 
+                    variant="outline" 
+                    className="border-amber-300 text-amber-700 hover:bg-amber-100"
+                    onClick={async () => {
+                      if (!employee) return;
+                      const today = new Date().toISOString().split('T')[0];
+                      try {
+                        await hrApi.saveEmployeeAttendance(employee.id, { date: today, status: 'on_leave', notes: 'Marked via quick action' });
+                        toast.success('Today marked as leave');
+                        loadEmployeeData(employee.id);
+                      } catch (error) {
+                        toast.error('Failed to mark leave');
+                      }
+                    }}
+                  >
+                    <Clock className="h-4 w-4 mr-2" /> Mark Today as Leave
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="border-amber-300 text-amber-700 hover:bg-amber-100"
+                    onClick={async () => {
+                      if (!employee) return;
+                      const tomorrow = new Date();
+                      tomorrow.setDate(tomorrow.getDate() + 1);
+                      const tomorrowStr = tomorrow.toISOString().split('T')[0];
+                      try {
+                        await hrApi.saveEmployeeAttendance(employee.id, { date: tomorrowStr, status: 'on_leave', notes: 'Marked via quick action' });
+                        toast.success('Tomorrow marked as leave');
+                        loadEmployeeData(employee.id);
+                      } catch (error) {
+                        toast.error('Failed to mark leave');
+                      }
+                    }}
+                  >
+                    <Calendar className="h-4 w-4 mr-2" /> Mark Tomorrow as Leave
+                  </Button>
                 </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">No attendance data available</div>
-              )}
+              </div>
+
+              {/* Monthly Leave Summary */}
+              <div className="bg-white border rounded-xl p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                    <History className="h-4 w-4" /> Monthly Leave Summary - {selectedYear}
+                  </h4>
+                  <Select value={String(selectedYear)} onValueChange={(v) => { setSelectedYear(parseInt(v)); if (employee) loadEmployeeData(employee.id); }}>
+                    <SelectTrigger className="w-28 h-8"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {[2024, 2025, 2026].map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {leaveSummary ? (
+                  <>
+                    {/* Summary Cards */}
+                    <div className="grid grid-cols-4 gap-4 mb-4">
+                      <div className="bg-emerald-50 p-4 rounded-xl text-center border border-emerald-200">
+                        <p className="text-2xl font-bold text-emerald-800">{leaveSummary.total_present || 0}</p>
+                        <p className="text-xs text-emerald-600">Present Days</p>
+                      </div>
+                      <div className="bg-red-50 p-4 rounded-xl text-center border border-red-200">
+                        <p className="text-2xl font-bold text-red-800">{leaveSummary.total_leaves_taken || 0}</p>
+                        <p className="text-xs text-red-600">Leaves Taken</p>
+                      </div>
+                      <div className="bg-orange-50 p-4 rounded-xl text-center border border-orange-200">
+                        <p className="text-2xl font-bold text-orange-800">{leaveSummary.total_half_days || 0}</p>
+                        <p className="text-xs text-orange-600">Half Days</p>
+                      </div>
+                      <div className="bg-blue-50 p-4 rounded-xl text-center border border-blue-200">
+                        <p className="text-2xl font-bold text-blue-800">{leaveSummary.total_working_days || 0}</p>
+                        <p className="text-xs text-blue-600">Working Days</p>
+                      </div>
+                    </div>
+
+                    {/* Monthly Breakdown Table */}
+                    {leaveSummary.monthly_breakdown && leaveSummary.monthly_breakdown.length > 0 && (
+                      <div className="border rounded-lg overflow-hidden">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="bg-slate-50 border-b">
+                              <th className="px-3 py-2 text-left text-xs font-semibold text-slate-600">Month</th>
+                              <th className="px-3 py-2 text-center text-xs font-semibold text-slate-600">Present</th>
+                              <th className="px-3 py-2 text-center text-xs font-semibold text-slate-600">Absent</th>
+                              <th className="px-3 py-2 text-center text-xs font-semibold text-slate-600">Half Day</th>
+                              <th className="px-3 py-2 text-center text-xs font-semibold text-slate-600">On Leave</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y">
+                            {leaveSummary.monthly_breakdown.map((month, idx) => (
+                              <tr key={idx} className="hover:bg-slate-50">
+                                <td className="px-3 py-2 font-medium">{['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][month.month - 1]} {selectedYear}</td>
+                                <td className="px-3 py-2 text-center text-emerald-600 font-medium">{month.present || 0}</td>
+                                <td className="px-3 py-2 text-center text-red-600 font-medium">{month.absent || 0}</td>
+                                <td className="px-3 py-2 text-center text-orange-600 font-medium">{month.half_day || 0}</td>
+                                <td className="px-3 py-2 text-center text-blue-600 font-medium">{month.on_leave || 0}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <Calendar className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                    <p>No attendance data available for {selectedYear}</p>
+                  </div>
+                )}
+              </div>
             </TabsContent>
 
             {/* Documents Tab */}
