@@ -1776,6 +1776,68 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
   // Employee ID validation
   const [employeeIdError, setEmployeeIdError] = useState('');
 
+  // Leads Management
+  const [availableCities, setAvailableCities] = useState([]);
+  const [leadsActive, setLeadsActive] = useState(true);
+  const [selectedCities, setSelectedCities] = useState([]);
+  const [leadsSaving, setLeadsSaving] = useState(false);
+
+  // Fetch available cities
+  useEffect(() => {
+    const fetchCities = async () => {
+      try {
+        const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/cities`);
+        setAvailableCities(response.data || []);
+      } catch (error) {
+        console.error('Failed to load cities:', error);
+        setAvailableCities(['Bangalore', 'Hyderabad', 'Chennai', 'Mumbai', 'Delhi', 'Pune', 'Kolkata']);
+      }
+    };
+    fetchCities();
+  }, []);
+
+  // Handle leads assignment toggle
+  const handleLeadsToggle = async (active) => {
+    setLeadsSaving(true);
+    try {
+      await hrApi.toggleLeadAssignment(employee.id, {
+        is_available_for_leads: active,
+        reason: active ? '' : 'Manually paused by admin'
+      });
+      setLeadsActive(active);
+      toast.success(active ? 'Leads activated for employee' : 'Leads deactivated for employee');
+    } catch (error) {
+      toast.error('Failed to update lead assignment');
+    } finally {
+      setLeadsSaving(false);
+    }
+  };
+
+  // Handle city selection
+  const handleCityToggle = (city) => {
+    setSelectedCities(prev => 
+      prev.includes(city) 
+        ? prev.filter(c => c !== city)
+        : [...prev, city]
+    );
+  };
+
+  // Save assigned cities
+  const saveAssignedCities = async () => {
+    setLeadsSaving(true);
+    try {
+      await hrApi.toggleLeadAssignment(employee.id, {
+        is_available_for_leads: leadsActive,
+        assigned_cities: selectedCities
+      });
+      toast.success('Assigned cities updated');
+    } catch (error) {
+      toast.error('Failed to update assigned cities');
+    } finally {
+      setLeadsSaving(false);
+    }
+  };
+
   // Handle photo file selection
   const handlePhotoSelect = async (e) => {
     const file = e.target.files?.[0];
