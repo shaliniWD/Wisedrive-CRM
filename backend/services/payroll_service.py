@@ -943,11 +943,20 @@ class PayrollService:
                 "total_hours_worked": 0
             }
         
-        # Calculate attendance deduction
-        # Only unapproved absences deduct salary
+        # Attendance days = working days - unapproved absences
+        # This is EDITABLE by HR
+        present = attendance.get("present_days", 0)
+        approved_leave = attendance.get("approved_leave_days", 0)
+        attendance_days = present + approved_leave  # Days that count as "attended"
+        if attendance_days > working_days:
+            attendance_days = working_days  # Cap at working days
+        
+        # Calculate attendance deduction based on attendance_days
+        # Formula: Per Day Salary = Gross / Working Days
+        # Attendance Deduction = Per Day Salary * (Working Days - Attendance Days)
         per_day_salary = gross / working_days if working_days > 0 else 0
-        unapproved_absent = attendance.get("unapproved_absent_days", 0)
-        attendance_deduction = round(per_day_salary * unapproved_absent, 2)
+        absent_days_for_deduction = working_days - attendance_days
+        attendance_deduction = round(per_day_salary * absent_days_for_deduction, 2)
         
         # Other deductions (editable - starts at 0)
         other_deductions = 0
@@ -981,6 +990,7 @@ class PayrollService:
             "employee_code": employee.get("employee_code"),
             "department_name": dept_name,
             "country_id": employee.get("country_id"),
+            "weekly_off_day": employee.get("weekly_off_day", 0),
             "month": month,
             "year": year,
             
@@ -1002,19 +1012,20 @@ class PayrollService:
             "other_statutory": other_statutory,
             "total_statutory_deductions": round(total_statutory, 2),
             
-            # Attendance deduction (AUTO - not editable unless override)
+            # Attendance (EDITABLE - attendance_days)
             "working_days_in_month": working_days,
+            "attendance_days": attendance_days,  # EDITABLE: Actual days attended/worked
             "per_day_salary": round(per_day_salary, 2),
             "present_days": attendance.get("present_days", 0),
             "pending_days": attendance.get("pending_days", 0),
             "absent_days": attendance.get("absent_days", 0),
             "approved_leave_days": attendance.get("approved_leave_days", 0),
-            "unapproved_absent_days": unapproved_absent,
+            "unapproved_absent_days": absent_days_for_deduction,
             "attendance_deduction": attendance_deduction,
             "attendance_override": False,
             "total_hours_worked": attendance.get("total_hours_worked", 0),
             
-            # Other deductions (EDITABLE)
+            # Other deductions (EDITABLE - capped at net salary)
             "other_deductions": other_deductions,
             "other_deductions_reason": None,
             
