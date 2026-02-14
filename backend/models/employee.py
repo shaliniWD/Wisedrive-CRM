@@ -78,6 +78,7 @@ class EmployeeUpdate(BaseModel):
     name: Optional[str] = None
     email: Optional[EmailStr] = None
     phone: Optional[str] = None
+    photo_url: Optional[str] = None
     country_id: Optional[str] = None
     department_id: Optional[str] = None
     team_id: Optional[str] = None
@@ -91,7 +92,7 @@ class EmployeeUpdate(BaseModel):
     pincode: Optional[str] = None
     employee_code: Optional[str] = None
     employment_type: Optional[str] = None
-    employment_status: Optional[str] = None  # active, exited
+    employment_status: Optional[str] = None  # active, exited, on_leave
     joining_date: Optional[str] = None
     probation_end_date: Optional[str] = None
     exit_date: Optional[str] = None
