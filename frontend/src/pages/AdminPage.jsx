@@ -1935,9 +1935,14 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
           lead_assignment_paused_reason: employee.lead_assignment_paused_reason || '',
           has_crm_access: employee.has_crm_access !== false, is_active: employee.is_active !== false,
         });
+        // Initialize leads management state
+        setLeadsActive(employee.is_available_for_leads !== false);
+        setSelectedCities(employee.assigned_cities || []);
         loadEmployeeData(employee.id);
       } else {
         setPhotoPreview(null);
+        setLeadsActive(true);
+        setSelectedCities([]);
         setForm({
           name: '', email: '', phone: '', photo_url: '', country_id: '', department_id: '', team_id: '',
           role_id: '', role_ids: [], employment_type: 'full_time', employee_code: '', joining_date: '',
