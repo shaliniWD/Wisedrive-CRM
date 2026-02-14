@@ -8,7 +8,56 @@ Recreate WiseDrive CRM (https://crm.wisedrive.com) design with a modern UI. Crea
 
 ## What's Been Implemented
 
-### Attendance Calendar Rework (Dec 14, 2025) ✅ LATEST
+### HR Module Enhancements V5 (Dec 14, 2025) ✅ LATEST
+- [x] **NumericInput Bug Fix**:
+  - Fixed number jumping issue in payroll preview
+  - Added debounce mechanism to prevent premature parent updates
+  - Users can now type multiple digits without values jumping
+
+- [x] **LOP (Loss of Pay) Tracking**:
+  - New `lop_days` field in attendance summaries
+  - Attendance overrides support LOP/Absent status
+  - LOP days calculated from `attendance_overrides` collection
+  - LOP count shown in attendance calendar summary column (red badge)
+
+- [x] **HR Attendance Edit Modal**:
+  - HR Manager can click any day cell to open edit modal
+  - Status options: Present, Absent/LOP, Half Day, Leave (Approved), Holiday
+  - Notes field for additional context
+  - Backend: `POST /api/hr/attendance/update-day` endpoint
+  - RBAC: Only CEO and HR_MANAGER can edit attendance
+
+- [x] **Attendance Date Restrictions**:
+  - Month dropdown limited to current and past months
+  - Year dropdown limited to current and past years
+  - Future day cells grayed out and non-clickable
+  - Backend rejects updates for future dates
+
+- [x] **City Master for Countries**:
+  - Countries now have `cities` array field
+  - Country modal includes city management section
+  - Add cities via input + button or Enter key
+  - Remove cities via X button on tags
+  - Cities used in Leads Management employee assignment
+
+- [x] **LOP in Payroll Display**:
+  - Renamed "Absent Days" → "LOP Days" throughout
+  - Renamed "Attendance Deduction" → "LOP Deduction"
+  - Payslip PDF shows "LOP Deduction (X days)"
+  - Clearer salary deduction reasoning
+
+- [x] **Payslips Tab in Employee Modal**:
+  - New "Payslips" tab in employee detail modal
+  - Auto-generated after payroll batch confirmation
+  - Shows: Period, Gross, Deductions, Net, Status
+  - Download PDF button for each payslip
+  - Backend: `GET /api/hr/payroll/employee/{id}/payslips` endpoint
+
+- [x] **Hidden Emergent Badge**:
+  - Emergent badge hidden via CSS `display: none !important`
+  - Badge element exists but not visible in production
+
+### Attendance Calendar Rework (Dec 14, 2025) ✅
 - [x] **New Calendar-Based Attendance View**:
   - Completely replaced session-based attendance logic with employee-wise calendar view
   - Consolidated view showing all employees with leave status for each day of the month
