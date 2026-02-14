@@ -1485,6 +1485,7 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
       if (employee) {
         setForm({
           name: employee.name || '', email: employee.email || '', phone: employee.phone || '',
+          photo_url: employee.photo_url || '',
           country_id: employee.country_id || '', department_id: employee.department_id || '',
           team_id: employee.team_id || '', role_id: employee.role_id || '',
           role_ids: employee.role_ids || (employee.role_id ? [employee.role_id] : []),
