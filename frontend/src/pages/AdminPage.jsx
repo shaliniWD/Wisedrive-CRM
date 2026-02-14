@@ -29,6 +29,7 @@ const PAGE_PERMISSIONS = [
   { id: 'customers', name: 'Customers', description: 'Manage customer records' },
   { id: 'inspections', name: 'Inspections', description: 'Manage vehicle inspections' },
   { id: 'employees', name: 'Admin - Employees', description: 'View and manage employees' },
+  { id: 'hr', name: 'HR Module', description: 'Attendance, payroll, and leave management' },
   { id: 'finance', name: 'Finance', description: 'Manage payments and payroll' },
   { id: 'settings', name: 'Settings', description: 'System configuration' },
 ];
@@ -40,6 +41,7 @@ const PRESET_ROLES = [
   { code: 'HR_MANAGER', name: 'HR Manager', permissions: [
     { page: 'dashboard', view: true, edit: false },
     { page: 'employees', view: true, edit: true },
+    { page: 'hr', view: true, edit: true },
     { page: 'finance', view: true, edit: true },
     { page: 'settings', view: true, edit: false },
   ]},
