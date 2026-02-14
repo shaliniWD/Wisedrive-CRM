@@ -391,6 +391,10 @@ export function PayrollDashboard({ isHR, isFinance }) {
   const [editingRecord, setEditingRecord] = useState(null);
   const [editingValues, setEditingValues] = useState({});
   const [saving, setSaving] = useState(false);
+  
+  // Preview editing states (for attendance_days and other_deductions)
+  const [previewEdits, setPreviewEdits] = useState({});  // { employee_id: { attendance_days, other_deductions } }
+  const [previewErrors, setPreviewErrors] = useState({}); // { employee_id: { field: error_message } }
 
   const fetchCountries = useCallback(async () => {
     try {
