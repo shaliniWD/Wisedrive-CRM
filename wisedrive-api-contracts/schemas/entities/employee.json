@@ -1,0 +1,172 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://api.wisedrive.com/schemas/entities/employee.json",
+  "title": "Employee",
+  "description": "Employee entity schema",
+  "type": "object",
+  
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier"
+    },
+    "email": {
+      "type": "string",
+      "format": "email",
+      "description": "Email address (unique)"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100,
+      "description": "Full name"
+    },
+    "phone": {
+      "type": "string",
+      "pattern": "^[+]?[0-9]{10,15}$",
+      "description": "Phone number"
+    },
+    "country_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Country assignment"
+    },
+    "department_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Department assignment"
+    },
+    "team_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Team assignment"
+    },
+    "role_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Primary role ID"
+    },
+    "role_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "description": "All assigned role IDs (multi-role support)"
+    },
+    "employment_type": {
+      "$ref": "common/enums.json#/definitions/EmploymentType"
+    },
+    "employment_status": {
+      "$ref": "common/enums.json#/definitions/EmploymentStatus"
+    },
+    "employee_code": {
+      "type": "string",
+      "description": "Internal employee code"
+    },
+    "date_of_birth": {
+      "type": "string",
+      "format": "date"
+    },
+    "gender": {
+      "$ref": "common/enums.json#/definitions/Gender"
+    },
+    "address": {
+      "type": "string"
+    },
+    "city": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string"
+    },
+    "pincode": {
+      "type": "string"
+    },
+    "joining_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "probation_end_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "exit_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "exit_reason": {
+      "type": "string",
+      "enum": ["resignation", "termination", "retirement", "contract_end", "other"]
+    },
+    "exit_notes": {
+      "type": "string"
+    },
+    "rejoin_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "weekly_off_day": {
+      "$ref": "common/enums.json#/definitions/DayOfWeek"
+    },
+    "is_available_for_leads": {
+      "type": "boolean",
+      "default": true
+    },
+    "lead_assignment_paused_reason": {
+      "type": "string"
+    },
+    "bank_name": {
+      "type": "string"
+    },
+    "bank_account_number": {
+      "type": "string"
+    },
+    "ifsc_code": {
+      "type": "string",
+      "pattern": "^[A-Z]{4}0[A-Z0-9]{6}$"
+    },
+    "pan_number": {
+      "type": "string",
+      "pattern": "^[A-Z]{5}[0-9]{4}[A-Z]$"
+    },
+    "emergency_contact_name": {
+      "type": "string"
+    },
+    "emergency_contact_phone": {
+      "type": "string"
+    },
+    "emergency_contact_relation": {
+      "type": "string"
+    },
+    "has_crm_access": {
+      "type": "boolean",
+      "default": true
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "profile_image": {
+      "type": "string",
+      "format": "uri"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "created_by": {
+      "type": "string",
+      "format": "uuid"
+    }
+  },
+  
+  "required": ["id", "email", "name", "country_id", "role_ids"],
+  
+  "additionalProperties": false
+}
