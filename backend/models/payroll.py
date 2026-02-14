@@ -96,7 +96,10 @@ class PayrollBatch(PayrollBatchBase):
 # ==================== PAYROLL RECORDS ====================
 
 class PayrollRecordBase(BaseModel):
-    """Monthly payroll record - IMMUTABLE after generation"""
+    """Monthly payroll record - IMMUTABLE after batch confirmation"""
+    # Batch reference
+    batch_id: Optional[str] = None  # Links to payroll_batches
+    
     employee_id: str
     employee_name: str  # Snapshot at generation
     employee_code: Optional[str] = None
@@ -104,6 +107,7 @@ class PayrollRecordBase(BaseModel):
     
     month: int  # 1-12
     year: int
+    country_id: Optional[str] = None
     
     # Salary structure snapshot (from employee's salary structure at generation time)
     basic_salary: float = 0
@@ -113,34 +117,44 @@ class PayrollRecordBase(BaseModel):
     special_allowance: float = 0
     variable_pay: float = 0
     
-    # Gross calculation
+    # Gross calculation - NOT EDITABLE
     gross_salary: float = 0  # Sum of all allowances
     
-    # Statutory deductions
-    pf_employee: float = 0
-    pf_employer: float = 0
-    professional_tax: float = 0
-    income_tax: float = 0  # TDS
-    other_deductions: float = 0
-    total_statutory_deductions: float = 0
+    # Statutory deductions - SEPARATE FIELDS (editable in DRAFT)
+    pf_employee: float = 0           # PF Employee Contribution
+    pf_employer: float = 0           # PF Employer Contribution (for record keeping)
+    professional_tax: float = 0      # PT
+    income_tax: float = 0            # TDS
+    esi: float = 0                   # ESI (if applicable)
+    other_statutory: float = 0       # Other statutory deductions
+    total_statutory_deductions: float = 0  # Sum of above
     
-    # Attendance-based deductions
+    # Attendance-based deductions - AUTO CALCULATED (not editable unless override)
     # Formula: Per Day Salary = Gross / Working Days
     # Attendance Deduction = Per Day Salary * Unapproved Absent Days
     working_days_in_month: int = 0
     per_day_salary: float = 0
     unapproved_absent_days: int = 0
     attendance_deduction: float = 0
+    attendance_override: bool = False  # If HR manually overrode attendance deduction
+    attendance_override_reason: Optional[str] = None
+    
+    # Other deductions - EDITABLE
+    other_deductions: float = 0
+    other_deductions_reason: Optional[str] = None
+    
+    # Total deductions
+    total_deductions: float = 0  # statutory + attendance + other
     
     # Attendance summary snapshot
     present_days: int = 0
     pending_days: int = 0
     absent_days: int = 0
-    approved_days: int = 0  # Pending days approved by HR
+    approved_leave_days: int = 0  # Approved leaves (not counted as absent)
     total_hours_worked: float = 0
     
-    # Net salary calculation
-    # Net = Gross - Statutory Deductions - Attendance Deduction
+    # Net salary calculation - AUTO CALCULATED
+    # Net = Gross - Total Deductions
     net_salary: float = 0
     
     # For mechanics/freelancers
@@ -172,8 +186,8 @@ class PayrollRecordBase(BaseModel):
     bank_account_number: Optional[str] = None
     ifsc_code: Optional[str] = None
     
-    # Immutability
-    is_locked: bool = True  # Always true after generation
+    # Immutability - locked when batch is CONFIRMED
+    is_locked: bool = False
     version: int = 1
     
     # Payslip reference
