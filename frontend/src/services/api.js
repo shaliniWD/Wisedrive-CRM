@@ -246,6 +246,11 @@ export const attendanceApi = {
   getPendingApprovals: (countryId) => axios.get(`${API_URL}/hr/attendance/pending-approvals`, { params: { country_id: countryId } }),
   overrideAttendance: (recordId, data) => axios.post(`${API_URL}/hr/attendance/${recordId}/override`, data),
   calculateDaily: (date) => axios.post(`${API_URL}/hr/attendance/calculate-daily`, null, { params: { date } }),
+  
+  // Attendance Calendar (consolidated view)
+  getCalendar: (month, year, countryId, search) => axios.get(`${API_URL}/hr/attendance/calendar`, { 
+    params: { month, year, country_id: countryId, search } 
+  }),
 };
 
 export const payrollApi = {
