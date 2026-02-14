@@ -3033,6 +3033,714 @@ async def get_payment_modes():
     ]
 
 
+# ==================== HR MODULE: ATTENDANCE TRACKING ====================
+
+@api_router.post("/hr/session/start")
+async def start_session(
+    request: Request,
+    current_user: dict = Depends(get_current_user)
+):
+    """Start a session on login - called after successful authentication"""
+    # Get token from authorization header
+    auth_header = request.headers.get("Authorization", "")
+    token = auth_header.replace("Bearer ", "") if auth_header.startswith("Bearer ") else ""
+    
+    ip_address = request.client.host if request.client else None
+    user_agent = request.headers.get("User-Agent")
+    
+    session = await attendance_service.create_session(
+        user_id=current_user["id"],
+        token=token,
+        ip_address=ip_address,
+        user_agent=user_agent
+    )
+    
+    return session
+
+
+@api_router.post("/hr/session/heartbeat")
+async def session_heartbeat(
+    request: Request,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update session activity - client should call every 2 minutes"""
+    auth_header = request.headers.get("Authorization", "")
+    token = auth_header.replace("Bearer ", "") if auth_header.startswith("Bearer ") else ""
+    
+    # Check if token is blacklisted
+    if await attendance_service.is_token_blacklisted(token):
+        raise HTTPException(status_code=401, detail="Session expired due to inactivity")
+    
+    success = await attendance_service.update_heartbeat(current_user["id"], token)
+    
+    return {"success": success, "timestamp": datetime.now(timezone.utc).isoformat()}
+
+
+@api_router.post("/hr/session/end")
+async def end_session(
+    request: Request,
+    current_user: dict = Depends(get_current_user)
+):
+    """End session on logout"""
+    auth_header = request.headers.get("Authorization", "")
+    token = auth_header.replace("Bearer ", "") if auth_header.startswith("Bearer ") else ""
+    
+    session = await attendance_service.end_session(
+        user_id=current_user["id"],
+        token=token,
+        reason="manual"
+    )
+    
+    return {"success": True, "session": session}
+
+
+@api_router.get("/hr/sessions/active")
+async def get_active_sessions(
+    country_id: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all active sessions - HR/CEO only"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER", "COUNTRY_HEAD"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Country head can only see their country
+    if role_code == "COUNTRY_HEAD":
+        country_id = current_user.get("country_id")
+    
+    sessions = await attendance_service.get_active_sessions(country_id)
+    
+    return sessions
+
+
+@api_router.post("/hr/sessions/{session_id}/force-logout")
+async def force_logout_session(
+    session_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Force logout a session - HR/CEO only"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Get session to find user_id
+    session = await db.user_sessions.find_one({"id": session_id}, {"_id": 0})
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    result = await attendance_service.end_session(
+        user_id=session["user_id"],
+        session_id=session_id,
+        reason="admin_force"
+    )
+    
+    return {"success": True, "session": result}
+
+
+# -------------------- ATTENDANCE RECORDS --------------------
+
+@api_router.get("/hr/attendance")
+async def get_attendance_records(
+    employee_id: Optional[str] = None,
+    month: Optional[int] = None,
+    year: Optional[int] = None,
+    status: Optional[str] = None,
+    country_id: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get attendance records - filtered by RBAC"""
+    role_code = current_user.get("role_code", "")
+    
+    # RBAC check
+    if role_code not in ["CEO", "HR_MANAGER", "COUNTRY_HEAD"]:
+        # Regular employees can only see their own
+        employee_id = current_user["id"]
+    elif role_code == "COUNTRY_HEAD":
+        country_id = current_user.get("country_id")
+    
+    if employee_id:
+        records = await attendance_service.get_employee_attendance(employee_id, month, year)
+    else:
+        # Get all employees for filter
+        emp_query = {"is_active": True}
+        if country_id:
+            emp_query["country_id"] = country_id
+        
+        employees = await db.users.find(emp_query, {"_id": 0, "id": 1}).to_list(10000)
+        emp_ids = [e["id"] for e in employees]
+        
+        query = {"employee_id": {"$in": emp_ids}}
+        if month and year:
+            start_date = f"{year}-{str(month).zfill(2)}-01"
+            import calendar
+            last_day = calendar.monthrange(year, month)[1]
+            end_date = f"{year}-{str(month).zfill(2)}-{last_day}"
+            query["date"] = {"$gte": start_date, "$lte": end_date}
+        if status:
+            query["system_status"] = status
+        
+        records = await db.attendance_records.find(query, {"_id": 0}).sort("date", -1).to_list(10000)
+    
+    # Enrich with employee names
+    emp_map = {}
+    for r in records:
+        if r["employee_id"] not in emp_map:
+            emp = await db.users.find_one({"id": r["employee_id"]}, {"_id": 0, "name": 1})
+            emp_map[r["employee_id"]] = emp.get("name", "Unknown") if emp else "Unknown"
+        r["employee_name"] = emp_map[r["employee_id"]]
+    
+    return records
+
+
+@api_router.get("/hr/attendance/summary/{employee_id}")
+async def get_attendance_summary(
+    employee_id: str,
+    month: int,
+    year: int,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get attendance summary for an employee"""
+    role_code = current_user.get("role_code", "")
+    
+    # RBAC check
+    if role_code not in ["CEO", "HR_MANAGER", "COUNTRY_HEAD", "FINANCE_MANAGER"]:
+        if current_user["id"] != employee_id:
+            raise HTTPException(status_code=403, detail="Not authorized")
+    
+    summary = await attendance_service.get_attendance_summary(employee_id, month, year)
+    
+    return summary
+
+
+@api_router.get("/hr/attendance/pending-approvals")
+async def get_pending_attendance_approvals(
+    country_id: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get pending attendance approvals - HR only"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    records = await attendance_service.get_pending_approvals(country_id)
+    
+    return records
+
+
+@api_router.post("/hr/attendance/{record_id}/override")
+async def override_attendance(
+    record_id: str,
+    override_data: AttendanceOverrideRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Override attendance status - HR only"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    try:
+        record = await attendance_service.override_attendance(
+            record_id=record_id,
+            override_status=override_data.override_status,
+            reason=override_data.reason,
+            hr_user_id=current_user["id"]
+        )
+        
+        if not record:
+            raise HTTPException(status_code=404, detail="Attendance record not found")
+        
+        # Log audit
+        await audit_service.log(
+            entity_type="attendance",
+            entity_id=record_id,
+            action="hr_override",
+            user_id=current_user["id"],
+            new_values={"override_status": override_data.override_status, "reason": override_data.reason}
+        )
+        
+        return record
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@api_router.post("/hr/attendance/calculate-daily")
+async def run_daily_attendance_calculation(
+    date: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Run daily attendance calculation - Admin only (normally runs as cron)"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    result = await attendance_service.calculate_daily_attendance(date)
+    
+    return result
+
+
+# ==================== HR MODULE: PAYROLL ====================
+
+@api_router.post("/hr/payroll/generate")
+async def generate_payroll(
+    data: PayrollRecordCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Generate payroll for a single employee - HR only"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    try:
+        payroll = await payroll_service.generate_payroll(
+            employee_id=data.employee_id,
+            month=data.month,
+            year=data.year,
+            generated_by=current_user["id"],
+            generated_by_name=current_user.get("name", "")
+        )
+        
+        return payroll
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@api_router.post("/hr/payroll/generate-bulk")
+async def generate_bulk_payroll(
+    data: PayrollBulkGenerateRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Generate payroll for multiple employees - HR only"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    result = await payroll_service.bulk_generate_payroll(
+        month=data.month,
+        year=data.year,
+        generated_by=current_user["id"],
+        generated_by_name=current_user.get("name", ""),
+        employee_ids=data.employee_ids,
+        country_id=data.country_id
+    )
+    
+    return result
+
+
+@api_router.get("/hr/payroll")
+async def get_payroll_records(
+    month: Optional[int] = None,
+    year: Optional[int] = None,
+    employee_id: Optional[str] = None,
+    status: Optional[str] = None,
+    country_id: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get payroll records - filtered by RBAC"""
+    role_code = current_user.get("role_code", "")
+    
+    # RBAC check
+    if role_code not in ["CEO", "HR_MANAGER", "FINANCE_MANAGER", "COUNTRY_HEAD"]:
+        # Regular employees can only see their own
+        employee_id = current_user["id"]
+    elif role_code in ["COUNTRY_HEAD", "FINANCE_MANAGER"]:
+        country_id = current_user.get("country_id")
+    
+    if employee_id:
+        records = await payroll_service.get_employee_payroll_history(employee_id, year)
+    elif month and year:
+        records = await payroll_service.get_monthly_payroll(month, year, country_id, status)
+    else:
+        # Default to current month
+        now = datetime.now(timezone.utc)
+        records = await payroll_service.get_monthly_payroll(now.month, now.year, country_id, status)
+    
+    return records
+
+
+@api_router.get("/hr/payroll/{payroll_id}")
+async def get_payroll_by_id(
+    payroll_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get single payroll record"""
+    payroll = await payroll_service.get_payroll_by_id(payroll_id)
+    
+    if not payroll:
+        raise HTTPException(status_code=404, detail="Payroll not found")
+    
+    role_code = current_user.get("role_code", "")
+    
+    # RBAC check - employees can only see their own
+    if role_code not in ["CEO", "HR_MANAGER", "FINANCE_MANAGER", "COUNTRY_HEAD"]:
+        if payroll["employee_id"] != current_user["id"]:
+            raise HTTPException(status_code=403, detail="Not authorized")
+    
+    return payroll
+
+
+@api_router.get("/hr/payroll/summary/{month}/{year}")
+async def get_payroll_summary(
+    month: int,
+    year: int,
+    country_id: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get monthly payroll summary"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER", "FINANCE_MANAGER", "COUNTRY_HEAD"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    if role_code in ["COUNTRY_HEAD", "FINANCE_MANAGER"]:
+        country_id = current_user.get("country_id")
+    
+    summary = await payroll_service.get_payroll_summary(month, year, country_id)
+    
+    return summary
+
+
+@api_router.post("/hr/payroll/{payroll_id}/mark-paid")
+async def mark_payroll_paid(
+    payroll_id: str,
+    data: PaymentMarkRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Mark payroll as paid - Finance Manager only"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "FINANCE_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Only Finance Manager can mark payments")
+    
+    try:
+        payroll = await payroll_service.mark_as_paid(
+            payroll_id=payroll_id,
+            transaction_reference=data.transaction_reference,
+            payment_date=data.payment_date,
+            payment_mode=data.payment_mode,
+            paid_by=current_user["id"],
+            paid_by_name=current_user.get("name", ""),
+            notes=data.notes
+        )
+        
+        return payroll
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@api_router.post("/hr/payroll/{payroll_id}/adjustment")
+async def create_payroll_adjustment(
+    payroll_id: str,
+    data: PayrollAdjustmentCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create payroll adjustment - HR/Finance only"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER", "FINANCE_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    try:
+        adjustment = await payroll_service.create_adjustment(
+            payroll_id=payroll_id,
+            adjustment_type=data.adjustment_type,
+            amount=data.amount,
+            reason=data.reason,
+            created_by=current_user["id"],
+            created_by_name=current_user.get("name", ""),
+            notes=data.notes
+        )
+        
+        return adjustment
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@api_router.get("/hr/payroll/{payroll_id}/adjustments")
+async def get_payroll_adjustments(
+    payroll_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get adjustments for a payroll record"""
+    adjustments = await payroll_service.get_adjustments(payroll_id)
+    
+    return adjustments
+
+
+# -------------------- PAYSLIP --------------------
+
+@api_router.post("/hr/payroll/{payroll_id}/generate-payslip")
+async def generate_payslip(
+    payroll_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Generate PDF payslip - HR/Finance only"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER", "FINANCE_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    try:
+        result = await payroll_service.generate_payslip(payroll_id)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Payslip generation failed: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate payslip")
+
+
+@api_router.get("/hr/payroll/{payroll_id}/payslip")
+async def download_payslip(
+    payroll_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get payslip download URL"""
+    payroll = await payroll_service.get_payroll_by_id(payroll_id)
+    
+    if not payroll:
+        raise HTTPException(status_code=404, detail="Payroll not found")
+    
+    role_code = current_user.get("role_code", "")
+    
+    # RBAC check - employees can only see their own
+    if role_code not in ["CEO", "HR_MANAGER", "FINANCE_MANAGER", "COUNTRY_HEAD"]:
+        if payroll["employee_id"] != current_user["id"]:
+            raise HTTPException(status_code=403, detail="Not authorized")
+    
+    if not payroll.get("payslip_path"):
+        raise HTTPException(status_code=404, detail="Payslip not generated yet")
+    
+    # Get download URL
+    storage = get_storage_service()
+    download_url = await storage.get_download_url(payroll["payslip_path"])
+    
+    return {
+        "payroll_id": payroll_id,
+        "employee_name": payroll.get("employee_name"),
+        "month": payroll.get("month"),
+        "year": payroll.get("year"),
+        "download_url": download_url
+    }
+
+
+# ==================== HR MODULE: LEAVE MANAGEMENT ====================
+
+@api_router.post("/hr/leave/apply")
+async def apply_for_leave(
+    data: LeaveRequestCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Apply for leave - any employee"""
+    try:
+        request = await leave_service.create_leave_request(
+            employee_id=current_user["id"],
+            leave_type=data.leave_type,
+            start_date=data.start_date,
+            end_date=data.end_date,
+            duration_type=data.duration_type,
+            reason=data.reason
+        )
+        
+        return request
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@api_router.get("/hr/leave/my-requests")
+async def get_my_leave_requests(
+    year: Optional[int] = None,
+    status: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get current user's leave requests"""
+    requests = await leave_service.get_employee_leaves(
+        employee_id=current_user["id"],
+        year=year,
+        status=status
+    )
+    
+    return requests
+
+
+@api_router.get("/hr/leave/my-balance")
+async def get_my_leave_balance(
+    year: Optional[int] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get current user's leave balance"""
+    if not year:
+        year = datetime.now(timezone.utc).year
+    
+    summary = await leave_service.get_leave_summary(current_user["id"], year)
+    
+    return summary
+
+
+@api_router.get("/hr/leave/pending-approvals")
+async def get_pending_leave_approvals(
+    country_id: Optional[str] = None,
+    team_id: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get pending leave approvals - HR/Manager only"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER", "COUNTRY_HEAD", "SALES_HEAD", "INSPECTION_HEAD"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    if role_code == "COUNTRY_HEAD":
+        country_id = current_user.get("country_id")
+    elif role_code in ["SALES_HEAD", "INSPECTION_HEAD"]:
+        team_id = current_user.get("team_id")
+    
+    requests = await leave_service.get_pending_approvals(country_id, team_id)
+    
+    return requests
+
+
+@api_router.post("/hr/leave/{request_id}/approve")
+async def approve_leave_request(
+    request_id: str,
+    data: LeaveApprovalRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Approve or reject leave request - HR/Manager only"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER", "COUNTRY_HEAD", "SALES_HEAD", "INSPECTION_HEAD"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    try:
+        if data.action == "APPROVED":
+            request = await leave_service.approve_leave(
+                request_id=request_id,
+                approved_by=current_user["id"],
+                approved_by_name=current_user.get("name", "")
+            )
+        elif data.action == "REJECTED":
+            if not data.rejection_reason:
+                raise HTTPException(status_code=400, detail="Rejection reason required")
+            request = await leave_service.reject_leave(
+                request_id=request_id,
+                rejected_by=current_user["id"],
+                rejected_by_name=current_user.get("name", ""),
+                rejection_reason=data.rejection_reason
+            )
+        else:
+            raise HTTPException(status_code=400, detail="Invalid action")
+        
+        # Log audit
+        await audit_service.log(
+            entity_type="leave_request",
+            entity_id=request_id,
+            action=data.action.lower(),
+            user_id=current_user["id"],
+            new_values={"action": data.action}
+        )
+        
+        return request
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@api_router.post("/hr/leave/{request_id}/cancel")
+async def cancel_leave_request(
+    request_id: str,
+    reason: str = "",
+    current_user: dict = Depends(get_current_user)
+):
+    """Cancel leave request - by employee or HR"""
+    # Get the request to check ownership
+    leave_req = await db.leave_requests.find_one({"id": request_id}, {"_id": 0})
+    if not leave_req:
+        raise HTTPException(status_code=404, detail="Leave request not found")
+    
+    role_code = current_user.get("role_code", "")
+    
+    # Only owner or HR can cancel
+    if leave_req["employee_id"] != current_user["id"] and role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    try:
+        request = await leave_service.cancel_leave(
+            request_id=request_id,
+            cancelled_by=current_user["id"],
+            cancellation_reason=reason
+        )
+        
+        return request
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@api_router.get("/hr/leave/employee/{employee_id}")
+async def get_employee_leaves(
+    employee_id: str,
+    year: Optional[int] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get leave requests for an employee - HR only"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER", "COUNTRY_HEAD"]:
+        if current_user["id"] != employee_id:
+            raise HTTPException(status_code=403, detail="Not authorized")
+    
+    requests = await leave_service.get_employee_leaves(employee_id, year)
+    
+    return requests
+
+
+@api_router.get("/hr/leave/employee/{employee_id}/balance")
+async def get_employee_leave_balance(
+    employee_id: str,
+    year: Optional[int] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get leave balance for an employee"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER", "COUNTRY_HEAD"]:
+        if current_user["id"] != employee_id:
+            raise HTTPException(status_code=403, detail="Not authorized")
+    
+    if not year:
+        year = datetime.now(timezone.utc).year
+    
+    summary = await leave_service.get_leave_summary(employee_id, year)
+    
+    return summary
+
+
+@api_router.get("/hr/leave/team-summary")
+async def get_team_leave_summary(
+    team_id: Optional[str] = None,
+    country_id: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get team leave summary"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER", "COUNTRY_HEAD", "SALES_HEAD", "INSPECTION_HEAD"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    if role_code == "COUNTRY_HEAD":
+        country_id = current_user.get("country_id")
+    elif role_code in ["SALES_HEAD", "INSPECTION_HEAD"]:
+        team_id = current_user.get("team_id")
+    
+    summary = await leave_service.get_team_leave_summary(team_id, country_id)
+    
+    return summary
+
+
 # ==================== SEED DATA ====================
 
 @api_router.post("/seed")
