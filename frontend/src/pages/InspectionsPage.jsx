@@ -11,15 +11,66 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Search, Pencil, Download, Loader2 } from 'lucide-react';
+import { 
+  Search, Loader2, ClipboardCheck, Filter, Calendar, MapPin, 
+  Car, User, Download, Eye, Edit2, Clock, CheckCircle, XCircle, 
+  AlertCircle, Play, Plus
+} from 'lucide-react';
 
-const statusConfig = {
-  COMPLETED: { label: 'Completed', class: 'status-badge completed' },
-  SCHEDULED: { label: 'Scheduled', class: 'status-badge scheduled' },
-  IN_PROGRESS: { label: 'In Progress', class: 'status-badge yellow' },
-  REQUEST_NEWSLOT: { label: 'Request NewSlot', class: 'status-badge request-slot' },
-  CANCELLED: { label: 'Cancelled', class: 'status-badge red' },
+// Status Badge Component matching FinancePage
+const StatusBadge = ({ status }) => {
+  const config = {
+    COMPLETED: { color: 'bg-emerald-100 text-emerald-800 border-emerald-200', icon: CheckCircle, label: 'Completed' },
+    SCHEDULED: { color: 'bg-blue-100 text-blue-800 border-blue-200', icon: Calendar, label: 'Scheduled' },
+    IN_PROGRESS: { color: 'bg-amber-100 text-amber-800 border-amber-200', icon: Play, label: 'In Progress' },
+    REQUEST_NEWSLOT: { color: 'bg-purple-100 text-purple-800 border-purple-200', icon: Clock, label: 'Request Slot' },
+    CANCELLED: { color: 'bg-red-100 text-red-800 border-red-200', icon: XCircle, label: 'Cancelled' },
+  };
+  const cfg = config[status] || config.SCHEDULED;
+  const Icon = cfg.icon;
+  
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${cfg.color}`}>
+      <Icon className="h-3 w-3" />
+      {cfg.label}
+    </span>
+  );
 };
+
+// Payment Badge Component
+const PaymentBadge = ({ status }) => {
+  const isCompleted = status === 'Completed' || status === 'Full';
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${
+      isCompleted ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-amber-100 text-amber-800 border-amber-200'
+    }`}>
+      {isCompleted ? 'Paid' : 'Pending'}
+    </span>
+  );
+};
+
+// Summary Card Component
+const SummaryCard = ({ title, value, icon: Icon, color, subtitle }) => (
+  <div className="rounded-xl border bg-white p-5">
+    <div className="flex items-start justify-between">
+      <div className="space-y-1">
+        <p className="text-sm font-medium text-gray-500">{title}</p>
+        <p className={`text-2xl font-bold ${color || 'text-gray-900'}`}>
+          {typeof value === 'number' ? value.toLocaleString() : value}
+        </p>
+        {subtitle && <p className="text-xs text-gray-400">{subtitle}</p>}
+      </div>
+      <div className={`p-3 rounded-xl bg-gradient-to-r ${
+        color?.includes('emerald') ? 'from-emerald-500 to-emerald-600' : 
+        color?.includes('blue') ? 'from-blue-500 to-blue-600' : 
+        color?.includes('amber') ? 'from-amber-500 to-amber-600' :
+        'from-gray-500 to-gray-600'
+      }`}>
+        <Icon className="h-5 w-5 text-white" />
+      </div>
+    </div>
+  </div>
+);
 
 export default function InspectionsPage() {
   const [inspections, setInspections] = useState([]);
@@ -103,140 +154,176 @@ export default function InspectionsPage() {
 
   const unscheduledCount = inspections.filter(i => !i.scheduled_date).length;
   const scheduledCount = inspections.filter(i => i.scheduled_date).length;
+  const completedCount = inspections.filter(i => i.inspection_status === 'COMPLETED').length;
 
   return (
-    <div className="p-4 space-y-4" data-testid="inspections-page">
-      {/* Search and Filters Row */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="search-bar flex-1 min-w-[300px]">
-          <Search className="h-4 w-4 text-gray-400 mr-2" />
-          <input
-            placeholder="Customer Name / Mobile Number"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="flex-1"
-            data-testid="search-input"
-          />
+    <div className="p-6 max-w-7xl mx-auto" data-testid="inspections-page">
+      {/* Page Header */}
+      <div className="flex justify-between items-start mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Inspections</h1>
+          <p className="text-gray-500 mt-1">Manage and track all vehicle inspections</p>
         </div>
-
-        <Select value={filterCity} onValueChange={setFilterCity}>
-          <SelectTrigger className="w-[140px] h-10 bg-white" data-testid="filter-city">
-            <SelectValue placeholder="-- Select City --" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Cities</SelectItem>
-            {cities.map((c) => (<SelectItem key={c} value={c}>{c}</SelectItem>))}
-          </SelectContent>
-        </Select>
-
-        <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="w-[180px] h-10 bg-white" data-testid="filter-status">
-            <SelectValue placeholder="-- Select Insp. Status --" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="SCHEDULED">Scheduled</SelectItem>
-            <SelectItem value="COMPLETED">Completed</SelectItem>
-            <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-            <SelectItem value="REQUEST_NEWSLOT">Request NewSlot</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-500">Date range:</span>
-          <Input type="date" className="w-[130px] h-10 bg-white" />
-        </div>
-
-        <button className="btn-purple" data-testid="submit-btn">Submit</button>
-        <button className="btn-purple" onClick={fetchData} data-testid="find-btn">Find</button>
+        <button
+          onClick={() => { setEditingInspection(null); setFormData({ ...formData, customer_name: '', customer_mobile: '', city: '' }); setIsModalOpen(true); }}
+          className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 flex items-center gap-2 font-medium shadow-lg shadow-blue-500/25 transition-all"
+        >
+          <Plus className="h-4 w-4" /> New Inspection
+        </button>
       </div>
 
-      {/* Inspections Count and Tabs */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="text-lg font-semibold text-gray-800">
-            Inspections Count: <span className="text-[#2E3192]">{inspections.length.toLocaleString()}</span>
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-6">
+        <SummaryCard title="Total Inspections" value={inspections.length} icon={ClipboardCheck} color="text-blue-700" />
+        <SummaryCard title="Scheduled" value={scheduledCount} icon={Calendar} color="text-amber-600" />
+        <SummaryCard title="Completed" value={completedCount} icon={CheckCircle} color="text-emerald-600" />
+        <SummaryCard title="Unscheduled" value={unscheduledCount} icon={AlertCircle} color="text-purple-600" />
+      </div>
+
+      {/* Filters Section */}
+      <div className="bg-white rounded-xl border p-4 mb-6">
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex-1 min-w-[300px] relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by customer name or mobile..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+              data-testid="search-input"
+            />
           </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setActiveTab('unscheduled')}
-              className={`tab-btn ${activeTab === 'unscheduled' ? 'active-dark' : ''}`}
-              data-testid="unscheduled-tab"
-            >
-              Unscheduled ({unscheduledCount})
-            </button>
-            <button
-              onClick={() => setActiveTab('scheduled')}
-              className={`tab-btn ${activeTab === 'scheduled' ? 'active-orange' : ''}`}
-              data-testid="scheduled-tab"
-            >
-              Scheduled ({scheduledCount})
-            </button>
-          </div>
+
+          <Select value={filterCity || 'all'} onValueChange={setFilterCity}>
+            <SelectTrigger className="w-[160px] h-10 bg-white" data-testid="filter-city">
+              <MapPin className="h-4 w-4 text-gray-400 mr-2" />
+              <SelectValue placeholder="All Cities" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Cities</SelectItem>
+              {cities.map((c) => (<SelectItem key={c} value={c}>{c}</SelectItem>))}
+            </SelectContent>
+          </Select>
+
+          <Select value={filterStatus || 'all'} onValueChange={setFilterStatus}>
+            <SelectTrigger className="w-[180px] h-10 bg-white" data-testid="filter-status">
+              <SelectValue placeholder="All Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="SCHEDULED">Scheduled</SelectItem>
+              <SelectItem value="COMPLETED">Completed</SelectItem>
+              <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+              <SelectItem value="REQUEST_NEWSLOT">Request NewSlot</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <button 
+            onClick={fetchData}
+            className="px-4 py-2.5 border rounded-lg hover:bg-gray-50 font-medium text-sm flex items-center gap-2"
+          >
+            <Filter className="h-4 w-4" /> Apply
+          </button>
         </div>
-        <div className="flex gap-3">
-          {['Today', 'This Week', 'This Month', 'This Quarter', 'This Year'].map((period) => (
-            <span key={period} className="quick-filter">{period}</span>
-          ))}
+
+        {/* Tab Buttons */}
+        <div className="flex items-center gap-3 mt-4 pt-4 border-t">
+          <button
+            onClick={() => setActiveTab('unscheduled')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              activeTab === 'unscheduled' 
+                ? 'bg-gray-900 text-white' 
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+            data-testid="unscheduled-tab"
+          >
+            Unscheduled ({unscheduledCount})
+          </button>
+          <button
+            onClick={() => setActiveTab('scheduled')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              activeTab === 'scheduled' 
+                ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white' 
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+            data-testid="scheduled-tab"
+          >
+            Scheduled ({scheduledCount})
+          </button>
         </div>
       </div>
 
       {/* Data Table */}
-      <div className="card overflow-hidden">
+      <div className="bg-white rounded-xl border overflow-hidden">
         {activeTab === 'unscheduled' ? (
           /* Unscheduled Tab Table */
-          <table className="data-table">
+          <table className="w-full">
             <thead>
-              <tr>
-                <th>Payment Date</th>
-                <th>Customer Mobile No.</th>
-                <th>Customer Name</th>
-                <th>Package Type</th>
-                <th>Available Inspections</th>
-                <th>Amount Details</th>
-                <th>Payment Status</th>
-                <th>Action</th>
+              <tr className="bg-slate-50 border-b">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Payment Date</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Customer</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Package</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Available</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Amount</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Action</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-gray-100">
               {loading ? (
-                <tr><td colSpan={8} className="text-center py-12"><Loader2 className="h-6 w-6 animate-spin mx-auto text-[#2E3192]" /></td></tr>
+                <tr>
+                  <td colSpan={7} className="text-center py-12">
+                    <div className="flex items-center justify-center gap-2">
+                      <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+                      <span className="text-gray-500">Loading inspections...</span>
+                    </div>
+                  </td>
+                </tr>
               ) : inspections.length === 0 ? (
-                <tr><td colSpan={8} className="text-center py-12 text-gray-500">No unscheduled inspections found</td></tr>
+                <tr>
+                  <td colSpan={7} className="text-center py-12">
+                    <ClipboardCheck className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-500">No unscheduled inspections</p>
+                  </td>
+                </tr>
               ) : (
                 inspections.map((inspection) => (
-                  <tr key={inspection.id} data-testid={`inspection-row-${inspection.id}`}>
-                    <td>
-                      <div className="text-sm">{formatDate(inspection.payment_date || inspection.order_date || inspection.created_at)}</div>
+                  <tr key={inspection.id} className="hover:bg-slate-50 transition-colors" data-testid={`inspection-row-${inspection.id}`}>
+                    <td className="px-4 py-4">
+                      <div className="text-sm font-medium">{formatDate(inspection.payment_date || inspection.created_at)}</div>
                     </td>
-                    <td>
-                      <div className="font-mono text-sm">{inspection.customer_mobile}</div>
-                      <div className="text-gray-500 text-xs">{inspection.customer_name}</div>
-                    </td>
-                    <td>
-                      <div className="font-medium">{inspection.customer_name}</div>
-                    </td>
-                    <td>
-                      <div className="text-sm">{inspection.package_type || '-'}</div>
-                    </td>
-                    <td>
-                      <span className="font-semibold text-[#2E3192]">{inspection.inspections_available || 1}</span>
-                    </td>
-                    <td>
-                      <div className="text-xs space-y-0.5">
-                        <div>Total Amount: <span className="font-medium">{inspection.total_amount || 0}</span></div>
-                        <div>Amount Paid: <span className="font-medium text-green-600">{inspection.amount_paid || 0}</span></div>
-                        <div>Pending Amount: <span className="font-medium text-red-600">{inspection.pending_amount || 0}</span></div>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 flex items-center justify-center text-white font-medium text-sm">
+                          {inspection.customer_name?.charAt(0)?.toUpperCase()}
+                        </div>
+                        <div>
+                          <div className="font-medium text-gray-900">{inspection.customer_name}</div>
+                          <div className="text-sm text-gray-500 font-mono">{inspection.customer_mobile}</div>
+                        </div>
                       </div>
                     </td>
-                    <td>
-                      <span className={`status-badge ${inspection.payment_type === 'Full' ? 'completed' : 'pending'}`}>
-                        {inspection.payment_type || 'Full'}
+                    <td className="px-4 py-4">
+                      <span className="text-sm text-gray-700">{inspection.package_type || 'Standard'}</span>
+                    </td>
+                    <td className="px-4 py-4">
+                      <span className="inline-flex items-center justify-center h-7 w-7 rounded-full bg-blue-100 text-blue-700 font-semibold text-sm">
+                        {inspection.inspections_available || 1}
                       </span>
                     </td>
-                    <td>
+                    <td className="px-4 py-4">
+                      <div className="text-xs space-y-0.5">
+                        <div className="text-gray-500">Total: <span className="font-medium text-gray-900">₹{inspection.total_amount || 0}</span></div>
+                        <div className="text-gray-500">Paid: <span className="font-medium text-emerald-600">₹{inspection.amount_paid || 0}</span></div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <PaymentBadge status={inspection.payment_type} />
+                    </td>
+                    <td className="px-4 py-4">
                       <button 
-                        className="btn-purple text-xs px-3 py-1.5"
+                        className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg text-xs font-medium hover:from-blue-700 hover:to-blue-800 transition-all shadow-sm"
                         onClick={() => {
                           setEditingInspection(inspection);
                           setFormData({
@@ -251,7 +338,7 @@ export default function InspectionsPage() {
                         }}
                         data-testid={`schedule-inspection-${inspection.id}`}
                       >
-                        Schedule Inspection
+                        Schedule
                       </button>
                     </td>
                   </tr>
@@ -261,71 +348,99 @@ export default function InspectionsPage() {
           </table>
         ) : (
           /* Scheduled Tab Table */
-          <table className="data-table">
+          <table className="w-full">
             <thead>
-              <tr>
-                <th>Inspection Date</th>
-                <th>Customer Details</th>
-                <th>Payment Status</th>
-                <th>Address</th>
-                <th>Inspection Status</th>
-                <th>Mechanic Name</th>
-                <th>Car Details</th>
-                <th>Action</th>
-                <th>Report Edit</th>
+              <tr className="bg-slate-50 border-b">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Date/Time</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Customer</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Payment</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Location</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Mechanic</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Vehicle</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-gray-100">
               {loading ? (
-                <tr><td colSpan={9} className="text-center py-12"><Loader2 className="h-6 w-6 animate-spin mx-auto text-[#2E3192]" /></td></tr>
+                <tr>
+                  <td colSpan={8} className="text-center py-12">
+                    <div className="flex items-center justify-center gap-2">
+                      <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+                      <span className="text-gray-500">Loading inspections...</span>
+                    </div>
+                  </td>
+                </tr>
               ) : inspections.length === 0 ? (
-                <tr><td colSpan={9} className="text-center py-12 text-gray-500">No scheduled inspections found</td></tr>
+                <tr>
+                  <td colSpan={8} className="text-center py-12">
+                    <ClipboardCheck className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-500">No scheduled inspections</p>
+                  </td>
+                </tr>
               ) : (
                 inspections.map((inspection) => (
-                  <tr key={inspection.id} data-testid={`inspection-row-${inspection.id}`}>
-                    <td>
-                      <div>{formatDate(inspection.scheduled_date) || '-'}</div>
-                      <div className="text-gray-400 text-xs">{formatTime(inspection.scheduled_time)}</div>
+                  <tr key={inspection.id} className="hover:bg-slate-50 transition-colors" data-testid={`inspection-row-${inspection.id}`}>
+                    <td className="px-4 py-4">
+                      <div className="font-medium text-gray-900">{formatDate(inspection.scheduled_date) || '-'}</div>
+                      <div className="text-xs text-gray-400 mt-0.5">{formatTime(inspection.scheduled_time)}</div>
                     </td>
-                    <td>
-                      <div className="font-medium">{inspection.customer_name}</div>
-                      <div className="text-gray-500 font-mono text-sm">{inspection.customer_mobile}</div>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white font-medium text-sm">
+                          {inspection.customer_name?.charAt(0)?.toUpperCase()}
+                        </div>
+                        <div>
+                          <div className="font-medium text-gray-900">{inspection.customer_name}</div>
+                          <div className="text-sm text-gray-500 font-mono">{inspection.customer_mobile}</div>
+                        </div>
+                      </div>
                     </td>
-                    <td>
-                      <span className={`status-badge ${inspection.payment_status === 'Completed' ? 'completed' : 'pending'}`}>
-                        {inspection.payment_status}
+                    <td className="px-4 py-4">
+                      <PaymentBadge status={inspection.payment_status} />
+                    </td>
+                    <td className="px-4 py-4">
+                      <span className="inline-flex items-center gap-1.5 text-sm text-blue-600">
+                        <MapPin className="h-3.5 w-3.5" />
+                        {inspection.city}
                       </span>
                     </td>
-                    <td>
-                      <span className="text-[#6366F1] cursor-pointer hover:underline">{inspection.city}</span>
-                    </td>
-                    <td>
-                      <span className={statusConfig[inspection.inspection_status]?.class || 'status-badge'}>
-                        {statusConfig[inspection.inspection_status]?.label || inspection.inspection_status}
-                      </span>
+                    <td className="px-4 py-4">
+                      <StatusBadge status={inspection.inspection_status} />
                       <div className="text-xs text-gray-400 mt-1">{formatDateTime(inspection.created_at)}</div>
                     </td>
-                    <td>{inspection.mechanic_name || '-'}</td>
-                    <td>
-                      <div className="text-[#6366F1] font-mono text-sm">{inspection.car_number}</div>
-                      <div className="text-xs text-gray-400">{inspection.car_details}</div>
+                    <td className="px-4 py-4">
+                      <span className="text-sm text-gray-700">{inspection.mechanic_name || '-'}</span>
                     </td>
-                    <td>
-                      <button className="btn-purple text-xs px-3 py-1" onClick={() => openEditModal(inspection)} data-testid={`edit-inspection-${inspection.id}`}>
-                        Edit
-                      </button>
-                    </td>
-                    <td>
-                      {inspection.report_url ? (
-                        <div className="flex flex-col gap-1">
-                          <button className="status-badge completed text-xs cursor-pointer">Show Report</button>
-                          <button className="text-[#10B981] text-xs flex items-center gap-1">
-                            <Download className="h-3 w-3" />
-                          </button>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-2">
+                        <Car className="h-4 w-4 text-gray-400" />
+                        <div>
+                          <div className="text-sm font-mono text-blue-600">{inspection.car_number || '-'}</div>
+                          <div className="text-xs text-gray-400">{inspection.car_details}</div>
                         </div>
-                      ) : (
-                        <button className="btn-purple text-xs px-3 py-1">Edit Report</button>
-                      )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-2">
+                        <button 
+                          onClick={() => openEditModal(inspection)} 
+                          className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Edit"
+                          data-testid={`edit-inspection-${inspection.id}`}
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </button>
+                        {inspection.report_url ? (
+                          <button className="p-2 text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Download Report">
+                            <Download className="h-4 w-4" />
+                          </button>
+                        ) : (
+                          <button className="p-2 text-gray-500 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors" title="View">
+                            <Eye className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -338,57 +453,75 @@ export default function InspectionsPage() {
       {/* Edit Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="sm:max-w-[560px]" data-testid="inspection-modal">
-          <DialogHeader>
-            <DialogTitle>{editingInspection ? 'Edit Inspection' : 'New Inspection'}</DialogTitle>
+          <DialogHeader className="border-b pb-4">
+            <DialogTitle className="flex items-center gap-2">
+              <ClipboardCheck className="h-5 w-5 text-blue-600" />
+              {editingInspection ? 'Edit Inspection' : 'Schedule Inspection'}
+            </DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit}>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <Label className="text-xs">Customer Name</Label>
-                  <Input value={formData.customer_name} onChange={(e) => setFormData({ ...formData, customer_name: e.target.value })} className="h-9" />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Mobile</Label>
-                  <Input value={formData.customer_mobile} onChange={(e) => setFormData({ ...formData, customer_mobile: e.target.value })} className="h-9" />
-                </div>
+          <form onSubmit={handleSubmit} className="space-y-5 pt-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Customer Name *</Label>
+                <Input value={formData.customer_name} onChange={(e) => setFormData({ ...formData, customer_name: e.target.value })} className="h-10" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <Label className="text-xs">City</Label>
-                  <Select value={formData.city} onValueChange={(v) => setFormData({ ...formData, city: v })}>
-                    <SelectTrigger className="h-9"><SelectValue placeholder="Select" /></SelectTrigger>
-                    <SelectContent>{cities.map((c) => (<SelectItem key={c} value={c}>{c}</SelectItem>))}</SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Status</Label>
-                  <Select value={formData.inspection_status} onValueChange={(v) => setFormData({ ...formData, inspection_status: v })}>
-                    <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="SCHEDULED">Scheduled</SelectItem>
-                      <SelectItem value="COMPLETED">Completed</SelectItem>
-                      <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                      <SelectItem value="REQUEST_NEWSLOT">Request NewSlot</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <Label className="text-xs">Car Number</Label>
-                  <Input value={formData.car_number} onChange={(e) => setFormData({ ...formData, car_number: e.target.value })} className="h-9 font-mono" />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Mechanic</Label>
-                  <Input value={formData.mechanic_name} onChange={(e) => setFormData({ ...formData, mechanic_name: e.target.value })} className="h-9" />
-                </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Mobile *</Label>
+                <Input value={formData.customer_mobile} onChange={(e) => setFormData({ ...formData, customer_mobile: e.target.value })} className="h-10 font-mono" />
               </div>
             </div>
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-              <Button type="submit" className="btn-purple" disabled={saving}>
-                {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Save
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">City *</Label>
+                <Select value={formData.city} onValueChange={(v) => setFormData({ ...formData, city: v })}>
+                  <SelectTrigger className="h-10"><SelectValue placeholder="Select city" /></SelectTrigger>
+                  <SelectContent>{cities.map((c) => (<SelectItem key={c} value={c}>{c}</SelectItem>))}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Status</Label>
+                <Select value={formData.inspection_status} onValueChange={(v) => setFormData({ ...formData, inspection_status: v })}>
+                  <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="SCHEDULED">Scheduled</SelectItem>
+                    <SelectItem value="COMPLETED">Completed</SelectItem>
+                    <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                    <SelectItem value="REQUEST_NEWSLOT">Request NewSlot</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Car Number</Label>
+                <Input value={formData.car_number} onChange={(e) => setFormData({ ...formData, car_number: e.target.value })} className="h-10 font-mono" placeholder="KA-01-AB-1234" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Mechanic</Label>
+                <Input value={formData.mechanic_name} onChange={(e) => setFormData({ ...formData, mechanic_name: e.target.value })} className="h-10" placeholder="Assign mechanic" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Scheduled Date</Label>
+                <Input type="date" value={formData.scheduled_date} onChange={(e) => setFormData({ ...formData, scheduled_date: e.target.value })} className="h-10" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Scheduled Time</Label>
+                <Input type="time" value={formData.scheduled_time} onChange={(e) => setFormData({ ...formData, scheduled_time: e.target.value })} className="h-10" />
+              </div>
+            </div>
+            <div className="flex gap-3 pt-4 border-t">
+              <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)} className="flex-1">
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={saving}
+                className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+              >
+                {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                {editingInspection ? 'Update' : 'Schedule'}
               </Button>
             </div>
           </form>
