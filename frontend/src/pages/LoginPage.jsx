@@ -5,7 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Loader2, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Mail, Lock, Eye, EyeOff, Shield, ArrowRight } from 'lucide-react';
+
+// Company Logo URL
+const COMPANY_LOGO = "https://customer-assets.emergentagent.com/job_crm-employee-hub/artifacts/6eac372o_Wisedrive%20New%20Logo%20Horizontal%20Blue%20Trans%20BG.png";
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -42,33 +45,39 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex" data-testid="login-page">
       {/* Left Side - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-indigo-600 p-12 flex-col justify-between">
-        <div>
-          <div className="flex items-center">
-            <span className="text-2xl font-bold text-white tracking-tight" style={{ fontFamily: 'Outfit, sans-serif' }}>
-              WISEDRIVE
-            </span>
-            <div className="ml-1 flex gap-0.5 items-end">
-              <div className="w-1.5 h-1.5 bg-amber-400 rounded-full"></div>
-              <div className="w-1.5 h-2.5 bg-amber-400 rounded-full"></div>
-              <div className="w-1.5 h-3.5 bg-amber-400 rounded-full"></div>
-            </div>
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 p-12 flex-col justify-between relative overflow-hidden">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-20 left-20 w-72 h-72 bg-white rounded-full blur-3xl"></div>
+          <div className="absolute bottom-20 right-20 w-96 h-96 bg-blue-400 rounded-full blur-3xl"></div>
+        </div>
+        
+        <div className="relative z-10">
+          <img src={COMPANY_LOGO} alt="WiseDrive" className="h-12" crossOrigin="anonymous" />
+        </div>
+        
+        <div className="relative z-10 space-y-8">
+          <h1 className="text-4xl font-bold text-white leading-tight">
+            Manage your leads,<br />
+            customers & inspections<br />
+            <span className="text-blue-300">with ease.</span>
+          </h1>
+          <p className="text-blue-200 text-lg max-w-md">
+            A modern CRM built for automotive warranty and inspection services. Streamline your operations and grow your business.
+          </p>
+          
+          {/* Feature Pills */}
+          <div className="flex flex-wrap gap-3 pt-4">
+            {['Lead Management', 'HR & Payroll', 'Finance', 'Inspections'].map((feature) => (
+              <span key={feature} className="px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full text-sm text-white border border-white/20">
+                {feature}
+              </span>
+            ))}
           </div>
         </div>
         
-        <div className="space-y-6">
-          <h1 className="text-4xl font-bold text-white leading-tight" style={{ fontFamily: 'Outfit, sans-serif' }}>
-            Manage your leads,<br />
-            customers & inspections<br />
-            with ease.
-          </h1>
-          <p className="text-indigo-200 text-lg">
-            A modern CRM built for automotive warranty and inspection services.
-          </p>
-        </div>
-        
-        <p className="text-indigo-300 text-sm">
-          © 2026 WiseDrive Technologies
+        <p className="relative z-10 text-blue-300 text-sm">
+          © 2026 WiseDrive Technologies Private Limited
         </p>
       </div>
 
@@ -77,19 +86,15 @@ export default function LoginPage() {
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center justify-center mb-8">
-            <span className="text-2xl font-bold text-slate-900 tracking-tight" style={{ fontFamily: 'Outfit, sans-serif' }}>
-              WISEDRIVE
-            </span>
-            <div className="ml-1 flex gap-0.5 items-end">
-              <div className="w-1.5 h-1.5 bg-amber-400 rounded-full"></div>
-              <div className="w-1.5 h-2.5 bg-amber-400 rounded-full"></div>
-              <div className="w-1.5 h-3.5 bg-amber-400 rounded-full"></div>
-            </div>
+            <img src={COMPANY_LOGO} alt="WiseDrive" className="h-10" crossOrigin="anonymous" />
           </div>
 
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8" data-testid="login-card">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-8" data-testid="login-card">
             <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold text-slate-900" style={{ fontFamily: 'Outfit, sans-serif' }}>
+              <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-r from-blue-600 to-blue-700 mb-4 shadow-lg shadow-blue-500/25">
+                <Shield className="h-7 w-7 text-white" />
+              </div>
+              <h2 className="text-2xl font-bold text-slate-900">
                 Welcome back
               </h2>
               <p className="text-slate-500 mt-2">
@@ -100,17 +105,17 @@ export default function LoginPage() {
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-sm font-medium text-slate-700">
-                  Email
+                  Email Address
                 </Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
                   <Input
                     id="email"
                     type="email"
                     placeholder="you@company.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10 h-11 bg-slate-50 border-slate-200 focus:bg-white"
+                    className="pl-11 h-12 bg-slate-50 border-slate-200 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-xl"
                     data-testid="email-input"
                     disabled={isLoading}
                   />
@@ -122,27 +127,27 @@ export default function LoginPage() {
                   Password
                 </Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
                   <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
                     placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 pr-10 h-11 bg-slate-50 border-slate-200 focus:bg-white"
+                    className="pl-11 pr-11 h-12 bg-slate-50 border-slate-200 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-xl"
                     data-testid="password-input"
                     disabled={isLoading}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
                     data-testid="toggle-password"
                   >
                     {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
+                      <EyeOff className="h-5 w-5" />
                     ) : (
-                      <Eye className="h-4 w-4" />
+                      <Eye className="h-5 w-5" />
                     )}
                   </button>
                 </div>
@@ -152,29 +157,32 @@ export default function LoginPage() {
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
-                    className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                    className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                     data-testid="remember-checkbox"
                   />
                   <span className="text-sm text-slate-600">Remember me</span>
                 </label>
-                <a href="#" className="text-sm text-indigo-600 hover:text-indigo-700 font-medium">
+                <a href="#" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
                   Forgot password?
                 </a>
               </div>
 
               <Button
                 type="submit"
-                className="w-full h-11 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-sm"
+                className="w-full h-12 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium rounded-xl shadow-lg shadow-blue-500/25 transition-all"
                 disabled={isLoading}
                 data-testid="login-button"
               >
                 {isLoading ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                     Signing in...
                   </>
                 ) : (
-                  'Sign in'
+                  <>
+                    Sign in
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </>
                 )}
               </Button>
             </form>
@@ -184,12 +192,25 @@ export default function LoginPage() {
             </p>
 
             {/* Demo Credentials */}
-            <div className="mt-6 p-4 bg-slate-100 rounded-lg" data-testid="demo-credentials">
-              <p className="text-xs font-medium text-slate-600 mb-2">Demo Credentials (V2):</p>
-              <div className="space-y-1 text-xs text-slate-500">
-                <p><span className="font-medium">CEO:</span> ceo@wisedrive.com / password123</p>
-                <p><span className="font-medium">Sales Exec:</span> salesexec1.in@wisedrive.com / password123</p>
-                <p><span className="font-medium">HR:</span> hr@wisedrive.com / password123</p>
+            <div className="mt-6 p-4 bg-gradient-to-r from-slate-50 to-slate-100 rounded-xl border border-slate-200" data-testid="demo-credentials">
+              <p className="text-xs font-semibold text-slate-600 mb-3 flex items-center gap-2">
+                <Shield className="h-3.5 w-3.5" />
+                Demo Credentials
+              </p>
+              <div className="space-y-2 text-xs">
+                <div className="flex items-center justify-between p-2 bg-white rounded-lg border">
+                  <span className="font-medium text-slate-700">CEO</span>
+                  <span className="text-slate-500 font-mono">ceo@wisedrive.com</span>
+                </div>
+                <div className="flex items-center justify-between p-2 bg-white rounded-lg border">
+                  <span className="font-medium text-slate-700">HR Manager</span>
+                  <span className="text-slate-500 font-mono">hr@wisedrive.com</span>
+                </div>
+                <div className="flex items-center justify-between p-2 bg-white rounded-lg border">
+                  <span className="font-medium text-slate-700">Finance</span>
+                  <span className="text-slate-500 font-mono">finance.manager.in@wisedrive.com</span>
+                </div>
+                <p className="text-center text-slate-400 pt-1">Password: password123</p>
               </div>
             </div>
           </div>
