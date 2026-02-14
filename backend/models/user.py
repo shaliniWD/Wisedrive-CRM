@@ -79,9 +79,15 @@ class UserUpdate(BaseModel):
     country_id: Optional[str] = None
     department_id: Optional[str] = None
     role_id: Optional[str] = None
+    role_ids: Optional[List[str]] = None  # Multiple roles support
     team_id: Optional[str] = None
     reports_to: Optional[str] = None
     employment_type: Optional[str] = None
+    employment_status: Optional[str] = None  # active, exited
+    exit_date: Optional[str] = None
+    exit_reason: Optional[str] = None
+    exit_notes: Optional[str] = None
+    rejoin_date: Optional[str] = None
     is_active: Optional[bool] = None
     is_available_for_assignment: Optional[bool] = None
 
