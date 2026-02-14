@@ -275,9 +275,9 @@ class TestHRQuickActions:
         
         employee_id = employees[0]['id']
         
-        # Get leave requests for this employee
+        # Get leave requests for this employee - correct endpoint is /hr/leave/employee/{employee_id}
         leave_response = requests.get(
-            f"{BASE_URL}/api/hr/employees/{employee_id}/leave-requests",
+            f"{BASE_URL}/api/hr/leave/employee/{employee_id}",
             headers=self.headers
         )
         assert leave_response.status_code == 200, f"Leave requests endpoint failed: {leave_response.text}"
