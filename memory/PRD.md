@@ -228,4 +228,4 @@ Vendor Payment → Finance Manager creates with GST/TDS → Submit for Approval 
 ```
 
 ## Last Updated
-February 14, 2026 - Finance Module Enhanced with 9 Payment Types, B2B GST/TDS Fields, Modern Payslip Design with Company Logo
+February 14, 2026 - CRM V4 Features: Multi-role support, Inline lead status editing, RBAC configuration UI, Employee exit/rejoin flow
