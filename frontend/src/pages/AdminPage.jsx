@@ -1513,7 +1513,7 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
         loadEmployeeData(employee.id);
       } else {
         setForm({
-          name: '', email: '', phone: '', country_id: '', department_id: '', team_id: '',
+          name: '', email: '', phone: '', photo_url: '', country_id: '', department_id: '', team_id: '',
           role_id: '', role_ids: [], employment_type: 'full_time', employee_code: '', joining_date: '',
           date_of_birth: '', gender: '', address: '', city: '', state: '', pincode: '',
           bank_name: '', bank_account_number: '', ifsc_code: '', pan_number: '',
