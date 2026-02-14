@@ -35,6 +35,12 @@ class EmployeeBase(BaseModel):
     exit_notes: Optional[str] = None
     rejoin_date: Optional[str] = None
     
+    # Reporting Structure
+    reporting_manager_id: Optional[str] = None  # Manager's employee ID
+    
+    # Payroll Control
+    payroll_active: bool = True  # If false, excluded from payroll generation
+    
     # Weekly Off (rotating off days - 0=Sunday, 1=Monday, ... 6=Saturday)
     weekly_off_day: int = 0  # Default Sunday
     
@@ -42,11 +48,14 @@ class EmployeeBase(BaseModel):
     is_available_for_leads: bool = True  # Toggle to stop new lead assignments
     lead_assignment_paused_reason: Optional[str] = None  # Reason if paused
     
-    # Bank Details (for salary)
+    # Bank Details (for salary) - ENCRYPTED at rest
     bank_name: Optional[str] = None
-    bank_account_number: Optional[str] = None
+    bank_account_number_encrypted: Optional[str] = None  # Encrypted value
+    bank_account_number_masked: Optional[str] = None  # Last 4 digits for display
     ifsc_code: Optional[str] = None
     pan_number: Optional[str] = None
+    account_holder_name: Optional[str] = None
+    bank_branch: Optional[str] = None
     
     # Emergency Contact
     emergency_contact_name: Optional[str] = None
