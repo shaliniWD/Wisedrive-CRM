@@ -4037,15 +4037,29 @@ async def apply_for_leave(
     data: LeaveRequestCreate,
     current_user: dict = Depends(get_current_user)
 ):
-    """Apply for leave - any employee"""
+    """Apply for leave - employees apply for self, Country Head/CEO can apply on behalf"""
     try:
+        role_code = current_user.get("role_code", "")
+        
+        # Determine target employee
+        target_employee_id = current_user["id"]
+        applied_by_id = None
+        
+        # Country Head or CEO can apply on behalf of others
+        if data.employee_id and data.employee_id != current_user["id"]:
+            if role_code not in ["CEO", "COUNTRY_HEAD"]:
+                raise HTTPException(status_code=403, detail="Only Country Head or CEO can apply leave on behalf of others")
+            target_employee_id = data.employee_id
+            applied_by_id = current_user["id"]
+        
         request = await leave_service.create_leave_request(
-            employee_id=current_user["id"],
+            employee_id=target_employee_id,
             leave_type=data.leave_type,
             start_date=data.start_date,
             end_date=data.end_date,
             duration_type=data.duration_type,
-            reason=data.reason
+            reason=data.reason,
+            applied_by_id=applied_by_id
         )
         
         return request
