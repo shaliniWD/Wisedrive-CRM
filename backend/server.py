@@ -2608,8 +2608,68 @@ async def generate_payslip(payment_id: str, current_user: dict = Depends(get_cur
     if not payment:
         raise HTTPException(status_code=404, detail="Payment not found")
     
-    # Get employee details
-    emp = await db.users.find_one({"id": payment["employee_id"]}, {"_id": 0})
+    # B2B payment types
+    b2b_types = ["vendor", "statutory", "legal"]
+    is_b2b = payment.get("payment_type") in b2b_types
+    
+    # Get country currency
+    currency = "INR"
+    currency_symbol = "₹"
+    if payment.get("country_id"):
+        country = await db.countries.find_one({"id": payment["country_id"]}, {"_id": 0, "currency": 1, "currency_symbol": 1})
+        if country:
+            currency = country.get("currency", "INR")
+            currency_symbol = country.get("currency_symbol", "₹")
+    
+    if is_b2b:
+        # B2B Payment payslip
+        payslip_data = {
+            # Company info
+            "company_name": "WiseDrive Technologies Private Limited",
+            "company_address": "Bangalore, India",
+            
+            # Vendor info
+            "vendor_name": payment.get("vendor_name", ""),
+            "employee_name": payment.get("vendor_name", ""),  # For compatibility
+            "gstin": payment.get("gstin"),
+            "pan_number": payment.get("pan_number"),
+            "invoice_number": payment.get("invoice_number"),
+            "invoice_date": payment.get("invoice_date"),
+            "due_date": payment.get("due_date"),
+            
+            # Payment period
+            "month": payment["month"],
+            "year": payment["year"],
+            "payment_date": payment.get("payment_date"),
+            "payment_type": payment.get("payment_type"),
+            
+            # B2B amounts
+            "is_b2b": True,
+            "is_mechanic": False,
+            "actual_amount": payment.get("actual_amount", payment.get("gross_amount", 0)),
+            "gst_percentage": payment.get("gst_percentage", 18),
+            "gst_amount": payment.get("gst_amount", 0),
+            "tds_percentage": payment.get("tds_percentage", 10),
+            "tds_amount": payment.get("tds_amount", payment.get("deductions", 0)),
+            "gross_amount": payment.get("gross_amount", 0),
+            "total_deductions": payment.get("deductions", 0),
+            "net_salary": payment.get("net_amount", 0),
+            
+            # Payment info
+            "payment_mode": payment.get("payment_mode"),
+            "transaction_reference": payment.get("transaction_reference"),
+            
+            # Currency
+            "currency": currency,
+            "currency_symbol": currency_symbol,
+            
+            # Status
+            "status": payment.get("status")
+        }
+        return payslip_data
+    
+    # Non-B2B payments - need employee details
+    emp = await db.users.find_one({"id": payment.get("employee_id")}, {"_id": 0})
     if not emp:
         raise HTTPException(status_code=404, detail="Employee not found")
     
@@ -2629,18 +2689,9 @@ async def generate_payslip(payment_id: str, current_user: dict = Depends(get_cur
         if dept:
             dept_name = dept.get("name", "")
     
-    # Get country currency
-    currency = "INR"
-    currency_symbol = "₹"
-    if payment.get("country_id"):
-        country = await db.countries.find_one({"id": payment["country_id"]}, {"_id": 0, "currency": 1, "currency_symbol": 1})
-        if country:
-            currency = country.get("currency", "INR")
-            currency_symbol = country.get("currency_symbol", "₹")
-    
     # Get salary structure for detailed breakdown
     salary_structure = await db.salary_structures.find_one(
-        {"user_id": payment["employee_id"], "effective_to": None},
+        {"user_id": payment.get("employee_id"), "effective_to": None},
         {"_id": 0}
     )
     
@@ -2648,7 +2699,7 @@ async def generate_payslip(payment_id: str, current_user: dict = Depends(get_cur
     
     payslip_data = {
         # Company info
-        "company_name": "WiseDrive Technologies",
+        "company_name": "WiseDrive Technologies Private Limited",
         "company_address": "Bangalore, India",
         
         # Employee info
@@ -2668,8 +2719,10 @@ async def generate_payslip(payment_id: str, current_user: dict = Depends(get_cur
         "month": payment["month"],
         "year": payment["year"],
         "payment_date": payment.get("payment_date"),
+        "payment_type": payment.get("payment_type"),
         
         # For salary payments
+        "is_b2b": False,
         "is_mechanic": is_mechanic,
         "basic_salary": salary_structure.get("basic_salary", 0) if salary_structure else 0,
         "hra": salary_structure.get("hra", 0) if salary_structure else 0,
@@ -2678,6 +2731,7 @@ async def generate_payslip(payment_id: str, current_user: dict = Depends(get_cur
         "special_allowance": salary_structure.get("special_allowance", 0) if salary_structure else 0,
         "variable_pay": salary_structure.get("variable_pay", 0) if salary_structure else 0,
         "gross_salary": payment.get("gross_amount", 0),
+        "gross_amount": payment.get("gross_amount", 0),
         
         # Deductions
         "pf_employee": salary_structure.get("pf_employee", 0) if salary_structure else 0,
