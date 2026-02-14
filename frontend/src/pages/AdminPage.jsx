@@ -136,7 +136,7 @@ const SummaryCard = ({ title, value, icon: Icon, color }) => (
   </div>
 );
 
-export default function AdminPage() {
+export default function AdminPage({ initialTab = 'employees', embedded = false }) {
   const { user } = useAuth();
   const [employees, setEmployees] = useState([]);
   const [countries, setCountries] = useState([]);
@@ -144,7 +144,7 @@ export default function AdminPage() {
   const [departments, setDepartments] = useState([]);
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('employees');
+  const [activeTab, setActiveTab] = useState(initialTab);
   
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
