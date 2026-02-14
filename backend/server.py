@@ -125,13 +125,35 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         if user is None:
             raise HTTPException(status_code=401, detail="User not found")
         
-        # Enrich with role and permissions
+        # Support for multiple roles - build roles array
+        user["roles"] = []
+        role_ids = user.get("role_ids", [])
+        if not role_ids and user.get("role_id"):
+            role_ids = [user["role_id"]]
+        
+        # Enrich with all roles
+        for role_id in role_ids:
+            role = await db.roles.find_one({"id": role_id}, {"_id": 0})
+            if role:
+                user["roles"].append({
+                    "id": role["id"],
+                    "name": role.get("name"),
+                    "code": role.get("code"),
+                    "level": role.get("level")
+                })
+        
+        # Set primary role info (for backward compatibility)
         if user.get("role_id"):
             role = await db.roles.find_one({"id": user["role_id"]}, {"_id": 0})
             if role:
                 user["role_name"] = role.get("name")
                 user["role_code"] = role.get("code")
                 user["role_level"] = role.get("level")
+        elif user["roles"]:
+            # Use first role as primary
+            user["role_name"] = user["roles"][0].get("name")
+            user["role_code"] = user["roles"][0].get("code")
+            user["role_level"] = user["roles"][0].get("level")
         
         # Get country name
         if user.get("country_id"):
