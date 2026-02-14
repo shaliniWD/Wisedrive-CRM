@@ -92,7 +92,8 @@ class LeaveService:
         start_date: str,
         end_date: str,
         duration_type: str,
-        reason: str
+        reason: str,
+        applied_by_id: str = None
     ) -> dict:
         """Create a new leave request"""
         # Get employee name
@@ -101,6 +102,15 @@ class LeaveService:
             {"_id": 0, "name": 1}
         )
         employee_name = employee.get("name", "") if employee else ""
+        
+        # Get applied_by name if different from employee
+        applied_by_name = None
+        if applied_by_id:
+            applier = await self.db.users.find_one(
+                {"id": applied_by_id},
+                {"_id": 0, "name": 1}
+            )
+            applied_by_name = applier.get("name", "") if applier else None
         
         # Calculate total days
         total_days = self._calculate_leave_days(start_date, end_date, duration_type)
@@ -141,6 +151,8 @@ class LeaveService:
             "total_days": total_days,
             "reason": reason,
             "status": "PENDING",
+            "applied_by_id": applied_by_id,
+            "applied_by_name": applied_by_name,
             "approved_by": None,
             "approved_by_name": None,
             "approved_at": None,
