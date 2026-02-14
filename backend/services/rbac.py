@@ -28,12 +28,12 @@ class RBACService:
     
     # Tab visibility by role code
     TAB_VISIBILITY = {
-        CEO: ["leads", "customers", "inspections", "reports", "employees", "settings", "finance", "hr"],
-        HR_MANAGER: ["employees", "hr", "finance"],  # HR sees Admin, HR Module, and Finance
+        CEO: ["leads", "customers", "inspections", "reports", "hr", "settings", "finance"],
+        HR_MANAGER: ["hr", "finance"],  # HR sees HR Module (includes employees) and Finance
         FINANCE_MANAGER: ["finance", "hr"],  # Finance Manager sees Finance and HR Module (for payroll)
-        COUNTRY_HEAD: ["leads", "customers", "inspections", "reports", "employees", "settings", "finance", "hr"],
-        SALES_HEAD: ["leads", "customers", "employees", "hr"],
-        INSPECTION_HEAD: ["customers", "inspections", "reports", "employees", "hr"],
+        COUNTRY_HEAD: ["leads", "customers", "inspections", "reports", "hr", "settings", "finance"],
+        SALES_HEAD: ["leads", "customers", "hr"],
+        INSPECTION_HEAD: ["customers", "inspections", "reports", "hr"],
         SALES_LEAD: ["leads", "customers", "hr"],
         INSPECTION_LEAD: ["customers", "inspections", "reports", "hr"],
         SALES_EXEC: ["leads", "hr"],
