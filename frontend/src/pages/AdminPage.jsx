@@ -1129,22 +1129,104 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
                 <div className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto text-blue-600" /></div>
               ) : (
                 <>
+                  {/* Earnings Section */}
                   <div className="bg-emerald-50 p-5 rounded-xl border border-emerald-200">
-                    <h4 className="text-sm font-semibold text-emerald-800 mb-4">Earnings</h4>
+                    <h4 className="text-sm font-semibold text-emerald-800 mb-4 flex items-center gap-2">
+                      <DollarSign className="h-4 w-4" /> Earnings
+                    </h4>
                     <div className="grid grid-cols-3 gap-4">
-                      <div className="space-y-2"><Label className="text-xs">Basic Salary</Label><Input type="number" value={salaryForm.basic_salary || ''} onChange={(e) => setSalaryForm({...salaryForm, basic_salary: parseFloat(e.target.value) || 0})} className="h-9" /></div>
-                      <div className="space-y-2"><Label className="text-xs">HRA</Label><Input type="number" value={salaryForm.hra || ''} onChange={(e) => setSalaryForm({...salaryForm, hra: parseFloat(e.target.value) || 0})} className="h-9" /></div>
-                      <div className="space-y-2"><Label className="text-xs">Variable Pay</Label><Input type="number" value={salaryForm.variable_pay || ''} onChange={(e) => setSalaryForm({...salaryForm, variable_pay: parseFloat(e.target.value) || 0})} className="h-9" /></div>
+                      <div className="space-y-2">
+                        <Label className="text-xs">Basic Salary</Label>
+                        <Input type="number" value={salaryForm.basic_salary || ''} onChange={(e) => setSalaryForm({...salaryForm, basic_salary: parseFloat(e.target.value) || 0})} className="h-9" placeholder="0" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs">HRA</Label>
+                        <Input type="number" value={salaryForm.hra || ''} onChange={(e) => setSalaryForm({...salaryForm, hra: parseFloat(e.target.value) || 0})} className="h-9" placeholder="0" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs">Variable Pay / Incentives</Label>
+                        <Input type="number" value={salaryForm.variable_pay || ''} onChange={(e) => setSalaryForm({...salaryForm, variable_pay: parseFloat(e.target.value) || 0})} className="h-9" placeholder="0" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs">Conveyance</Label>
+                        <Input type="number" value={salaryForm.conveyance || ''} onChange={(e) => setSalaryForm({...salaryForm, conveyance: parseFloat(e.target.value) || 0})} className="h-9" placeholder="0" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs">Medical Allowance</Label>
+                        <Input type="number" value={salaryForm.medical || ''} onChange={(e) => setSalaryForm({...salaryForm, medical: parseFloat(e.target.value) || 0})} className="h-9" placeholder="0" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs">Special Allowance</Label>
+                        <Input type="number" value={salaryForm.special_allowance || ''} onChange={(e) => setSalaryForm({...salaryForm, special_allowance: parseFloat(e.target.value) || 0})} className="h-9" placeholder="0" />
+                      </div>
                     </div>
                     <div className="mt-4 pt-4 border-t border-emerald-200 flex justify-between">
                       <span className="font-medium text-emerald-800">Gross Salary:</span>
-                      <span className="font-bold text-emerald-800 text-lg">₹{formatCurrency((salaryForm.basic_salary||0)+(salaryForm.hra||0)+(salaryForm.variable_pay||0))}</span>
+                      <span className="font-bold text-emerald-800 text-lg">₹{formatCurrency((salaryForm.basic_salary||0)+(salaryForm.hra||0)+(salaryForm.variable_pay||0)+(salaryForm.conveyance||0)+(salaryForm.medical||0)+(salaryForm.special_allowance||0))}</span>
                     </div>
                   </div>
+
+                  {/* Deductions Section */}
+                  <div className="bg-red-50 p-5 rounded-xl border border-red-200">
+                    <h4 className="text-sm font-semibold text-red-800 mb-4 flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4" /> Deductions
+                    </h4>
+                    <div className="grid grid-cols-4 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-xs">PF (Employee)</Label>
+                        <Input type="number" value={salaryForm.pf_employee || ''} onChange={(e) => setSalaryForm({...salaryForm, pf_employee: parseFloat(e.target.value) || 0})} className="h-9" placeholder="0" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs">Professional Tax</Label>
+                        <Input type="number" value={salaryForm.professional_tax || ''} onChange={(e) => setSalaryForm({...salaryForm, professional_tax: parseFloat(e.target.value) || 0})} className="h-9" placeholder="0" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs">Income Tax (TDS)</Label>
+                        <Input type="number" value={salaryForm.income_tax || ''} onChange={(e) => setSalaryForm({...salaryForm, income_tax: parseFloat(e.target.value) || 0})} className="h-9" placeholder="0" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs">Other Deductions</Label>
+                        <Input type="number" value={salaryForm.other_deductions || ''} onChange={(e) => setSalaryForm({...salaryForm, other_deductions: parseFloat(e.target.value) || 0})} className="h-9" placeholder="0" />
+                      </div>
+                    </div>
+                    <div className="mt-4 pt-4 border-t border-red-200 flex justify-between">
+                      <span className="font-medium text-red-800">Total Deductions:</span>
+                      <span className="font-bold text-red-800 text-lg">₹{formatCurrency((salaryForm.pf_employee||0)+(salaryForm.professional_tax||0)+(salaryForm.income_tax||0)+(salaryForm.other_deductions||0))}</span>
+                    </div>
+                  </div>
+
+                  {/* Net Salary Summary */}
+                  <div className="bg-blue-50 p-5 rounded-xl border border-blue-200">
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold text-blue-800 text-lg">Net Salary (Take Home):</span>
+                      <span className="font-bold text-blue-800 text-2xl">
+                        ₹{formatCurrency(
+                          ((salaryForm.basic_salary||0)+(salaryForm.hra||0)+(salaryForm.variable_pay||0)+(salaryForm.conveyance||0)+(salaryForm.medical||0)+(salaryForm.special_allowance||0)) - 
+                          ((salaryForm.pf_employee||0)+(salaryForm.professional_tax||0)+(salaryForm.income_tax||0)+(salaryForm.other_deductions||0))
+                        )}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* For Mechanics: Price per Inspection */}
+                  {isMechanic && (
+                    <div className="bg-orange-50 p-5 rounded-xl border border-orange-200">
+                      <h4 className="text-sm font-semibold text-orange-800 mb-4 flex items-center gap-2">
+                        <Briefcase className="h-4 w-4" /> Mechanic / Freelancer Settings
+                      </h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-xs">Price Per Inspection (₹)</Label>
+                          <Input type="number" value={salaryForm.price_per_inspection || ''} onChange={(e) => setSalaryForm({...salaryForm, price_per_inspection: parseFloat(e.target.value) || 0})} className="h-9" placeholder="e.g., 500" />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex justify-end gap-3 pt-4 border-t">
                     <Button variant="outline" onClick={onClose}>Cancel</Button>
                     <Button onClick={handleSaveSalary} disabled={saving} className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800">
-                      {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Save Salary
+                      {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Save Salary Structure
                     </Button>
                   </div>
                 </>
