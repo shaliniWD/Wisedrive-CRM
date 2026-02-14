@@ -11,6 +11,7 @@ import LeadsPage from "@/pages/LeadsPage";
 import CustomersPage from "@/pages/CustomersPage";
 import InspectionsPage from "@/pages/InspectionsPage";
 import AdminPage from "@/pages/AdminPage";
+import FinancePage from "@/pages/FinancePage";
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
             <Route path="/customers" element={<CustomersPage />} />
             <Route path="/inspections" element={<InspectionsPage />} />
             <Route path="/admin" element={<AdminPage />} />
+            <Route path="/finance" element={<FinancePage />} />
           </Route>
 
           {/* Default redirect */}
