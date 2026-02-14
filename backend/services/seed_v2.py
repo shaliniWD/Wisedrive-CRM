@@ -143,12 +143,18 @@ async def seed_v2_data(db: AsyncIOMotorDatabase):
             "salary.view": "all", "salary.edit": "all",
             "dashboard.view": "all",
             "settings.view": "all", "settings.edit": "all",
+            "finance.view": "all", "finance.create": "all", "finance.edit": "all", "finance.approve": "all", "finance.export": "all",
         },
         "HR_MANAGER": {
             "users.view": "all", "users.create": "all", "users.edit": "all", "users.delete": "all",
             "salary.view": "all", "salary.edit": "all",
             "dashboard.view": "all",
-            "settings.view": "all", "settings.edit": "all",
+        },
+        "FINANCE_MANAGER": {
+            "finance.view": "country", "finance.create": "country", "finance.edit": "country", "finance.export": "country",
+            "users.view": "country",  # Can view employees to create payments
+            "salary.view": "country",  # Can view salary structures
+            "dashboard.view": "country",
         },
         "COUNTRY_HEAD": {
             "leads.view": "country", "leads.create": "country", "leads.edit": "country", "leads.export": "country",
@@ -159,6 +165,7 @@ async def seed_v2_data(db: AsyncIOMotorDatabase):
             "salary.view": "country",
             "dashboard.view": "country",
             "settings.view": "country",
+            "finance.view": "country", "finance.edit": "country", "finance.approve": "country", "finance.export": "country",
         },
         "SALES_HEAD": {
             "leads.view": "country", "leads.create": "country", "leads.edit": "country", "leads.reassign": "country", "leads.export": "country",
