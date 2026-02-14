@@ -1796,6 +1796,11 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
   const [leadsActive, setLeadsActive] = useState(true);
   const [selectedCities, setSelectedCities] = useState([]);
   const [leadsSaving, setLeadsSaving] = useState(false);
+  
+  // Payslips
+  const [employeePayslips, setEmployeePayslips] = useState([]);
+  const [payslipsLoading, setPayslipsLoading] = useState(false);
+  const [downloadingPayslip, setDownloadingPayslip] = useState(null);
 
   // Fetch available cities from the employee's country
   useEffect(() => {
