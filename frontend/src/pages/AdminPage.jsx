@@ -188,7 +188,79 @@ export default function AdminPage({ initialTab = 'employees', embedded = false }
   const [newPassword, setNewPassword] = useState('');
   const [resettingPassword, setResettingPassword] = useState(false);
 
+  // Photo upload
+  const photoInputRef = useRef(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  
+  // Employee ID validation
+  const [employeeIdError, setEmployeeIdError] = useState('');
+
   const isHROrCEO = user?.role_code === 'CEO' || user?.role_code === 'HR_MANAGER' || user?.roles?.some(r => r.code === 'CEO' || r.code === 'HR_MANAGER');
+
+  // Handle photo file selection
+  const handlePhotoSelect = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+    
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB');
+      return;
+    }
+    
+    setUploadingPhoto(true);
+    try {
+      // Convert to base64 for preview and storage
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = reader.result;
+        setPhotoPreview(base64);
+        setForm(prev => ({ ...prev, photo_url: base64 }));
+        setUploadingPhoto(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      toast.error('Failed to process image');
+      setUploadingPhoto(false);
+    }
+  };
+
+  // Remove photo
+  const handleRemovePhoto = () => {
+    setPhotoPreview(null);
+    setForm(prev => ({ ...prev, photo_url: '' }));
+    if (photoInputRef.current) {
+      photoInputRef.current.value = '';
+    }
+  };
+
+  // Validate employee ID for duplicates
+  const validateEmployeeId = async (empId) => {
+    if (!empId) {
+      setEmployeeIdError('');
+      return true;
+    }
+    
+    // Check for duplicates in loaded employees
+    const duplicate = employees.find(emp => 
+      emp.employee_code === empId && emp.id !== selectedEmployee?.id
+    );
+    
+    if (duplicate) {
+      setEmployeeIdError(`Employee ID "${empId}" already exists for ${duplicate.name}`);
+      return false;
+    }
+    
+    setEmployeeIdError('');
+    return true;
+  };
 
   // Open password reset modal
   const openPasswordModal = (emp) => {
