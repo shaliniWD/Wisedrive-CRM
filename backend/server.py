@@ -2287,7 +2287,7 @@ async def toggle_lead_assignment(
     data: dict,
     current_user: dict = Depends(get_current_user)
 ):
-    """Toggle lead assignment for employee"""
+    """Toggle lead assignment for employee and update assigned cities"""
     role_code = current_user.get("role_code", "")
     
     if role_code not in ["CEO", "HR_MANAGER"]:
@@ -2295,14 +2295,21 @@ async def toggle_lead_assignment(
     
     is_available = data.get("is_available_for_leads", True)
     reason = data.get("reason", "")
+    assigned_cities = data.get("assigned_cities", [])
+    
+    update_data = {
+        "is_available_for_leads": is_available,
+        "lead_assignment_paused_reason": reason if not is_available else None,
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    # Only update assigned_cities if provided
+    if "assigned_cities" in data:
+        update_data["assigned_cities"] = assigned_cities
     
     await db.users.update_one(
         {"id": employee_id},
-        {"$set": {
-            "is_available_for_leads": is_available,
-            "lead_assignment_paused_reason": reason if not is_available else None,
-            "updated_at": datetime.now(timezone.utc).isoformat()
-        }}
+        {"$set": update_data}
     )
     
     # Log audit
@@ -2311,10 +2318,10 @@ async def toggle_lead_assignment(
         entity_id=employee_id,
         action="lead_assignment_toggle",
         user_id=current_user["id"],
-        new_values={"is_available_for_leads": is_available, "reason": reason}
+        new_values={"is_available_for_leads": is_available, "reason": reason, "assigned_cities": assigned_cities}
     )
     
-    return {"is_available_for_leads": is_available}
+    return {"is_available_for_leads": is_available, "assigned_cities": assigned_cities}
 
 
 @api_router.patch("/hr/employees/{employee_id}/weekly-off")
