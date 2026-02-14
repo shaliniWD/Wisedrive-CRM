@@ -278,6 +278,7 @@ class CountryBase(BaseModel):
     currency_symbol: str = "₹"
     phone_code: str = "+91"
     is_active: bool = True
+    cities: List[str] = []  # List of city names
 
 
 class CountryCreate(CountryBase):
