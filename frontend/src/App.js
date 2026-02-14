@@ -13,6 +13,7 @@ import InspectionsPage from "@/pages/InspectionsPage";
 import AdminPage from "@/pages/AdminPage";
 import FinancePage from "@/pages/FinancePage";
 import SettingsPage from "@/pages/SettingsPage";
+import HRModulePage from "@/pages/HRModulePage";
 
 // Smart redirect based on visible tabs
 const SmartRedirect = () => {
@@ -28,6 +29,7 @@ const SmartRedirect = () => {
     employees: '/admin',
     finance: '/finance',
     settings: '/settings',
+    hr: '/hr',
   };
   
   // Find the first visible tab and redirect there
@@ -57,6 +59,7 @@ function App() {
             <Route path="/admin" element={<AdminPage />} />
             <Route path="/finance" element={<FinancePage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/hr" element={<HRModulePage />} />
           </Route>
 
           {/* Default redirect */}
