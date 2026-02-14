@@ -148,6 +148,12 @@ Recreate WiseDrive CRM (https://crm.wisedrive.com) design with a modern UI. Crea
 
 ## API Endpoints
 
+### CRM V4 Endpoints (New)
+- `PATCH /api/leads/{lead_id}/status` - Inline status update for leads
+- `GET /api/auth/me` - Returns user with `roles` array for multi-role support
+- `GET /api/hr/employees` - Returns employees with `roles` array
+- `PUT /api/hr/employees/{id}` - Update employee with `role_ids` array and `employment_status`
+
 ### Finance Module (Enhanced)
 - `GET /api/finance/payments` - List payments (filter by payment_type)
 - `POST /api/finance/payments` - Create payment (B2B or employee)
