@@ -29,7 +29,7 @@ The CRM has been refactored from V1 monolithic architecture to V2 with:
 - **Database**: MongoDB
 - **Authentication**: JWT-based with bcrypt password hashing
 - **Structure**:
-  - `/app/backend/models/` - Pydantic models (user, organization, lead, customer, inspection, audit)
+  - `/app/backend/models/` - Pydantic models (user, organization, lead, customer, inspection, audit, employee)
   - `/app/backend/services/` - Business logic (rbac, round_robin, audit, seed_v2)
   - `/app/backend/server.py` - Main FastAPI application with all routes
 
@@ -41,43 +41,35 @@ The CRM has been refactored from V1 monolithic architecture to V2 with:
   - Permission-based feature access
   - Dynamic navigation
 
-## Role-Permission Matrix
-
-| Permission | CEO | Country Head | Sales Head | Sales Exec | HR Manager |
-|------------|-----|--------------|------------|------------|------------|
-| leads.view | ALL | COUNTRY | COUNTRY | OWN | - |
-| leads.edit | ALL | COUNTRY | COUNTRY | OWN | - |
-| leads.reassign | ALL | - | COUNTRY | - | - |
-| customers.view | ALL | COUNTRY | COUNTRY | OWN | - |
-| inspections.view | ALL | COUNTRY | - | - | COUNTRY |
-| users.view | ALL | COUNTRY | TEAM | - | ALL |
-| salary.view | ALL | COUNTRY | TEAM | - | ALL |
-
-## Tab Visibility by Role
-
-| Tab | CEO | Sales Head | Sales Exec | HR Manager |
-|-----|-----|------------|------------|------------|
-| Dashboard | ✓ | ✓ | ✓ | ✓ |
-| Leads | ✓ | ✓ | ✓ | - |
-| Customers | ✓ | ✓ | - | - |
-| Inspections | ✓ | - | - | - |
-| Admin | ✓ | ✓ | - | ✓ |
-
 ## What's Been Implemented
 
-### V2 Backend (Feb 13, 2026)
-- [x] Multi-country data model (countries, departments, roles, teams)
-- [x] 48 permissions with scopes (all, country, team, own)
-- [x] Role-based permission mapping
-- [x] RBAC service for permission checking
-- [x] Round-robin lead assignment service
-- [x] Audit service for logging
-- [x] RBAC-filtered API endpoints (leads, customers, inspections, dashboard)
-- [x] Lead reassignment with mandatory reason
-- [x] User enrichment (role_name, country_name, department_name, team_name)
-- [x] Dashboard stats with RBAC filtering
+### HR Module V3 (Feb 14, 2026)
+- [x] **Column Order Updated**: Employee, Role, Country, Weekly Off, Status, Salary Info, Audit, Actions
+- [x] **Docs Column Removed** from employee table
+- [x] **Audit Column Repositioned** - now before Actions column
+- [x] **Weekly Off Day Tracking**: 
+  - Weekly off day selector in employee modal (0=Sunday to 6=Saturday)
+  - Round-robin excludes employees on their weekly off day
+- [x] **Lead Assignment Control**:
+  - `is_available_for_leads` toggle in employee modal
+  - When unchecked, employee won't receive new leads via round-robin
+  - Optional reason field when pausing lead assignment
+- [x] **Attendance/Leave Tracking**:
+  - Mark Today's Attendance buttons: Present, Absent, Half Day, On Leave
+  - Month-wise leave summary table with Present, Absent, Half Day, On Leave, Total Leaves
+  - Year filter for attendance history
+  - Marking absent excludes from lead assignment for that day
+- [x] **Salary Payments History**:
+  - Year-filterable payment history in Salary tab
+  - Shows Month, Gross, Net, Status for each payment
+- [x] **Salary Info Column Display**:
+  - Shows gross salary for permanent staff
+  - Shows "price per inspection" for mechanics/freelancers
+- [x] **Mechanic Salary Form**: Freelancer / Mechanic Compensation with Price Per Inspection and Commission %
+- [x] **HR Manager Tab Visibility**: Only Admin tab visible (Settings, Leads, Customers, Inspections removed)
+- [x] **Indian HR Full Access**: HR Manager can manage employees across all countries
 
-### HR Module (Feb 13, 2026)
+### HR Module V2 (Feb 13, 2026)
 - [x] Unified Employee tab (merged Employee, Garage Employee, HR/Salary, Audit Trail)
 - [x] Comprehensive Employee modal with 5 tabs:
   - Details: Personal info, employment info, bank details, CRM access toggle
@@ -86,10 +78,19 @@ The CRM has been refactored from V1 monolithic architecture to V2 with:
   - Attendance: Monthly attendance summary with Present/Absent/Half-Day/Leave
   - Audit: Per-employee audit trail with action history
 - [x] Countries tab with currency management (symbol, phone code, employee count)
-- [x] HR Manager tab visibility updated (only Admin and Settings - no Dashboard/Leads/Customers)
-- [x] Indian HR full access to employees in all countries
-- [x] Mechanics have no CRM access (empty tab visibility)
 - [x] Employee creation with password and auto-generated employee code
+
+### V2 Backend (Feb 13, 2026)
+- [x] Multi-country data model (countries, departments, roles, teams)
+- [x] 48 permissions with scopes (all, country, team, own)
+- [x] Role-based permission mapping
+- [x] RBAC service for permission checking
+- [x] Round-robin lead assignment service (respects weekly off and availability)
+- [x] Audit service for logging
+- [x] RBAC-filtered API endpoints (leads, customers, inspections, dashboard)
+- [x] Lead reassignment with mandatory reason
+- [x] User enrichment (role_name, country_name, department_name, team_name)
+- [x] Dashboard stats with RBAC filtering
 
 ### V2 Frontend (Feb 13, 2026)
 - [x] AuthContext with permissions and visible tabs
@@ -108,7 +109,38 @@ The CRM has been refactored from V1 monolithic architecture to V2 with:
 - [x] Pagination for data tables
 - [x] Ad ID display for FACEBOOK/INSTAGRAM leads
 
+## Role-Permission Matrix
+
+| Permission | CEO | Country Head | Sales Head | Sales Exec | HR Manager |
+|------------|-----|--------------|------------|------------|------------|
+| leads.view | ALL | COUNTRY | COUNTRY | OWN | - |
+| leads.edit | ALL | COUNTRY | COUNTRY | OWN | - |
+| leads.reassign | ALL | - | COUNTRY | - | - |
+| customers.view | ALL | COUNTRY | COUNTRY | OWN | - |
+| inspections.view | ALL | COUNTRY | - | - | COUNTRY |
+| users.view | ALL | COUNTRY | TEAM | - | ALL |
+| salary.view | ALL | COUNTRY | TEAM | - | ALL |
+
+## Tab Visibility by Role
+
+| Tab | CEO | Sales Head | Sales Exec | HR Manager |
+|-----|-----|------------|------------|------------|
+| Dashboard | ✓ | ✓ | ✓ | - |
+| Leads | ✓ | ✓ | ✓ | - |
+| Customers | ✓ | ✓ | - | - |
+| Inspections | ✓ | - | - | - |
+| Admin | ✓ | ✓ | - | ✓ |
+| Settings | ✓ | ✓ | - | ❌ |
+
 ## API Endpoints
+
+### HR Module (V3 - New/Updated)
+- `PATCH /api/hr/employees/{id}/weekly-off` - Update weekly off day
+- `PATCH /api/hr/employees/{id}/lead-assignment` - Toggle lead availability
+- `GET /api/hr/employees/{id}/leave-summary?year=` - Get month-wise leave summary
+- `GET /api/hr/employees/{id}/salary-payments?year=` - Get salary payment history
+- `POST /api/hr/employees/{id}/salary-payments` - Record salary payment
+- `POST /api/hr/employees/{id}/attendance` - Mark attendance
 
 ### Authentication
 - `POST /api/auth/login` - Login with email/password
@@ -134,7 +166,7 @@ The CRM has been refactored from V1 monolithic architecture to V2 with:
 - `GET /api/leads/{id}/reassignment-history` - Get reassignment audit log
 
 ### Round Robin
-- `GET /api/round-robin/next/{country_id}` - Get next agent
+- `GET /api/round-robin/next/{country_id}` - Get next agent (excludes weekly off and absent)
 - `GET /api/round-robin/stats/{country_id}` - Assignment statistics
 
 ### Dashboard
@@ -167,10 +199,10 @@ The CRM has been refactored from V1 monolithic architecture to V2 with:
 ### P0 - Complete
 - [x] V2 Multi-tenant RBAC architecture
 - [x] Role-based permission system
-- [x] Round-robin lead assignment
+- [x] Round-robin lead assignment (with availability checks)
 - [x] RBAC-filtered API endpoints
 - [x] Dashboard stats with proper filtering
-- [x] Comprehensive HR Module (employee, salary, documents, attendance, audit)
+- [x] Comprehensive HR Module V3 (weekly off, leave tracking, salary history, lead assignment control)
 - [x] Countries management with currency
 - [x] Per-employee audit trail
 
@@ -196,11 +228,12 @@ The CRM has been refactored from V1 monolithic architecture to V2 with:
 
 ### MongoDB Collections (V2)
 - countries, departments, roles, permissions, role_permissions
-- teams, users, salary_structures
+- teams, users, salary_structures, salary_payments
 - leads, lead_reassignment_logs
 - customers, inspections, transactions
 - audit_logs, round_robin_state
 - digital_ads, garage_employees
+- employee_attendance, employee_documents
 
 ### RBAC Scope Definitions
 - **ALL**: Access to all data across all countries
@@ -212,4 +245,4 @@ The CRM has been refactored from V1 monolithic architecture to V2 with:
 - **Vaahan Car Lookup**: Returns mock car data in payment modal
 
 ## Last Updated
-February 13, 2026 - Comprehensive HR Module Complete
+February 14, 2026 - HR Module V3 Complete with Weekly Off, Leave Tracking, Salary History, and Lead Assignment Control
