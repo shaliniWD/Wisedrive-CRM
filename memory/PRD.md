@@ -8,7 +8,29 @@ Recreate WiseDrive CRM (https://crm.wisedrive.com) design with a modern UI. Crea
 
 ## What's Been Implemented
 
-### CRM V4 Features (Feb 14, 2026) ✅ LATEST
+### Attendance Calendar Rework (Dec 14, 2025) ✅ LATEST
+- [x] **New Calendar-Based Attendance View**:
+  - Completely replaced session-based attendance logic with employee-wise calendar view
+  - Consolidated view showing all employees with leave status for each day of the month
+  - Color-coded status indicators:
+    - Green (✓): Working day
+    - Gray (-): Weekend/Holiday
+    - Blue (L): Approved Leave
+    - Amber (P): Pending Leave
+  - Employee search filter with debounced input
+  - Country, Month, and Year filter dropdowns
+  - Summary column showing working days (W), approved leaves (L), pending leaves (P)
+  - Employee photos/initials with name and employee code
+  - Responsive horizontal scrolling for many days
+
+- [x] **Safe Production Sync Endpoint**:
+  - New `POST /api/admin/sync-users` endpoint (non-destructive)
+  - Only adds missing users without deleting existing data
+  - Returns created and skipped user counts
+  - Can be run multiple times safely (idempotent)
+  - Ensures required users exist: CEO, HR Manager, Finance Manager, Sales, Mechanic
+
+### CRM V4 Features (Feb 14, 2026) ✅
 - [x] **Multi-Role Support for Employees**:
   - Employees can be assigned multiple roles via checkbox selection
   - Backend stores `role_ids` array in addition to primary `role_id`
