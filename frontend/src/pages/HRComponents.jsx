@@ -1526,7 +1526,7 @@ export function PayrollDashboard({ isHR, isFinance }) {
                       {formatCurrency(record.gross_salary, record.currency_symbol)}
                     </td>
                     
-                    {/* Absent Days */}
+                    {/* LOP Days */}
                     {editingRecord === record.id && selectedBatch.status === 'DRAFT' ? (
                       <td className="px-2 py-1 bg-amber-50/50">
                         <Input
@@ -1534,14 +1534,14 @@ export function PayrollDashboard({ isHR, isFinance }) {
                           min="0"
                           max={record.working_days_in_month}
                           step="1"
-                          value={editingValues.absent_days ?? record.unapproved_absent_days ?? 0}
+                          value={editingValues.lop_days ?? editingValues.absent_days ?? record.lop_days ?? record.unapproved_absent_days ?? 0}
                           onChange={(e) => {
-                            const absentDays = parseInt(e.target.value, 10) || 0;
+                            const lopDays = parseInt(e.target.value, 10) || 0;
                             const workingDays = record.working_days_in_month || 0;
-                            const attendanceDays = workingDays - absentDays;
+                            const attendanceDays = workingDays - lopDays;
                             setEditingValues({
                               ...editingValues, 
-                              absent_days: absentDays,
+                              lop_days: lopDays,
                               attendance_days: Math.max(0, attendanceDays)
                             });
                           }}
@@ -1550,7 +1550,7 @@ export function PayrollDashboard({ isHR, isFinance }) {
                       </td>
                     ) : (
                       <td className="px-3 py-2 text-center bg-amber-50/50 text-amber-700 font-medium">
-                        {record.unapproved_absent_days ?? (record.working_days_in_month - (record.attendance_days || 0)) ?? 0}
+                        {record.lop_days ?? record.unapproved_absent_days ?? (record.working_days_in_month - (record.attendance_days || 0)) ?? 0}
                       </td>
                     )}
                     
