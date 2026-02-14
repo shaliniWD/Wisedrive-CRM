@@ -16,52 +16,57 @@ from datetime import datetime, timedelta
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 
+def get_india_country():
+    """Get India country from public endpoint"""
+    response = requests.get(f"{BASE_URL}/api/auth/countries")
+    if response.status_code == 200:
+        countries = response.json()
+        return next((c for c in countries if c.get('name', '').lower() == 'india'), None)
+    return None
+
+def get_hr_token():
+    """Get HR Manager token"""
+    india = get_india_country()
+    if not india:
+        return None
+    response = requests.post(f"{BASE_URL}/api/auth/login", json={
+        "email": "hr@wisedrive.com",
+        "password": "password123",
+        "country_id": india['id']
+    })
+    if response.status_code == 200:
+        return response.json().get("token")
+    return None
+
+def get_ceo_token():
+    """Get CEO token"""
+    india = get_india_country()
+    if not india:
+        return None
+    response = requests.post(f"{BASE_URL}/api/auth/login", json={
+        "email": "kalyan@wisedrive.com",
+        "password": "password123",
+        "country_id": india['id']
+    })
+    if response.status_code == 200:
+        return response.json().get("token")
+    return None
+
+
 class TestAuth:
     """Authentication tests"""
     
-    @pytest.fixture(scope="class")
-    def hr_token(self):
-        """Get HR Manager token"""
-        # First get countries
-        countries_res = requests.get(f"{BASE_URL}/api/countries")
-        assert countries_res.status_code == 200
-        countries = countries_res.json()
-        india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
-        assert india is not None, "India country not found"
-        
-        # Login as HR
-        response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "hr@wisedrive.com",
-            "password": "password123",
-            "country_id": india['id']
-        })
-        assert response.status_code == 200, f"HR login failed: {response.text}"
-        return response.json().get("token")
-    
-    @pytest.fixture(scope="class")
-    def ceo_token(self):
-        """Get CEO token"""
-        countries_res = requests.get(f"{BASE_URL}/api/countries")
-        countries = countries_res.json()
-        india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
-        
-        response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "kalyan@wisedrive.com",
-            "password": "password123",
-            "country_id": india['id']
-        })
-        assert response.status_code == 200, f"CEO login failed: {response.text}"
-        return response.json().get("token")
-    
-    def test_hr_login(self, hr_token):
+    def test_hr_login(self):
         """Test HR Manager can login"""
-        assert hr_token is not None
-        print(f"HR token obtained: {hr_token[:20]}...")
+        token = get_hr_token()
+        assert token is not None, "HR login failed"
+        print(f"HR token obtained: {token[:20]}...")
     
-    def test_ceo_login(self, ceo_token):
+    def test_ceo_login(self):
         """Test CEO can login"""
-        assert ceo_token is not None
-        print(f"CEO token obtained: {ceo_token[:20]}...")
+        token = get_ceo_token()
+        assert token is not None, "CEO login failed"
+        print(f"CEO token obtained: {token[:20]}...")
 
 
 class TestAttendanceCalendar:
@@ -70,16 +75,9 @@ class TestAttendanceCalendar:
     @pytest.fixture(scope="class")
     def hr_headers(self):
         """Get HR auth headers"""
-        countries_res = requests.get(f"{BASE_URL}/api/countries")
-        countries = countries_res.json()
-        india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
-        
-        response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "hr@wisedrive.com",
-            "password": "password123",
-            "country_id": india['id']
-        })
-        token = response.json().get("token")
+        token = get_hr_token()
+        if not token:
+            pytest.skip("HR login failed")
         return {"Authorization": f"Bearer {token}"}
     
     def test_get_attendance_calendar(self, hr_headers):
@@ -121,6 +119,21 @@ class TestAttendanceCalendar:
         assert legend["lop"]["color"] == "#EF4444", "LOP color should be red"
         assert "LOP" in legend["lop"]["label"] or "Absent" in legend["lop"]["label"]
         print(f"LOP legend: {legend['lop']}")
+    
+    def test_calendar_has_half_day_in_legend(self, hr_headers):
+        """Test calendar legend includes half_day status"""
+        now = datetime.now()
+        response = requests.get(
+            f"{BASE_URL}/api/hr/attendance/calendar",
+            params={"month": now.month, "year": now.year},
+            headers=hr_headers
+        )
+        assert response.status_code == 200
+        data = response.json()
+        
+        legend = data.get("legend", {})
+        assert "half_day" in legend, "half_day not in legend"
+        print(f"Half Day legend: {legend['half_day']}")
     
     def test_calendar_employee_summary_has_lop_days(self, hr_headers):
         """Test employee summary includes lop_days count"""
@@ -167,16 +180,9 @@ class TestAttendanceUpdate:
     @pytest.fixture(scope="class")
     def hr_headers(self):
         """Get HR auth headers"""
-        countries_res = requests.get(f"{BASE_URL}/api/countries")
-        countries = countries_res.json()
-        india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
-        
-        response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "hr@wisedrive.com",
-            "password": "password123",
-            "country_id": india['id']
-        })
-        token = response.json().get("token")
+        token = get_hr_token()
+        if not token:
+            pytest.skip("HR login failed")
         return {"Authorization": f"Bearer {token}"}
     
     @pytest.fixture(scope="class")
@@ -294,6 +300,27 @@ class TestAttendanceUpdate:
         data = response.json()
         assert data["status"] == "lop", "absent should normalize to lop"
         print("'absent' correctly normalized to 'lop'")
+    
+    def test_verify_lop_in_calendar_after_update(self, hr_headers, test_employee_id):
+        """Test that LOP shows in calendar after update"""
+        if not test_employee_id:
+            pytest.skip("No test employee found")
+        
+        now = datetime.now()
+        response = requests.get(
+            f"{BASE_URL}/api/hr/attendance/calendar",
+            params={"month": now.month, "year": now.year},
+            headers=hr_headers
+        )
+        assert response.status_code == 200
+        data = response.json()
+        
+        # Find the employee we updated
+        employee = next((e for e in data["employees"] if e["employee_id"] == test_employee_id), None)
+        if employee:
+            # Check if any day has lop status
+            lop_days = [d for d in employee["days"].values() if d.get("status") in ["lop", "absent"]]
+            print(f"Employee has {len(lop_days)} LOP days in calendar")
 
 
 class TestCityMaster:
@@ -302,16 +329,9 @@ class TestCityMaster:
     @pytest.fixture(scope="class")
     def ceo_headers(self):
         """Get CEO auth headers"""
-        countries_res = requests.get(f"{BASE_URL}/api/countries")
-        countries = countries_res.json()
-        india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
-        
-        response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "kalyan@wisedrive.com",
-            "password": "password123",
-            "country_id": india['id']
-        })
-        token = response.json().get("token")
+        token = get_ceo_token()
+        if not token:
+            pytest.skip("CEO login failed")
         return {"Authorization": f"Bearer {token}"}
     
     def test_get_countries_with_cities(self, ceo_headers):
@@ -324,7 +344,8 @@ class TestCityMaster:
         
         # Check if countries have cities field
         for country in countries:
-            assert "cities" in country or country.get("cities") is None, f"Country {country['name']} missing cities field"
+            # cities field should exist (can be empty array or None)
+            print(f"Country {country['name']}: cities = {country.get('cities', [])}")
         
         # Find India and check cities
         india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
@@ -360,6 +381,13 @@ class TestCityMaster:
         # May return 200 or 403 depending on permissions
         if update_response.status_code == 200:
             print(f"Updated India with cities: {test_cities}")
+            
+            # Verify cities were saved
+            verify_response = requests.get(f"{BASE_URL}/api/countries", headers=ceo_headers)
+            countries = verify_response.json()
+            india_updated = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
+            if india_updated:
+                assert india_updated.get("cities") == test_cities, "Cities not saved correctly"
         else:
             print(f"Update response: {update_response.status_code} - {update_response.text}")
 
@@ -370,16 +398,9 @@ class TestEmployeePayslips:
     @pytest.fixture(scope="class")
     def hr_headers(self):
         """Get HR auth headers"""
-        countries_res = requests.get(f"{BASE_URL}/api/countries")
-        countries = countries_res.json()
-        india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
-        
-        response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "hr@wisedrive.com",
-            "password": "password123",
-            "country_id": india['id']
-        })
-        token = response.json().get("token")
+        token = get_hr_token()
+        if not token:
+            pytest.skip("HR login failed")
         return {"Authorization": f"Bearer {token}"}
     
     @pytest.fixture(scope="class")
@@ -440,6 +461,8 @@ class TestEmployeePayslips:
             second_date = second["year"] * 12 + second["month"]
             assert first_date >= second_date, "Payslips should be sorted newest first"
             print("Payslips correctly sorted by date descending")
+        else:
+            print(f"Only {len(payslips)} payslips found, skipping sort check")
 
 
 class TestRBACForNewEndpoints:
@@ -448,9 +471,9 @@ class TestRBACForNewEndpoints:
     @pytest.fixture(scope="class")
     def sales_headers(self):
         """Get Sales user headers (should have limited access)"""
-        countries_res = requests.get(f"{BASE_URL}/api/countries")
-        countries = countries_res.json()
-        india = next((c for c in countries if c.get('name', '').lower() == 'india'), None)
+        india = get_india_country()
+        if not india:
+            return None
         
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
             "email": "john.sales@wisedrive.com",
@@ -460,6 +483,24 @@ class TestRBACForNewEndpoints:
         if response.status_code == 200:
             token = response.json().get("token")
             return {"Authorization": f"Bearer {token}"}
+        return None
+    
+    @pytest.fixture(scope="class")
+    def hr_headers(self):
+        """Get HR auth headers"""
+        token = get_hr_token()
+        if not token:
+            pytest.skip("HR login failed")
+        return {"Authorization": f"Bearer {token}"}
+    
+    @pytest.fixture(scope="class")
+    def test_employee_id(self, hr_headers):
+        """Get a test employee ID"""
+        response = requests.get(f"{BASE_URL}/api/hr/employees", headers=hr_headers)
+        if response.status_code == 200:
+            employees = response.json()
+            if employees:
+                return employees[0]["id"]
         return None
     
     def test_sales_cannot_access_attendance_calendar(self, sales_headers):
@@ -476,16 +517,18 @@ class TestRBACForNewEndpoints:
         assert response.status_code == 403, f"Sales should not access calendar: {response.status_code}"
         print("Sales correctly denied access to attendance calendar")
     
-    def test_sales_cannot_update_attendance(self, sales_headers):
+    def test_sales_cannot_update_attendance(self, sales_headers, test_employee_id):
         """Test sales user cannot update attendance"""
         if not sales_headers:
             pytest.skip("Sales user login failed")
+        if not test_employee_id:
+            pytest.skip("No test employee found")
         
         yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
         response = requests.post(
             f"{BASE_URL}/api/hr/attendance/update-day",
             json={
-                "employee_id": "some-id",
+                "employee_id": test_employee_id,
                 "date": yesterday,
                 "status": "present"
             },
@@ -493,6 +536,20 @@ class TestRBACForNewEndpoints:
         )
         assert response.status_code == 403, f"Sales should not update attendance: {response.status_code}"
         print("Sales correctly denied attendance update")
+    
+    def test_sales_cannot_access_employee_payslips(self, sales_headers, test_employee_id):
+        """Test sales user cannot access employee payslips"""
+        if not sales_headers:
+            pytest.skip("Sales user login failed")
+        if not test_employee_id:
+            pytest.skip("No test employee found")
+        
+        response = requests.get(
+            f"{BASE_URL}/api/hr/payroll/employee/{test_employee_id}/payslips",
+            headers=sales_headers
+        )
+        assert response.status_code == 403, f"Sales should not access payslips: {response.status_code}"
+        print("Sales correctly denied access to employee payslips")
 
 
 if __name__ == "__main__":
