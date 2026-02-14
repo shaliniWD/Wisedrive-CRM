@@ -1268,17 +1268,33 @@ async def get_hr_employees(
     
     # Enrich with role, country, department info
     for emp in employees:
+        # Support multiple roles
+        emp["roles"] = []
+        role_ids = emp.get("role_ids", [])
+        if not role_ids and emp.get("role_id"):
+            role_ids = [emp["role_id"]]
+        
+        for rid in role_ids:
+            role = await db.roles.find_one({"id": rid}, {"_id": 0, "id": 1, "name": 1, "code": 1})
+            if role:
+                emp["roles"].append(role)
+        
+        # Set primary role info (backward compatibility)
         if emp.get("role_id"):
             role = await db.roles.find_one({"id": emp["role_id"]}, {"_id": 0, "name": 1, "code": 1})
             if role:
                 emp["role_name"] = role.get("name")
                 emp["role_code"] = role.get("code")
+        elif emp["roles"]:
+            emp["role_name"] = emp["roles"][0].get("name")
+            emp["role_code"] = emp["roles"][0].get("code")
         
         if emp.get("country_id"):
-            country = await db.countries.find_one({"id": emp["country_id"]}, {"_id": 0, "name": 1, "currency": 1})
+            country = await db.countries.find_one({"id": emp["country_id"]}, {"_id": 0, "name": 1, "currency": 1, "currency_symbol": 1})
             if country:
                 emp["country_name"] = country.get("name")
                 emp["currency"] = country.get("currency")
+                emp["currency_symbol"] = country.get("currency_symbol", "₹")
         
         if emp.get("department_id"):
             dept = await db.departments.find_one({"id": emp["department_id"]}, {"_id": 0, "name": 1})
