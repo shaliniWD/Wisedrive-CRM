@@ -8,7 +8,40 @@ Recreate WiseDrive CRM (https://crm.wisedrive.com) design with a modern UI. Crea
 
 ## What's Been Implemented
 
-### Full UI/UX Redesign (Feb 14, 2026) ✅ LATEST
+### CRM V4 Features (Feb 14, 2026) ✅ LATEST
+- [x] **Multi-Role Support for Employees**:
+  - Employees can be assigned multiple roles via checkbox selection
+  - Backend stores `role_ids` array in addition to primary `role_id`
+  - `/api/auth/me` returns `roles` array with all assigned roles
+  - RBAC service aggregates permissions from all assigned roles
+  - Frontend: RoleBadges component shows multiple role badges
+  - Frontend: Add Employee modal with multi-role checkbox selection
+
+- [x] **Inline Lead Status Update**:
+  - StatusDropdown component in LeadsPage.jsx
+  - Click on status badge → dropdown with all status options
+  - `PATCH /api/leads/{lead_id}/status` endpoint for quick updates
+  - Valid statuses: NEW, HOT, CONTACTED, INTERESTED, NOT_INTERESTED, CONVERTED, RNR, RCB_WHATSAPP, FOLLOWUP, OUT_OF_SERVICE_AREA, LOST
+
+- [x] **Admin Page RBAC Configuration UI**:
+  - New "Roles & Access" tab showing all roles with permissions
+  - Displays page access permissions (View/Edit) for each role
+  - Edit button for each role to modify permissions
+
+- [x] **Employee Exit/Rejoin Flow**:
+  - Exit modal with Exit Date, Exit Reason dropdown, Notes
+  - `employment_status` field: 'active' or 'exited'
+  - Exited employees preserved for audit purposes
+  - Rejoin functionality to reactivate employees
+  - Status badges: Active (green), Exited (red)
+
+- [x] **Leads Page Enhancements**:
+  - Hot Leads summary card (shows count of HOT status leads)
+  - Clickable status badges with dropdown for inline editing
+  - Discount & Inspection Schedule fields in payment modal
+  - Summary cards: New Leads (Today), Hot Leads, RCB WhatsApp, Follow Up, Payment Link Sent
+
+### Full UI/UX Redesign (Feb 14, 2026) ✅
 - [x] **Login Page**: Split-screen design with gradient left panel (blue-900 to blue-700), white form card on right, demo credentials section, feature pills
   - Added Country selection dropdown at top of form (Feb 14, 2026)
   - Public /api/auth/countries endpoint for dropdown (India, Malaysia, Thailand, Philippines)
