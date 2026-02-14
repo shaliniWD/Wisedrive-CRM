@@ -15,11 +15,28 @@ PAYMENT_STATUS_PAID = "paid"            # Payment completed
 # Payment modes
 PAYMENT_MODES = ["bank_transfer", "cash", "cheque", "upi", "neft", "rtgs", "imps", "other"]
 
+# Payment types
+PAYMENT_TYPES = [
+    "salary",           # Salary Payout
+    "mechanic_payout",  # Mechanic Payment
+    "incentive",        # Incentive Payment
+    "vendor",           # Vendor Payment (B2B)
+    "admin_expense",    # Admin Expenses
+    "operational",      # Operational Expenses
+    "statutory",        # Statutory Payments (B2B)
+    "legal",            # Legal Payments (B2B)
+    "other",            # Other Payments
+]
+
+# B2B payment types (need GST/TDS)
+B2B_PAYMENT_TYPES = ["vendor", "statutory", "legal"]
+
 
 class PaymentBase(BaseModel):
-    """Base payment model for both salary and mechanic payouts"""
-    employee_id: str
-    payment_type: str = "salary"  # salary, mechanic_payout
+    """Base payment model for all payment types"""
+    employee_id: Optional[str] = None  # For employee payments
+    vendor_name: Optional[str] = None  # For B2B/vendor payments
+    payment_type: str = "salary"  # salary, mechanic_payout, vendor, admin_expense, etc.
     month: int  # 1-12
     year: int
     
@@ -32,6 +49,17 @@ class PaymentBase(BaseModel):
     inspections_count: int = 0
     rate_per_inspection: float = 0
     bonus_amount: float = 0
+    
+    # For B2B payments (GST/TDS)
+    actual_amount: float = 0
+    gst_percentage: float = 18
+    gst_amount: float = 0
+    tds_percentage: float = 10
+    tds_amount: float = 0
+    invoice_number: Optional[str] = None
+    invoice_date: Optional[str] = None
+    due_date: Optional[str] = None
+    gstin: Optional[str] = None
     
     # Payment info
     payment_mode: Optional[str] = None  # bank_transfer, cash, cheque, upi, etc.
@@ -51,6 +79,7 @@ class PaymentBase(BaseModel):
     rejection_reason: Optional[str] = None
     
     # Additional details
+    description: Optional[str] = None
     notes: Optional[str] = None
     country_id: Optional[str] = None
     currency: str = "INR"
