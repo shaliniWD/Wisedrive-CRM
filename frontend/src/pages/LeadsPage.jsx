@@ -13,7 +13,8 @@ import {
 import { toast } from 'sonner';
 import { 
   Search, Plus, Pencil, Loader2, X, Users, TrendingUp, Calendar, 
-  Phone, MapPin, Bell, Clock, CreditCard, Copy, ChevronLeft, ChevronRight, Filter
+  Phone, MapPin, Bell, Clock, CreditCard, Copy, ChevronLeft, ChevronRight, Filter,
+  MessageCircle, Link2, ExternalLink, Eye
 } from 'lucide-react';
 
 // Status Badge Component matching FinancePage style
@@ -25,6 +26,8 @@ const StatusBadge = ({ status }) => {
     NOT_INTERESTED: { color: 'bg-gray-100 text-gray-800 border-gray-200', label: 'Not Interested' },
     CONVERTED: { color: 'bg-emerald-100 text-emerald-800 border-emerald-200', label: 'Converted' },
     RNR: { color: 'bg-red-100 text-red-800 border-red-200', label: 'RNR' },
+    RCB_WHATSAPP: { color: 'bg-green-100 text-green-800 border-green-200', label: 'RCB WhatsApp' },
+    FOLLOWUP: { color: 'bg-orange-100 text-orange-800 border-orange-200', label: 'Follow Up' },
     OUT_OF_SERVICE_AREA: { color: 'bg-slate-100 text-slate-800 border-slate-200', label: 'Out of Area' },
   };
   const cfg = config[status] || config.NEW;
@@ -36,25 +39,28 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-// Summary Card Component
-const SummaryCard = ({ title, value, icon: Icon, color, subtitle }) => (
-  <div className="rounded-xl border bg-white p-5 hover:shadow-lg transition-all duration-300">
-    <div className="flex items-start justify-between">
-      <div className="space-y-1">
-        <p className="text-sm font-medium text-gray-500">{title}</p>
-        <p className={`text-2xl font-bold ${color || 'text-gray-900'}`}>
-          {typeof value === 'number' ? value.toLocaleString() : value}
-        </p>
-        {subtitle && <p className="text-xs text-gray-400">{subtitle}</p>}
-      </div>
-      <div className={`p-3 rounded-xl bg-gradient-to-r ${
+// Summary Card Component - Compact version for sales dashboard
+const SummaryCard = ({ title, value, icon: Icon, color, onClick, active }) => (
+  <div 
+    className={`rounded-xl border bg-white p-4 hover:shadow-lg transition-all duration-300 cursor-pointer ${active ? 'ring-2 ring-blue-500 border-blue-500' : ''}`}
+    onClick={onClick}
+  >
+    <div className="flex items-center gap-3">
+      <div className={`p-2.5 rounded-xl bg-gradient-to-r ${
         color?.includes('blue') ? 'from-blue-500 to-blue-600' : 
         color?.includes('emerald') ? 'from-emerald-500 to-emerald-600' : 
         color?.includes('amber') ? 'from-amber-500 to-amber-600' :
-        color?.includes('purple') ? 'from-purple-500 to-purple-600' :
+        color?.includes('green') ? 'from-green-500 to-green-600' :
+        color?.includes('orange') ? 'from-orange-500 to-orange-600' :
         'from-gray-500 to-gray-600'
       }`}>
-        <Icon className="h-5 w-5 text-white" />
+        <Icon className="h-4 w-4 text-white" />
+      </div>
+      <div>
+        <p className={`text-2xl font-bold ${color || 'text-gray-900'}`}>
+          {typeof value === 'number' ? value.toLocaleString() : value}
+        </p>
+        <p className="text-xs font-medium text-gray-500">{title}</p>
       </div>
     </div>
   </div>
@@ -78,6 +84,7 @@ export default function LeadsPage() {
   const [selectedEmployee, setSelectedEmployee] = useState('');
   const [saving, setSaving] = useState(false);
   const [modalStep, setModalStep] = useState(1);
+  const [activeFilter, setActiveFilter] = useState('all');
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -92,7 +99,7 @@ export default function LeadsPage() {
   const [formData, setFormData] = useState({
     name: '', mobile: '', city: '', source: 'WEBSITE', status: 'NEW',
     assigned_to: '', reminder_date: '', reminder_time: '', notes: '',
-    service_type: '',
+    service_type: '', ad_id: '',
   });
 
   const [reminderFormData, setReminderFormData] = useState({
@@ -110,6 +117,9 @@ export default function LeadsPage() {
   const [carLoading, setCarLoading] = useState(false);
   const [carError, setCarError] = useState('');
   const [reassignReason, setReassignReason] = useState('');
+
+  // Get today's date for filtering
+  const today = new Date().toISOString().split('T')[0];
 
   // Mock Vaahan API call
   const fetchCarDetails = async (carNumber) => {
@@ -186,7 +196,7 @@ export default function LeadsPage() {
 
   const resetForm = () => {
     setFormData({ name: '', mobile: '', city: '', source: 'WEBSITE', status: 'NEW',
-      assigned_to: '', reminder_date: '', reminder_time: '', notes: '', service_type: '' });
+      assigned_to: '', reminder_date: '', reminder_time: '', notes: '', service_type: '', ad_id: '' });
     setEditingLead(null);
   };
 
@@ -194,7 +204,8 @@ export default function LeadsPage() {
     setEditingLead(lead);
     setFormData({ name: lead.name, mobile: lead.mobile, city: lead.city, source: lead.source,
       status: lead.status, assigned_to: lead.assigned_to || '', reminder_date: lead.reminder_date || '',
-      reminder_time: lead.reminder_time || '', notes: lead.notes || '', service_type: lead.service_type || '' });
+      reminder_time: lead.reminder_time || '', notes: lead.notes || '', service_type: lead.service_type || '',
+      ad_id: lead.ad_id || '' });
     setIsModalOpen(true);
   };
 
@@ -268,21 +279,39 @@ export default function LeadsPage() {
     }
   };
 
+  // Calculate stats for sales agent dashboard
+  const todayNewLeads = leads.filter(l => l.status === 'NEW' && l.created_at?.startsWith(today)).length;
+  const rcbWhatsappLeads = leads.filter(l => l.status === 'RCB_WHATSAPP' || l.reminder_reason === 'RCB_WHATSAPP').length;
+  const followupLeads = leads.filter(l => l.status === 'FOLLOWUP' || l.reminder_date).length;
+  const paymentLinkSentLeads = leads.filter(l => l.payment_link).length;
+
+  // Filter leads based on active filter card
+  const getFilteredLeads = () => {
+    let filtered = leads;
+    if (activeFilter === 'new_today') {
+      filtered = leads.filter(l => l.status === 'NEW' && l.created_at?.startsWith(today));
+    } else if (activeFilter === 'rcb_whatsapp') {
+      filtered = leads.filter(l => l.status === 'RCB_WHATSAPP' || l.reminder_reason === 'RCB_WHATSAPP');
+    } else if (activeFilter === 'followup') {
+      filtered = leads.filter(l => l.status === 'FOLLOWUP' || l.reminder_date);
+    } else if (activeFilter === 'payment_sent') {
+      filtered = leads.filter(l => l.payment_link);
+    }
+    return filtered;
+  };
+
+  const filteredLeads = getFilteredLeads();
+
   // Pagination calculations
-  const totalPages = Math.ceil(leads.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredLeads.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedLeads = leads.slice(startIndex, endIndex);
-
-  // Stats
-  const newLeads = leads.filter(l => l.status === 'NEW').length;
-  const convertedLeads = leads.filter(l => l.status === 'CONVERTED').length;
-  const interestedLeads = leads.filter(l => l.status === 'INTERESTED').length;
+  const paginatedLeads = filteredLeads.slice(startIndex, endIndex);
 
   return (
-    <div className="p-6 max-w-7xl mx-auto" data-testid="leads-page">
+    <div className="p-4 max-w-full" data-testid="leads-page">
       {/* Page Header */}
-      <div className="flex justify-between items-start mb-8">
+      <div className="flex justify-between items-start mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Leads</h1>
           <p className="text-gray-500 mt-1">Manage and track all your sales leads</p>
@@ -296,32 +325,60 @@ export default function LeadsPage() {
         </button>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-6">
-        <SummaryCard title="Total Leads" value={leads.length} icon={Users} color="text-blue-700" subtitle="All time" />
-        <SummaryCard title="New Leads" value={newLeads} icon={TrendingUp} color="text-purple-600" subtitle="Pending contact" />
-        <SummaryCard title="Interested" value={interestedLeads} icon={Calendar} color="text-amber-600" subtitle="In pipeline" />
-        <SummaryCard title="Converted" value={convertedLeads} icon={Users} color="text-emerald-600" subtitle="This month" />
+      {/* Sales Agent Dashboard - Action-oriented Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-5">
+        <SummaryCard 
+          title="New Leads (Today)" 
+          value={todayNewLeads} 
+          icon={TrendingUp} 
+          color="text-blue-700" 
+          onClick={() => { setActiveFilter(activeFilter === 'new_today' ? 'all' : 'new_today'); setCurrentPage(1); }}
+          active={activeFilter === 'new_today'}
+        />
+        <SummaryCard 
+          title="RCB WhatsApp" 
+          value={rcbWhatsappLeads} 
+          icon={MessageCircle} 
+          color="text-green-600" 
+          onClick={() => { setActiveFilter(activeFilter === 'rcb_whatsapp' ? 'all' : 'rcb_whatsapp'); setCurrentPage(1); }}
+          active={activeFilter === 'rcb_whatsapp'}
+        />
+        <SummaryCard 
+          title="Follow Up" 
+          value={followupLeads} 
+          icon={Bell} 
+          color="text-orange-600" 
+          onClick={() => { setActiveFilter(activeFilter === 'followup' ? 'all' : 'followup'); setCurrentPage(1); }}
+          active={activeFilter === 'followup'}
+        />
+        <SummaryCard 
+          title="Payment Link Sent" 
+          value={paymentLinkSentLeads} 
+          icon={Link2} 
+          color="text-emerald-600" 
+          onClick={() => { setActiveFilter(activeFilter === 'payment_sent' ? 'all' : 'payment_sent'); setCurrentPage(1); }}
+          active={activeFilter === 'payment_sent'}
+        />
       </div>
 
       {/* Filters Section */}
-      <div className="bg-white rounded-xl border p-4 mb-6">
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex-1 min-w-[300px] relative">
+      <div className="bg-white rounded-xl border p-3 mb-5">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex-1 min-w-[250px] relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search by name or mobile number..."
+              placeholder="Search by name or mobile..."
               value={search}
               onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
-              className="w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+              className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
               data-testid="search-input"
             />
           </div>
 
           <Select value={filterEmployee || 'all'} onValueChange={(v) => { setFilterEmployee(v === 'all' ? '' : v); setCurrentPage(1); }}>
-            <SelectTrigger className="w-[160px] h-10 bg-white" data-testid="filter-employee">
-              <SelectValue placeholder="All Employees" />
+            <SelectTrigger className="w-[140px] h-9 bg-white text-sm" data-testid="filter-employee">
+              <SelectValue placeholder="Employee" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Employees</SelectItem>
@@ -330,8 +387,8 @@ export default function LeadsPage() {
           </Select>
 
           <Select value={filterStatus || 'all'} onValueChange={(v) => { setFilterStatus(v === 'all' ? '' : v); setCurrentPage(1); }}>
-            <SelectTrigger className="w-[140px] h-10 bg-white" data-testid="filter-status">
-              <SelectValue placeholder="All Status" />
+            <SelectTrigger className="w-[130px] h-9 bg-white text-sm" data-testid="filter-status">
+              <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
@@ -340,9 +397,8 @@ export default function LeadsPage() {
           </Select>
 
           <Select value={filterCity || 'all'} onValueChange={(v) => { setFilterCity(v === 'all' ? '' : v); setCurrentPage(1); }}>
-            <SelectTrigger className="w-[140px] h-10 bg-white" data-testid="filter-city">
-              <MapPin className="h-4 w-4 text-gray-400 mr-2" />
-              <SelectValue placeholder="All Cities" />
+            <SelectTrigger className="w-[120px] h-9 bg-white text-sm" data-testid="filter-city">
+              <SelectValue placeholder="City" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Cities</SelectItem>
@@ -351,8 +407,8 @@ export default function LeadsPage() {
           </Select>
 
           <Select value={filterSource || 'all'} onValueChange={(v) => { setFilterSource(v === 'all' ? '' : v); setCurrentPage(1); }}>
-            <SelectTrigger className="w-[140px] h-10 bg-white" data-testid="filter-source">
-              <SelectValue placeholder="All Sources" />
+            <SelectTrigger className="w-[120px] h-9 bg-white text-sm" data-testid="filter-source">
+              <SelectValue placeholder="Source" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Sources</SelectItem>
@@ -361,21 +417,26 @@ export default function LeadsPage() {
           </Select>
 
           <button 
-            onClick={fetchData}
-            className="px-4 py-2.5 border rounded-lg hover:bg-gray-50 font-medium text-sm flex items-center gap-2"
+            onClick={() => { setActiveFilter('all'); fetchData(); }}
+            className="px-3 py-2 border rounded-lg hover:bg-gray-50 font-medium text-sm flex items-center gap-1"
           >
-            <Filter className="h-4 w-4" /> Apply
+            <Filter className="h-4 w-4" /> Reset
           </button>
         </div>
 
         {/* Quick Filters */}
-        <div className="flex items-center gap-3 mt-4 pt-4 border-t">
-          <span className="text-sm text-gray-500">Quick filters:</span>
-          {['Today', 'This Week', 'This Month', 'This Quarter', 'This Year'].map((period) => (
-            <button key={period} className="text-sm text-blue-600 hover:text-blue-700 hover:underline">
+        <div className="flex items-center gap-3 mt-3 pt-3 border-t">
+          <span className="text-xs text-gray-500">Quick:</span>
+          {['Today', 'This Week', 'This Month'].map((period) => (
+            <button key={period} className="text-xs text-blue-600 hover:text-blue-700 hover:underline">
               {period}
             </button>
           ))}
+          {activeFilter !== 'all' && (
+            <span className="ml-auto text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+              Filtered: {activeFilter.replace(/_/g, ' ')}
+            </span>
+          )}
         </div>
       </div>
 
@@ -384,14 +445,14 @@ export default function LeadsPage() {
         <table className="w-full">
           <thead>
             <tr className="bg-slate-50 border-b">
-              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Date</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Lead Details</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">City</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Assigned To</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Reminder</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Source</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Payment Link</th>
+              <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Date</th>
+              <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Lead Details</th>
+              <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">City</th>
+              <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Assigned</th>
+              <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Reminder</th>
+              <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
+              <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Source</th>
+              <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Payment Link</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -414,54 +475,54 @@ export default function LeadsPage() {
             ) : (
               paginatedLeads.map((lead) => (
                 <tr key={lead.id} className="hover:bg-slate-50 transition-colors" data-testid={`lead-row-${lead.id}`}>
-                  <td className="px-4 py-4">
+                  <td className="px-3 py-3">
                     <div className="text-sm font-medium text-gray-900">{formatDate(lead.created_at)}</div>
                     <div className="text-xs text-gray-400">{formatTime(lead.created_at)}</div>
                   </td>
-                  <td className="px-4 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="h-9 w-9 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white font-medium text-sm">
+                  <td className="px-3 py-3">
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 w-8 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white font-medium text-xs">
                         {lead.name?.charAt(0)?.toUpperCase()}
                       </div>
                       <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-gray-900">{lead.name}</span>
+                        <div className="flex items-center gap-1">
+                          <span className="font-medium text-gray-900 text-sm">{lead.name}</span>
                           <button 
                             onClick={() => openEditModal(lead)} 
-                            className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                            className="p-0.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
                             data-testid={`edit-lead-${lead.id}`}
                           >
                             <Pencil className="h-3 w-3" />
                           </button>
                         </div>
-                        <div className="text-sm text-gray-500 font-mono flex items-center gap-1">
+                        <div className="text-xs text-gray-500 font-mono flex items-center gap-1">
                           <Phone className="h-3 w-3" /> {lead.mobile}
                         </div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-4">
-                    <span className="inline-flex items-center gap-1.5 text-sm text-gray-700">
-                      <MapPin className="h-3.5 w-3.5 text-gray-400" />
+                  <td className="px-3 py-3">
+                    <span className="inline-flex items-center gap-1 text-sm text-gray-700">
+                      <MapPin className="h-3 w-3 text-gray-400" />
                       {lead.city}
                     </span>
                   </td>
-                  <td className="px-4 py-4">
-                    <div className="flex items-center gap-2">
+                  <td className="px-3 py-3">
+                    <div className="flex items-center gap-1">
                       <span className="text-sm text-gray-700">{lead.assigned_to_name || lead.assigned_to || '-'}</span>
                       <button 
                         onClick={() => openAssignModal(lead)}
-                        className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                        className="p-0.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
                         data-testid={`assign-employee-${lead.id}`}
                       >
                         <Pencil className="h-3 w-3" />
                       </button>
                     </div>
                   </td>
-                  <td className="px-4 py-4">
-                    <div className="space-y-2">
+                  <td className="px-3 py-3">
+                    <div className="space-y-1">
                       <button 
-                        className="px-3 py-1.5 text-xs bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg hover:from-purple-600 hover:to-purple-700 font-medium flex items-center gap-1.5 shadow-sm"
+                        className="px-2 py-1 text-xs bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg hover:from-purple-600 hover:to-purple-700 font-medium flex items-center gap-1 shadow-sm"
                         onClick={() => openReminderModal(lead)}
                         data-testid={`add-reminder-${lead.id}`}
                       >
@@ -469,45 +530,57 @@ export default function LeadsPage() {
                         {lead.reminder_date ? 'Edit' : 'Add'}
                       </button>
                       {lead.reminder_date && (
-                        <div className="text-xs space-y-0.5 bg-slate-50 p-2 rounded-lg border">
+                        <div className="text-xs bg-slate-50 p-1.5 rounded border">
                           <div className="flex items-center gap-1 text-gray-600 font-medium">
                             <Clock className="h-3 w-3" />
-                            {formatDate(lead.reminder_date)} at {formatTime(lead.reminder_time)}
+                            {formatDate(lead.reminder_date)}
                           </div>
-                          <div className="text-gray-500">{lead.reminder_reason || 'Follow Up'}</div>
                         </div>
                       )}
                     </div>
                   </td>
-                  <td className="px-4 py-4">
+                  <td className="px-3 py-3">
                     <StatusBadge status={lead.status} />
-                    <div className="text-xs text-gray-400 mt-1">{formatDate(lead.created_at)}</div>
                   </td>
-                  <td className="px-4 py-4">
+                  <td className="px-3 py-3">
                     <div className="text-sm font-medium text-gray-700">{lead.source}</div>
-                    {lead.ad_id && <div className="font-mono text-xs text-gray-400 mt-0.5">Ad: {lead.ad_id}</div>}
+                    {lead.ad_id && (
+                      <div className="font-mono text-xs text-blue-600 mt-0.5 bg-blue-50 px-1.5 py-0.5 rounded inline-block">
+                        Ad: {lead.ad_id}
+                      </div>
+                    )}
                   </td>
-                  <td className="px-4 py-4">
-                    <div className="space-y-2">
+                  <td className="px-3 py-3">
+                    <div className="space-y-1">
                       <button 
-                        className="px-3 py-1.5 text-xs bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg hover:from-amber-600 hover:to-amber-700 font-medium flex items-center gap-1.5 shadow-sm"
+                        className="px-2 py-1 text-xs bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg hover:from-amber-600 hover:to-amber-700 font-medium flex items-center gap-1 shadow-sm"
                         onClick={() => openPaymentModal(lead)}
                         data-testid={`send-pay-link-${lead.id}`}
                       >
                         <CreditCard className="h-3 w-3" />
-                        {lead.payment_link ? 'Resend' : 'Send Pay Link'}
+                        {lead.payment_link ? 'Resend' : 'Send'}
                       </button>
                       {lead.payment_link && (
-                        <button
-                          onClick={async () => {
-                            try { await navigator.clipboard.writeText(lead.payment_link); toast.success('Link copied!'); }
-                            catch (err) { toast.success('Link copied!'); }
-                          }}
-                          className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
-                          data-testid={`copy-link-${lead.id}`}
-                        >
-                          <Copy className="h-3 w-3" /> Copy Link
-                        </button>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => window.open(lead.payment_link, '_blank')}
+                            className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-0.5"
+                            data-testid={`view-link-${lead.id}`}
+                          >
+                            <Eye className="h-3 w-3" /> View
+                          </button>
+                          <span className="text-gray-300">|</span>
+                          <button
+                            onClick={async () => {
+                              try { await navigator.clipboard.writeText(lead.payment_link); toast.success('Link copied!'); }
+                              catch (err) { toast.success('Link copied!'); }
+                            }}
+                            className="text-xs text-gray-500 hover:text-gray-700 font-medium flex items-center gap-0.5"
+                            data-testid={`copy-link-${lead.id}`}
+                          >
+                            <Copy className="h-3 w-3" /> Copy
+                          </button>
+                        </div>
                       )}
                     </div>
                   </td>
@@ -518,16 +591,16 @@ export default function LeadsPage() {
         </table>
         
         {/* Pagination */}
-        {!loading && leads.length > 0 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t bg-slate-50">
+        {!loading && filteredLeads.length > 0 && (
+          <div className="flex items-center justify-between px-3 py-2 border-t bg-slate-50">
             <div className="text-sm text-gray-600">
-              Showing <span className="font-medium">{startIndex + 1}</span> to <span className="font-medium">{Math.min(endIndex, leads.length)}</span> of <span className="font-medium">{leads.length}</span> leads
+              Showing <span className="font-medium">{startIndex + 1}</span> to <span className="font-medium">{Math.min(endIndex, filteredLeads.length)}</span> of <span className="font-medium">{filteredLeads.length}</span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <button
                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
-                className="p-2 border rounded-lg hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="p-1.5 border rounded-lg hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
@@ -538,7 +611,7 @@ export default function LeadsPage() {
                     <button
                       key={pageNum}
                       onClick={() => setCurrentPage(pageNum)}
-                      className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-colors ${
+                      className={`px-2.5 py-1 text-sm rounded-lg font-medium transition-colors ${
                         currentPage === pageNum ? 'bg-blue-600 text-white' : 'hover:bg-white border'
                       }`}
                     >
@@ -550,7 +623,7 @@ export default function LeadsPage() {
               <button
                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                 disabled={currentPage === totalPages}
-                className="p-2 border rounded-lg hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="p-1.5 border rounded-lg hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
@@ -568,7 +641,7 @@ export default function LeadsPage() {
               {editingLead ? 'Edit Lead' : 'Add New Lead'}
             </DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-5 pt-4">
+          <form onSubmit={handleSubmit} className="space-y-4 pt-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Lead Name *</Label>
@@ -588,15 +661,8 @@ export default function LeadsPage() {
                 <Input value={formData.mobile} onChange={(e) => setFormData({ ...formData, mobile: e.target.value })} className="h-10 font-mono" data-testid="lead-mobile-input" />
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Service Type</Label>
-                <Select value={formData.service_type} onValueChange={(v) => setFormData({ ...formData, service_type: v })}>
-                  <SelectTrigger className="h-10" data-testid="lead-service-select"><SelectValue placeholder="Select" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="INSPECTION">Inspection</SelectItem>
-                    <SelectItem value="WARRANTY">Warranty</SelectItem>
-                    <SelectItem value="SERVICE">Service</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label className="text-sm font-medium">Ad ID (from Settings)</Label>
+                <Input value={formData.ad_id} onChange={(e) => setFormData({ ...formData, ad_id: e.target.value })} className="h-10 font-mono" placeholder="Optional" data-testid="lead-ad-id-input" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -620,7 +686,7 @@ export default function LeadsPage() {
               <textarea 
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                className="w-full min-h-[100px] px-3 py-2 border rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full min-h-[80px] px-3 py-2 border rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Enter notes..."
                 data-testid="lead-notes-input"
               />
@@ -636,7 +702,7 @@ export default function LeadsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Payment Modal - Simplified for brevity */}
+      {/* Payment Modal */}
       <Dialog open={isPaymentModalOpen} onOpenChange={setIsPaymentModalOpen}>
         <DialogContent className="sm:max-w-[700px] p-0 overflow-hidden max-h-[90vh] overflow-y-auto" data-testid="payment-modal">
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4">
@@ -646,7 +712,6 @@ export default function LeadsPage() {
             </div>
           </div>
           <div className="p-6">
-            {/* Step content here - keeping modal functional but simpler display */}
             <div className="space-y-6">
               {modalStep === 1 && (
                 <>
@@ -823,6 +888,7 @@ export default function LeadsPage() {
                 <SelectContent>
                   <SelectItem value="select">-- Select --</SelectItem>
                   <SelectItem value="RNR">RNR</SelectItem>
+                  <SelectItem value="RCB_WHATSAPP">RCB WhatsApp</SelectItem>
                   <SelectItem value="CALL_BACK">Call Back</SelectItem>
                   <SelectItem value="FOLLOW_UP">Follow Up</SelectItem>
                 </SelectContent>
