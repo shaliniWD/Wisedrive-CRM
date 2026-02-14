@@ -314,7 +314,7 @@ async def seed_v2_data(db: AsyncIOMotorDatabase):
             "email": u["email"],
             "name": u["name"],
             "phone": f"+91{random.randint(9000000000, 9999999999)}",
-            "hashed_password": pwd_context.hash("password123"),
+            "hashed_password": hash_password("password123"),
             "country_id": countries.get(u["country_code"]),
             "department_id": departments.get(
                 "EXEC" if u["role_code"] in ["CEO", "COUNTRY_HEAD"] else 
