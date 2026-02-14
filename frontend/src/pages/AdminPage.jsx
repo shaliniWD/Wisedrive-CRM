@@ -102,6 +102,7 @@ const RoleBadges = ({ roles }) => {
     SALES_HEAD: 'bg-cyan-100 text-cyan-800 border-cyan-200',
     SALES_EXECUTIVE: 'bg-sky-100 text-sky-800 border-sky-200',
     INSPECTION_HEAD: 'bg-amber-100 text-amber-800 border-amber-200',
+    FREELANCER: 'bg-pink-100 text-pink-800 border-pink-200',
   };
   
   return (
