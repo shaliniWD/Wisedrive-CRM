@@ -913,14 +913,22 @@ export function PayrollDashboard({ isHR, isFinance }) {
         <>
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
-              <Button variant="outline" onClick={() => { setView('batches'); setPreviewData(null); }}>
+              <Button variant="outline" onClick={() => { setView('batches'); setPreviewData(null); setPreviewEdits({}); setPreviewErrors({}); }}>
                 ← Back to Batches
               </Button>
               <div>
                 <h2 className="text-lg font-semibold text-gray-900">
                   Payroll Preview - {new Date(2000, previewData.month - 1).toLocaleString('default', { month: 'long' })} {previewData.year}
                 </h2>
-                <p className="text-sm text-gray-500">{previewData.country_name} • {previewData.employee_count} employees • {previewData.working_days} working days</p>
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500">
+                  <span>{previewData.country_name}</span>
+                  <span>•</span>
+                  <span>{previewData.employee_count} employees</span>
+                  <span>•</span>
+                  <span className="font-medium text-slate-700">Pay Period: {previewData.pay_period_start} to {previewData.pay_period_end}</span>
+                  <span>•</span>
+                  <span className="font-medium text-indigo-600">{previewData.working_days} working days</span>
+                </div>
               </div>
             </div>
             
@@ -930,6 +938,10 @@ export function PayrollDashboard({ isHR, isFinance }) {
                   <span className="text-xs text-emerald-600 block">Total Gross</span>
                   <span className="font-bold text-emerald-800">{formatCurrency(previewData.total_gross, previewData.currency_symbol)}</span>
                 </div>
+                <div className="px-3 py-1.5 bg-red-50 rounded-lg border border-red-200">
+                  <span className="text-xs text-red-600 block">Total Deductions</span>
+                  <span className="font-bold text-red-800">{formatCurrency((previewData.total_statutory_deductions || 0) + (previewData.total_attendance_deductions || 0) + (previewData.total_other_deductions || 0), previewData.currency_symbol)}</span>
+                </div>
                 <div className="px-3 py-1.5 bg-blue-50 rounded-lg border border-blue-200">
                   <span className="text-xs text-blue-600 block">Total Net</span>
                   <span className="font-bold text-blue-800">{formatCurrency(previewData.total_net, previewData.currency_symbol)}</span>
@@ -938,7 +950,7 @@ export function PayrollDashboard({ isHR, isFinance }) {
               
               <Button
                 onClick={handleCreateBatch}
-                disabled={generating}
+                disabled={generating || hasPreviewErrors()}
                 className="bg-gradient-to-r from-blue-600 to-blue-700"
                 data-testid="create-batch-btn"
               >
@@ -948,24 +960,43 @@ export function PayrollDashboard({ isHR, isFinance }) {
             </div>
           </div>
 
+          {hasPreviewErrors() && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700 text-sm">
+              <AlertCircle className="h-4 w-4" />
+              Please fix validation errors before creating batch
+            </div>
+          )}
+
           <div className="border rounded-xl overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-slate-50 border-b">
                   <th className="px-3 py-2 text-left text-xs font-semibold text-slate-600 sticky left-0 bg-slate-50">Employee</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600">Gross</th>
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-slate-600 bg-indigo-50">Working Days</th>
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-slate-600 bg-amber-50">
+                    <div className="flex flex-col items-center">
+                      <span>Attendance Days</span>
+                      <span className="text-[10px] text-amber-600 font-normal">(Editable)</span>
+                    </div>
+                  </th>
                   <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-red-50">PF</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-red-50">PT</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-red-50">TDS</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-red-50">ESI</th>
-                  <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-amber-50">Attendance</th>
-                  <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-gray-100">Other</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-amber-50">Attend. Ded.</th>
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-slate-600 bg-gray-100">
+                    <div className="flex flex-col items-center">
+                      <span>Other</span>
+                      <span className="text-[10px] text-gray-500 font-normal">(Editable)</span>
+                    </div>
+                  </th>
                   <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-blue-50">Net Salary</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
                 {previewData.records.map((record) => (
-                  <tr key={record.employee_id} className="hover:bg-slate-50">
+                  <tr key={record.employee_id} className={`hover:bg-slate-50 ${previewErrors[record.employee_id] ? 'bg-red-50/30' : ''}`}>
                     <td className="px-3 py-2 sticky left-0 bg-white">
                       <div className="flex items-center gap-2">
                         <div className="h-7 w-7 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-medium">
@@ -973,17 +1004,52 @@ export function PayrollDashboard({ isHR, isFinance }) {
                         </div>
                         <div>
                           <span className="font-medium text-xs block">{record.employee_name}</span>
-                          <span className="text-[10px] text-gray-500">{record.unapproved_absent_days} absent days</span>
+                          <span className="text-[10px] text-gray-500">{record.employee_code}</span>
                         </div>
                       </div>
                     </td>
                     <td className="px-3 py-2 text-right font-medium text-emerald-600">{formatCurrency(record.gross_salary, record.currency_symbol)}</td>
+                    <td className="px-3 py-2 text-center bg-indigo-50/50">
+                      <span className="font-medium text-indigo-700">{record.working_days_in_month}</span>
+                    </td>
+                    <td className="px-3 py-2 bg-amber-50/50">
+                      <div className="flex flex-col items-center">
+                        <Input
+                          type="number"
+                          min="0"
+                          max={record.working_days_in_month}
+                          step="1"
+                          value={previewEdits[record.employee_id]?.attendance_days ?? record.attendance_days}
+                          onChange={(e) => handlePreviewEdit(record.employee_id, 'attendance_days', e.target.value)}
+                          className={`w-16 h-7 text-center text-xs ${previewErrors[record.employee_id]?.attendance_days ? 'border-red-500 bg-red-50' : ''}`}
+                          data-testid={`attendance-days-${record.employee_id}`}
+                        />
+                        {previewErrors[record.employee_id]?.attendance_days && (
+                          <span className="text-[10px] text-red-600 mt-0.5">{previewErrors[record.employee_id].attendance_days}</span>
+                        )}
+                      </div>
+                    </td>
                     <td className="px-3 py-2 text-right bg-red-50/50 text-red-600">{formatCurrency(record.pf_employee, record.currency_symbol)}</td>
                     <td className="px-3 py-2 text-right bg-red-50/50 text-red-600">{formatCurrency(record.professional_tax, record.currency_symbol)}</td>
                     <td className="px-3 py-2 text-right bg-red-50/50 text-red-600">{formatCurrency(record.income_tax, record.currency_symbol)}</td>
                     <td className="px-3 py-2 text-right bg-red-50/50 text-red-600">{formatCurrency(record.esi, record.currency_symbol)}</td>
                     <td className="px-3 py-2 text-right bg-amber-50/50 text-amber-600">{formatCurrency(record.attendance_deduction, record.currency_symbol)}</td>
-                    <td className="px-3 py-2 text-right bg-gray-100/50">{formatCurrency(record.other_deductions, record.currency_symbol)}</td>
+                    <td className="px-3 py-2 bg-gray-100/50">
+                      <div className="flex flex-col items-center">
+                        <Input
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={previewEdits[record.employee_id]?.other_deductions ?? record.other_deductions}
+                          onChange={(e) => handlePreviewEdit(record.employee_id, 'other_deductions', e.target.value)}
+                          className={`w-20 h-7 text-center text-xs ${previewErrors[record.employee_id]?.other_deductions ? 'border-red-500 bg-red-50' : ''}`}
+                          data-testid={`other-deductions-${record.employee_id}`}
+                        />
+                        {previewErrors[record.employee_id]?.other_deductions && (
+                          <span className="text-[10px] text-red-600 mt-0.5 max-w-[100px] text-center">{previewErrors[record.employee_id].other_deductions}</span>
+                        )}
+                      </div>
+                    </td>
                     <td className="px-3 py-2 text-right bg-blue-50/50 font-bold text-blue-800">{formatCurrency(record.net_salary, record.currency_symbol)}</td>
                   </tr>
                 ))}
