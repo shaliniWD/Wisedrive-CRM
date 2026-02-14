@@ -10,7 +10,6 @@ import DashboardPage from "@/pages/DashboardPage";
 import LeadsPage from "@/pages/LeadsPage";
 import CustomersPage from "@/pages/CustomersPage";
 import InspectionsPage from "@/pages/InspectionsPage";
-import AdminPage from "@/pages/AdminPage";
 import FinancePage from "@/pages/FinancePage";
 import SettingsPage from "@/pages/SettingsPage";
 import HRModulePage from "@/pages/HRModulePage";
@@ -21,15 +20,14 @@ const SmartRedirect = () => {
   
   if (loading) return null;
   
-  // Map tab names to routes
+  // Map tab names to routes - Admin merged into HR
   const tabRouteMap = {
     leads: '/leads',
     customers: '/customers',
     inspections: '/inspections',
-    employees: '/admin',
+    hr: '/hr',
     finance: '/finance',
     settings: '/settings',
-    hr: '/hr',
   };
   
   // Find the first visible tab and redirect there
@@ -56,10 +54,11 @@ function App() {
             <Route path="/leads" element={<LeadsPage />} />
             <Route path="/customers" element={<CustomersPage />} />
             <Route path="/inspections" element={<InspectionsPage />} />
-            <Route path="/admin" element={<AdminPage />} />
+            <Route path="/hr" element={<HRModulePage />} />
             <Route path="/finance" element={<FinancePage />} />
             <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/hr" element={<HRModulePage />} />
+            {/* Redirect old /admin to /hr */}
+            <Route path="/admin" element={<Navigate to="/hr" replace />} />
           </Route>
 
           {/* Default redirect */}
