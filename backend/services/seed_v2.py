@@ -278,6 +278,8 @@ async def seed_v2_data(db: AsyncIOMotorDatabase):
         {"email": "hr@wisedrive.com", "name": "Priya Sharma", "role_code": "HR_MANAGER", "country_code": "IN", "team_name": None},
         # India - Country Head
         {"email": "countryhead.in@wisedrive.com", "name": "Vikram Singh", "role_code": "COUNTRY_HEAD", "country_code": "IN", "team_name": None},
+        # India - Finance Manager
+        {"email": "finance.in@wisedrive.com", "name": "Anita Desai", "role_code": "FINANCE_MANAGER", "country_code": "IN", "team_name": None},
         # India - Sales
         {"email": "saleshead.in@wisedrive.com", "name": "Arun Kumar", "role_code": "SALES_HEAD", "country_code": "IN", "team_name": None},
         {"email": "saleslead1.in@wisedrive.com", "name": "Rahul Verma", "role_code": "SALES_LEAD", "country_code": "IN", "team_name": "Sales Team Alpha"},
@@ -293,6 +295,7 @@ async def seed_v2_data(db: AsyncIOMotorDatabase):
         {"email": "mechanic2.in@wisedrive.com", "name": "Venkat Inspector", "role_code": "MECHANIC", "country_code": "IN", "team_name": "Inspection Team Alpha"},
         # Malaysia
         {"email": "countryhead.my@wisedrive.com", "name": "Ahmad Tan", "role_code": "COUNTRY_HEAD", "country_code": "MY", "team_name": None},
+        {"email": "finance.my@wisedrive.com", "name": "Lim Wei Chen", "role_code": "FINANCE_MANAGER", "country_code": "MY", "team_name": None},
         {"email": "saleshead.my@wisedrive.com", "name": "Lee Wei", "role_code": "SALES_HEAD", "country_code": "MY", "team_name": None},
         {"email": "salesexec1.my@wisedrive.com", "name": "Siti Aminah", "role_code": "SALES_EXEC", "country_code": "MY", "team_name": "Sales Team MY"},
     ]
