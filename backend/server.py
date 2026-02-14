@@ -1481,6 +1481,18 @@ async def get_hr_employees(
             {"_id": 0, "status": 1}
         )
         emp["today_attendance"] = today_attendance.get("status") if today_attendance else None
+        
+        # Check if employee is on approved leave today - dynamically set status
+        on_leave_today = await db.leave_requests.find_one({
+            "employee_id": emp["id"],
+            "status": "approved",
+            "start_date": {"$lte": today_date},
+            "end_date": {"$gte": today_date}
+        }, {"_id": 0, "id": 1, "leave_type": 1})
+        
+        if on_leave_today and emp.get("is_active"):
+            emp["employment_status"] = "on_leave"
+            emp["current_leave_type"] = on_leave_today.get("leave_type")
     
     return employees
 
