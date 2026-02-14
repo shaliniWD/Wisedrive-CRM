@@ -173,19 +173,33 @@ class RBACService:
         return {"id": "NONE"}  # No permission - block all
 
     async def get_visible_tabs(self, user_id: str) -> List[str]:
-        """Get list of tabs visible to user based on role"""
-        user = await self.db.users.find_one({"id": user_id}, {"_id": 0, "role_id": 1})
+        """Get list of tabs visible to user based on their role(s) - aggregates from all roles"""
+        user = await self.db.users.find_one({"id": user_id}, {"_id": 0, "role_id": 1, "role_ids": 1})
         if not user:
             return []
         
-        role = await self.db.roles.find_one(
-            {"id": user.get("role_id")}, {"_id": 0, "code": 1}
-        )
-        if not role:
+        # Collect all role IDs
+        role_ids = []
+        if user.get("role_ids"):
+            role_ids.extend(user["role_ids"])
+        elif user.get("role_id"):
+            role_ids.append(user["role_id"])
+        
+        if not role_ids:
             return []
         
-        role_code = role.get("code", "")
-        return self.TAB_VISIBILITY.get(role_code, [])
+        # Aggregate visible tabs from all roles
+        visible_tabs = set()
+        for role_id in role_ids:
+            role = await self.db.roles.find_one(
+                {"id": role_id}, {"_id": 0, "code": 1}
+            )
+            if role:
+                role_code = role.get("code", "")
+                tabs = self.TAB_VISIBILITY.get(role_code, [])
+                visible_tabs.update(tabs)
+        
+        return list(visible_tabs)
 
     async def can_reassign_lead(self, user_id: str, lead_team_id: Optional[str] = None) -> bool:
         """Check if user can reassign leads"""
