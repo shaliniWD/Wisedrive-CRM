@@ -36,6 +36,7 @@ const StatusDropdown = ({ lead, statuses, onUpdate }) => {
     RCB_WHATSAPP: { color: 'bg-green-100 text-green-800 border-green-200', label: 'RCB WhatsApp' },
     FOLLOWUP: { color: 'bg-orange-100 text-orange-800 border-orange-200', label: 'Follow Up' },
     OUT_OF_SERVICE_AREA: { color: 'bg-slate-100 text-slate-800 border-slate-200', label: 'Out of Area' },
+    LOST: { color: 'bg-gray-200 text-gray-800 border-gray-300', label: 'Lost' },
   };
   const cfg = config[lead.status] || config.NEW;
 
@@ -46,7 +47,8 @@ const StatusDropdown = ({ lead, statuses, onUpdate }) => {
     }
     setUpdating(true);
     try {
-      await leadsApi.update(lead.id, { ...lead, status: newStatus });
+      // Use the dedicated status update endpoint for inline editing
+      await leadsApi.updateStatus(lead.id, newStatus);
       toast.success(`Status updated to ${config[newStatus]?.label || newStatus}`);
       onUpdate();
     } catch (error) {
