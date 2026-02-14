@@ -150,6 +150,7 @@ export const hrApi = {
   // Attendance
   getEmployeeAttendance: (id, params) => axios.get(`${API_URL}/hr/employees/${id}/attendance`, { params }),
   saveEmployeeAttendance: (id, data) => axios.post(`${API_URL}/hr/employees/${id}/attendance`, data),
+  markAttendance: (data) => axios.post(`${API_URL}/hr/attendance/mark`, data),
   
   // Documents
   getEmployeeDocuments: (id) => axios.get(`${API_URL}/hr/employees/${id}/documents`),
