@@ -1764,26 +1764,67 @@ async def create_employee_attendance(employee_id: str, att_data: AttendanceCreat
 
 # -------------------- DOCUMENTS --------------------
 
+# Sensitive document types that require HR/Admin access
+SENSITIVE_DOCUMENT_TYPES = ["aadhaar", "pan", "passport", "bank_statement", "it_returns", "income_tax", "salary_slip"]
+
 @api_router.get("/hr/employees/{employee_id}/documents")
 async def get_employee_documents(employee_id: str, current_user: dict = Depends(get_current_user)):
-    """Get employee documents"""
+    """Get employee documents with RBAC enforcement"""
     role_code = current_user.get("role_code", "")
+    user_id = current_user.get("id")
     
-    if role_code not in ["CEO", "HR_MANAGER"]:
-        if current_user.get("id") != employee_id:
-            raise HTTPException(status_code=403, detail="Not authorized")
+    # CEO and HR Manager get full access
+    if role_code in ["CEO", "HR_MANAGER"]:
+        documents = await db.employee_documents.find(
+            {"user_id": employee_id},
+            {"_id": 0}
+        ).to_list(50)
+        
+        # Log document access for audit
+        await audit_service.log(
+            entity_type="employee_documents",
+            entity_id=employee_id,
+            action="view_all",
+            user_id=user_id,
+            new_values={"document_count": len(documents), "role": role_code}
+        )
+        return documents
     
-    documents = await db.employee_documents.find(
-        {"user_id": employee_id},
-        {"_id": 0}
-    ).to_list(50)
+    # Employee can view own documents only
+    if user_id == employee_id:
+        documents = await db.employee_documents.find(
+            {"user_id": employee_id},
+            {"_id": 0}
+        ).to_list(50)
+        return documents
     
-    return documents
+    # Country Head can view non-sensitive documents within their country
+    if role_code == "COUNTRY_HEAD":
+        # Verify employee is in same country
+        emp = await db.users.find_one({"id": employee_id}, {"_id": 0, "country_id": 1})
+        user_country = current_user.get("country_id")
+        
+        if emp and emp.get("country_id") == user_country:
+            documents = await db.employee_documents.find(
+                {"user_id": employee_id, "document_type": {"$nin": SENSITIVE_DOCUMENT_TYPES}},
+                {"_id": 0}
+            ).to_list(50)
+            return documents
+    
+    # Finance cannot access personal ID documents
+    if role_code == "FINANCE_MANAGER":
+        documents = await db.employee_documents.find(
+            {"user_id": employee_id, "document_type": {"$nin": SENSITIVE_DOCUMENT_TYPES}},
+            {"_id": 0}
+        ).to_list(50)
+        return documents
+    
+    raise HTTPException(status_code=403, detail="Not authorized to view these documents")
 
 
 @api_router.post("/hr/employees/{employee_id}/documents")
 async def create_employee_document(employee_id: str, doc_data: DocumentCreate, current_user: dict = Depends(get_current_user)):
-    """Add employee document"""
+    """Add employee document - HR/Admin only"""
     role_code = current_user.get("role_code", "")
     
     if role_code not in ["CEO", "HR_MANAGER"]:
@@ -1793,20 +1834,81 @@ async def create_employee_document(employee_id: str, doc_data: DocumentCreate, c
     doc_dict["user_id"] = employee_id
     doc_dict["id"] = str(uuid.uuid4())
     doc_dict["created_at"] = datetime.now(timezone.utc).isoformat()
+    doc_dict["uploaded_by"] = current_user["id"]
+    doc_dict["uploaded_by_name"] = current_user.get("name", "")
     
     await db.employee_documents.insert_one(doc_dict)
     doc_dict.pop("_id", None)
     
     # Log audit
     await audit_service.log(
-        entity_type="employee",
+        entity_type="employee_documents",
         entity_id=employee_id,
-        action="document_added",
+        action="upload",
         user_id=current_user["id"],
-        new_values={"document_type": doc_dict["document_type"], "document_name": doc_dict["document_name"]}
+        new_values={
+            "document_type": doc_dict["document_type"], 
+            "document_name": doc_dict["document_name"],
+            "is_sensitive": doc_dict["document_type"] in SENSITIVE_DOCUMENT_TYPES
+        }
     )
     
     return doc_dict
+
+
+@api_router.get("/hr/employees/{employee_id}/documents/{document_id}/download")
+async def download_employee_document(employee_id: str, document_id: str, current_user: dict = Depends(get_current_user)):
+    """Download employee document with RBAC and audit logging"""
+    role_code = current_user.get("role_code", "")
+    user_id = current_user.get("id")
+    
+    # Get the document
+    document = await db.employee_documents.find_one(
+        {"id": document_id, "user_id": employee_id},
+        {"_id": 0}
+    )
+    
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+    
+    doc_type = document.get("document_type", "")
+    is_sensitive = doc_type in SENSITIVE_DOCUMENT_TYPES
+    
+    # Check access permissions
+    has_access = False
+    
+    if role_code in ["CEO", "HR_MANAGER"]:
+        has_access = True
+    elif user_id == employee_id:
+        has_access = True  # Employee can download own documents
+    elif role_code == "COUNTRY_HEAD" and not is_sensitive:
+        # Country head can access non-sensitive if same country
+        emp = await db.users.find_one({"id": employee_id}, {"_id": 0, "country_id": 1})
+        if emp and emp.get("country_id") == current_user.get("country_id"):
+            has_access = True
+    elif role_code == "FINANCE_MANAGER" and not is_sensitive:
+        has_access = True
+    
+    if not has_access:
+        await audit_service.log(
+            entity_type="employee_documents",
+            entity_id=document_id,
+            action="download_denied",
+            user_id=user_id,
+            new_values={"document_type": doc_type, "reason": "unauthorized"}
+        )
+        raise HTTPException(status_code=403, detail="Not authorized to download this document")
+    
+    # Log successful download
+    await audit_service.log(
+        entity_type="employee_documents",
+        entity_id=document_id,
+        action="download",
+        user_id=user_id,
+        new_values={"document_type": doc_type, "document_name": document.get("document_name")}
+    )
+    
+    return {"document_url": document.get("document_url"), "document_name": document.get("document_name")}
 
 
 @api_router.put("/hr/employees/{employee_id}/documents/{document_id}")
