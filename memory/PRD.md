@@ -253,17 +253,29 @@ Vendor Payment → Finance Manager creates with GST/TDS → Submit for Approval 
 ```
 
 ## Last Updated
-February 14, 2026 - **Bug Fix: Attendance UI Update**: 
-- **Fixed:** Attendance marking now updates the employee table immediately without requiring manual page refresh
-- **Root Cause:** The `today_attendance` field was returned by the backend but not displayed in the UI
-- **Solution:** Added color-coded "Today: status" badges in the Status column (present=green, absent=red, half_day=amber, late=orange, on_leave=gray)
-- **Verification:** Testing agent confirmed 100% pass rate for both backend and frontend
+February 14, 2026 - **Payroll Enhancement Features**:
+1. **Display Working Days:** 
+   - Pay period (start-end) displayed in preview/batch header
+   - Working days count shown in header (calculated from weekends)
+   - Working Days column in preview/batch table (read-only, per-employee)
+   - Considers global weekends (Sat/Sun) + employee-specific weekly off
 
-Previous (Feb 14, 2026):
-1. Removed top mini dashboard cards from HR Module page
-2. Added "On Leave Today" card to employee data table summary section (5 cards now)
-3. Replaced leave action buttons with attendance action button (Clock icon)
-4. Added Quick Attendance modal to mark attendance directly from employee table
+2. **Editable Attendance Days:**
+   - Attendance Days column editable via numeric input
+   - Validation: integer only, >= 0, <= working_days
+   - Real-time recalculation: Prorated attendance deduction, total deductions, net salary
+   - Formula: Attendance Deduction = (Gross / Working Days) × (Working Days - Attendance Days)
+
+3. **Editable Other Deductions:**
+   - Other column editable via numeric input
+   - Validation: >= 0, capped at Net Pay (hard block)
+   - Deducted from Net Salary
+
+4. **Real-time Batch Totals:**
+   - Total Gross, Total Deductions, Total Net update instantly on edit
+   - Create Batch blocked when validation errors exist
+
+Previous (Feb 14, 2026): Bug Fix - Attendance UI Update (today_attendance badge now displays in employee table)
 
 ## Platform Architecture v5.0
 
