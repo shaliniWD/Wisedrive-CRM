@@ -355,6 +355,48 @@ export function AttendanceDashboard({ isHR }) {
 
 // ==================== PAYROLL DASHBOARD (NEW BATCH-BASED GOVERNANCE) ====================
 export function PayrollDashboard({ isHR, isFinance }) {
+  // NumericInput helper - handles "0" value properly (shows empty on focus if value is 0)
+  const NumericInput = ({ value, onChange, className, min = 0, max, ...props }) => {
+    const [displayValue, setDisplayValue] = useState(value?.toString() || '');
+    
+    useEffect(() => {
+      setDisplayValue(value?.toString() || '');
+    }, [value]);
+    
+    const handleFocus = (e) => {
+      if (value === 0 || value === '0') {
+        setDisplayValue('');
+      }
+      e.target.select();
+    };
+    
+    const handleChange = (e) => {
+      const newValue = e.target.value;
+      setDisplayValue(newValue);
+      onChange(e);
+    };
+    
+    const handleBlur = () => {
+      if (displayValue === '' || displayValue === undefined) {
+        setDisplayValue('0');
+      }
+    };
+    
+    return (
+      <input
+        type="text"
+        inputMode="numeric"
+        pattern="[0-9]*"
+        value={displayValue}
+        onChange={handleChange}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        className={`flex rounded-md border border-input bg-transparent px-2 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${className}`}
+        {...props}
+      />
+    );
+  };
+
   // View states
   const [view, setView] = useState('batches'); // batches, preview, batch-detail
   const [loading, setLoading] = useState(true);
