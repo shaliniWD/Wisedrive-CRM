@@ -1147,6 +1147,7 @@ class PayrollService:
         """
         Update a payroll record in a DRAFT batch.
         Only certain fields are editable.
+        Supports attendance_days and other_deductions with validation.
         """
         # Verify batch is DRAFT
         batch = await self.db.payroll_batches.find_one({"id": batch_id}, {"_id": 0})
@@ -1163,6 +1164,7 @@ class PayrollService:
         # Only allow updating specific fields
         allowed_fields = [
             "pf_employee", "professional_tax", "income_tax", "esi", "other_statutory",
+            "attendance_days",  # NEW: Editable attendance days
             "attendance_override", "attendance_deduction", "attendance_override_reason",
             "other_deductions", "other_deductions_reason"
         ]
@@ -1175,7 +1177,31 @@ class PayrollService:
         if not update_data:
             raise ValueError("No valid fields to update")
         
-        # Recalculate totals
+        # Validate attendance_days if provided
+        working_days = record.get("working_days_in_month", 0)
+        gross = record.get("gross_salary", 0)
+        
+        attendance_days = update_data.get("attendance_days", record.get("attendance_days", working_days))
+        
+        if "attendance_days" in update_data:
+            # Validation: Must be integer >= 0 and <= working_days
+            if not isinstance(attendance_days, int) or attendance_days < 0:
+                raise ValueError("Attendance days must be a non-negative integer")
+            if attendance_days > working_days:
+                raise ValueError(f"Attendance days ({attendance_days}) cannot exceed working days ({working_days})")
+        
+        # Recalculate attendance deduction based on attendance_days
+        per_day_salary = gross / working_days if working_days > 0 else 0
+        absent_days_for_deduction = working_days - attendance_days
+        attendance_deduction = round(per_day_salary * absent_days_for_deduction, 2)
+        
+        # Update attendance fields
+        update_data["attendance_days"] = attendance_days
+        update_data["attendance_deduction"] = attendance_deduction
+        update_data["per_day_salary"] = round(per_day_salary, 2)
+        update_data["unapproved_absent_days"] = absent_days_for_deduction
+        
+        # Recalculate statutory deductions
         pf = update_data.get("pf_employee", record.get("pf_employee", 0))
         pt = update_data.get("professional_tax", record.get("professional_tax", 0))
         tds = update_data.get("income_tax", record.get("income_tax", 0))
@@ -1183,16 +1209,29 @@ class PayrollService:
         other_stat = update_data.get("other_statutory", record.get("other_statutory", 0))
         total_statutory = pf + pt + tds + esi + other_stat
         
-        attendance_ded = update_data.get("attendance_deduction", record.get("attendance_deduction", 0))
+        # Calculate net salary before other_deductions
+        total_deductions_before_other = total_statutory + attendance_deduction
+        net_before_other = gross - total_deductions_before_other
+        
+        # Validate other_deductions
         other_ded = update_data.get("other_deductions", record.get("other_deductions", 0))
         
-        total_deductions = total_statutory + attendance_ded + other_ded
-        gross = record.get("gross_salary", 0)
+        if "other_deductions" in update_data:
+            # Validation: Must be >= 0
+            if other_ded < 0:
+                raise ValueError("Other deductions must be non-negative")
+            # Validation: Cap at net salary (cannot exceed)
+            if other_ded > net_before_other:
+                raise ValueError(f"Other deductions ({other_ded}) cannot exceed net salary ({round(net_before_other, 2)})")
+        
+        # Final calculations
+        total_deductions = total_statutory + attendance_deduction + other_ded
         net = gross - total_deductions
         
         update_data["total_statutory_deductions"] = round(total_statutory, 2)
         update_data["total_deductions"] = round(total_deductions, 2)
         update_data["net_salary"] = round(net, 2)
+        update_data["version"] = record.get("version", 1) + 1
         update_data["version"] = record.get("version", 1) + 1
         
         await self.db.payroll_records.update_one(
