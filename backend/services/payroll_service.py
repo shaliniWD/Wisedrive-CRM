@@ -1088,6 +1088,12 @@ class PayrollService:
         total_other = sum(r.get("other_deductions", 0) for r in records)
         total_net = sum(r.get("net_salary", 0) for r in records)
         
+        # Get pay period
+        pay_period_start, pay_period_end = self._get_pay_period(year, month)
+        
+        # Calculate base working days
+        base_working_days = self._calculate_working_days(year, month, 0)
+        
         # Create batch
         batch = {
             "id": batch_id,
@@ -1095,6 +1101,9 @@ class PayrollService:
             "year": year,
             "country_id": country_id,
             "country_name": country.get("name"),
+            "pay_period_start": pay_period_start,
+            "pay_period_end": pay_period_end,
+            "working_days": base_working_days,
             "status": "DRAFT",
             "employee_count": len(records),
             "total_gross": round(total_gross, 2),
