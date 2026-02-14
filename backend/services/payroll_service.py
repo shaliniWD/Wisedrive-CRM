@@ -1232,7 +1232,6 @@ class PayrollService:
         update_data["total_deductions"] = round(total_deductions, 2)
         update_data["net_salary"] = round(net, 2)
         update_data["version"] = record.get("version", 1) + 1
-        update_data["version"] = record.get("version", 1) + 1
         
         await self.db.payroll_records.update_one(
             {"id": record_id},
