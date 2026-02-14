@@ -2205,7 +2205,7 @@ async def get_finance_payments(
     country_id: Optional[str] = None,
     employee_id: Optional[str] = None,
     payment_type: Optional[str] = None,
-    status: Optional[str] = None,
+    payment_status: Optional[str] = None,
     month: Optional[int] = None,
     year: Optional[int] = None,
     current_user: dict = Depends(get_current_user)
@@ -2232,8 +2232,8 @@ async def get_finance_payments(
         query["employee_id"] = employee_id
     if payment_type:
         query["payment_type"] = payment_type
-    if status:
-        query["status"] = status
+    if payment_status:
+        query["status"] = payment_status
     if month:
         query["month"] = month
     if year:
