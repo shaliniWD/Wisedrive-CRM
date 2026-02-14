@@ -48,7 +48,9 @@ from models.attendance import (
 )
 from models.payroll import (
     PayrollRecordCreate, PayrollBulkGenerateRequest, PaymentMarkRequest,
-    PayrollAdjustmentCreate, BulkPaymentMarkRequest
+    PayrollAdjustmentCreate, BulkPaymentMarkRequest,
+    PayrollPreviewRequest, PayrollRecordUpdate, BatchRecordsUpdateRequest,
+    BatchConfirmRequest, BatchMarkPaidRequest, PayrollBatchCreate
 )
 from models.leave import (
     LeaveRequestCreate, LeaveApprovalRequest, LeaveBalanceCreate
