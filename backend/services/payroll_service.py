@@ -45,7 +45,7 @@ class PayrollService:
         
         # Get salary structure
         salary = await self.db.salary_structures.find_one(
-            {"user_id": employee_id, "effective_to": None},
+            {"employee_id": employee_id, "is_active": True},
             {"_id": 0}
         )
         if not salary:
