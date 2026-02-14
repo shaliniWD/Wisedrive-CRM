@@ -999,7 +999,7 @@ export function PayrollDashboard({ isHR, isFinance }) {
   const handleStartEdit = (record) => {
     const workingDays = record.working_days_in_month || 0;
     const attendanceDays = record.attendance_days || workingDays;
-    const absentDays = workingDays - attendanceDays;
+    const lopDays = record.lop_days ?? (workingDays - attendanceDays);
     
     setEditingRecord(record.id);
     setEditingValues({
@@ -1008,8 +1008,8 @@ export function PayrollDashboard({ isHR, isFinance }) {
       income_tax: record.income_tax || 0,
       esi: record.esi || 0,
       other_statutory: record.other_statutory || 0,
-      absent_days: Math.max(0, absentDays),  // Use absent_days instead of attendance_days
-      attendance_days: attendanceDays,        // Keep for calculation
+      lop_days: Math.max(0, lopDays),  // Use lop_days
+      attendance_days: attendanceDays,  // Keep for calculation
       other_deductions: record.other_deductions || 0,
       other_deductions_reason: record.other_deductions_reason || '',
       attendance_deduction: record.attendance_deduction || 0,
