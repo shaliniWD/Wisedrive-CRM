@@ -752,7 +752,8 @@ class PayrollService:
         # Criteria: is_active=True, payroll_active=True (if field exists), country_id matches
         query = {
             "is_active": True,
-            "country_id": country_id
+            "country_id": country_id,
+            "payroll_active": {"$ne": False}  # Include employees where payroll_active is True or not set
         }
         
         employees = await self.db.users.find(query, {"_id": 0}).to_list(10000)
@@ -763,6 +764,10 @@ class PayrollService:
         
         eligible_employees = []
         for emp in employees:
+            # Skip if payroll_active is explicitly False
+            if emp.get("payroll_active") is False:
+                continue
+            
             join_date = emp.get("joining_date", "")
             if join_date and join_date <= month_end:
                 eligible_employees.append(emp)
