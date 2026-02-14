@@ -3679,6 +3679,25 @@ async def get_attendance_calendar(
                 }
             current += timedelta(days=1)
     
+    # Get attendance overrides (HR manual entries)
+    override_query = {
+        "employee_id": {"$in": emp_ids},
+        "date": {"$gte": start_date, "$lte": end_date}
+    }
+    overrides = await db.attendance_overrides.find(override_query, {"_id": 0}).to_list(10000)
+    
+    # Group overrides by employee and date
+    override_map = {}  # {employee_id: {date: {status, notes}}}
+    for override in overrides:
+        emp_id = override["employee_id"]
+        if emp_id not in override_map:
+            override_map[emp_id] = {}
+        override_map[emp_id][override["date"]] = {
+            "status": override["status"],
+            "notes": override.get("notes", ""),
+            "updated_by": override.get("updated_by_name", "")
+        }
+    
     # Build calendar data for each employee
     calendar_data = []
     day_names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
