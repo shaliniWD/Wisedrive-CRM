@@ -343,17 +343,19 @@ export function PayrollDashboard({ isHR, isFinance }) {
   const NumericInput = ({ value, onChange, className, min = 0, max, ...props }) => {
     const inputRef = useRef(null);
     const [localValue, setLocalValue] = useState(value?.toString() || '0');
-    const isTypingRef = useRef(false);
+    const [isFocused, setIsFocused] = useState(false);
+    const debounceRef = useRef(null);
     
-    // Sync from parent only when not actively typing
+    // Only sync from parent when NOT focused (prevents jumping)
     useEffect(() => {
-      if (!isTypingRef.current) {
+      if (!isFocused) {
         setLocalValue(value?.toString() || '0');
       }
-    }, [value]);
+    }, [value, isFocused]);
     
     const handleFocus = (e) => {
-      isTypingRef.current = true;
+      setIsFocused(true);
+      // Clear to allow fresh input if value is 0
       if (localValue === '0') {
         setLocalValue('');
       }
@@ -362,19 +364,44 @@ export function PayrollDashboard({ isHR, isFinance }) {
     
     const handleChange = (e) => {
       const newValue = e.target.value;
-      // Only allow numeric input
+      // Only allow numeric input (digits only)
       if (newValue === '' || /^\d*$/.test(newValue)) {
         setLocalValue(newValue);
-        // Debounce the parent update
-        onChange(e);
+        
+        // Debounce parent update to prevent jumping
+        if (debounceRef.current) {
+          clearTimeout(debounceRef.current);
+        }
+        debounceRef.current = setTimeout(() => {
+          // Create synthetic event with the current input value
+          const syntheticEvent = { target: { value: newValue || '0' } };
+          onChange(syntheticEvent);
+        }, 150);
       }
     };
     
-    const handleBlur = () => {
-      isTypingRef.current = false;
+    const handleBlur = (e) => {
+      setIsFocused(false);
+      // Clear any pending debounce
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+      // Finalize value and trigger parent update
       const finalValue = localValue === '' ? '0' : localValue;
       setLocalValue(finalValue);
+      // Immediate update on blur
+      const syntheticEvent = { target: { value: finalValue } };
+      onChange(syntheticEvent);
     };
+    
+    // Cleanup debounce on unmount
+    useEffect(() => {
+      return () => {
+        if (debounceRef.current) {
+          clearTimeout(debounceRef.current);
+        }
+      };
+    }, []);
     
     return (
       <input
