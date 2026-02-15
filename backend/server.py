@@ -3878,8 +3878,6 @@ async def get_attendance_calendar(
             is_org_holiday = emp_country and date_str in org_holiday_map.get(emp_country, {})
             org_holiday_name = org_holiday_map.get(emp_country, {}).get(date_str, None)
             
-            is_holiday_default = is_weekly_off or is_org_holiday
-            
             # Check for HR override first (takes precedence)
             override_info = override_map.get(emp["id"], {}).get(date_str)
             leave_info = leave_map.get(emp["id"], {}).get(date_str)
