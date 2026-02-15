@@ -2801,7 +2801,7 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
                 </h4>
                 <div className="grid grid-cols-3 gap-3">
                   <div className="space-y-2">
-                    <Label className="text-xs">Document Type</Label>
+                    <Label className="text-xs">Document Type *</Label>
                     <Select value={docForm.document_type || ''} onValueChange={(v) => setDocForm({...docForm, document_type: v})}>
                       <SelectTrigger className="h-9"><SelectValue placeholder="Select type" /></SelectTrigger>
                       <SelectContent>
@@ -2813,12 +2813,14 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
                         <SelectItem value="education">Education Certificate</SelectItem>
                         <SelectItem value="experience">Experience Letter</SelectItem>
                         <SelectItem value="offer_letter">Offer Letter</SelectItem>
+                        <SelectItem value="increment_letter">Increment Letter</SelectItem>
+                        <SelectItem value="salary_slip">Salary Slip</SelectItem>
                         <SelectItem value="other">Other</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs">Document Name</Label>
+                    <Label className="text-xs">Document Name *</Label>
                     <Input 
                       value={docForm.document_name || ''} 
                       onChange={(e) => setDocForm({...docForm, document_name: e.target.value})}
@@ -2827,35 +2829,57 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs">Document URL / Reference</Label>
+                    <Label className="text-xs">Select File *</Label>
                     <Input 
-                      value={docForm.document_url || ''} 
-                      onChange={(e) => setDocForm({...docForm, document_url: e.target.value})}
-                      placeholder="https://..." 
-                      className="h-9" 
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                      onChange={(e) => setDocForm({...docForm, file: e.target.files[0]})}
+                      className="h-9 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200"
+                      data-testid="document-file-input"
                     />
+                    <p className="text-[10px] text-gray-500">PDF, JPG, PNG, DOC (Max 10MB)</p>
                   </div>
                 </div>
+                {docForm.file && (
+                  <div className="mt-2 p-2 bg-white rounded border border-blue-200 flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-blue-500" />
+                    <span className="text-xs text-gray-700">{docForm.file.name}</span>
+                    <span className="text-[10px] text-gray-500">({(docForm.file.size / 1024).toFixed(1)} KB)</span>
+                    <button onClick={() => setDocForm({...docForm, file: null})} className="ml-auto text-red-500 hover:text-red-700">
+                      <XCircle className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
                 <div className="flex justify-end mt-3">
                   <Button 
                     size="sm"
+                    disabled={!docForm.document_type || !docForm.document_name || !docForm.file}
                     onClick={async () => {
-                      if (!employee || !docForm.document_type || !docForm.document_name) {
-                        toast.error('Please fill document type and name');
+                      if (!employee || !docForm.document_type || !docForm.document_name || !docForm.file) {
+                        toast.error('Please fill all fields and select a file');
                         return;
                       }
                       try {
-                        await hrApi.addEmployeeDocument(employee.id, docForm);
-                        toast.success('Document added');
-                        setDocForm({ document_type: '', document_name: '', document_url: '' });
+                        const formData = new FormData();
+                        formData.append('document_type', docForm.document_type);
+                        formData.append('document_name', docForm.document_name);
+                        formData.append('file', docForm.file);
+                        
+                        await hrApi.uploadEmployeeDocument(employee.id, formData);
+                        toast.success('Document uploaded successfully');
+                        setDocForm({ document_type: '', document_name: '', file: null });
+                        // Reset file input
+                        const fileInput = document.querySelector('[data-testid="document-file-input"]');
+                        if (fileInput) fileInput.value = '';
                         loadEmployeeData(employee.id);
                       } catch (error) {
-                        toast.error('Failed to add document');
+                        toast.error(error.response?.data?.detail || 'Failed to upload document');
                       }
                     }}
                     className="bg-gradient-to-r from-blue-600 to-blue-700"
+                    data-testid="upload-document-btn"
                   >
-                    <Plus className="h-4 w-4 mr-1" /> Add Document
+                    <Upload className="h-4 w-4 mr-1" /> Upload Document
                   </Button>
                 </div>
               </div>
