@@ -151,10 +151,12 @@ All users use password: `password123`
 
 ## Build Information
 
-### Latest Mobile Builds (February 15, 2026)
-- **Android APK:** https://expo.dev/artifacts/eas/tpw3QaCnWueUXHeCVbkqio.apk
-- **iOS IPA:** https://expo.dev/artifacts/eas/oP9RLSZQxB56RNQNYqB88r.ipa
+### Latest Mobile Builds (December 2025)
+- **New Design Status:** Implemented - Premium Dark Theme
+- **Android APK:** [Build required after design approval]
+- **iOS IPA:** [Build required after design approval]
 - **API Endpoint:** https://crmdev.wisedrive.com/api
+- **Theme:** Dark (#0B1120 background, #3B82F6 primary)
 
 ### Expo Project
 - **Account:** @kalyandhar
