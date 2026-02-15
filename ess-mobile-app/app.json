@@ -18,7 +18,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.wisedrive.ess",
       "infoPlist": {
-        "UIBackgroundModes": ["remote-notification"]
+        "UIBackgroundModes": [
+          "remote-notification"
+        ]
       }
     },
     "android": {
@@ -28,7 +30,10 @@
       },
       "package": "com.wisedrive.ess",
       "googleServicesFile": "./google-services.json",
-      "permissions": ["RECEIVE_BOOT_COMPLETED", "VIBRATE"]
+      "permissions": [
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -42,6 +47,11 @@
         }
       ]
     ],
-    "owner": "kalyandhar"
+    "owner": "kalyandhar",
+    "extra": {
+      "eas": {
+        "projectId": "d31f3cae-6d84-4f31-8b4c-0175b03f84ae"
+      }
+    }
   }
 }
