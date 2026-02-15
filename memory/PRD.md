@@ -505,9 +505,7 @@ Recreate WiseDrive CRM (https://crm.wisedrive.com) design with a modern UI. Crea
   - "On Leave Today" dashboard card with expandable list
 
 ### P1 - High Priority (Next)
-- [ ] **ESS Mobile App Phase 2**: Integrate Firebase Admin SDK for actual FCM push notifications
-- [ ] **ESS Mobile App Phase 3**: React Native / Flutter mobile app development
-- [ ] **CRM Notification Configuration UI**: HR interface to configure push notification triggers
+- [ ] **ESS Mobile App Production Deployment**: Configure Firebase credentials for real FCM push
 - [ ] Bulk payment creation for monthly salary processing
 - [ ] Link salary structure to automatic payment creation
 - [ ] Export payments to CSV/Excel
@@ -518,6 +516,7 @@ Recreate WiseDrive CRM (https://crm.wisedrive.com) design with a modern UI. Crea
 - [ ] Dashboard charts and graphs
 - [ ] Report generation
 - [ ] ESS Mobile App: Force update capability
+- [ ] App Store / Play Store submission
 
 ### P3 - Future
 - [ ] Twilio WhatsApp integration
