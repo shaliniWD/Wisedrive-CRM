@@ -488,6 +488,7 @@ class AttendanceService:
         approved = 0
         rejected = 0
         half_days = 0
+        overtime_days = 0
         total_minutes = 0
         
         # Process each day of the month
