@@ -481,23 +481,38 @@ Vendor Payment → Finance Manager creates with GST/TDS → Submit for Approval 
 ```
 
 ## Last Updated
-February 14, 2026 - **Deployment Bug Fixes**:
-1. **bcrypt/passlib Compatibility Fix:**
-   - Removed passlib dependency (incompatible with bcrypt 4.1+)
-   - Switched to using bcrypt directly for password hashing
-   - Updated `hash_password()` and `verify_password()` in server.py
-   - Updated `seed_v2.py` to use bcrypt directly
+February 15, 2026 - **ESS Mobile App API V1.0**:
+1. **New ESS API Server:**
+   - Created separate FastAPI server at `/app/ess/api/`
+   - Runs on port 8002, independent from CRM (port 8001)
+   - All endpoints prefixed with `/ess/v1/`
+   - 23+ API endpoints for mobile app
 
-2. **JWT Key Length Fix:**
-   - Increased default JWT_SECRET from 29 bytes to 52 bytes
-   - Eliminates `InsecureKeyLengthWarning` in production
+2. **Authentication with Single Device Policy:**
+   - Mobile login with device registration
+   - Single active device enforced per user
+   - Refresh token support (30-day validity)
+   - Device session tracking in MongoDB
 
-3. **Files Modified:**
-   - `/app/backend/server.py` - bcrypt import, password functions, JWT secret
-   - `/app/backend/services/seed_v2.py` - bcrypt import, hash_password function
-   - `/app/backend/requirements.txt` - removed passlib
+3. **Core Modules:**
+   - Profile, Leave Management, Payslips, Documents, Notifications
+   - Approver functionality for managers
 
-Previous (Feb 14, 2026): Password Management & Numeric Input Bug Fix v2
+4. **Push Notification Services:**
+   - FCM/APNS integration structure (MOCKED - requires API keys)
+   - In-app notification service
+
+5. **API Contract:**
+   - OpenAPI 3.0 spec at `/app/ess/docs/ess-api-v1.yaml`
+
+6. **Files Created:**
+   - `/app/ess/api/main.py` - Main FastAPI application
+   - `/app/ess/api/routes/*.py` - API endpoints
+   - `/app/ess/api/models/*.py` - Pydantic models
+   - `/app/ess/api/services/*.py` - Business logic
+   - `/app/ess/README.md` - Documentation
+
+Previous (Feb 14, 2026): Deployment Bug Fixes
 
 ## Platform Architecture v5.0
 
