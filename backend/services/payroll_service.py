@@ -1310,6 +1310,8 @@ class PayrollService:
         total_statutory = sum(r.get("total_statutory_deductions", 0) for r in records)
         total_attendance = sum(r.get("attendance_deduction", 0) for r in records)
         total_other = sum(r.get("other_deductions", 0) for r in records)
+        total_incentive = sum(r.get("incentive_amount", 0) for r in records)
+        total_overtime_pay = sum(r.get("overtime_pay", 0) for r in records)
         total_net = sum(r.get("net_salary", 0) for r in records)
         
         await self.db.payroll_batches.update_one(
@@ -1320,6 +1322,8 @@ class PayrollService:
                 "total_statutory_deductions": round(total_statutory, 2),
                 "total_attendance_deductions": round(total_attendance, 2),
                 "total_other_deductions": round(total_other, 2),
+                "total_incentive": round(total_incentive, 2),
+                "total_overtime_pay": round(total_overtime_pay, 2),
                 "total_net": round(total_net, 2)
             }}
         )
