@@ -658,15 +658,16 @@ export function PayrollDashboard({ isHR, isFinance }) {
       setPreviewData(res.data);
       // Set batch working days (editable at header level)
       setBatchWorkingDays(res.data.working_days);
-      // Initialize preview edits with current values - now using lop_days
+      // Initialize preview edits with current values - LOP defaults to 0
       const initialEdits = {};
       res.data.records.forEach(record => {
-        // Get LOP days from record (or calculate from working - attendance)
-        const lopDays = record.lop_days ?? record.unapproved_absent_days ?? 
-          Math.max(0, (record.working_days_in_month || res.data.working_days) - (record.attendance_days || record.working_days_in_month || res.data.working_days));
+        // LOP days defaults to 0 unless explicitly set in the record
+        const lopDays = record.lop_days ?? 0;
         initialEdits[record.employee_id] = {
-          lop_days: Math.max(0, lopDays), // Default to 0 or calculated value
-          other_deductions: record.other_deductions || 0
+          lop_days: lopDays,
+          other_deductions: record.other_deductions || 0,
+          incentive_amount: record.incentive_amount || 0,
+          overtime_days: record.overtime_days || 0
         };
       });
       setPreviewEdits(initialEdits);
