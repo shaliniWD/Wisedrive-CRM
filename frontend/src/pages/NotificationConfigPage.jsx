@@ -27,9 +27,9 @@ const NotificationConfigPage = () => {
     setLoading(true);
     try {
       const [triggersRes, templatesRes, statsRes] = await Promise.all([
-        api.get('/api/notification-config/triggers'),
-        api.get('/api/notification-config/templates'),
-        api.get('/api/notification-config/stats'),
+        axios.get(`${API_URL}/api/notification-config/triggers`),
+        axios.get(`${API_URL}/api/notification-config/templates`),
+        axios.get(`${API_URL}/api/notification-config/stats`),
       ]);
       setTriggers(triggersRes.data);
       setTemplates(templatesRes.data);
@@ -43,7 +43,7 @@ const NotificationConfigPage = () => {
 
   const fetchCountries = async () => {
     try {
-      const response = await api.get('/api/countries');
+      const response = await axios.get(`${API_URL}/api/countries`);
       setCountries(response.data);
     } catch (error) {
       console.error('Error fetching countries:', error);
@@ -52,7 +52,7 @@ const NotificationConfigPage = () => {
 
   const updateTrigger = async (triggerId, updates) => {
     try {
-      await api.put(`/api/notification-config/triggers/${triggerId}`, updates);
+      await axios.put(`${API_URL}/api/notification-config/triggers/${triggerId}`, updates);
       fetchData();
     } catch (error) {
       console.error('Error updating trigger:', error);
@@ -61,7 +61,7 @@ const NotificationConfigPage = () => {
 
   const updateTemplate = async (templateId, updates) => {
     try {
-      await api.put(`/api/notification-config/templates/${templateId}`, updates);
+      await axios.put(`${API_URL}/api/notification-config/templates/${templateId}`, updates);
       setEditingTemplate(null);
       fetchData();
     } catch (error) {
