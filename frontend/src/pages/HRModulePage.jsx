@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Users, Clock, DollarSign, Calendar, Shield, Globe, IndianRupee } from 'lucide-react';
+import { Users, Clock, DollarSign, Calendar, Shield, Globe, IndianRupee, CalendarDays } from 'lucide-react';
 import { hrApi } from '@/services/api';
 
 // Import the full AdminPage content
 import AdminPage from './AdminPage';
 
 // Import HR-specific components
-import { AttendanceDashboard, PayrollDashboard, LeaveManagement } from './HRComponents';
+import { AttendanceDashboard, PayrollDashboard, LeaveManagement, HolidayCalendar } from './HRComponents';
 
 export default function HRModulePage() {
   const { user } = useAuth();
@@ -42,10 +42,11 @@ export default function HRModulePage() {
   const tabs = [
     { id: 'employees', label: 'Employees', icon: Users, show: true },
     { id: 'attendance', label: 'Attendance', icon: Clock, show: true },
+    { id: 'holidays', label: 'Holiday Calendar', icon: CalendarDays, show: isHR },
     { id: 'payroll', label: 'Payroll', icon: DollarSign, show: isHROrFinance },
     { id: 'leave', label: 'Leave', icon: Calendar, show: true },
     { id: 'roles', label: 'Roles', icon: Shield, show: isHR },
-    { id: 'countries', label: 'Countries', icon: Globe, show: isHR },
+    { id: 'countries', label: 'Countries', icon: Globe, show: isCEO },
   ].filter(t => t.show);
 
   return (
