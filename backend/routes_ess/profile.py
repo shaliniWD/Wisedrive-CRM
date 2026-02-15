@@ -293,3 +293,58 @@ async def get_attendance_summary(
         half_days=half_days,
         overtime_days=overtime_days
     )
+
+
+
+@router.get("/holidays")
+async def get_holidays(
+    request: Request,
+    year: int = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Get holidays for the user's country.
+    """
+    db = request.app.state.db
+    country_id = current_user.get("country_id")
+    
+    now = datetime.now(timezone.utc)
+    if not year:
+        year = now.year
+    
+    # Build query
+    query = {}
+    if country_id:
+        query["$or"] = [
+            {"country_id": country_id},
+            {"country_id": None},  # Global holidays
+            {"country_id": "all"}
+        ]
+    
+    # Filter by year
+    query["date"] = {"$regex": f"^{year}"}
+    
+    # Try both holiday collections
+    holidays = await db.holidays.find(query, {"_id": 0}).sort("date", 1).to_list(100)
+    
+    if not holidays:
+        # Try organization_holidays collection
+        holidays = await db.organization_holidays.find(query, {"_id": 0}).sort("date", 1).to_list(100)
+    
+    # Format holidays
+    result = []
+    for h in holidays:
+        result.append({
+            "id": h.get("id"),
+            "name": h.get("name") or h.get("title"),
+            "date": h.get("date"),
+            "type": h.get("type", "public"),
+            "description": h.get("description", ""),
+            "is_optional": h.get("is_optional", False)
+        })
+    
+    return {
+        "year": year,
+        "country_id": country_id,
+        "holidays": result
+    }
