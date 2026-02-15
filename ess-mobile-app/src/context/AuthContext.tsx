@@ -10,6 +10,7 @@ import {
   getStoredUser,
   getDeviceId 
 } from '../services/api';
+import { queryClient } from '../../App';
 
 interface User {
   id: string;
