@@ -1,4 +1,4 @@
-// Home Screen - Dashboard
+// Modern Home Dashboard Screen
 import React from 'react';
 import {
   View,
@@ -7,175 +7,246 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
+  Image,
 } from 'react-native';
-import { useQuery } from '@tanstack/react-query';
-import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../context/AuthContext';
 import { getProfile, getLeaveBalance, getAttendanceSummary } from '../services/api';
+import { colors, spacing, borderRadius, shadows } from '../theme';
 
 export default function HomeScreen() {
   const navigation = useNavigation<any>();
-  const { user, logout } = useAuth();
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
 
-  const { data: profile, refetch: refetchProfile } = useQuery({
+  const { data: profile } = useQuery({
     queryKey: ['profile'],
     queryFn: getProfile,
   });
 
-  const { data: leaveBalance, refetch: refetchLeave } = useQuery({
+  const { data: leaveBalance } = useQuery({
     queryKey: ['leaveBalance'],
     queryFn: () => getLeaveBalance(),
   });
 
-  const { data: attendance, refetch: refetchAttendance } = useQuery({
+  const { data: attendance } = useQuery({
     queryKey: ['attendance'],
     queryFn: () => getAttendanceSummary(),
   });
 
+  const [refreshing, setRefreshing] = React.useState(false);
+
   const onRefresh = async () => {
-    await Promise.all([refetchProfile(), refetchLeave(), refetchAttendance()]);
+    setRefreshing(true);
+    await queryClient.invalidateQueries();
+    setRefreshing(false);
   };
 
-  const QuickAction = ({ icon, label, onPress, color = '#2196F3' }: any) => (
-    <TouchableOpacity style={styles.quickAction} onPress={onPress}>
-      <View style={[styles.quickActionIcon, { backgroundColor: color + '20' }]}>
-        <Ionicons name={icon} size={24} color={color} />
-      </View>
-      <Text style={styles.quickActionLabel}>{label}</Text>
-    </TouchableOpacity>
-  );
+  const totalLeaves = leaveBalance 
+    ? (leaveBalance.casual_leaves?.available || 0) + 
+      (leaveBalance.sick_leaves?.available || 0) + 
+      (leaveBalance.earned_leaves?.available || 0)
+    : 0;
 
-  const StatCard = ({ title, value, subtitle, color = '#2196F3' }: any) => (
-    <View style={[styles.statCard, { borderLeftColor: color }]}>
-      <Text style={styles.statTitle}>{title}</Text>
-      <Text style={[styles.statValue, { color }]}>{value}</Text>
-      {subtitle && <Text style={styles.statSubtitle}>{subtitle}</Text>}
-    </View>
-  );
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  };
+
+  const getInitials = (name: string) => {
+    return name?.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'U';
+  };
 
   return (
     <ScrollView
       style={styles.container}
-      refreshControl={<RefreshControl refreshing={false} onRefresh={onRefresh} />}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary.default} />}
     >
-      {/* Header */}
-      <View style={styles.header}>
+      {/* Header Section */}
+      <LinearGradient
+        colors={[colors.primary.default, colors.secondary.default]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.headerGradient}
+      >
         <View style={styles.headerContent}>
-          <Text style={styles.greeting}>Hello,</Text>
-          <Text style={styles.userName}>{profile?.name || user?.name}</Text>
-          <Text style={styles.role}>{profile?.role_name}</Text>
-        </View>
-        <TouchableOpacity 
-          style={styles.profileButton}
-          onPress={() => navigation.navigate('Profile')}
-        >
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {(profile?.name || user?.name || 'U').charAt(0).toUpperCase()}
-            </Text>
+          <View style={styles.headerTop}>
+            <View style={styles.greetingSection}>
+              <Text style={styles.greetingText}>{getGreeting()}</Text>
+              <Text style={styles.userName}>{profile?.name || user?.name || 'User'}</Text>
+              <Text style={styles.userRole}>{profile?.role_name || user?.role || 'Employee'}</Text>
+            </View>
+            <TouchableOpacity 
+              style={styles.avatarContainer}
+              onPress={() => navigation.navigate('Profile')}
+            >
+              {profile?.photo_url ? (
+                <Image source={{ uri: profile.photo_url }} style={styles.avatar} />
+              ) : (
+                <View style={styles.avatarPlaceholder}>
+                  <Text style={styles.avatarText}>{getInitials(profile?.name || user?.name || '')}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
           </View>
-        </TouchableOpacity>
-      </View>
+          
+          {/* Quick Stats Row */}
+          <View style={styles.quickStatsRow}>
+            <View style={styles.quickStat}>
+              <Text style={styles.quickStatValue}>{attendance?.present_days || 0}</Text>
+              <Text style={styles.quickStatLabel}>Present</Text>
+            </View>
+            <View style={styles.quickStatDivider} />
+            <View style={styles.quickStat}>
+              <Text style={styles.quickStatValue}>{totalLeaves}</Text>
+              <Text style={styles.quickStatLabel}>Leaves Left</Text>
+            </View>
+            <View style={styles.quickStatDivider} />
+            <View style={styles.quickStat}>
+              <Text style={styles.quickStatValue}>{attendance?.working_days || 0}</Text>
+              <Text style={styles.quickStatLabel}>Work Days</Text>
+            </View>
+          </View>
+        </View>
+      </LinearGradient>
 
-      {/* Quick Actions */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
-        <View style={styles.quickActionsGrid}>
-          <QuickAction 
-            icon="calendar" 
-            label="Apply Leave" 
-            color="#4CAF50"
-            onPress={() => navigation.navigate('Leave', { screen: 'LeaveApply' })}
-          />
-          <QuickAction 
-            icon="wallet" 
-            label="Payslips" 
-            color="#FF9800"
+      {/* Main Content */}
+      <View style={styles.mainContent}>
+        {/* Bento Grid */}
+        <View style={styles.bentoGrid}>
+          {/* Leave Balance Card - Large */}
+          <TouchableOpacity 
+            style={[styles.bentoCard, styles.bentoCardLarge]}
+            onPress={() => navigation.navigate('Leave')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.bentoCardHeader}>
+              <View style={[styles.bentoIconContainer, { backgroundColor: colors.status.infoLight }]}>
+                <Ionicons name="calendar" size={22} color={colors.status.info} />
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.text.muted} />
+            </View>
+            <Text style={styles.bentoCardTitle}>Leave Balance</Text>
+            <View style={styles.leaveBalanceGrid}>
+              <View style={styles.leaveBalanceItem}>
+                <Text style={styles.leaveBalanceValue}>{leaveBalance?.casual_leaves?.available || 0}</Text>
+                <Text style={styles.leaveBalanceLabel}>Casual</Text>
+              </View>
+              <View style={styles.leaveBalanceItem}>
+                <Text style={styles.leaveBalanceValue}>{leaveBalance?.sick_leaves?.available || 0}</Text>
+                <Text style={styles.leaveBalanceLabel}>Sick</Text>
+              </View>
+              <View style={styles.leaveBalanceItem}>
+                <Text style={styles.leaveBalanceValue}>{leaveBalance?.earned_leaves?.available || 0}</Text>
+                <Text style={styles.leaveBalanceLabel}>Earned</Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+
+          {/* Payslips Card */}
+          <TouchableOpacity 
+            style={styles.bentoCard}
             onPress={() => navigation.navigate('Payslips')}
-          />
-          <QuickAction 
-            icon="document-text" 
-            label="Documents" 
-            color="#9C27B0"
+            activeOpacity={0.7}
+          >
+            <View style={[styles.bentoIconContainer, { backgroundColor: colors.status.successLight }]}>
+              <Ionicons name="wallet" size={22} color={colors.status.success} />
+            </View>
+            <Text style={styles.bentoCardTitle}>Payslips</Text>
+            <Text style={styles.bentoCardSubtitle}>View salary slips</Text>
+          </TouchableOpacity>
+
+          {/* Profile Card */}
+          <TouchableOpacity 
+            style={styles.bentoCard}
+            onPress={() => navigation.navigate('Profile')}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.bentoIconContainer, { backgroundColor: colors.primary.light }]}>
+              <Ionicons name="person" size={22} color={colors.primary.default} />
+            </View>
+            <Text style={styles.bentoCardTitle}>My Profile</Text>
+            <Text style={styles.bentoCardSubtitle}>Personal details</Text>
+          </TouchableOpacity>
+
+          {/* Documents Card */}
+          <TouchableOpacity 
+            style={styles.bentoCard}
             onPress={() => navigation.navigate('Documents')}
-          />
-          <QuickAction 
-            icon="calendar-number" 
-            label="Holidays" 
-            color="#E91E63"
+            activeOpacity={0.7}
+          >
+            <View style={[styles.bentoIconContainer, { backgroundColor: colors.status.warningLight }]}>
+              <Ionicons name="document-text" size={22} color={colors.status.warning} />
+            </View>
+            <Text style={styles.bentoCardTitle}>Documents</Text>
+            <Text style={styles.bentoCardSubtitle}>View & upload</Text>
+          </TouchableOpacity>
+
+          {/* Holidays Card */}
+          <TouchableOpacity 
+            style={styles.bentoCard}
             onPress={() => navigation.navigate('HolidayCalendar')}
-          />
-          <QuickAction 
-            icon="settings" 
-            label="Settings" 
-            color="#607D8B"
-            onPress={() => navigation.navigate('Settings')}
-          />
-        </View>
-      </View>
+            activeOpacity={0.7}
+          >
+            <View style={[styles.bentoIconContainer, { backgroundColor: colors.accent.light }]}>
+              <Ionicons name="sunny" size={22} color={colors.accent.default} />
+            </View>
+            <Text style={styles.bentoCardTitle}>Holidays</Text>
+            <Text style={styles.bentoCardSubtitle}>Calendar view</Text>
+          </TouchableOpacity>
 
-      {/* Leave Balance */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Leave Balance</Text>
-        <View style={styles.statsRow}>
-          <StatCard 
-            title="Casual" 
-            value={leaveBalance?.casual_leaves?.available ?? '-'} 
-            subtitle="Available"
-            color="#4CAF50"
-          />
-          <StatCard 
-            title="Sick" 
-            value={leaveBalance?.sick_leaves?.available ?? '-'} 
-            subtitle="Available"
-            color="#FF9800"
-          />
-          <StatCard 
-            title="Earned" 
-            value={leaveBalance?.earned_leaves?.available ?? '-'} 
-            subtitle="Available"
-            color="#2196F3"
-          />
+          {/* Notifications Card */}
+          <TouchableOpacity 
+            style={styles.bentoCard}
+            onPress={() => navigation.navigate('Notifications')}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.bentoIconContainer, { backgroundColor: colors.secondary.light }]}>
+              <Ionicons name="notifications" size={22} color={colors.secondary.default} />
+            </View>
+            <Text style={styles.bentoCardTitle}>Alerts</Text>
+            <Text style={styles.bentoCardSubtitle}>Notifications</Text>
+          </TouchableOpacity>
         </View>
-      </View>
 
-      {/* Attendance This Month */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>This Month</Text>
-        <View style={styles.attendanceCard}>
-          <View style={styles.attendanceRow}>
-            <View style={styles.attendanceItem}>
-              <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
-              <Text style={styles.attendanceValue}>{attendance?.present_days ?? 0}</Text>
-              <Text style={styles.attendanceLabel}>Present</Text>
-            </View>
-            <View style={styles.attendanceItem}>
-              <Ionicons name="close-circle" size={24} color="#F44336" />
-              <Text style={styles.attendanceValue}>{attendance?.absent_days ?? 0}</Text>
-              <Text style={styles.attendanceLabel}>Absent</Text>
-            </View>
-            <View style={styles.attendanceItem}>
-              <Ionicons name="calendar" size={24} color="#FF9800" />
-              <Text style={styles.attendanceValue}>{attendance?.leaves_taken ?? 0}</Text>
-              <Text style={styles.attendanceLabel}>On Leave</Text>
-            </View>
-            <View style={styles.attendanceItem}>
-              <Ionicons name="time" size={24} color="#9C27B0" />
-              <Text style={styles.attendanceValue}>{attendance?.overtime_days ?? 0}</Text>
-              <Text style={styles.attendanceLabel}>Overtime</Text>
-            </View>
+        {/* Quick Actions */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          <View style={styles.quickActionsRow}>
+            <TouchableOpacity 
+              style={styles.quickActionButton}
+              onPress={() => navigation.navigate('Leave', { screen: 'LeaveApply' })}
+            >
+              <LinearGradient
+                colors={[colors.primary.default, colors.secondary.default]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.quickActionGradient}
+              >
+                <Ionicons name="add-circle" size={24} color="#FFFFFF" />
+              </LinearGradient>
+              <Text style={styles.quickActionText}>Apply Leave</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.quickActionButton}
+              onPress={() => navigation.navigate('Settings')}
+            >
+              <View style={styles.quickActionIcon}>
+                <Ionicons name="settings" size={24} color={colors.text.secondary} />
+              </View>
+              <Text style={styles.quickActionText}>Settings</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </View>
-
-      {/* Logout Button */}
-      <TouchableOpacity style={styles.logoutButton} onPress={logout}>
-        <Ionicons name="log-out-outline" size={20} color="#F44336" />
-        <Text style={styles.logoutText}>Sign Out</Text>
-      </TouchableOpacity>
-
-      <View style={{ height: 40 }} />
     </ScrollView>
   );
 }
@@ -183,163 +254,197 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.background.app,
   },
-  header: {
-    backgroundColor: '#2196F3',
-    padding: 24,
+  content: {
+    paddingBottom: spacing.xxxl,
+  },
+  headerGradient: {
     paddingTop: 60,
+    paddingBottom: spacing.xxl,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+  },
+  headerContent: {
+    paddingHorizontal: spacing.xl,
+  },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: spacing.xl,
+  },
+  greetingSection: {
+    flex: 1,
+  },
+  greetingText: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.8)',
+    marginBottom: spacing.xs,
+  },
+  userName: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: spacing.xs,
+  },
+  userRole: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.7)',
+  },
+  avatarContainer: {
+    marginLeft: spacing.lg,
+  },
+  avatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    borderWidth: 3,
+    borderColor: 'rgba(255,255,255,0.3)',
+  },
+  avatarPlaceholder: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: 'rgba(255,255,255,0.3)',
+  },
+  avatarText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  quickStatsRow: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+  },
+  quickStat: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  quickStatValue: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  quickStatLabel: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.8)',
+    marginTop: spacing.xs,
+  },
+  quickStatDivider: {
+    width: 1,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    marginHorizontal: spacing.lg,
+  },
+  mainContent: {
+    paddingHorizontal: spacing.lg,
+    marginTop: -spacing.lg,
+  },
+  bentoGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+    marginTop: spacing.xl,
+  },
+  bentoCard: {
+    width: '48%',
+    backgroundColor: colors.background.card,
+    borderRadius: borderRadius.xl,
+    padding: spacing.lg,
+    ...shadows.md,
+  },
+  bentoCardLarge: {
+    width: '100%',
+  },
+  bentoCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: spacing.md,
   },
-  headerContent: {
-    flex: 1,
-  },
-  greeting: {
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: 16,
-  },
-  userName: {
-    color: '#fff',
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  role: {
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: 14,
-    marginTop: 4,
-  },
-  profileButton: {
-    marginLeft: 16,
-  },
-  avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: 'rgba(255,255,255,0.3)',
+  bentoIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: borderRadius.md,
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: spacing.md,
   },
-  avatarText: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: 'bold',
+  bentoCardTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text.primary,
+    marginBottom: spacing.xs,
+  },
+  bentoCardSubtitle: {
+    fontSize: 13,
+    color: colors.text.muted,
+  },
+  leaveBalanceGrid: {
+    flexDirection: 'row',
+    marginTop: spacing.lg,
+    gap: spacing.xl,
+  },
+  leaveBalanceItem: {
+    alignItems: 'center',
+  },
+  leaveBalanceValue: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: colors.primary.default,
+  },
+  leaveBalanceLabel: {
+    fontSize: 12,
+    color: colors.text.muted,
+    marginTop: spacing.xs,
   },
   section: {
-    padding: 16,
+    marginTop: spacing.xxl,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
-    marginBottom: 12,
+    color: colors.text.primary,
+    marginBottom: spacing.lg,
   },
-  quickActionsGrid: {
+  quickActionsRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    gap: spacing.md,
   },
-  quickAction: {
-    width: '48%',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
+  quickActionButton: {
+    flex: 1,
     alignItems: 'center',
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    backgroundColor: colors.background.card,
+    borderRadius: borderRadius.xl,
+    padding: spacing.lg,
+    ...shadows.sm,
   },
-  quickActionIcon: {
+  quickActionGradient: {
     width: 48,
     height: 48,
     borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
-  quickActionLabel: {
-    fontSize: 14,
-    color: '#333',
-    fontWeight: '500',
-  },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginHorizontal: 4,
-    borderLeftWidth: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  statTitle: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 4,
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  statSubtitle: {
-    fontSize: 10,
-    color: '#999',
-    marginTop: 2,
-  },
-  attendanceCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  attendanceRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  attendanceItem: {
-    alignItems: 'center',
-  },
-  attendanceValue: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    marginTop: 8,
-  },
-  attendanceLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 4,
-  },
-  logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  quickActionIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.background.subtle,
     justifyContent: 'center',
-    padding: 16,
-    marginHorizontal: 16,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#F44336',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
   },
-  logoutText: {
-    color: '#F44336',
-    fontSize: 16,
+  quickActionText: {
+    fontSize: 14,
     fontWeight: '500',
-    marginLeft: 8,
+    color: colors.text.secondary,
   },
 });
