@@ -534,7 +534,6 @@ export function PayrollDashboard({ isHR, isFinance }) {
   const isIndianUser = user?.country_code === 'IN' || user?.country_name?.toLowerCase().includes('india');
   const CurrencyIcon = (!isCEO && isIndianUser) ? IndianRupee : DollarSign;
   
-  // NumericInput helper - handles "0" value properly (shows empty on focus if value is 0)
   // Simple number input - NO complex state management, just a plain text field
   const SimpleNumberInput = ({ defaultValue, onValueChange, className, ...props }) => {
     const [value, setValue] = useState(defaultValue?.toString() || '0');
