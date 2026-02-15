@@ -11,7 +11,7 @@ const STATUS_COLORS: Record<string, string> = {
   rejected: '#F44336',
 };
 
-const DOC_ICONS: Record<string, string> = {
+const DOC_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   aadhar: 'card',
   pan: 'card-outline',
   passport: 'globe',
