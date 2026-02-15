@@ -17,7 +17,7 @@ import { toast } from 'sonner';
 import { 
   Plus, Loader2, Pencil, Users, Globe, Search, ChevronDown, ChevronUp,
   FileText, Calendar, DollarSign, History, Eye, X, PauseCircle, PlayCircle,
-  Building, Phone, Mail, MapPin, Briefcase, Clock, CheckCircle, AlertCircle,
+  Building, Phone, Mail, MapPin, Briefcase, Clock, CheckCircle, AlertCircle, XCircle,
   Shield, UserX, UserPlus, Settings, Lock, CreditCard, Upload, Trash2, Camera, Download
 } from 'lucide-react';
 
