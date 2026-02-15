@@ -3044,7 +3044,7 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
 
 // ==================== ROLE MODAL ====================
 function RoleModal({ isOpen, onClose, role, onSave }) {
-  const [form, setForm] = useState({ name: '', code: '', permissions: [] });
+  const [form, setForm] = useState({ name: '', code: '', permissions: [], eligible_sick_leaves_per_month: 2, eligible_casual_leaves_per_month: 1 });
   const [saving, setSaving] = useState(false);
   const isEdit = !!role;
 
@@ -3056,9 +3056,17 @@ function RoleModal({ isOpen, onClose, role, onSave }) {
           name: role.name || '',
           code: role.code || '',
           permissions: presetRole?.permissions || role.permissions || [],
+          eligible_sick_leaves_per_month: role.eligible_sick_leaves_per_month ?? 2,
+          eligible_casual_leaves_per_month: role.eligible_casual_leaves_per_month ?? 1,
         });
       } else {
-        setForm({ name: '', code: '', permissions: PAGE_PERMISSIONS.map(p => ({ page: p.id, view: false, edit: false })) });
+        setForm({ 
+          name: '', 
+          code: '', 
+          permissions: PAGE_PERMISSIONS.map(p => ({ page: p.id, view: false, edit: false })),
+          eligible_sick_leaves_per_month: 2,
+          eligible_casual_leaves_per_month: 1,
+        });
       }
     }
   }, [isOpen, role]);
