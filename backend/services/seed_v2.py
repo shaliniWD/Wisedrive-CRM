@@ -76,18 +76,18 @@ async def seed_v2_data(db: AsyncIOMotorDatabase):
     
     # ==================== ROLES ====================
     roles_data = [
-        {"name": "CEO", "code": "CEO", "level": 1, "department_code": "EXEC", "description": "Chief Executive Officer - Global Super Admin"},
-        {"name": "HR Manager", "code": "HR_MANAGER", "level": 2, "department_code": "HR", "description": "Human Resources Manager"},
-        {"name": "Country Head", "code": "COUNTRY_HEAD", "level": 2, "department_code": "EXEC", "description": "Country Head - Full country access"},
-        {"name": "Finance Manager", "code": "FINANCE_MANAGER", "level": 3, "department_code": "FINANCE", "description": "Finance Manager - Country-level finance access"},
-        {"name": "Sales Head", "code": "SALES_HEAD", "level": 3, "department_code": "SALES", "description": "Head of Sales Department"},
-        {"name": "Inspection Head", "code": "INSPECTION_HEAD", "level": 3, "department_code": "INSPECTION", "description": "Head of Inspection Department"},
-        {"name": "Sales Lead", "code": "SALES_LEAD", "level": 4, "department_code": "SALES", "description": "Sales Team Leader"},
-        {"name": "Inspection Lead", "code": "INSPECTION_LEAD", "level": 4, "department_code": "INSPECTION", "description": "Inspection Team Leader"},
-        {"name": "Sales Executive", "code": "SALES_EXEC", "level": 5, "department_code": "SALES", "description": "Sales Executive"},
-        {"name": "Inspection Coordinator", "code": "INSPECTION_COORD", "level": 5, "department_code": "INSPECTION", "description": "Inspection Coordinator"},
-        {"name": "Report Reviewer", "code": "REPORT_REVIEWER", "level": 5, "department_code": "INSPECTION", "description": "Inspection Report Reviewer"},
-        {"name": "Mechanic", "code": "MECHANIC", "level": 6, "department_code": "INSPECTION", "description": "Field Mechanic / Inspector"},
+        {"name": "CEO", "code": "CEO", "level": 1, "department_code": "EXEC", "description": "Chief Executive Officer - Global Super Admin", "sick": 3, "casual": 2},
+        {"name": "HR Manager", "code": "HR_MANAGER", "level": 2, "department_code": "HR", "description": "Human Resources Manager", "sick": 2, "casual": 1},
+        {"name": "Country Head", "code": "COUNTRY_HEAD", "level": 2, "department_code": "EXEC", "description": "Country Head - Full country access", "sick": 3, "casual": 2},
+        {"name": "Finance Manager", "code": "FINANCE_MANAGER", "level": 3, "department_code": "FINANCE", "description": "Finance Manager - Country-level finance access", "sick": 2, "casual": 1},
+        {"name": "Sales Head", "code": "SALES_HEAD", "level": 3, "department_code": "SALES", "description": "Head of Sales Department", "sick": 2, "casual": 1},
+        {"name": "Inspection Head", "code": "INSPECTION_HEAD", "level": 3, "department_code": "INSPECTION", "description": "Head of Inspection Department", "sick": 2, "casual": 1},
+        {"name": "Sales Lead", "code": "SALES_LEAD", "level": 4, "department_code": "SALES", "description": "Sales Team Leader", "sick": 2, "casual": 1},
+        {"name": "Inspection Lead", "code": "INSPECTION_LEAD", "level": 4, "department_code": "INSPECTION", "description": "Inspection Team Leader", "sick": 2, "casual": 1},
+        {"name": "Sales Executive", "code": "SALES_EXEC", "level": 5, "department_code": "SALES", "description": "Sales Executive", "sick": 2, "casual": 1},
+        {"name": "Inspection Coordinator", "code": "INSPECTION_COORD", "level": 5, "department_code": "INSPECTION", "description": "Inspection Coordinator", "sick": 2, "casual": 1},
+        {"name": "Report Reviewer", "code": "REPORT_REVIEWER", "level": 5, "department_code": "INSPECTION", "description": "Inspection Report Reviewer", "sick": 2, "casual": 1},
+        {"name": "Mechanic", "code": "MECHANIC", "level": 6, "department_code": "INSPECTION", "description": "Field Mechanic / Inspector", "sick": 1, "casual": 1},
     ]
     
     roles = {}
@@ -103,10 +103,20 @@ async def seed_v2_data(db: AsyncIOMotorDatabase):
                 "department_id": departments.get(r["department_code"]),
                 "is_system": True,
                 "description": r["description"],
+                "eligible_sick_leaves_per_month": r.get("sick", 2),
+                "eligible_casual_leaves_per_month": r.get("casual", 1),
                 "created_at": datetime.now(timezone.utc).isoformat()
             })
             roles[r["code"]] = role_id
         else:
+            # Update existing roles with leave entitlements if missing
+            await db.roles.update_one(
+                {"code": r["code"]},
+                {"$set": {
+                    "eligible_sick_leaves_per_month": r.get("sick", 2),
+                    "eligible_casual_leaves_per_month": r.get("casual", 1)
+                }}
+            )
             roles[r["code"]] = existing["id"]
     
     print(f"Roles seeded: {list(roles.keys())}")
