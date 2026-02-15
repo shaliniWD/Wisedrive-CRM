@@ -1346,13 +1346,20 @@ export function PayrollDashboard({ isHR, isFinance }) {
                   <th className="px-3 py-2 text-center text-xs font-semibold text-slate-600 bg-amber-50">
                     <span>LOP Days</span>
                   </th>
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-slate-600 bg-emerald-50">
+                    <span>Incentive</span>
+                  </th>
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-slate-600 bg-pink-50">
+                    <span>OT Days</span>
+                  </th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-pink-50">OT Pay</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-red-50">PF</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-red-50">PT</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-red-50">TDS</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-red-50">ESI</th>
-                  <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-amber-50">LOP Deduction</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-amber-50">LOP Ded.</th>
                   <th className="px-3 py-2 text-center text-xs font-semibold text-slate-600 bg-gray-100">
-                    <span>Other Deductions</span>
+                    <span>Other Ded.</span>
                   </th>
                   <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-blue-50">Net Salary</th>
                 </tr>
@@ -1377,7 +1384,7 @@ export function PayrollDashboard({ isHR, isFinance }) {
                         <SimpleNumberInput
                           defaultValue={previewEdits[record.employee_id]?.lop_days ?? previewEdits[record.employee_id]?.absent_days ?? 0}
                           onValueChange={(val) => handlePreviewEdit(record.employee_id, 'lop_days', val.toString())}
-                          className={`w-16 h-7 text-center text-xs ${previewErrors[record.employee_id]?.lop_days ? 'border-red-500 bg-red-50' : ''}`}
+                          className={`w-14 h-7 text-center text-xs ${previewErrors[record.employee_id]?.lop_days ? 'border-red-500 bg-red-50' : ''}`}
                           data-testid={`lop-days-${record.employee_id}`}
                         />
                         {previewErrors[record.employee_id]?.lop_days && (
@@ -1385,6 +1392,27 @@ export function PayrollDashboard({ isHR, isFinance }) {
                         )}
                       </div>
                     </td>
+                    <td className="px-3 py-2 bg-emerald-50/50">
+                      <div className="flex flex-col items-center">
+                        <SimpleNumberInput
+                          defaultValue={previewEdits[record.employee_id]?.incentive_amount ?? record.incentive_amount ?? 0}
+                          onValueChange={(val) => handlePreviewEdit(record.employee_id, 'incentive_amount', val.toString())}
+                          className="w-20 h-7 text-center text-xs"
+                          data-testid={`incentive-${record.employee_id}`}
+                        />
+                      </div>
+                    </td>
+                    <td className="px-3 py-2 bg-pink-50/50">
+                      <div className="flex flex-col items-center">
+                        <SimpleNumberInput
+                          defaultValue={previewEdits[record.employee_id]?.overtime_days ?? record.overtime_days ?? 0}
+                          onValueChange={(val) => handlePreviewEdit(record.employee_id, 'overtime_days', val.toString())}
+                          className="w-14 h-7 text-center text-xs"
+                          data-testid={`overtime-days-${record.employee_id}`}
+                        />
+                      </div>
+                    </td>
+                    <td className="px-3 py-2 text-right bg-pink-50/50 text-pink-600">{formatCurrency(record.overtime_pay || 0, record.currency_symbol)}</td>
                     <td className="px-3 py-2 text-right bg-red-50/50 text-red-600">{formatCurrency(record.pf_employee, record.currency_symbol)}</td>
                     <td className="px-3 py-2 text-right bg-red-50/50 text-red-600">{formatCurrency(record.professional_tax, record.currency_symbol)}</td>
                     <td className="px-3 py-2 text-right bg-red-50/50 text-red-600">{formatCurrency(record.income_tax, record.currency_symbol)}</td>
