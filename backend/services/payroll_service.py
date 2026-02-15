@@ -1110,6 +1110,8 @@ class PayrollService:
         total_statutory = sum(r.get("total_statutory_deductions", 0) for r in records)
         total_attendance = sum(r.get("attendance_deduction", 0) for r in records)
         total_other = sum(r.get("other_deductions", 0) for r in records)
+        total_incentive = sum(r.get("incentive_amount", 0) for r in records)
+        total_overtime_pay = sum(r.get("overtime_pay", 0) for r in records)
         total_net = sum(r.get("net_salary", 0) for r in records)
         
         # Get pay period
