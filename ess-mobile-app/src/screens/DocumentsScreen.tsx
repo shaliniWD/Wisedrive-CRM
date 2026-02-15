@@ -1,112 +1,163 @@
-// Documents Screen
-import React from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, Linking } from 'react-native';
+// Modern Documents Screen
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  RefreshControl,
+  Linking,
+} from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { getDocuments, getDocumentRequirements } from '../services/api';
+import { colors, spacing, borderRadius, shadows } from '../theme';
 
-const STATUS_COLORS: Record<string, string> = {
-  pending: '#FF9800',
-  verified: '#4CAF50',
-  rejected: '#F44336',
+const STATUS_CONFIG: Record<string, { bg: string; text: string; icon: keyof typeof Ionicons.glyphMap }> = {
+  pending: { bg: '#FEF3C7', text: '#D97706', icon: 'time' },
+  verified: { bg: '#D1FAE5', text: '#059669', icon: 'checkmark-circle' },
+  rejected: { bg: '#FEE2E2', text: '#DC2626', icon: 'close-circle' },
 };
 
-const DOC_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
-  aadhar: 'card',
-  pan: 'card-outline',
-  passport: 'globe',
-  driving_license: 'car',
-  educational: 'school',
-  offer_letter: 'document',
-  experience_letter: 'briefcase',
-  other: 'document-text',
+const DOC_ICONS: Record<string, { icon: keyof typeof Ionicons.glyphMap; color: string }> = {
+  aadhar: { icon: 'card', color: '#3B82F6' },
+  pan: { icon: 'document-text', color: '#8B5CF6' },
+  passport: { icon: 'globe', color: '#10B981' },
+  driving_license: { icon: 'car', color: '#F59E0B' },
+  educational: { icon: 'school', color: '#EC4899' },
+  offer_letter: { icon: 'document', color: '#6366F1' },
+  experience_letter: { icon: 'briefcase', color: '#14B8A6' },
+  bank_statement: { icon: 'wallet', color: '#EF4444' },
+  other: { icon: 'document-attach', color: '#6B7280' },
 };
 
 export default function DocumentsScreen() {
-  const { data: documents, isLoading, refetch } = useQuery({
+  const [refreshing, setRefreshing] = useState(false);
+
+  const { data: documentsData, refetch: refetchDocs } = useQuery({
     queryKey: ['documents'],
     queryFn: () => getDocuments(),
   });
 
-  const { data: requirements } = useQuery({
+  const { data: requirementsData, refetch: refetchReqs } = useQuery({
     queryKey: ['documentRequirements'],
-    queryFn: getDocumentRequirements,
+    queryFn: () => getDocumentRequirements(),
   });
 
-  const handleViewDocument = (url: string) => {
-    if (url) {
-      Linking.openURL(url);
-    }
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([refetchDocs(), refetchReqs()]);
+    setRefreshing(false);
   };
 
-  const DocumentCard = ({ item }: { item: any }) => (
-    <TouchableOpacity
-      style={styles.card}
-      onPress={() => item.file_url && handleViewDocument(item.file_url)}
-      disabled={!item.file_url}
-    >
-      <View style={styles.cardLeft}>
-        <View style={[styles.iconContainer, { backgroundColor: STATUS_COLORS[item.status] + '20' }]}>
-          <Ionicons
-            name={DOC_ICONS[item.document_type] || 'document-text'}
-            size={24}
-            color={STATUS_COLORS[item.status]}
-          />
+  const documents = documentsData?.documents || [];
+  const requirements = requirementsData?.requirements || [];
+
+  const uploadedCount = documents.length;
+  const verifiedCount = documents.filter((d: any) => d.status === 'verified').length;
+  const pendingCount = documents.filter((d: any) => d.status === 'pending').length;
+
+  const formatDocType = (type: string) => {
+    return type?.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()) || 'Document';
+  };
+
+  const renderDocument = ({ item }: { item: any }) => {
+    const status = STATUS_CONFIG[item.status] || STATUS_CONFIG.pending;
+    const docConfig = DOC_ICONS[item.document_type] || DOC_ICONS.other;
+
+    return (
+      <TouchableOpacity
+        style={styles.documentCard}
+        onPress={() => item.file_url && Linking.openURL(item.file_url)}
+        activeOpacity={0.7}
+      >
+        <View style={[styles.docIcon, { backgroundColor: `${docConfig.color}15` }]}>
+          <Ionicons name={docConfig.icon} size={24} color={docConfig.color} />
         </View>
+
         <View style={styles.docInfo}>
-          <Text style={styles.docName}>{item.document_name}</Text>
+          <Text style={styles.docTitle}>{formatDocType(item.document_type)}</Text>
           {item.document_number && (
             <Text style={styles.docNumber}>{item.document_number}</Text>
           )}
-          <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[item.status] + '20' }]}>
-            <Text style={[styles.statusText, { color: STATUS_COLORS[item.status] }]}>
-              {item.status.toUpperCase()}
+          {item.uploaded_at && (
+            <Text style={styles.docDate}>
+              Uploaded: {new Date(item.uploaded_at).toLocaleDateString()}
             </Text>
-          </View>
+          )}
         </View>
-      </View>
-      
-      {item.file_url && (
-        <Ionicons name="eye-outline" size={20} color="#666" />
-      )}
-    </TouchableOpacity>
-  );
+
+        <View style={styles.docRight}>
+          <View style={[styles.statusBadge, { backgroundColor: status.bg }]}>
+            <Ionicons name={status.icon} size={14} color={status.text} />
+            <Text style={[styles.statusText, { color: status.text }]}>{item.status}</Text>
+          </View>
+          {item.file_url && (
+            <Ionicons name="download-outline" size={20} color={colors.text.muted} style={{ marginTop: spacing.sm }} />
+          )}
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={styles.container}>
-      {/* Progress Header */}
-      {requirements && (
-        <View style={styles.progressContainer}>
-          <View style={styles.progressHeader}>
-            <Text style={styles.progressTitle}>Document Completion</Text>
-            <Text style={styles.progressPercent}>
-              {requirements.completion_percentage}%
-            </Text>
+      {/* Header */}
+      <LinearGradient
+        colors={[colors.primary.default, colors.secondary.default]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.headerGradient}
+      >
+        <Text style={styles.headerTitle}>My Documents</Text>
+        <Text style={styles.headerSubtitle}>Manage your uploaded documents</Text>
+
+        {/* Stats Row */}
+        <View style={styles.statsRow}>
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{uploadedCount}</Text>
+            <Text style={styles.statLabel}>Uploaded</Text>
           </View>
-          <View style={styles.progressBar}>
-            <View
-              style={[styles.progressFill, { width: `${requirements.completion_percentage}%` }]}
-            />
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={[styles.statValue, { color: '#4ADE80' }]}>{verifiedCount}</Text>
+            <Text style={styles.statLabel}>Verified</Text>
           </View>
-          <Text style={styles.progressText}>
-            {requirements.completed_count} of {requirements.total_required} required documents uploaded
-          </Text>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={[styles.statValue, { color: '#FBBF24' }]}>{pendingCount}</Text>
+            <Text style={styles.statLabel}>Pending</Text>
+          </View>
         </View>
-      )}
+      </LinearGradient>
 
       {/* Documents List */}
       <FlatList
-        data={documents?.documents || []}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <DocumentCard item={item} />}
+        data={documents}
+        keyExtractor={(item, index) => item.id || index.toString()}
+        renderItem={renderDocument}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary.default} />
+        }
         contentContainerStyle={styles.listContent}
-        refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} />}
+        showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Ionicons name="document-outline" size={64} color="#ccc" />
+            <View style={styles.emptyIconContainer}>
+              <Ionicons name="folder-open-outline" size={48} color={colors.text.muted} />
+            </View>
             <Text style={styles.emptyText}>No documents uploaded</Text>
-            <Text style={styles.emptySubtext}>Upload documents via the web portal</Text>
+            <Text style={styles.emptySubtext}>
+              Contact HR to upload your documents
+            </Text>
           </View>
+        }
+        ListHeaderComponent={
+          documents.length > 0 ? (
+            <Text style={styles.sectionTitle}>Uploaded Documents</Text>
+          ) : null
         }
       />
     </View>
@@ -116,114 +167,131 @@ export default function DocumentsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.background.app,
   },
-  progressContainer: {
-    backgroundColor: '#fff',
-    padding: 16,
-    margin: 16,
-    marginBottom: 0,
-    borderRadius: 12,
+  headerGradient: {
+    paddingTop: 60,
+    paddingBottom: spacing.xxl,
+    paddingHorizontal: spacing.lg,
   },
-  progressHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
-  progressTitle: {
+  headerSubtitle: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
+    color: 'rgba(255,255,255,0.8)',
+    marginTop: spacing.xs,
   },
-  progressPercent: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#4CAF50',
+  statsRow: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginTop: spacing.lg,
   },
-  progressBar: {
-    height: 8,
-    backgroundColor: '#e0e0e0',
-    borderRadius: 4,
-    overflow: 'hidden',
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
   },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#4CAF50',
-    borderRadius: 4,
+  statValue: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
-  progressText: {
+  statLabel: {
     fontSize: 12,
-    color: '#666',
-    marginTop: 8,
+    color: 'rgba(255,255,255,0.8)',
+    marginTop: spacing.xs,
+  },
+  statDivider: {
+    width: 1,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    marginHorizontal: spacing.md,
   },
   listContent: {
-    padding: 16,
+    padding: spacing.lg,
   },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text.primary,
+    marginBottom: spacing.md,
   },
-  cardLeft: {
+  documentCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
+    backgroundColor: colors.background.card,
+    borderRadius: borderRadius.xl,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+    ...shadows.sm,
   },
-  iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  docIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: borderRadius.md,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
   },
   docInfo: {
     flex: 1,
+    marginLeft: spacing.md,
   },
-  docName: {
+  docTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: colors.text.primary,
   },
   docNumber: {
+    fontSize: 13,
+    color: colors.text.secondary,
+    marginTop: spacing.xs,
+  },
+  docDate: {
     fontSize: 12,
-    color: '#666',
-    marginTop: 2,
+    color: colors.text.muted,
+    marginTop: spacing.xs,
+  },
+  docRight: {
+    alignItems: 'flex-end',
   },
   statusBadge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-    marginTop: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
+    gap: 4,
   },
   statusText: {
-    fontSize: 10,
-    fontWeight: 'bold',
+    fontSize: 11,
+    fontWeight: '600',
+    textTransform: 'capitalize',
   },
   emptyState: {
     alignItems: 'center',
-    padding: 40,
+    paddingVertical: spacing.xxxl * 2,
+  },
+  emptyIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: colors.background.subtle,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
   },
   emptyText: {
-    color: '#333',
     fontSize: 18,
     fontWeight: '600',
-    marginTop: 16,
+    color: colors.text.secondary,
   },
   emptySubtext: {
-    color: '#999',
     fontSize: 14,
-    marginTop: 4,
+    color: colors.text.muted,
+    marginTop: spacing.xs,
+    textAlign: 'center',
   },
 });
