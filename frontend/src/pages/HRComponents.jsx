@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { attendanceApi, payrollApi, leaveApi, hrApi } from '@/services/api';
+import { attendanceApi, payrollApi, leaveApi, hrApi, holidayApi } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,7 +13,8 @@ import {
 import { toast } from 'sonner';
 import { 
   Loader2, Clock, IndianRupee, Calendar, CheckCircle, XCircle, AlertCircle,
-  Download, Users, PlayCircle, StopCircle, RefreshCw, FileText, Search, Filter, DollarSign
+  Download, Users, PlayCircle, StopCircle, RefreshCw, FileText, Search, Filter, DollarSign,
+  Plus, Trash2, CalendarDays, Globe
 } from 'lucide-react';
 
 // ==================== ATTENDANCE CALENDAR DASHBOARD ====================
