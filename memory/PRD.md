@@ -8,7 +8,26 @@ Recreate WiseDrive CRM (https://crm.wisedrive.com) design with a modern UI. Crea
 
 ## What's Been Implemented
 
-### HR Module Enhancements V7 (Feb 15, 2025) ✅ LATEST
+### Employee Lifecycle & UI Fix V8 (Feb 15, 2025) ✅ LATEST
+- [x] **Employee Modal Overflow Fix**:
+  - Fixed modal overflow issue - now properly contained within viewport
+  - Added flex layout with proper scrolling on all tabs
+  - Header and tab list fixed, content area scrolls independently
+  - All tabs (Details, Salary, Attendance, Payslips, Documents, Leads) scroll properly
+
+- [x] **Complete Employee Lifecycle Tested**:
+  - Create employee with ALL fields (name, email, photo, country, role, department, weekly off, etc.)
+  - Salary setup with full deductions (basic, HRA, allowances, PF, PT, TDS, ESI)
+  - Attendance management with calendar view and status updates
+  - Payslip upload and download functionality
+  - Document management (ID proofs, offer letters, etc.)
+  - Leads management tab with city assignment and toggle
+
+- [x] **CEO Login Fix**:
+  - Updated seed data to use `kalyan@wisedrive.com` for CEO user
+  - CEO login now works correctly
+
+### HR Module Enhancements V7 (Feb 15, 2025) ✅
 - [x] **Payroll Column Restructure**:
   - New columns: Working Days, Actual Working Days (info modal), Gross Salary (info modal), Incentive (+green), OT Pay (+green), Other Deductions (-red), Net Salary
   - Info modal on Actual Working Days shows: LOP days, leaves taken, entitlement, calculation breakdown
