@@ -13,6 +13,7 @@ import InspectionsPage from "@/pages/InspectionsPage";
 import FinancePage from "@/pages/FinancePage";
 import SettingsPage from "@/pages/SettingsPage";
 import HRModulePage from "@/pages/HRModulePage";
+import NotificationConfigPage from "@/pages/NotificationConfigPage";
 
 // Smart redirect based on visible tabs
 const SmartRedirect = () => {
