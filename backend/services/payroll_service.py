@@ -907,7 +907,7 @@ class PayrollService:
             
             total_gross += record["gross_salary"]
             total_statutory += record["total_statutory_deductions"]
-            total_attendance += record["attendance_deduction"]
+            total_attendance += record.get("attendance_deduction", 0)  # May not exist in v2 records
             total_other += record["other_deductions"]
             total_incentive += record.get("incentive_amount", 0)
             total_overtime += record.get("overtime_pay", 0)
