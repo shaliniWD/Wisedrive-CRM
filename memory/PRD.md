@@ -8,7 +8,50 @@ Recreate WiseDrive CRM (https://crm.wisedrive.com) design with a modern UI. Crea
 
 ## What's Been Implemented
 
-### Employee Lifecycle & UI Fix V8 (Feb 15, 2025) ✅ LATEST
+### ESS Mobile App API V1.0 (Feb 15, 2026) ✅ LATEST
+- [x] **ESS API Project Structure**:
+  - Created separate FastAPI server at `/app/ess/api/`
+  - Independent release cycle from main CRM
+  - Runs on port 8002 (separate from CRM on 8001)
+  - Versioned API prefix: `/ess/v1/`
+
+- [x] **Authentication with Device Management**:
+  - Mobile login with device registration (`/ess/v1/auth/login`)
+  - Single active device policy enforced
+  - New login invalidates all previous sessions
+  - Refresh token support (30-day validity)
+  - Device session tracking in `ess_device_sessions` collection
+
+- [x] **Core ESS Modules Implemented**:
+  - **Profile**: View employee profile, bank details (masked), salary summary, attendance summary
+  - **Leave Management**: Apply for leave, view balance, leave history, cancel pending leaves
+  - **Payslips**: View payslip list, detailed payslip, download PDF
+  - **Documents**: View uploaded documents, document requirements checklist
+  - **Notifications**: In-app notifications, notification settings, quiet hours
+
+- [x] **Leave Approver Functionality**:
+  - Managers can view pending approvals (`/ess/v1/leave/pending-approvals`)
+  - Approve/reject leave requests with comments
+  - Role-based access control (CEO, HR_MANAGER, COUNTRY_HEAD, etc.)
+
+- [x] **Push Notification Services**:
+  - FCM (Firebase Cloud Messaging) integration structure
+  - APNS (Apple Push Notification Service) integration structure
+  - In-app notification service for leave updates, payslip alerts, etc.
+  - User notification preferences with quiet hours
+
+- [x] **API Contract Document**:
+  - Complete OpenAPI 3.0 specification at `/app/ess/docs/ess-api-v1.yaml`
+  - 23+ endpoints documented with schemas
+  - Ready for SDK generation
+
+- [x] **Testing**:
+  - 32 backend tests passed (100% success rate)
+  - All authentication flows tested
+  - Leave application workflow validated
+  - Route ordering fixes applied
+
+### Employee Lifecycle & UI Fix V8 (Feb 15, 2025) ✅
 - [x] **Employee Modal Overflow Fix**:
   - Fixed modal overflow issue - now properly contained within viewport
   - Added flex layout with proper scrolling on all tabs
