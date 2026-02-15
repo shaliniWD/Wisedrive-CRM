@@ -155,6 +155,12 @@ export const getAttendanceSummary = async (month?: number, year?: number) => {
   return response.data;
 };
 
+export const getHolidays = async (year?: number) => {
+  const params = year ? `?year=${year}` : '';
+  const response = await api.get(`${API_ENDPOINTS.HOLIDAYS}${params}`);
+  return response.data;
+};
+
 // Leave
 export const applyLeave = async (leaveData: any) => {
   const response = await api.post(API_ENDPOINTS.LEAVE_APPLY, leaveData);
