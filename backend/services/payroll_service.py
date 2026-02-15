@@ -109,14 +109,22 @@ class PayrollService:
         other_deductions = salary.get("other_deductions", 0)
         total_statutory = pf_employee + professional_tax + income_tax + other_deductions
         
-        # Attendance deduction
+        # Attendance deduction (LOP)
         working_days = attendance.get("working_days", 22)
         per_day_salary = gross / working_days if working_days > 0 else 0
-        unapproved_absent = attendance.get("unapproved_absent_days", 0)
-        attendance_deduction = per_day_salary * unapproved_absent
+        lop_days = attendance.get("lop_days", attendance.get("unapproved_absent_days", 0))
+        attendance_deduction = per_day_salary * lop_days
         
-        # Net salary
-        net = gross - total_statutory - attendance_deduction
+        # Overtime calculation
+        overtime_days = attendance.get("overtime_days", 0)
+        overtime_rate = employee.get("overtime_rate_per_day", 0)
+        overtime_payment = overtime_days * overtime_rate
+        
+        # Incentive (defaults to 0, can be set during payroll processing)
+        incentive_amount = 0
+        
+        # Net salary = Gross - LOP Deduction + Incentive + Overtime - Other Deductions
+        net = gross - attendance_deduction + incentive_amount + overtime_payment - total_statutory
         
         # For freelancers/mechanics
         inspections = 0
@@ -167,9 +175,15 @@ class PayrollService:
             # Attendance
             "working_days_in_month": working_days,
             "per_day_salary": round(per_day_salary, 2),
-            "lop_days": unapproved_absent,  # LOP days (replaces unapproved_absent_days in UI)
-            "unapproved_absent_days": unapproved_absent,  # Keep for backward compatibility
+            "lop_days": lop_days,
+            "unapproved_absent_days": lop_days,  # Keep for backward compatibility
             "attendance_deduction": round(attendance_deduction, 2),
+            
+            # Incentive and Overtime (new)
+            "incentive_amount": incentive_amount,
+            "overtime_days": overtime_days,
+            "overtime_rate_per_day": overtime_rate,
+            "overtime_payment": round(overtime_payment, 2),
             
             # Attendance summary
             "present_days": attendance.get("present_days", 0),
