@@ -1327,9 +1327,9 @@ export function PayrollDashboard({ isHR, isFinance }) {
                     <td className="px-3 py-2 text-right font-medium text-emerald-600">{formatCurrency(record.gross_salary, record.currency_symbol)}</td>
                     <td className="px-3 py-2 bg-amber-50/50">
                       <div className="flex flex-col items-center">
-                        <NumericInput
-                          value={previewEdits[record.employee_id]?.lop_days ?? previewEdits[record.employee_id]?.absent_days ?? 0}
-                          onChange={(e) => handlePreviewEdit(record.employee_id, 'lop_days', e.target.value)}
+                        <SimpleNumberInput
+                          defaultValue={previewEdits[record.employee_id]?.lop_days ?? previewEdits[record.employee_id]?.absent_days ?? 0}
+                          onValueChange={(val) => handlePreviewEdit(record.employee_id, 'lop_days', val.toString())}
                           className={`w-16 h-7 text-center text-xs ${previewErrors[record.employee_id]?.lop_days ? 'border-red-500 bg-red-50' : ''}`}
                           data-testid={`lop-days-${record.employee_id}`}
                         />
@@ -1345,9 +1345,9 @@ export function PayrollDashboard({ isHR, isFinance }) {
                     <td className="px-3 py-2 text-right bg-amber-50/50 text-amber-600">{formatCurrency(record.attendance_deduction, record.currency_symbol)}</td>
                     <td className="px-3 py-2 bg-gray-100/50">
                       <div className="flex flex-col items-center">
-                        <NumericInput
-                          value={previewEdits[record.employee_id]?.other_deductions ?? record.other_deductions}
-                          onChange={(e) => handlePreviewEdit(record.employee_id, 'other_deductions', e.target.value)}
+                        <SimpleNumberInput
+                          defaultValue={previewEdits[record.employee_id]?.other_deductions ?? record.other_deductions}
+                          onValueChange={(val) => handlePreviewEdit(record.employee_id, 'other_deductions', val.toString())}
                           className={`w-20 h-7 text-center text-xs ${previewErrors[record.employee_id]?.other_deductions ? 'border-red-500 bg-red-50' : ''}`}
                           data-testid={`other-deductions-${record.employee_id}`}
                         />
