@@ -2,7 +2,7 @@
 from fastapi import APIRouter, HTTPException, Depends, Request, Query
 from datetime import datetime, timezone
 
-from models.document import (
+from models_ess.document import (
     DocumentResponse,
     DocumentListResponse,
     DocumentType,

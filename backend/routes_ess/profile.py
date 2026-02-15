@@ -2,7 +2,7 @@
 from fastapi import APIRouter, HTTPException, Depends, Request
 from datetime import datetime, timezone
 
-from models.profile import (
+from models_ess.profile import (
     EmployeeProfile,
     EmployeeProfileUpdate,
     BankDetailsResponse,

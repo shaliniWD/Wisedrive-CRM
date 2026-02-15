@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException, Depends, Request, Query
 from datetime import datetime, timezone, timedelta
 import uuid
 
-from models.leave import (
+from models_ess.leave import (
     LeaveRequestCreate,
     LeaveRequestResponse,
     LeaveBalanceResponse,

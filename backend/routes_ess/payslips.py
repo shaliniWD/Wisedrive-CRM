@@ -4,7 +4,7 @@ from fastapi.responses import StreamingResponse
 from datetime import datetime, timezone
 import io
 
-from models.payslip import (
+from models_ess.payslip import (
     PayslipSummary,
     PayslipDetail,
     PayslipListResponse,
