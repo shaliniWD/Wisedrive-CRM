@@ -287,7 +287,7 @@ async def seed_v2_data(db: AsyncIOMotorDatabase):
     
     users_data = [
         # CEO
-        {"email": "ceo@wisedrive.com", "name": "Rajesh Kumar", "role_code": "CEO", "country_code": "IN", "team_name": None},
+        {"email": "kalyan@wisedrive.com", "name": "Kalyan Kumar", "role_code": "CEO", "country_code": "IN", "team_name": None},
         # HR
         {"email": "hr@wisedrive.com", "name": "Priya Sharma", "role_code": "HR_MANAGER", "country_code": "IN", "team_name": None},
         # India - Country Head
