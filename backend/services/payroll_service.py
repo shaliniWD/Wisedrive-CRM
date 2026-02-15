@@ -1117,6 +1117,207 @@ class PayrollService:
             "ifsc_code": employee.get("ifsc_code"),
         }
     
+    async def _calculate_employee_payroll_v2(
+        self,
+        employee: dict,
+        month: int,
+        year: int,
+        working_days: int,
+        currency: str,
+        currency_symbol: str,
+        public_holiday_dates: list,
+        public_holiday_names: dict,
+        weekly_offs_in_month: int,
+        employee_weekly_off: int,
+        eligible_sick_leaves: int,
+        eligible_casual_leaves: int
+    ) -> dict:
+        """
+        Calculate payroll for a single employee with detailed breakdown for new payroll structure.
+        
+        Key calculations:
+        - Working Days = Days in Month - Public Holidays
+        - Actual Working Days = Working Days - LOP Days - Leaves beyond entitlement
+        - Pro-rated Gross = (Monthly Gross / Working Days) × Actual Working Days
+        - Net = Pro-rated Gross + Incentive + OT Pay - Statutory - Other Deductions
+        """
+        
+        # Get salary structure
+        salary = await self.db.salary_structures.find_one(
+            {"employee_id": employee["id"], "is_active": True},
+            {"_id": 0}
+        )
+        
+        # Get department name
+        dept_name = None
+        if employee.get("department_id"):
+            dept = await self.db.departments.find_one({"id": employee["department_id"]}, {"_id": 0, "name": 1})
+            dept_name = dept.get("name") if dept else None
+        
+        # Calculate salary components
+        basic = salary.get("basic_salary", 0) if salary else 0
+        hra = salary.get("hra", 0) if salary else 0
+        conveyance = salary.get("conveyance", 0) if salary else 0
+        medical = salary.get("medical_allowance", 0) if salary else 0
+        special = salary.get("special_allowance", 0) if salary else 0
+        variable = salary.get("variable_pay", 0) if salary else 0
+        
+        monthly_gross = basic + hra + conveyance + medical + special + variable
+        
+        # Statutory deductions (from salary structure) - these are fixed monthly amounts
+        pf_employee = salary.get("pf_employee", 0) if salary else 0
+        pf_employer = salary.get("pf_employer", 0) if salary else 0
+        professional_tax = salary.get("professional_tax", 0) if salary else 0
+        income_tax = salary.get("income_tax", 0) if salary else 0
+        esi = salary.get("esi", 0) if salary else 0
+        other_statutory = salary.get("other_statutory", 0) if salary else 0
+        total_statutory = pf_employee + professional_tax + income_tax + esi + other_statutory
+        
+        # Get attendance data
+        total_leave_entitlement = eligible_sick_leaves + eligible_casual_leaves
+        
+        if self.attendance_service:
+            attendance = await self.attendance_service.get_attendance_summary(
+                employee["id"], month, year
+            )
+        else:
+            attendance = {
+                "present_days": working_days,
+                "approved_leave_days": 0,
+                "unapproved_absent_days": 0,
+                "lop_days": 0,
+                "overtime_days": 0
+            }
+        
+        # Calculate leaves taken
+        approved_leaves_taken = attendance.get("approved_leave_days", 0)
+        lop_days = attendance.get("lop_days", 0)  # Days marked as LOP/Absent
+        overtime_days_from_attendance = attendance.get("overtime_days", 0)
+        
+        # Calculate leaves beyond entitlement
+        leaves_beyond_entitlement = max(0, approved_leaves_taken - total_leave_entitlement)
+        
+        # Actual Working Days calculation
+        # Actual = Working Days - LOP Days - Leaves beyond entitlement
+        # Note: Weekly offs are an entitlement, not deducted
+        actual_working_days = working_days - lop_days - leaves_beyond_entitlement
+        actual_working_days = max(0, actual_working_days)  # Can't be negative
+        
+        # Pro-rated Gross Salary calculation
+        per_day_salary = monthly_gross / working_days if working_days > 0 else 0
+        prorated_gross = round(per_day_salary * actual_working_days, 2)
+        
+        # Deduction details for info modal
+        deduction_breakdown = {
+            "lop_days": lop_days,
+            "leaves_taken": approved_leaves_taken,
+            "leave_entitlement": total_leave_entitlement,
+            "leaves_beyond_entitlement": leaves_beyond_entitlement,
+            "weekly_offs_in_month": weekly_offs_in_month,
+            "calculation": f"Working Days ({working_days}) - LOP Days ({lop_days}) - Leaves Beyond Entitlement ({leaves_beyond_entitlement}) = {actual_working_days}"
+        }
+        
+        # Gross salary calculation for info modal
+        gross_calculation = {
+            "monthly_gross": monthly_gross,
+            "working_days": working_days,
+            "actual_working_days": actual_working_days,
+            "per_day_salary": round(per_day_salary, 2),
+            "calculation": f"(Monthly Gross {currency_symbol}{monthly_gross:,.2f} / Working Days {working_days}) × Actual Working Days {actual_working_days} = {currency_symbol}{prorated_gross:,.2f}"
+        }
+        
+        # Incentive and Overtime (defaults to 0, editable by HR)
+        incentive_amount = 0
+        overtime_rate_per_day = employee.get("overtime_rate_per_day", 0)
+        overtime_days = 0  # Default, editable
+        overtime_pay = 0
+        
+        # Other deductions (editable - starts at 0)
+        other_deductions = 0
+        
+        # Total deductions (only includes statutory and other for new formula)
+        total_deductions = total_statutory + other_deductions
+        
+        # Net salary calculation: Pro-rated Gross + Incentive + OT Pay - Total Deductions
+        net = round(prorated_gross + incentive_amount + overtime_pay - total_deductions, 2)
+        
+        return {
+            "employee_id": employee["id"],
+            "employee_name": employee.get("name", ""),
+            "employee_code": employee.get("employee_code"),
+            "department_name": dept_name,
+            "country_id": employee.get("country_id"),
+            "weekly_off_day": employee_weekly_off,
+            "month": month,
+            "year": year,
+            
+            # Salary components (NOT EDITABLE)
+            "basic_salary": basic,
+            "hra": hra,
+            "conveyance_allowance": conveyance,
+            "medical_allowance": medical,
+            "special_allowance": special,
+            "variable_pay": variable,
+            "monthly_gross": monthly_gross,
+            
+            # Working days info
+            "working_days": working_days,  # Days in month - Public holidays
+            "actual_working_days": actual_working_days,  # After deducting LOP and excess leaves
+            "deduction_breakdown": deduction_breakdown,  # For info modal
+            
+            # Pro-rated Gross
+            "gross_salary": prorated_gross,  # Pro-rated based on actual working days
+            "gross_calculation": gross_calculation,  # For info modal
+            "per_day_salary": round(per_day_salary, 2),
+            
+            # Leave entitlements (based on role)
+            "eligible_sick_leaves": eligible_sick_leaves,
+            "eligible_casual_leaves": eligible_casual_leaves,
+            "total_leave_entitlement": total_leave_entitlement,
+            "leaves_taken": approved_leaves_taken,
+            "leaves_beyond_entitlement": leaves_beyond_entitlement,
+            
+            # LOP tracking
+            "lop_days": lop_days,
+            
+            # Statutory deductions (EDITABLE)
+            "pf_employee": pf_employee,
+            "pf_employer": pf_employer,
+            "professional_tax": professional_tax,
+            "income_tax": income_tax,
+            "esi": esi,
+            "other_statutory": other_statutory,
+            "total_statutory_deductions": round(total_statutory, 2),
+            
+            # Incentive (EDITABLE - green background)
+            "incentive_amount": incentive_amount,
+            
+            # Overtime (EDITABLE - green background)
+            "overtime_rate_per_day": overtime_rate_per_day,
+            "overtime_days": overtime_days,
+            "overtime_pay": overtime_pay,
+            
+            # Other deductions (EDITABLE - red background)
+            "other_deductions": other_deductions,
+            "other_deductions_reason": None,
+            
+            # Total deductions
+            "total_deductions": round(total_deductions, 2),
+            
+            # Net salary (AUTO CALCULATED)
+            # Net = Pro-rated Gross + Incentive + OT Pay - Statutory - Other Deductions
+            "net_salary": net,
+            
+            # Currency
+            "currency": currency,
+            "currency_symbol": currency_symbol,
+            
+            # Bank details
+            "bank_name": employee.get("bank_name"),
+            "bank_account_number": employee.get("bank_account_number"),
+            "ifsc_code": employee.get("ifsc_code"),
+        }
+    
     async def create_batch(
         self,
         month: int,
