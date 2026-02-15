@@ -1,75 +1,65 @@
-// Modern Leave Screen
+// Premium Leave Screen - Dark Theme
 import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  FlatList,
+  ScrollView,
   TouchableOpacity,
   RefreshControl,
 } from 'react-native';
-import { useQuery } from '@tanstack/react-query';
-import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { format, parseISO } from 'date-fns';
-import { getLeaveHistory, getLeaveBalance } from '../services/api';
-import { colors, spacing, fontSize, radius, iconSize } from '../theme';
+import { format } from 'date-fns';
+import { getLeaveBalance, getLeaveHistory } from '../services/api';
+import { colors, spacing, fontSize, fontWeight, radius, iconSize } from '../theme';
 
-const STATUS_CONFIG: Record<string, { bg: string; text: string }> = {
-  pending: { bg: colors.status.warningBg, text: colors.status.warning },
-  approved: { bg: colors.status.successBg, text: colors.status.success },
-  rejected: { bg: colors.status.errorBg, text: colors.status.error },
-  cancelled: { bg: colors.background.tertiary, text: colors.text.tertiary },
-};
+type LeaveStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
 
 export default function LeaveScreen() {
   const navigation = useNavigation<any>();
+  const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
+  const [filter, setFilter] = useState<'all' | LeaveStatus>('all');
 
-  const { data: leaveHistory, refetch: refetchHistory } = useQuery({
-    queryKey: ['leaveHistory'],
-    queryFn: () => getLeaveHistory(),
-  });
-
-  const { data: leaveBalance, refetch: refetchBalance } = useQuery({
+  const { data: leaveBalance } = useQuery({
     queryKey: ['leaveBalance'],
     queryFn: () => getLeaveBalance(),
   });
 
+  const { data: leaveHistory } = useQuery({
+    queryKey: ['leaveHistory'],
+    queryFn: () => getLeaveHistory(1, 50),
+  });
+
   const onRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([refetchHistory(), refetchBalance()]);
+    await queryClient.invalidateQueries({ queryKey: ['leaveBalance'] });
+    await queryClient.invalidateQueries({ queryKey: ['leaveHistory'] });
     setRefreshing(false);
   };
 
-  const leaves = leaveHistory?.requests || [];
+  const leaves = leaveHistory?.items || [];
+  const filteredLeaves = filter === 'all' 
+    ? leaves 
+    : leaves.filter((l: any) => l.status === filter);
 
-  const renderLeaveItem = ({ item }: { item: any }) => {
-    const status = STATUS_CONFIG[item.status] || STATUS_CONFIG.pending;
-    const startDate = parseISO(item.start_date);
-    const endDate = parseISO(item.end_date);
-
-    return (
-      <TouchableOpacity
-        style={styles.leaveCard}
-        onPress={() => navigation.navigate('LeaveDetail', { leaveId: item.id })}
-      >
-        <View style={styles.leaveLeft}>
-          <Text style={styles.leaveType}>
-            {item.leave_type?.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
-          </Text>
-          <Text style={styles.leaveDates}>
-            {format(startDate, 'MMM d')} - {format(endDate, 'MMM d')}
-          </Text>
-          <Text style={styles.leaveDays}>{item.days_count} day(s)</Text>
-        </View>
-        <View style={[styles.statusBadge, { backgroundColor: status.bg }]}>
-          <Text style={[styles.statusText, { color: status.text }]}>{item.status}</Text>
-        </View>
-      </TouchableOpacity>
-    );
+  const getStatusStyle = (status: string) => {
+    switch (status) {
+      case 'approved':
+        return { bg: colors.successBg, color: colors.success };
+      case 'pending':
+        return { bg: colors.warningBg, color: colors.warning };
+      case 'rejected':
+      case 'cancelled':
+        return { bg: colors.errorBg, color: colors.error };
+      default:
+        return { bg: colors.surface, color: colors.text.secondary };
+    }
   };
 
   return (
@@ -77,163 +67,285 @@ export default function LeaveScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Leave</Text>
-        <TouchableOpacity 
+        <TouchableOpacity
+          testID="apply-leave-btn"
           style={styles.applyBtn}
           onPress={() => navigation.navigate('LeaveApply')}
         >
-          <Ionicons name="add" size={iconSize.md} color={colors.text.inverse} />
-          <Text style={styles.applyBtnText}>Apply</Text>
+          <LinearGradient
+            colors={colors.gradients.primary}
+            style={styles.applyBtnGradient}
+          >
+            <Ionicons name="add" size={iconSize.md} color="#FFF" />
+            <Text style={styles.applyBtnText}>Apply</Text>
+          </LinearGradient>
         </TouchableOpacity>
       </View>
 
-      {/* Balance Cards */}
-      <View style={styles.balanceSection}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+          />
+        }
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* Balance Cards */}
         <View style={styles.balanceRow}>
-          <BalanceCard label="Casual" value={leaveBalance?.casual_leaves?.available || 0} total={leaveBalance?.casual_leaves?.total || 12} color={colors.status.warning} />
-          <BalanceCard label="Sick" value={leaveBalance?.sick_leaves?.available || 0} total={leaveBalance?.sick_leaves?.total || 12} color={colors.status.error} />
-          <BalanceCard label="Earned" value={leaveBalance?.earned_leaves?.available || 0} total={leaveBalance?.earned_leaves?.total || 15} color={colors.primary.default} />
+          <BalanceCard
+            label="Casual"
+            available={leaveBalance?.casual_leaves?.available || 0}
+            total={leaveBalance?.casual_leaves?.total || 12}
+            color={colors.success}
+          />
+          <BalanceCard
+            label="Sick"
+            available={leaveBalance?.sick_leaves?.available || 0}
+            total={leaveBalance?.sick_leaves?.total || 12}
+            color={colors.warning}
+          />
+          <BalanceCard
+            label="Earned"
+            available={leaveBalance?.earned_leaves?.available || 0}
+            total={leaveBalance?.earned_leaves?.total || 15}
+            color={colors.accent}
+          />
         </View>
-      </View>
 
-      {/* Leave History */}
-      <View style={styles.historySection}>
-        <Text style={styles.sectionTitle}>History</Text>
-        <FlatList
-          data={leaves}
-          keyExtractor={(item) => item.id}
-          renderItem={renderLeaveItem}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary.default} />}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.listContent}
-          ListEmptyComponent={
+        {/* Filter Tabs */}
+        <View style={styles.filterRow}>
+          {(['all', 'pending', 'approved', 'rejected'] as const).map((f) => (
+            <TouchableOpacity
+              key={f}
+              testID={`filter-${f}`}
+              style={[styles.filterTab, filter === f && styles.filterTabActive]}
+              onPress={() => setFilter(f)}
+            >
+              <Text style={[styles.filterText, filter === f && styles.filterTextActive]}>
+                {f.charAt(0).toUpperCase() + f.slice(1)}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Leave History */}
+        <View style={styles.historySection}>
+          <Text style={styles.sectionLabel}>History</Text>
+          {filteredLeaves.length === 0 ? (
             <View style={styles.emptyState}>
               <Ionicons name="calendar-outline" size={40} color={colors.text.tertiary} />
-              <Text style={styles.emptyText}>No leave requests yet</Text>
+              <Text style={styles.emptyText}>No leave requests found</Text>
             </View>
-          }
-        />
-      </View>
+          ) : (
+            filteredLeaves.map((leave: any) => {
+              const statusStyle = getStatusStyle(leave.status);
+              return (
+                <TouchableOpacity
+                  key={leave.id}
+                  testID={`leave-item-${leave.id}`}
+                  style={styles.leaveCard}
+                  onPress={() => navigation.navigate('LeaveDetail', { leaveId: leave.id })}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.leaveHeader}>
+                    <View style={styles.leaveTypeContainer}>
+                      <Text style={styles.leaveType}>{leave.leave_type}</Text>
+                      <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
+                        <Text style={[styles.statusText, { color: statusStyle.color }]}>
+                          {leave.status}
+                        </Text>
+                      </View>
+                    </View>
+                    <Text style={styles.leaveDays}>
+                      {leave.days} {leave.days === 1 ? 'day' : 'days'}
+                    </Text>
+                  </View>
+                  <View style={styles.leaveDates}>
+                    <Ionicons name="calendar-outline" size={14} color={colors.text.tertiary} />
+                    <Text style={styles.leaveDateText}>
+                      {format(new Date(leave.start_date), 'MMM d')} - {format(new Date(leave.end_date), 'MMM d, yyyy')}
+                    </Text>
+                  </View>
+                  {leave.reason && (
+                    <Text style={styles.leaveReason} numberOfLines={1}>
+                      {leave.reason}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              );
+            })
+          )}
+        </View>
+      </ScrollView>
     </View>
   );
 }
 
-const BalanceCard = ({ label, value, total, color }: { label: string; value: number; total: number; color: string }) => (
+// Balance Card Component
+const BalanceCard = ({ 
+  label, 
+  available, 
+  total, 
+  color 
+}: { 
+  label: string; 
+  available: number; 
+  total: number; 
+  color: string;
+}) => (
   <View style={styles.balanceCard}>
-    <View style={[styles.balanceDot, { backgroundColor: color }]} />
+    <View style={[styles.balanceIndicator, { backgroundColor: color }]} />
+    <Text style={styles.balanceValue}>{available}</Text>
+    <Text style={styles.balanceTotal}>/ {total}</Text>
     <Text style={styles.balanceLabel}>{label}</Text>
-    <Text style={styles.balanceValue}>{value}<Text style={styles.balanceTotal}>/{total}</Text></Text>
   </View>
 );
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background.secondary,
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    backgroundColor: colors.background.primary,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
   },
   headerTitle: {
     fontSize: fontSize.xl,
-    fontWeight: '600',
+    fontWeight: fontWeight.semibold,
     color: colors.text.primary,
   },
   applyBtn: {
+    borderRadius: radius.md,
+    overflow: 'hidden',
+  },
+  applyBtnGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.primary.default,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
-    borderRadius: radius.md,
     gap: spacing.xs,
   },
   applyBtnText: {
+    color: '#FFF',
     fontSize: fontSize.sm,
-    fontWeight: '600',
-    color: colors.text.inverse,
+    fontWeight: fontWeight.medium,
   },
-  balanceSection: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    backgroundColor: colors.background.primary,
+  scrollContent: {
+    padding: spacing.xl,
+    paddingTop: 0,
+    paddingBottom: spacing.xxxxl,
   },
+  // Balance Cards
   balanceRow: {
     flexDirection: 'row',
-    gap: spacing.sm,
+    gap: spacing.md,
+    marginBottom: spacing.xxl,
   },
   balanceCard: {
     flex: 1,
-    backgroundColor: colors.background.tertiary,
-    padding: spacing.md,
+    backgroundColor: colors.surface,
     borderRadius: radius.lg,
+    padding: spacing.lg,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  balanceDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginBottom: spacing.xs,
+  balanceIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginBottom: spacing.sm,
+  },
+  balanceValue: {
+    fontSize: fontSize.xxl,
+    fontWeight: fontWeight.bold,
+    color: colors.text.primary,
+  },
+  balanceTotal: {
+    fontSize: fontSize.xs,
+    color: colors.text.tertiary,
+    marginTop: 2,
   },
   balanceLabel: {
     fontSize: fontSize.xs,
-    color: colors.text.tertiary,
+    color: colors.text.secondary,
+    marginTop: spacing.sm,
   },
-  balanceValue: {
-    fontSize: fontSize.xl,
-    fontWeight: '700',
-    color: colors.text.primary,
-    marginTop: 2,
+  // Filter Tabs
+  filterRow: {
+    flexDirection: 'row',
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    padding: spacing.xs,
+    marginBottom: spacing.xl,
   },
-  balanceTotal: {
-    fontSize: fontSize.sm,
-    fontWeight: '400',
-    color: colors.text.tertiary,
-  },
-  historySection: {
+  filterTab: {
     flex: 1,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
+    paddingVertical: spacing.sm,
+    alignItems: 'center',
+    borderRadius: radius.sm,
   },
-  sectionTitle: {
+  filterTabActive: {
+    backgroundColor: colors.primary,
+  },
+  filterText: {
     fontSize: fontSize.sm,
-    fontWeight: '600',
+    color: colors.text.secondary,
+    fontWeight: fontWeight.medium,
+  },
+  filterTextActive: {
+    color: '#FFF',
+  },
+  // History
+  historySection: {},
+  sectionLabel: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
     color: colors.text.secondary,
     marginBottom: spacing.md,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  listContent: {
-    paddingBottom: spacing.xxl,
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.xxxxl,
+  },
+  emptyText: {
+    fontSize: fontSize.sm,
+    color: colors.text.tertiary,
+    marginTop: spacing.md,
   },
   leaveCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.card,
-    padding: spacing.lg,
+    backgroundColor: colors.surface,
     borderRadius: radius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  leaveHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
     marginBottom: spacing.sm,
   },
-  leaveLeft: {},
+  leaveTypeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
   leaveType: {
     fontSize: fontSize.base,
-    fontWeight: '600',
+    fontWeight: fontWeight.medium,
     color: colors.text.primary,
-  },
-  leaveDates: {
-    fontSize: fontSize.sm,
-    color: colors.text.secondary,
-    marginTop: 2,
-  },
-  leaveDays: {
-    fontSize: fontSize.xs,
-    color: colors.text.tertiary,
-    marginTop: 2,
   },
   statusBadge: {
     paddingHorizontal: spacing.sm,
@@ -242,16 +354,26 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: fontSize.xs,
-    fontWeight: '600',
+    fontWeight: fontWeight.medium,
     textTransform: 'capitalize',
   },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: spacing.xxl * 2,
+  leaveDays: {
+    fontSize: fontSize.sm,
+    color: colors.text.secondary,
   },
-  emptyText: {
+  leaveDates: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.sm,
+  },
+  leaveDateText: {
     fontSize: fontSize.sm,
     color: colors.text.tertiary,
-    marginTop: spacing.md,
+  },
+  leaveReason: {
+    fontSize: fontSize.sm,
+    color: colors.text.secondary,
+    fontStyle: 'italic',
   },
 });
