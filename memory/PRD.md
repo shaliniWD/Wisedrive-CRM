@@ -8,7 +8,43 @@ Recreate WiseDrive CRM (https://crm.wisedrive.com) design with a modern UI. Crea
 
 ## What's Been Implemented
 
-### HR Module Enhancements V5 (Dec 14, 2025) ✅ LATEST
+### HR Module Enhancements V6 (Dec 15, 2025) ✅ LATEST
+- [x] **Holiday Calendar Feature**:
+  - New "Holiday Calendar" tab in HR Module
+  - Country-specific organization holidays
+  - Add/Delete holidays with date, name, and reason
+  - Year and country filters
+  - Holidays reflected in Attendance Calendar as "H" status
+
+- [x] **Overtime Tracking**:
+  - New "Overtime pay per day" field in Employee modal
+  - HR can mark days as "Overtime" in attendance calendar
+  - Overtime (O) status option in day-edit modal
+  - Overtime days and pay tracked in payroll
+
+- [x] **Payroll Preview Enhancements**:
+  - Default LOP Days to 0 (not auto-calculated from absences)
+  - New editable "Incentive Amount" column
+  - New editable "OT Days" column
+  - "OT Pay" calculated automatically (OT Days × OT Rate/Day)
+  - Summary cards show: Gross, Incentives, OT Pay, Deductions, Net
+
+- [x] **New Salary Calculation**:
+  - Formula: Net = Gross + Incentive + OT Pay - Statutory - LOP Deduction - Other Deductions
+  - Backend updated to save incentive_amount, overtime_days, overtime_pay to payroll records
+  - Batch totals include total_incentive and total_overtime_pay
+
+- [x] **Payroll Month Filter**:
+  - New month dropdown filter in Payroll Batches view
+  - Filter batches by specific month (January-December)
+  - "All Months" option to show all batches
+
+- [x] **Attendance Calendar Legend Update**:
+  - Weekly Off (W) - Employee's designated weekly off day
+  - Org Holiday (H) - Organization holidays from Holiday Calendar
+  - Overtime (O) - Days marked as overtime by HR
+
+### HR Module Enhancements V5 (Dec 14, 2025) ✅
 - [x] **NumericInput Bug Fix**:
   - Fixed number jumping issue in payroll preview
   - Added debounce mechanism to prevent premature parent updates
