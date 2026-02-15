@@ -1,4 +1,4 @@
-// Modern Main Navigator - Clean minimal design
+// Premium Main Navigator - Dark Theme with Floating Tab Bar
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -6,9 +6,9 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { LinearGradient } from 'expo-linear-gradient';
 
-import { useAuth } from '../context/AuthContext';
-import { colors, spacing, fontSize, radius, iconSize } from '../theme';
+import { colors, spacing, fontSize, fontWeight, radius, iconSize } from '../theme';
 
 // Screens
 import HomeScreen from '../screens/HomeScreen';
@@ -26,45 +26,6 @@ import HolidayCalendarScreen from '../screens/HolidayCalendarScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
-
-// Custom Header Component
-const CustomHeader = ({ title, showBack = false }: { title: string; showBack?: boolean }) => {
-  const insets = useSafeAreaInsets();
-  const navigation = useNavigation<any>();
-  const { user } = useAuth();
-
-  const getInitials = (name: string) => {
-    return name?.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'U';
-  };
-
-  return (
-    <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
-      <View style={styles.headerLeft}>
-        {showBack ? (
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerIconBtn}>
-            <Ionicons name="chevron-back" size={iconSize.lg} color={colors.text.primary} />
-          </TouchableOpacity>
-        ) : null}
-        <Text style={styles.headerTitle}>{title}</Text>
-      </View>
-      
-      <View style={styles.headerRight}>
-        <TouchableOpacity 
-          onPress={() => navigation.navigate('Notifications')} 
-          style={styles.headerIconBtn}
-        >
-          <Ionicons name="notifications-outline" size={iconSize.md} color={colors.text.secondary} />
-        </TouchableOpacity>
-        <TouchableOpacity 
-          onPress={() => navigation.navigate('Profile')} 
-          style={styles.avatarBtn}
-        >
-          <Text style={styles.avatarText}>{getInitials(user?.name || '')}</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-};
 
 // Stack Navigators
 function HomeStack() {
@@ -116,8 +77,8 @@ function MoreScreen() {
   const insets = useSafeAreaInsets();
 
   const menuItems = [
-    { icon: 'document-text-outline', label: 'Documents', screen: 'Documents', color: colors.status.info },
-    { icon: 'calendar-outline', label: 'Holidays', screen: 'HolidayCalendar', color: colors.status.success },
+    { icon: 'folder-outline', label: 'Documents', screen: 'Documents', color: colors.accent },
+    { icon: 'sunny-outline', label: 'Holidays', screen: 'HolidayCalendar', color: colors.warning },
     { icon: 'settings-outline', label: 'Settings', screen: 'Settings', color: colors.text.secondary },
   ];
 
@@ -130,15 +91,16 @@ function MoreScreen() {
         {menuItems.map((item, index) => (
           <TouchableOpacity
             key={index}
+            testID={`more-${item.label.toLowerCase()}`}
             style={styles.moreItem}
             onPress={() => navigation.navigate(item.screen)}
             activeOpacity={0.7}
           >
-            <View style={[styles.moreItemIcon, { backgroundColor: `${item.color}15` }]}>
+            <View style={[styles.moreItemIcon, { backgroundColor: `${item.color}20` }]}>
               <Ionicons name={item.icon as any} size={iconSize.lg} color={item.color} />
             </View>
             <Text style={styles.moreItemLabel}>{item.label}</Text>
-            <Ionicons name="chevron-forward" size={iconSize.sm} color={colors.text.tertiary} />
+            <Ionicons name="chevron-forward" size={iconSize.md} color={colors.text.tertiary} />
           </TouchableOpacity>
         ))}
       </View>
@@ -146,55 +108,67 @@ function MoreScreen() {
   );
 }
 
-// Custom Tab Bar
+// Custom Floating Tab Bar
 function CustomTabBar({ state, descriptors, navigation }: any) {
   const insets = useSafeAreaInsets();
 
+  const tabs = [
+    { name: 'Home', icon: 'home' },
+    { name: 'Leave', icon: 'calendar' },
+    { name: 'Payslips', icon: 'wallet' },
+    { name: 'More', icon: 'apps' },
+  ];
+
   return (
-    <View style={[styles.tabBar, { paddingBottom: Math.max(insets.bottom, spacing.sm) }]}>
-      {state.routes.map((route: any, index: number) => {
-        const { options } = descriptors[route.key];
-        const isFocused = state.index === index;
+    <View style={[styles.tabBarWrapper, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
+      <View style={styles.tabBarContainer}>
+        {state.routes.map((route: any, index: number) => {
+          const isFocused = state.index === index;
+          const tab = tabs.find(t => t.name === route.name) || tabs[0];
 
-        const iconMap: Record<string, string> = {
-          Home: 'home',
-          Leave: 'calendar',
-          Payslips: 'wallet',
-          More: 'grid',
-        };
+          const onPress = () => {
+            const event = navigation.emit({
+              type: 'tabPress',
+              target: route.key,
+              canPreventDefault: true,
+            });
 
-        const onPress = () => {
-          const event = navigation.emit({
-            type: 'tabPress',
-            target: route.key,
-            canPreventDefault: true,
-          });
+            if (!isFocused && !event.defaultPrevented) {
+              navigation.navigate(route.name);
+            }
+          };
 
-          if (!isFocused && !event.defaultPrevented) {
-            navigation.navigate(route.name);
-          }
-        };
-
-        return (
-          <TouchableOpacity
-            key={index}
-            onPress={onPress}
-            style={styles.tabItem}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.tabIconContainer, isFocused && styles.tabIconActive]}>
-              <Ionicons
-                name={(isFocused ? iconMap[route.name] : `${iconMap[route.name]}-outline`) as any}
-                size={iconSize.lg}
-                color={isFocused ? colors.primary.default : colors.text.tertiary}
-              />
-            </View>
-            <Text style={[styles.tabLabel, isFocused && styles.tabLabelActive]}>
-              {route.name}
-            </Text>
-          </TouchableOpacity>
-        );
-      })}
+          return (
+            <TouchableOpacity
+              key={index}
+              testID={`tab-${route.name.toLowerCase()}`}
+              onPress={onPress}
+              style={styles.tabItem}
+              activeOpacity={0.7}
+            >
+              {isFocused ? (
+                <View style={styles.tabActiveContainer}>
+                  <LinearGradient
+                    colors={colors.gradients.primary}
+                    style={styles.tabActiveGradient}
+                  >
+                    <Ionicons name={tab.icon as any} size={iconSize.lg} color="#FFF" />
+                  </LinearGradient>
+                </View>
+              ) : (
+                <Ionicons 
+                  name={`${tab.icon}-outline` as any} 
+                  size={iconSize.lg} 
+                  color={colors.text.tertiary} 
+                />
+              )}
+              <Text style={[styles.tabLabel, isFocused && styles.tabLabelActive]}>
+                {tab.name}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
     </View>
   );
 }
@@ -214,104 +188,89 @@ export default function MainNavigator() {
 }
 
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  // Tab Bar
+  tabBarWrapper: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.md,
-    backgroundColor: colors.background.primary,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
   },
-  headerLeft: {
+  tabBarContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-  },
-  headerIconBtn: {
-    padding: spacing.xs,
-    marginRight: spacing.xs,
-  },
-  headerTitle: {
-    fontSize: fontSize.lg,
-    fontWeight: '600',
-    color: colors.text.primary,
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  avatarBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.primary.light,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarText: {
-    fontSize: fontSize.xs,
-    fontWeight: '600',
-    color: colors.primary.default,
-  },
-  tabBar: {
-    flexDirection: 'row',
-    backgroundColor: colors.background.primary,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingTop: spacing.sm,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xxl,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    // Glass effect
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
   },
   tabItem: {
     flex: 1,
     alignItems: 'center',
+    paddingVertical: spacing.sm,
   },
-  tabIconContainer: {
-    width: 40,
-    height: 28,
+  tabActiveContainer: {
+    marginBottom: 2,
+  },
+  tabActiveGradient: {
+    width: 44,
+    height: 32,
     borderRadius: radius.md,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  tabIconActive: {
-    backgroundColor: colors.primary.light,
-  },
   tabLabel: {
     fontSize: fontSize.xs,
     color: colors.text.tertiary,
-    marginTop: 2,
+    marginTop: spacing.xs,
+    fontWeight: fontWeight.medium,
   },
   tabLabelActive: {
-    color: colors.primary.default,
-    fontWeight: '500',
+    color: colors.primary,
   },
+  // More Screen
   moreContainer: {
     flex: 1,
-    backgroundColor: colors.background.secondary,
+    backgroundColor: colors.background,
   },
   moreHeader: {
-    padding: spacing.lg,
-    backgroundColor: colors.background.primary,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
   },
   moreTitle: {
     fontSize: fontSize.xl,
-    fontWeight: '600',
+    fontWeight: fontWeight.semibold,
     color: colors.text.primary,
   },
   moreList: {
-    padding: spacing.lg,
+    paddingHorizontal: spacing.xl,
   },
   moreItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.card,
+    backgroundColor: colors.surface,
     padding: spacing.lg,
     borderRadius: radius.lg,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   moreItemIcon: {
-    width: 36,
-    height: 36,
+    width: 40,
+    height: 40,
     borderRadius: radius.md,
     justifyContent: 'center',
     alignItems: 'center',
@@ -319,7 +278,7 @@ const styles = StyleSheet.create({
   moreItemLabel: {
     flex: 1,
     fontSize: fontSize.base,
-    fontWeight: '500',
+    fontWeight: fontWeight.medium,
     color: colors.text.primary,
     marginLeft: spacing.md,
   },
