@@ -14,8 +14,8 @@ import RootNavigator from './src/navigation/RootNavigator';
 // Keep splash screen visible while loading
 SplashScreen.preventAutoHideAsync();
 
-// Create React Query client
-const queryClient = new QueryClient({
+// Create React Query client - exported for cache clearing on logout
+export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60 * 5, // 5 minutes
