@@ -8,8 +8,19 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone
 import uuid
 import os
+import jwt
+from motor.motor_asyncio import AsyncIOMotorClient
 
 router = APIRouter()
+
+# Database connection
+mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+db_name = os.environ.get('DB_NAME', 'test_database')
+_client = AsyncIOMotorClient(mongo_url)
+_db = _client[db_name]
+
+def get_db():
+    return _db
 
 
 # ==================== MODELS ====================
