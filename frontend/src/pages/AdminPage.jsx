@@ -1990,6 +1990,7 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
           account_holder_name: employee.account_holder_name || '',
           bank_branch: employee.bank_branch || '',
           weekly_off_day: employee.weekly_off_day || 0,
+          overtime_rate_per_day: employee.overtime_rate_per_day || 0,
           reporting_manager_id: employee.reporting_manager_id || '',
           payroll_active: employee.payroll_active !== false,
           emergency_contact_name: employee.emergency_contact_name || '',
