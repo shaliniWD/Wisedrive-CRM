@@ -248,7 +248,7 @@ class TestPayrollPreviewWithLeaveEntitlements:
         current_year = datetime.datetime.now().year
         
         preview_response = requests.post(
-            f"{BASE_URL}/api/payroll/preview",
+            f"{BASE_URL}/api/hr/payroll/preview",
             headers=self.headers,
             json={
                 "month": current_month,
@@ -325,7 +325,7 @@ class TestPayrollNewColumnStructure:
         current_year = datetime.datetime.now().year
         
         preview_response = requests.post(
-            f"{BASE_URL}/api/payroll/preview",
+            f"{BASE_URL}/api/hr/payroll/preview",
             headers=self.headers,
             json={
                 "month": current_month,
@@ -340,7 +340,7 @@ class TestPayrollNewColumnStructure:
             
             # Get existing batches
             batches_response = requests.get(
-                f"{BASE_URL}/api/payroll/batches",
+                f"{BASE_URL}/api/hr/payroll/batches",
                 headers=self.headers,
                 params={"month": current_month, "year": current_year, "country_id": country_id}
             )
