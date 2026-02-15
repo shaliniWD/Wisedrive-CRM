@@ -3950,6 +3950,7 @@ async def get_attendance_calendar(
                 "holidays": holidays,
                 "lop_days": lop_days,
                 "half_days": half_days,
+                "overtime_days": overtime_days,
                 "total_days": last_day
             }
         })
@@ -3966,11 +3967,13 @@ async def get_attendance_calendar(
         "countries": countries,
         "legend": {
             "working": {"color": "#10B981", "label": "Present"},
-            "holiday": {"color": "#94A3B8", "label": "Weekend/Holiday"},
+            "weekly_off": {"color": "#94A3B8", "label": "Weekly Off"},
+            "org_holiday": {"color": "#8B5CF6", "label": "Organization Holiday"},
             "leave_approved": {"color": "#3B82F6", "label": "Leave (Approved)"},
             "leave_pending": {"color": "#F59E0B", "label": "Leave (Pending)"},
             "lop": {"color": "#EF4444", "label": "LOP/Absent"},
-            "half_day": {"color": "#F97316", "label": "Half Day"}
+            "half_day": {"color": "#F97316", "label": "Half Day"},
+            "overtime": {"color": "#EC4899", "label": "Overtime"}
         }
     }
 
