@@ -711,6 +711,10 @@ class TestESSAuthSession:
         login_data = login_response.json()
         refresh_token = login_data["refresh_token"]
         
+        # Wait a moment to ensure different token timestamp
+        import time
+        time.sleep(1)
+        
         # Refresh token
         response = requests.post(
             f"{ESS_BASE_URL}/ess/v1/auth/refresh",
@@ -725,7 +729,8 @@ class TestESSAuthSession:
         data = response.json()
         assert "access_token" in data
         assert "refresh_token" in data
-        assert data["access_token"] != login_data["access_token"]  # New token
+        # New refresh token should be different (old one is deleted)
+        assert data["refresh_token"] != refresh_token
         print("✓ Token refresh successful")
         
         # Verify new token works
