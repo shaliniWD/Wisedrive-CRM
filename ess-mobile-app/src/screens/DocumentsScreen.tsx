@@ -11,53 +11,34 @@ import {
 } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { getDocuments, getDocumentRequirements } from '../services/api';
-import { colors, spacing, borderRadius, shadows } from '../theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import { getDocuments } from '../services/api';
+import { colors, spacing, fontSize, radius, iconSize } from '../theme';
 
-const STATUS_CONFIG: Record<string, { bg: string; text: string; icon: keyof typeof Ionicons.glyphMap }> = {
-  pending: { bg: '#FEF3C7', text: '#D97706', icon: 'time' },
-  verified: { bg: '#D1FAE5', text: '#059669', icon: 'checkmark-circle' },
-  rejected: { bg: '#FEE2E2', text: '#DC2626', icon: 'close-circle' },
-};
-
-const DOC_ICONS: Record<string, { icon: keyof typeof Ionicons.glyphMap; color: string }> = {
-  aadhar: { icon: 'card', color: '#3B82F6' },
-  pan: { icon: 'document-text', color: '#8B5CF6' },
-  passport: { icon: 'globe', color: '#10B981' },
-  driving_license: { icon: 'car', color: '#F59E0B' },
-  educational: { icon: 'school', color: '#EC4899' },
-  offer_letter: { icon: 'document', color: '#6366F1' },
-  experience_letter: { icon: 'briefcase', color: '#14B8A6' },
-  bank_statement: { icon: 'wallet', color: '#EF4444' },
-  other: { icon: 'document-attach', color: '#6B7280' },
+const STATUS_CONFIG: Record<string, { bg: string; text: string }> = {
+  pending: { bg: colors.status.warningBg, text: colors.status.warning },
+  verified: { bg: colors.status.successBg, text: colors.status.success },
+  rejected: { bg: colors.status.errorBg, text: colors.status.error },
 };
 
 export default function DocumentsScreen() {
+  const insets = useSafeAreaInsets();
+  const navigation = useNavigation<any>();
   const [refreshing, setRefreshing] = useState(false);
 
-  const { data: documentsData, refetch: refetchDocs } = useQuery({
+  const { data: documentsData, refetch } = useQuery({
     queryKey: ['documents'],
     queryFn: () => getDocuments(),
   });
 
-  const { data: requirementsData, refetch: refetchReqs } = useQuery({
-    queryKey: ['documentRequirements'],
-    queryFn: () => getDocumentRequirements(),
-  });
-
   const onRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([refetchDocs(), refetchReqs()]);
+    await refetch();
     setRefreshing(false);
   };
 
   const documents = documentsData?.documents || [];
-  const requirements = requirementsData?.requirements || [];
-
-  const uploadedCount = documents.length;
-  const verifiedCount = documents.filter((d: any) => d.status === 'verified').length;
-  const pendingCount = documents.filter((d: any) => d.status === 'pending').length;
 
   const formatDocType = (type: string) => {
     return type?.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()) || 'Document';
@@ -65,99 +46,70 @@ export default function DocumentsScreen() {
 
   const renderDocument = ({ item }: { item: any }) => {
     const status = STATUS_CONFIG[item.status] || STATUS_CONFIG.pending;
-    const docConfig = DOC_ICONS[item.document_type] || DOC_ICONS.other;
 
     return (
       <TouchableOpacity
-        style={styles.documentCard}
+        style={styles.docCard}
         onPress={() => item.file_url && Linking.openURL(item.file_url)}
-        activeOpacity={0.7}
       >
-        <View style={[styles.docIcon, { backgroundColor: `${docConfig.color}15` }]}>
-          <Ionicons name={docConfig.icon} size={24} color={docConfig.color} />
+        <View style={styles.docIcon}>
+          <Ionicons name="document-text-outline" size={iconSize.lg} color={colors.primary.default} />
         </View>
-
         <View style={styles.docInfo}>
           <Text style={styles.docTitle}>{formatDocType(item.document_type)}</Text>
-          {item.document_number && (
-            <Text style={styles.docNumber}>{item.document_number}</Text>
-          )}
-          {item.uploaded_at && (
-            <Text style={styles.docDate}>
-              Uploaded: {new Date(item.uploaded_at).toLocaleDateString()}
-            </Text>
-          )}
+          {item.document_number && <Text style={styles.docNumber}>{item.document_number}</Text>}
         </View>
-
-        <View style={styles.docRight}>
-          <View style={[styles.statusBadge, { backgroundColor: status.bg }]}>
-            <Ionicons name={status.icon} size={14} color={status.text} />
-            <Text style={[styles.statusText, { color: status.text }]}>{item.status}</Text>
-          </View>
-          {item.file_url && (
-            <Ionicons name="download-outline" size={20} color={colors.text.muted} style={{ marginTop: spacing.sm }} />
-          )}
+        <View style={[styles.statusBadge, { backgroundColor: status.bg }]}>
+          <Text style={[styles.statusText, { color: status.text }]}>{item.status}</Text>
         </View>
       </TouchableOpacity>
     );
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
-      <LinearGradient
-        colors={[colors.primary.default, colors.secondary.default]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.headerGradient}
-      >
-        <Text style={styles.headerTitle}>My Documents</Text>
-        <Text style={styles.headerSubtitle}>Manage your uploaded documents</Text>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <Ionicons name="chevron-back" size={iconSize.lg} color={colors.text.primary} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Documents</Text>
+        <View style={{ width: 36 }} />
+      </View>
 
-        {/* Stats Row */}
-        <View style={styles.statsRow}>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{uploadedCount}</Text>
-            <Text style={styles.statLabel}>Uploaded</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={[styles.statValue, { color: '#4ADE80' }]}>{verifiedCount}</Text>
-            <Text style={styles.statLabel}>Verified</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={[styles.statValue, { color: '#FBBF24' }]}>{pendingCount}</Text>
-            <Text style={styles.statLabel}>Pending</Text>
-          </View>
+      {/* Stats */}
+      <View style={styles.statsRow}>
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>{documents.length}</Text>
+          <Text style={styles.statLabel}>Total</Text>
         </View>
-      </LinearGradient>
+        <View style={styles.statItem}>
+          <Text style={[styles.statValue, { color: colors.status.success }]}>
+            {documents.filter((d: any) => d.status === 'verified').length}
+          </Text>
+          <Text style={styles.statLabel}>Verified</Text>
+        </View>
+        <View style={styles.statItem}>
+          <Text style={[styles.statValue, { color: colors.status.warning }]}>
+            {documents.filter((d: any) => d.status === 'pending').length}
+          </Text>
+          <Text style={styles.statLabel}>Pending</Text>
+        </View>
+      </View>
 
       {/* Documents List */}
       <FlatList
         data={documents}
         keyExtractor={(item, index) => item.id || index.toString()}
         renderItem={renderDocument}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary.default} />
-        }
-        contentContainerStyle={styles.listContent}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary.default} />}
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <View style={styles.emptyIconContainer}>
-              <Ionicons name="folder-open-outline" size={48} color={colors.text.muted} />
-            </View>
+            <Ionicons name="folder-open-outline" size={40} color={colors.text.tertiary} />
             <Text style={styles.emptyText}>No documents uploaded</Text>
-            <Text style={styles.emptySubtext}>
-              Contact HR to upload your documents
-            </Text>
           </View>
-        }
-        ListHeaderComponent={
-          documents.length > 0 ? (
-            <Text style={styles.sectionTitle}>Uploaded Documents</Text>
-          ) : null
         }
       />
     </View>
@@ -167,71 +119,66 @@ export default function DocumentsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background.app,
+    backgroundColor: colors.background.secondary,
   },
-  headerGradient: {
-    paddingTop: 60,
-    paddingBottom: spacing.xxl,
-    paddingHorizontal: spacing.lg,
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.background.primary,
+  },
+  backBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.8)',
-    marginTop: spacing.xs,
+    fontSize: fontSize.lg,
+    fontWeight: '600',
+    color: colors.text.primary,
   },
   statsRow: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    marginTop: spacing.lg,
+    backgroundColor: colors.background.primary,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   statItem: {
     flex: 1,
     alignItems: 'center',
   },
   statValue: {
-    fontSize: 24,
+    fontSize: fontSize.xl,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: colors.text.primary,
   },
   statLabel: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.8)',
-    marginTop: spacing.xs,
-  },
-  statDivider: {
-    width: 1,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    marginHorizontal: spacing.md,
+    fontSize: fontSize.xs,
+    color: colors.text.tertiary,
+    marginTop: 2,
   },
   listContent: {
     padding: spacing.lg,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text.primary,
-    marginBottom: spacing.md,
-  },
-  documentCard: {
+  docCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.background.card,
-    borderRadius: borderRadius.xl,
+    backgroundColor: colors.card,
     padding: spacing.lg,
-    marginBottom: spacing.md,
-    ...shadows.sm,
+    borderRadius: radius.lg,
+    marginBottom: spacing.sm,
   },
   docIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: borderRadius.md,
+    width: 40,
+    height: 40,
+    borderRadius: radius.md,
+    backgroundColor: colors.primary.light,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -240,58 +187,32 @@ const styles = StyleSheet.create({
     marginLeft: spacing.md,
   },
   docTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: fontSize.base,
+    fontWeight: '500',
     color: colors.text.primary,
   },
   docNumber: {
-    fontSize: 13,
-    color: colors.text.secondary,
-    marginTop: spacing.xs,
-  },
-  docDate: {
-    fontSize: 12,
-    color: colors.text.muted,
-    marginTop: spacing.xs,
-  },
-  docRight: {
-    alignItems: 'flex-end',
+    fontSize: fontSize.sm,
+    color: colors.text.tertiary,
+    marginTop: 2,
   },
   statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
-    borderRadius: borderRadius.full,
-    gap: 4,
+    borderRadius: radius.sm,
   },
   statusText: {
-    fontSize: 11,
+    fontSize: fontSize.xs,
     fontWeight: '600',
     textTransform: 'capitalize',
   },
   emptyState: {
     alignItems: 'center',
-    paddingVertical: spacing.xxxl * 2,
-  },
-  emptyIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.background.subtle,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: spacing.lg,
+    paddingVertical: spacing.xxl * 2,
   },
   emptyText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text.secondary,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: colors.text.muted,
-    marginTop: spacing.xs,
-    textAlign: 'center',
+    fontSize: fontSize.sm,
+    color: colors.text.tertiary,
+    marginTop: spacing.md,
   },
 });
