@@ -95,6 +95,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Logout API error:', error);
     } finally {
+      // Clear all cached data when user logs out
+      queryClient.clear();
       await clearAuth();
       setUser(null);
     }
