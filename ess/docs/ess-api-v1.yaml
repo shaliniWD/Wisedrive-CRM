@@ -1,0 +1,1406 @@
+openapi: 3.0.3
+info:
+  title: WiseDrive ESS Mobile API
+  description: |
+    Employee Self-Service (ESS) API for WiseDrive Mobile App.
+    
+    ## Overview
+    This API is designed for the WiseDrive mobile application, enabling employees to:
+    - View and manage their profile
+    - Apply for and track leave requests
+    - Access payslips and salary information
+    - View uploaded documents
+    - Receive push notifications
+    
+    ## Authentication
+    - Uses JWT Bearer tokens with refresh token support
+    - **Single Active Device Policy**: Only one device can be logged in at a time
+    - Device registration required during login
+    - Refresh tokens have 30-day validity
+    
+    ## Versioning
+    - Current version: v1
+    - Base path: /ess/v1
+    - Breaking changes will increment major version
+    
+    ## Rate Limiting
+    - Standard: 60 requests/minute per user
+    - Burst: 120 requests/minute (temporary spikes)
+    
+    ## Error Handling
+    All errors return JSON with structure:
+    ```json
+    {
+      "detail": "Error message"
+    }
+    ```
+    
+  version: 1.0.0
+  contact:
+    name: WiseDrive Platform Team
+    email: mobile@wisedrive.com
+  license:
+    name: Proprietary
+
+servers:
+  - url: https://api.wisedrive.com/ess/v1
+    description: Production
+  - url: https://api-staging.wisedrive.com/ess/v1
+    description: Staging
+  - url: http://localhost:8002/ess/v1
+    description: Local Development
+
+tags:
+  - name: Authentication
+    description: Mobile authentication with device management
+  - name: Profile
+    description: Employee profile management
+  - name: Leave
+    description: Leave application and tracking
+  - name: Payslips
+    description: Salary and payslip access
+  - name: Documents
+    description: Employee documents
+  - name: Notifications
+    description: Push notifications and in-app notifications
+
+paths:
+  # ==================== AUTHENTICATION ====================
+  /auth/login:
+    post:
+      tags: [Authentication]
+      summary: Mobile Login
+      description: |
+        Authenticate employee and register device.
+        
+        **Single Device Policy**: Logging in from a new device will automatically
+        invalidate all existing sessions for this user.
+      operationId: mobileLogin
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MobileLoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MobileLoginResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/refresh:
+    post:
+      tags: [Authentication]
+      summary: Refresh Token
+      description: Get new access token using refresh token
+      operationId: refreshToken
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshTokenResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/logout:
+    post:
+      tags: [Authentication]
+      summary: Logout
+      description: Logout from current device or all devices
+      operationId: logout
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /auth/push-token:
+    post:
+      tags: [Authentication]
+      summary: Register Push Token
+      description: Register or update device push notification token
+      operationId: registerPushToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PushTokenRegister'
+      responses:
+        '200':
+          description: Token registered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  # ==================== PROFILE ====================
+  /profile:
+    get:
+      tags: [Profile]
+      summary: Get Profile
+      description: Get current employee profile
+      operationId: getProfile
+      responses:
+        '200':
+          description: Profile data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmployeeProfile'
+    patch:
+      tags: [Profile]
+      summary: Update Profile
+      description: Update employee profile (limited fields)
+      operationId: updateProfile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeeProfileUpdate'
+      responses:
+        '200':
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmployeeProfile'
+
+  /profile/bank-details:
+    get:
+      tags: [Profile]
+      summary: Get Bank Details
+      description: Get employee bank details (masked for security)
+      operationId: getBankDetails
+      responses:
+        '200':
+          description: Bank details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BankDetailsResponse'
+
+  /profile/salary:
+    get:
+      tags: [Profile]
+      summary: Get Salary Summary
+      description: Get employee salary summary
+      operationId: getSalarySummary
+      responses:
+        '200':
+          description: Salary summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalarySummary'
+
+  /profile/attendance:
+    get:
+      tags: [Profile]
+      summary: Get Attendance Summary
+      description: Get attendance summary for a month
+      operationId: getAttendanceSummary
+      parameters:
+        - name: month
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+        - name: year
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Attendance summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttendanceSummary'
+
+  # ==================== LEAVE ====================
+  /leave/apply:
+    post:
+      tags: [Leave]
+      summary: Apply for Leave
+      description: Submit a leave request
+      operationId: applyLeave
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeaveRequestCreate'
+      responses:
+        '200':
+          description: Leave request created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveRequestResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /leave/balance:
+    get:
+      tags: [Leave]
+      summary: Get Leave Balance
+      description: Get leave balance for current year
+      operationId: getLeaveBalance
+      parameters:
+        - name: year
+          in: query
+          schema:
+            type: integer
+          description: Year (defaults to current year)
+      responses:
+        '200':
+          description: Leave balance
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveBalanceResponse'
+
+  /leave/history:
+    get:
+      tags: [Leave]
+      summary: Get Leave History
+      description: Get paginated leave request history
+      operationId: getLeaveHistory
+      parameters:
+        - $ref: '#/components/parameters/PageNumber'
+        - $ref: '#/components/parameters/PageSize'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, approved, rejected, cancelled]
+        - name: year
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Leave history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveHistoryResponse'
+
+  /leave/{leave_id}:
+    get:
+      tags: [Leave]
+      summary: Get Leave Request
+      description: Get single leave request details
+      operationId: getLeaveRequest
+      parameters:
+        - name: leave_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Leave request details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveRequestResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /leave/{leave_id}/cancel:
+    post:
+      tags: [Leave]
+      summary: Cancel Leave
+      description: Cancel a pending or approved leave request (if not started)
+      operationId: cancelLeave
+      parameters:
+        - name: leave_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Leave cancelled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /leave/pending-approvals:
+    get:
+      tags: [Leave]
+      summary: Get Pending Approvals
+      description: Get pending leave requests for approval (managers only)
+      operationId: getPendingApprovals
+      responses:
+        '200':
+          description: Pending approvals list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PendingApprovalResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /leave/{leave_id}/action:
+    post:
+      tags: [Leave]
+      summary: Approve/Reject Leave
+      description: Approve or reject a leave request (managers only)
+      operationId: approveRejectLeave
+      parameters:
+        - name: leave_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeaveApprovalAction'
+      responses:
+        '200':
+          description: Action completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # ==================== PAYSLIPS ====================
+  /payslips:
+    get:
+      tags: [Payslips]
+      summary: Get Payslips
+      description: Get paginated list of payslips
+      operationId: getPayslips
+      parameters:
+        - $ref: '#/components/parameters/PageNumber'
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 12
+            minimum: 1
+            maximum: 24
+        - name: year
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Payslip list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PayslipListResponse'
+
+  /payslips/{payslip_id}:
+    get:
+      tags: [Payslips]
+      summary: Get Payslip Detail
+      description: Get detailed payslip information
+      operationId: getPayslipDetail
+      parameters:
+        - name: payslip_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Payslip details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PayslipDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /payslips/{payslip_id}/download:
+    get:
+      tags: [Payslips]
+      summary: Download Payslip
+      description: Download payslip PDF
+      operationId: downloadPayslip
+      parameters:
+        - name: payslip_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: PDF file or download URL
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            application/json:
+              schema:
+                type: object
+                properties:
+                  download_url:
+                    type: string
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /payslips/years:
+    get:
+      tags: [Payslips]
+      summary: Get Available Years
+      description: Get list of years with available payslips
+      operationId: getPayslipYears
+      responses:
+        '200':
+          description: Available years
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  years:
+                    type: array
+                    items:
+                      type: integer
+
+  # ==================== DOCUMENTS ====================
+  /documents:
+    get:
+      tags: [Documents]
+      summary: Get Documents
+      description: Get all documents uploaded by employee
+      operationId: getDocuments
+      parameters:
+        - name: document_type
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Document list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentListResponse'
+
+  /documents/{document_id}:
+    get:
+      tags: [Documents]
+      summary: Get Document
+      description: Get single document details
+      operationId: getDocument
+      parameters:
+        - name: document_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Document details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /documents/requirements:
+    get:
+      tags: [Documents]
+      summary: Get Document Requirements
+      description: Get document requirements and completion status
+      operationId: getDocumentRequirements
+      responses:
+        '200':
+          description: Document requirements
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentRequirementsResponse'
+
+  # ==================== NOTIFICATIONS ====================
+  /notifications:
+    get:
+      tags: [Notifications]
+      summary: Get Notifications
+      description: Get paginated notifications
+      operationId: getNotifications
+      parameters:
+        - $ref: '#/components/parameters/PageNumber'
+        - $ref: '#/components/parameters/PageSize'
+        - name: unread_only
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Notification list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationListResponse'
+
+  /notifications/read:
+    post:
+      tags: [Notifications]
+      summary: Mark as Read
+      description: Mark notifications as read
+      operationId: markNotificationsRead
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MarkNotificationsRead'
+      responses:
+        '200':
+          description: Notifications marked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  marked_count:
+                    type: integer
+
+  /notifications/{notification_id}:
+    delete:
+      tags: [Notifications]
+      summary: Delete Notification
+      description: Delete a notification
+      operationId: deleteNotification
+      parameters:
+        - name: notification_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Notification deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /notifications/settings:
+    get:
+      tags: [Notifications]
+      summary: Get Settings
+      description: Get notification settings
+      operationId: getNotificationSettings
+      responses:
+        '200':
+          description: Notification settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationSettings'
+    patch:
+      tags: [Notifications]
+      summary: Update Settings
+      description: Update notification settings
+      operationId: updateNotificationSettings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationSettingsUpdate'
+      responses:
+        '200':
+          description: Settings updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationSettings'
+
+  /notifications/unread-count:
+    get:
+      tags: [Notifications]
+      summary: Get Unread Count
+      description: Get unread notification count (for badge)
+      operationId: getUnreadCount
+      responses:
+        '200':
+          description: Unread count
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  unread_count:
+                    type: integer
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    PageNumber:
+      name: page
+      in: query
+      schema:
+        type: integer
+        default: 1
+        minimum: 1
+    PageSize:
+      name: page_size
+      in: query
+      schema:
+        type: integer
+        default: 20
+        minimum: 1
+        maximum: 50
+
+  responses:
+    Unauthorized:
+      description: Authentication required or token invalid
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              detail:
+                type: string
+    Forbidden:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              detail:
+                type: string
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              detail:
+                type: string
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              detail:
+                type: string
+
+  schemas:
+    # ==================== AUTH SCHEMAS ====================
+    DeviceInfo:
+      type: object
+      required:
+        - device_id
+        - platform
+        - app_version
+      properties:
+        device_id:
+          type: string
+          format: uuid
+          description: Unique device identifier
+        device_name:
+          type: string
+          description: Device model name
+        platform:
+          type: string
+          enum: [ios, android]
+        os_version:
+          type: string
+        app_version:
+          type: string
+        push_token:
+          type: string
+          description: FCM/APNS token
+
+    MobileLoginRequest:
+      type: object
+      required:
+        - email
+        - password
+        - device
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+        device:
+          $ref: '#/components/schemas/DeviceInfo'
+
+    MobileLoginResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        token_type:
+          type: string
+          default: bearer
+        expires_in:
+          type: integer
+          description: Access token expiry in seconds
+        user:
+          type: object
+          properties:
+            id:
+              type: string
+            email:
+              type: string
+            name:
+              type: string
+            employee_code:
+              type: string
+            photo_url:
+              type: string
+            role:
+              type: string
+            role_code:
+              type: string
+            country_name:
+              type: string
+            is_approver:
+              type: boolean
+
+    RefreshTokenRequest:
+      type: object
+      required:
+        - refresh_token
+        - device_id
+      properties:
+        refresh_token:
+          type: string
+        device_id:
+          type: string
+
+    RefreshTokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        token_type:
+          type: string
+        expires_in:
+          type: integer
+
+    LogoutRequest:
+      type: object
+      required:
+        - device_id
+      properties:
+        device_id:
+          type: string
+        all_devices:
+          type: boolean
+          default: false
+
+    PushTokenRegister:
+      type: object
+      required:
+        - device_id
+        - push_token
+        - platform
+      properties:
+        device_id:
+          type: string
+        push_token:
+          type: string
+        platform:
+          type: string
+          enum: [ios, android]
+
+    # ==================== PROFILE SCHEMAS ====================
+    EmployeeProfile:
+      type: object
+      properties:
+        id:
+          type: string
+        employee_code:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        photo_url:
+          type: string
+        department_name:
+          type: string
+        role_name:
+          type: string
+        country_name:
+          type: string
+        team_name:
+          type: string
+        date_of_joining:
+          type: string
+        employment_type:
+          type: string
+        employment_status:
+          type: string
+        reporting_manager_id:
+          type: string
+        reporting_manager_name:
+          type: string
+        date_of_birth:
+          type: string
+        gender:
+          type: string
+        blood_group:
+          type: string
+        emergency_contact_name:
+          type: string
+        emergency_contact_phone:
+          type: string
+
+    EmployeeProfileUpdate:
+      type: object
+      properties:
+        phone:
+          type: string
+        emergency_contact_name:
+          type: string
+        emergency_contact_phone:
+          type: string
+        blood_group:
+          type: string
+        current_address:
+          type: string
+        permanent_address:
+          type: string
+
+    BankDetailsResponse:
+      type: object
+      properties:
+        bank_name:
+          type: string
+        account_number_masked:
+          type: string
+        ifsc_code:
+          type: string
+        account_holder_name:
+          type: string
+
+    SalarySummary:
+      type: object
+      properties:
+        gross_salary:
+          type: number
+        net_salary:
+          type: number
+        currency:
+          type: string
+        currency_symbol:
+          type: string
+        basic_salary:
+          type: number
+        hra:
+          type: number
+        other_allowances:
+          type: number
+        total_deductions:
+          type: number
+
+    AttendanceSummary:
+      type: object
+      properties:
+        month:
+          type: string
+        year:
+          type: integer
+        working_days:
+          type: integer
+        present_days:
+          type: integer
+        absent_days:
+          type: integer
+        leaves_taken:
+          type: integer
+        half_days:
+          type: integer
+        overtime_days:
+          type: integer
+
+    # ==================== LEAVE SCHEMAS ====================
+    LeaveRequestCreate:
+      type: object
+      required:
+        - leave_type
+        - start_date
+        - end_date
+        - reason
+      properties:
+        leave_type:
+          type: string
+          enum: [casual, sick, earned, unpaid, maternity, paternity, bereavement]
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        reason:
+          type: string
+          minLength: 10
+          maxLength: 500
+        is_half_day:
+          type: boolean
+          default: false
+        half_day_type:
+          type: string
+          enum: [first_half, second_half]
+        contact_number:
+          type: string
+
+    LeaveRequestResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        employee_id:
+          type: string
+        leave_type:
+          type: string
+        start_date:
+          type: string
+        end_date:
+          type: string
+        days_count:
+          type: number
+        reason:
+          type: string
+        status:
+          type: string
+          enum: [pending, approved, rejected, cancelled]
+        is_half_day:
+          type: boolean
+        half_day_type:
+          type: string
+        applied_on:
+          type: string
+        approved_by:
+          type: string
+        approved_on:
+          type: string
+        rejection_reason:
+          type: string
+        can_cancel:
+          type: boolean
+
+    LeaveBalanceResponse:
+      type: object
+      properties:
+        employee_id:
+          type: string
+        year:
+          type: integer
+        casual_leaves:
+          type: object
+          properties:
+            total:
+              type: integer
+            used:
+              type: number
+            available:
+              type: number
+        sick_leaves:
+          type: object
+        earned_leaves:
+          type: object
+        unpaid_leaves:
+          type: object
+
+    LeaveHistoryResponse:
+      type: object
+      properties:
+        leaves:
+          type: array
+          items:
+            $ref: '#/components/schemas/LeaveRequestResponse'
+        total:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+        has_more:
+          type: boolean
+
+    PendingApprovalResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        employee_id:
+          type: string
+        employee_name:
+          type: string
+        employee_photo:
+          type: string
+        leave_type:
+          type: string
+        start_date:
+          type: string
+        end_date:
+          type: string
+        days_count:
+          type: number
+        reason:
+          type: string
+        applied_on:
+          type: string
+
+    LeaveApprovalAction:
+      type: object
+      required:
+        - action
+      properties:
+        action:
+          type: string
+          enum: [approve, reject]
+        comments:
+          type: string
+          maxLength: 500
+
+    # ==================== PAYSLIP SCHEMAS ====================
+    PayslipSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        period:
+          type: string
+        month:
+          type: integer
+        year:
+          type: integer
+        gross_salary:
+          type: number
+        total_deductions:
+          type: number
+        net_salary:
+          type: number
+        currency_symbol:
+          type: string
+        status:
+          type: string
+        payment_date:
+          type: string
+        can_download:
+          type: boolean
+
+    PayslipDetail:
+      type: object
+      properties:
+        id:
+          type: string
+        employee_id:
+          type: string
+        employee_name:
+          type: string
+        employee_code:
+          type: string
+        period:
+          type: string
+        month:
+          type: integer
+        year:
+          type: integer
+        company_name:
+          type: string
+        earnings:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              amount:
+                type: number
+        total_earnings:
+          type: number
+        deductions:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              amount:
+                type: number
+        total_deductions:
+          type: number
+        net_salary:
+          type: number
+        currency:
+          type: string
+        currency_symbol:
+          type: string
+        working_days:
+          type: integer
+        days_worked:
+          type: integer
+        lop_days:
+          type: integer
+        overtime_days:
+          type: integer
+        overtime_pay:
+          type: number
+        incentive_amount:
+          type: number
+        status:
+          type: string
+        payment_date:
+          type: string
+        payment_reference:
+          type: string
+        bank_name:
+          type: string
+        account_number_masked:
+          type: string
+        pdf_url:
+          type: string
+
+    PayslipListResponse:
+      type: object
+      properties:
+        payslips:
+          type: array
+          items:
+            $ref: '#/components/schemas/PayslipSummary'
+        total:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+        has_more:
+          type: boolean
+
+    # ==================== DOCUMENT SCHEMAS ====================
+    DocumentResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        document_type:
+          type: string
+          enum: [aadhar, pan, passport, driving_license, voter_id, offer_letter, experience_letter, salary_slip, relieving_letter, educational, other]
+        document_name:
+          type: string
+        document_number:
+          type: string
+        uploaded_at:
+          type: string
+        status:
+          type: string
+          enum: [pending, verified, rejected]
+        verified_by:
+          type: string
+        verified_at:
+          type: string
+        rejection_reason:
+          type: string
+        file_url:
+          type: string
+        file_size:
+          type: integer
+        mime_type:
+          type: string
+
+    DocumentListResponse:
+      type: object
+      properties:
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentResponse'
+        total:
+          type: integer
+
+    DocumentRequirementsResponse:
+      type: object
+      properties:
+        requirements:
+          type: array
+          items:
+            type: object
+            properties:
+              document_type:
+                type: string
+              document_name:
+                type: string
+              is_required:
+                type: boolean
+              is_uploaded:
+                type: boolean
+              status:
+                type: string
+        completed_count:
+          type: integer
+        total_required:
+          type: integer
+        completion_percentage:
+          type: number
+
+    # ==================== NOTIFICATION SCHEMAS ====================
+    NotificationResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [leave_approved, leave_rejected, leave_request, payslip_available, document_verified, document_rejected, announcement, holiday, system]
+        title:
+          type: string
+        body:
+          type: string
+        priority:
+          type: string
+          enum: [low, normal, high]
+        is_read:
+          type: boolean
+        created_at:
+          type: string
+        data:
+          type: object
+        action_url:
+          type: string
+
+    NotificationListResponse:
+      type: object
+      properties:
+        notifications:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotificationResponse'
+        total:
+          type: integer
+        unread_count:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+        has_more:
+          type: boolean
+
+    NotificationSettings:
+      type: object
+      properties:
+        leave_updates:
+          type: boolean
+        payslip_alerts:
+          type: boolean
+        document_updates:
+          type: boolean
+        announcements:
+          type: boolean
+        holiday_reminders:
+          type: boolean
+        quiet_hours_enabled:
+          type: boolean
+        quiet_hours_start:
+          type: string
+        quiet_hours_end:
+          type: string
+
+    NotificationSettingsUpdate:
+      type: object
+      properties:
+        leave_updates:
+          type: boolean
+        payslip_alerts:
+          type: boolean
+        document_updates:
+          type: boolean
+        announcements:
+          type: boolean
+        holiday_reminders:
+          type: boolean
+        quiet_hours_enabled:
+          type: boolean
+        quiet_hours_start:
+          type: string
+        quiet_hours_end:
+          type: string
+
+    MarkNotificationsRead:
+      type: object
+      properties:
+        notification_ids:
+          type: array
+          items:
+            type: string
+        mark_all:
+          type: boolean
+          default: false
+
+security:
+  - bearerAuth: []
