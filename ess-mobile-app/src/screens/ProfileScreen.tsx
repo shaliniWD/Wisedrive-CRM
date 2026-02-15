@@ -40,7 +40,7 @@ export default function ProfileScreen() {
 
   const { data: documentsData } = useQuery({
     queryKey: ['documents'],
-    queryFn: getDocuments,
+    queryFn: () => getDocuments(),
   });
 
   const onRefresh = async () => {
