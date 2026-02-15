@@ -3119,6 +3119,41 @@ function RoleModal({ isOpen, onClose, role, onSave }) {
               <Input value={form.code} onChange={(e) => setForm({...form, code: e.target.value.toUpperCase().replace(/\s/g, '_')})} className="h-10 font-mono" disabled={isEdit} />
             </div>
           </div>
+          
+          {/* Leave Entitlements Section */}
+          <div className="border-t pt-4">
+            <Label className="text-sm font-semibold flex items-center gap-2 mb-3">
+              <Calendar className="h-4 w-4 text-emerald-500" />
+              Monthly Leave Entitlements
+            </Label>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-xs text-gray-500">Sick Leaves / Month</Label>
+                <Input 
+                  type="number" 
+                  min="0" 
+                  value={form.eligible_sick_leaves_per_month} 
+                  onChange={(e) => setForm({...form, eligible_sick_leaves_per_month: parseInt(e.target.value) || 0})} 
+                  className="h-10"
+                  data-testid="role-sick-leaves"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs text-gray-500">Casual Leaves / Month</Label>
+                <Input 
+                  type="number" 
+                  min="0" 
+                  value={form.eligible_casual_leaves_per_month} 
+                  onChange={(e) => setForm({...form, eligible_casual_leaves_per_month: parseInt(e.target.value) || 0})} 
+                  className="h-10"
+                  data-testid="role-casual-leaves"
+                />
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              Total: {(form.eligible_sick_leaves_per_month || 0) + (form.eligible_casual_leaves_per_month || 0)} leaves/month for employees with this role
+            </p>
+          </div>
 
           <div className="border-t pt-4">
             <Label className="text-sm font-semibold flex items-center gap-2 mb-3">
