@@ -852,24 +852,57 @@ class PayrollService:
         # Get pay period
         pay_period_start, pay_period_end = self._get_pay_period(year, month)
         
+        # Calculate working days: Days in Month - Public Holidays
+        total_days_in_month = calendar.monthrange(year, month)[1]
+        
+        # Get public holidays for this country and month
+        start_date = f"{year}-{str(month).zfill(2)}-01"
+        end_date = f"{year}-{str(month).zfill(2)}-{total_days_in_month}"
+        
+        holidays = await self.db.holidays.find({
+            "country_id": country_id,
+            "date": {"$gte": start_date, "$lte": end_date}
+        }, {"_id": 0, "date": 1, "name": 1}).to_list(100)
+        
+        public_holiday_count = len(holidays)
+        public_holiday_dates = [h["date"] for h in holidays]
+        public_holiday_names = {h["date"]: h.get("name", "Holiday") for h in holidays}
+        
+        # Working Days = Total Days - Public Holidays (7-day work week, no Sat/Sun exclusion)
+        base_working_days = total_days_in_month - public_holiday_count
+        
         # Calculate payroll preview for each employee
         preview_records = []
         total_gross = 0
         total_statutory = 0
         total_attendance = 0
         total_other = 0
+        total_incentive = 0
+        total_overtime = 0
         total_net = 0
         
-        # Base working days (will be adjusted per employee based on their weekly off)
-        base_working_days = self._calculate_working_days(year, month, 0)  # Default Sunday off
-        
         for emp in eligible_employees:
-            # Calculate working days for this employee (considering their weekly off)
-            employee_weekly_off = emp.get("weekly_off_day", 0)  # 0 = Sunday
-            emp_working_days = self._calculate_working_days(year, month, employee_weekly_off)
+            # Get employee's role for leave entitlements
+            role_id = emp.get("role_id")
+            role = await self.db.roles.find_one({"id": role_id}, {"_id": 0}) if role_id else None
             
-            record = await self._calculate_employee_payroll(
-                emp, month, year, emp_working_days, currency, currency_symbol
+            eligible_sick_leaves = role.get("eligible_sick_leaves_per_month", 2) if role else 2
+            eligible_casual_leaves = role.get("eligible_casual_leaves_per_month", 1) if role else 1
+            total_leave_entitlement = eligible_sick_leaves + eligible_casual_leaves
+            
+            # Employee's weekly off day (0=Sunday, etc.)
+            employee_weekly_off = emp.get("weekly_off_day", 0)
+            
+            # Count employee's weekly offs in the month
+            python_weekday_map = {0: 6, 1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5}
+            employee_weekly_off_python = python_weekday_map.get(employee_weekly_off, 6)
+            weekly_offs_in_month = self._count_weekday_occurrences(year, month, employee_weekly_off_python)
+            
+            record = await self._calculate_employee_payroll_v2(
+                emp, month, year, base_working_days, currency, currency_symbol,
+                public_holiday_dates, public_holiday_names,
+                weekly_offs_in_month, employee_weekly_off,
+                eligible_sick_leaves, eligible_casual_leaves
             )
             preview_records.append(record)
             
@@ -877,6 +910,8 @@ class PayrollService:
             total_statutory += record["total_statutory_deductions"]
             total_attendance += record["attendance_deduction"]
             total_other += record["other_deductions"]
+            total_incentive += record.get("incentive_amount", 0)
+            total_overtime += record.get("overtime_pay", 0)
             total_net += record["net_salary"]
         
         return {
@@ -888,12 +923,17 @@ class PayrollService:
             "currency_symbol": currency_symbol,
             "pay_period_start": pay_period_start,
             "pay_period_end": pay_period_end,
-            "working_days": base_working_days,  # Base working days (can vary per employee)
+            "total_days_in_month": total_days_in_month,
+            "public_holiday_count": public_holiday_count,
+            "public_holidays": holidays,
+            "working_days": base_working_days,
             "employee_count": len(preview_records),
             "total_gross": round(total_gross, 2),
             "total_statutory_deductions": round(total_statutory, 2),
             "total_attendance_deductions": round(total_attendance, 2),
             "total_other_deductions": round(total_other, 2),
+            "total_incentive": round(total_incentive, 2),
+            "total_overtime_pay": round(total_overtime, 2),
             "total_net": round(total_net, 2),
             "records": preview_records
         }
