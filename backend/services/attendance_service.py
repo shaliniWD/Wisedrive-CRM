@@ -507,6 +507,9 @@ class AttendanceService:
                     present += 0.5  # Count half day as 0.5 present
                 elif status == "leave_approved":
                     approved += 1
+                elif status == "overtime":
+                    overtime_days += 1
+                    present += 1  # Overtime is also a present day
                 # Holiday status doesn't count
                 continue
             
