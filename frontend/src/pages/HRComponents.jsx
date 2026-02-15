@@ -1387,24 +1387,27 @@ export function PayrollDashboard({ isHR, isFinance }) {
               <thead>
                 <tr className="bg-slate-50 border-b">
                   <th className="px-3 py-2 text-left text-xs font-semibold text-slate-600 sticky left-0 bg-slate-50">Employee</th>
-                  <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600">Gross</th>
-                  <th className="px-3 py-2 text-center text-xs font-semibold text-slate-600 bg-amber-50">
-                    <span>LOP Days</span>
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-slate-600">Working Days</th>
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-slate-600">
+                    <div className="flex items-center justify-center gap-1">
+                      Actual Working
+                      <Info className="h-3 w-3 text-blue-500 cursor-pointer" />
+                    </div>
                   </th>
-                  <th className="px-3 py-2 text-center text-xs font-semibold text-slate-600 bg-emerald-50">
-                    <span>Incentive</span>
+                  <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600">
+                    <div className="flex items-center justify-end gap-1">
+                      Gross Salary
+                      <Info className="h-3 w-3 text-blue-500 cursor-pointer" />
+                    </div>
                   </th>
-                  <th className="px-3 py-2 text-center text-xs font-semibold text-slate-600 bg-pink-50">
-                    <span>OT Days</span>
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-slate-600 bg-emerald-100">
+                    <span className="text-emerald-700">Incentive (+)</span>
                   </th>
-                  <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-pink-50">OT Pay</th>
-                  <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-red-50">PF</th>
-                  <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-red-50">PT</th>
-                  <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-red-50">TDS</th>
-                  <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-red-50">ESI</th>
-                  <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-amber-50">LOP Ded.</th>
-                  <th className="px-3 py-2 text-center text-xs font-semibold text-slate-600 bg-gray-100">
-                    <span>Other Ded.</span>
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-slate-600 bg-emerald-100">
+                    <span className="text-emerald-700">OT Pay (+)</span>
+                  </th>
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-slate-600 bg-red-100">
+                    <span className="text-red-700">Other Ded. (-)</span>
                   </th>
                   <th className="px-3 py-2 text-right text-xs font-semibold text-slate-600 bg-blue-50">Net Salary</th>
                 </tr>
@@ -1423,56 +1426,90 @@ export function PayrollDashboard({ isHR, isFinance }) {
                         </div>
                       </div>
                     </td>
-                    <td className="px-3 py-2 text-right font-medium text-emerald-600">{formatCurrency(record.gross_salary, record.currency_symbol)}</td>
-                    <td className="px-3 py-2 bg-amber-50/50">
-                      <div className="flex flex-col items-center">
-                        <SimpleNumberInput
-                          defaultValue={previewEdits[record.employee_id]?.lop_days ?? previewEdits[record.employee_id]?.absent_days ?? 0}
-                          onValueChange={(val) => handlePreviewEdit(record.employee_id, 'lop_days', val.toString())}
-                          className={`w-14 h-7 text-center text-xs ${previewErrors[record.employee_id]?.lop_days ? 'border-red-500 bg-red-50' : ''}`}
-                          data-testid={`lop-days-${record.employee_id}`}
-                        />
-                        {previewErrors[record.employee_id]?.lop_days && (
-                          <span className="text-[10px] text-red-600 mt-0.5">{previewErrors[record.employee_id].lop_days}</span>
-                        )}
+                    <td className="px-3 py-2 text-center">
+                      <span className="font-medium">{record.working_days || previewData.working_days}</span>
+                    </td>
+                    <td className="px-3 py-2 text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <span className="font-medium">{record.actual_working_days ?? (record.working_days - (previewEdits[record.employee_id]?.lop_days || 0))}</span>
+                        <button
+                          onClick={() => setInfoModal({
+                            open: true,
+                            type: 'actual_working',
+                            data: {
+                              employee_name: record.employee_name,
+                              working_days: record.working_days || previewData.working_days,
+                              lop_days: previewEdits[record.employee_id]?.lop_days ?? record.lop_days ?? 0,
+                              leaves_taken: record.leaves_taken || 0,
+                              leave_entitlement: record.total_leave_entitlement || 3,
+                              leaves_beyond_entitlement: record.leaves_beyond_entitlement || 0,
+                              weekly_offs: record.weekly_offs_in_month || 4,
+                              deduction_breakdown: record.deduction_breakdown
+                            }
+                          })}
+                          className="text-blue-500 hover:text-blue-700"
+                        >
+                          <Info className="h-3.5 w-3.5" />
+                        </button>
                       </div>
                     </td>
-                    <td className="px-3 py-2 bg-emerald-50/50">
+                    <td className="px-3 py-2 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <span className="font-medium text-emerald-600">{formatCurrency(record.gross_salary, record.currency_symbol)}</span>
+                        <button
+                          onClick={() => setInfoModal({
+                            open: true,
+                            type: 'gross_salary',
+                            data: {
+                              employee_name: record.employee_name,
+                              monthly_gross: record.monthly_gross || record.gross_salary,
+                              working_days: record.working_days || previewData.working_days,
+                              actual_working_days: record.actual_working_days ?? (record.working_days - (previewEdits[record.employee_id]?.lop_days || 0)),
+                              per_day_salary: record.per_day_salary,
+                              prorated_gross: record.gross_salary,
+                              currency_symbol: record.currency_symbol,
+                              gross_calculation: record.gross_calculation
+                            }
+                          })}
+                          className="text-blue-500 hover:text-blue-700"
+                        >
+                          <Info className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                    <td className="px-3 py-2 bg-emerald-50">
                       <div className="flex flex-col items-center">
                         <SimpleNumberInput
                           defaultValue={previewEdits[record.employee_id]?.incentive_amount ?? record.incentive_amount ?? 0}
                           onValueChange={(val) => handlePreviewEdit(record.employee_id, 'incentive_amount', val.toString())}
-                          className="w-20 h-7 text-center text-xs"
+                          className="w-20 h-7 text-center text-xs bg-white border-emerald-300"
                           data-testid={`incentive-${record.employee_id}`}
                         />
                       </div>
                     </td>
-                    <td className="px-3 py-2 bg-pink-50/50">
-                      <div className="flex flex-col items-center">
+                    <td className="px-3 py-2 bg-emerald-50">
+                      <div className="flex flex-col items-center gap-0.5">
                         <SimpleNumberInput
                           defaultValue={previewEdits[record.employee_id]?.overtime_days ?? record.overtime_days ?? 0}
                           onValueChange={(val) => handlePreviewEdit(record.employee_id, 'overtime_days', val.toString())}
-                          className="w-14 h-7 text-center text-xs"
+                          className="w-14 h-7 text-center text-xs bg-white border-emerald-300"
                           data-testid={`overtime-days-${record.employee_id}`}
                         />
+                        <span className="text-[10px] text-emerald-600">
+                          {formatCurrency(record.overtime_pay || ((previewEdits[record.employee_id]?.overtime_days || 0) * (record.overtime_rate_per_day || 0)), record.currency_symbol)}
+                        </span>
                       </div>
                     </td>
-                    <td className="px-3 py-2 text-right bg-pink-50/50 text-pink-600">{formatCurrency(record.overtime_pay || 0, record.currency_symbol)}</td>
-                    <td className="px-3 py-2 text-right bg-red-50/50 text-red-600">{formatCurrency(record.pf_employee, record.currency_symbol)}</td>
-                    <td className="px-3 py-2 text-right bg-red-50/50 text-red-600">{formatCurrency(record.professional_tax, record.currency_symbol)}</td>
-                    <td className="px-3 py-2 text-right bg-red-50/50 text-red-600">{formatCurrency(record.income_tax, record.currency_symbol)}</td>
-                    <td className="px-3 py-2 text-right bg-red-50/50 text-red-600">{formatCurrency(record.esi, record.currency_symbol)}</td>
-                    <td className="px-3 py-2 text-right bg-amber-50/50 text-amber-600">{formatCurrency(record.attendance_deduction, record.currency_symbol)}</td>
-                    <td className="px-3 py-2 bg-gray-100/50">
+                    <td className="px-3 py-2 bg-red-50">
                       <div className="flex flex-col items-center">
                         <SimpleNumberInput
-                          defaultValue={previewEdits[record.employee_id]?.other_deductions ?? record.other_deductions}
+                          defaultValue={previewEdits[record.employee_id]?.other_deductions ?? record.other_deductions ?? 0}
                           onValueChange={(val) => handlePreviewEdit(record.employee_id, 'other_deductions', val.toString())}
-                          className={`w-20 h-7 text-center text-xs ${previewErrors[record.employee_id]?.other_deductions ? 'border-red-500 bg-red-50' : ''}`}
+                          className={`w-20 h-7 text-center text-xs bg-white border-red-300 ${previewErrors[record.employee_id]?.other_deductions ? 'border-red-500 bg-red-50' : ''}`}
                           data-testid={`other-deductions-${record.employee_id}`}
                         />
                         {previewErrors[record.employee_id]?.other_deductions && (
-                          <span className="text-[10px] text-red-600 mt-0.5 max-w-[100px] text-center">{previewErrors[record.employee_id].other_deductions}</span>
+                          <span className="text-[10px] text-red-600 mt-0.5">{previewErrors[record.employee_id].other_deductions}</span>
                         )}
                       </div>
                     </td>
@@ -1482,6 +1519,84 @@ export function PayrollDashboard({ isHR, isFinance }) {
               </tbody>
             </table>
           </div>
+          
+          {/* Info Modal for Actual Working Days */}
+          <Dialog open={infoModal.open && infoModal.type === 'actual_working'} onOpenChange={(open) => !open && setInfoModal({ open: false, type: '', data: null })}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle className="text-lg">Actual Working Days Calculation</DialogTitle>
+              </DialogHeader>
+              {infoModal.data && (
+                <div className="space-y-4">
+                  <div className="text-sm font-medium text-gray-700">{infoModal.data.employee_name}</div>
+                  <div className="bg-slate-50 p-4 rounded-lg space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>Working Days (in month)</span>
+                      <span className="font-medium">{infoModal.data.working_days}</span>
+                    </div>
+                    <div className="flex justify-between text-red-600">
+                      <span>− LOP Days</span>
+                      <span className="font-medium">{infoModal.data.lop_days}</span>
+                    </div>
+                    <div className="flex justify-between text-amber-600">
+                      <span>− Leaves Beyond Entitlement</span>
+                      <span className="font-medium">{infoModal.data.leaves_beyond_entitlement}</span>
+                    </div>
+                    <div className="border-t pt-2 flex justify-between font-bold">
+                      <span>= Actual Working Days</span>
+                      <span className="text-blue-600">{infoModal.data.working_days - infoModal.data.lop_days - infoModal.data.leaves_beyond_entitlement}</span>
+                    </div>
+                  </div>
+                  <div className="bg-blue-50 p-3 rounded-lg text-xs text-blue-700">
+                    <div className="font-medium mb-1">Leave Entitlement Info:</div>
+                    <div>• Leaves Taken: {infoModal.data.leaves_taken} days</div>
+                    <div>• Entitlement: {infoModal.data.leave_entitlement} days/month</div>
+                    <div>• Weekly Offs: {infoModal.data.weekly_offs} (not deducted)</div>
+                  </div>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
+          
+          {/* Info Modal for Gross Salary */}
+          <Dialog open={infoModal.open && infoModal.type === 'gross_salary'} onOpenChange={(open) => !open && setInfoModal({ open: false, type: '', data: null })}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle className="text-lg">Gross Salary Calculation</DialogTitle>
+              </DialogHeader>
+              {infoModal.data && (
+                <div className="space-y-4">
+                  <div className="text-sm font-medium text-gray-700">{infoModal.data.employee_name}</div>
+                  <div className="bg-slate-50 p-4 rounded-lg space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>Monthly Gross Salary</span>
+                      <span className="font-medium">{infoModal.data.currency_symbol}{infoModal.data.monthly_gross?.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-gray-500">
+                      <span>÷ Working Days</span>
+                      <span>{infoModal.data.working_days}</span>
+                    </div>
+                    <div className="flex justify-between text-gray-500">
+                      <span>= Per Day Salary</span>
+                      <span>{infoModal.data.currency_symbol}{infoModal.data.per_day_salary?.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-emerald-600">
+                      <span>× Actual Working Days</span>
+                      <span>{infoModal.data.actual_working_days}</span>
+                    </div>
+                    <div className="border-t pt-2 flex justify-between font-bold">
+                      <span>= Pro-rated Gross</span>
+                      <span className="text-emerald-600">{infoModal.data.currency_symbol}{infoModal.data.prorated_gross?.toLocaleString()}</span>
+                    </div>
+                  </div>
+                  <div className="bg-emerald-50 p-3 rounded-lg text-xs text-emerald-700">
+                    <div className="font-medium">Formula:</div>
+                    <div>(Monthly Gross ÷ Working Days) × Actual Working Days</div>
+                  </div>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
         </>
       )}
 
