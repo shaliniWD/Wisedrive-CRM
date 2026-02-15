@@ -2833,7 +2833,12 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
                     <Input 
                       type="file"
                       accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                      onChange={(e) => setDocForm({...docForm, file: e.target.files[0]})}
+                      onChange={(e) => {
+                        const selectedFile = e.target.files?.[0];
+                        if (selectedFile) {
+                          setDocForm(prev => ({...prev, file: selectedFile}));
+                        }
+                      }}
                       className="h-9 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200"
                       data-testid="document-file-input"
                     />
