@@ -614,6 +614,7 @@ export function PayrollDashboard({ isHR, isFinance }) {
   // Filter states
   const [filterCountry, setFilterCountry] = useState('');
   const [filterYear, setFilterYear] = useState(new Date().getFullYear());
+  const [filterMonth, setFilterMonth] = useState(''); // Empty means all months
   const [filterBatchStatus, setFilterBatchStatus] = useState('all');
   
   // Generate modal states
