@@ -243,7 +243,7 @@ async def get_notification_triggers(
     country_id: Optional[str] = None
 ):
     """Get all notification trigger configurations"""
-    db = request.app.state.db
+    db = get_db()
     
     query = {}
     if country_id:
@@ -270,7 +270,7 @@ async def update_notification_trigger(
     current_user: dict = Depends(get_hr_user)
 ):
     """Update a notification trigger configuration"""
-    db = request.app.state.db
+    db = get_db()
     
     trigger = await db.notification_triggers.find_one({"id": trigger_id})
     if not trigger:
@@ -295,7 +295,7 @@ async def get_notification_templates(
     country_id: Optional[str] = None
 ):
     """Get all notification templates"""
-    db = request.app.state.db
+    db = get_db()
     
     query = {}
     if country_id:
@@ -323,7 +323,7 @@ async def update_notification_template(
     current_user: dict = Depends(get_hr_user)
 ):
     """Update a notification template"""
-    db = request.app.state.db
+    db = get_db()
     
     template = await db.notification_templates.find_one({"id": template_id})
     if not template:
@@ -349,7 +349,7 @@ async def create_notification_template(
     current_user: dict = Depends(get_hr_user)
 ):
     """Create a custom notification template (for country-specific overrides)"""
-    db = request.app.state.db
+    db = get_db()
     
     template_dict = template.model_dump()
     template_dict["id"] = str(uuid.uuid4())
@@ -368,7 +368,7 @@ async def send_test_notification(
     current_user: dict = Depends(get_hr_user)
 ):
     """Send a test notification to preview how it will appear"""
-    db = request.app.state.db
+    db = get_db()
     
     # Get template
     template = await db.notification_templates.find_one(
@@ -419,7 +419,7 @@ async def get_notification_stats(
     current_user: dict = Depends(get_hr_user)
 ):
     """Get notification delivery statistics"""
-    db = request.app.state.db
+    db = get_db()
     
     from datetime import timedelta
     start_date = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
@@ -460,7 +460,7 @@ async def send_announcement(
     current_user: dict = Depends(get_hr_user)
 ):
     """Send announcement to all employees or specific country"""
-    db = request.app.state.db
+    db = get_db()
     
     # Get target users
     query = {"is_active": True}
