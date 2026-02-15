@@ -1,4 +1,4 @@
-// Modern Profile Screen - Clean design with tabs
+// Premium Profile Screen - Dark Theme
 import React, { useState } from 'react';
 import {
   View,
@@ -7,36 +7,42 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useAuth } from '../context/AuthContext';
 import { getProfile, getBankDetails, getSalarySummary } from '../services/api';
-import { colors, spacing, fontSize, radius, iconSize } from '../theme';
+import { colors, spacing, fontSize, fontWeight, radius, iconSize } from '../theme';
 
-type TabType = 'personal' | 'salary' | 'bank';
+type TabType = 'personal' | 'bank' | 'salary';
 
 export default function ProfileScreen() {
-  const [activeTab, setActiveTab] = useState<TabType>('personal');
-  const [refreshing, setRefreshing] = useState(false);
+  const navigation = useNavigation<any>();
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation<any>();
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<TabType>('personal');
+  const [refreshing, setRefreshing] = useState(false);
 
-  const { data: profile } = useQuery({
+  const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['profile'],
     queryFn: getProfile,
   });
 
-  const { data: bankDetails } = useQuery({
+  const { data: bankDetails, isLoading: bankLoading } = useQuery({
     queryKey: ['bankDetails'],
     queryFn: getBankDetails,
+    enabled: activeTab === 'bank',
   });
 
-  const { data: salary } = useQuery({
+  const { data: salary, isLoading: salaryLoading } = useQuery({
     queryKey: ['salary'],
     queryFn: getSalarySummary,
+    enabled: activeTab === 'salary',
   });
 
   const onRefresh = async () => {
@@ -49,360 +55,325 @@ export default function ProfileScreen() {
     return name?.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'U';
   };
 
-  const formatCurrency = (amount: number, symbol: string = '₹') => {
-    return `${symbol}${amount?.toLocaleString('en-IN') || 0}`;
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0,
+    }).format(amount || 0);
   };
 
-  const tabs = [
-    { key: 'personal' as TabType, label: 'Personal' },
-    { key: 'salary' as TabType, label: 'Salary' },
-    { key: 'bank' as TabType, label: 'Bank' },
+  const tabs: { key: TabType; label: string; icon: any }[] = [
+    { key: 'personal', label: 'Personal', icon: 'person-outline' },
+    { key: 'bank', label: 'Bank', icon: 'card-outline' },
+    { key: 'salary', label: 'Salary', icon: 'wallet-outline' },
   ];
 
-  const renderPersonalTab = () => (
-    <View style={styles.tabContent}>
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Basic Information</Text>
-        <InfoRow label="Full Name" value={profile?.name} />
-        <InfoRow label="Email" value={profile?.email} />
-        <InfoRow label="Phone" value={profile?.phone || 'Not provided'} />
-        <InfoRow label="Employee Code" value={profile?.employee_code} />
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Work Information</Text>
-        <InfoRow label="Department" value={profile?.department_name || 'Not assigned'} />
-        <InfoRow label="Designation" value={profile?.role_name} />
-        <InfoRow label="Country" value={profile?.country_name || 'India'} />
-        <InfoRow label="Joining Date" value={profile?.joining_date || '-'} />
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Address</Text>
-        <InfoRow label="Current" value={profile?.address || profile?.current_address || '-'} />
-        <InfoRow label="Permanent" value={profile?.permanent_address || '-'} isLast />
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Emergency Contact</Text>
-        <InfoRow label="Name" value={profile?.emergency_contact_name || '-'} />
-        <InfoRow label="Phone" value={profile?.emergency_contact_phone || '-'} />
-        <InfoRow label="Relation" value={profile?.emergency_contact_relation || '-'} isLast />
-      </View>
-    </View>
-  );
-
-  const renderSalaryTab = () => (
-    <View style={styles.tabContent}>
-      {/* Net Salary Highlight */}
-      <View style={styles.salaryHighlight}>
-        <Text style={styles.salaryHighlightLabel}>Net Salary (Monthly)</Text>
-        <Text style={styles.salaryHighlightValue}>
-          {formatCurrency(salary?.net_salary, salary?.currency_symbol)}
-        </Text>
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Earnings</Text>
-        <SalaryRow label="Basic Salary" value={salary?.basic_salary} symbol={salary?.currency_symbol} />
-        <SalaryRow label="HRA" value={salary?.hra} symbol={salary?.currency_symbol} />
-        <SalaryRow label="Conveyance" value={salary?.conveyance_allowance} symbol={salary?.currency_symbol} />
-        <SalaryRow label="Medical" value={salary?.medical_allowance} symbol={salary?.currency_symbol} />
-        <SalaryRow label="Special" value={salary?.special_allowance} symbol={salary?.currency_symbol} />
-        <View style={styles.totalRow}>
-          <Text style={styles.totalLabel}>Gross Salary</Text>
-          <Text style={styles.totalValue}>{formatCurrency(salary?.gross_salary, salary?.currency_symbol)}</Text>
-        </View>
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Deductions</Text>
-        <SalaryRow label="PF (Employee)" value={salary?.pf_employee} symbol={salary?.currency_symbol} isDeduction />
-        <SalaryRow label="Professional Tax" value={salary?.professional_tax} symbol={salary?.currency_symbol} isDeduction />
-        <SalaryRow label="TDS" value={salary?.tds} symbol={salary?.currency_symbol} isDeduction />
-        <View style={styles.totalRow}>
-          <Text style={styles.totalLabel}>Total Deductions</Text>
-          <Text style={[styles.totalValue, { color: colors.status.error }]}>
-            -{formatCurrency((salary?.pf_employee || 0) + (salary?.professional_tax || 0) + (salary?.tds || 0), salary?.currency_symbol)}
-          </Text>
-        </View>
-      </View>
-    </View>
-  );
-
-  const renderBankTab = () => (
-    <View style={styles.tabContent}>
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Bank Account</Text>
-        <InfoRow label="Bank Name" value={bankDetails?.bank_name || '-'} />
-        <InfoRow label="Account No." value={bankDetails?.account_number ? `****${bankDetails.account_number.slice(-4)}` : '-'} />
-        <InfoRow label="IFSC Code" value={bankDetails?.ifsc_code || '-'} />
-        <InfoRow label="Account Type" value={bankDetails?.account_type || 'Savings'} />
-        <InfoRow label="Holder Name" value={bankDetails?.account_holder_name || profile?.name || '-'} isLast />
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Tax Information</Text>
-        <InfoRow label="PAN Number" value={bankDetails?.pan_number || profile?.pan_number || '-'} />
-        <InfoRow label="UAN Number" value={bankDetails?.uan_number || '-'} />
-        <InfoRow label="PF Account" value={bankDetails?.pf_account || '-'} isLast />
-      </View>
-    </View>
-  );
+  const isLoading = profileLoading || (activeTab === 'bank' && bankLoading) || (activeTab === 'salary' && salaryLoading);
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Ionicons name="chevron-back" size={iconSize.lg} color={colors.text.primary} />
+        <TouchableOpacity
+          testID="back-btn"
+          style={styles.backBtn}
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="arrow-back" size={iconSize.lg} color={colors.text.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>My Profile</Text>
-        <View style={{ width: 36 }} />
+        <Text style={styles.headerTitle}>Profile</Text>
+        <TouchableOpacity
+          testID="settings-btn"
+          style={styles.settingsBtn}
+          onPress={() => navigation.navigate('Settings')}
+        >
+          <Ionicons name="settings-outline" size={iconSize.lg} color={colors.text.secondary} />
+        </TouchableOpacity>
       </View>
 
-      {/* Profile Summary */}
-      <View style={styles.profileSummary}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{getInitials(profile?.name || '')}</Text>
-        </View>
-        <Text style={styles.profileName}>{profile?.name || 'Loading...'}</Text>
-        <Text style={styles.profileRole}>{profile?.role_name || ''}</Text>
-        <View style={styles.badge}>
-          <View style={styles.badgeDot} />
-          <Text style={styles.badgeText}>Active</Text>
-        </View>
-      </View>
-
-      {/* Tabs */}
-      <View style={styles.tabs}>
-        {tabs.map((tab) => (
-          <TouchableOpacity
-            key={tab.key}
-            style={[styles.tab, activeTab === tab.key && styles.tabActive]}
-            onPress={() => setActiveTab(tab.key)}
-          >
-            <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>
-              {tab.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      {/* Tab Content */}
       <ScrollView
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary.default} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+          />
+        }
+        contentContainerStyle={styles.scrollContent}
       >
-        {activeTab === 'personal' && renderPersonalTab()}
-        {activeTab === 'salary' && renderSalaryTab()}
-        {activeTab === 'bank' && renderBankTab()}
+        {/* Profile Card */}
+        <View style={styles.profileCard}>
+          <LinearGradient
+            colors={colors.gradients.surface}
+            style={styles.profileGradient}
+          >
+            <View style={styles.avatarContainer}>
+              <LinearGradient colors={colors.gradients.primary} style={styles.avatar}>
+                <Text style={styles.avatarText}>
+                  {getInitials(profile?.name || user?.name || '')}
+                </Text>
+              </LinearGradient>
+            </View>
+            <Text style={styles.profileName}>{profile?.name || user?.name || 'User'}</Text>
+            <Text style={styles.profileEmail}>{profile?.email || user?.email || ''}</Text>
+            <View style={styles.profileBadge}>
+              <Ionicons name="briefcase" size={14} color={colors.primary} />
+              <Text style={styles.profileRole}>{profile?.role_name || 'Employee'}</Text>
+            </View>
+          </LinearGradient>
+        </View>
+
+        {/* Tabs */}
+        <View style={styles.tabsContainer}>
+          {tabs.map((tab) => (
+            <TouchableOpacity
+              key={tab.key}
+              testID={`tab-${tab.key}`}
+              style={[styles.tab, activeTab === tab.key && styles.tabActive]}
+              onPress={() => setActiveTab(tab.key)}
+            >
+              <Ionicons 
+                name={tab.icon} 
+                size={iconSize.md} 
+                color={activeTab === tab.key ? colors.primary : colors.text.tertiary} 
+              />
+              <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>
+                {tab.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Tab Content */}
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        ) : (
+          <View style={styles.tabContent}>
+            {activeTab === 'personal' && (
+              <>
+                <InfoRow icon="id-card-outline" label="Employee ID" value={profile?.employee_code || '-'} />
+                <InfoRow icon="call-outline" label="Phone" value={profile?.phone || '-'} />
+                <InfoRow icon="business-outline" label="Department" value={profile?.department_name || '-'} />
+                <InfoRow icon="location-outline" label="Location" value={profile?.location || profile?.country_name || '-'} />
+                <InfoRow icon="calendar-outline" label="Join Date" value={profile?.join_date || '-'} />
+              </>
+            )}
+            {activeTab === 'bank' && (
+              <>
+                <InfoRow icon="card-outline" label="Account Number" value={bankDetails?.account_number ? `****${bankDetails.account_number.slice(-4)}` : '-'} />
+                <InfoRow icon="business-outline" label="Bank Name" value={bankDetails?.bank_name || '-'} />
+                <InfoRow icon="git-branch-outline" label="Branch" value={bankDetails?.branch_name || '-'} />
+                <InfoRow icon="barcode-outline" label="IFSC Code" value={bankDetails?.ifsc_code || '-'} />
+                <InfoRow icon="person-outline" label="Account Holder" value={bankDetails?.account_holder_name || '-'} />
+              </>
+            )}
+            {activeTab === 'salary' && (
+              <>
+                <InfoRow icon="cash-outline" label="Gross Salary" value={formatCurrency(salary?.gross_salary || 0)} highlight />
+                <InfoRow icon="wallet-outline" label="Net Salary" value={formatCurrency(salary?.net_salary || 0)} highlight />
+                <InfoRow icon="home-outline" label="Basic" value={formatCurrency(salary?.basic || 0)} />
+                <InfoRow icon="car-outline" label="HRA" value={formatCurrency(salary?.hra || 0)} />
+                <InfoRow icon="briefcase-outline" label="Allowances" value={formatCurrency(salary?.allowances || 0)} />
+              </>
+            )}
+          </View>
+        )}
       </ScrollView>
     </View>
   );
 }
 
-// Info Row Component
-const InfoRow = ({ label, value, isLast = false }: { label: string; value: string | undefined; isLast?: boolean }) => (
-  <View style={[styles.infoRow, !isLast && styles.infoRowBorder]}>
-    <Text style={styles.infoLabel}>{label}</Text>
-    <Text style={styles.infoValue} numberOfLines={2}>{value || '-'}</Text>
-  </View>
-);
-
-// Salary Row Component
-const SalaryRow = ({ label, value, symbol = '₹', isDeduction = false }: { label: string; value: number | undefined; symbol?: string; isDeduction?: boolean }) => (
-  <View style={styles.salaryRow}>
-    <Text style={styles.salaryLabel}>{label}</Text>
-    <Text style={[styles.salaryValue, isDeduction && value && { color: colors.status.error }]}>
-      {isDeduction && value ? '-' : ''}{symbol}{value?.toLocaleString('en-IN') || '0'}
-    </Text>
+const InfoRow = ({ 
+  icon, 
+  label, 
+  value, 
+  highlight = false 
+}: { 
+  icon: any; 
+  label: string; 
+  value: string; 
+  highlight?: boolean;
+}) => (
+  <View style={styles.infoRow}>
+    <View style={styles.infoIcon}>
+      <Ionicons name={icon} size={16} color={colors.text.tertiary} />
+    </View>
+    <View style={styles.infoContent}>
+      <Text style={styles.infoLabel}>{label}</Text>
+      <Text style={[styles.infoValue, highlight && styles.infoValueHighlight]}>{value}</Text>
+    </View>
   </View>
 );
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background.secondary,
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    backgroundColor: colors.background.primary,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
   },
   backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   headerTitle: {
     fontSize: fontSize.lg,
-    fontWeight: '600',
+    fontWeight: fontWeight.semibold,
     color: colors.text.primary,
   },
-  profileSummary: {
+  settingsBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: spacing.xl,
-    backgroundColor: colors.background.primary,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  scrollContent: {
+    padding: spacing.xl,
+    paddingTop: 0,
+    paddingBottom: spacing.xxxxl,
+  },
+  // Profile Card
+  profileCard: {
+    borderRadius: radius.xl,
+    overflow: 'hidden',
+    marginBottom: spacing.xl,
+  },
+  profileGradient: {
+    padding: spacing.xxl,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.xl,
+  },
+  avatarContainer: {
+    marginBottom: spacing.lg,
   },
   avatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: colors.primary.default,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarText: {
-    fontSize: fontSize.xl,
-    fontWeight: '600',
-    color: colors.text.inverse,
+    fontSize: fontSize.xxl,
+    fontWeight: fontWeight.bold,
+    color: '#FFF',
   },
   profileName: {
-    fontSize: fontSize.lg,
-    fontWeight: '600',
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.semibold,
     color: colors.text.primary,
-    marginTop: spacing.sm,
+    marginBottom: spacing.xs,
+  },
+  profileEmail: {
+    fontSize: fontSize.sm,
+    color: colors.text.secondary,
+    marginBottom: spacing.md,
+  },
+  profileBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: `${colors.primary}20`,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.full,
+    gap: spacing.xs,
   },
   profileRole: {
     fontSize: fontSize.sm,
-    color: colors.text.secondary,
-    marginTop: 2,
+    color: colors.primary,
+    fontWeight: fontWeight.medium,
   },
-  badge: {
+  // Tabs
+  tabsContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.status.successBg,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: radius.full,
-    marginTop: spacing.sm,
-  },
-  badgeDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.status.success,
-    marginRight: spacing.xs,
-  },
-  badgeText: {
-    fontSize: fontSize.xs,
-    color: colors.status.success,
-    fontWeight: '500',
-  },
-  tabs: {
-    flexDirection: 'row',
-    backgroundColor: colors.background.primary,
-    paddingHorizontal: spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.xs,
+    marginBottom: spacing.xl,
   },
   tab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: spacing.md,
-    marginRight: spacing.xl,
+    gap: spacing.xs,
+    borderRadius: radius.md,
   },
   tabActive: {
-    borderBottomWidth: 2,
-    borderBottomColor: colors.primary.default,
+    backgroundColor: colors.surfaceHighlight,
   },
   tabText: {
     fontSize: fontSize.sm,
-    fontWeight: '500',
     color: colors.text.tertiary,
+    fontWeight: fontWeight.medium,
   },
   tabTextActive: {
-    color: colors.primary.default,
+    color: colors.primary,
+  },
+  // Content
+  loadingContainer: {
+    paddingVertical: spacing.xxxxl,
+    alignItems: 'center',
   },
   tabContent: {
-    padding: spacing.lg,
-  },
-  card: {
-    backgroundColor: colors.card,
+    backgroundColor: colors.surface,
     borderRadius: radius.lg,
     padding: spacing.lg,
-    marginBottom: spacing.md,
-  },
-  cardTitle: {
-    fontSize: fontSize.sm,
-    fontWeight: '600',
-    color: colors.text.secondary,
-    marginBottom: spacing.md,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   infoRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: spacing.sm,
-  },
-  infoRowBorder: {
+    paddingVertical: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+  },
+  infoIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.sm,
+    backgroundColor: colors.surfaceHighlight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.md,
+  },
+  infoContent: {
+    flex: 1,
   },
   infoLabel: {
-    fontSize: fontSize.sm,
-    color: colors.text.secondary,
+    fontSize: fontSize.xs,
+    color: colors.text.tertiary,
+    marginBottom: 2,
   },
   infoValue: {
-    fontSize: fontSize.sm,
-    fontWeight: '500',
-    color: colors.text.primary,
-    maxWidth: '55%',
-    textAlign: 'right',
-  },
-  salaryHighlight: {
-    backgroundColor: colors.primary.default,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.md,
-    alignItems: 'center',
-  },
-  salaryHighlightLabel: {
-    fontSize: fontSize.sm,
-    color: 'rgba(255,255,255,0.8)',
-  },
-  salaryHighlightValue: {
-    fontSize: fontSize.hero,
-    fontWeight: '700',
-    color: colors.text.inverse,
-    marginTop: spacing.xs,
-  },
-  salaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  salaryLabel: {
-    fontSize: fontSize.sm,
-    color: colors.text.secondary,
-  },
-  salaryValue: {
-    fontSize: fontSize.sm,
-    fontWeight: '500',
+    fontSize: fontSize.base,
     color: colors.text.primary,
   },
-  totalRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingTop: spacing.md,
-    marginTop: spacing.xs,
-  },
-  totalLabel: {
-    fontSize: fontSize.sm,
-    fontWeight: '600',
-    color: colors.text.primary,
-  },
-  totalValue: {
-    fontSize: fontSize.sm,
-    fontWeight: '700',
-    color: colors.status.success,
+  infoValueHighlight: {
+    color: colors.success,
+    fontWeight: fontWeight.semibold,
   },
 });
