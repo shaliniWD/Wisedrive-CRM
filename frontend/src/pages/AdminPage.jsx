@@ -2943,6 +2943,23 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
                                   <Download className="h-4 w-4" />
                                 </a>
                               )}
+                              {!doc.verified && (
+                                <button
+                                  onClick={async () => {
+                                    try {
+                                      await hrApi.verifyEmployeeDocument(employee.id, doc.id);
+                                      toast.success('Document verified');
+                                      loadEmployeeData(employee.id);
+                                    } catch (error) {
+                                      toast.error('Failed to verify document');
+                                    }
+                                  }}
+                                  className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded"
+                                  title="Mark as Verified"
+                                >
+                                  <CheckCircle className="h-4 w-4" />
+                                </button>
+                              )}
                               <button 
                                 onClick={async () => {
                                   if (!window.confirm('Delete this document?')) return;
