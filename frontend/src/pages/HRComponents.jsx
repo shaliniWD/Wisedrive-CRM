@@ -535,80 +535,36 @@ export function PayrollDashboard({ isHR, isFinance }) {
   const CurrencyIcon = (!isCEO && isIndianUser) ? IndianRupee : DollarSign;
   
   // NumericInput helper - handles "0" value properly (shows empty on focus if value is 0)
-  const NumericInput = ({ value, onChange, className, min = 0, max, ...props }) => {
-    const inputRef = useRef(null);
-    const [localValue, setLocalValue] = useState(value?.toString() || '0');
-    const [isFocused, setIsFocused] = useState(false);
-    const debounceRef = useRef(null);
+  // Simple number input - NO complex state management, just a plain text field
+  const SimpleNumberInput = ({ defaultValue, onValueChange, className, ...props }) => {
+    const [value, setValue] = useState(defaultValue?.toString() || '0');
     
-    // Only sync from parent when NOT focused (prevents jumping)
+    // Only update from parent on mount or when defaultValue changes externally
     useEffect(() => {
-      if (!isFocused) {
-        setLocalValue(value?.toString() || '0');
-      }
-    }, [value, isFocused]);
-    
-    const handleFocus = (e) => {
-      setIsFocused(true);
-      // Clear to allow fresh input if value is 0
-      if (localValue === '0') {
-        setLocalValue('');
-      }
-      setTimeout(() => e.target.select(), 0);
-    };
-    
-    const handleChange = (e) => {
-      const newValue = e.target.value;
-      // Only allow numeric input (digits only)
-      if (newValue === '' || /^\d*$/.test(newValue)) {
-        setLocalValue(newValue);
-        
-        // Debounce parent update to prevent jumping
-        if (debounceRef.current) {
-          clearTimeout(debounceRef.current);
-        }
-        debounceRef.current = setTimeout(() => {
-          // Create synthetic event with the current input value
-          const syntheticEvent = { target: { value: newValue || '0' } };
-          onChange(syntheticEvent);
-        }, 150);
-      }
-    };
-    
-    const handleBlur = (e) => {
-      setIsFocused(false);
-      // Clear any pending debounce
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
-      }
-      // Finalize value and trigger parent update
-      const finalValue = localValue === '' ? '0' : localValue;
-      setLocalValue(finalValue);
-      // Immediate update on blur
-      const syntheticEvent = { target: { value: finalValue } };
-      onChange(syntheticEvent);
-    };
-    
-    // Cleanup debounce on unmount
-    useEffect(() => {
-      return () => {
-        if (debounceRef.current) {
-          clearTimeout(debounceRef.current);
-        }
-      };
-    }, []);
+      setValue(defaultValue?.toString() || '0');
+    }, [defaultValue]);
     
     return (
       <input
-        ref={inputRef}
         type="text"
         inputMode="numeric"
-        pattern="[0-9]*"
-        value={localValue}
-        onChange={handleChange}
-        onFocus={handleFocus}
-        onBlur={handleBlur}
-        className={`flex rounded-md border border-input bg-transparent px-2 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${className}`}
+        value={value}
+        onChange={(e) => {
+          const v = e.target.value;
+          // Allow only digits
+          if (v === '' || /^\d*$/.test(v)) {
+            setValue(v);
+          }
+        }}
+        onBlur={(e) => {
+          // Only call parent on blur with final value
+          const finalValue = value === '' ? '0' : value;
+          setValue(finalValue);
+          if (onValueChange) {
+            onValueChange(parseInt(finalValue, 10) || 0);
+          }
+        }}
+        className={`flex rounded-md border border-input bg-white px-2 py-1 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${className}`}
         {...props}
       />
     );
