@@ -1,0 +1,115 @@
+{
+  "summary": "ESS Mobile API testing complete - All 32 tests passed. Fixed route ordering issues for /payslips/years and /documents/requirements endpoints.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_ess_mobile_api.py",
+    "/app/test_reports/pytest/pytest_ess_mobile_api.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Fixed route ordering in /app/ess/api/routes/payslips.py - moved /payslips/years before /payslips/{payslip_id}",
+    "Fixed route ordering in /app/ess/api/routes/documents.py - moved /documents/requirements before /documents/{document_id}",
+    "FCM and APNS push notification delivery is MOCKED - no actual push sent without FCM_SERVER_KEY/APNS credentials"
+  ],
+  "updated_files": [
+    "/app/ess/api/routes/payslips.py",
+    "/app/ess/api/routes/documents.py",
+    "/app/backend/tests/test_ess_mobile_api.py"
+  ],
+  "success_rate": {
+    "backend": "100% (32/32 tests passed)",
+    "frontend": "N/A - Backend only testing"
+  },
+  "test_credentials": {
+    "CEO": "kalyan@wisedrive.com / password123",
+    "HR Manager": "hr@wisedrive.com / password123",
+    "Sales Executive": "salesexec1.in@wisedrive.com / password123"
+  },
+  "seed_data_creation": "Leave applications created during testing (future dates)",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "ESS Mobile API fully tested on port 8002. All endpoints working: health check, auth (login/logout/refresh/session), profile (basic/bank/salary/attendance), leave (balance/history/apply/cancel), notifications (list/settings/read), payslips (list/years), documents (list/requirements). Single device policy verified working - new login invalidates old sessions. Main CRM API on port 8001 still working alongside ESS API.",
+  "features_tested": {
+    "health_check": "PASS - /ess/v1/health returns healthy status",
+    "authentication": {
+      "login_ceo": "PASS - CEO user can login with device registration",
+      "login_hr": "PASS - HR Manager can login",
+      "login_sales": "PASS - Sales Executive can login",
+      "invalid_credentials": "PASS - Invalid credentials rejected with 401",
+      "wrong_password": "PASS - Wrong password rejected with 401",
+      "single_device_policy": "PASS - New login invalidates old session",
+      "logout": "PASS - Logout invalidates token",
+      "refresh_token": "PASS - Token refresh works correctly",
+      "session_info": "PASS - Current session info retrievable"
+    },
+    "profile": {
+      "get_profile": "PASS - Returns employee profile with all fields",
+      "unauthorized_access": "PASS - Unauthorized access rejected",
+      "bank_details": "PASS - Bank details endpoint working (masked)",
+      "salary_summary": "PASS - Salary summary endpoint working",
+      "attendance_summary": "PASS - Attendance summary endpoint working"
+    },
+    "leave_management": {
+      "get_balance": "PASS - Leave balance returns casual/sick/earned leaves",
+      "get_history": "PASS - Leave history with pagination",
+      "apply_leave": "PASS - Leave application creates pending request",
+      "past_date_validation": "PASS - Past date leave rejected with 400"
+    },
+    "notifications": {
+      "get_notifications": "PASS - Returns paginated notifications",
+      "unread_count": "PASS - Returns unread count for badge",
+      "get_settings": "PASS - Returns notification preferences",
+      "update_settings": "PASS - Can update quiet hours settings",
+      "mark_read": "PASS - Can mark notifications as read"
+    },
+    "payslips": {
+      "get_payslips": "PASS - Returns paginated payslip list",
+      "get_available_years": "PASS - Returns years with payslips (fixed route ordering)"
+    },
+    "documents": {
+      "get_documents": "PASS - Returns employee documents",
+      "get_requirements": "PASS - Returns document requirements checklist (fixed route ordering)"
+    },
+    "main_crm_api": {
+      "root_endpoint": "PASS - Main CRM API still working at /api/",
+      "login": "PASS - Main CRM login still working"
+    }
+  },
+  "mocked_apis": {
+    "FCM_push_notifications": "MOCKED - No actual push sent without FCM_SERVER_KEY",
+    "APNS_push_notifications": "MOCKED - No actual push sent without APNS credentials"
+  },
+  "api_endpoints_tested": [
+    "GET /ess/v1/health",
+    "GET /ess/v1",
+    "GET /ess/v1/docs",
+    "POST /ess/v1/auth/login",
+    "POST /ess/v1/auth/logout",
+    "POST /ess/v1/auth/refresh",
+    "GET /ess/v1/auth/session",
+    "GET /ess/v1/profile",
+    "GET /ess/v1/profile/bank-details",
+    "GET /ess/v1/profile/salary",
+    "GET /ess/v1/profile/attendance",
+    "GET /ess/v1/leave/balance",
+    "GET /ess/v1/leave/history",
+    "POST /ess/v1/leave/apply",
+    "GET /ess/v1/notifications",
+    "GET /ess/v1/notifications/unread-count",
+    "GET /ess/v1/notifications/settings",
+    "PATCH /ess/v1/notifications/settings",
+    "POST /ess/v1/notifications/read",
+    "GET /ess/v1/payslips",
+    "GET /ess/v1/payslips/years",
+    "GET /ess/v1/documents",
+    "GET /ess/v1/documents/requirements"
+  ]
+}
