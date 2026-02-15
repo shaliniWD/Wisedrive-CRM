@@ -1244,9 +1244,9 @@ export function PayrollDashboard({ isHR, isFinance }) {
                   <span>•</span>
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-indigo-600">Working Days:</span>
-                    <NumericInput
-                      value={batchWorkingDays ?? previewData.working_days}
-                      onChange={(e) => handleWorkingDaysChange(e.target.value)}
+                    <SimpleNumberInput
+                      defaultValue={batchWorkingDays ?? previewData.working_days}
+                      onValueChange={(val) => handleWorkingDaysChange(val.toString())}
                       className="w-16 h-7 text-center text-sm font-medium border-indigo-300 focus:border-indigo-500"
                       data-testid="batch-working-days-input"
                     />
