@@ -89,6 +89,25 @@ async def get_payslips(
     )
 
 
+@router.get("/payslips/years")
+async def get_available_years(
+    request: Request,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Get list of years with available payslips.
+    """
+    db = request.app.state.db
+    user_id = current_user["id"]
+    
+    years = await db.payroll_records.distinct(
+        "year",
+        {"employee_id": user_id, "status": {"$in": ["confirmed", "paid"]}}
+    )
+    
+    return {"years": sorted(years, reverse=True)}
+
+
 @router.get("/payslips/{payslip_id}", response_model=PayslipDetail)
 async def get_payslip_detail(
     request: Request,
