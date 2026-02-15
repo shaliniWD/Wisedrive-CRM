@@ -2237,6 +2237,30 @@ async def update_employee_document(employee_id: str, document_id: str, doc_data:
     return doc
 
 
+@api_router.put("/hr/employees/{employee_id}/documents/{document_id}/verify")
+async def verify_employee_document(employee_id: str, document_id: str, current_user: dict = Depends(get_current_user)):
+    """Mark employee document as verified - HR only"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    result = await db.employee_documents.update_one(
+        {"id": document_id, "user_id": employee_id},
+        {"$set": {
+            "verified": True,
+            "verified_by": current_user["id"],
+            "verified_by_name": current_user.get("name", ""),
+            "verified_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Document not found")
+    
+    return {"message": "Document verified successfully"}
+
+
 @api_router.delete("/hr/employees/{employee_id}/documents/{document_id}")
 async def delete_employee_document(employee_id: str, document_id: str, current_user: dict = Depends(get_current_user)):
     """Delete employee document"""
