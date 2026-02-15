@@ -2014,7 +2014,7 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
           date_of_birth: '', gender: '', address: '', city: '', state: '', pincode: '',
           bank_name: '', bank_account_number: '', ifsc_code: '', pan_number: '',
           account_holder_name: '', bank_branch: '',
-          weekly_off_day: 0, reporting_manager_id: '', payroll_active: true,
+          weekly_off_day: 0, overtime_rate_per_day: 0, reporting_manager_id: '', payroll_active: true,
           emergency_contact_name: '', emergency_contact_phone: '', emergency_contact_relation: '',
           is_available_for_leads: true, lead_assignment_paused_reason: '',
           has_crm_access: true, is_active: true, password: ''
