@@ -1038,9 +1038,16 @@ class PayrollService:
             "absent_days": attendance.get("absent_days", 0),
             "approved_leave_days": attendance.get("approved_leave_days", 0),
             "unapproved_absent_days": absent_days_for_deduction,
+            "lop_days": 0,  # Default LOP to 0 - editable by HR
             "attendance_deduction": attendance_deduction,
             "attendance_override": False,
             "total_hours_worked": attendance.get("total_hours_worked", 0),
+            
+            # Incentive and Overtime (EDITABLE)
+            "incentive_amount": 0,  # Editable by HR
+            "overtime_rate_per_day": employee.get("overtime_rate_per_day", 0),
+            "overtime_days": 0,  # Editable by HR
+            "overtime_pay": 0,  # Calculated from overtime_days * overtime_rate_per_day
             
             # Other deductions (EDITABLE - capped at net salary)
             "other_deductions": other_deductions,
