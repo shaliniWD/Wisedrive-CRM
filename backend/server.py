@@ -3828,29 +3828,63 @@ async def get_attendance_calendar(
             "updated_by": override.get("updated_by_name", "")
         }
     
+    # Get organization holidays for the month (country-specific)
+    # Get unique country IDs from employees
+    country_ids = list(set(e.get("country_id") for e in employees if e.get("country_id")))
+    holiday_query = {
+        "country_id": {"$in": country_ids},
+        "date": {"$gte": start_date, "$lte": end_date}
+    }
+    org_holidays = await db.holidays.find(holiday_query, {"_id": 0}).to_list(100)
+    
+    # Group org holidays by country and date
+    org_holiday_map = {}  # {country_id: {date: holiday_name}}
+    for h in org_holidays:
+        cid = h.get("country_id")
+        if cid not in org_holiday_map:
+            org_holiday_map[cid] = {}
+        org_holiday_map[cid][h["date"]] = h.get("name", "Holiday")
+    
     # Build calendar data for each employee
     calendar_data = []
     day_names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
     
+    # Weekday mapping: 0=Monday, 1=Tuesday, ..., 6=Sunday
+    # Employee weekly_off_day: 0=Sunday, 1=Monday, ..., 6=Saturday (or use direct mapping)
+    
     for emp in employees:
-        emp_weekly_off = emp.get("weekly_off_day", 0)  # 0=Sunday default
+        # Employee's weekly off day - stored as day name or number
+        emp_weekly_off = emp.get("weekly_off_day", "Sunday")  # Default Sunday
+        emp_country = emp.get("country_id")
         emp_days = {}
+        
+        # Convert weekly off to weekday number (0=Monday format)
+        if isinstance(emp_weekly_off, str):
+            weekly_off_map = {"Sunday": 6, "Monday": 0, "Tuesday": 1, "Wednesday": 2, "Thursday": 3, "Friday": 4, "Saturday": 5}
+            emp_weekly_off_weekday = weekly_off_map.get(emp_weekly_off, 6)
+        else:
+            # If numeric: 0=Sunday, convert to 0=Monday format
+            emp_weekly_off_weekday = (emp_weekly_off - 1) % 7 if emp_weekly_off > 0 else 6
         
         for day in range(1, last_day + 1):
             date_str = f"{year}-{str(month).zfill(2)}-{str(day).zfill(2)}"
             date_obj = datetime(year, month, day)
             weekday = date_obj.weekday()  # 0=Monday, 6=Sunday
             
-            # Check if it's a weekend (Saturday=5, Sunday=6) or employee's weekly off
-            is_weekend = weekday in [5, 6]  # Saturday or Sunday
-            is_weekly_off = weekday == (emp_weekly_off - 1) % 7 if emp_weekly_off > 0 else weekday == 6
-            is_holiday_default = is_weekend or is_weekly_off
+            # Check if it's the employee's weekly off day
+            is_weekly_off = weekday == emp_weekly_off_weekday
+            
+            # Check if it's an organization holiday for this country
+            is_org_holiday = emp_country and date_str in org_holiday_map.get(emp_country, {})
+            org_holiday_name = org_holiday_map.get(emp_country, {}).get(date_str, None)
+            
+            is_holiday_default = is_weekly_off or is_org_holiday
             
             # Check for HR override first (takes precedence)
             override_info = override_map.get(emp["id"], {}).get(date_str)
             leave_info = leave_map.get(emp["id"], {}).get(date_str)
             
-            # Priority: Override > Leave > Default (holiday/working)
+            # Priority: Override > Leave > Org Holiday > Weekly Off > Working
             if override_info:
                 day_status = override_info["status"]
                 leave_type = None
@@ -3862,10 +3896,15 @@ async def get_attendance_calendar(
                 day_status = f"leave_{status}"  # "leave_approved" or "leave_pending"
                 reason = leave_info.get("reason", "")
                 leave_id = leave_info.get("leave_id")
-            elif is_holiday_default:
-                day_status = "holiday"
+            elif is_org_holiday:
+                day_status = "org_holiday"
                 leave_type = None
-                reason = None
+                reason = org_holiday_name
+                leave_id = None
+            elif is_weekly_off:
+                day_status = "weekly_off"
+                leave_type = None
+                reason = f"Weekly Off ({day_names[weekday]})"
                 leave_id = None
             else:
                 day_status = "working"
@@ -3880,19 +3919,21 @@ async def get_attendance_calendar(
                 "weekday_name": day_names[weekday],
                 "status": day_status,
                 "leave_type": leave_type,
-                "is_weekend": is_weekend,
+                "is_weekly_off": is_weekly_off,
+                "is_org_holiday": is_org_holiday,
                 "leave_id": leave_id,
                 "reason": reason,
                 "is_override": override_info is not None
             }
         
-        # Count summary - include LOP days
+        # Count summary - include LOP days and overtime
         working_days = sum(1 for d in emp_days.values() if d["status"] in ["working", "present"])
         leave_approved = sum(1 for d in emp_days.values() if d["status"] == "leave_approved")
         leave_pending = sum(1 for d in emp_days.values() if d["status"] == "leave_pending")
-        holidays = sum(1 for d in emp_days.values() if d["status"] == "holiday")
+        holidays = sum(1 for d in emp_days.values() if d["status"] in ["weekly_off", "org_holiday", "holiday"])
         lop_days = sum(1 for d in emp_days.values() if d["status"] in ["lop", "absent"])
         half_days = sum(1 for d in emp_days.values() if d["status"] == "half_day")
+        overtime_days = sum(1 for d in emp_days.values() if d["status"] == "overtime")
         
         calendar_data.append({
             "employee_id": emp["id"],
