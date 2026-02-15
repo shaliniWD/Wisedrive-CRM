@@ -4150,6 +4150,7 @@ async def get_payroll_batches(
     country_id: Optional[str] = None,
     batch_status: Optional[str] = None,
     year: Optional[int] = None,
+    month: Optional[int] = None,
     current_user: dict = Depends(get_current_user)
 ):
     """Get payroll batches - HR/Finance"""
@@ -4158,7 +4159,7 @@ async def get_payroll_batches(
     if role_code not in ["CEO", "HR_MANAGER", "FINANCE_MANAGER", "COUNTRY_HEAD"]:
         raise HTTPException(status_code=403, detail="Not authorized")
     
-    batches = await payroll_service.get_batches(country_id, batch_status, year)
+    batches = await payroll_service.get_batches(country_id, batch_status, year, month)
     return batches
 
 
