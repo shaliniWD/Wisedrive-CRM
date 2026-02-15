@@ -141,6 +141,9 @@ async def mobile_login(request: Request, login_data: MobileLoginRequest):
     # Delete old refresh tokens for this user
     await db.ess_refresh_tokens.delete_many({"user_id": user_id})
     
+    # Delete any existing session with this device_id (to avoid unique constraint violation)
+    await db.ess_device_sessions.delete_one({"device_id": device.device_id})
+    
     # Create new device session
     session_id = str(uuid.uuid4())
     session_data = {
