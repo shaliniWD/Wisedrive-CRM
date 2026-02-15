@@ -5298,10 +5298,95 @@ api_router.include_router(ess_notifications.router, prefix=ess_prefix, tags=["ES
 @api_router.get("/ess/v1/health")
 async def ess_health_check():
     """ESS Mobile API Health check endpoint"""
+    fcm_status = "not_initialized"
+    if hasattr(app.state, 'fcm_service'):
+        if app.state.fcm_service.initialized:
+            fcm_status = "active"
+        elif app.state.fcm_service.mock_mode:
+            fcm_status = "mock_mode"
+    
     return {
         "status": "healthy",
         "service": "ess-mobile-api",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "fcm_status": fcm_status
+    }
+
+# Test push notification endpoint (for HR/Admin testing)
+@api_router.post("/ess/v1/notifications/test")
+async def send_test_notification(
+    request: Request,
+    user_id: str = None,
+    title: str = "Test Notification",
+    body: str = "This is a test push notification from WiseDrive ESS"
+):
+    """Send a test push notification to a user (for testing FCM setup)"""
+    if not hasattr(request.app.state, 'fcm_service'):
+        raise HTTPException(status_code=500, detail="FCM service not initialized")
+    
+    fcm = request.app.state.fcm_service
+    
+    if not user_id:
+        # Get first user with a push token
+        token_doc = await db.ess_push_tokens.find_one({}, {"_id": 0, "user_id": 1})
+        if token_doc:
+            user_id = token_doc["user_id"]
+        else:
+            raise HTTPException(status_code=400, detail="No user_id provided and no users with push tokens found")
+    
+    result = await fcm.send_notification(
+        user_id=user_id,
+        title=title,
+        body=body,
+        data={"type": "test", "timestamp": datetime.now(timezone.utc).isoformat()}
+    )
+    
+    return {
+        "message": "Test notification sent",
+        "user_id": user_id,
+        "result": result,
+        "fcm_mode": "production" if not fcm.mock_mode else "mock"
+    }
+
+# Broadcast notification endpoint (for announcements)
+@api_router.post("/ess/v1/notifications/broadcast")
+async def broadcast_notification(
+    request: Request,
+    title: str,
+    body: str,
+    country_id: str = None
+):
+    """Broadcast notification to all users or users in a specific country"""
+    if not hasattr(request.app.state, 'fcm_service'):
+        raise HTTPException(status_code=500, detail="FCM service not initialized")
+    
+    fcm = request.app.state.fcm_service
+    
+    # Get all users with push tokens
+    query = {}
+    if country_id:
+        # Get users from specific country
+        users = await db.users.find({"country_id": country_id}, {"_id": 0, "id": 1}).to_list(1000)
+        user_ids = [u["id"] for u in users]
+        query = {"user_id": {"$in": user_ids}}
+    
+    push_tokens = await db.ess_push_tokens.find(query, {"_id": 0, "user_id": 1}).to_list(1000)
+    user_ids = [t["user_id"] for t in push_tokens]
+    
+    if not user_ids:
+        return {"message": "No users with push tokens found", "sent": 0}
+    
+    results = await fcm.send_to_multiple(
+        user_ids=user_ids,
+        title=title,
+        body=body,
+        data={"type": "announcement"}
+    )
+    
+    return {
+        "message": "Broadcast complete",
+        "results": results,
+        "fcm_mode": "production" if not fcm.mock_mode else "mock"
     }
 
 # Include the router in the main app
