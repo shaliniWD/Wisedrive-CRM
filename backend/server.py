@@ -5260,6 +5260,33 @@ async def admin_sync_users():
 from routes.notification_config import router as notification_config_router
 api_router.include_router(notification_config_router, tags=["Notification Configuration"])
 
+# Import and include ESS Mobile API routes
+from routes_ess import auth as ess_auth
+from routes_ess import leave as ess_leave
+from routes_ess import payslips as ess_payslips
+from routes_ess import documents as ess_documents
+from routes_ess import profile as ess_profile
+from routes_ess import notifications as ess_notifications
+
+# ESS Mobile API routes with /ess/v1 prefix
+ess_prefix = "/ess/v1"
+api_router.include_router(ess_auth.router, prefix=ess_prefix, tags=["ESS Authentication"])
+api_router.include_router(ess_leave.router, prefix=ess_prefix, tags=["ESS Leave Management"])
+api_router.include_router(ess_payslips.router, prefix=ess_prefix, tags=["ESS Payslips"])
+api_router.include_router(ess_documents.router, prefix=ess_prefix, tags=["ESS Documents"])
+api_router.include_router(ess_profile.router, prefix=ess_prefix, tags=["ESS Profile"])
+api_router.include_router(ess_notifications.router, prefix=ess_prefix, tags=["ESS Notifications"])
+
+# ESS Health check endpoint
+@api_router.get("/ess/v1/health")
+async def ess_health_check():
+    """ESS Mobile API Health check endpoint"""
+    return {
+        "status": "healthy",
+        "service": "ess-mobile-api",
+        "version": "1.0.0"
+    }
+
 # Include the router in the main app
 app.include_router(api_router)
 
