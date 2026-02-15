@@ -2218,6 +2218,272 @@ export function LeaveManagement({ isHR }) {
   );
 }
 
+// ==================== HOLIDAY CALENDAR ====================
+export function HolidayCalendar() {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [holidays, setHolidays] = useState([]);
+  const [countries, setCountries] = useState([]);
+  const [filterYear, setFilterYear] = useState(new Date().getFullYear());
+  const [filterCountry, setFilterCountry] = useState('');
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [newHoliday, setNewHoliday] = useState({
+    date: '',
+    name: '',
+    reason: '',
+    country_id: ''
+  });
+  
+  // Fetch holidays
+  const fetchHolidays = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await holidayApi.getAll({ 
+        year: filterYear, 
+        country_id: filterCountry || undefined 
+      });
+      setHolidays(res.data || []);
+    } catch (e) {
+      toast.error('Failed to load holidays');
+    } finally {
+      setLoading(false);
+    }
+  }, [filterYear, filterCountry]);
+  
+  // Fetch countries
+  const fetchCountries = useCallback(async () => {
+    try {
+      const res = await hrApi.getAllCountries();
+      setCountries(res.data || []);
+    } catch (e) {
+      console.error('Failed to load countries');
+    }
+  }, []);
+  
+  useEffect(() => {
+    fetchCountries();
+  }, [fetchCountries]);
+  
+  useEffect(() => {
+    fetchHolidays();
+  }, [fetchHolidays]);
+  
+  // Add new holiday
+  const handleAddHoliday = async () => {
+    if (!newHoliday.date || !newHoliday.name || !newHoliday.country_id) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+    setSaving(true);
+    try {
+      await holidayApi.create(newHoliday);
+      toast.success('Holiday added successfully');
+      setIsAddModalOpen(false);
+      setNewHoliday({ date: '', name: '', reason: '', country_id: '' });
+      fetchHolidays();
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Failed to add holiday');
+    } finally {
+      setSaving(false);
+    }
+  };
+  
+  // Delete holiday
+  const handleDeleteHoliday = async (holidayId) => {
+    if (!window.confirm('Are you sure you want to delete this holiday?')) return;
+    try {
+      await holidayApi.delete(holidayId);
+      toast.success('Holiday deleted');
+      fetchHolidays();
+    } catch (e) {
+      toast.error('Failed to delete holiday');
+    }
+  };
+  
+  // Get years for filter
+  const years = [new Date().getFullYear(), new Date().getFullYear() + 1, new Date().getFullYear() - 1].sort((a, b) => b - a);
+  
+  return (
+    <div className="p-6" data-testid="holiday-calendar">
+      {/* Header */}
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <CalendarDays className="h-5 w-5 text-purple-600" />
+            Holiday Calendar
+          </h2>
+          <p className="text-sm text-gray-500">
+            Configure organization-wide holidays (country-specific)
+          </p>
+        </div>
+        
+        <div className="flex items-center gap-3">
+          {/* Year Filter */}
+          <Select value={String(filterYear)} onValueChange={(v) => setFilterYear(parseInt(v))}>
+            <SelectTrigger className="w-28">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          
+          {/* Country Filter */}
+          <Select value={filterCountry || 'all'} onValueChange={(v) => setFilterCountry(v === 'all' ? '' : v)}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="All Countries" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Countries</SelectItem>
+              {countries.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          
+          <Button 
+            onClick={() => setIsAddModalOpen(true)}
+            className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800"
+          >
+            <Plus className="h-4 w-4 mr-2" /> Add Holiday
+          </Button>
+        </div>
+      </div>
+      
+      {/* Holidays Table */}
+      {loading ? (
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+        </div>
+      ) : holidays.length > 0 ? (
+        <div className="border rounded-xl overflow-hidden bg-white">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-slate-50 border-b">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600">Date</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600">Holiday Name</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600">Reason</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600">Country</th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-slate-600">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {holidays.map((holiday) => {
+                const dateObj = new Date(holiday.date);
+                const dayName = dateObj.toLocaleDateString('en', { weekday: 'long' });
+                const formattedDate = dateObj.toLocaleDateString('en', { day: 'numeric', month: 'short', year: 'numeric' });
+                
+                return (
+                  <tr key={holiday.id} className="hover:bg-slate-50">
+                    <td className="px-4 py-3">
+                      <div className="flex flex-col">
+                        <span className="font-medium">{formattedDate}</span>
+                        <span className="text-xs text-gray-500">{dayName}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 font-medium text-purple-700">{holiday.name}</td>
+                    <td className="px-4 py-3 text-gray-600">{holiday.reason || '-'}</td>
+                    <td className="px-4 py-3">
+                      <span className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs">
+                        <Globe className="h-3 w-3 mr-1" />
+                        {holiday.country_name}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <button
+                        onClick={() => handleDeleteHoliday(holiday.id)}
+                        className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center py-16 text-gray-500">
+          <CalendarDays className="h-12 w-12 text-gray-300 mb-3" />
+          <p className="font-medium">No holidays configured</p>
+          <p className="text-sm">Add holidays to mark organization-wide days off</p>
+        </div>
+      )}
+      
+      {/* Add Holiday Modal */}
+      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+        <DialogContent className="sm:max-w-[450px]" data-testid="add-holiday-modal">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CalendarDays className="h-5 w-5 text-purple-600" />
+              Add Holiday
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div>
+              <Label className="text-sm font-medium">Country *</Label>
+              <Select 
+                value={newHoliday.country_id} 
+                onValueChange={(v) => setNewHoliday({...newHoliday, country_id: v})}
+              >
+                <SelectTrigger className="mt-1.5">
+                  <SelectValue placeholder="Select country" />
+                </SelectTrigger>
+                <SelectContent>
+                  {countries.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <Label className="text-sm font-medium">Date *</Label>
+              <Input
+                type="date"
+                value={newHoliday.date}
+                onChange={(e) => setNewHoliday({...newHoliday, date: e.target.value})}
+                className="mt-1.5"
+              />
+            </div>
+            
+            <div>
+              <Label className="text-sm font-medium">Holiday Name *</Label>
+              <Input
+                value={newHoliday.name}
+                onChange={(e) => setNewHoliday({...newHoliday, name: e.target.value})}
+                placeholder="e.g., Christmas, Diwali"
+                className="mt-1.5"
+              />
+            </div>
+            
+            <div>
+              <Label className="text-sm font-medium">Reason (Optional)</Label>
+              <Input
+                value={newHoliday.reason}
+                onChange={(e) => setNewHoliday({...newHoliday, reason: e.target.value})}
+                placeholder="e.g., Festival, National Holiday"
+                className="mt-1.5"
+              />
+            </div>
+          </div>
+          
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>Cancel</Button>
+            <Button 
+              onClick={handleAddHoliday} 
+              disabled={saving}
+              className="bg-gradient-to-r from-purple-600 to-purple-700"
+            >
+              {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              Add Holiday
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
 // Helper component for status badge
 function StatusBadge({ status }) {
   const config = {
