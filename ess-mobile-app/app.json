@@ -38,15 +38,15 @@
         "expo-notifications",
         {
           "icon": "./assets/notification-icon.png",
-          "color": "#2196F3",
-          "sounds": ["./assets/notification-sound.wav"]
+          "color": "#2196F3"
         }
       ]
     ],
     "extra": {
       "eas": {
-        "projectId": "your-eas-project-id"
+        "projectId": "wisedrive-ess-app"
       }
-    }
+    },
+    "owner": "wisedrive"
   }
 }
