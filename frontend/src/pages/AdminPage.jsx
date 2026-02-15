@@ -1968,7 +1968,7 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
 
   useEffect(() => {
     if (isOpen) {
-      setDocForm({ document_type: '', document_name: '', document_url: '' });
+      setDocForm({ document_type: '', document_name: '', file: null });
       setEmployeeIdError('');
       if (employee) {
         setPhotoPreview(employee.photo_url || null);
