@@ -874,7 +874,10 @@ export function PayrollDashboard({ isHR, isFinance }) {
     recalculatePreview(employeeId, field, numValue);
   };
 
-  // Recalculate payroll for employee in preview (now uses lop_days, incentive, overtime)
+  // Recalculate payroll for employee in preview (NEW formula)
+  // Net = Pro-rated Gross + Incentive + OT Pay - Statutory - Other Deductions
+  // Pro-rated Gross = (Monthly Gross / Working Days) × Actual Working Days
+  // Actual Working Days = Working Days - LOP Days - Leaves Beyond Entitlement
   const recalculatePreview = (employeeId, changedField, newValue) => {
     setPreviewData(prev => {
       if (!prev) return prev;
@@ -882,28 +885,32 @@ export function PayrollDashboard({ isHR, isFinance }) {
       const updatedRecords = prev.records.map(record => {
         if (record.employee_id !== employeeId) return record;
 
-        const workingDays = batchWorkingDays || record.working_days_in_month;
-        const gross = record.gross_salary;
-        const perDaySalary = workingDays > 0 ? gross / workingDays : 0;
+        const workingDays = record.working_days || prev.working_days;
+        const monthlyGross = record.monthly_gross || record.gross_salary;
+        const perDaySalary = workingDays > 0 ? monthlyGross / workingDays : 0;
 
         // Get LOP days (from edit or default to 0)
         let lopDays = (changedField === 'lop_days' || changedField === 'absent_days')
           ? newValue 
-          : (previewEdits[employeeId]?.lop_days ?? previewEdits[employeeId]?.absent_days ?? 0);
+          : (previewEdits[employeeId]?.lop_days ?? record.lop_days ?? 0);
         
         // Cap LOP days at working days
         lopDays = Math.min(Math.max(0, lopDays), workingDays);
         
-        // Calculate attendance (present) days: Present = Working - LOP
-        const attendanceDays = workingDays - lopDays;
+        // Get leaves beyond entitlement (calculated server-side, not editable)
+        const leavesBeyondEntitlement = record.leaves_beyond_entitlement || 0;
         
-        // Calculate LOP deduction based on LOP days
-        const attendanceDeduction = Math.round(perDaySalary * lopDays * 100) / 100;
+        // Calculate actual working days
+        const actualWorkingDays = Math.max(0, workingDays - lopDays - leavesBeyondEntitlement);
+        
+        // Calculate pro-rated gross salary
+        const proratedGross = Math.round(perDaySalary * actualWorkingDays * 100) / 100;
 
         // Get other deductions
         let otherDeductions = changedField === 'other_deductions'
           ? newValue
           : (previewEdits[employeeId]?.other_deductions ?? record.other_deductions ?? 0);
+        otherDeductions = Math.max(0, otherDeductions);
         
         // Get incentive amount (editable)
         let incentiveAmount = changedField === 'incentive_amount'
@@ -921,17 +928,17 @@ export function PayrollDashboard({ isHR, isFinance }) {
         const overtimeRate = record.overtime_rate_per_day || 0;
         const overtimePay = Math.round(overtimeRate * overtimeDays * 100) / 100;
 
-        // Calculate totals: Net = Gross + Incentive + OT Pay - Statutory - LOP Ded. - Other Ded.
-        const totalDeductions = record.total_statutory_deductions + attendanceDeduction + otherDeductions;
-        const netSalary = Math.round((gross + incentiveAmount + overtimePay - totalDeductions) * 100) / 100;
+        // Calculate totals: Net = Pro-rated Gross + Incentive + OT Pay - Statutory - Other Ded.
+        const totalDeductions = record.total_statutory_deductions + otherDeductions;
+        const netSalary = Math.round((proratedGross + incentiveAmount + overtimePay - totalDeductions) * 100) / 100;
 
         return {
           ...record,
-          working_days_in_month: workingDays,
-          attendance_days: attendanceDays,
+          working_days: workingDays,
+          actual_working_days: actualWorkingDays,
           lop_days: lopDays,
-          unapproved_absent_days: lopDays,  // Keep for backward compatibility
-          attendance_deduction: attendanceDeduction,
+          gross_salary: proratedGross,  // This is now pro-rated gross
+          per_day_salary: Math.round(perDaySalary * 100) / 100,
           other_deductions: otherDeductions,
           incentive_amount: incentiveAmount,
           overtime_days: overtimeDays,
@@ -944,7 +951,6 @@ export function PayrollDashboard({ isHR, isFinance }) {
       // Recalculate batch totals
       const totalGross = updatedRecords.reduce((sum, r) => sum + r.gross_salary, 0);
       const totalStatutory = updatedRecords.reduce((sum, r) => sum + r.total_statutory_deductions, 0);
-      const totalAttendance = updatedRecords.reduce((sum, r) => sum + r.attendance_deduction, 0);
       const totalOther = updatedRecords.reduce((sum, r) => sum + r.other_deductions, 0);
       const totalIncentive = updatedRecords.reduce((sum, r) => sum + (r.incentive_amount || 0), 0);
       const totalOvertimePay = updatedRecords.reduce((sum, r) => sum + (r.overtime_pay || 0), 0);
@@ -955,7 +961,6 @@ export function PayrollDashboard({ isHR, isFinance }) {
         records: updatedRecords,
         total_gross: Math.round(totalGross * 100) / 100,
         total_statutory_deductions: Math.round(totalStatutory * 100) / 100,
-        total_attendance_deductions: Math.round(totalAttendance * 100) / 100,
         total_other_deductions: Math.round(totalOther * 100) / 100,
         total_incentive: Math.round(totalIncentive * 100) / 100,
         total_overtime_pay: Math.round(totalOvertimePay * 100) / 100,
