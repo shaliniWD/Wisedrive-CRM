@@ -536,7 +536,38 @@ Vendor Payment → Finance Manager creates with GST/TDS → Submit for Approval 
 ```
 
 ## Last Updated
-February 15, 2026 - **ESS Mobile App API V1.0**:
+February 15, 2026 - **ESS Mobile App + Notification System V2.0**:
+
+1. **Firebase FCM Integration:**
+   - Created `/app/ess/api/services/fcm_service.py`
+   - Supports FCM (Android) and APNS (iOS)
+   - Mock mode without credentials
+   - Notification templates for all events
+
+2. **React Native Mobile App (`/app/ess-mobile-app/`):**
+   - Complete mobile app with 12 screens
+   - Login, Dashboard, Leave, Payslips, Documents, Notifications, Profile, Settings
+   - Tab navigation with badge support
+   - Push notification registration
+   - To test: `cd /app/ess-mobile-app && npx expo start`
+
+3. **CRM Notification Configuration:**
+   - Backend API at `/api/notification-config/*`
+   - Frontend UI at `/hr/notifications`
+   - Triggers, Templates, Stats, Announcements
+
+4. **Testing:**
+   - iteration_31.json: 11/11 backend tests passed
+   - All notification config endpoints verified
+   - FCM is MOCKED without Firebase credentials
+
+5. **Files Created:**
+   - `/app/ess/api/services/fcm_service.py`
+   - `/app/backend/routes/notification_config.py`
+   - `/app/frontend/src/pages/NotificationConfigPage.jsx`
+   - `/app/ess-mobile-app/*` (complete React Native app)
+
+Previous (Feb 15, 2026): ESS Mobile App API V1.0
 1. **New ESS API Server:**
    - Created separate FastAPI server at `/app/ess/api/`
    - Runs on port 8002, independent from CRM (port 8001)
