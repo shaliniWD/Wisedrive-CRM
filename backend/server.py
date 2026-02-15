@@ -4038,7 +4038,7 @@ async def update_attendance_day(
             "$set": {
                 "employee_id": data.employee_id,
                 "date": data.date,
-                "status": status,
+                "status": normalized_status,
                 "notes": data.notes,
                 "updated_by": current_user["id"],
                 "updated_by_name": current_user.get("name", ""),
@@ -4056,7 +4056,7 @@ async def update_attendance_day(
         "message": "Attendance updated successfully",
         "employee_id": data.employee_id,
         "date": data.date,
-        "status": status
+        "status": normalized_status
     }
 
 
