@@ -1,126 +1,183 @@
-// Approvals Screen - For managers to approve/reject leaves
-import React from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ActivityIndicator, RefreshControl } from 'react-native';
+// Premium Approvals Screen - Dark Theme
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  RefreshControl,
+  ActivityIndicator,
+  Alert,
+  TextInput,
+} from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format } from 'date-fns';
 import { getPendingApprovals, approveRejectLeave } from '../services/api';
+import { colors, spacing, fontSize, fontWeight, radius, iconSize } from '../theme';
 
 export default function ApprovalsScreen() {
+  const navigation = useNavigation<any>();
   const queryClient = useQueryClient();
+  const insets = useSafeAreaInsets();
+  const [refreshing, setRefreshing] = useState(false);
+  const [selectedLeave, setSelectedLeave] = useState<any>(null);
+  const [comments, setComments] = useState('');
 
-  const { data: approvals, isLoading, refetch } = useQuery({
+  const { data: approvals, isLoading } = useQuery({
     queryKey: ['pendingApprovals'],
     queryFn: getPendingApprovals,
   });
 
   const actionMutation = useMutation({
-    mutationFn: ({ leaveId, action, comments }: { leaveId: string; action: 'approve' | 'reject'; comments?: string }) =>
+    mutationFn: ({ leaveId, action }: { leaveId: string; action: 'approve' | 'reject' }) =>
       approveRejectLeave(leaveId, action, comments),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pendingApprovals'] });
-      Alert.alert('Success', 'Leave request updated');
+      setSelectedLeave(null);
+      setComments('');
+      Alert.alert('Success', 'Action completed successfully');
     },
     onError: (error: any) => {
-      Alert.alert('Error', error.response?.data?.detail || 'Failed to update leave');
+      Alert.alert('Error', error.message || 'Action failed');
     },
   });
 
-  const handleApprove = (leaveId: string) => {
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await queryClient.invalidateQueries({ queryKey: ['pendingApprovals'] });
+    setRefreshing(false);
+  };
+
+  const handleAction = (leaveId: string, action: 'approve' | 'reject') => {
     Alert.alert(
-      'Approve Leave',
-      'Are you sure you want to approve this leave request?',
+      action === 'approve' ? 'Approve Leave' : 'Reject Leave',
+      `Are you sure you want to ${action} this leave request?`,
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Approve', onPress: () => actionMutation.mutate({ leaveId, action: 'approve' }) },
+        {
+          text: action === 'approve' ? 'Approve' : 'Reject',
+          style: action === 'reject' ? 'destructive' : 'default',
+          onPress: () => actionMutation.mutate({ leaveId, action }),
+        },
       ]
     );
   };
 
-  const handleReject = (leaveId: string) => {
-    Alert.prompt(
-      'Reject Leave',
-      'Please provide a reason for rejection:',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Reject',
-          style: 'destructive',
-          onPress: (reason) => actionMutation.mutate({ leaveId, action: 'reject', comments: reason }),
-        },
-      ],
-      'plain-text'
-    );
-  };
-
-  const ApprovalCard = ({ item }: { item: any }) => (
-    <View style={styles.card}>
-      <View style={styles.cardHeader}>
-        <View style={styles.employeeInfo}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{item.employee_name?.charAt(0) || 'E'}</Text>
-          </View>
-          <View>
-            <Text style={styles.employeeName}>{item.employee_name}</Text>
-            <Text style={styles.leaveType}>
-              {item.leave_type.charAt(0).toUpperCase() + item.leave_type.slice(1)} Leave
-            </Text>
-          </View>
-        </View>
-        <Text style={styles.days}>{item.days_count} day(s)</Text>
-      </View>
-
-      <View style={styles.dateRow}>
-        <Ionicons name="calendar-outline" size={16} color="#666" />
-        <Text style={styles.dateText}>
-          {item.start_date} → {item.end_date}
-        </Text>
-      </View>
-
-      <Text style={styles.reason} numberOfLines={2}>{item.reason}</Text>
-
-      <Text style={styles.appliedOn}>
-        Applied {format(new Date(item.applied_on), 'MMM d, yyyy')}
-      </Text>
-
-      <View style={styles.actions}>
-        <TouchableOpacity
-          style={[styles.actionButton, styles.rejectButton]}
-          onPress={() => handleReject(item.id)}
-          disabled={actionMutation.isPending}
-        >
-          <Ionicons name="close" size={20} color="#F44336" />
-          <Text style={styles.rejectText}>Reject</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.actionButton, styles.approveButton]}
-          onPress={() => handleApprove(item.id)}
-          disabled={actionMutation.isPending}
-        >
-          <Ionicons name="checkmark" size={20} color="#fff" />
-          <Text style={styles.approveText}>Approve</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
+  const pendingList = approvals?.pending || [];
 
   return (
-    <View style={styles.container}>
-      <FlatList
-        data={approvals || []}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <ApprovalCard item={item} />}
-        contentContainerStyle={styles.listContent}
-        refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} />}
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Ionicons name="checkmark-done-circle" size={64} color="#4CAF50" />
-            <Text style={styles.emptyText}>No pending approvals</Text>
-            <Text style={styles.emptySubtext}>All caught up!</Text>
-          </View>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          testID="back-btn"
+          style={styles.backBtn}
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="arrow-back" size={iconSize.lg} color={colors.text.primary} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Approvals</Text>
+        <View style={styles.countBadge}>
+          <Text style={styles.countText}>{pendingList.length}</Text>
+        </View>
+      </View>
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+          />
         }
-      />
+        contentContainerStyle={styles.scrollContent}
+      >
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        ) : pendingList.length === 0 ? (
+          <View style={styles.emptyState}>
+            <View style={styles.emptyIcon}>
+              <Ionicons name="checkmark-done-circle-outline" size={48} color={colors.success} />
+            </View>
+            <Text style={styles.emptyText}>All caught up!</Text>
+            <Text style={styles.emptySubtext}>No pending approvals</Text>
+          </View>
+        ) : (
+          pendingList.map((leave: any) => (
+            <View key={leave.id} style={styles.approvalCard}>
+              {/* Employee Info */}
+              <View style={styles.employeeRow}>
+                <View style={styles.employeeAvatar}>
+                  <Text style={styles.employeeInitials}>
+                    {leave.employee_name?.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() || 'U'}
+                  </Text>
+                </View>
+                <View style={styles.employeeInfo}>
+                  <Text style={styles.employeeName}>{leave.employee_name}</Text>
+                  <Text style={styles.employeeDept}>{leave.department || 'Employee'}</Text>
+                </View>
+                <View style={styles.leaveDaysBadge}>
+                  <Text style={styles.leaveDaysText}>{leave.days} {leave.days === 1 ? 'day' : 'days'}</Text>
+                </View>
+              </View>
+
+              {/* Leave Details */}
+              <View style={styles.leaveDetails}>
+                <View style={styles.detailRow}>
+                  <View style={styles.detailItem}>
+                    <Ionicons name="bookmark-outline" size={14} color={colors.text.tertiary} />
+                    <Text style={styles.detailText}>{leave.leave_type}</Text>
+                  </View>
+                  <View style={styles.detailItem}>
+                    <Ionicons name="calendar-outline" size={14} color={colors.text.tertiary} />
+                    <Text style={styles.detailText}>
+                      {format(new Date(leave.start_date), 'MMM d')} - {format(new Date(leave.end_date), 'MMM d')}
+                    </Text>
+                  </View>
+                </View>
+                {leave.reason && (
+                  <Text style={styles.reasonText} numberOfLines={2}>{leave.reason}</Text>
+                )}
+              </View>
+
+              {/* Actions */}
+              <View style={styles.actionsRow}>
+                <TouchableOpacity
+                  testID={`reject-${leave.id}`}
+                  style={styles.rejectBtn}
+                  onPress={() => handleAction(leave.id, 'reject')}
+                  disabled={actionMutation.isPending}
+                >
+                  <Ionicons name="close" size={18} color={colors.error} />
+                  <Text style={styles.rejectText}>Reject</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  testID={`approve-${leave.id}`}
+                  style={styles.approveBtn}
+                  onPress={() => handleAction(leave.id, 'approve')}
+                  disabled={actionMutation.isPending}
+                >
+                  <LinearGradient
+                    colors={[colors.success, '#059669']}
+                    style={styles.approveBtnGradient}
+                  >
+                    <Ionicons name="checkmark" size={18} color="#FFF" />
+                    <Text style={styles.approveText}>Approve</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))
+        )}
+      </ScrollView>
     </View>
   );
 }
@@ -128,128 +185,187 @@ export default function ApprovalsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.background,
   },
-  listContent: {
-    padding: 16,
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  cardHeader: {
+  header: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
   },
-  employeeInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  avatar: {
+  backBtn: {
     width: 40,
     height: 40,
-    borderRadius: 20,
-    backgroundColor: '#2196F3',
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
-  },
-  avatarText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  employeeName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-  },
-  leaveType: {
-    fontSize: 12,
-    color: '#666',
-  },
-  days: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#2196F3',
-  },
-  dateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  dateText: {
-    marginLeft: 8,
-    color: '#666',
-    fontSize: 14,
-  },
-  reason: {
-    color: '#666',
-    fontSize: 14,
-    marginBottom: 8,
-  },
-  appliedOn: {
-    color: '#999',
-    fontSize: 12,
-    marginBottom: 12,
-  },
-  actions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
-    paddingTop: 12,
-  },
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    flex: 1,
-    marginHorizontal: 4,
-  },
-  rejectButton: {
-    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#F44336',
+    borderColor: colors.border,
   },
-  approveButton: {
-    backgroundColor: '#4CAF50',
+  headerTitle: {
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.semibold,
+    color: colors.text.primary,
   },
-  rejectText: {
-    color: '#F44336',
-    fontWeight: '600',
-    marginLeft: 4,
+  countBadge: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    backgroundColor: colors.primary,
+    borderRadius: radius.full,
   },
-  approveText: {
-    color: '#fff',
-    fontWeight: '600',
-    marginLeft: 4,
+  countText: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    color: '#FFF',
+  },
+  scrollContent: {
+    padding: spacing.xl,
+    paddingTop: 0,
+    paddingBottom: spacing.xxxxl,
+  },
+  loadingContainer: {
+    paddingVertical: spacing.xxxxl,
+    alignItems: 'center',
   },
   emptyState: {
     alignItems: 'center',
-    padding: 40,
+    justifyContent: 'center',
+    paddingVertical: spacing.xxxxl,
+  },
+  emptyIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: radius.xl,
+    backgroundColor: colors.successBg,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
   },
   emptyText: {
-    color: '#333',
-    fontSize: 18,
-    fontWeight: '600',
-    marginTop: 16,
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.medium,
+    color: colors.text.secondary,
   },
   emptySubtext: {
-    color: '#999',
-    fontSize: 14,
-    marginTop: 4,
+    fontSize: fontSize.sm,
+    color: colors.text.tertiary,
+    marginTop: spacing.xs,
+  },
+  // Approval Card
+  approvalCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  employeeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  employeeAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.md,
+    backgroundColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  employeeInitials: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    color: '#FFF',
+  },
+  employeeInfo: {
+    flex: 1,
+    marginLeft: spacing.md,
+  },
+  employeeName: {
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.medium,
+    color: colors.text.primary,
+  },
+  employeeDept: {
+    fontSize: fontSize.xs,
+    color: colors.text.tertiary,
+    marginTop: 2,
+  },
+  leaveDaysBadge: {
+    backgroundColor: colors.surfaceHighlight,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.sm,
+  },
+  leaveDaysText: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    color: colors.text.primary,
+  },
+  // Leave Details
+  leaveDetails: {
+    backgroundColor: colors.surfaceHighlight,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    gap: spacing.lg,
+  },
+  detailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  detailText: {
+    fontSize: fontSize.sm,
+    color: colors.text.secondary,
+  },
+  reasonText: {
+    fontSize: fontSize.sm,
+    color: colors.text.secondary,
+    fontStyle: 'italic',
+    marginTop: spacing.sm,
+  },
+  // Actions
+  actionsRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  rejectBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.errorBg,
+    paddingVertical: spacing.md,
+    borderRadius: radius.md,
+    gap: spacing.xs,
+  },
+  rejectText: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    color: colors.error,
+  },
+  approveBtn: {
+    flex: 1,
+    borderRadius: radius.md,
+    overflow: 'hidden',
+  },
+  approveBtnGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.md,
+    gap: spacing.xs,
+  },
+  approveText: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    color: '#FFF',
   },
 });
