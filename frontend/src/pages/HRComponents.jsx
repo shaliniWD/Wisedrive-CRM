@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 import { 
   Loader2, Clock, IndianRupee, Calendar, CheckCircle, XCircle, AlertCircle,
   Download, Users, PlayCircle, StopCircle, RefreshCw, FileText, Search, Filter, DollarSign,
-  Plus, Trash2, CalendarDays, Globe
+  Plus, Trash2, CalendarDays, Globe, Info
 } from 'lucide-react';
 
 // ==================== ATTENDANCE CALENDAR DASHBOARD ====================
