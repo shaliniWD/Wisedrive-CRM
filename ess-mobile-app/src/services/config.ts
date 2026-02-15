@@ -20,6 +20,7 @@ export const API_ENDPOINTS = {
   BANK_DETAILS: '/ess/v1/profile/bank-details',
   SALARY: '/ess/v1/profile/salary',
   ATTENDANCE: '/ess/v1/profile/attendance',
+  HOLIDAYS: '/ess/v1/holidays',
   
   // Leave
   LEAVE_APPLY: '/ess/v1/leave/apply',
