@@ -56,6 +56,7 @@ function App() {
             <Route path="/customers" element={<CustomersPage />} />
             <Route path="/inspections" element={<InspectionsPage />} />
             <Route path="/hr" element={<HRModulePage />} />
+            <Route path="/hr/notifications" element={<NotificationConfigPage />} />
             <Route path="/finance" element={<FinancePage />} />
             <Route path="/settings" element={<SettingsPage />} />
             {/* Redirect old /admin to /hr */}
