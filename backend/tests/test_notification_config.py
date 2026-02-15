@@ -194,7 +194,8 @@ class TestESSHealthCheck:
                 "device": {
                     "device_id": "test-device-001",
                     "device_name": "Test Device",
-                    "platform": "android"
+                    "platform": "android",
+                    "app_version": "1.0.0"
                 }
             }
         )
