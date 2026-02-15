@@ -2020,6 +2020,115 @@ async def get_employee_documents(employee_id: str, current_user: dict = Depends(
     raise HTTPException(status_code=403, detail="Not authorized to view these documents")
 
 
+@api_router.post("/hr/employees/{employee_id}/documents/upload")
+async def upload_employee_document_file(
+    employee_id: str,
+    document_type: str = Form(...),
+    document_name: str = Form(...),
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """Upload employee document file - HR/Admin only"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Validate file type
+    allowed_types = ["application/pdf", "image/jpeg", "image/png", "image/jpg", "application/msword", 
+                     "application/vnd.openxmlformats-officedocument.wordprocessingml.document"]
+    if file.content_type not in allowed_types:
+        raise HTTPException(status_code=400, detail=f"File type {file.content_type} not allowed. Use PDF, JPG, PNG, or DOC/DOCX")
+    
+    # Max file size: 10MB
+    content = await file.read()
+    if len(content) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File too large. Maximum size is 10MB")
+    
+    # Create storage directory
+    storage_dir = f"/app/storage/documents/{employee_id}"
+    os.makedirs(storage_dir, exist_ok=True)
+    
+    # Generate unique filename
+    file_ext = os.path.splitext(file.filename)[1] if file.filename else ".pdf"
+    unique_filename = f"{uuid.uuid4()}{file_ext}"
+    file_path = f"{storage_dir}/{unique_filename}"
+    
+    # Save file
+    with open(file_path, "wb") as f:
+        f.write(content)
+    
+    # Create document record
+    doc_dict = {
+        "id": str(uuid.uuid4()),
+        "user_id": employee_id,
+        "document_type": document_type,
+        "document_name": document_name,
+        "document_url": f"/api/hr/employees/{employee_id}/documents/file/{unique_filename}",
+        "file_path": file_path,
+        "file_name": file.filename,
+        "file_size": len(content),
+        "content_type": file.content_type,
+        "uploaded_at": datetime.now(timezone.utc).isoformat(),
+        "uploaded_by": current_user["id"],
+        "uploaded_by_name": current_user.get("name", ""),
+        "verified": False,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.employee_documents.insert_one(doc_dict)
+    doc_dict.pop("_id", None)
+    
+    # Log audit
+    await audit_service.log(
+        entity_type="employee_documents",
+        entity_id=employee_id,
+        action="upload",
+        user_id=current_user["id"],
+        new_values={
+            "document_type": document_type, 
+            "document_name": document_name,
+            "file_name": file.filename,
+            "file_size": len(content)
+        }
+    )
+    
+    return doc_dict
+
+
+@api_router.get("/hr/employees/{employee_id}/documents/file/{filename}")
+async def serve_employee_document_file(employee_id: str, filename: str, current_user: dict = Depends(get_current_user)):
+    """Serve employee document file - with RBAC"""
+    from fastapi.responses import FileResponse
+    
+    role_code = current_user.get("role_code", "")
+    
+    # HR/Admin can access all documents
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        # Check if user is accessing their own document
+        if current_user["id"] != employee_id:
+            raise HTTPException(status_code=403, detail="Not authorized")
+    
+    file_path = f"/app/storage/documents/{employee_id}/{filename}"
+    
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    # Determine content type
+    ext = os.path.splitext(filename)[1].lower()
+    content_types = {
+        ".pdf": "application/pdf",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
+        ".doc": "application/msword",
+        ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    }
+    content_type = content_types.get(ext, "application/octet-stream")
+    
+    return FileResponse(file_path, media_type=content_type, filename=filename)
+
+
 @api_router.post("/hr/employees/{employee_id}/documents")
 async def create_employee_document(employee_id: str, doc_data: DocumentCreate, current_user: dict = Depends(get_current_user)):
     """Add employee document - HR/Admin only"""
