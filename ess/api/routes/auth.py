@@ -190,7 +190,7 @@ async def mobile_login(request: Request, login_data: MobileLoginRequest):
         "user_id": user_id,
         "device_id": device.device_id,
         "created_at": datetime.now(timezone.utc).isoformat(),
-        "expires_at": datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+        "expires_at": (datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)).isoformat()
     })
     
     # Get role info
