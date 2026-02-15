@@ -349,6 +349,33 @@ async def get_roles(current_user: dict = Depends(get_current_user)):
     return roles
 
 
+class RoleUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    eligible_sick_leaves_per_month: Optional[int] = None
+    eligible_casual_leaves_per_month: Optional[int] = None
+
+
+@api_router.put("/roles/{role_id}")
+async def update_role(role_id: str, data: RoleUpdate, current_user: dict = Depends(get_current_user)):
+    """Update role - Admin/HR only"""
+    role_code = current_user.get("role_code", "")
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    role = await db.roles.find_one({"id": role_id})
+    if not role:
+        raise HTTPException(status_code=404, detail="Role not found")
+    
+    update_data = {k: v for k, v in data.model_dump().items() if v is not None}
+    
+    if update_data:
+        await db.roles.update_one({"id": role_id}, {"$set": update_data})
+    
+    updated_role = await db.roles.find_one({"id": role_id}, {"_id": 0})
+    return updated_role
+
+
 @api_router.get("/roles/{role_id}/permissions")
 async def get_role_permissions(role_id: str, current_user: dict = Depends(get_current_user)):
     """Get permissions for a specific role"""
