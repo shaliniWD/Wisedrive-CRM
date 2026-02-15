@@ -334,7 +334,7 @@ export function AttendanceDashboard({ isHR }) {
         </div>
       </div>
 
-      {/* Legend - Updated with LOP */}
+      {/* Legend - Updated with Weekly Off, Org Holiday, Overtime */}
       <div className="flex flex-wrap items-center gap-4 mb-4 p-3 bg-slate-50 rounded-lg border">
         <span className="text-xs font-medium text-gray-500 uppercase">Legend:</span>
         <div className="flex items-center gap-1.5">
@@ -342,8 +342,12 @@ export function AttendanceDashboard({ isHR }) {
           <span className="text-xs text-gray-600">Present</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-4 h-4 rounded bg-slate-100 border border-slate-200 flex items-center justify-center text-[8px]">-</span>
-          <span className="text-xs text-gray-600">Weekend/Holiday</span>
+          <span className="w-4 h-4 rounded bg-slate-100 border border-slate-200 flex items-center justify-center text-[8px]">W</span>
+          <span className="text-xs text-gray-600">Weekly Off</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="w-4 h-4 rounded bg-purple-100 border border-purple-300 flex items-center justify-center text-[8px]">H</span>
+          <span className="text-xs text-gray-600">Org Holiday</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="w-4 h-4 rounded bg-blue-100 border border-blue-300 flex items-center justify-center text-[8px]">L</span>
@@ -358,8 +362,12 @@ export function AttendanceDashboard({ isHR }) {
           <span className="text-xs text-gray-600">LOP/Absent</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-4 h-4 rounded bg-orange-100 border border-orange-300 flex items-center justify-center text-[8px]">H</span>
+          <span className="w-4 h-4 rounded bg-orange-100 border border-orange-300 flex items-center justify-center text-[8px]">½</span>
           <span className="text-xs text-gray-600">Half Day</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="w-4 h-4 rounded bg-pink-100 border border-pink-300 flex items-center justify-center text-[8px]">O</span>
+          <span className="text-xs text-gray-600">Overtime</span>
         </div>
       </div>
 
