@@ -173,7 +173,7 @@ export default function SettingsScreen() {
         {/* Footer */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>WiseDrive ESS</Text>
-          <Text style={styles.footerSubtext}>© 2024 WiseDrive. All rights reserved.</Text>
+          <Text style={styles.footerSubtext}>© 2025 WiseDrive. All rights reserved.</Text>
         </View>
       </ScrollView>
     </View>
