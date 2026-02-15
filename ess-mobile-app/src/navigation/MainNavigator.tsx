@@ -20,6 +20,7 @@ import DocumentsScreen from '../screens/DocumentsScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import HolidayCalendarScreen from '../screens/HolidayCalendarScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -42,6 +43,11 @@ function HomeStack() {
         name="Settings" 
         component={SettingsScreen} 
         options={{ title: 'Settings' }}
+      />
+      <Stack.Screen 
+        name="HolidayCalendar" 
+        component={HolidayCalendarScreen} 
+        options={{ title: 'Holiday Calendar' }}
       />
     </Stack.Navigator>
   );
