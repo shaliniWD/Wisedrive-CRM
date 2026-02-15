@@ -349,7 +349,7 @@ class TestPayrollNewColumnStructure:
                 if batches:
                     batch_id = batches[0]['id']
                     batch_detail = requests.get(
-                        f"{BASE_URL}/api/payroll/batches/{batch_id}",
+                        f"{BASE_URL}/api/hr/payroll/batches/{batch_id}",
                         headers=self.headers
                     )
                     if batch_detail.status_code == 200:
