@@ -2147,7 +2147,7 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
             )}
           </TabsList>
 
-          <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+          <div className="p-6 overflow-y-auto flex-1 min-h-0">
             {/* Details Tab */}
             <TabsContent value="details" className="mt-0 space-y-4">
               {/* Personal Information */}
