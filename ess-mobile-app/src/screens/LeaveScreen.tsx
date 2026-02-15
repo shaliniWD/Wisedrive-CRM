@@ -22,7 +22,7 @@ const STATUS_COLORS: Record<string, string> = {
   cancelled: '#9E9E9E',
 };
 
-const LEAVE_TYPE_ICONS: Record<string, string> = {
+const LEAVE_TYPE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   casual: 'sunny',
   sick: 'medkit',
   earned: 'star',
