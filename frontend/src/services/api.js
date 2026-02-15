@@ -159,6 +159,9 @@ export const hrApi = {
   // Documents
   getEmployeeDocuments: (id) => axios.get(`${API_URL}/hr/employees/${id}/documents`),
   addEmployeeDocument: (id, data) => axios.post(`${API_URL}/hr/employees/${id}/documents`, data),
+  uploadEmployeeDocument: (id, formData) => axios.post(`${API_URL}/hr/employees/${id}/documents/upload`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
   updateEmployeeDocument: (id, docId, data) => axios.put(`${API_URL}/hr/employees/${id}/documents/${docId}`, data),
   deleteEmployeeDocument: (id, docId) => axios.delete(`${API_URL}/hr/employees/${id}/documents/${docId}`),
   
