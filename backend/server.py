@@ -3596,6 +3596,136 @@ async def run_daily_attendance_calculation(
     return result
 
 
+# ==================== HOLIDAY CALENDAR ====================
+
+class HolidayCreate(BaseModel):
+    date: str  # YYYY-MM-DD
+    name: str
+    reason: Optional[str] = None
+    country_id: str
+
+
+class HolidayUpdate(BaseModel):
+    date: Optional[str] = None
+    name: Optional[str] = None
+    reason: Optional[str] = None
+
+
+@api_router.get("/hr/holidays")
+async def get_holidays(
+    country_id: Optional[str] = None,
+    year: Optional[int] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get holidays for a country (optionally filtered by year)"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER", "COUNTRY_HEAD", "FINANCE_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    query = {}
+    if country_id:
+        query["country_id"] = country_id
+    if year:
+        query["date"] = {"$regex": f"^{year}-"}
+    
+    holidays = await db.holidays.find(query, {"_id": 0}).sort("date", 1).to_list(500)
+    
+    # Get country names
+    country_ids = list(set(h.get("country_id") for h in holidays if h.get("country_id")))
+    countries = await db.countries.find({"id": {"$in": country_ids}}, {"_id": 0, "id": 1, "name": 1}).to_list(100)
+    country_map = {c["id"]: c["name"] for c in countries}
+    
+    for h in holidays:
+        h["country_name"] = country_map.get(h.get("country_id"), "Unknown")
+    
+    return holidays
+
+
+@api_router.post("/hr/holidays")
+async def create_holiday(
+    data: HolidayCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create a new holiday"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Only CEO or HR Manager can create holidays")
+    
+    # Validate date format
+    try:
+        datetime.strptime(data.date, "%Y-%m-%d")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+    
+    # Check if holiday already exists for this date and country
+    existing = await db.holidays.find_one({
+        "date": data.date,
+        "country_id": data.country_id
+    })
+    if existing:
+        raise HTTPException(status_code=400, detail="Holiday already exists for this date")
+    
+    now = datetime.now(timezone.utc).isoformat()
+    holiday = {
+        "id": str(uuid.uuid4()),
+        "date": data.date,
+        "name": data.name,
+        "reason": data.reason,
+        "country_id": data.country_id,
+        "created_by": current_user["id"],
+        "created_at": now,
+        "updated_at": now
+    }
+    
+    await db.holidays.insert_one(holiday)
+    
+    return {"message": "Holiday created", "id": holiday["id"]}
+
+
+@api_router.put("/hr/holidays/{holiday_id}")
+async def update_holiday(
+    holiday_id: str,
+    data: HolidayUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update a holiday"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Only CEO or HR Manager can update holidays")
+    
+    holiday = await db.holidays.find_one({"id": holiday_id})
+    if not holiday:
+        raise HTTPException(status_code=404, detail="Holiday not found")
+    
+    update_data = {k: v for k, v in data.dict().items() if v is not None}
+    if update_data:
+        update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+        await db.holidays.update_one({"id": holiday_id}, {"$set": update_data})
+    
+    return {"message": "Holiday updated"}
+
+
+@api_router.delete("/hr/holidays/{holiday_id}")
+async def delete_holiday(
+    holiday_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Delete a holiday"""
+    role_code = current_user.get("role_code", "")
+    
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Only CEO or HR Manager can delete holidays")
+    
+    result = await db.holidays.delete_one({"id": holiday_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Holiday not found")
+    
+    return {"message": "Holiday deleted"}
+
+
 @api_router.get("/hr/attendance/calendar")
 async def get_attendance_calendar(
     month: int,
