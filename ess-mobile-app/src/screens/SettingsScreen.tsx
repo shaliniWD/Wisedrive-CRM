@@ -1,30 +1,25 @@
-// Settings Screen
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Switch, TouchableOpacity, Alert } from 'react-native';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+// Premium Settings Screen - Dark Theme
+import React from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Alert,
+  Switch,
+} from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
-import { getNotificationSettings, updateNotificationSettings } from '../services/api';
+import { colors, spacing, fontSize, fontWeight, radius, iconSize } from '../theme';
 
 export default function SettingsScreen() {
+  const navigation = useNavigation<any>();
+  const insets = useSafeAreaInsets();
   const { logout, user } = useAuth();
-  const queryClient = useQueryClient();
-
-  const { data: settings, isLoading } = useQuery({
-    queryKey: ['notificationSettings'],
-    queryFn: getNotificationSettings,
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: updateNotificationSettings,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notificationSettings'] });
-    },
-  });
-
-  const handleToggle = (key: string, value: boolean) => {
-    updateMutation.mutate({ [key]: value });
-  };
+  const [pushEnabled, setPushEnabled] = React.useState(true);
 
   const handleLogout = () => {
     Alert.alert(
@@ -32,267 +27,303 @@ export default function SettingsScreen() {
       'Are you sure you want to sign out?',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Sign Out', style: 'destructive', onPress: logout },
+        { 
+          text: 'Sign Out', 
+          style: 'destructive',
+          onPress: async () => {
+            await logout();
+          }
+        },
       ]
     );
   };
 
-  const SettingRow = ({ 
-    icon, 
-    label, 
-    description, 
-    value, 
-    onValueChange 
-  }: { 
-    icon: string; 
-    label: string; 
-    description?: string;
-    value: boolean; 
-    onValueChange: (value: boolean) => void;
-  }) => (
-    <View style={styles.settingRow}>
-      <View style={styles.settingLeft}>
-        <Ionicons name={icon as any} size={24} color="#666" />
-        <View style={styles.settingText}>
-          <Text style={styles.settingLabel}>{label}</Text>
-          {description && <Text style={styles.settingDescription}>{description}</Text>}
-        </View>
-      </View>
-      <Switch
-        value={value}
-        onValueChange={onValueChange}
-        trackColor={{ false: '#e0e0e0', true: '#81C784' }}
-        thumbColor={value ? '#4CAF50' : '#f4f3f4'}
-      />
-    </View>
-  );
+  const settingsSections = [
+    {
+      title: 'Preferences',
+      items: [
+        {
+          icon: 'notifications-outline',
+          label: 'Push Notifications',
+          type: 'switch',
+          value: pushEnabled,
+          onToggle: setPushEnabled,
+        },
+      ],
+    },
+    {
+      title: 'Support',
+      items: [
+        {
+          icon: 'help-circle-outline',
+          label: 'Help Center',
+          type: 'link',
+          onPress: () => Alert.alert('Help', 'Contact HR for support'),
+        },
+        {
+          icon: 'document-text-outline',
+          label: 'Terms of Service',
+          type: 'link',
+          onPress: () => Alert.alert('Terms', 'Terms of Service'),
+        },
+        {
+          icon: 'shield-outline',
+          label: 'Privacy Policy',
+          type: 'link',
+          onPress: () => Alert.alert('Privacy', 'Privacy Policy'),
+        },
+      ],
+    },
+    {
+      title: 'About',
+      items: [
+        {
+          icon: 'information-circle-outline',
+          label: 'App Version',
+          type: 'info',
+          value: '1.0.0',
+        },
+      ],
+    },
+  ];
 
   return (
-    <ScrollView style={styles.container}>
-      {/* Account Info */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Account</Text>
-        <View style={styles.accountCard}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{user?.name?.charAt(0) || 'U'}</Text>
-          </View>
-          <View>
-            <Text style={styles.accountName}>{user?.name}</Text>
-            <Text style={styles.accountEmail}>{user?.email}</Text>
-          </View>
-        </View>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          testID="back-btn"
+          style={styles.backBtn}
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="arrow-back" size={iconSize.lg} color={colors.text.primary} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Settings</Text>
+        <View style={{ width: 40 }} />
       </View>
 
-      {/* Notification Settings */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Notifications</Text>
-        
-        <SettingRow
-          icon="calendar"
-          label="Leave Updates"
-          description="Get notified about leave approvals/rejections"
-          value={settings?.leave_updates ?? true}
-          onValueChange={(value) => handleToggle('leave_updates', value)}
-        />
-        
-        <SettingRow
-          icon="wallet"
-          label="Payslip Alerts"
-          description="Get notified when payslip is ready"
-          value={settings?.payslip_alerts ?? true}
-          onValueChange={(value) => handleToggle('payslip_alerts', value)}
-        />
-        
-        <SettingRow
-          icon="document-text"
-          label="Document Updates"
-          description="Get notified about document verification"
-          value={settings?.document_updates ?? true}
-          onValueChange={(value) => handleToggle('document_updates', value)}
-        />
-        
-        <SettingRow
-          icon="megaphone"
-          label="Announcements"
-          description="Receive company announcements"
-          value={settings?.announcements ?? true}
-          onValueChange={(value) => handleToggle('announcements', value)}
-        />
-        
-        <SettingRow
-          icon="sunny"
-          label="Holiday Reminders"
-          description="Get reminded about upcoming holidays"
-          value={settings?.holiday_reminders ?? true}
-          onValueChange={(value) => handleToggle('holiday_reminders', value)}
-        />
-      </View>
-
-      {/* Quiet Hours */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Quiet Hours</Text>
-        
-        <SettingRow
-          icon="moon"
-          label="Enable Quiet Hours"
-          description="Don't disturb during specified hours"
-          value={settings?.quiet_hours_enabled ?? false}
-          onValueChange={(value) => handleToggle('quiet_hours_enabled', value)}
-        />
-        
-        {settings?.quiet_hours_enabled && (
-          <View style={styles.quietHoursInfo}>
-            <Ionicons name="time" size={16} color="#666" />
-            <Text style={styles.quietHoursText}>
-              {settings?.quiet_hours_start || '22:00'} - {settings?.quiet_hours_end || '07:00'}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* User Info Card */}
+        <View style={styles.userCard}>
+          <View style={styles.userAvatar}>
+            <Text style={styles.userAvatarText}>
+              {user?.name?.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'U'}
             </Text>
           </View>
-        )}
-      </View>
-
-      {/* App Info */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>About</Text>
-        
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>App Version</Text>
-          <Text style={styles.infoValue}>1.0.0</Text>
+          <View style={styles.userInfo}>
+            <Text style={styles.userName}>{user?.name || 'User'}</Text>
+            <Text style={styles.userEmail}>{user?.email || ''}</Text>
+          </View>
         </View>
-        
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Build</Text>
-          <Text style={styles.infoValue}>2025.12.1</Text>
+
+        {/* Settings Sections */}
+        {settingsSections.map((section, sectionIndex) => (
+          <View key={sectionIndex} style={styles.section}>
+            <Text style={styles.sectionTitle}>{section.title}</Text>
+            <View style={styles.sectionCard}>
+              {section.items.map((item, itemIndex) => (
+                <TouchableOpacity
+                  key={itemIndex}
+                  testID={`setting-${item.label.toLowerCase().replace(/\s/g, '-')}`}
+                  style={[
+                    styles.settingItem,
+                    itemIndex < section.items.length - 1 && styles.settingItemBorder,
+                  ]}
+                  onPress={item.type === 'link' ? item.onPress : undefined}
+                  activeOpacity={item.type === 'link' ? 0.7 : 1}
+                  disabled={item.type !== 'link'}
+                >
+                  <View style={styles.settingIcon}>
+                    <Ionicons name={item.icon as any} size={18} color={colors.text.secondary} />
+                  </View>
+                  <Text style={styles.settingLabel}>{item.label}</Text>
+                  {item.type === 'switch' && (
+                    <Switch
+                      value={item.value}
+                      onValueChange={item.onToggle}
+                      trackColor={{ false: colors.surfaceHighlight, true: colors.primary }}
+                      thumbColor="#FFF"
+                    />
+                  )}
+                  {item.type === 'link' && (
+                    <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />
+                  )}
+                  {item.type === 'info' && (
+                    <Text style={styles.settingValue}>{item.value}</Text>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        ))}
+
+        {/* Logout Button */}
+        <TouchableOpacity
+          testID="logout-btn"
+          style={styles.logoutBtn}
+          onPress={handleLogout}
+        >
+          <Ionicons name="log-out-outline" size={iconSize.lg} color={colors.error} />
+          <Text style={styles.logoutText}>Sign Out</Text>
+        </TouchableOpacity>
+
+        {/* Footer */}
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>WiseDrive ESS</Text>
+          <Text style={styles.footerSubtext}>© 2024 WiseDrive. All rights reserved.</Text>
         </View>
-      </View>
-
-      {/* Sign Out */}
-      <TouchableOpacity style={styles.signOutButton} onPress={handleLogout}>
-        <Ionicons name="log-out-outline" size={20} color="#F44336" />
-        <Text style={styles.signOutText}>Sign Out</Text>
-      </TouchableOpacity>
-
-      <View style={{ height: 40 }} />
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.background,
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  headerTitle: {
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.semibold,
+    color: colors.text.primary,
+  },
+  scrollContent: {
+    padding: spacing.xl,
+    paddingTop: 0,
+    paddingBottom: spacing.xxxxl,
+  },
+  // User Card
+  userCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+    marginBottom: spacing.xxl,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  userAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.md,
+    backgroundColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  userAvatarText: {
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.bold,
+    color: '#FFF',
+  },
+  userInfo: {
+    marginLeft: spacing.md,
+    flex: 1,
+  },
+  userName: {
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
+    color: colors.text.primary,
+  },
+  userEmail: {
+    fontSize: fontSize.sm,
+    color: colors.text.secondary,
+    marginTop: 2,
+  },
+  // Sections
   section: {
-    backgroundColor: '#fff',
-    margin: 16,
-    marginBottom: 0,
-    padding: 16,
-    borderRadius: 12,
+    marginBottom: spacing.xl,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 16,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    color: colors.text.secondary,
+    marginBottom: spacing.md,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  accountCard: {
+  sectionCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
+    padding: spacing.lg,
   },
-  avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#2196F3',
+  settingItemBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  settingIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.sm,
+    backgroundColor: colors.surfaceHighlight,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
-  },
-  avatarText: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  accountName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-  },
-  accountEmail: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 2,
-  },
-  settingRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  settingLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    marginRight: 12,
-  },
-  settingText: {
-    marginLeft: 12,
-    flex: 1,
+    marginRight: spacing.md,
   },
   settingLabel: {
-    fontSize: 15,
-    color: '#333',
-    fontWeight: '500',
+    flex: 1,
+    fontSize: fontSize.base,
+    color: colors.text.primary,
   },
-  settingDescription: {
-    fontSize: 12,
-    color: '#999',
-    marginTop: 2,
+  settingValue: {
+    fontSize: fontSize.sm,
+    color: colors.text.tertiary,
   },
-  quietHoursInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f5f5f5',
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 8,
-  },
-  quietHoursText: {
-    marginLeft: 8,
-    color: '#666',
-    fontSize: 14,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  infoLabel: {
-    color: '#666',
-    fontSize: 14,
-  },
-  infoValue: {
-    color: '#333',
-    fontSize: 14,
-  },
-  signOutButton: {
+  // Logout
+  logoutBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    margin: 16,
-    padding: 16,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#F44336',
+    backgroundColor: colors.errorBg,
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+    gap: spacing.sm,
+    marginBottom: spacing.xxl,
   },
-  signOutText: {
-    color: '#F44336',
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8,
+  logoutText: {
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.medium,
+    color: colors.error,
+  },
+  // Footer
+  footer: {
+    alignItems: 'center',
+    paddingTop: spacing.lg,
+  },
+  footerText: {
+    fontSize: fontSize.sm,
+    color: colors.text.tertiary,
+    fontWeight: fontWeight.medium,
+  },
+  footerSubtext: {
+    fontSize: fontSize.xs,
+    color: colors.text.tertiary,
+    marginTop: spacing.xs,
   },
 });
