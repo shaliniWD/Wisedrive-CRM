@@ -1,4 +1,4 @@
-// Holiday Calendar Screen
+// Modern Holiday Calendar Screen
 import React, { useState } from 'react';
 import {
   View,
@@ -10,25 +10,34 @@ import {
 } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { format, parseISO, isAfter, isBefore, isToday } from 'date-fns';
 import { getHolidays } from '../services/api';
+import { colors, spacing, borderRadius, shadows } from '../theme';
 
-const HOLIDAY_COLORS: Record<string, string> = {
-  public: '#4CAF50',
-  national: '#2196F3',
-  regional: '#FF9800',
-  optional: '#9C27B0',
-  restricted: '#607D8B',
+const HOLIDAY_COLORS: Record<string, { bg: string; text: string }> = {
+  public: { bg: '#D1FAE5', text: '#059669' },
+  national: { bg: '#DBEAFE', text: '#2563EB' },
+  regional: { bg: '#FEF3C7', text: '#D97706' },
+  optional: { bg: '#F3E8FF', text: '#9333EA' },
+  restricted: { bg: '#F3F4F6', text: '#6B7280' },
 };
 
 export default function HolidayCalendarScreen() {
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const { data, isLoading, refetch } = useQuery({
+  const { data, refetch } = useQuery({
     queryKey: ['holidays', selectedYear],
     queryFn: () => getHolidays(selectedYear),
   });
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  };
 
   const holidays = data?.holidays || [];
 
@@ -41,61 +50,66 @@ export default function HolidayCalendarScreen() {
     return 'upcoming';
   };
 
+  const upcomingHolidays = holidays.filter((h: any) => {
+    const status = getHolidayStatus(h.date);
+    return status === 'upcoming' || status === 'today';
+  });
+
   const renderHoliday = ({ item }: { item: any }) => {
     const status = getHolidayStatus(item.date);
     const holidayDate = parseISO(item.date);
-    const color = HOLIDAY_COLORS[item.type] || HOLIDAY_COLORS.public;
+    const typeColor = HOLIDAY_COLORS[item.type] || HOLIDAY_COLORS.public;
+    const isPast = status === 'past';
+    const isCurrentDay = status === 'today';
 
     return (
       <View style={[
         styles.holidayCard,
-        status === 'past' && styles.pastHoliday,
-        status === 'today' && styles.todayHoliday,
+        isPast && styles.holidayCardPast,
+        isCurrentDay && styles.holidayCardToday,
       ]}>
-        <View style={[styles.dateContainer, { backgroundColor: color + '20' }]}>
-          <Text style={[styles.dateDay, { color }]}>
+        {/* Date Section */}
+        <View style={[styles.dateSection, { backgroundColor: isPast ? colors.background.subtle : colors.primary.light }]}>
+          <Text style={[styles.dateDay, isPast && styles.textPast]}>
             {format(holidayDate, 'd')}
           </Text>
-          <Text style={[styles.dateMonth, { color }]}>
+          <Text style={[styles.dateMonth, isPast && styles.textPast]}>
             {format(holidayDate, 'MMM')}
           </Text>
-          <Text style={styles.dateWeekday}>
+          <Text style={[styles.dateWeekday, isPast && styles.textPast]}>
             {format(holidayDate, 'EEE')}
           </Text>
         </View>
-        
-        <View style={styles.holidayInfo}>
-          <View style={styles.holidayHeader}>
-            <Text style={[
-              styles.holidayName,
-              status === 'past' && styles.pastText
-            ]}>
+
+        {/* Info Section */}
+        <View style={styles.infoSection}>
+          <View style={styles.infoHeader}>
+            <Text style={[styles.holidayName, isPast && styles.textPast]}>
               {item.name}
             </Text>
+            {isCurrentDay && (
+              <View style={styles.todayBadge}>
+                <Ionicons name="star" size={12} color="#F59E0B" />
+                <Text style={styles.todayText}>Today</Text>
+              </View>
+            )}
+          </View>
+
+          <View style={styles.infoFooter}>
+            <View style={[styles.typeBadge, { backgroundColor: typeColor.bg }]}>
+              <Text style={[styles.typeText, { color: typeColor.text }]}>
+                {item.type?.charAt(0).toUpperCase() + item.type?.slice(1)}
+              </Text>
+            </View>
             {item.is_optional && (
               <View style={styles.optionalBadge}>
                 <Text style={styles.optionalText}>Optional</Text>
               </View>
             )}
           </View>
-          
-          <View style={styles.holidayMeta}>
-            <View style={[styles.typeBadge, { backgroundColor: color + '20' }]}>
-              <Text style={[styles.typeText, { color }]}>
-                {item.type?.charAt(0).toUpperCase() + item.type?.slice(1)}
-              </Text>
-            </View>
-            
-            {status === 'today' && (
-              <View style={styles.todayBadge}>
-                <Ionicons name="star" size={12} color="#FF9800" />
-                <Text style={styles.todayText}>Today</Text>
-              </View>
-            )}
-          </View>
-          
+
           {item.description && (
-            <Text style={styles.description} numberOfLines={2}>
+            <Text style={[styles.description, isPast && styles.textPast]} numberOfLines={2}>
               {item.description}
             </Text>
           )}
@@ -104,70 +118,70 @@ export default function HolidayCalendarScreen() {
     );
   };
 
-  const upcomingHolidays = holidays.filter((h: any) => 
-    getHolidayStatus(h.date) === 'upcoming' || getHolidayStatus(h.date) === 'today'
-  );
-  
-  const pastHolidays = holidays.filter((h: any) => 
-    getHolidayStatus(h.date) === 'past'
-  );
-
   return (
     <View style={styles.container}>
+      {/* Header */}
+      <LinearGradient
+        colors={[colors.primary.default, colors.secondary.default]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.headerGradient}
+      >
+        <Text style={styles.headerTitle}>Holiday Calendar</Text>
+        
+        {/* Summary Stats */}
+        <View style={styles.summaryRow}>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryValue}>{holidays.length}</Text>
+            <Text style={styles.summaryLabel}>Total</Text>
+          </View>
+          <View style={styles.summaryDivider} />
+          <View style={styles.summaryItem}>
+            <Text style={[styles.summaryValue, { color: '#4ADE80' }]}>{upcomingHolidays.length}</Text>
+            <Text style={styles.summaryLabel}>Upcoming</Text>
+          </View>
+        </View>
+      </LinearGradient>
+
       {/* Year Selector */}
-      <View style={styles.yearSelector}>
-        <TouchableOpacity 
-          style={styles.yearButton}
-          onPress={() => setSelectedYear(selectedYear - 1)}
-        >
-          <Ionicons name="chevron-back" size={24} color="#2196F3" />
-        </TouchableOpacity>
-        
-        <Text style={styles.yearText}>{selectedYear}</Text>
-        
-        <TouchableOpacity 
-          style={styles.yearButton}
-          onPress={() => setSelectedYear(selectedYear + 1)}
-        >
-          <Ionicons name="chevron-forward" size={24} color="#2196F3" />
-        </TouchableOpacity>
-      </View>
+      <View style={styles.yearSelectorContainer}>
+        <View style={styles.yearSelector}>
+          <TouchableOpacity
+            style={styles.yearButton}
+            onPress={() => setSelectedYear(selectedYear - 1)}
+          >
+            <Ionicons name="chevron-back" size={24} color={colors.primary.default} />
+          </TouchableOpacity>
 
-      {/* Summary */}
-      <View style={styles.summary}>
-        <View style={styles.summaryItem}>
-          <Text style={styles.summaryValue}>{holidays.length}</Text>
-          <Text style={styles.summaryLabel}>Total Holidays</Text>
-        </View>
-        <View style={styles.summaryDivider} />
-        <View style={styles.summaryItem}>
-          <Text style={[styles.summaryValue, { color: '#4CAF50' }]}>
-            {upcomingHolidays.length}
-          </Text>
-          <Text style={styles.summaryLabel}>Upcoming</Text>
-        </View>
-        <View style={styles.summaryDivider} />
-        <View style={styles.summaryItem}>
-          <Text style={[styles.summaryValue, { color: '#9E9E9E' }]}>
-            {pastHolidays.length}
-          </Text>
-          <Text style={styles.summaryLabel}>Past</Text>
+          <View style={styles.yearDisplay}>
+            <Ionicons name="calendar" size={18} color={colors.primary.default} />
+            <Text style={styles.yearDisplayText}>{selectedYear}</Text>
+          </View>
+
+          <TouchableOpacity
+            style={styles.yearButton}
+            onPress={() => setSelectedYear(selectedYear + 1)}
+          >
+            <Ionicons name="chevron-forward" size={24} color={colors.primary.default} />
+          </TouchableOpacity>
         </View>
       </View>
 
-      {/* Holiday List */}
+      {/* Holidays List */}
       <FlatList
         data={holidays}
         keyExtractor={(item, index) => item.id || index.toString()}
         renderItem={renderHoliday}
         refreshControl={
-          <RefreshControl refreshing={isLoading} onRefresh={refetch} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary.default} />
         }
         contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Ionicons name="calendar-outline" size={64} color="#ccc" />
-            <Text style={styles.emptyText}>No holidays found for {selectedYear}</Text>
+            <Ionicons name="sunny-outline" size={64} color={colors.text.muted} />
+            <Text style={styles.emptyText}>No holidays found</Text>
+            <Text style={styles.emptySubtext}>No holidays configured for {selectedYear}</Text>
           </View>
         }
       />
@@ -178,163 +192,193 @@ export default function HolidayCalendarScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.background.app,
   },
-  yearSelector: {
+  headerGradient: {
+    paddingTop: 60,
+    paddingBottom: spacing.xxl,
+    paddingHorizontal: spacing.lg,
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: spacing.lg,
+  },
+  summaryRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  yearButton: {
-    padding: 8,
-  },
-  yearText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    marginHorizontal: 24,
-  },
-  summary: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    paddingVertical: 16,
-    marginBottom: 8,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
   },
   summaryItem: {
     flex: 1,
     alignItems: 'center',
   },
-  summaryDivider: {
-    width: 1,
-    backgroundColor: '#eee',
-  },
   summaryValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#2196F3',
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   summaryLabel: {
     fontSize: 12,
-    color: '#666',
-    marginTop: 4,
+    color: 'rgba(255,255,255,0.8)',
+    marginTop: spacing.xs,
+  },
+  summaryDivider: {
+    width: 1,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    marginHorizontal: spacing.lg,
+  },
+  yearSelectorContainer: {
+    paddingHorizontal: spacing.lg,
+    marginTop: -spacing.lg,
+  },
+  yearSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.background.card,
+    borderRadius: borderRadius.xl,
+    padding: spacing.sm,
+    ...shadows.md,
+  },
+  yearButton: {
+    width: 44,
+    height: 44,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.background.subtle,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  yearDisplay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  yearDisplayText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.text.primary,
   },
   listContent: {
-    padding: 16,
+    padding: spacing.lg,
+    paddingTop: spacing.xl,
   },
   holidayCard: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    backgroundColor: colors.background.card,
+    borderRadius: borderRadius.xl,
+    marginBottom: spacing.md,
     overflow: 'hidden',
+    ...shadows.sm,
   },
-  pastHoliday: {
+  holidayCardPast: {
     opacity: 0.6,
   },
-  todayHoliday: {
+  holidayCardToday: {
     borderWidth: 2,
-    borderColor: '#FF9800',
+    borderColor: '#F59E0B',
   },
-  dateContainer: {
-    width: 70,
-    paddingVertical: 12,
+  dateSection: {
+    width: 72,
+    paddingVertical: spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
   },
   dateDay: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 26,
+    fontWeight: '700',
+    color: colors.primary.default,
   },
   dateMonth: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
+    color: colors.primary.default,
+    marginTop: 2,
   },
   dateWeekday: {
-    fontSize: 12,
-    color: '#666',
+    fontSize: 11,
+    color: colors.text.muted,
     marginTop: 4,
   },
-  holidayInfo: {
-    flex: 1,
-    padding: 12,
-    justifyContent: 'center',
+  textPast: {
+    color: colors.text.muted,
   },
-  holidayHeader: {
+  infoSection: {
+    flex: 1,
+    padding: spacing.lg,
+  },
+  infoHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    justifyContent: 'space-between',
   },
   holidayName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: colors.text.primary,
     flex: 1,
-  },
-  pastText: {
-    color: '#999',
-  },
-  optionalBadge: {
-    backgroundColor: '#FF980020',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  optionalText: {
-    fontSize: 10,
-    color: '#FF9800',
-    fontWeight: '600',
-  },
-  holidayMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  typeBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    marginRight: 8,
-  },
-  typeText: {
-    fontSize: 12,
-    fontWeight: '500',
   },
   todayBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF3E0',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
+    gap: 4,
   },
   todayText: {
-    fontSize: 12,
-    color: '#FF9800',
+    fontSize: 11,
     fontWeight: '600',
-    marginLeft: 4,
+    color: '#F59E0B',
+  },
+  infoFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: spacing.sm,
+    gap: spacing.sm,
+  },
+  typeBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.sm,
+  },
+  typeText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  optionalBadge: {
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.sm,
+  },
+  optionalText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#D97706',
   },
   description: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 8,
+    fontSize: 13,
+    color: colors.text.secondary,
+    marginTop: spacing.sm,
+    lineHeight: 18,
   },
   emptyState: {
-    flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
+    paddingVertical: spacing.xxxl * 2,
   },
   emptyText: {
-    fontSize: 16,
-    color: '#999',
-    marginTop: 16,
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text.secondary,
+    marginTop: spacing.lg,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: colors.text.muted,
+    marginTop: spacing.xs,
   },
 });
