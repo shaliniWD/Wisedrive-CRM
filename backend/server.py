@@ -4018,12 +4018,12 @@ async def update_attendance_day(
         raise HTTPException(status_code=404, detail="Employee not found")
     
     # Normalize status
-    status = data.status.lower()
-    if status == "absent":
-        status = "lop"
+    normalized_status = data.status.lower()
+    if normalized_status == "absent":
+        normalized_status = "lop"
     
     valid_statuses = ["present", "lop", "half_day", "leave_approved", "holiday", "overtime"]
-    if status not in valid_statuses:
+    if normalized_status not in valid_statuses:
         raise HTTPException(status_code=400, detail=f"Invalid status. Must be one of: {valid_statuses}")
     
     now = datetime.now(timezone.utc).isoformat()
