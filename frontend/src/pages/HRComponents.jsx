@@ -744,13 +744,21 @@ export function PayrollDashboard({ isHR, isFinance }) {
         // Get other deductions
         let otherDeductions = previewEdits[record.employee_id]?.other_deductions ?? record.other_deductions ?? 0;
         
-        // Cap other deductions at net before other
-        const netBeforeOther = gross - record.total_statutory_deductions - attendanceDeduction;
-        otherDeductions = Math.min(Math.max(0, otherDeductions), Math.max(0, netBeforeOther));
+        // Get incentive amount
+        let incentiveAmount = previewEdits[record.employee_id]?.incentive_amount ?? record.incentive_amount ?? 0;
+        incentiveAmount = Math.max(0, incentiveAmount);
+        
+        // Get overtime days
+        let overtimeDays = previewEdits[record.employee_id]?.overtime_days ?? record.overtime_days ?? 0;
+        overtimeDays = Math.max(0, overtimeDays);
+        
+        // Calculate overtime pay
+        const overtimeRate = record.overtime_rate_per_day || 0;
+        const overtimePay = Math.round(overtimeRate * overtimeDays * 100) / 100;
 
-        // Calculate totals
+        // Calculate totals: Net = Gross + Incentive + OT Pay - Statutory - LOP Ded. - Other Ded.
         const totalDeductions = record.total_statutory_deductions + attendanceDeduction + otherDeductions;
-        const netSalary = Math.round((gross - totalDeductions) * 100) / 100;
+        const netSalary = Math.round((gross + incentiveAmount + overtimePay - totalDeductions) * 100) / 100;
 
         return {
           ...record,
@@ -761,6 +769,9 @@ export function PayrollDashboard({ isHR, isFinance }) {
           attendance_deduction: attendanceDeduction,
           per_day_salary: Math.round(perDaySalary * 100) / 100,
           other_deductions: otherDeductions,
+          incentive_amount: incentiveAmount,
+          overtime_days: overtimeDays,
+          overtime_pay: overtimePay,
           total_deductions: Math.round(totalDeductions * 100) / 100,
           net_salary: netSalary
         };
@@ -771,6 +782,8 @@ export function PayrollDashboard({ isHR, isFinance }) {
       const totalStatutory = updatedRecords.reduce((sum, r) => sum + r.total_statutory_deductions, 0);
       const totalAttendance = updatedRecords.reduce((sum, r) => sum + r.attendance_deduction, 0);
       const totalOther = updatedRecords.reduce((sum, r) => sum + r.other_deductions, 0);
+      const totalIncentive = updatedRecords.reduce((sum, r) => sum + (r.incentive_amount || 0), 0);
+      const totalOvertimePay = updatedRecords.reduce((sum, r) => sum + (r.overtime_pay || 0), 0);
       const totalNet = updatedRecords.reduce((sum, r) => sum + r.net_salary, 0);
 
       return {
@@ -781,6 +794,8 @@ export function PayrollDashboard({ isHR, isFinance }) {
         total_statutory_deductions: Math.round(totalStatutory * 100) / 100,
         total_attendance_deductions: Math.round(totalAttendance * 100) / 100,
         total_other_deductions: Math.round(totalOther * 100) / 100,
+        total_incentive: Math.round(totalIncentive * 100) / 100,
+        total_overtime_pay: Math.round(totalOvertimePay * 100) / 100,
         total_net: Math.round(totalNet * 100) / 100
       };
     });
