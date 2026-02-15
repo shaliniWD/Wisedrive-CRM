@@ -888,7 +888,6 @@ class PayrollService:
             
             eligible_sick_leaves = role.get("eligible_sick_leaves_per_month", 2) if role else 2
             eligible_casual_leaves = role.get("eligible_casual_leaves_per_month", 1) if role else 1
-            total_leave_entitlement = eligible_sick_leaves + eligible_casual_leaves
             
             # Employee's weekly off day (0=Sunday, etc.)
             employee_weekly_off = emp.get("weekly_off_day", 0)
