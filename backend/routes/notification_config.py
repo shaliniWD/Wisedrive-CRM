@@ -198,12 +198,7 @@ DEFAULT_TEMPLATES = [
 # Auth dependency - check for HR access
 async def get_hr_user(request: Request) -> dict:
     """Get current user and verify HR access"""
-    # Import JWT verification
-    import jwt
-    from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-    from fastapi import Depends
-    
-    security = HTTPBearer()
+    db = get_db()
     
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
@@ -212,11 +207,10 @@ async def get_hr_user(request: Request) -> dict:
     token = auth_header.split(" ")[1]
     
     try:
-        SECRET_KEY = os.environ.get('JWT_SECRET', 'wisedrive-crm-secret-key-change-in-production-2024')
+        SECRET_KEY = os.environ.get('JWT_SECRET', 'wisedrive-crm-secure-secret-key-2024-production-env')
         payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
         user_id = payload.get("sub")
         
-        db = request.app.state.db
         user = await db.users.find_one({"id": user_id}, {"_id": 0, "hashed_password": 0})
         
         if not user:
