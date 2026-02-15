@@ -1,135 +1,116 @@
 {
   "identity": {
-    "name": "WiseDrive CRM",
-    "mission": "A high-density, modern CRM for 2026 that prioritizes data visibility and workflow efficiency.",
-    "vibe": "Swiss High-Contrast, Professional, Airy, Data-Dense",
-    "theme_mode": "light"
+    "name": "WiseDrive ESS",
+    "tone": "Professional, Efficient, Modern, Trustworthy",
+    "archetype": "The Performance Pro (Clean, High-Contrast, Functional)",
+    "target_audience": "Corporate Employees (Executives to Managers)"
   },
   "typography": {
     "font_family": {
-      "headings": "Outfit, sans-serif",
-      "body": "Inter, sans-serif",
-      "mono": "JetBrains Mono, monospace"
+      "headings": "Inter, sans-serif",
+      "body": "Inter, sans-serif"
     },
-    "rules": [
-      "Headings (H1-H3): Use 'Outfit' with tight tracking (-0.02em). Font weight 600 or 700.",
-      "Body Text: Use 'Inter'. Base size 14px or 15px for data density.",
-      "Data/IDs: Use 'JetBrains Mono' for any ID, license plate, or code.",
-      "Labels: Uppercase, text-xs, tracking-wider, font-semibold, text-muted-foreground."
-    ]
+    "styles": {
+      "h1": "text-3xl font-bold tracking-tight text-slate-900",
+      "h2": "text-2xl font-semibold tracking-tight text-slate-900",
+      "h3": "text-xl font-semibold tracking-tight text-slate-900",
+      "body_large": "text-base font-medium text-slate-700",
+      "body_default": "text-sm text-slate-600 leading-relaxed",
+      "caption": "text-xs text-slate-500 font-medium uppercase tracking-wider"
+    }
   },
   "colors": {
     "palette": {
       "primary": {
-        "name": "Electric Indigo",
-        "hex": "#4F46E5",
-        "tailwind": "bg-indigo-600 text-white hover:bg-indigo-700"
+        "default": "#2E3192",
+        "hover": "#1E2060",
+        "foreground": "#FFFFFF"
       },
       "secondary": {
-        "name": "Slate Surface",
-        "hex": "#F8FAFC",
-        "tailwind": "bg-slate-50 text-slate-900"
+        "default": "#6366F1",
+        "foreground": "#FFFFFF"
       },
       "accent": {
-        "name": "Signal Blue",
-        "hex": "#3B82F6",
-        "tailwind": "text-blue-500"
-      },
-      "success": {
-        "name": "Emerald",
-        "hex": "#10B981",
-        "tailwind": "text-emerald-600 bg-emerald-50 border-emerald-200"
-      },
-      "warning": {
-        "name": "Amber",
-        "hex": "#F59E0B",
-        "tailwind": "text-amber-600 bg-amber-50 border-amber-200"
-      },
-      "danger": {
-        "name": "Rose",
-        "hex": "#E11D48",
-        "tailwind": "text-rose-600 bg-rose-50 border-rose-200"
+        "default": "#FFD700",
+        "foreground": "#1A1A1A"
       },
       "background": {
-        "app": "#FFFFFF",
-        "subtle": "#F8FAFC"
+        "app": "#F8FAFC",
+        "card": "#FFFFFF",
+        "subtle": "#F1F5F9"
+      },
+      "status": {
+        "success": "#10B981",
+        "warning": "#F59E0B",
+        "error": "#EF4444",
+        "info": "#3B82F6"
       }
     },
-    "usage_rules": [
-      "NO GRADIENTS for text or backgrounds. Use solid, confident colors.",
-      "Use 'muted' backgrounds (slate-50/100) for table headers to differentiate from data.",
-      "Primary color is ONLY for primary actions (Add Lead, Save). Secondary actions use outline or ghost variants."
-    ]
+    "usage_rules": {
+      "primary_action": "Use WiseDrive Blue (#2E3192) for primary buttons and active tab states.",
+      "secondary_action": "Use WiseDrive Purple (#6366F1) for secondary actions or decorative icons.",
+      "highlight": "Use WiseDrive Yellow (#FFD700) sparingly for notifications, badges, or 'New' indicators.",
+      "text": "Never use pure black. Use Slate-900 (#0F172A) for headings and Slate-600 (#475569) for body."
+    }
   },
   "layout": {
+    "structure": "Mobile-First Web App",
+    "container": "max-w-md mx-auto bg-slate-50 min-h-screen shadow-2xl overflow-hidden relative",
+    "spacing": {
+      "page_padding": "p-4 md:p-6",
+      "card_padding": "p-5",
+      "section_gap": "gap-6"
+    },
     "navigation": {
-      "type": "horizontal_top",
-      "structure": [
-        "Logo (Left)",
-        "Main Links (Center-Left): Dashboard, Leads, Customers, Inspections, Admin",
-        "Global Search (Center-Right)",
-        "Notifications & Profile (Right)"
-      ],
-      "style": "Sticky top-0 z-50. Glassmorphism (bg-white/80 backdrop-blur-md). Border-b border-slate-200."
+      "type": "Bottom Tab Bar (Fixed)",
+      "style": "bg-white/90 backdrop-blur-md border-t border-slate-200 h-16 pb-safe"
     },
-    "container": {
-      "max_width": "max-w-[1920px]",
-      "padding": "px-6 py-6",
-      "strategy": "Use 95% of screen width for data tables. Do not center-constrain tables to 1000px."
-    },
-    "dashboard_grid": {
-      "type": "bento_high_density",
-      "classes": "grid grid-cols-1 md:grid-cols-4 gap-4",
-      "rules": "Widgets must stretch to fill height. No jagged bottoms."
-    }
+    "grid_system": "Bento Grid for Dashboard (mix of col-span-1 and col-span-2)"
   },
   "components": {
-    "tables": {
-      "style": "clean_density",
-      "instructions": [
-        "Remove vertical borders. Only use horizontal borders (border-b).",
-        "Header: bg-slate-50/50, text-xs uppercase tracking-wider font-medium text-slate-500.",
-        "Rows: hover:bg-slate-50/80 transition-colors duration-150.",
-        "Cell Padding: p-3 (compact) to fit more columns.",
-        "Actions: Use a '...' dropdown menu for row actions to save space."
-      ]
-    },
     "cards": {
-      "style": "minimal_border",
-      "classes": "bg-white border border-slate-200 shadow-sm rounded-xl",
-      "hover": "hover:shadow-md transition-shadow duration-200"
+      "style": "bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all duration-200",
+      "header": "flex items-center justify-between mb-4 border-b border-slate-50 pb-3"
     },
     "buttons": {
-      "primary": "bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm rounded-lg px-4 py-2 font-medium text-sm",
-      "secondary": "bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 shadow-sm rounded-lg px-4 py-2 font-medium text-sm",
-      "ghost": "hover:bg-slate-100 text-slate-600 rounded-lg px-3 py-2"
+      "primary": "bg-[#2E3192] text-white hover:bg-[#1E2060] rounded-xl px-6 py-3 font-semibold shadow-lg shadow-blue-900/20 active:scale-95 transition-all",
+      "secondary": "bg-white text-[#2E3192] border border-[#2E3192]/20 hover:bg-slate-50 rounded-xl px-6 py-3 font-medium active:scale-95 transition-all",
+      "ghost": "text-slate-600 hover:bg-slate-100 rounded-lg px-4 py-2 font-medium transition-colors"
     },
-    "modals": {
-      "overlay": "bg-slate-900/20 backdrop-blur-sm",
-      "content": "bg-white border border-slate-200 shadow-2xl sm:rounded-xl"
+    "inputs": {
+      "style": "bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:ring-2 focus:ring-[#2E3192]/20 focus:border-[#2E3192] transition-all outline-none placeholder:text-slate-400"
+    },
+    "badges": {
+      "style": "px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wide"
     }
   },
-  "assets": {
-    "logos": [
-      {
-        "url": "https://images.unsplash.com/photo-1770210217380-d78a69acdc77?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxOTJ8MHwxfHNlYXJjaHwxfHxtaW5pbWFsaXN0JTIwYWJzdHJhY3QlMjB0ZWNoJTIwY29tcGFueSUyMGxvZ298ZW58MHx8fHwxNzcwOTg4MjAwfDA&ixlib=rb-4.1.0&q=85",
-        "alt": "WiseDrive Logo Placeholder"
-      }
-    ],
-    "avatars": [
-      "https://images.unsplash.com/photo-1762522927402-f390672558d8?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NjZ8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBidXNpbmVzcyUyMHBvcnRyYWl0JTIwaGVhZHNob3R8ZW58MHx8fHwxNzcwOTg4MTk1fDA&ixlib=rb-4.1.0&q=85",
-      "https://images.unsplash.com/photo-1762522926157-bcc04bf0b10a?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NjZ8MHwxfHNlYXJjaHwyfHxwcm9mZXNzaW9uYWwlMjBidXNpbmVzcyUyMHBvcnRyYWl0JTIwaGVhZHNob3R8ZW58MHx8fHwxNzcwOTg4MTk1fDA&ixlib=rb-4.1.0&q=85",
-      "https://images.unsplash.com/photo-1689600944138-da3b150d9cb8?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NjZ8MHwxfHNlYXJjaHw0fHxwcm9mZXNzaW9uYWwlMjBidXNpbmVzcyUyMHBvcnRyYWl0JTIwaGVhZHNob3R8ZW58MHx8fHwxNzcwOTg4MTk1fDA&ixlib=rb-4.1.0&q=85"
-    ]
+  "visual_enhancers": {
+    "glassmorphism": "Use backdrop-blur-xl bg-white/80 for sticky headers and modals.",
+    "shadows": "Use soft, diffuse shadows (shadow-lg shadow-slate-200/50) to create depth without dirtiness.",
+    "gradients": "Avoid heavy gradients. Use subtle mesh gradients in the Login background only.",
+    "icons": "Use Lucide-React icons. Stroke width 1.5px for a refined look."
   },
-  "universal_guidelines": [
-    "NO SIDEBAR. Use the top navigation bar for all main routes.",
-    "Data Density is King: Avoid excessive padding in tables. Users need to see rows.",
-    "Use 'sonner' for all toast notifications.",
-    "All interactive elements MUST have a 'data-testid'.",
-    "Do not use 'Inter' for Headings. Use 'Outfit'.",
-    "Do not use gradients for text.",
-    "Ensure all text has at least 4.5:1 contrast ratio.",
-    "Use 'lucide-react' for icons."
+  "image_urls": {
+    "login_background": "https://images.unsplash.com/photo-1768528385807-a7751490fffb?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMjh8MHwxfHNlYXJjaHw0fHxtb2Rlcm4lMjBjb3Jwb3JhdGUlMjBvZmZpY2UlMjBhcmNoaXRlY3R1cmUlMjBhYnN0cmFjdHxlbnwwfHx8fDE3NzExODIyNzZ8MA&ixlib=rb-4.1.0&q=85",
+    "user_avatar_placeholder": "https://images.pexels.com/photos/33871730/pexels-photo-33871730.jpeg",
+    "logo_placeholder": "https://placehold.co/200x50/2E3192/FFFFFF?text=WiseDrive"
+  },
+  "instructions_to_main_agent": [
+    "1. REFINE THE HEADER: The existing .wisedrive-header is too basic. Replace it with a modern, sticky header with a glass effect.",
+    "2. MOBILE OPTIMIZATION: Ensure all touch targets are at least 44px. Use the 'Bottom Navigation' pattern for the main menu (Home, Leaves, Payslips, Profile).",
+    "3. DASHBOARD: Create a 'Bento Grid' layout for the dashboard. Don't just list links. Show 'Leave Balance', 'Next Holiday', and 'Latest Payslip' as visual cards.",
+    "4. PROFILE: Use a clean Tab system (Shadcn Tabs) for the Profile section (Personal, Salary, Bank, Docs).",
+    "5. PAYSLIPS: Design the payslip list like a wallet transaction history - clean, minimal, with a clear download button.",
+    "6. LOGIN: Make the login screen visually stunning using the provided 'login_background' image with a dark overlay and a centered white card.",
+    "7. USE EXISTING VARIABLES: Map Tailwind classes to the existing CSS variables where possible, or override them with the new palette defined here."
+  ],
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "Do not use generic centered layouts.",
+    "Create depth through layered design elements.",
+    "Use glass-morphism effects with backdrop filters.",
+    "Every interaction needs micro-animations.",
+    "Use 2-3x more spacing than feels comfortable.",
+    "Use Lucide-React icons.",
+    "Use Sonner for toasts."
   ]
 }
