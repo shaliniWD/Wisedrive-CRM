@@ -8,7 +8,63 @@ Recreate WiseDrive CRM (https://crm.wisedrive.com) design with a modern UI. Crea
 
 ## What's Been Implemented
 
-### ESS Mobile App API V1.0 (Feb 15, 2026) ✅ LATEST
+### ESS Mobile App + Notification System V2.0 (Feb 15, 2026) ✅ LATEST
+
+#### Firebase FCM Integration
+- [x] **FCM Service** (`/app/ess/api/services/fcm_service.py`):
+  - Firebase Admin SDK integration structure
+  - Supports FCM (Android) and APNS (iOS)
+  - Notification templates for all event types
+  - Mock mode when no credentials provided
+  - Quiet hours support
+  - Topic-based notifications
+
+#### React Native Mobile App (`/app/ess-mobile-app/`)
+- [x] **Complete Mobile App Features**:
+  - **Login Screen** - Email/password auth with device registration
+  - **Home Screen** - Dashboard with leave balance, attendance, quick actions
+  - **Leave Screen** - Apply leave, view history, cancel requests
+  - **Leave Apply Screen** - Full leave application form
+  - **Leave Detail Screen** - View leave details with cancel option
+  - **Approvals Screen** - For managers to approve/reject leaves
+  - **Payslips Screen** - List and filter by year
+  - **Payslip Detail Screen** - Detailed view with download
+  - **Documents Screen** - View uploaded documents and requirements
+  - **Notifications Screen** - In-app notifications with read/unread
+  - **Profile Screen** - Personal info, bank details, salary
+  - **Settings Screen** - Notification preferences, quiet hours
+
+- [x] **App Architecture**:
+  - React Navigation (Stack + Tab navigators)
+  - TanStack Query for data fetching
+  - Zustand for state management
+  - Expo push notifications
+  - Secure storage for tokens
+
+#### CRM Notification Configuration UI
+- [x] **Notification Config API** (`/app/backend/routes/notification_config.py`):
+  - `GET /api/notification-config/triggers` - List all triggers
+  - `PUT /api/notification-config/triggers/{id}` - Update trigger
+  - `GET /api/notification-config/templates` - List templates
+  - `PUT /api/notification-config/templates/{id}` - Update template
+  - `POST /api/notification-config/test` - Send test notification
+  - `POST /api/notification-config/send-announcement` - Mass announcement
+  - `GET /api/notification-config/stats` - Delivery statistics
+
+- [x] **Notification Config UI** (`/app/frontend/src/pages/NotificationConfigPage.jsx`):
+  - Triggers tab with toggle switches for each event
+  - Templates tab with editable title/body
+  - Statistics cards (registered devices, sent count, etc.)
+  - Test notification modal
+  - Send announcement modal with country filter
+  - Available at route `/hr/notifications`
+
+- [x] **Testing**:
+  - 11 backend tests passed (100% success rate)
+  - All notification config endpoints tested
+  - Frontend UI verified working
+
+### ESS Mobile App API V1.0 (Feb 15, 2026) ✅
 - [x] **ESS API Project Structure**:
   - Created separate FastAPI server at `/app/ess/api/`
   - Independent release cycle from main CRM
