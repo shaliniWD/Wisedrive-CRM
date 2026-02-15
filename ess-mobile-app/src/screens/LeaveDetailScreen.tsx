@@ -1,23 +1,27 @@
-// Leave Detail Screen
+// Premium Leave Detail Screen - Dark Theme
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format } from 'date-fns';
 import { getLeaveDetail, cancelLeave } from '../services/api';
-
-const STATUS_COLORS: Record<string, string> = {
-  pending: '#FF9800',
-  approved: '#4CAF50',
-  rejected: '#F44336',
-  cancelled: '#9E9E9E',
-};
+import { colors, spacing, fontSize, fontWeight, radius, iconSize } from '../theme';
 
 export default function LeaveDetailScreen() {
+  const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const navigation = useNavigation();
   const queryClient = useQueryClient();
+  const insets = useSafeAreaInsets();
   const { leaveId } = route.params;
 
   const { data: leave, isLoading } = useQuery({
@@ -29,11 +33,13 @@ export default function LeaveDetailScreen() {
     mutationFn: () => cancelLeave(leaveId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leaveHistory'] });
-      queryClient.invalidateQueries({ queryKey: ['leaveDetail', leaveId] });
-      Alert.alert('Success', 'Leave request cancelled');
+      queryClient.invalidateQueries({ queryKey: ['leaveBalance'] });
+      Alert.alert('Success', 'Leave request cancelled', [
+        { text: 'OK', onPress: () => navigation.goBack() }
+      ]);
     },
     onError: (error: any) => {
-      Alert.alert('Error', error.response?.data?.detail || 'Failed to cancel leave');
+      Alert.alert('Error', error.message || 'Failed to cancel leave');
     },
   });
 
@@ -48,204 +54,291 @@ export default function LeaveDetailScreen() {
     );
   };
 
+  const getStatusStyle = (status: string) => {
+    switch (status) {
+      case 'approved':
+        return { bg: colors.successBg, color: colors.success };
+      case 'pending':
+        return { bg: colors.warningBg, color: colors.warning };
+      case 'rejected':
+      case 'cancelled':
+        return { bg: colors.errorBg, color: colors.error };
+      default:
+        return { bg: colors.surface, color: colors.text.secondary };
+    }
+  };
+
   if (isLoading) {
     return (
-      <View style={styles.loading}>
-        <ActivityIndicator size="large" color="#2196F3" />
+      <View style={[styles.container, styles.loadingContainer, { paddingTop: insets.top }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
-  if (!leave) {
-    return (
-      <View style={styles.loading}>
-        <Text>Leave not found</Text>
-      </View>
-    );
-  }
+  const statusStyle = getStatusStyle(leave?.status || '');
 
   return (
-    <ScrollView style={styles.container}>
-      {/* Status Header */}
-      <View style={[styles.statusHeader, { backgroundColor: STATUS_COLORS[leave.status] }]}>
-        <Ionicons
-          name={leave.status === 'approved' ? 'checkmark-circle' : leave.status === 'rejected' ? 'close-circle' : 'time'}
-          size={48}
-          color="#fff"
-        />
-        <Text style={styles.statusText}>{leave.status.toUpperCase()}</Text>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          testID="back-btn"
+          style={styles.backBtn}
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="arrow-back" size={iconSize.lg} color={colors.text.primary} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Leave Details</Text>
+        <View style={{ width: 40 }} />
       </View>
 
-      {/* Leave Details */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Leave Details</Text>
-        
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Type</Text>
-          <Text style={styles.detailValue}>
-            {leave.leave_type.charAt(0).toUpperCase() + leave.leave_type.slice(1)} Leave
-          </Text>
-        </View>
-
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Duration</Text>
-          <Text style={styles.detailValue}>
-            {leave.start_date} → {leave.end_date}
-          </Text>
-        </View>
-
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Days</Text>
-          <Text style={styles.detailValue}>{leave.days_count} day(s)</Text>
-        </View>
-
-        {leave.is_half_day && (
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Half Day</Text>
-            <Text style={styles.detailValue}>
-              {leave.half_day_type === 'first_half' ? 'First Half' : 'Second Half'}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* Status Card */}
+        <View style={styles.statusCard}>
+          <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
+            <Ionicons 
+              name={leave?.status === 'approved' ? 'checkmark-circle' : leave?.status === 'pending' ? 'time' : 'close-circle'} 
+              size={20} 
+              color={statusStyle.color} 
+            />
+            <Text style={[styles.statusText, { color: statusStyle.color }]}>
+              {leave?.status?.toUpperCase()}
             </Text>
+          </View>
+          <Text style={styles.leaveType}>{leave?.leave_type}</Text>
+          <Text style={styles.leaveDays}>{leave?.days} {leave?.days === 1 ? 'day' : 'days'}</Text>
+        </View>
+
+        {/* Details */}
+        <View style={styles.detailsCard}>
+          <DetailRow 
+            icon="calendar-outline" 
+            label="Start Date" 
+            value={leave?.start_date ? format(new Date(leave.start_date), 'MMMM d, yyyy') : '-'} 
+          />
+          <DetailRow 
+            icon="calendar-outline" 
+            label="End Date" 
+            value={leave?.end_date ? format(new Date(leave.end_date), 'MMMM d, yyyy') : '-'} 
+          />
+          <DetailRow 
+            icon="time-outline" 
+            label="Applied On" 
+            value={leave?.created_at ? format(new Date(leave.created_at), 'MMM d, yyyy') : '-'} 
+          />
+          {leave?.approver_name && (
+            <DetailRow 
+              icon="person-outline" 
+              label="Approver" 
+              value={leave.approver_name} 
+            />
+          )}
+        </View>
+
+        {/* Reason */}
+        {leave?.reason && (
+          <View style={styles.reasonCard}>
+            <Text style={styles.reasonLabel}>Reason</Text>
+            <Text style={styles.reasonText}>{leave.reason}</Text>
           </View>
         )}
 
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Applied On</Text>
-          <Text style={styles.detailValue}>
-            {format(new Date(leave.applied_on), 'MMM d, yyyy h:mm a')}
-          </Text>
-        </View>
-      </View>
-
-      {/* Reason */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Reason</Text>
-        <Text style={styles.reasonText}>{leave.reason}</Text>
-      </View>
-
-      {/* Approval Info */}
-      {(leave.approved_by || leave.rejection_reason) && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
-            {leave.status === 'approved' ? 'Approval Info' : 'Rejection Info'}
-          </Text>
-          
-          {leave.approved_by && (
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>By</Text>
-              <Text style={styles.detailValue}>{leave.approved_by}</Text>
-            </View>
-          )}
-
-          {leave.approved_on && (
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>On</Text>
-              <Text style={styles.detailValue}>
-                {format(new Date(leave.approved_on), 'MMM d, yyyy h:mm a')}
-              </Text>
-            </View>
-          )}
-
-          {leave.rejection_reason && (
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Reason</Text>
-              <Text style={styles.detailValue}>{leave.rejection_reason}</Text>
-            </View>
-          )}
-        </View>
-      )}
+        {/* Comments */}
+        {leave?.comments && (
+          <View style={styles.reasonCard}>
+            <Text style={styles.reasonLabel}>Comments</Text>
+            <Text style={styles.reasonText}>{leave.comments}</Text>
+          </View>
+        )}
+      </ScrollView>
 
       {/* Cancel Button */}
-      {leave.can_cancel && (
-        <TouchableOpacity
-          style={styles.cancelButton}
-          onPress={handleCancel}
-          disabled={cancelMutation.isPending}
-        >
-          {cancelMutation.isPending ? (
-            <ActivityIndicator color="#F44336" />
-          ) : (
-            <>
-              <Ionicons name="close-circle" size={20} color="#F44336" />
-              <Text style={styles.cancelButtonText}>Cancel Leave Request</Text>
-            </>
-          )}
-        </TouchableOpacity>
+      {leave?.status === 'pending' && (
+        <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.lg }]}>
+          <TouchableOpacity
+            testID="cancel-leave-btn"
+            style={styles.cancelBtn}
+            onPress={handleCancel}
+            disabled={cancelMutation.isPending}
+          >
+            {cancelMutation.isPending ? (
+              <ActivityIndicator color={colors.error} />
+            ) : (
+              <>
+                <Ionicons name="close-circle-outline" size={18} color={colors.error} />
+                <Text style={styles.cancelBtnText}>Cancel Leave Request</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
       )}
-
-      <View style={{ height: 40 }} />
-    </ScrollView>
+    </View>
   );
 }
+
+const DetailRow = ({ icon, label, value }: { icon: any; label: string; value: string }) => (
+  <View style={styles.detailRow}>
+    <View style={styles.detailIcon}>
+      <Ionicons name={icon} size={16} color={colors.text.tertiary} />
+    </View>
+    <View style={styles.detailContent}>
+      <Text style={styles.detailLabel}>{label}</Text>
+      <Text style={styles.detailValue}>{value}</Text>
+    </View>
+  </View>
+);
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.background,
   },
-  loading: {
-    flex: 1,
+  loadingContainer: {
     justifyContent: 'center',
     alignItems: 'center',
   },
-  statusHeader: {
-    padding: 32,
+  header: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  headerTitle: {
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.semibold,
+    color: colors.text.primary,
+  },
+  scrollContent: {
+    padding: spacing.xl,
+    paddingTop: 0,
+    paddingBottom: spacing.xl,
+  },
+  // Status Card
+  statusCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.xxl,
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.full,
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
   },
   statusText: {
-    color: '#fff',
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginTop: 8,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
   },
-  section: {
-    backgroundColor: '#fff',
-    margin: 16,
-    marginBottom: 0,
-    padding: 16,
-    borderRadius: 12,
+  leaveType: {
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.semibold,
+    color: colors.text.primary,
+    marginBottom: spacing.xs,
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 16,
+  leaveDays: {
+    fontSize: fontSize.base,
+    color: colors.text.secondary,
+  },
+  // Details Card
+  detailsCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   detailRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 8,
+    alignItems: 'center',
+    paddingVertical: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: colors.border,
+  },
+  detailIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.sm,
+    backgroundColor: colors.surfaceHighlight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.md,
+  },
+  detailContent: {
+    flex: 1,
   },
   detailLabel: {
-    color: '#666',
-    fontSize: 14,
+    fontSize: fontSize.xs,
+    color: colors.text.tertiary,
+    marginBottom: 2,
   },
   detailValue: {
-    color: '#333',
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: fontSize.base,
+    color: colors.text.primary,
+  },
+  // Reason Card
+  reasonCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  reasonLabel: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    color: colors.text.secondary,
+    marginBottom: spacing.sm,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   reasonText: {
-    color: '#333',
-    fontSize: 14,
+    fontSize: fontSize.base,
+    color: colors.text.primary,
     lineHeight: 22,
   },
-  cancelButton: {
+  // Footer
+  footer: {
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  cancelBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    margin: 16,
-    padding: 16,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#F44336',
+    backgroundColor: colors.errorBg,
+    paddingVertical: spacing.lg,
+    borderRadius: radius.md,
+    gap: spacing.sm,
   },
-  cancelButtonText: {
-    color: '#F44336',
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8,
+  cancelBtnText: {
+    color: colors.error,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.medium,
   },
 });
