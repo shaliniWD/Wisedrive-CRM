@@ -51,6 +51,13 @@ WiseDrive is a scalable automotive platform with a CRM system and an Employee Se
 - ✅ Push Notifications (FCM integrated)
 - ✅ React Query cache clearing on logout
 - ✅ Pointing to stable domain: `crmdev.wisedrive.com`
+- ✅ **Premium Dark Theme Redesign (December 2025)**
+  - Dark background (#0B1120) with blue accents (#3B82F6)
+  - Modern minimalist UI with refined fonts and icons
+  - Floating bottom tab navigation with gradients
+  - Bento grid dashboard layout
+  - Proper SafeAreaInsets handling for iOS/Android
+  - All testID attributes for testing
 
 ### ESS API Routes (Integrated in Main Backend)
 - ✅ `/api/ess/v1/auth/*` - Authentication (login, logout, refresh)
