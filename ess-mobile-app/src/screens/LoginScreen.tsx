@@ -1,4 +1,4 @@
-// Modern Login Screen
+// Premium Login Screen - Dark Theme
 import React, { useState } from 'react';
 import {
   View,
@@ -9,14 +9,14 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  Image,
-  Dimensions,
   StatusBar,
+  Dimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
-import { colors, spacing, borderRadius, shadows } from '../theme';
+import { colors, spacing, fontSize, fontWeight, radius, shadows } from '../theme';
 
 const { width, height } = Dimensions.get('window');
 
@@ -25,7 +25,9 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [focusedInput, setFocusedInput] = useState<string | null>(null);
   const { login, isLoading } = useAuth();
+  const insets = useSafeAreaInsets();
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -42,101 +44,137 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="light-content" backgroundColor={colors.background} />
       
-      {/* Background Gradient */}
+      {/* Background */}
       <LinearGradient
-        colors={['#2E3192', '#6366F1', '#8B5CF6']}
+        colors={['#0B1120', '#1E293B', '#0B1120']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={styles.backgroundGradient}
+        style={StyleSheet.absoluteFill}
       />
       
-      {/* Decorative Circles */}
-      <View style={styles.decorativeCircle1} />
-      <View style={styles.decorativeCircle2} />
-      <View style={styles.decorativeCircle3} />
+      {/* Decorative Elements */}
+      <View style={[styles.glowOrb, styles.glowOrb1]} />
+      <View style={[styles.glowOrb, styles.glowOrb2]} />
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
-        {/* Logo Section */}
-        <View style={styles.logoSection}>
-          <View style={styles.logoContainer}>
-            <Ionicons name="car-sport" size={48} color="#FFFFFF" />
-          </View>
-          <Text style={styles.brandName}>WiseDrive</Text>
-          <Text style={styles.tagline}>Employee Self-Service</Text>
-        </View>
-
-        {/* Login Card */}
-        <View style={styles.card}>
-          <Text style={styles.welcomeText}>Welcome Back</Text>
-          <Text style={styles.subtitleText}>Sign in to continue</Text>
-
-          {error ? (
-            <View style={styles.errorContainer}>
-              <Ionicons name="alert-circle" size={18} color={colors.status.error} />
-              <Text style={styles.errorText}>{error}</Text>
-            </View>
-          ) : null}
-
-          <View style={styles.inputContainer}>
-            <View style={styles.inputWrapper}>
-              <Ionicons name="mail-outline" size={20} color={colors.text.muted} style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Email address"
-                placeholderTextColor={colors.text.muted}
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-            </View>
-
-            <View style={styles.inputWrapper}>
-              <Ionicons name="lock-closed-outline" size={20} color={colors.text.muted} style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Password"
-                placeholderTextColor={colors.text.muted}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-              />
-              <TouchableOpacity
-                onPress={() => setShowPassword(!showPassword)}
-                style={styles.eyeIcon}
+        <View style={[styles.content, { paddingTop: insets.top + spacing.xxxxl }]}>
+          {/* Logo Section */}
+          <View style={styles.logoSection}>
+            <View style={styles.logoContainer}>
+              <LinearGradient
+                colors={colors.gradients.primary}
+                style={styles.logoGradient}
               >
-                <Ionicons
-                  name={showPassword ? 'eye-outline' : 'eye-off-outline'}
-                  size={20}
-                  color={colors.text.muted}
-                />
-              </TouchableOpacity>
+                <Ionicons name="car-sport" size={28} color="#FFF" />
+              </LinearGradient>
             </View>
+            <Text style={styles.brandName}>WiseDrive</Text>
+            <Text style={styles.tagline}>Employee Self-Service</Text>
           </View>
 
-          <TouchableOpacity
-            style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
-            onPress={handleLogin}
-            disabled={isLoading}
-            activeOpacity={0.8}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <>
-                <Text style={styles.loginButtonText}>Sign In</Text>
-                <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
-              </>
-            )}
-          </TouchableOpacity>
+          {/* Login Form */}
+          <View style={styles.formSection}>
+            <Text style={styles.welcomeText}>Welcome back</Text>
+            <Text style={styles.subtitleText}>Sign in to your account</Text>
 
-          <View style={styles.footer}>
+            {error ? (
+              <View style={styles.errorContainer}>
+                <Ionicons name="alert-circle" size={16} color={colors.error} />
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            ) : null}
+
+            <View style={styles.inputGroup}>
+              <View style={[
+                styles.inputWrapper,
+                focusedInput === 'email' && styles.inputFocused
+              ]}>
+                <Ionicons 
+                  name="mail-outline" 
+                  size={18} 
+                  color={focusedInput === 'email' ? colors.primary : colors.text.tertiary} 
+                />
+                <TextInput
+                  testID="email-input"
+                  style={styles.input}
+                  placeholder="Email"
+                  placeholderTextColor={colors.text.tertiary}
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  onFocus={() => setFocusedInput('email')}
+                  onBlur={() => setFocusedInput(null)}
+                />
+              </View>
+
+              <View style={[
+                styles.inputWrapper,
+                focusedInput === 'password' && styles.inputFocused
+              ]}>
+                <Ionicons 
+                  name="lock-closed-outline" 
+                  size={18} 
+                  color={focusedInput === 'password' ? colors.primary : colors.text.tertiary} 
+                />
+                <TextInput
+                  testID="password-input"
+                  style={styles.input}
+                  placeholder="Password"
+                  placeholderTextColor={colors.text.tertiary}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                  onFocus={() => setFocusedInput('password')}
+                  onBlur={() => setFocusedInput(null)}
+                />
+                <TouchableOpacity
+                  testID="toggle-password-btn"
+                  onPress={() => setShowPassword(!showPassword)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Ionicons
+                    name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                    size={18}
+                    color={colors.text.tertiary}
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              testID="login-button"
+              style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
+              onPress={handleLogin}
+              disabled={isLoading}
+              activeOpacity={0.8}
+            >
+              <LinearGradient
+                colors={colors.gradients.primary}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.loginButtonGradient}
+              >
+                {isLoading ? (
+                  <ActivityIndicator color="#FFF" size="small" />
+                ) : (
+                  <>
+                    <Text style={styles.loginButtonText}>Sign In</Text>
+                    <Ionicons name="arrow-forward" size={18} color="#FFF" />
+                  </>
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+
+          {/* Footer */}
+          <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.xl }]}>
             <Text style={styles.footerText}>Powered by WiseDrive</Text>
           </View>
         </View>
@@ -148,151 +186,138 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.primary.default,
-  },
-  backgroundGradient: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-  },
-  decorativeCircle1: {
-    position: 'absolute',
-    width: 300,
-    height: 300,
-    borderRadius: 150,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    top: -100,
-    right: -100,
-  },
-  decorativeCircle2: {
-    position: 'absolute',
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    top: 100,
-    left: -50,
-  },
-  decorativeCircle3: {
-    position: 'absolute',
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    bottom: 100,
-    right: -30,
+    backgroundColor: colors.background,
   },
   keyboardView: {
     flex: 1,
-    justifyContent: 'center',
+  },
+  content: {
+    flex: 1,
     paddingHorizontal: spacing.xl,
+    justifyContent: 'space-between',
+  },
+  glowOrb: {
+    position: 'absolute',
+    borderRadius: 999,
+    backgroundColor: colors.primary,
+    opacity: 0.08,
+  },
+  glowOrb1: {
+    width: 300,
+    height: 300,
+    top: -100,
+    right: -100,
+  },
+  glowOrb2: {
+    width: 200,
+    height: 200,
+    bottom: 100,
+    left: -80,
   },
   logoSection: {
     alignItems: 'center',
-    marginBottom: spacing.xxxl,
+    marginBottom: spacing.xxxxl,
   },
   logoContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 24,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
     marginBottom: spacing.lg,
   },
+  logoGradient: {
+    width: 56,
+    height: 56,
+    borderRadius: radius.lg,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   brandName: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontSize: fontSize.xxl,
+    fontWeight: fontWeight.bold,
+    color: colors.text.primary,
     letterSpacing: -0.5,
   },
   tagline: {
-    fontSize: 16,
-    color: 'rgba(255,255,255,0.8)',
+    fontSize: fontSize.sm,
+    color: colors.text.secondary,
     marginTop: spacing.xs,
   },
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: borderRadius.xl,
-    padding: spacing.xxl,
-    ...shadows.lg,
+  formSection: {
+    flex: 1,
+    justifyContent: 'center',
   },
   welcomeText: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.semibold,
     color: colors.text.primary,
     marginBottom: spacing.xs,
   },
   subtitleText: {
-    fontSize: 14,
-    color: colors.text.muted,
-    marginBottom: spacing.xl,
+    fontSize: fontSize.sm,
+    color: colors.text.secondary,
+    marginBottom: spacing.xxl,
   },
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.status.errorLight,
+    backgroundColor: colors.errorBg,
     padding: spacing.md,
-    borderRadius: borderRadius.md,
+    borderRadius: radius.sm,
     marginBottom: spacing.lg,
+    gap: spacing.sm,
   },
   errorText: {
-    color: colors.status.error,
-    marginLeft: spacing.sm,
-    fontSize: 14,
+    color: colors.error,
+    fontSize: fontSize.sm,
     flex: 1,
   },
-  inputContainer: {
+  inputGroup: {
     gap: spacing.lg,
-    marginBottom: spacing.xl,
+    marginBottom: spacing.xxl,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.background.subtle,
-    borderRadius: borderRadius.lg,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.lg,
+    height: 52,
     borderWidth: 1,
-    borderColor: colors.border.default,
+    borderColor: colors.border,
+    gap: spacing.md,
   },
-  inputIcon: {
-    paddingLeft: spacing.lg,
+  inputFocused: {
+    borderColor: colors.primary,
   },
   input: {
     flex: 1,
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.md,
-    fontSize: 16,
+    fontSize: fontSize.base,
     color: colors.text.primary,
-  },
-  eyeIcon: {
-    padding: spacing.lg,
+    height: '100%',
   },
   loginButton: {
-    backgroundColor: colors.primary.default,
-    borderRadius: borderRadius.lg,
-    paddingVertical: spacing.lg,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
+    borderRadius: radius.md,
+    overflow: 'hidden',
     ...shadows.md,
   },
   loginButtonDisabled: {
     opacity: 0.7,
   },
+  loginButtonGradient: {
+    height: 52,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
   loginButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
+    color: '#FFF',
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
   },
   footer: {
     alignItems: 'center',
-    marginTop: spacing.xl,
+    paddingTop: spacing.xl,
   },
   footerText: {
-    fontSize: 12,
-    color: colors.text.muted,
+    fontSize: fontSize.xs,
+    color: colors.text.tertiary,
   },
 });
