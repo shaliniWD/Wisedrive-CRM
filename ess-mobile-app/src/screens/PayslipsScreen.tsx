@@ -1,86 +1,163 @@
-// Payslips Screen
+// Modern Payslips Screen
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  RefreshControl,
+} from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { format, parseISO } from 'date-fns';
 import { getPayslips, getPayslipYears } from '../services/api';
+import { colors, spacing, borderRadius, shadows } from '../theme';
 
 export default function PayslipsScreen() {
   const navigation = useNavigation<any>();
-  const [selectedYear, setSelectedYear] = useState<number | undefined>();
+  const currentYear = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const { data: payslipsData, refetch } = useQuery({
+    queryKey: ['payslips', selectedYear],
+    queryFn: () => getPayslips(selectedYear),
+  });
 
   const { data: yearsData } = useQuery({
     queryKey: ['payslipYears'],
     queryFn: getPayslipYears,
   });
 
-  const { data: payslipsData, isLoading, refetch } = useQuery({
-    queryKey: ['payslips', selectedYear],
-    queryFn: () => getPayslips(1, 24, selectedYear),
-  });
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  };
 
-  const PayslipCard = ({ item }: { item: any }) => (
-    <TouchableOpacity
-      style={styles.card}
-      onPress={() => navigation.navigate('PayslipDetail', { payslipId: item.id })}
-    >
-      <View style={styles.cardLeft}>
-        <View style={styles.iconContainer}>
-          <Ionicons name="document-text" size={24} color="#2196F3" />
+  const payslips = payslipsData?.payslips || [];
+  const years = yearsData?.years || [currentYear];
+
+  const formatCurrency = (amount: number, symbol: string = '₹') => {
+    return `${symbol}${amount?.toLocaleString('en-IN') || 0}`;
+  };
+
+  const getMonthName = (month: number) => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return months[month - 1] || 'Unknown';
+  };
+
+  const renderPayslip = ({ item }: { item: any }) => {
+    const monthName = getMonthName(item.month);
+    const isPaid = item.status === 'paid';
+
+    return (
+      <TouchableOpacity
+        style={styles.payslipCard}
+        onPress={() => navigation.navigate('PayslipDetail', { payslipId: item.id })}
+        activeOpacity={0.7}
+      >
+        <View style={styles.payslipLeft}>
+          <View style={styles.monthContainer}>
+            <Text style={styles.monthText}>{monthName}</Text>
+            <Text style={styles.yearText}>{item.year}</Text>
+          </View>
         </View>
-        <View>
-          <Text style={styles.period}>{item.period}</Text>
-          <Text style={styles.status}>
-            {item.status === 'paid' ? '✓ Paid' : 'Confirmed'}
+
+        <View style={styles.payslipCenter}>
+          <Text style={styles.netSalary}>
+            {formatCurrency(item.net_salary, item.currency_symbol)}
           </Text>
+          <View style={styles.salaryDetails}>
+            <Text style={styles.salaryDetailText}>
+              Gross: {formatCurrency(item.gross_salary, item.currency_symbol)}
+            </Text>
+            <Text style={styles.salaryDetailDivider}>•</Text>
+            <Text style={styles.salaryDetailText}>
+              Deductions: {formatCurrency(item.total_deductions, item.currency_symbol)}
+            </Text>
+          </View>
         </View>
-      </View>
-      
-      <View style={styles.cardRight}>
-        <Text style={styles.amount}>
-          {item.currency_symbol}{item.net_salary.toLocaleString()}
-        </Text>
-        <Ionicons name="chevron-forward" size={20} color="#999" />
-      </View>
-    </TouchableOpacity>
-  );
+
+        <View style={styles.payslipRight}>
+          <View style={[styles.statusBadge, isPaid ? styles.statusPaid : styles.statusPending]}>
+            <Text style={[styles.statusText, isPaid ? styles.statusTextPaid : styles.statusTextPending]}>
+              {item.status || 'Paid'}
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={colors.text.muted} />
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={styles.container}>
-      {/* Year Filter */}
-      <View style={styles.yearFilterContainer}>
-        <FlatList
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          data={[{ year: undefined, label: 'All' }, ...(yearsData?.years || []).map((y: number) => ({ year: y, label: y.toString() }))]}
-          keyExtractor={(item) => item.label}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={[styles.yearChip, selectedYear === item.year && styles.yearChipActive]}
-              onPress={() => setSelectedYear(item.year)}
-            >
-              <Text style={[styles.yearChipText, selectedYear === item.year && styles.yearChipTextActive]}>
-                {item.label}
-              </Text>
-            </TouchableOpacity>
-          )}
-          contentContainerStyle={styles.yearFilterContent}
-        />
+      {/* Header */}
+      <LinearGradient
+        colors={[colors.primary.default, colors.secondary.default]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.headerGradient}
+      >
+        <Text style={styles.headerTitle}>Payslips</Text>
+        <Text style={styles.headerSubtitle}>View and download your salary slips</Text>
+      </LinearGradient>
+
+      {/* Year Selector */}
+      <View style={styles.yearSelectorContainer}>
+        <View style={styles.yearSelector}>
+          <TouchableOpacity
+            style={styles.yearButton}
+            onPress={() => setSelectedYear(Math.max(selectedYear - 1, Math.min(...years)))}
+          >
+            <Ionicons name="chevron-back" size={24} color={colors.primary.default} />
+          </TouchableOpacity>
+
+          <View style={styles.yearDisplay}>
+            <Ionicons name="calendar" size={18} color={colors.primary.default} />
+            <Text style={styles.yearDisplayText}>{selectedYear}</Text>
+          </View>
+
+          <TouchableOpacity
+            style={styles.yearButton}
+            onPress={() => setSelectedYear(Math.min(selectedYear + 1, Math.max(...years)))}
+          >
+            <Ionicons name="chevron-forward" size={24} color={colors.primary.default} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Payslips List */}
       <FlatList
-        data={payslipsData?.payslips || []}
+        data={payslips}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <PayslipCard item={item} />}
+        renderItem={renderPayslip}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary.default} />
+        }
         contentContainerStyle={styles.listContent}
-        refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} />}
+        showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Ionicons name="wallet-outline" size={64} color="#ccc" />
-            <Text style={styles.emptyText}>No payslips found</Text>
+            <View style={styles.emptyIconContainer}>
+              <Ionicons name="wallet-outline" size={48} color={colors.text.muted} />
+            </View>
+            <Text style={styles.emptyText}>No payslips for {selectedYear}</Text>
+            <Text style={styles.emptySubtext}>
+              Payslips will appear here once processed
+            </Text>
           </View>
+        }
+        ListHeaderComponent={
+          payslips.length > 0 ? (
+            <View style={styles.listHeader}>
+              <Text style={styles.listHeaderText}>{payslips.length} payslip(s) found</Text>
+            </View>
+          ) : null
         }
       />
     </View>
@@ -90,91 +167,164 @@ export default function PayslipsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.background.app,
   },
-  yearFilterContainer: {
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+  headerGradient: {
+    paddingTop: 60,
+    paddingBottom: spacing.xxl,
+    paddingHorizontal: spacing.lg,
   },
-  yearFilterContent: {
-    padding: 12,
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
-  yearChip: {
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#f0f0f0',
-    marginRight: 8,
-  },
-  yearChipActive: {
-    backgroundColor: '#2196F3',
-  },
-  yearChipText: {
-    color: '#666',
+  headerSubtitle: {
     fontSize: 14,
-    fontWeight: '500',
+    color: 'rgba(255,255,255,0.8)',
+    marginTop: spacing.xs,
   },
-  yearChipTextActive: {
-    color: '#fff',
+  yearSelectorContainer: {
+    paddingHorizontal: spacing.lg,
+    marginTop: -spacing.lg,
   },
-  listContent: {
-    padding: 16,
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+  yearSelector: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    backgroundColor: colors.background.card,
+    borderRadius: borderRadius.xl,
+    padding: spacing.sm,
+    ...shadows.md,
   },
-  cardLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#E3F2FD',
+  yearButton: {
+    width: 44,
+    height: 44,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.background.subtle,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
   },
-  period: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-  },
-  status: {
-    fontSize: 12,
-    color: '#4CAF50',
-    marginTop: 2,
-  },
-  cardRight: {
+  yearDisplay: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing.sm,
   },
-  amount: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#2196F3',
-    marginRight: 8,
+  yearDisplayText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.text.primary,
+  },
+  listContent: {
+    padding: spacing.lg,
+    paddingTop: spacing.xl,
+  },
+  listHeader: {
+    marginBottom: spacing.md,
+  },
+  listHeaderText: {
+    fontSize: 14,
+    color: colors.text.muted,
+  },
+  payslipCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.background.card,
+    borderRadius: borderRadius.xl,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+    ...shadows.sm,
+  },
+  payslipLeft: {
+    marginRight: spacing.md,
+  },
+  monthContainer: {
+    width: 56,
+    height: 56,
+    backgroundColor: colors.primary.light,
+    borderRadius: borderRadius.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  monthText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.primary.default,
+  },
+  yearText: {
+    fontSize: 11,
+    color: colors.primary.default,
+    opacity: 0.7,
+  },
+  payslipCenter: {
+    flex: 1,
+  },
+  netSalary: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.text.primary,
+  },
+  salaryDetails: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: spacing.xs,
+  },
+  salaryDetailText: {
+    fontSize: 12,
+    color: colors.text.muted,
+  },
+  salaryDetailDivider: {
+    marginHorizontal: spacing.sm,
+    color: colors.text.muted,
+  },
+  payslipRight: {
+    alignItems: 'flex-end',
+    gap: spacing.sm,
+  },
+  statusBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
+  },
+  statusPaid: {
+    backgroundColor: colors.status.successLight,
+  },
+  statusPending: {
+    backgroundColor: colors.status.warningLight,
+  },
+  statusText: {
+    fontSize: 10,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+  },
+  statusTextPaid: {
+    color: colors.status.success,
+  },
+  statusTextPending: {
+    color: colors.status.warning,
   },
   emptyState: {
     alignItems: 'center',
-    padding: 40,
+    paddingVertical: spacing.xxxl * 2,
+  },
+  emptyIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: colors.background.subtle,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
   },
   emptyText: {
-    color: '#999',
-    fontSize: 16,
-    marginTop: 16,
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text.secondary,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: colors.text.muted,
+    marginTop: spacing.xs,
+    textAlign: 'center',
   },
 });
