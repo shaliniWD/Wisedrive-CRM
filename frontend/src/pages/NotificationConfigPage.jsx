@@ -266,7 +266,7 @@ const NotificationConfigPage = () => {
 
     const sendTest = async () => {
       try {
-        const response = await api.post('/api/notification-config/test', {
+        const response = await axios.post(`${API_URL}/api/notification-config/test`, {
           user_id: userId,
           event_type: eventType,
           preview_data: previewData,
