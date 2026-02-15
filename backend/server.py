@@ -113,13 +113,25 @@ async def startup():
     payroll_service = PayrollService(db, attendance_service, storage_service)
     leave_service = LeaveService(db)
     
+    # Set db in app.state for ESS routes compatibility
+    app.state.db = db
+    
     # Create TTL index for token blacklist (auto-expire entries)
     try:
         await db.token_blacklist.create_index("expires_at", expireAfterSeconds=0)
     except Exception:
         pass  # Index may already exist
     
-    logger.info("WiseDrive CRM V2 started with HR Module")
+    # Create ESS-specific indexes
+    try:
+        await db.ess_device_sessions.create_index("user_id")
+        await db.ess_device_sessions.create_index("device_id", unique=True)
+        await db.ess_refresh_tokens.create_index("token", unique=True)
+        await db.ess_push_tokens.create_index("user_id")
+    except Exception:
+        pass  # Indexes may already exist
+    
+    logger.info("WiseDrive CRM V2 started with HR Module and ESS Mobile API")
 
 
 # ==================== AUTH MODELS ====================
