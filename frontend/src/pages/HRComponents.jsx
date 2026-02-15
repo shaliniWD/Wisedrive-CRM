@@ -1337,18 +1337,26 @@ export function PayrollDashboard({ isHR, isFinance }) {
             </div>
             
             <div className="flex items-center gap-4">
-              <div className="flex gap-3">
-                <div className="px-3 py-1.5 bg-emerald-50 rounded-lg border border-emerald-200">
-                  <span className="text-xs text-emerald-600 block">Total Gross</span>
-                  <span className="font-bold text-emerald-800">{formatCurrency(previewData.total_gross, previewData.currency_symbol)}</span>
+              <div className="flex gap-2 flex-wrap">
+                <div className="px-2 py-1 bg-emerald-50 rounded-lg border border-emerald-200">
+                  <span className="text-[10px] text-emerald-600 block">Gross</span>
+                  <span className="font-bold text-emerald-800 text-sm">{formatCurrency(previewData.total_gross, previewData.currency_symbol)}</span>
                 </div>
-                <div className="px-3 py-1.5 bg-red-50 rounded-lg border border-red-200">
-                  <span className="text-xs text-red-600 block">Total Deductions</span>
-                  <span className="font-bold text-red-800">{formatCurrency((previewData.total_statutory_deductions || 0) + (previewData.total_attendance_deductions || 0) + (previewData.total_other_deductions || 0), previewData.currency_symbol)}</span>
+                <div className="px-2 py-1 bg-teal-50 rounded-lg border border-teal-200">
+                  <span className="text-[10px] text-teal-600 block">Incentives</span>
+                  <span className="font-bold text-teal-800 text-sm">{formatCurrency(previewData.total_incentive || 0, previewData.currency_symbol)}</span>
                 </div>
-                <div className="px-3 py-1.5 bg-blue-50 rounded-lg border border-blue-200">
-                  <span className="text-xs text-blue-600 block">Total Net</span>
-                  <span className="font-bold text-blue-800">{formatCurrency(previewData.total_net, previewData.currency_symbol)}</span>
+                <div className="px-2 py-1 bg-pink-50 rounded-lg border border-pink-200">
+                  <span className="text-[10px] text-pink-600 block">OT Pay</span>
+                  <span className="font-bold text-pink-800 text-sm">{formatCurrency(previewData.total_overtime_pay || 0, previewData.currency_symbol)}</span>
+                </div>
+                <div className="px-2 py-1 bg-red-50 rounded-lg border border-red-200">
+                  <span className="text-[10px] text-red-600 block">Deductions</span>
+                  <span className="font-bold text-red-800 text-sm">{formatCurrency((previewData.total_statutory_deductions || 0) + (previewData.total_attendance_deductions || 0) + (previewData.total_other_deductions || 0), previewData.currency_symbol)}</span>
+                </div>
+                <div className="px-2 py-1 bg-blue-50 rounded-lg border border-blue-200">
+                  <span className="text-[10px] text-blue-600 block">Net</span>
+                  <span className="font-bold text-blue-800 text-sm">{formatCurrency(previewData.total_net, previewData.currency_symbol)}</span>
                 </div>
               </div>
               
