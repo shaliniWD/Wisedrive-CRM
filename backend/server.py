@@ -101,7 +101,7 @@ leave_service: Optional[LeaveService] = None
 @app.on_event("startup")
 async def startup():
     global rbac_service, round_robin_service, audit_service
-    global attendance_service, payroll_service, leave_service
+    global attendance_service, payroll_service, leave_service, fcm_service
     
     rbac_service = RBACService(db)
     round_robin_service = RoundRobinService(db)
@@ -112,6 +112,11 @@ async def startup():
     attendance_service = AttendanceService(db)
     payroll_service = PayrollService(db, attendance_service, storage_service)
     leave_service = LeaveService(db)
+    
+    # Initialize FCM Service for push notifications
+    from services_ess.fcm_service import FCMService
+    fcm_service = FCMService(db)
+    app.state.fcm_service = fcm_service
     
     # Set db in app.state for ESS routes compatibility
     app.state.db = db
@@ -131,7 +136,7 @@ async def startup():
     except Exception:
         pass  # Indexes may already exist
     
-    logger.info("WiseDrive CRM V2 started with HR Module and ESS Mobile API")
+    logger.info("WiseDrive CRM V2 started with HR Module, ESS Mobile API, and FCM Push Notifications")
 
 
 # ==================== AUTH MODELS ====================
