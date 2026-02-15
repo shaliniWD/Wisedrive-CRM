@@ -1159,6 +1159,20 @@ export function PayrollDashboard({ isHR, isFinance }) {
                 </SelectContent>
               </Select>
 
+              <Select value={filterMonth || 'all'} onValueChange={(v) => setFilterMonth(v === 'all' ? '' : v)}>
+                <SelectTrigger className="w-32" data-testid="filter-month">
+                  <SelectValue placeholder="All Months" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Months</SelectItem>
+                  {[...Array(12)].map((_, i) => (
+                    <SelectItem key={i + 1} value={String(i + 1)}>
+                      {new Date(2000, i).toLocaleString('default', { month: 'long' })}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
               <Select value={filterBatchStatus} onValueChange={setFilterBatchStatus}>
                 <SelectTrigger className="w-32">
                   <SelectValue placeholder="Status" />
