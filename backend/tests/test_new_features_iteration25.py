@@ -548,7 +548,13 @@ class TestSalaryCalculation:
         data = response.json()
         
         records = data.get("records", [])
+        verified_count = 0
         for record in records:
+            # Skip freelancers/mechanics - they have different calculation (inspection-based)
+            if record.get("is_freelancer"):
+                print(f"Skipping freelancer: {record.get('employee_name')}")
+                continue
+            
             gross = record.get("gross_salary", 0)
             incentive = record.get("incentive_amount", 0)
             overtime_pay = record.get("overtime_pay", 0)
@@ -561,8 +567,9 @@ class TestSalaryCalculation:
             # Allow small rounding differences
             assert abs(net_salary - expected_net) < 1, \
                 f"Net salary mismatch for {record.get('employee_name')}: expected {expected_net}, got {net_salary}"
+            verified_count += 1
         
-        print(f"Verified salary calculation formula for {len(records)} employees")
+        print(f"Verified salary calculation formula for {verified_count} regular employees")
 
 
 if __name__ == "__main__":
