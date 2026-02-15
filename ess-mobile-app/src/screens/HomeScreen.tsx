@@ -101,6 +101,12 @@ export default function HomeScreen() {
             onPress={() => navigation.navigate('Documents')}
           />
           <QuickAction 
+            icon="calendar-number" 
+            label="Holidays" 
+            color="#E91E63"
+            onPress={() => navigation.navigate('HolidayCalendar')}
+          />
+          <QuickAction 
             icon="settings" 
             label="Settings" 
             color="#607D8B"
