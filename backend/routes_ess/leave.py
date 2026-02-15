@@ -97,6 +97,35 @@ async def apply_leave(
     
     await db.leave_requests.insert_one(leave_record)
     
+    # Send push notification to manager/HR about new leave request
+    if hasattr(request.app.state, 'fcm_service'):
+        fcm = request.app.state.fcm_service
+        employee_name = current_user.get("name", "An employee")
+        leave_type = leave_data.leave_type.value.replace("_", " ").title()
+        
+        # Notify HR managers and the employee's reporting manager
+        hr_users = await db.users.find(
+            {"role_code": {"$in": ["HR_MANAGER", "CEO"]}},
+            {"_id": 0, "id": 1}
+        ).to_list(10)
+        
+        manager_id = current_user.get("reporting_manager_id")
+        notify_ids = [u["id"] for u in hr_users]
+        if manager_id and manager_id not in notify_ids:
+            notify_ids.append(manager_id)
+        
+        for notify_id in notify_ids:
+            await fcm.send_notification(
+                user_id=notify_id,
+                title="New Leave Request",
+                body=f"{employee_name} has requested {leave_type} leave from {leave_data.start_date} to {leave_data.end_date}.",
+                data={
+                    "type": "new_leave_request",
+                    "leave_id": leave_id,
+                    "employee_id": user_id
+                }
+            )
+    
     return LeaveRequestResponse(
         id=leave_id,
         employee_id=user_id,
