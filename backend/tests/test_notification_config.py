@@ -191,9 +191,11 @@ class TestESSHealthCheck:
             json={
                 "email": "hr@wisedrive.com",
                 "password": "password123",
-                "device_id": "test-device-001",
-                "device_name": "Test Device",
-                "platform": "android"
+                "device": {
+                    "device_id": "test-device-001",
+                    "device_name": "Test Device",
+                    "platform": "android"
+                }
             }
         )
         assert response.status_code == 200, f"Failed: {response.text}"
