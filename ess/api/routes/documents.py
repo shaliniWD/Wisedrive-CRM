@@ -68,6 +68,62 @@ async def get_documents(
     )
 
 
+@router.get("/documents/requirements", response_model=DocumentRequirementsResponse)
+async def get_document_requirements(
+    request: Request,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Get document requirements and completion status.
+    """
+    db = request.app.state.db
+    user_id = current_user["id"]
+    
+    # Get uploaded documents
+    uploaded = await db.employee_documents.find(
+        {"user_id": user_id},
+        {"_id": 0, "document_type": 1, "verified": 1, "status": 1}
+    ).to_list(100)
+    
+    uploaded_types = {}
+    for doc in uploaded:
+        doc_type = doc.get("document_type", "other")
+        status = "verified" if doc.get("verified") else (doc.get("status", "pending"))
+        uploaded_types[doc_type] = status
+    
+    # Build requirements list
+    requirements = []
+    completed = 0
+    total_required = 0
+    
+    for req in REQUIRED_DOCUMENTS:
+        doc_type = req["type"]
+        is_uploaded = doc_type in uploaded_types
+        status = uploaded_types.get(doc_type)
+        
+        requirements.append(DocumentRequirement(
+            document_type=DocumentType(doc_type),
+            document_name=req["name"],
+            is_required=req["required"],
+            is_uploaded=is_uploaded,
+            status=DocumentStatus(status) if status else None
+        ))
+        
+        if req["required"]:
+            total_required += 1
+            if is_uploaded:
+                completed += 1
+    
+    completion_pct = (completed / total_required * 100) if total_required > 0 else 100
+    
+    return DocumentRequirementsResponse(
+        requirements=requirements,
+        completed_count=completed,
+        total_required=total_required,
+        completion_percentage=round(completion_pct, 1)
+    )
+
+
 @router.get("/documents/{document_id}", response_model=DocumentResponse)
 async def get_document(
     request: Request,
