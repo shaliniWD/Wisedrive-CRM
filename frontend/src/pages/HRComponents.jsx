@@ -512,9 +512,10 @@ export function AttendanceDashboard({ isHR }) {
                 <SelectContent>
                   <SelectItem value="present">✓ Present</SelectItem>
                   <SelectItem value="absent">A - Absent/LOP</SelectItem>
-                  <SelectItem value="half_day">H - Half Day</SelectItem>
+                  <SelectItem value="half_day">½ - Half Day</SelectItem>
                   <SelectItem value="leave_approved">L - Leave (Approved)</SelectItem>
                   <SelectItem value="holiday">- Weekend/Holiday</SelectItem>
+                  <SelectItem value="overtime">O - Overtime</SelectItem>
                 </SelectContent>
               </Select>
             </div>
