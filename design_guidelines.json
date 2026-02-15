@@ -1,116 +1,178 @@
 {
   "identity": {
-    "name": "WiseDrive ESS",
-    "tone": "Professional, Efficient, Modern, Trustworthy",
-    "archetype": "The Performance Pro (Clean, High-Contrast, Functional)",
-    "target_audience": "Corporate Employees (Executives to Managers)"
+    "persona": "E1",
+    "mission": "Create a high-end, professional Employee Self-Service (ESS) mobile app that feels like a premium fintech product, not a boring HR tool.",
+    "principles": [
+      "Fusion over Imitation: Mix 'Fintech Precision' with 'Hospitality Warmth'.",
+      "Emotion First: The user should feel 'In Control' and 'Valued'.",
+      "Content is King: Data (Leaves, Salary) is the hero. Present it boldly.",
+      "Negative Space: Use generous padding (20px-24px) to create a premium feel.",
+      "Contrast: High contrast text for readability in Dark Mode."
+    ]
   },
-  "typography": {
-    "font_family": {
-      "headings": "Inter, sans-serif",
-      "body": "Inter, sans-serif"
-    },
-    "styles": {
-      "h1": "text-3xl font-bold tracking-tight text-slate-900",
-      "h2": "text-2xl font-semibold tracking-tight text-slate-900",
-      "h3": "text-xl font-semibold tracking-tight text-slate-900",
-      "body_large": "text-base font-medium text-slate-700",
-      "body_default": "text-sm text-slate-600 leading-relaxed",
-      "caption": "text-xs text-slate-500 font-medium uppercase tracking-wider"
-    }
-  },
-  "colors": {
+  "theme_strategy": {
+    "mode": "dark",
+    "archetype": "The Performance Pro (Elite & Precise)",
     "palette": {
-      "primary": {
-        "default": "#2E3192",
-        "hover": "#1E2060",
-        "foreground": "#FFFFFF"
+      "background": "#0B1120",
+      "surface": "#1E293B",
+      "surface_highlight": "#334155",
+      "primary": "#3B82F6",
+      "primary_foreground": "#FFFFFF",
+      "secondary": "#64748B",
+      "accent": "#0EA5E9",
+      "success": "#10B981",
+      "warning": "#F59E0B",
+      "error": "#EF4444",
+      "text_primary": "#F8FAFC",
+      "text_secondary": "#94A3B8",
+      "text_tertiary": "#64748B",
+      "border": "#334155"
+    },
+    "typography": {
+      "font_family": "System",
+      "sizes": {
+        "xs": 12,
+        "sm": 14,
+        "base": 16,
+        "lg": 18,
+        "xl": 20,
+        "2xl": 24,
+        "3xl": 32,
+        "4xl": 40
       },
-      "secondary": {
-        "default": "#6366F1",
-        "foreground": "#FFFFFF"
-      },
-      "accent": {
-        "default": "#FFD700",
-        "foreground": "#1A1A1A"
-      },
-      "background": {
-        "app": "#F8FAFC",
-        "card": "#FFFFFF",
-        "subtle": "#F1F5F9"
-      },
-      "status": {
-        "success": "#10B981",
-        "warning": "#F59E0B",
-        "error": "#EF4444",
-        "info": "#3B82F6"
+      "weights": {
+        "regular": "400",
+        "medium": "500",
+        "semibold": "600",
+        "bold": "700"
       }
     },
-    "usage_rules": {
-      "primary_action": "Use WiseDrive Blue (#2E3192) for primary buttons and active tab states.",
-      "secondary_action": "Use WiseDrive Purple (#6366F1) for secondary actions or decorative icons.",
-      "highlight": "Use WiseDrive Yellow (#FFD700) sparingly for notifications, badges, or 'New' indicators.",
-      "text": "Never use pure black. Use Slate-900 (#0F172A) for headings and Slate-600 (#475569) for body."
+    "spacing": {
+      "xs": 4,
+      "sm": 8,
+      "md": 12,
+      "lg": 16,
+      "xl": 20,
+      "2xl": 24,
+      "3xl": 32,
+      "4xl": 48
+    },
+    "radius": {
+      "sm": 8,
+      "md": 12,
+      "lg": 16,
+      "xl": 24,
+      "full": 9999
     }
   },
-  "layout": {
-    "structure": "Mobile-First Web App",
-    "container": "max-w-md mx-auto bg-slate-50 min-h-screen shadow-2xl overflow-hidden relative",
-    "spacing": {
-      "page_padding": "p-4 md:p-6",
-      "card_padding": "p-5",
-      "section_gap": "gap-6"
-    },
-    "navigation": {
-      "type": "Bottom Tab Bar (Fixed)",
-      "style": "bg-white/90 backdrop-blur-md border-t border-slate-200 h-16 pb-safe"
-    },
-    "grid_system": "Bento Grid for Dashboard (mix of col-span-1 and col-span-2)"
+  "layout_strategy": {
+    "safe_area": "Always wrap main content in SafeAreaView or handle insets manually.",
+    "grid_system": "Bento Grid",
+    "padding": "Horizontal padding of 20px (spacing.xl) for all main containers.",
+    "header_height": 60,
+    "bottom_tab_height": 70
   },
   "components": {
-    "cards": {
-      "style": "bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all duration-200",
-      "header": "flex items-center justify-between mb-4 border-b border-slate-50 pb-3"
+    "Button": {
+      "base": {
+        "height": 52,
+        "borderRadius": 12,
+        "justifyContent": "center",
+        "alignItems": "center",
+        "flexDirection": "row"
+      },
+      "primary": {
+        "backgroundColor": "#3B82F6"
+      },
+      "secondary": {
+        "backgroundColor": "#334155"
+      },
+      "text_style": {
+        "color": "#FFFFFF",
+        "fontSize": 16,
+        "fontWeight": "600"
+      }
     },
-    "buttons": {
-      "primary": "bg-[#2E3192] text-white hover:bg-[#1E2060] rounded-xl px-6 py-3 font-semibold shadow-lg shadow-blue-900/20 active:scale-95 transition-all",
-      "secondary": "bg-white text-[#2E3192] border border-[#2E3192]/20 hover:bg-slate-50 rounded-xl px-6 py-3 font-medium active:scale-95 transition-all",
-      "ghost": "text-slate-600 hover:bg-slate-100 rounded-lg px-4 py-2 font-medium transition-colors"
+    "Card": {
+      "base": {
+        "backgroundColor": "#1E293B",
+        "borderRadius": 16,
+        "padding": 20,
+        "marginBottom": 16,
+        "borderWidth": 1,
+        "borderColor": "#334155"
+      },
+      "elevated": {
+        "shadowColor": "#000",
+        "shadowOffset": { "width": 0, "height": 4 },
+        "shadowOpacity": 0.2,
+        "shadowRadius": 8,
+        "elevation": 4
+      }
     },
-    "inputs": {
-      "style": "bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:ring-2 focus:ring-[#2E3192]/20 focus:border-[#2E3192] transition-all outline-none placeholder:text-slate-400"
-    },
-    "badges": {
-      "style": "px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wide"
+    "Input": {
+      "base": {
+        "height": 52,
+        "backgroundColor": "#0F172A",
+        "borderRadius": 12,
+        "paddingHorizontal": 16,
+        "borderWidth": 1,
+        "borderColor": "#334155",
+        "color": "#F8FAFC",
+        "fontSize": 16
+      },
+      "focus": {
+        "borderColor": "#3B82F6"
+      }
     }
   },
   "visual_enhancers": {
-    "glassmorphism": "Use backdrop-blur-xl bg-white/80 for sticky headers and modals.",
-    "shadows": "Use soft, diffuse shadows (shadow-lg shadow-slate-200/50) to create depth without dirtiness.",
-    "gradients": "Avoid heavy gradients. Use subtle mesh gradients in the Login background only.",
-    "icons": "Use Lucide-React icons. Stroke width 1.5px for a refined look."
+    "gradients": {
+      "primary_card": ["#1E293B", "#0F172A"],
+      "blue_glow": ["rgba(59, 130, 246, 0.2)", "transparent"]
+    },
+    "glassmorphism": "Use semi-transparent backgrounds (rgba(30, 41, 59, 0.8)) for floating elements like the bottom tab bar.",
+    "icons": {
+      "library": "@expo/vector-icons",
+      "set": "Ionicons",
+      "style": "Rounded, thin stroke (outline) for inactive, filled for active."
+    }
   },
-  "image_urls": {
-    "login_background": "https://images.unsplash.com/photo-1768528385807-a7751490fffb?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMjh8MHwxfHNlYXJjaHw0fHxtb2Rlcm4lMjBjb3Jwb3JhdGUlMjBvZmZpY2UlMjBhcmNoaXRlY3R1cmUlMjBhYnN0cmFjdHxlbnwwfHx8fDE3NzExODIyNzZ8MA&ixlib=rb-4.1.0&q=85",
-    "user_avatar_placeholder": "https://images.pexels.com/photos/33871730/pexels-photo-33871730.jpeg",
-    "logo_placeholder": "https://placehold.co/200x50/2E3192/FFFFFF?text=WiseDrive"
+  "image_assets": {
+    "login_background": {
+      "url": "https://images.unsplash.com/photo-1767552989959-00c3b2fa7255?crop=entropy&cs=srgb&fm=jpg&q=85",
+      "description": "Modern blue glass building, abstract and professional. Use with a dark overlay (opacity 0.7) for the Login Screen background."
+    },
+    "company_placeholder": {
+      "url": "https://images.unsplash.com/photo-1765366417060-7d87b2e854a0?crop=entropy&cs=srgb&fm=jpg&q=85",
+      "description": "Modern office interior. Use for 'Company Documents' header or generic cover image."
+    }
   },
   "instructions_to_main_agent": [
-    "1. REFINE THE HEADER: The existing .wisedrive-header is too basic. Replace it with a modern, sticky header with a glass effect.",
-    "2. MOBILE OPTIMIZATION: Ensure all touch targets are at least 44px. Use the 'Bottom Navigation' pattern for the main menu (Home, Leaves, Payslips, Profile).",
-    "3. DASHBOARD: Create a 'Bento Grid' layout for the dashboard. Don't just list links. Show 'Leave Balance', 'Next Holiday', and 'Latest Payslip' as visual cards.",
-    "4. PROFILE: Use a clean Tab system (Shadcn Tabs) for the Profile section (Personal, Salary, Bank, Docs).",
-    "5. PAYSLIPS: Design the payslip list like a wallet transaction history - clean, minimal, with a clear download button.",
-    "6. LOGIN: Make the login screen visually stunning using the provided 'login_background' image with a dark overlay and a centered white card.",
-    "7. USE EXISTING VARIABLES: Map Tailwind classes to the existing CSS variables where possible, or override them with the new palette defined here."
+    "1. SETUP: Create a 'src/constants/theme.ts' file to export the colors, spacing, and typography defined above. Use this SINGLE source of truth.",
+    "2. NAVIGATION: Use '@react-navigation/bottom-tabs' with a custom tab bar that floats slightly above the bottom (margin: 16, borderRadius: 24).",
+    "3. GRADIENTS: Use 'expo-linear-gradient' for the 'Leave Balance' card to make it pop (Deep Blue to Black).",
+    "4. TYPOGRAPHY: Never use default text sizes. Always define style={theme.typography...}. Use 'Inter' if available, otherwise System font.",
+    "5. DATA-TESTID: Add 'testID' prop to all TouchableOpacity, TextInput, and Pressable components.",
+    "6. SAFE AREA: Use 'react-native-safe-area-context' hooks (useSafeAreaInsets) to handle padding dynamically.",
+    "7. ANIMATION: Use 'LayoutAnimation' or 'react-native-reanimated' for smooth transitions (e.g., expanding a payslip card).",
+    "8. REUSABILITY: Create reusable components: 'AppButton', 'AppCard', 'AppInput', 'ScreenWrapper'.",
+    "9. HEADER: Create a custom 'Header' component with a 'Glass' effect (absolute position, semi-transparent bg) if possible, or just clean solid dark color.",
+    "10. MOCK DATA: Since API integration must not be changed, ensure the UI handles the existing data structure gracefully. If data is missing, show elegant 'skeleton' loaders."
   ],
-  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
-    "Do not use generic centered layouts.",
-    "Create depth through layered design elements.",
-    "Use glass-morphism effects with backdrop filters.",
-    "Every interaction needs micro-animations.",
-    "Use 2-3x more spacing than feels comfortable.",
-    "Use Lucide-React icons.",
-    "Use Sonner for toasts."
-  ]
+  "universal_guidelines": {
+    "avoid": [
+      "Bulky navigation bars (keep it sleek)",
+      "Generic 'Bootstrap' blue (use the specific #3B82F6)",
+      "Centered text for long paragraphs (left align)",
+      "Full screen loaders (use skeletons)"
+    ],
+    "embrace": [
+      "Dark Mode by default",
+      "Subtle borders (1px solid #334155)",
+      "High contrast for accessibility",
+      "Micro-interactions (scale down on press)"
+    ]
+  }
 }
