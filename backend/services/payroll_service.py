@@ -1260,9 +1260,20 @@ class PayrollService:
             if other_ded > net_before_other:
                 raise ValueError(f"Other deductions ({other_ded}) cannot exceed net salary ({round(net_before_other, 2)})")
         
-        # Final calculations
+        # Get incentive and overtime values
+        incentive_amount = update_data.get("incentive_amount", record.get("incentive_amount", 0))
+        overtime_days = update_data.get("overtime_days", record.get("overtime_days", 0))
+        overtime_rate = record.get("overtime_rate_per_day", 0)
+        overtime_pay = round(overtime_days * overtime_rate, 2) if overtime_days > 0 else 0
+        
+        # Update incentive/overtime fields
+        update_data["incentive_amount"] = incentive_amount
+        update_data["overtime_days"] = overtime_days
+        update_data["overtime_pay"] = overtime_pay
+        
+        # Final calculations: Net = Gross + Incentive + OT Pay - Statutory - LOP Deduction - Other Deductions
         total_deductions = total_statutory + attendance_deduction + other_ded
-        net = gross - total_deductions
+        net = gross + incentive_amount + overtime_pay - total_deductions
         
         update_data["total_statutory_deductions"] = round(total_statutory, 2)
         update_data["total_deductions"] = round(total_deductions, 2)
