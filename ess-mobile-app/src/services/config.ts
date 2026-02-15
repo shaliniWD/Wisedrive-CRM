@@ -4,8 +4,8 @@
 // For development with Expo Go on local network:
 // export const API_BASE_URL = 'http://YOUR_LOCAL_IP:8002';
 
-// For production - using the deployed preview URL:
-export const API_BASE_URL = 'https://ess-portal-1.preview.emergentagent.com/api';
+// For production - using crmdev:
+export const API_BASE_URL = 'https://crmdev.wisedrive.com/api';
 
 export const API_ENDPOINTS = {
   // Auth
