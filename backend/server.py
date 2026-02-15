@@ -5256,6 +5256,10 @@ async def admin_sync_users():
     }
 
 
+# Import and include notification config router
+from routes.notification_config import router as notification_config_router
+api_router.include_router(notification_config_router, tags=["Notification Configuration"])
+
 # Include the router in the main app
 app.include_router(api_router)
 
