@@ -660,6 +660,7 @@ export function PayrollDashboard({ isHR, isFinance }) {
       const res = await payrollApi.getBatches({
         country_id: filterCountry || undefined,
         year: filterYear,
+        month: filterMonth || undefined,
         status: filterBatchStatus !== 'all' ? filterBatchStatus : undefined
       });
       setBatches(res.data || []);
@@ -669,7 +670,7 @@ export function PayrollDashboard({ isHR, isFinance }) {
     } finally { 
       setLoading(false); 
     }
-  }, [filterCountry, filterYear, filterBatchStatus]);
+  }, [filterCountry, filterYear, filterMonth, filterBatchStatus]);
 
   useEffect(() => { fetchCountries(); }, [fetchCountries]);
   useEffect(() => { if (view === 'batches') fetchBatches(); }, [fetchBatches, view]);
