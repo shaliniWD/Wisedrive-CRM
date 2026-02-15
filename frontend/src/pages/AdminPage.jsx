@@ -3087,8 +3087,17 @@ function RoleModal({ isOpen, onClose, role, onSave }) {
     }
     setSaving(true);
     try {
-      // For now, just close as this is config-level (would need backend API)
-      toast.success(isEdit ? 'Role updated' : 'Role created');
+      if (isEdit && role?.id) {
+        await rolesApi.update(role.id, {
+          name: form.name,
+          eligible_sick_leaves_per_month: form.eligible_sick_leaves_per_month,
+          eligible_casual_leaves_per_month: form.eligible_casual_leaves_per_month,
+        });
+        toast.success('Role updated successfully');
+      } else {
+        // Create new role would need a POST endpoint
+        toast.success('Role created (config-level only)');
+      }
       onSave();
     } catch (error) {
       toast.error('Failed to save role');
