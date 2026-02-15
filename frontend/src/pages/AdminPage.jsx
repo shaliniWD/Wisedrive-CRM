@@ -1774,7 +1774,7 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
   const [form, setForm] = useState({});
   const [salaryForm, setSalaryForm] = useState({});
   const [documents, setDocuments] = useState([]);
-  const [docForm, setDocForm] = useState({ document_type: '', document_name: '', document_url: '' });
+  const [docForm, setDocForm] = useState({ document_type: '', document_name: '', file: null });
   const [attendance, setAttendance] = useState({ records: [], summary: {} });
   const [leaveSummary, setLeaveSummary] = useState(null);
   const [salaryPayments, setSalaryPayments] = useState([]);
