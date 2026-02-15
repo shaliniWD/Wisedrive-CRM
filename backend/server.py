@@ -3998,6 +3998,7 @@ async def update_attendance_day(
     - half_day: Half day present
     - leave_approved: Approved leave (manual override)
     - holiday: Mark as holiday/weekly off
+    - overtime: Mark as overtime day
     """
     role_code = current_user.get("role_code", "")
     
@@ -4023,7 +4024,7 @@ async def update_attendance_day(
     if status == "absent":
         status = "lop"
     
-    valid_statuses = ["present", "lop", "half_day", "leave_approved", "holiday"]
+    valid_statuses = ["present", "lop", "half_day", "leave_approved", "holiday", "overtime"]
     if status not in valid_statuses:
         raise HTTPException(status_code=400, detail=f"Invalid status. Must be one of: {valid_statuses}")
     
