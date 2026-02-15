@@ -8,7 +8,40 @@ Recreate WiseDrive CRM (https://crm.wisedrive.com) design with a modern UI. Crea
 
 ## What's Been Implemented
 
-### HR Module Enhancements V6 (Dec 15, 2025) ✅ LATEST
+### HR Module Enhancements V7 (Feb 15, 2025) ✅ LATEST
+- [x] **Payroll Column Restructure**:
+  - New columns: Working Days, Actual Working Days (info modal), Gross Salary (info modal), Incentive (+green), OT Pay (+green), Other Deductions (-red), Net Salary
+  - Info modal on Actual Working Days shows: LOP days, leaves taken, entitlement, calculation breakdown
+  - Info modal on Gross Salary shows: Pro-rating formula and calculation
+
+- [x] **New Working Days Calculation**:
+  - Working Days = Days in Month - Public Holidays
+  - 7-day work week (NO Saturday/Sunday exclusion)
+  - Organization works all days except public holidays
+  - Each employee gets 1 weekly off (configured per employee)
+
+- [x] **Leave Entitlements at Role Level**:
+  - New fields: `eligible_sick_leaves_per_month`, `eligible_casual_leaves_per_month`
+  - Configurable per role (e.g., CEO: 3 sick + 2 casual, others: 2 sick + 1 casual)
+  - Role modal updated with leave entitlement fields
+  - PUT /api/roles/{id} endpoint for updating role settings
+
+- [x] **New Salary Calculation Formula**:
+  - Actual Working Days = Working Days - LOP Days - Leaves Beyond Entitlement
+  - Pro-rated Gross = (Monthly Gross / Working Days) × Actual Working Days
+  - Net = Pro-rated Gross + Incentive + OT Pay - Statutory - Other Deductions
+
+- [x] **Bug Fix - Weekly Off Day Update**:
+  - Fixed: weekly_off_day now properly updates when editing existing employee
+  - Changed model type from Optional[str] to Optional[int]
+
+- [x] **Tight Integration**:
+  - Holiday Calendar → Attendance Calendar → Payroll
+  - Leave entitlements (role-based) → Payroll calculation
+  - Weekly Off per employee → Attendance display
+  - OT tracking → Payroll calculation
+
+### HR Module Enhancements V6 (Dec 15, 2025) ✅
 - [x] **Holiday Calendar Feature**:
   - New "Holiday Calendar" tab in HR Module
   - Country-specific organization holidays
