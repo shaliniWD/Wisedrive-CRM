@@ -549,6 +549,7 @@ class AttendanceService:
             "lop_days": lop_days,  # Changed from absent_days
             "absent_days": lop_days,  # Keep for backward compatibility
             "half_days": half_days,
+            "overtime_days": overtime_days,
             "approved_days": approved,
             "rejected_days": rejected,
             "unapproved_absent_days": unapproved_absent,
