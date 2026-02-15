@@ -107,12 +107,16 @@ export function AttendanceDashboard({ isHR }) {
     return checkDate > today;
   };
 
-  // Get status color class - updated with LOP
+  // Get status color class - updated with LOP, weekly off, org holiday, overtime
   const getStatusColor = (status) => {
     switch (status) {
       case 'working':
       case 'present':
         return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+      case 'weekly_off':
+        return 'bg-slate-100 text-slate-500 border-slate-200';
+      case 'org_holiday':
+        return 'bg-purple-100 text-purple-800 border-purple-300';
       case 'holiday':
         return 'bg-slate-100 text-slate-500 border-slate-200';
       case 'leave_approved':
@@ -124,6 +128,8 @@ export function AttendanceDashboard({ isHR }) {
         return 'bg-red-100 text-red-800 border-red-300';
       case 'half_day':
         return 'bg-orange-100 text-orange-800 border-orange-300';
+      case 'overtime':
+        return 'bg-pink-100 text-pink-800 border-pink-300';
       default:
         return 'bg-gray-100 text-gray-600 border-gray-200';
     }
@@ -135,6 +141,10 @@ export function AttendanceDashboard({ isHR }) {
       case 'working':
       case 'present':
         return '✓';
+      case 'weekly_off':
+        return 'W';
+      case 'org_holiday':
+        return 'H';
       case 'holiday':
         return '-';
       case 'leave_approved':
@@ -145,7 +155,9 @@ export function AttendanceDashboard({ isHR }) {
       case 'absent':
         return 'A';
       case 'half_day':
-        return 'H';
+        return '½';
+      case 'overtime':
+        return 'O';
       default:
         return '?';
     }
@@ -163,14 +175,23 @@ export function AttendanceDashboard({ isHR }) {
     if (dayData.status === 'leave_pending') {
       return `Pending ${dayData.leave_type === 'casual' ? 'Casual' : 'Sick'} Leave${dayData.reason ? `: ${dayData.reason}` : ''}`;
     }
+    if (dayData.status === 'weekly_off') {
+      return `Weekly Off (${dayData.weekday_name})`;
+    }
+    if (dayData.status === 'org_holiday') {
+      return `Organization Holiday: ${dayData.reason || 'Holiday'}`;
+    }
     if (dayData.status === 'holiday') {
-      return `Weekend/Holiday (${dayData.weekday_name})`;
+      return `Holiday (${dayData.weekday_name})`;
     }
     if (dayData.status === 'lop' || dayData.status === 'absent') {
       return `LOP/Absent${dayData.reason ? `: ${dayData.reason}` : ''}`;
     }
     if (dayData.status === 'half_day') {
       return `Half Day${dayData.reason ? `: ${dayData.reason}` : ''}`;
+    }
+    if (dayData.status === 'overtime') {
+      return `Overtime Day${dayData.reason ? `: ${dayData.reason}` : ''}`;
     }
     return `Working Day (${dayData.weekday_name})`;
   };
