@@ -355,7 +355,7 @@ const NotificationConfigPage = () => {
         params.append('message', message);
         if (countryId) params.append('country_id', countryId);
 
-        const response = await api.post(`/api/notification-config/send-announcement?${params}`);
+        const response = await axios.post(`${API_URL}/api/notification-config/send-announcement?${params}`);
         setResult(response.data);
       } catch (error) {
         setResult({ error: error.response?.data?.detail || 'Failed to send announcement' });
