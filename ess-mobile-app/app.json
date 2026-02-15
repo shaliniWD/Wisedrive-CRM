@@ -29,7 +29,6 @@
         "backgroundColor": "#2196F3"
       },
       "package": "com.wisedrive.ess",
-      "googleServicesFile": "./google-services.json",
       "permissions": [
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE"
