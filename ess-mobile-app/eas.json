@@ -23,7 +23,7 @@
         "withoutCredentials": true
       },
       "ios": {
-        "resourceClass": "m1-medium"
+        "resourceClass": "m-medium"
       }
     },
     "production": {
@@ -32,7 +32,7 @@
         "credentialsSource": "remote"
       },
       "ios": {
-        "resourceClass": "m1-medium"
+        "resourceClass": "m-medium"
       }
     }
   },
