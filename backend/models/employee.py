@@ -102,7 +102,7 @@ class EmployeeUpdate(BaseModel):
     rejoin_date: Optional[str] = None
     reporting_manager_id: Optional[str] = None
     payroll_active: Optional[bool] = None
-    weekly_off_day: Optional[str] = None  # Day name: "Sunday", "Monday", etc.
+    weekly_off_day: Optional[int] = None  # Day index: 0=Sunday, 1=Monday, ..., 6=Saturday
     is_available_for_leads: Optional[bool] = None
     lead_assignment_paused_reason: Optional[str] = None
     bank_name: Optional[str] = None
