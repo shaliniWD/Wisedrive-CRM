@@ -1191,7 +1191,7 @@ class PayrollService:
         # Calculate leaves taken
         approved_leaves_taken = attendance.get("approved_leave_days", 0)
         lop_days = attendance.get("lop_days", 0)  # Days marked as LOP/Absent
-        overtime_days_from_attendance = attendance.get("overtime_days", 0)
+        # Note: overtime_days from attendance is available but we let HR edit it
         
         # Calculate leaves beyond entitlement
         leaves_beyond_entitlement = max(0, approved_leaves_taken - total_leave_entitlement)
