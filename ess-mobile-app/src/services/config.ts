@@ -1,11 +1,6 @@
 // API Configuration
-// Change this to your backend URL
-
-// For development with Expo Go on local network:
-// export const API_BASE_URL = 'http://YOUR_LOCAL_IP:8002';
-
-// For production - using the Emergent preview URL where ESS API is deployed:
-export const API_BASE_URL = 'https://ess-portal-1.preview.emergentagent.com/api';
+// Production endpoint - using stable custom domain
+export const API_BASE_URL = 'https://crmdev.wisedrive.com/api';
 
 export const API_ENDPOINTS = {
   // Auth
