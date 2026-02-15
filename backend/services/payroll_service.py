@@ -1136,6 +1136,8 @@ class PayrollService:
             "total_statutory_deductions": round(total_statutory, 2),
             "total_attendance_deductions": round(total_attendance, 2),
             "total_other_deductions": round(total_other, 2),
+            "total_incentive": round(total_incentive, 2),
+            "total_overtime_pay": round(total_overtime_pay, 2),
             "total_net": round(total_net, 2),
             "generated_by": created_by,
             "generated_by_name": created_by_name,
