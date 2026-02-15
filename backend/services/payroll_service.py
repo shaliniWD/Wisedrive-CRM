@@ -1440,7 +1440,8 @@ class PayrollService:
         self,
         country_id: Optional[str] = None,
         status: Optional[str] = None,
-        year: Optional[int] = None
+        year: Optional[int] = None,
+        month: Optional[int] = None
     ) -> List[dict]:
         """Get batches with optional filters"""
         query = {}
@@ -1450,6 +1451,8 @@ class PayrollService:
             query["status"] = status
         if year:
             query["year"] = year
+        if month:
+            query["month"] = month
         
         batches = await self.db.payroll_batches.find(
             query, {"_id": 0}
