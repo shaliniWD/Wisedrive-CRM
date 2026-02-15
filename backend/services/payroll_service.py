@@ -1197,9 +1197,12 @@ class PayrollService:
         # Only allow updating specific fields
         allowed_fields = [
             "pf_employee", "professional_tax", "income_tax", "esi", "other_statutory",
-            "attendance_days",  # NEW: Editable attendance days
+            "attendance_days",  # Editable attendance days
             "attendance_override", "attendance_deduction", "attendance_override_reason",
-            "other_deductions", "other_deductions_reason"
+            "other_deductions", "other_deductions_reason",
+            "lop_days",  # LOP days (editable)
+            "incentive_amount",  # Incentive (editable)
+            "overtime_days", "overtime_pay"  # Overtime (editable)
         ]
         
         update_data = {}
