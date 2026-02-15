@@ -228,6 +228,15 @@ export const financeApi = {
   getPaymentModes: () => axios.get(`${API_URL}/finance/payment-modes`),
 };
 
+// ==================== HOLIDAY CALENDAR APIs ====================
+
+export const holidayApi = {
+  getAll: (params) => axios.get(`${API_URL}/hr/holidays`, { params }),
+  create: (data) => axios.post(`${API_URL}/hr/holidays`, data),
+  update: (id, data) => axios.put(`${API_URL}/hr/holidays/${id}`, data),
+  delete: (id) => axios.delete(`${API_URL}/hr/holidays/${id}`),
+};
+
 // ==================== HR MODULE APIs ====================
 
 export const attendanceApi = {
