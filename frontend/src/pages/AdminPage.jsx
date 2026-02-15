@@ -2337,6 +2337,17 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
                     </Select>
                   </div>
                   <div className="space-y-2">
+                    <Label className="text-sm font-medium">Overtime Pay / Day</Label>
+                    <Input 
+                      type="number" 
+                      value={form.overtime_rate_per_day || ''} 
+                      onChange={(e) => setForm({...form, overtime_rate_per_day: parseFloat(e.target.value) || 0})} 
+                      className="h-10" 
+                      placeholder="0"
+                      data-testid="overtime-rate-input"
+                    />
+                  </div>
+                  <div className="space-y-2">
                     <Label className="text-sm font-medium">Reporting Manager</Label>
                     <Select value={form.reporting_manager_id || ''} onValueChange={(v) => setForm({...form, reporting_manager_id: v === 'none' ? '' : v})}>
                       <SelectTrigger className="h-10"><SelectValue placeholder="Select Manager" /></SelectTrigger>
