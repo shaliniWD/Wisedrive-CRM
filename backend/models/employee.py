@@ -102,7 +102,7 @@ class EmployeeUpdate(BaseModel):
     rejoin_date: Optional[str] = None
     reporting_manager_id: Optional[str] = None
     payroll_active: Optional[bool] = None
-    weekly_off_day: Optional[int] = None
+    weekly_off_day: Optional[str] = None  # Day name: "Sunday", "Monday", etc.
     is_available_for_leads: Optional[bool] = None
     lead_assignment_paused_reason: Optional[str] = None
     bank_name: Optional[str] = None
@@ -118,6 +118,7 @@ class EmployeeUpdate(BaseModel):
     is_active: Optional[bool] = None
     is_available_for_assignment: Optional[bool] = None
     password: Optional[str] = None  # For password reset
+    overtime_rate_per_day: Optional[float] = None  # Overtime pay per day
 
 
 class Employee(EmployeeBase):
