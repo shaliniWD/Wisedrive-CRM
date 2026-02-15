@@ -1,4 +1,4 @@
-// Leave Screen - Leave management
+// Modern Leave Screen - Leave management
 import React, { useState } from 'react';
 import {
   View,
@@ -11,323 +11,338 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { format } from 'date-fns';
-import { useAuth } from '../context/AuthContext';
+import { LinearGradient } from 'expo-linear-gradient';
+import { format, parseISO } from 'date-fns';
 import { getLeaveHistory, getLeaveBalance } from '../services/api';
+import { colors, spacing, borderRadius, shadows } from '../theme';
 
-const STATUS_COLORS: Record<string, string> = {
-  pending: '#FF9800',
-  approved: '#4CAF50',
-  rejected: '#F44336',
-  cancelled: '#9E9E9E',
+const STATUS_COLORS: Record<string, { bg: string; text: string; icon: string }> = {
+  pending: { bg: '#FEF3C7', text: '#D97706', icon: 'time' },
+  approved: { bg: '#D1FAE5', text: '#059669', icon: 'checkmark-circle' },
+  rejected: { bg: '#FEE2E2', text: '#DC2626', icon: 'close-circle' },
+  cancelled: { bg: '#F3F4F6', text: '#6B7280', icon: 'ban' },
 };
 
-const LEAVE_TYPE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
-  casual: 'sunny',
-  sick: 'medkit',
-  earned: 'star',
-  unpaid: 'remove-circle',
+const LEAVE_TYPE_ICONS: Record<string, { icon: keyof typeof Ionicons.glyphMap; color: string }> = {
+  casual: { icon: 'sunny', color: '#F59E0B' },
+  sick: { icon: 'medkit', color: '#EF4444' },
+  earned: { icon: 'star', color: '#8B5CF6' },
+  unpaid: { icon: 'remove-circle', color: '#6B7280' },
 };
 
 export default function LeaveScreen() {
   const navigation = useNavigation<any>();
-  const { user } = useAuth();
-  const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const { data: leaveData, isLoading, refetch } = useQuery({
-    queryKey: ['leaveHistory', selectedFilter],
-    queryFn: () => getLeaveHistory(1, 50, selectedFilter || undefined),
+  const { data: leaveHistory, refetch: refetchHistory } = useQuery({
+    queryKey: ['leaveHistory'],
+    queryFn: () => getLeaveHistory(),
   });
 
-  const { data: balance } = useQuery({
+  const { data: leaveBalance, refetch: refetchBalance } = useQuery({
     queryKey: ['leaveBalance'],
     queryFn: () => getLeaveBalance(),
   });
 
-  const FilterChip = ({ label, value }: { label: string; value: string | null }) => (
-    <TouchableOpacity
-      style={[
-        styles.filterChip,
-        selectedFilter === value && styles.filterChipActive,
-      ]}
-      onPress={() => setSelectedFilter(value)}
-    >
-      <Text
-        style={[
-          styles.filterChipText,
-          selectedFilter === value && styles.filterChipTextActive,
-        ]}
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([refetchHistory(), refetchBalance()]);
+    setRefreshing(false);
+  };
+
+  const leaves = leaveHistory?.requests || [];
+
+  const renderLeaveItem = ({ item }: { item: any }) => {
+    const status = STATUS_COLORS[item.status] || STATUS_COLORS.pending;
+    const leaveType = LEAVE_TYPE_ICONS[item.leave_type] || LEAVE_TYPE_ICONS.casual;
+    const startDate = parseISO(item.start_date);
+    const endDate = parseISO(item.end_date);
+
+    return (
+      <TouchableOpacity
+        style={styles.leaveCard}
+        onPress={() => navigation.navigate('LeaveDetail', { leaveId: item.id })}
+        activeOpacity={0.7}
       >
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
-
-  const LeaveCard = ({ item }: { item: any }) => (
-    <TouchableOpacity
-      style={styles.leaveCard}
-      onPress={() => navigation.navigate('LeaveDetail', { leaveId: item.id })}
-    >
-      <View style={styles.leaveCardHeader}>
-        <View style={styles.leaveTypeContainer}>
-          <Ionicons
-            name={LEAVE_TYPE_ICONS[item.leave_type] || 'calendar'}
-            size={20}
-            color="#2196F3"
-          />
-          <Text style={styles.leaveType}>
-            {item.leave_type.charAt(0).toUpperCase() + item.leave_type.slice(1)} Leave
-          </Text>
+        <View style={styles.leaveCardHeader}>
+          <View style={[styles.leaveTypeIcon, { backgroundColor: `${leaveType.color}15` }]}>
+            <Ionicons name={leaveType.icon} size={20} color={leaveType.color} />
+          </View>
+          <View style={styles.leaveInfo}>
+            <Text style={styles.leaveType}>
+              {item.leave_type?.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())} Leave
+            </Text>
+            <Text style={styles.leaveDates}>
+              {format(startDate, 'MMM d')} - {format(endDate, 'MMM d, yyyy')}
+            </Text>
+          </View>
+          <View style={[styles.statusBadge, { backgroundColor: status.bg }]}>
+            <Ionicons name={status.icon as any} size={14} color={status.text} />
+            <Text style={[styles.statusText, { color: status.text }]}>{item.status}</Text>
+          </View>
         </View>
-        <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[item.status] + '20' }]}>
-          <Text style={[styles.statusText, { color: STATUS_COLORS[item.status] }]}>
-            {item.status.toUpperCase()}
-          </Text>
+        
+        <View style={styles.leaveCardFooter}>
+          <View style={styles.leaveDetail}>
+            <Ionicons name="calendar" size={14} color={colors.text.muted} />
+            <Text style={styles.leaveDetailText}>{item.days_count} day(s)</Text>
+          </View>
+          {item.reason && (
+            <Text style={styles.leaveReason} numberOfLines={1}>
+              {item.reason}
+            </Text>
+          )}
         </View>
-      </View>
-
-      <View style={styles.leaveDates}>
-        <Text style={styles.dateText}>
-          {item.start_date} → {item.end_date}
-        </Text>
-        <Text style={styles.daysCount}>{item.days_count} day(s)</Text>
-      </View>
-
-      <Text style={styles.reason} numberOfLines={2}>
-        {item.reason}
-      </Text>
-
-      <Text style={styles.appliedOn}>
-        Applied on {format(new Date(item.applied_on), 'MMM d, yyyy')}
-      </Text>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={styles.container}>
-      {/* Balance Summary */}
-      <View style={styles.balanceContainer}>
-        <View style={styles.balanceItem}>
-          <Text style={styles.balanceValue}>{balance?.casual_leaves?.available ?? '-'}</Text>
-          <Text style={styles.balanceLabel}>Casual</Text>
-        </View>
-        <View style={styles.balanceDivider} />
-        <View style={styles.balanceItem}>
-          <Text style={styles.balanceValue}>{balance?.sick_leaves?.available ?? '-'}</Text>
-          <Text style={styles.balanceLabel}>Sick</Text>
-        </View>
-        <View style={styles.balanceDivider} />
-        <View style={styles.balanceItem}>
-          <Text style={styles.balanceValue}>{balance?.earned_leaves?.available ?? '-'}</Text>
-          <Text style={styles.balanceLabel}>Earned</Text>
-        </View>
-      </View>
-
-      {/* Filters */}
-      <View style={styles.filtersContainer}>
-        <FilterChip label="All" value={null} />
-        <FilterChip label="Pending" value="pending" />
-        <FilterChip label="Approved" value="approved" />
-        <FilterChip label="Rejected" value="rejected" />
-      </View>
-
-      {/* Leave List */}
-      <FlatList
-        data={leaveData?.leaves || []}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <LeaveCard item={item} />}
-        contentContainerStyle={styles.listContent}
-        refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} />}
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Ionicons name="calendar-outline" size={64} color="#ccc" />
-            <Text style={styles.emptyText}>No leave requests found</Text>
-          </View>
-        }
-      />
-
-      {/* FAB - Apply Leave */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => navigation.navigate('LeaveApply')}
+      {/* Header with Balance Cards */}
+      <LinearGradient
+        colors={[colors.primary.default, colors.secondary.default]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.headerGradient}
       >
-        <Ionicons name="add" size={28} color="#fff" />
-      </TouchableOpacity>
+        <Text style={styles.headerTitle}>Leave Management</Text>
+        
+        {/* Balance Cards */}
+        <View style={styles.balanceCards}>
+          <BalanceCard
+            title="Casual"
+            available={leaveBalance?.casual_leaves?.available || 0}
+            total={leaveBalance?.casual_leaves?.total || 12}
+            color="#F59E0B"
+          />
+          <BalanceCard
+            title="Sick"
+            available={leaveBalance?.sick_leaves?.available || 0}
+            total={leaveBalance?.sick_leaves?.total || 12}
+            color="#EF4444"
+          />
+          <BalanceCard
+            title="Earned"
+            available={leaveBalance?.earned_leaves?.available || 0}
+            total={leaveBalance?.earned_leaves?.total || 15}
+            color="#8B5CF6"
+          />
+        </View>
+      </LinearGradient>
 
-      {/* Approvals Button (for managers) */}
-      {user?.is_approver && (
+      {/* Apply Leave Button */}
+      <View style={styles.applyButtonContainer}>
         <TouchableOpacity
-          style={styles.approvalsButton}
-          onPress={() => navigation.navigate('Approvals')}
+          style={styles.applyButton}
+          onPress={() => navigation.navigate('LeaveApply')}
+          activeOpacity={0.8}
         >
-          <Ionicons name="checkmark-done" size={20} color="#fff" />
-          <Text style={styles.approvalsButtonText}>Pending Approvals</Text>
+          <Ionicons name="add-circle" size={22} color="#FFFFFF" />
+          <Text style={styles.applyButtonText}>Apply for Leave</Text>
         </TouchableOpacity>
-      )}
+      </View>
+
+      {/* Leave History */}
+      <View style={styles.historySection}>
+        <Text style={styles.sectionTitle}>Leave History</Text>
+        
+        <FlatList
+          data={leaves}
+          keyExtractor={(item) => item.id}
+          renderItem={renderLeaveItem}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary.default} />
+          }
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Ionicons name="calendar-outline" size={64} color={colors.text.muted} />
+              <Text style={styles.emptyText}>No leave requests yet</Text>
+              <Text style={styles.emptySubtext}>Tap "Apply for Leave" to request time off</Text>
+            </View>
+          }
+        />
+      </View>
     </View>
   );
 }
 
+// Balance Card Component
+const BalanceCard = ({ title, available, total, color }: { title: string; available: number; total: number; color: string }) => (
+  <View style={styles.balanceCard}>
+    <View style={[styles.balanceIndicator, { backgroundColor: color }]} />
+    <Text style={styles.balanceTitle}>{title}</Text>
+    <Text style={styles.balanceValue}>{available}</Text>
+    <Text style={styles.balanceTotal}>of {total}</Text>
+  </View>
+);
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.background.app,
   },
-  balanceContainer: {
+  headerGradient: {
+    paddingTop: 60,
+    paddingBottom: spacing.xl,
+    paddingHorizontal: spacing.lg,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: spacing.lg,
+  },
+  balanceCards: {
     flexDirection: 'row',
-    backgroundColor: '#2196F3',
-    padding: 20,
-    justifyContent: 'space-around',
+    gap: spacing.sm,
+  },
+  balanceCard: {
+    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
     alignItems: 'center',
   },
-  balanceItem: {
-    alignItems: 'center',
+  balanceIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginBottom: spacing.xs,
+  },
+  balanceTitle: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.8)',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   balanceValue: {
-    color: '#fff',
     fontSize: 28,
-    fontWeight: 'bold',
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginTop: spacing.xs,
   },
-  balanceLabel: {
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: 12,
-    marginTop: 4,
+  balanceTotal: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.6)',
   },
-  balanceDivider: {
-    width: 1,
-    height: 40,
-    backgroundColor: 'rgba(255,255,255,0.3)',
+  applyButtonContainer: {
+    paddingHorizontal: spacing.lg,
+    marginTop: -spacing.lg,
   },
-  filtersContainer: {
+  applyButton: {
     flexDirection: 'row',
-    padding: 12,
-    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary.default,
+    borderRadius: borderRadius.lg,
+    paddingVertical: spacing.lg,
+    gap: spacing.sm,
+    ...shadows.lg,
   },
-  filterChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#f0f0f0',
-    marginRight: 8,
+  applyButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
-  filterChipActive: {
-    backgroundColor: '#2196F3',
+  historySection: {
+    flex: 1,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.xl,
   },
-  filterChipText: {
-    color: '#666',
-    fontSize: 14,
-  },
-  filterChipTextActive: {
-    color: '#fff',
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text.primary,
+    marginBottom: spacing.md,
   },
   listContent: {
-    padding: 16,
-    paddingBottom: 100,
+    paddingBottom: spacing.xxxl,
   },
   leaveCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    backgroundColor: colors.background.card,
+    borderRadius: borderRadius.xl,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+    ...shadows.sm,
   },
   leaveCardHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
   },
-  leaveTypeContainer: {
-    flexDirection: 'row',
+  leaveTypeIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: borderRadius.md,
+    justifyContent: 'center',
     alignItems: 'center',
+  },
+  leaveInfo: {
+    flex: 1,
+    marginLeft: spacing.md,
   },
   leaveType: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
-    color: '#333',
-    marginLeft: 8,
-  },
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  statusText: {
-    fontSize: 10,
-    fontWeight: 'bold',
+    color: colors.text.primary,
   },
   leaveDates: {
+    fontSize: 13,
+    color: colors.text.muted,
+    marginTop: spacing.xs,
+  },
+  statusBadge: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
+    gap: 4,
   },
-  dateText: {
-    fontSize: 14,
-    color: '#666',
+  statusText: {
+    fontSize: 11,
+    fontWeight: '600',
+    textTransform: 'capitalize',
   },
-  daysCount: {
-    fontSize: 14,
-    color: '#2196F3',
-    fontWeight: '500',
+  leaveCardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border.light,
   },
-  reason: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 8,
+  leaveDetail: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
   },
-  appliedOn: {
-    fontSize: 12,
-    color: '#999',
+  leaveDetailText: {
+    fontSize: 13,
+    color: colors.text.muted,
+  },
+  leaveReason: {
+    flex: 1,
+    fontSize: 13,
+    color: colors.text.secondary,
+    marginLeft: spacing.lg,
+    fontStyle: 'italic',
   },
   emptyState: {
     alignItems: 'center',
-    padding: 40,
+    paddingVertical: spacing.xxxl,
   },
   emptyText: {
-    color: '#999',
-    fontSize: 16,
-    marginTop: 16,
-  },
-  fab: {
-    position: 'absolute',
-    right: 20,
-    bottom: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#4CAF50',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  approvalsButton: {
-    position: 'absolute',
-    left: 20,
-    bottom: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FF9800',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  approvalsButtonText: {
-    color: '#fff',
+    fontSize: 18,
     fontWeight: '600',
-    marginLeft: 8,
+    color: colors.text.secondary,
+    marginTop: spacing.lg,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: colors.text.muted,
+    marginTop: spacing.xs,
   },
 });
