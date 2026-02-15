@@ -451,6 +451,31 @@ async def approve_reject_leave(
     
     await db.leave_requests.update_one({"id": leave_id}, {"$set": update_data})
     
-    # TODO: Send push notification to employee
+    # Send push notification to employee
+    if hasattr(request.app.state, 'fcm_service'):
+        fcm = request.app.state.fcm_service
+        employee_id = leave.get("employee_id")
+        leave_type = leave.get("leave_type", "").replace("_", " ").title()
+        start_date = leave.get("start_date", "")
+        end_date = leave.get("end_date", "")
+        
+        if action_data.action == "approve":
+            title = "Leave Approved ✅"
+            body = f"Your {leave_type} leave from {start_date} to {end_date} has been approved by {current_user.get('name', 'your manager')}."
+        else:
+            title = "Leave Rejected"
+            reason = action_data.comments or "No reason provided"
+            body = f"Your {leave_type} leave request has been rejected. Reason: {reason}"
+        
+        await fcm.send_notification(
+            user_id=employee_id,
+            title=title,
+            body=body,
+            data={
+                "type": "leave_" + action_data.action,
+                "leave_id": leave_id,
+                "action": action_data.action
+            }
+        )
     
     return {"message": f"Leave request {action_data.action}d successfully"}
