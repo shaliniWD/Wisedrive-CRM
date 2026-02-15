@@ -4,11 +4,8 @@
 // For development with Expo Go on local network:
 // export const API_BASE_URL = 'http://YOUR_LOCAL_IP:8002';
 
-// For production:
-// export const API_BASE_URL = 'https://api.wisedrive.com';
-
-// Using the deployed preview URL:
-export const API_BASE_URL = '__ESS_API_URL__'; // Will be replaced during build
+// For production - using the deployed preview URL:
+export const API_BASE_URL = 'https://dual-app-portal.preview.emergentagent.com';
 
 export const API_ENDPOINTS = {
   // Auth
