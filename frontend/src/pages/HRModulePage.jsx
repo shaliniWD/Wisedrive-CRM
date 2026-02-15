@@ -96,8 +96,11 @@ export default function HRModulePage() {
           {/* Roles Tab - Uses AdminPage roles section */}
           {activeTab === 'roles' && isHR && <AdminPageRolesSection />}
           
-          {/* Countries Tab - Uses AdminPage countries section */}
-          {activeTab === 'countries' && isHR && <AdminPageCountriesSection />}
+          {/* Holiday Calendar Tab */}
+          {activeTab === 'holidays' && isHR && <HolidayCalendar />}
+          
+          {/* Countries Tab - Uses AdminPage countries section (CEO only) */}
+          {activeTab === 'countries' && isCEO && <AdminPageCountriesSection />}
         </div>
       </div>
     </div>
