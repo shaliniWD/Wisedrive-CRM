@@ -9,7 +9,7 @@ from models_ess.profile import (
     SalarySummary,
     AttendanceSummary
 )
-from routes.auth import get_current_user
+from routes_ess.auth import get_current_user
 
 router = APIRouter()
 

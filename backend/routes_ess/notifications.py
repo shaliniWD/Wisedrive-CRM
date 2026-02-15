@@ -12,7 +12,7 @@ from models_ess.notification import (
     NotificationType,
     NotificationPriority
 )
-from routes.auth import get_current_user
+from routes_ess.auth import get_current_user
 
 router = APIRouter()
 

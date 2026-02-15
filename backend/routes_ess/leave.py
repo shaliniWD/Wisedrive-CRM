@@ -13,7 +13,7 @@ from models_ess.leave import (
     LeaveStatus,
     LeaveType
 )
-from routes.auth import get_current_user
+from routes_ess.auth import get_current_user
 
 router = APIRouter()
 
