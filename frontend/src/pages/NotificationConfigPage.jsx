@@ -514,7 +514,7 @@ const NotificationConfigPage = () => {
               </div>
               <div>
                 <p className="text-2xl font-bold">
-                  {Object.values(stats.notifications_by_type || {}).reduce((a: any, b: any) => a + b, 0)}
+                  {Object.values(stats.notifications_by_type || {}).reduce((a, b) => a + b, 0)}
                 </p>
                 <p className="text-sm text-gray-500">Total Notifications</p>
               </div>
