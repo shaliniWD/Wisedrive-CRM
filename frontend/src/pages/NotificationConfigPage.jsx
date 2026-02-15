@@ -1,7 +1,9 @@
 // Notification Configuration Page - HR can manage push notification settings
 import React, { useState, useEffect } from 'react';
 import { Bell, Send, Settings, Users, Globe, RefreshCw, CheckCircle, X, Edit2, Save, TestTube, Smartphone, ChevronDown, ChevronUp } from 'lucide-react';
-import api from '../services/api';
+import axios from 'axios';
+
+const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const NotificationConfigPage = () => {
   const [triggers, setTriggers] = useState([]);
