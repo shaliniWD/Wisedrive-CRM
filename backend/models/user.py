@@ -24,6 +24,9 @@ class RoleBase(BaseModel):
     department_id: Optional[str] = None
     is_system: bool = True  # System roles cannot be deleted
     description: Optional[str] = None
+    # Leave entitlements per month
+    eligible_sick_leaves_per_month: int = 2  # Default 2 sick leaves/month
+    eligible_casual_leaves_per_month: int = 1  # Default 1 casual leave/month
 
 
 class RoleCreate(RoleBase):
