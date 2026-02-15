@@ -2926,8 +2926,14 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
                           <td className="px-4 py-3 text-center">
                             <div className="flex justify-center gap-1">
                               {doc.document_url && (
-                                <a href={doc.document_url} target="_blank" rel="noopener noreferrer" className="p-1.5 text-blue-600 hover:bg-blue-50 rounded">
-                                  <Eye className="h-4 w-4" />
+                                <a 
+                                  href={`${process.env.REACT_APP_BACKEND_URL}${doc.document_url}`} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer" 
+                                  className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
+                                  title="View/Download"
+                                >
+                                  <Download className="h-4 w-4" />
                                 </a>
                               )}
                               <button 
