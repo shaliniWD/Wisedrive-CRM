@@ -183,17 +183,50 @@ DEFAULT_TEMPLATES = [
 ]
 
 
-# Auth dependency (import from main server)
+# Auth dependency - check for HR access
 async def get_hr_user(request: Request) -> dict:
     """Get current user and verify HR access"""
-    from routes.auth import get_current_user
-    user = await get_current_user(request)
+    # Import JWT verification
+    import jwt
+    from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+    from fastapi import Depends
     
-    role_code = user.get("role_code", "")
-    if role_code not in ["CEO", "HR_MANAGER"]:
-        raise HTTPException(status_code=403, detail="HR access required")
+    security = HTTPBearer()
     
-    return user
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    token = auth_header.split(" ")[1]
+    
+    try:
+        SECRET_KEY = os.environ.get('JWT_SECRET', 'wisedrive-crm-secret-key-change-in-production-2024')
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        user_id = payload.get("sub")
+        
+        db = request.app.state.db
+        user = await db.users.find_one({"id": user_id}, {"_id": 0, "hashed_password": 0})
+        
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
+        
+        # Get role info
+        if user.get("role_id"):
+            role = await db.roles.find_one({"id": user["role_id"]}, {"_id": 0})
+            if role:
+                user["role_code"] = role.get("code", "")
+                user["role_name"] = role.get("name", "")
+        
+        role_code = user.get("role_code", "")
+        if role_code not in ["CEO", "HR_MANAGER"]:
+            raise HTTPException(status_code=403, detail="HR access required")
+        
+        return user
+        
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
 
 
 # ==================== ENDPOINTS ====================
