@@ -463,13 +463,13 @@ export default function LeadsPage() {
     setSelectedLead(lead);
     setPaymentFormData({
       hasCarDetails: 'yes', carNo: '', carMake: '', carModel: '', carYear: '',
-      fuelType: '', carColor: '', carConfirmed: false, packageId: '', // Changed from packageType to packageId
-      numberOfCars: '1', discountType: 'none', discountValue: '', city: lead.city || '',
-      inspectionDate: '', inspectionTime: '', address: '', latitude: '',
-      longitude: '', customerMobile: lead.mobile, customerName: lead.name,
+      fuelType: '', carColor: '', carConfirmed: false, packageId: '',
+      discountType: 'none', discountValue: '', city: lead.city || '',
+      customerMobile: lead.mobile, customerName: lead.name,
     });
     setCarError('');
     setVehicleData(null);
+    setInspectionSchedules([]); // Reset schedules
     setModalStep(1);
     setIsPaymentModalOpen(true);
   };
