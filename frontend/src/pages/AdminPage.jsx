@@ -2520,7 +2520,7 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
                     </div>
                     <div className="mt-4 pt-4 border-t border-emerald-200 flex justify-between">
                       <span className="font-medium text-emerald-800">Gross Salary:</span>
-                      <span className="font-bold text-emerald-800 text-lg">₹{formatCurrency((salaryForm.basic_salary||0)+(salaryForm.hra||0)+(salaryForm.variable_pay||0)+(salaryForm.conveyance||0)+(salaryForm.medical||0)+(salaryForm.special_allowance||0))}</span>
+                      <span className="font-bold text-emerald-800 text-lg">₹{formatCurrency((salaryForm.basic_salary||0)+(salaryForm.hra||0)+(salaryForm.variable_pay||0)+(salaryForm.conveyance_allowance||0)+(salaryForm.medical_allowance||0)+(salaryForm.special_allowance||0))}</span>
                     </div>
                   </div>
 
