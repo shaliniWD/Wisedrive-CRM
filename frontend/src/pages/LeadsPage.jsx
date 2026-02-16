@@ -552,12 +552,14 @@ export default function LeadsPage() {
           </Select>
 
           <Select value={filterStatus || 'all'} onValueChange={(v) => { setFilterStatus(v === 'all' ? '' : v); setCurrentPage(1); }}>
-            <SelectTrigger className="w-[140px] h-10 bg-white text-sm" data-testid="filter-status">
+            <SelectTrigger className="w-[160px] h-10 bg-white text-sm" data-testid="filter-status">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="max-h-[300px]">
               <SelectItem value="all">All Status</SelectItem>
-              {statuses.map((s) => (<SelectItem key={s} value={s}>{s.replace(/_/g, ' ')}</SelectItem>))}
+              {statuses.map((s) => (
+                <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
 
