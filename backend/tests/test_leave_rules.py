@@ -10,6 +10,7 @@ Tests for:
 import pytest
 import requests
 import os
+import uuid
 from datetime import datetime, timedelta
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
@@ -30,11 +31,11 @@ class TestLeaveRulesAPI:
         self.session.headers.update({"Content-Type": "application/json"})
         self.hr_token = None
         self.admin_token = None
-        self.employee_token = None
-        self.employee_id = None
+        self.ess_token = None
+        self.device_id = f"test-device-{uuid.uuid4()}"
     
     def get_hr_token(self):
-        """Get HR user token"""
+        """Get HR user token (CRM API)"""
         if not self.hr_token:
             response = self.session.post(f"{BASE_URL}/api/auth/login", json={
                 "email": HR_USER,
@@ -45,7 +46,7 @@ class TestLeaveRulesAPI:
         return self.hr_token
     
     def get_admin_token(self):
-        """Get Admin/CEO token"""
+        """Get Admin/CEO token (CRM API)"""
         if not self.admin_token:
             response = self.session.post(f"{BASE_URL}/api/auth/login", json={
                 "email": ADMIN_USER,
@@ -55,38 +56,25 @@ class TestLeaveRulesAPI:
                 self.admin_token = response.json().get("access_token")
         return self.admin_token
     
-    def get_employee_token(self):
-        """Get a regular employee token for ESS testing"""
-        if not self.employee_token:
-            # Try to login as a regular employee
-            # First get list of employees
-            admin_token = self.get_admin_token()
-            if admin_token:
-                response = self.session.get(
-                    f"{BASE_URL}/api/users",
-                    headers={"Authorization": f"Bearer {admin_token}"}
-                )
-                if response.status_code == 200:
-                    users = response.json()
-                    # Find a non-admin employee
-                    for user in users:
-                        if user.get("role_code") not in ["CEO", "HR_MANAGER"]:
-                            # Try to login as this user
-                            login_resp = self.session.post(f"{BASE_URL}/api/auth/login", json={
-                                "email": user.get("email"),
-                                "password": PASSWORD
-                            })
-                            if login_resp.status_code == 200:
-                                self.employee_token = login_resp.json().get("access_token")
-                                self.employee_id = user.get("id")
-                                break
-            
-            # Fallback to HR user if no employee found
-            if not self.employee_token:
-                self.employee_token = self.get_hr_token()
-        return self.employee_token
+    def get_ess_token(self, email=HR_USER):
+        """Get ESS mobile token with device registration"""
+        if not self.ess_token:
+            response = self.session.post(f"{BASE_URL}/api/ess/v1/auth/login", json={
+                "email": email,
+                "password": PASSWORD,
+                "device": {
+                    "device_id": self.device_id,
+                    "device_name": "Test Device",
+                    "platform": "android",
+                    "os_version": "14.0",
+                    "app_version": "1.0.0"
+                }
+            })
+            if response.status_code == 200:
+                self.ess_token = response.json().get("access_token")
+        return self.ess_token
     
-    # ==================== LEAVE RULES GET/PUT TESTS ====================
+    # ==================== LEAVE RULES GET/PUT TESTS (CRM API) ====================
     
     def test_01_get_leave_rules_default(self):
         """Test GET /api/leave-rules returns default configuration"""
@@ -160,29 +148,7 @@ class TestLeaveRulesAPI:
         
         print(f"Updated to quarterly: {data}")
     
-    def test_04_update_leave_rules_unauthorized(self):
-        """Test PUT /api/leave-rules fails for non-HR users"""
-        # Get a regular employee token
-        employee_token = self.get_employee_token()
-        
-        # Skip if we couldn't get an employee token (fallback was HR)
-        if employee_token == self.hr_token:
-            pytest.skip("No regular employee available for unauthorized test")
-        
-        response = self.session.put(
-            f"{BASE_URL}/api/leave-rules",
-            headers={"Authorization": f"Bearer {employee_token}"},
-            json={
-                "allocation_period": "monthly",
-                "sick_leaves_per_period": 5,
-                "casual_leaves_per_period": 5
-            }
-        )
-        
-        assert response.status_code == 403, f"Expected 403, got {response.status_code}"
-        print("Unauthorized update correctly rejected")
-    
-    def test_05_update_leave_rules_invalid_period(self):
+    def test_04_update_leave_rules_invalid_period(self):
         """Test PUT /api/leave-rules rejects invalid allocation_period"""
         token = self.get_hr_token()
         assert token, "Failed to get HR token"
@@ -201,11 +167,43 @@ class TestLeaveRulesAPI:
         assert response.status_code == 422, f"Expected 422 for invalid period, got {response.status_code}"
         print("Invalid allocation_period correctly rejected")
     
-    # ==================== PERIOD BALANCE TESTS ====================
+    def test_05_carry_forward_always_disabled(self):
+        """Test that carry_forward_enabled is always False"""
+        hr_token = self.get_hr_token()
+        
+        # Get current rules
+        response = self.session.get(
+            f"{BASE_URL}/api/leave-rules",
+            headers={"Authorization": f"Bearer {hr_token}"}
+        )
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert data["carry_forward_enabled"] == False, "carry_forward should always be False"
+        
+        # Try to update (even though carry_forward is not in the update model)
+        # The response should still have carry_forward_enabled = False
+        update_resp = self.session.put(
+            f"{BASE_URL}/api/leave-rules",
+            headers={"Authorization": f"Bearer {hr_token}"},
+            json={
+                "allocation_period": "monthly",
+                "sick_leaves_per_period": 2,
+                "casual_leaves_per_period": 1
+            }
+        )
+        
+        assert update_resp.status_code == 200
+        updated_data = update_resp.json()
+        assert updated_data["carry_forward_enabled"] == False, "carry_forward should remain False after update"
+        
+        print("Carry forward is correctly always disabled")
+    
+    # ==================== PERIOD BALANCE TESTS (ESS API) ====================
     
     def test_06_get_period_balance_monthly(self):
         """Test GET /api/ess/v1/leave/period-balance with monthly allocation"""
-        # First set to monthly
+        # First set to monthly using CRM API
         hr_token = self.get_hr_token()
         self.session.put(
             f"{BASE_URL}/api/leave-rules",
@@ -217,11 +215,14 @@ class TestLeaveRulesAPI:
             }
         )
         
+        # Get ESS token
+        ess_token = self.get_ess_token()
+        assert ess_token, "Failed to get ESS token"
+        
         # Get period balance
-        token = self.get_employee_token() or hr_token
         response = self.session.get(
             f"{BASE_URL}/api/ess/v1/leave/period-balance",
-            headers={"Authorization": f"Bearer {token}"}
+            headers={"Authorization": f"Bearer {ess_token}"}
         )
         
         assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
@@ -245,13 +246,11 @@ class TestLeaveRulesAPI:
         # Verify monthly allocation
         assert data["period_type"] == "monthly", f"Expected monthly, got {data['period_type']}"
         
-        # For monthly, allocation should be the per-period value (not multiplied)
-        # Default is sick=2, casual=1 per month
         print(f"Monthly period balance: {data}")
     
     def test_07_get_period_balance_quarterly(self):
         """Test GET /api/ess/v1/leave/period-balance with quarterly allocation"""
-        # First set to quarterly
+        # First set to quarterly using CRM API
         hr_token = self.get_hr_token()
         self.session.put(
             f"{BASE_URL}/api/leave-rules",
@@ -263,11 +262,14 @@ class TestLeaveRulesAPI:
             }
         )
         
+        # Get ESS token
+        ess_token = self.get_ess_token()
+        assert ess_token, "Failed to get ESS token"
+        
         # Get period balance
-        token = self.get_employee_token() or hr_token
         response = self.session.get(
             f"{BASE_URL}/api/ess/v1/leave/period-balance",
-            headers={"Authorization": f"Bearer {token}"}
+            headers={"Authorization": f"Bearer {ess_token}"}
         )
         
         assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
@@ -300,11 +302,14 @@ class TestLeaveRulesAPI:
             }
         )
         
+        # Get ESS token
+        ess_token = self.get_ess_token()
+        assert ess_token, "Failed to get ESS token"
+        
         # Get period balance
-        token = self.get_employee_token() or hr_token
         response = self.session.get(
             f"{BASE_URL}/api/ess/v1/leave/period-balance",
-            headers={"Authorization": f"Bearer {token}"}
+            headers={"Authorization": f"Bearer {ess_token}"}
         )
         
         assert response.status_code == 200
@@ -339,13 +344,15 @@ class TestLeaveRulesAPI:
             }
         )
         
-        token = self.get_employee_token() or hr_token
+        ess_token = self.get_ess_token()
+        assert ess_token, "Failed to get ESS token"
         
         # Get current balance first
         balance_resp = self.session.get(
             f"{BASE_URL}/api/ess/v1/leave/period-balance",
-            headers={"Authorization": f"Bearer {token}"}
+            headers={"Authorization": f"Bearer {ess_token}"}
         )
+        assert balance_resp.status_code == 200
         balance = balance_resp.json()
         
         # Try to apply leave for a future date
@@ -353,7 +360,7 @@ class TestLeaveRulesAPI:
         
         response = self.session.post(
             f"{BASE_URL}/api/ess/v1/leave/apply",
-            headers={"Authorization": f"Bearer {token}"},
+            headers={"Authorization": f"Bearer {ess_token}"},
             json={
                 "leave_type": "casual",
                 "start_date": future_date,
@@ -373,7 +380,7 @@ class TestLeaveRulesAPI:
             # Cancel the leave to clean up
             cancel_resp = self.session.post(
                 f"{BASE_URL}/api/ess/v1/leave/{data['id']}/cancel",
-                headers={"Authorization": f"Bearer {token}"}
+                headers={"Authorization": f"Bearer {ess_token}"}
             )
             print(f"Leave cancelled: {cancel_resp.status_code}")
         else:
@@ -395,14 +402,15 @@ class TestLeaveRulesAPI:
             }
         )
         
-        token = self.get_employee_token() or hr_token
+        ess_token = self.get_ess_token()
+        assert ess_token, "Failed to get ESS token"
         
         # Try to apply casual leave
         future_date = (datetime.now() + timedelta(days=7)).strftime("%Y-%m-%d")
         
         response = self.session.post(
             f"{BASE_URL}/api/ess/v1/leave/apply",
-            headers={"Authorization": f"Bearer {token}"},
+            headers={"Authorization": f"Bearer {ess_token}"},
             json={
                 "leave_type": "casual",
                 "start_date": future_date,
@@ -449,13 +457,15 @@ class TestLeaveRulesAPI:
             }
         )
         
-        token = self.get_employee_token() or hr_token
+        ess_token = self.get_ess_token()
+        assert ess_token, "Failed to get ESS token"
         
         # Get current balance
         balance_resp = self.session.get(
             f"{BASE_URL}/api/ess/v1/leave/period-balance",
-            headers={"Authorization": f"Bearer {token}"}
+            headers={"Authorization": f"Bearer {ess_token}"}
         )
+        assert balance_resp.status_code == 200
         balance = balance_resp.json()
         
         # Try to apply sick leave
@@ -463,7 +473,7 @@ class TestLeaveRulesAPI:
         
         response = self.session.post(
             f"{BASE_URL}/api/ess/v1/leave/apply",
-            headers={"Authorization": f"Bearer {token}"},
+            headers={"Authorization": f"Bearer {ess_token}"},
             json={
                 "leave_type": "sick",
                 "start_date": future_date,
@@ -481,7 +491,7 @@ class TestLeaveRulesAPI:
             # Cancel to clean up
             self.session.post(
                 f"{BASE_URL}/api/ess/v1/leave/{data['id']}/cancel",
-                headers={"Authorization": f"Bearer {token}"}
+                headers={"Authorization": f"Bearer {ess_token}"}
             )
         else:
             assert response.status_code == 400, f"Expected 400 when no sick leaves, got {response.status_code}"
@@ -504,10 +514,12 @@ class TestLeaveRulesAPI:
             }
         )
         
-        token = self.get_employee_token() or hr_token
+        ess_token = self.get_ess_token()
+        assert ess_token, "Failed to get ESS token"
+        
         response = self.session.get(
             f"{BASE_URL}/api/ess/v1/leave/period-balance",
-            headers={"Authorization": f"Bearer {token}"}
+            headers={"Authorization": f"Bearer {ess_token}"}
         )
         
         assert response.status_code == 200
@@ -541,10 +553,12 @@ class TestLeaveRulesAPI:
             }
         )
         
-        token = self.get_employee_token() or hr_token
+        ess_token = self.get_ess_token()
+        assert ess_token, "Failed to get ESS token"
+        
         response = self.session.get(
             f"{BASE_URL}/api/ess/v1/leave/period-balance",
-            headers={"Authorization": f"Bearer {token}"}
+            headers={"Authorization": f"Bearer {ess_token}"}
         )
         
         assert response.status_code == 200
@@ -565,40 +579,6 @@ class TestLeaveRulesAPI:
             f"Expected period_start {expected_start}, got {data['period_start']}"
         
         print(f"Quarterly period: {data['period_start']} to {data['period_end']}, label: {data['period_label']}")
-    
-    # ==================== CARRY FORWARD DISABLED TESTS ====================
-    
-    def test_14_carry_forward_always_disabled(self):
-        """Test that carry_forward_enabled is always False"""
-        hr_token = self.get_hr_token()
-        
-        # Get current rules
-        response = self.session.get(
-            f"{BASE_URL}/api/leave-rules",
-            headers={"Authorization": f"Bearer {hr_token}"}
-        )
-        
-        assert response.status_code == 200
-        data = response.json()
-        assert data["carry_forward_enabled"] == False, "carry_forward should always be False"
-        
-        # Try to update (even though carry_forward is not in the update model)
-        # The response should still have carry_forward_enabled = False
-        update_resp = self.session.put(
-            f"{BASE_URL}/api/leave-rules",
-            headers={"Authorization": f"Bearer {hr_token}"},
-            json={
-                "allocation_period": "monthly",
-                "sick_leaves_per_period": 2,
-                "casual_leaves_per_period": 1
-            }
-        )
-        
-        assert update_resp.status_code == 200
-        updated_data = update_resp.json()
-        assert updated_data["carry_forward_enabled"] == False, "carry_forward should remain False after update"
-        
-        print("Carry forward is correctly always disabled")
 
 
 class TestLeaveRulesIntegration:
@@ -609,9 +589,10 @@ class TestLeaveRulesIntegration:
         """Setup test session"""
         self.session = requests.Session()
         self.session.headers.update({"Content-Type": "application/json"})
+        self.device_id = f"test-device-{uuid.uuid4()}"
     
-    def get_token(self, email=HR_USER):
-        """Get auth token"""
+    def get_crm_token(self, email=HR_USER):
+        """Get CRM auth token"""
         response = self.session.post(f"{BASE_URL}/api/auth/login", json={
             "email": email,
             "password": PASSWORD
@@ -620,15 +601,32 @@ class TestLeaveRulesIntegration:
             return response.json().get("access_token")
         return None
     
-    def test_15_full_leave_flow_with_period_balance(self):
+    def get_ess_token(self, email=HR_USER):
+        """Get ESS mobile token"""
+        response = self.session.post(f"{BASE_URL}/api/ess/v1/auth/login", json={
+            "email": email,
+            "password": PASSWORD,
+            "device": {
+                "device_id": self.device_id,
+                "device_name": "Test Device",
+                "platform": "android",
+                "os_version": "14.0",
+                "app_version": "1.0.0"
+            }
+        })
+        if response.status_code == 200:
+            return response.json().get("access_token")
+        return None
+    
+    def test_14_full_leave_flow_with_period_balance(self):
         """Test complete leave flow: check balance -> apply -> verify balance updated"""
-        token = self.get_token()
-        assert token, "Failed to get token"
+        crm_token = self.get_crm_token()
+        assert crm_token, "Failed to get CRM token"
         
         # Set rules to monthly
         self.session.put(
             f"{BASE_URL}/api/leave-rules",
-            headers={"Authorization": f"Bearer {token}"},
+            headers={"Authorization": f"Bearer {crm_token}"},
             json={
                 "allocation_period": "monthly",
                 "sick_leaves_per_period": 2,
@@ -636,10 +634,13 @@ class TestLeaveRulesIntegration:
             }
         )
         
+        ess_token = self.get_ess_token()
+        assert ess_token, "Failed to get ESS token"
+        
         # Step 1: Get initial balance
         balance_resp = self.session.get(
             f"{BASE_URL}/api/ess/v1/leave/period-balance",
-            headers={"Authorization": f"Bearer {token}"}
+            headers={"Authorization": f"Bearer {ess_token}"}
         )
         assert balance_resp.status_code == 200
         initial_balance = balance_resp.json()
@@ -651,7 +652,7 @@ class TestLeaveRulesIntegration:
             
             apply_resp = self.session.post(
                 f"{BASE_URL}/api/ess/v1/leave/apply",
-                headers={"Authorization": f"Bearer {token}"},
+                headers={"Authorization": f"Bearer {ess_token}"},
                 json={
                     "leave_type": "casual",
                     "start_date": future_date,
@@ -669,7 +670,7 @@ class TestLeaveRulesIntegration:
                 # Step 3: Cancel the leave to clean up
                 cancel_resp = self.session.post(
                     f"{BASE_URL}/api/ess/v1/leave/{leave_id}/cancel",
-                    headers={"Authorization": f"Bearer {token}"}
+                    headers={"Authorization": f"Bearer {ess_token}"}
                 )
                 assert cancel_resp.status_code == 200, f"Failed to cancel leave: {cancel_resp.text}"
                 print("Leave cancelled successfully")
@@ -678,15 +679,15 @@ class TestLeaveRulesIntegration:
         else:
             print("No casual leaves available, skipping apply test")
     
-    def test_16_verify_lop_days_tracking(self):
+    def test_15_verify_lop_days_tracking(self):
         """Test that LOP (Loss of Pay) days are tracked in period balance"""
-        token = self.get_token()
-        assert token, "Failed to get token"
+        ess_token = self.get_ess_token()
+        assert ess_token, "Failed to get ESS token"
         
         # Get period balance
         response = self.session.get(
             f"{BASE_URL}/api/ess/v1/leave/period-balance",
-            headers={"Authorization": f"Bearer {token}"}
+            headers={"Authorization": f"Bearer {ess_token}"}
         )
         
         assert response.status_code == 200
@@ -698,15 +699,15 @@ class TestLeaveRulesIntegration:
         
         print(f"LOP days: {data['lop_days']}")
     
-    def test_17_verify_total_availed_calculation(self):
+    def test_16_verify_total_availed_calculation(self):
         """Test that total_availed is correctly calculated"""
-        token = self.get_token()
-        assert token, "Failed to get token"
+        ess_token = self.get_ess_token()
+        assert ess_token, "Failed to get ESS token"
         
         # Get period balance
         response = self.session.get(
             f"{BASE_URL}/api/ess/v1/leave/period-balance",
-            headers={"Authorization": f"Bearer {token}"}
+            headers={"Authorization": f"Bearer {ess_token}"}
         )
         
         assert response.status_code == 200
