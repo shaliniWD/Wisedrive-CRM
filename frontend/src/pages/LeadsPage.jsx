@@ -847,7 +847,9 @@ export default function LeadsPage() {
                 <Label className="text-sm font-medium">Lead Status</Label>
                 <Select value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v })}>
                   <SelectTrigger className="h-10" data-testid="lead-status-select"><SelectValue /></SelectTrigger>
-                  <SelectContent>{statuses.map((s) => (<SelectItem key={s} value={s}>{s.replace(/_/g, ' ')}</SelectItem>))}</SelectContent>
+                  <SelectContent className="max-h-[300px]">
+                    {statuses.map((s) => (<SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>))}
+                  </SelectContent>
                 </Select>
               </div>
             </div>
