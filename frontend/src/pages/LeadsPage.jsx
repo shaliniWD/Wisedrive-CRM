@@ -290,9 +290,8 @@ export default function LeadsPage() {
       setEmployees(employeesRes.data);
       setCities(citiesRes.data);
       setSources(sourcesRes.data);
-      // Add HOT status if not present
-      const allStatuses = statusesRes.data.includes('HOT') ? statusesRes.data : ['NEW', 'HOT', ...statusesRes.data.filter(s => s !== 'NEW')];
-      setStatuses(allStatuses);
+      // Statuses come as array of objects with value, label, color
+      setStatuses(statusesRes.data || []);
     } catch (error) {
       toast.error('Failed to load leads');
     } finally {
