@@ -222,18 +222,25 @@ const BalanceCard = ({
   label, 
   available, 
   total, 
-  color 
+  color,
+  canApply,
+  isLOP = false,
 }: { 
   label: string; 
   available: number; 
-  total: number; 
+  total: number | null; 
   color: string;
+  canApply?: boolean;
+  isLOP?: boolean;
 }) => (
-  <View style={styles.balanceCard}>
+  <View style={[styles.balanceCard, !canApply && !isLOP && styles.balanceCardDisabled]}>
     <View style={[styles.balanceIndicator, { backgroundColor: color }]} />
-    <Text style={styles.balanceValue}>{available}</Text>
-    <Text style={styles.balanceTotal}>/ {total}</Text>
+    <Text style={[styles.balanceValue, isLOP && { color: color }]}>{available}</Text>
+    {total !== null && <Text style={styles.balanceTotal}>/ {total}</Text>}
     <Text style={styles.balanceLabel}>{label}</Text>
+    {!canApply && !isLOP && available <= 0 && (
+      <Text style={styles.exhaustedBadge}>Exhausted</Text>
+    )}
   </View>
 );
 
