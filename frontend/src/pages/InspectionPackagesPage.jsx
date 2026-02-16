@@ -242,6 +242,7 @@ export default function InspectionPackagesPage() {
     currency: 'INR',
     currency_symbol: '₹',
     categories: [],
+    no_of_inspections: 1,
     is_recommended: false,
     order: 0,
     brands_covered: [],
