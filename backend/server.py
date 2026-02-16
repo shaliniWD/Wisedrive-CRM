@@ -1347,6 +1347,55 @@ async def delete_garage_employee(emp_id: str, current_user: dict = Depends(get_c
     return {"message": "Garage employee deleted"}
 
 
+# ==================== LEAVE RULES ROUTES ====================
+
+class LeaveRulesUpdate(BaseModel):
+    allocation_period: str = Field(default="monthly", pattern="^(monthly|quarterly)$")
+    sick_leaves_per_period: int = Field(default=2, ge=0, le=10)
+    casual_leaves_per_period: int = Field(default=1, ge=0, le=10)
+
+@api_router.get("/leave-rules")
+async def get_leave_rules(current_user: dict = Depends(get_current_user)):
+    """Get leave rules configuration"""
+    rules = await db.leave_rules.find_one({}, {"_id": 0})
+    if not rules:
+        rules = {
+            "allocation_period": "monthly",
+            "carry_forward_enabled": False,
+            "sick_leaves_per_period": 2,
+            "casual_leaves_per_period": 1
+        }
+    return rules
+
+@api_router.put("/leave-rules")
+async def update_leave_rules(
+    rules_data: LeaveRulesUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update leave rules - HR/CEO only"""
+    role_code = current_user.get("role_code", "")
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized to update leave rules")
+    
+    rules = {
+        "allocation_period": rules_data.allocation_period,
+        "carry_forward_enabled": False,  # Always False - no carry forward
+        "sick_leaves_per_period": rules_data.sick_leaves_per_period,
+        "casual_leaves_per_period": rules_data.casual_leaves_per_period,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "updated_by": current_user["id"]
+    }
+    
+    # Upsert the rules (single document)
+    await db.leave_rules.update_one(
+        {},
+        {"$set": rules},
+        upsert=True
+    )
+    
+    return rules
+
+
 # ==================== INSPECTION PACKAGES ROUTES ====================
 
 @api_router.get("/inspection-categories")
