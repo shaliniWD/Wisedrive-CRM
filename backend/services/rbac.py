@@ -231,9 +231,8 @@ class RBACService:
                     tabs = self.TAB_VISIBILITY.get(role_code, [])
                     visible_tabs.update(tabs)
         
-        # Always include dashboard if any tabs are visible
-        if visible_tabs:
-            visible_tabs.add("dashboard")
+        # Note: Dashboard is included in TAB_VISIBILITY for roles that should see it
+        # SALES_EXEC intentionally only has ["leads"] without dashboard
         
         return list(visible_tabs)
 
