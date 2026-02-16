@@ -976,13 +976,24 @@ export default function LeadsPage() {
                       {paymentFormData.carMake && (
                         <div className="bg-emerald-50 p-5 rounded-xl border border-emerald-200">
                           <h4 className="font-semibold text-emerald-800 mb-3 flex items-center gap-2">
-                            <span className="w-2 h-2 bg-emerald-500 rounded-full" /> Vehicle Information
+                            <span className="w-2 h-2 bg-emerald-500 rounded-full" /> Vehicle Information (Vaahan API)
                           </h4>
-                          <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div className="grid grid-cols-2 gap-3 text-sm">
                             <div><span className="text-gray-500">Make:</span> <span className="font-medium ml-2">{paymentFormData.carMake}</span></div>
                             <div><span className="text-gray-500">Model:</span> <span className="font-medium ml-2">{paymentFormData.carModel}</span></div>
                             <div><span className="text-gray-500">Year:</span> <span className="font-medium ml-2">{paymentFormData.carYear}</span></div>
                             <div><span className="text-gray-500">Fuel:</span> <span className="font-medium ml-2">{paymentFormData.fuelType}</span></div>
+                            <div><span className="text-gray-500">Color:</span> <span className="font-medium ml-2">{paymentFormData.carColor}</span></div>
+                            <div><span className="text-gray-500">Owner:</span> <span className="font-medium ml-2">{paymentFormData.ownerName}</span></div>
+                            {paymentFormData.registrationDate && (
+                              <div><span className="text-gray-500">Reg Date:</span> <span className="font-medium ml-2">{paymentFormData.registrationDate}</span></div>
+                            )}
+                            {paymentFormData.rcExpiryDate && (
+                              <div><span className="text-gray-500">RC Expiry:</span> <span className="font-medium ml-2">{paymentFormData.rcExpiryDate}</span></div>
+                            )}
+                            {paymentFormData.insuranceCompany && (
+                              <div className="col-span-2"><span className="text-gray-500">Insurance:</span> <span className="font-medium ml-2">{paymentFormData.insuranceCompany} (Valid: {paymentFormData.insuranceValidUpto})</span></div>
+                            )}
                           </div>
                           <label className="flex items-center gap-3 mt-4 pt-4 border-t border-emerald-200 cursor-pointer">
                             <input type="checkbox" checked={paymentFormData.carConfirmed} onChange={(e) => setPaymentFormData({ ...paymentFormData, carConfirmed: e.target.checked })}
