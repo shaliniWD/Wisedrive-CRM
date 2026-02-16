@@ -164,6 +164,10 @@ All users use password: `password123`
 - [x] Salary structure matching CRM exactly ✅ DONE
 - [x] Navigation restructuring (hub-based) ✅ DONE
 - [x] Inspection Packages feature in Settings ✅ DONE (February 16, 2026)
+- [x] **Auto-fix password hashes on startup** ✅ DONE (February 16, 2026)
+  - Automatic password hash validation on every deployment
+  - No manual curl commands needed
+  - All users login with their existing credentials
 - [ ] User acceptance testing on actual mobile devices (IN PROGRESS)
 
 ### P1 - High Priority
