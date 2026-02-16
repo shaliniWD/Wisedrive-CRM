@@ -191,7 +191,17 @@ export default function LeadsPage() {
   // Get today's date for filtering
   const today = new Date().toISOString().split('T')[0];
 
-  // Mock Vaahan API call
+  // Notes and Activities states
+  const [isNotesDrawerOpen, setIsNotesDrawerOpen] = useState(false);
+  const [selectedLeadForNotes, setSelectedLeadForNotes] = useState(null);
+  const [leadNotes, setLeadNotes] = useState([]);
+  const [leadActivities, setLeadActivities] = useState([]);
+  const [newNote, setNewNote] = useState('');
+  const [loadingNotes, setLoadingNotes] = useState(false);
+  const [savingNote, setSavingNote] = useState(false);
+  const [notesTab, setNotesTab] = useState('notes'); // 'notes' or 'activities'
+
+  // Fetch car details (mock - can be replaced with Vaahan API)
   const fetchCarDetails = async (carNumber) => {
     setCarLoading(true);
     setCarError('');
@@ -208,6 +218,50 @@ export default function LeadsPage() {
       toast.error('Failed to fetch car details');
     } finally {
       setCarLoading(false);
+    }
+  };
+
+  // Fetch notes and activities for a lead
+  const fetchNotesAndActivities = async (lead) => {
+    setLoadingNotes(true);
+    try {
+      const [notesRes, activitiesRes] = await Promise.all([
+        leadsApi.getNotes(lead.id),
+        leadsApi.getActivities(lead.id)
+      ]);
+      setLeadNotes(notesRes.data || []);
+      setLeadActivities(activitiesRes.data || []);
+    } catch (error) {
+      console.error('Failed to fetch notes/activities:', error);
+      setLeadNotes([]);
+      setLeadActivities([]);
+    } finally {
+      setLoadingNotes(false);
+    }
+  };
+
+  // Open notes drawer
+  const openNotesDrawer = async (lead) => {
+    setSelectedLeadForNotes(lead);
+    setIsNotesDrawerOpen(true);
+    setNotesTab('notes');
+    setNewNote('');
+    await fetchNotesAndActivities(lead);
+  };
+
+  // Add a new note
+  const handleAddNote = async () => {
+    if (!newNote.trim() || !selectedLeadForNotes) return;
+    setSavingNote(true);
+    try {
+      await leadsApi.addNote(selectedLeadForNotes.id, newNote.trim());
+      toast.success('Note added successfully');
+      setNewNote('');
+      await fetchNotesAndActivities(selectedLeadForNotes);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to add note');
+    } finally {
+      setSavingNote(false);
     }
   };
 
