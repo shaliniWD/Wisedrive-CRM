@@ -20,7 +20,7 @@ from datetime import datetime, timezone
 # Get BASE_URL from environment
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 if not BASE_URL:
-    BASE_URL = "https://autoleads-app-1.preview.emergentagent.com"
+    BASE_URL = "https://autolead-hub-2.preview.emergentagent.com"
 
 # Test credentials
 ADMIN_EMAIL = "kalyan@wisedrive.com"
