@@ -475,6 +475,24 @@ export default function InspectionPackagesPage() {
     }
   };
 
+  // Copy package
+  const handleCopyPackage = (pkg) => {
+    setEditingPackage(null);  // Creating new, not editing
+    setPackageForm({
+      name: `${pkg.name} (Copy)`,
+      description: pkg.description || '',
+      price: pkg.price || 0,
+      currency: pkg.currency || 'INR',
+      currency_symbol: pkg.currency_symbol || '₹',
+      categories: pkg.categories || [],
+      no_of_inspections: pkg.no_of_inspections || 1,
+      is_recommended: false,  // Don't copy recommended status
+      order: packages.length,
+      brands_covered: pkg.brands_covered || [],
+    });
+    setIsPackageModalOpen(true);
+  };
+
   const handleDeletePackage = async (pkg) => {
     if (!window.confirm(`Delete "${pkg.name}"? This cannot be undone.`)) return;
     try {
