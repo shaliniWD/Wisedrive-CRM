@@ -191,6 +191,12 @@ export const publicApi = {
   getLoginCountries: () => axios.get(`${API_URL}/countries/login`),
 };
 
+// Leave Rules API
+export const leaveRulesApi = {
+  get: () => axios.get(`${API_URL}/leave-rules`),
+  update: (data) => axios.put(`${API_URL}/leave-rules`, data),
+};
+
 // Legacy Salary/HR API (for backward compatibility)
 export const salaryApi = {
   getAll: (params) => axios.get(`${API_URL}/salaries`, { params }),
