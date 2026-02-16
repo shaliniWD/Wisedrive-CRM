@@ -412,26 +412,36 @@ export default function LeadsPage() {
     }
   };
 
-  // Calculate stats for sales agent dashboard
-  const todayNewLeads = leads.filter(l => l.status === 'NEW' && l.created_at?.startsWith(today)).length;
-  const hotLeads = leads.filter(l => l.status === 'HOT' || l.status === 'INTERESTED').length;
-  const rcbWhatsappLeads = leads.filter(l => l.status === 'RCB_WHATSAPP' || l.reminder_reason === 'RCB_WHATSAPP').length;
-  const followupLeads = leads.filter(l => l.status === 'FOLLOWUP' || l.reminder_date).length;
-  const paymentLinkSentLeads = leads.filter(l => l.payment_link).length;
+  // Calculate stats for sales agent dashboard (matching actual statuses from LEAD_STATUSES)
+  const todayNewLeads = leads.filter(l => l.status === 'NEW LEAD' && l.created_at?.startsWith(today)).length;
+  const hotLeads = leads.filter(l => l.status === 'HOT LEADS').length;
+  const rcbWhatsappLeads = leads.filter(l => l.status === 'RCB WHATSAPP' || l.reminder_reason === 'RCB_WHATSAPP').length;
+  const followupLeads = leads.filter(l => 
+    l.status === 'FOLLOW UP' || 
+    l.status === 'WHATSAPP FOLLOW UP' || 
+    l.status === 'Repeat follow up' ||
+    l.reminder_date
+  ).length;
+  const paymentLinkSentLeads = leads.filter(l => l.status === 'PAYMENT LINK SENT' || l.payment_link).length;
 
   // Filter leads based on active filter card
   const getFilteredLeads = () => {
     let filtered = leads;
     if (activeFilter === 'new_today') {
-      filtered = leads.filter(l => l.status === 'NEW' && l.created_at?.startsWith(today));
+      filtered = leads.filter(l => l.status === 'NEW LEAD' && l.created_at?.startsWith(today));
     } else if (activeFilter === 'hot') {
-      filtered = leads.filter(l => l.status === 'HOT' || l.status === 'INTERESTED');
+      filtered = leads.filter(l => l.status === 'HOT LEADS');
     } else if (activeFilter === 'rcb_whatsapp') {
-      filtered = leads.filter(l => l.status === 'RCB_WHATSAPP' || l.reminder_reason === 'RCB_WHATSAPP');
+      filtered = leads.filter(l => l.status === 'RCB WHATSAPP' || l.reminder_reason === 'RCB_WHATSAPP');
     } else if (activeFilter === 'followup') {
-      filtered = leads.filter(l => l.status === 'FOLLOWUP' || l.reminder_date);
+      filtered = leads.filter(l => 
+        l.status === 'FOLLOW UP' || 
+        l.status === 'WHATSAPP FOLLOW UP' || 
+        l.status === 'Repeat follow up' ||
+        l.reminder_date
+      );
     } else if (activeFilter === 'payment_sent') {
-      filtered = leads.filter(l => l.payment_link);
+      filtered = leads.filter(l => l.status === 'PAYMENT LINK SENT' || l.payment_link);
     }
     return filtered;
   };
