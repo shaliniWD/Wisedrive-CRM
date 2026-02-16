@@ -112,8 +112,34 @@ Build a scalable automotive platform "Wisedrive" that evolved into a monolithic 
 
 ## Future Tasks (Backlog)
 
-### P1 - Upcoming
-- [ ] User acceptance testing with fixed builds
+### ✅ COMPLETED - Leads Management Module (Phase 1-4)
+
+**Phase 1 - Lead Creation via Twilio WhatsApp:**
+- Webhook: `/api/webhooks/twilio/whatsapp`
+- Receives Meta ad clicks, extracts ad_id, maps to city
+- Creates lead with status "NEW LEAD"
+
+**Phase 2 - Lead Management:**
+- 22 lead statuses implemented
+- Round-robin assignment to sales reps by city
+- Filtering by status, city, search
+
+**Phase 3 - Follow-up:**
+- Lead notes with activity logging
+- Reminder system with scheduled notifications
+- Status change tracking
+
+**Phase 4 - Payment (Razorpay):**
+- Payment link creation: `/api/leads/{id}/payment-link`
+- WhatsApp send via Twilio
+- Webhook: `/api/webhooks/razorpay/payment`
+- Auto-creates customer on payment confirmation
+
+### P1 - Frontend UI for Leads Module
+- [ ] Leads listing page with filters
+- [ ] Lead detail view with notes/activities
+- [ ] Payment link generation UI
+- [ ] AD-City mapping settings UI
 
 ### P2 - CRM Modules
 - [ ] Leads Module
