@@ -288,9 +288,45 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
   },
+  applyBtnDisabled: {
+    opacity: 0.7,
+  },
   scrollContent: {
     padding: spacing.xl,
     paddingBottom: spacing.xxxxl + 80,
+  },
+  // Period Header
+  periodHeader: {
+    marginBottom: spacing.lg,
+  },
+  periodLabel: {
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.semibold,
+    color: colors.text.primary,
+    textAlign: 'center',
+  },
+  periodSubLabel: {
+    fontSize: fontSize.xs,
+    color: colors.text.tertiary,
+    textAlign: 'center',
+    marginTop: spacing.xs,
+  },
+  // No Leaves Warning
+  noLeavesWarning: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.warningBg,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.md,
+    marginBottom: spacing.lg,
+  },
+  noLeavesText: {
+    fontSize: fontSize.sm,
+    color: colors.warning,
+    fontWeight: fontWeight.medium,
   },
   // Balance Cards
   balanceRow: {
@@ -306,6 +342,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  balanceCardDisabled: {
+    opacity: 0.6,
   },
   balanceIndicator: {
     width: 8,
@@ -327,6 +366,12 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xs,
     color: colors.text.secondary,
     marginTop: spacing.sm,
+  },
+  exhaustedBadge: {
+    fontSize: fontSize.xs,
+    color: colors.error,
+    fontWeight: fontWeight.medium,
+    marginTop: spacing.xs,
   },
   // Filter Tabs
   filterRow: {
