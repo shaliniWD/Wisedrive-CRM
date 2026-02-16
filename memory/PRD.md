@@ -131,8 +131,8 @@ All users use password: `password123`
 ## Future Tasks / Backlog
 
 ### P0 - Immediate (To Complete Project)
-- [ ] Build and deliver final Android APK and iOS IPA with new design
-- [ ] User acceptance testing (UAT) of redesigned app
+- [x] Build final APK/IPA with new design ✅ DONE
+- [ ] User acceptance testing on actual mobile devices (IN PROGRESS)
 
 ### P1 - High Priority
 - [ ] Production Firebase setup (replace test credentials)
