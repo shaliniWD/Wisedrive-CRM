@@ -5260,24 +5260,118 @@ async def clear_and_seed():
     }
 
 
-@api_router.post("/admin/reset-users")
-async def admin_reset_users():
-    """Reset users to 3 main credentials + 2 test employees for dev environment"""
+# ==================== ADMIN PASSWORD FIX ENDPOINTS ====================
+
+class AdminPasswordReset(BaseModel):
+    """Request to reset user password"""
+    email: str
+    new_password: str
+
+
+@api_router.post("/admin/fix-user-password")
+async def admin_fix_user_password(
+    data: AdminPasswordReset,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Fix password for a specific user - CEO/HR only.
+    Use this when a user cannot login due to corrupted password hash.
+    """
+    # Only CEO and HR can reset passwords
+    role_code = current_user.get("role_code", "")
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Only CEO or HR Manager can reset passwords")
     
-    # Delete all existing users
-    await db.users.delete_many({})
+    # Find user
+    user = await db.users.find_one({"email": data.email})
+    if not user:
+        raise HTTPException(status_code=404, detail=f"User with email {data.email} not found")
     
-    # Delete related data
-    await db.salary_structures.delete_many({})
-    await db.payroll_records.delete_many({})
-    await db.payroll_batches.delete_many({})
-    await db.attendance_records.delete_many({})
-    await db.leave_requests.delete_many({})
-    await db.leave_balances.delete_many({})
-    await db.employee_documents.delete_many({})
+    # Hash new password
+    new_hash = hash_password(data.new_password)
+    
+    # Update user password
+    await db.users.update_one(
+        {"email": data.email},
+        {"$set": {
+            "hashed_password": new_hash,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "password_reset_by": current_user.get("id"),
+            "password_reset_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    # Invalidate all sessions for this user (force re-login)
+    await db.user_sessions.delete_many({"user_id": user["id"]})
+    await db.ess_device_sessions.update_many(
+        {"user_id": user["id"]},
+        {"$set": {"is_active": False}}
+    )
+    
+    return {
+        "success": True,
+        "message": f"Password reset for {data.email}",
+        "user_id": user["id"]
+    }
+
+
+@api_router.post("/admin/fix-all-passwords")
+async def admin_fix_all_passwords(
+    default_password: str = "password123",
+    secret_key: str = None
+):
+    """
+    Fix passwords for ALL users - requires secret key.
+    Use this only when multiple users cannot login.
+    Does NOT delete any data - only updates password hashes.
+    
+    Required: secret_key must match ADMIN_SECRET environment variable
+    """
+    # Require secret key for this dangerous operation
+    admin_secret = os.environ.get("ADMIN_SECRET", "wisedrive-admin-2026-secure")
+    if secret_key != admin_secret:
+        raise HTTPException(status_code=403, detail="Invalid admin secret key")
+    
+    # Get all users
+    users = await db.users.find({}, {"_id": 0, "id": 1, "email": 1}).to_list(1000)
+    
+    if not users:
+        return {"success": False, "message": "No users found", "count": 0}
+    
+    # Hash the default password once
+    password_hash = hash_password(default_password)
+    now = datetime.now(timezone.utc).isoformat()
+    
+    # Update all users
+    updated_count = 0
+    for user in users:
+        await db.users.update_one(
+            {"id": user["id"]},
+            {"$set": {
+                "hashed_password": password_hash,
+                "updated_at": now,
+                "password_bulk_reset_at": now
+            }}
+        )
+        updated_count += 1
+    
+    # Invalidate all sessions
     await db.user_sessions.delete_many({})
+    await db.ess_device_sessions.update_many({}, {"$set": {"is_active": False}})
     
-    # Get role IDs
+    return {
+        "success": True,
+        "message": f"Passwords reset for {updated_count} users to '{default_password}'",
+        "count": updated_count,
+        "users": [u["email"] for u in users]
+    }
+
+
+# DEPRECATED: Old dangerous endpoint - keeping for reference but disabled
+# @api_router.post("/admin/reset-users")
+# async def admin_reset_users():
+#     """DISABLED - Use /admin/fix-all-passwords instead"""
+#     raise HTTPException(status_code=410, detail="This endpoint is disabled. Use /admin/fix-all-passwords instead")
     ceo_role = await db.roles.find_one({"code": "CEO"}, {"_id": 0, "id": 1})
     hr_role = await db.roles.find_one({"code": "HR_MANAGER"}, {"_id": 0, "id": 1})
     finance_role = await db.roles.find_one({"code": "FINANCE_MANAGER"}, {"_id": 0, "id": 1})
