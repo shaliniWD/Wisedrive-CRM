@@ -75,17 +75,25 @@ class BankDetailsResponse(BaseModel):
 
 
 class SalarySummary(BaseModel):
-    """Salary summary visible to employee"""
+    """Salary summary visible to employee - matches CRM structure"""
     gross_salary: float
     net_salary: float
     currency: str
     currency_symbol: str
     
-    # Breakdown (optional)
-    basic_salary: Optional[float]
-    hra: Optional[float]
-    other_allowances: Optional[float]
-    total_deductions: Optional[float]
+    # Earnings breakdown (matching CRM)
+    basic_salary: Optional[float] = None
+    hra: Optional[float] = None
+    variable_pay: Optional[float] = None
+    conveyance: Optional[float] = None
+    medical: Optional[float] = None
+    special_allowance: Optional[float] = None
+    
+    # Deductions breakdown (matching CRM)
+    pf_employee: Optional[float] = None
+    professional_tax: Optional[float] = None
+    income_tax: Optional[float] = None
+    other_deductions: Optional[float] = None
 
 
 class AttendanceSummary(BaseModel):
