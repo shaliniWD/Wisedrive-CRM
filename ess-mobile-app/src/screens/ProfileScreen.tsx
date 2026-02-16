@@ -1,4 +1,5 @@
 // Professional Profile Screen - Light Theme
+// Salary structure matches CRM exactly
 import React, { useState } from 'react';
 import {
   View,
@@ -55,12 +56,9 @@ export default function ProfileScreen() {
     return name?.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'U';
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0,
-    }).format(amount || 0);
+  const formatCurrency = (amount: number, symbol: string = '₹') => {
+    if (!amount && amount !== 0) return '-';
+    return `${symbol}${new Intl.NumberFormat('en-IN').format(amount)}`;
   };
 
   const tabs: { key: TabType; label: string; icon: any }[] = [
@@ -71,9 +69,16 @@ export default function ProfileScreen() {
 
   const isLoading = profileLoading || (activeTab === 'bank' && bankLoading) || (activeTab === 'salary' && salaryLoading);
 
+  // Calculate totals for salary display (matching CRM structure)
+  const grossSalary = (salary?.basic_salary || 0) + (salary?.hra || 0) + (salary?.variable_pay || 0) + 
+                      (salary?.conveyance || 0) + (salary?.medical || 0) + (salary?.special_allowance || 0);
+  const totalDeductions = (salary?.pf_employee || 0) + (salary?.professional_tax || 0) + 
+                          (salary?.income_tax || 0) + (salary?.other_deductions || 0);
+  const netSalary = grossSalary - totalDeductions;
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Header */}
+      {/* Header - No settings icon (settings is on home now) */}
       <View style={styles.header}>
         <TouchableOpacity
           testID="back-btn"
@@ -83,13 +88,7 @@ export default function ProfileScreen() {
           <Ionicons name="arrow-back" size={iconSize.lg} color={colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Profile</Text>
-        <TouchableOpacity
-          testID="settings-btn"
-          style={styles.settingsBtn}
-          onPress={() => navigation.navigate('Settings')}
-        >
-          <Ionicons name="settings-outline" size={iconSize.lg} color={colors.text.secondary} />
-        </TouchableOpacity>
+        <View style={{ width: 40 }} />
       </View>
 
       <ScrollView
@@ -147,35 +146,90 @@ export default function ProfileScreen() {
             <ActivityIndicator size="large" color={colors.primary} />
           </View>
         ) : (
-          <View style={styles.tabContent}>
+          <>
             {activeTab === 'personal' && (
-              <>
+              <View style={styles.tabContent}>
                 <InfoRow icon="id-card-outline" label="Employee ID" value={profile?.employee_code || '-'} />
                 <InfoRow icon="call-outline" label="Phone" value={profile?.phone || '-'} />
                 <InfoRow icon="business-outline" label="Department" value={profile?.department_name || '-'} />
                 <InfoRow icon="location-outline" label="Location" value={profile?.location || profile?.country_name || '-'} />
                 <InfoRow icon="calendar-outline" label="Join Date" value={profile?.join_date || '-'} />
-              </>
+              </View>
             )}
+            
             {activeTab === 'bank' && (
-              <>
+              <View style={styles.tabContent}>
                 <InfoRow icon="card-outline" label="Account Number" value={bankDetails?.account_number ? `****${bankDetails.account_number.slice(-4)}` : '-'} />
                 <InfoRow icon="business-outline" label="Bank Name" value={bankDetails?.bank_name || '-'} />
                 <InfoRow icon="git-branch-outline" label="Branch" value={bankDetails?.branch_name || '-'} />
                 <InfoRow icon="barcode-outline" label="IFSC Code" value={bankDetails?.ifsc_code || '-'} />
                 <InfoRow icon="person-outline" label="Account Holder" value={bankDetails?.account_holder_name || '-'} />
-              </>
+              </View>
             )}
+            
             {activeTab === 'salary' && (
               <>
-                <InfoRow icon="cash-outline" label="Gross Salary" value={formatCurrency(salary?.gross_salary || 0)} highlight />
-                <InfoRow icon="wallet-outline" label="Net Salary" value={formatCurrency(salary?.net_salary || 0)} highlight />
-                <InfoRow icon="home-outline" label="Basic" value={formatCurrency(salary?.basic || 0)} />
-                <InfoRow icon="car-outline" label="HRA" value={formatCurrency(salary?.hra || 0)} />
-                <InfoRow icon="briefcase-outline" label="Allowances" value={formatCurrency(salary?.allowances || 0)} />
+                {/* Earnings Section - Matching CRM */}
+                <View style={styles.salarySection}>
+                  <View style={styles.salarySectionHeader}>
+                    <View style={[styles.salarySectionIcon, { backgroundColor: colors.successBg }]}>
+                      <Ionicons name="trending-up" size={16} color={colors.success} />
+                    </View>
+                    <Text style={styles.salarySectionTitle}>Earnings</Text>
+                  </View>
+                  <View style={styles.salaryCard}>
+                    <SalaryRow label="Basic Salary" value={formatCurrency(salary?.basic_salary || 0)} />
+                    <SalaryRow label="HRA" value={formatCurrency(salary?.hra || 0)} />
+                    <SalaryRow label="Variable Pay / Incentives" value={formatCurrency(salary?.variable_pay || 0)} />
+                    <SalaryRow label="Conveyance" value={formatCurrency(salary?.conveyance || 0)} />
+                    <SalaryRow label="Medical Allowance" value={formatCurrency(salary?.medical || 0)} />
+                    <SalaryRow label="Special Allowance" value={formatCurrency(salary?.special_allowance || 0)} />
+                    <View style={styles.salaryTotalRow}>
+                      <Text style={styles.salaryTotalLabel}>Gross Salary</Text>
+                      <Text style={[styles.salaryTotalValue, { color: colors.success }]}>
+                        {formatCurrency(grossSalary)}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Deductions Section - Matching CRM */}
+                <View style={styles.salarySection}>
+                  <View style={styles.salarySectionHeader}>
+                    <View style={[styles.salarySectionIcon, { backgroundColor: colors.errorBg }]}>
+                      <Ionicons name="trending-down" size={16} color={colors.error} />
+                    </View>
+                    <Text style={styles.salarySectionTitle}>Deductions</Text>
+                  </View>
+                  <View style={styles.salaryCard}>
+                    <SalaryRow label="PF (Employee)" value={formatCurrency(salary?.pf_employee || 0)} isDeduction />
+                    <SalaryRow label="Professional Tax" value={formatCurrency(salary?.professional_tax || 0)} isDeduction />
+                    <SalaryRow label="Income Tax (TDS)" value={formatCurrency(salary?.income_tax || 0)} isDeduction />
+                    <SalaryRow label="Other Deductions" value={formatCurrency(salary?.other_deductions || 0)} isDeduction />
+                    <View style={styles.salaryTotalRow}>
+                      <Text style={styles.salaryTotalLabel}>Total Deductions</Text>
+                      <Text style={[styles.salaryTotalValue, { color: colors.error }]}>
+                        {formatCurrency(totalDeductions)}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Net Salary Card */}
+                <View style={styles.netSalaryCard}>
+                  <LinearGradient
+                    colors={colors.gradients.primary}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.netSalaryGradient}
+                  >
+                    <Text style={styles.netSalaryLabel}>Net Salary (Take Home)</Text>
+                    <Text style={styles.netSalaryValue}>{formatCurrency(netSalary)}</Text>
+                  </LinearGradient>
+                </View>
               </>
             )}
-          </View>
+          </>
         )}
       </ScrollView>
     </View>
@@ -186,12 +240,10 @@ const InfoRow = ({
   icon, 
   label, 
   value, 
-  highlight = false 
 }: { 
   icon: any; 
   label: string; 
   value: string; 
-  highlight?: boolean;
 }) => (
   <View style={styles.infoRow}>
     <View style={styles.infoIcon}>
@@ -199,8 +251,23 @@ const InfoRow = ({
     </View>
     <View style={styles.infoContent}>
       <Text style={styles.infoLabel}>{label}</Text>
-      <Text style={[styles.infoValue, highlight && styles.infoValueHighlight]}>{value}</Text>
+      <Text style={styles.infoValue}>{value}</Text>
     </View>
+  </View>
+);
+
+const SalaryRow = ({ 
+  label, 
+  value, 
+  isDeduction = false 
+}: { 
+  label: string; 
+  value: string; 
+  isDeduction?: boolean;
+}) => (
+  <View style={styles.salaryRow}>
+    <Text style={styles.salaryRowLabel}>{label}</Text>
+    <Text style={[styles.salaryRowValue, isDeduction && { color: colors.error }]}>{value}</Text>
   </View>
 );
 
@@ -231,16 +298,6 @@ const styles = StyleSheet.create({
     fontSize: fontSize.lg,
     fontWeight: fontWeight.semibold,
     color: colors.text.primary,
-  },
-  settingsBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.md,
-    backgroundColor: colors.surface,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   scrollContent: {
     padding: spacing.xl,
@@ -366,8 +423,90 @@ const styles = StyleSheet.create({
     fontSize: fontSize.base,
     color: colors.text.primary,
   },
-  infoValueHighlight: {
-    color: colors.success,
+  // Salary Section
+  salarySection: {
+    marginBottom: spacing.lg,
+  },
+  salarySectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  salarySectionIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: radius.sm,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  salarySectionTitle: {
+    fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,
+    color: colors.text.primary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  salaryCard: {
+    backgroundColor: colors.background,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  salaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLight,
+  },
+  salaryRowLabel: {
+    fontSize: fontSize.sm,
+    color: colors.text.secondary,
+  },
+  salaryRowValue: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    color: colors.text.primary,
+  },
+  salaryTotalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: spacing.md,
+    marginTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  salaryTotalLabel: {
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
+    color: colors.text.primary,
+  },
+  salaryTotalValue: {
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.bold,
+  },
+  // Net Salary Card
+  netSalaryCard: {
+    borderRadius: radius.xl,
+    overflow: 'hidden',
+    ...shadows.lg,
+  },
+  netSalaryGradient: {
+    padding: spacing.xl,
+    alignItems: 'center',
+  },
+  netSalaryLabel: {
+    fontSize: fontSize.sm,
+    color: 'rgba(255,255,255,0.8)',
+    marginBottom: spacing.sm,
+  },
+  netSalaryValue: {
+    fontSize: 32,
+    fontWeight: fontWeight.bold,
+    color: '#FFF',
   },
 });
