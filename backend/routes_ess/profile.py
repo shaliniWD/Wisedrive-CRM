@@ -207,7 +207,7 @@ async def get_salary_summary(
     # Calculate deductions totals
     pf = salary.get("pf_employee") or 0
     pt = salary.get("professional_tax") or 0
-    tds = salary.get("tds") or 0
+    tds = salary.get("income_tax") or salary.get("tds") or 0  # Support both field names
     other_ded = salary.get("other_deductions") or 0
     
     # Calculate gross and net if not stored
