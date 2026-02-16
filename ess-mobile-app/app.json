@@ -27,7 +27,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#0B1120"
+        "backgroundColor": "#2563EB"
       },
       "package": "com.wisedrive.ess",
       "permissions": [
