@@ -1,4 +1,4 @@
-// Premium Documents Screen - Dark Theme
+// Professional Documents Screen - Light Theme
 import React, { useState } from 'react';
 import {
   View,
@@ -33,7 +33,7 @@ export default function DocumentsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState('all');
 
-  const { data: documents, isLoading } = useQuery({
+  const { data: documents, isLoading, isError } = useQuery({
     queryKey: ['documents', filter === 'all' ? undefined : filter],
     queryFn: () => getDocuments(filter === 'all' ? undefined : filter),
   });
@@ -45,9 +45,14 @@ export default function DocumentsScreen() {
   };
 
   const handleDocumentPress = async (doc: any) => {
-    if (doc.file_url) {
+    if (doc?.file_url) {
       try {
-        await Linking.openURL(doc.file_url);
+        const canOpen = await Linking.canOpenURL(doc.file_url);
+        if (canOpen) {
+          await Linking.openURL(doc.file_url);
+        } else {
+          Alert.alert('Error', 'Unable to open this document');
+        }
       } catch (error) {
         Alert.alert('Error', 'Unable to open document');
       }
@@ -56,7 +61,7 @@ export default function DocumentsScreen() {
     }
   };
 
-  const getDocIcon = (type: string) => {
+  const getDocIcon = (type?: string) => {
     switch (type?.toLowerCase()) {
       case 'policy':
         return 'shield-checkmark-outline';
@@ -69,7 +74,7 @@ export default function DocumentsScreen() {
     }
   };
 
-  const getDocColor = (type: string) => {
+  const getDocColor = (type?: string) => {
     switch (type?.toLowerCase()) {
       case 'policy':
         return colors.primary;
@@ -81,6 +86,9 @@ export default function DocumentsScreen() {
         return colors.accent;
     }
   };
+
+  // Safe array access
+  const documentList = Array.isArray(documents) ? documents : [];
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -134,28 +142,37 @@ export default function DocumentsScreen() {
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={colors.primary} />
           </View>
-        ) : documents?.length === 0 ? (
+        ) : isError ? (
+          <View style={styles.emptyState}>
+            <Ionicons name="alert-circle-outline" size={48} color={colors.error} />
+            <Text style={styles.emptyText}>Failed to load documents</Text>
+            <Text style={styles.emptySubtext}>Pull down to try again</Text>
+          </View>
+        ) : documentList.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="folder-open-outline" size={48} color={colors.text.tertiary} />
             <Text style={styles.emptyText}>No documents found</Text>
             <Text style={styles.emptySubtext}>Documents will appear here when available</Text>
           </View>
         ) : (
-          documents?.map((doc: any) => {
+          documentList.map((doc: any, index: number) => {
+            if (!doc) return null;
             const docColor = getDocColor(doc.document_type);
+            const docKey = doc.id || `doc-${index}`;
+            
             return (
               <TouchableOpacity
-                key={doc.id}
-                testID={`document-${doc.id}`}
+                key={docKey}
+                testID={`document-${docKey}`}
                 style={styles.docCard}
                 onPress={() => handleDocumentPress(doc)}
                 activeOpacity={0.7}
               >
-                <View style={[styles.docIcon, { backgroundColor: `${docColor}20` }]}>
-                  <Ionicons name={getDocIcon(doc.document_type)} size={iconSize.lg} color={docColor} />
+                <View style={[styles.docIcon, { backgroundColor: `${docColor}15` }]}>
+                  <Ionicons name={getDocIcon(doc.document_type) as any} size={iconSize.lg} color={docColor} />
                 </View>
                 <View style={styles.docInfo}>
-                  <Text style={styles.docTitle} numberOfLines={1}>{doc.name}</Text>
+                  <Text style={styles.docTitle} numberOfLines={1}>{doc.name || 'Untitled Document'}</Text>
                   <View style={styles.docMeta}>
                     <Text style={styles.docType}>{doc.document_type || 'Document'}</Text>
                     {doc.created_at && (
@@ -189,6 +206,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.lg,
+    backgroundColor: colors.background,
   },
   backBtn: {
     width: 40,
@@ -208,6 +226,7 @@ const styles = StyleSheet.create({
   // Filter
   filterContainer: {
     paddingBottom: spacing.md,
+    backgroundColor: colors.background,
   },
   filterScroll: {
     paddingHorizontal: spacing.xl,
