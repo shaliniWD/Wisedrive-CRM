@@ -75,16 +75,26 @@ WiseDrive is a scalable automotive platform with a CRM system and an Employee Se
 - ✅ Payroll management
 - ✅ Leave management
 - ✅ Notification Configuration UI for HR
-- ✅ **Inspection Packages (NEW - February 16, 2026):**
+- ✅ **Inspection Packages (Updated - February 16, 2026):**
   - Settings > Inspection Packages tab
-  - Create/Edit/Delete inspection categories with check points, items, and benefits
-  - Create/Edit/Delete packages that include multiple categories
+  - Create/Edit inspection categories with check points, items, and benefits
+  - Create/Edit packages that include multiple categories
   - **Category-to-Package assignment:** Select categories when creating/editing a package
   - **No. of Inspections:** Define how many inspections customer can avail per package
+  - **Copy & Create:** Duplicate existing packages/categories
+  - **Show Inactive:** Inactive packages/categories visible with badge (no delete option)
+  - **Toggle Status:** Activate/deactivate packages and categories
   - Package pricing with currency support
   - Recommended badge for featured packages
   - Country-based filtering
-  - Soft delete support (deactivate instead of hard delete)
+- ✅ **HR Module Fixes (February 16, 2026):**
+  - Role creation: POST /api/roles endpoint for creating new roles
+  - Copy role: Duplicate existing roles with modified name/code
+  - Salary field mapping: Using correct field names (conveyance_allowance, medical_allowance)
+  - Document download: Authenticated download through API
+  - Reporting Manager dropdown: Shows list of all active employees
+  - Modal alignment: Wider modal (900px), better overflow handling
+  - ESS Mobile sync: Salary data now correctly synced between CRM and mobile app
 
 ### Integrations
 - ✅ Firebase Cloud Messaging (FCM) for push notifications
