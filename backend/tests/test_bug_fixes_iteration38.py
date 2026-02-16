@@ -88,7 +88,8 @@ def ess_token():
     """Get ESS auth token"""
     response = requests.post(f"{BASE_URL}/api/ess/v1/auth/login", json={
         "email": HR_EMAIL,
-        "password": DEFAULT_PASSWORD
+        "password": DEFAULT_PASSWORD,
+        "device": TEST_DEVICE
     })
     if response.status_code != 200:
         pytest.skip(f"ESS login failed: {response.text}")
