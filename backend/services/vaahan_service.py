@@ -8,8 +8,13 @@ class VaahanService:
     
     def __init__(self):
         self.api_url = "https://api.invincibleocean.com/invincible/vehicleRcV6"
-        self.client_id = os.environ.get("VAAHAN_CLIENT_ID", "")
-        self.secret_key = os.environ.get("VAAHAN_SECRET_KEY", "")
+    
+    def _get_credentials(self):
+        """Get credentials at runtime (after dotenv is loaded)"""
+        return {
+            "client_id": os.environ.get("VAAHAN_CLIENT_ID", ""),
+            "secret_key": os.environ.get("VAAHAN_SECRET_KEY", "")
+        }
     
     async def get_vehicle_details(self, vehicle_number: str) -> Dict[str, Any]:
         """
@@ -21,7 +26,8 @@ class VaahanService:
         Returns:
             Dict with vehicle details or error
         """
-        if not self.client_id or not self.secret_key:
+        creds = self._get_credentials()
+        if not creds["client_id"] or not creds["secret_key"]:
             return {
                 "success": False,
                 "error": "Vaahan API credentials not configured"
@@ -32,8 +38,8 @@ class VaahanService:
         
         headers = {
             "Content-Type": "application/json",
-            "clientId": self.client_id,
-            "secretKey": self.secret_key
+            "clientId": creds["client_id"],
+            "secretKey": creds["secret_key"]
         }
         
         payload = {
