@@ -577,11 +577,11 @@ export default function LeadsPage() {
     return inspectionPackages.find(p => p.id === paymentFormData.packageId);
   };
 
-  // Calculate base amount from selected package
+  // Calculate base amount from selected package (no longer multiplied by numberOfCars)
   const getBaseAmount = () => {
     const pkg = getSelectedPackage();
     if (!pkg) return 0;
-    return pkg.price * parseInt(paymentFormData.numberOfCars || 1);
+    return pkg.price;
   };
 
   // Calculate discount amount
@@ -600,6 +600,19 @@ export default function LeadsPage() {
     const baseAmount = getBaseAmount();
     const discount = getDiscountAmount();
     return Math.max(0, baseAmount - discount);
+  };
+
+  // Handle package selection and initialize schedules
+  const handlePackageSelect = (packageId) => {
+    setPaymentFormData(prev => ({ ...prev, packageId }));
+    if (packageId && packageId !== 'select') {
+      const pkg = inspectionPackages.find(p => p.id === packageId);
+      if (pkg) {
+        initializeInspectionSchedules(pkg);
+      }
+    } else {
+      setInspectionSchedules([]);
+    }
   };
 
   return (
