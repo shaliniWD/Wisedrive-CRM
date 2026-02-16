@@ -173,6 +173,12 @@ export const getLeaveBalance = async (year?: number) => {
   return response.data;
 };
 
+// Get period-based leave balance (monthly/quarterly with no carry forward)
+export const getLeavePeriodBalance = async () => {
+  const response = await api.get(API_ENDPOINTS.LEAVE_PERIOD_BALANCE);
+  return response.data;
+};
+
 export const getLeaveHistory = async (page = 1, pageSize = 20, status?: string, year?: number) => {
   const params = new URLSearchParams();
   params.append('page', page.toString());
