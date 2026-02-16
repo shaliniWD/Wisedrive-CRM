@@ -37,6 +37,7 @@ class InspectionPackageBase(BaseModel):
     country_id: str
     categories: List[str] = []  # List of category IDs included in this package
     total_check_points: int = 0
+    no_of_inspections: int = 1  # Number of inspections customer can avail with this package
     is_active: bool = True
     is_recommended: bool = False  # Show "Recommended" badge
     order: int = 0  # Display order
@@ -53,6 +54,7 @@ class InspectionPackageUpdate(BaseModel):
     price: Optional[float] = None
     categories: Optional[List[str]] = None
     total_check_points: Optional[int] = None
+    no_of_inspections: Optional[int] = None
     is_active: Optional[bool] = None
     is_recommended: Optional[bool] = None
     order: Optional[int] = None
