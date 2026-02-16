@@ -2235,7 +2235,9 @@ async def create_employee_salary(employee_id: str, salary_data: SalaryStructureC
             salary_dict["currency"] = country.get("currency", "INR")
     
     # Calculate gross and net salary for full-time employees
-    if salary_dict.get("employment_type") in ["full_time", "part_time"]:
+    # Support both 'full_time' and 'fulltime' variations
+    emp_type = salary_dict.get("employment_type", "").lower().replace("_", "")
+    if emp_type in ["fulltime", "parttime", "full_time", "part_time"]:
         salary_dict["gross_salary"] = (
             salary_dict.get("basic_salary", 0) +
             salary_dict.get("hra", 0) +
