@@ -1,4 +1,4 @@
-// Premium Notifications Screen - Dark Theme
+// Professional Notifications Screen - Light Theme
 import React, { useState } from 'react';
 import {
   View,
@@ -71,7 +71,7 @@ export default function NotificationsScreen() {
           <Ionicons name="arrow-back" size={iconSize.lg} color={colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Notifications</Text>
-        {unreadCount > 0 && (
+        {unreadCount > 0 ? (
           <TouchableOpacity
             testID="mark-all-read-btn"
             style={styles.markAllBtn}
@@ -79,8 +79,9 @@ export default function NotificationsScreen() {
           >
             <Text style={styles.markAllText}>Mark all read</Text>
           </TouchableOpacity>
+        ) : (
+          <View style={{ width: 80 }} />
         )}
-        {unreadCount === 0 && <View style={{ width: 80 }} />}
       </View>
 
       <ScrollView
@@ -123,7 +124,7 @@ export default function NotificationsScreen() {
                 ]}
                 activeOpacity={0.7}
               >
-                <View style={[styles.notificationIcon, { backgroundColor: `${color}20` }]}>
+                <View style={[styles.notificationIcon, { backgroundColor: `${color}15` }]}>
                   <Ionicons name={icon as any} size={iconSize.lg} color={color} />
                 </View>
                 <View style={styles.notificationContent}>
@@ -150,7 +151,7 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
   },
   header: {
     flexDirection: 'row',
@@ -158,6 +159,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.lg,
+    backgroundColor: colors.background,
   },
   backBtn: {
     width: 40,
@@ -185,7 +187,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: spacing.xl,
-    paddingTop: 0,
     paddingBottom: spacing.xxxxl,
   },
   loadingContainer: {
@@ -201,10 +202,12 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: radius.xl,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   emptyText: {
     fontSize: fontSize.lg,
@@ -216,11 +219,10 @@ const styles = StyleSheet.create({
     color: colors.text.tertiary,
     marginTop: spacing.xs,
   },
-  // Notification Card
   notificationCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
     padding: spacing.lg,
     borderRadius: radius.lg,
     marginBottom: spacing.md,
@@ -228,7 +230,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   notificationUnread: {
-    backgroundColor: colors.surfaceHighlight,
+    backgroundColor: colors.primaryLight,
     borderColor: colors.primary,
   },
   notificationIcon: {
