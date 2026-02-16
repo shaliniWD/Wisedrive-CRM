@@ -9,15 +9,22 @@ Build a scalable automotive platform "Wisedrive" that evolved into a monolithic 
 
 ## User Personas
 - **CEO** - Full system access
-- **HR Manager** - Employee, payroll, leave management, leads view
-- **Sales Agents** - Leads management, payment links
+- **HR Manager** - Employee, payroll, leave management, leads view (all leads)
+- **Sales Executives** - Leads management (only their assigned leads), payment links
 - **Employees** - Self-service access via mobile app
 
 ---
 
 ## Completed Features
 
-### ✅ Leads Management Module (December 2025)
+### ✅ Leads Management Module (February 2026)
+
+**RBAC Implementation:**
+- Sales Executives only see Leads tab (no Dashboard, HR Module, Finance)
+- Sales Executives only see leads assigned to them (filtered by `assigned_to` field)
+- HR Manager sees Leads, HR Module, Finance tabs
+- HR Manager can see and manage all leads
+- Summary cards show role-appropriate counts
 
 **Phase 1 - Lead Creation via Twilio WhatsApp:**
 - Webhook: `/api/webhooks/twilio/whatsapp`
@@ -40,13 +47,15 @@ Build a scalable automotive platform "Wisedrive" that evolved into a monolithic 
 - Webhook: `/api/webhooks/razorpay/payment`
 - Auto-creates customer on payment confirmation
 
-**Frontend UI (February 2026):**
+**Frontend UI:**
 - Summary cards (New Leads Today, Hot Leads, RCB WhatsApp, Follow Up, Payment Link Sent)
 - Leads table with 9 columns: Date, Lead Details, City, Assigned, Reminder, Status, Notes, Source, Payment Link
 - Inline status dropdown with all 22 statuses
 - Notes drawer with Notes and Activity Log tabs
 - Add Lead modal with all fields
 - Payment Link modal with car details and package selection
+- RBAC-aware Employee filter (dropdown for managers, static text for sales execs)
+- Reassign button hidden for Sales Executives
 
 ### ✅ Leave Rules Feature (December 2025)
 - Period-based leave allocation (monthly/quarterly)
@@ -63,10 +72,35 @@ Build a scalable automotive platform "Wisedrive" that evolved into a monolithic 
 
 ---
 
+## RBAC Configuration
+
+### Tab Visibility by Role
+| Role | Visible Tabs |
+|------|-------------|
+| CEO | leads, customers, inspections, reports, hr, settings, finance |
+| HR_MANAGER | leads, hr, finance |
+| FINANCE_MANAGER | finance, hr |
+| COUNTRY_HEAD | leads, customers, inspections, reports, hr, settings, finance |
+| SALES_HEAD | leads, customers, hr |
+| SALES_LEAD | leads, customers, hr |
+| **SALES_EXEC** | **leads** (ONLY) |
+| INSPECTION_HEAD | customers, inspections, reports, hr |
+| MECHANIC | hr |
+| FREELANCER | hr |
+
+### Data Scope for Leads
+| Role | Leads Access |
+|------|-------------|
+| CEO | All leads (no filter) |
+| HR_MANAGER | All leads in their country |
+| SALES_EXEC | Only leads assigned to them (`assigned_to` = user_id) |
+
+---
+
 ## API Endpoints
 
 ### Leads API
-- `GET /api/leads` - List leads with filters
+- `GET /api/leads` - List leads (RBAC filtered)
 - `POST /api/leads` - Create new lead
 - `PUT /api/leads/{id}` - Update lead
 - `PATCH /api/leads/{id}/status` - Inline status update
@@ -76,25 +110,26 @@ Build a scalable automotive platform "Wisedrive" that evolved into a monolithic 
 - `GET /api/leads/{id}/notes` - Get notes
 - `GET /api/leads/{id}/activities` - Get activity log
 - `POST /api/leads/{id}/payment-link` - Create Razorpay payment link
-- `POST /api/leads/{id}/reassign` - Reassign lead to another agent
+- `POST /api/leads/{id}/reassign` - Reassign lead (blocked for SALES_EXEC)
 
-### Webhooks
-- `POST /api/webhooks/twilio-whatsapp` - Twilio WhatsApp webhook
-- `POST /api/webhooks/razorpay` - Razorpay payment webhook
+### Auth API
+- `POST /api/auth/login` - Returns `visible_tabs` in user object
+- `GET /api/auth/me` - Returns full user with `visible_tabs` and `permissions`
 
 ---
 
 ## Test Results
 
-### Latest Test: Iteration 43 (February 2026)
-- **Backend:** 20/20 tests passed (100%)
-- **Frontend:** All UI features verified (100%)
-- **Test file:** `/app/backend/tests/test_lead_management.py`
+### Latest Test: Iteration 44 (February 2026)
+- **Backend:** 8/8 tests passed (100%)
+- **Frontend:** All RBAC features verified (100%)
+- **Test file:** `/app/backend/tests/test_rbac_leads.py`
 
 ### Test Credentials
-- **CRM URL:** https://autoleads-app-1.preview.emergentagent.com
-- **HR User:** hr@wisedrive.com / password123
-- **Country:** India (IN)
+| Role | Email | Password |
+|------|-------|----------|
+| Sales Executive | salesexec3.in@wisedrive.com | password123 |
+| HR Manager | hr@wisedrive.com | password123 |
 
 ---
 
@@ -120,20 +155,20 @@ Build a scalable automotive platform "Wisedrive" that evolved into a monolithic 
 
 ## Future Tasks (Backlog)
 
-### P1 - UAT & Deployment
+### P0 - UAT & Deployment
 - [ ] User Acceptance Testing for Leads Module
 - [ ] Production deployment
 
-### P2 - CRM Modules
+### P1 - CRM Modules
 - [ ] Inspections Module
 - [ ] Customer Module
 
-### P3 - Integrations
+### P2 - Integrations
 - [ ] OBD-Integration-v1.0
 - [ ] Vaahan API (real integration)
 - [ ] Invincible Ocean clients integration
 
-### P4 - Enhancements
+### P3 - Enhancements
 - [ ] Screen height adjustment verification (iOS vs Android)
 
 ---
@@ -150,17 +185,22 @@ Build a scalable automotive platform "Wisedrive" that evolved into a monolithic 
 │   │   ├── leave.py            # ESS leave APIs with rules
 │   │   └── documents.py        # ESS documents API
 │   ├── services/
-│   │   ├── rbac.py             # Role-based access control
+│   │   ├── rbac.py             # Role-based access control (TAB_VISIBILITY, get_data_filter)
 │   │   ├── twilio_service.py   # Twilio WhatsApp integration
 │   │   └── razorpay_service.py # Razorpay payment integration
-│   └── server.py               # Main API server with Leads, Leave Rules
+│   ├── tests/
+│   │   └── test_rbac_leads.py  # RBAC test suite
+│   └── server.py               # Main API server
 ├── ess-mobile-app/             # React Native (Expo) app
 └── frontend/
-    ├── src/pages/
-    │   ├── LeadsPage.jsx       # Leads management UI
-    │   └── AdminPage.jsx       # HR module with employees, roles
-    └── src/services/
-        └── api.js              # API client functions
+    ├── src/
+    │   ├── components/layout/
+    │   │   └── TopNavbar.jsx   # RBAC-aware navigation
+    │   ├── pages/
+    │   │   └── LeadsPage.jsx   # RBAC-aware leads management
+    │   ├── contexts/
+    │   │   └── AuthContext.js  # User state with visibleTabs
+    │   └── App.js              # SmartRedirect for tab routing
 ```
 
 ---
@@ -168,4 +208,9 @@ Build a scalable automotive platform "Wisedrive" that evolved into a monolithic 
 ## Document History
 - **Created:** December 2025
 - **Last Updated:** February 16, 2026
-- **Version:** 2.0
+- **Version:** 2.1
+
+## Changelog
+- v2.1 (Feb 16, 2026): Added RBAC for Sales Executives - leads filtering by assigned_to, Leads-only tab visibility, hidden reassign button
+- v2.0 (Feb 16, 2026): Leads Management frontend integration complete
+- v1.6 (Dec 2025): Bug fixes and Leave Rules feature
