@@ -1,4 +1,4 @@
-// Premium Leave Detail Screen - Dark Theme
+// Professional Leave Detail Screen - Light Theme
 import React from 'react';
 import {
   View,
@@ -195,7 +195,7 @@ const DetailRow = ({ icon, label, value }: { icon: any; label: string; value: st
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
   },
   loadingContainer: {
     justifyContent: 'center',
@@ -207,6 +207,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.lg,
+    backgroundColor: colors.background,
   },
   backBtn: {
     width: 40,
@@ -225,12 +226,10 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: spacing.xl,
-    paddingTop: 0,
     paddingBottom: spacing.xl,
   },
-  // Status Card
   statusCard: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
     borderRadius: radius.lg,
     padding: spacing.xxl,
     alignItems: 'center',
@@ -261,9 +260,8 @@ const styles = StyleSheet.create({
     fontSize: fontSize.base,
     color: colors.text.secondary,
   },
-  // Details Card
   detailsCard: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
     borderRadius: radius.lg,
     padding: spacing.lg,
     marginBottom: spacing.lg,
@@ -281,7 +279,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: radius.sm,
-    backgroundColor: colors.surfaceHighlight,
+    backgroundColor: colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: spacing.md,
@@ -298,9 +296,8 @@ const styles = StyleSheet.create({
     fontSize: fontSize.base,
     color: colors.text.primary,
   },
-  // Reason Card
   reasonCard: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
     borderRadius: radius.lg,
     padding: spacing.lg,
     marginBottom: spacing.lg,
@@ -320,12 +317,12 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     lineHeight: 22,
   },
-  // Footer
   footer: {
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.lg,
     borderTopWidth: 1,
     borderTopColor: colors.border,
+    backgroundColor: colors.background,
   },
   cancelBtn: {
     flexDirection: 'row',
