@@ -25,7 +25,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [ipCountryDetected, setIpCountryDetected] = useState(false);
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, visibleTabs } = useAuth();
   const navigate = useNavigate();
 
   // Fetch countries and detect IP-based country
