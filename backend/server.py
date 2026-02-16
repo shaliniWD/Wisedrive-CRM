@@ -1295,6 +1295,25 @@ async def delete_inspection_category(
     return {"message": "Category deleted"}
 
 
+@api_router.patch("/inspection-categories/{category_id}/toggle-status")
+async def toggle_inspection_category_status(
+    category_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Toggle inspection category active status"""
+    category = await db.inspection_categories.find_one({"id": category_id})
+    if not category:
+        raise HTTPException(status_code=404, detail="Category not found")
+    
+    new_status = not category.get("is_active", True)
+    await db.inspection_categories.update_one(
+        {"id": category_id},
+        {"$set": {"is_active": new_status, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    return {"is_active": new_status}
+
+
 @api_router.get("/inspection-packages")
 async def get_inspection_packages(
     country_id: Optional[str] = None,
