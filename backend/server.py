@@ -1193,11 +1193,31 @@ async def set_lead_reminder(lead_id: str, reminder_data: LeadReminderUpdate, cur
     return lead
 
 
-# Payment Link Generation
+# Payment Link Generation - Request Models
+class InspectionScheduleData(BaseModel):
+    """Individual inspection schedule data from frontend"""
+    vehicle_number: Optional[str] = None
+    vehicle_data: Optional[dict] = None
+    inspection_date: Optional[str] = None
+    inspection_time: Optional[str] = None
+    address: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    slot_number: int = 1
+
+
 class PaymentLinkRequest(BaseModel):
     package_id: str
     amount: Optional[float] = None
     send_via_whatsapp: bool = True
+    description: Optional[str] = None
+    vehicle_number: Optional[str] = None
+    no_of_inspections: int = 1
+    discount_type: Optional[str] = None
+    discount_value: Optional[str] = None
+    base_amount: Optional[float] = None
+    discount_amount: Optional[float] = None
+    inspection_schedules: Optional[List[InspectionScheduleData]] = None
 
 
 @api_router.post("/leads/{lead_id}/payment-link")
@@ -1229,13 +1249,22 @@ async def create_lead_payment_link(lead_id: str, payment_data: PaymentLinkReques
         customer_name=lead.get("name", "Customer"),
         customer_phone=lead.get("mobile", ""),
         customer_email=lead.get("email"),
-        description=f"WiseDrive - {package.get('name', 'Vehicle Inspection')}",
+        description=payment_data.description or f"WiseDrive - {package.get('name', 'Vehicle Inspection')}",
         lead_id=lead_id,
         package_id=payment_data.package_id
     )
     
     if not result.get("success"):
         raise HTTPException(status_code=500, detail=result.get("error", "Failed to create payment link"))
+    
+    # Get number of inspections from package
+    no_of_inspections = payment_data.no_of_inspections or package.get("no_of_inspections", 1)
+    
+    # Store inspection schedules with the lead for later processing on payment
+    inspection_schedules_data = []
+    if payment_data.inspection_schedules:
+        for schedule in payment_data.inspection_schedules:
+            inspection_schedules_data.append(schedule.model_dump())
     
     # Update lead with payment link details
     update_dict = {
@@ -1246,6 +1275,12 @@ async def create_lead_payment_link(lead_id: str, payment_data: PaymentLinkReques
         "payment_amount": amount,
         "package_id": payment_data.package_id,
         "package_name": package.get("name"),
+        "no_of_inspections": no_of_inspections,
+        "discount_type": payment_data.discount_type,
+        "discount_value": payment_data.discount_value,
+        "base_amount": payment_data.base_amount,
+        "discount_amount": payment_data.discount_amount,
+        "inspection_schedules": inspection_schedules_data,  # Store schedules for processing on payment
         "status": "PAYMENT LINK SENT",
         "updated_at": datetime.now(timezone.utc).isoformat(),
         "updated_by": current_user["id"]
@@ -1261,7 +1296,7 @@ async def create_lead_payment_link(lead_id: str, payment_data: PaymentLinkReques
         "user_name": current_user.get("name", "Unknown"),
         "action": "payment_link_created",
         "new_value": result.get("short_url"),
-        "details": f"Amount: ₹{amount}, Package: {package.get('name')}",
+        "details": f"Amount: ₹{amount}, Package: {package.get('name')}, Inspections: {no_of_inspections}",
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.lead_activities.insert_one(activity)
