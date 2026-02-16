@@ -152,15 +152,15 @@ All users use password: `password123`
 ## Build Information
 
 ### Latest Mobile Builds (February 16, 2026)
-- **New Design Status:** ✅ Complete - Premium Dark Theme
-- **Android APK:** https://expo.dev/artifacts/eas/aAFkjYAG25oVhDq5S69N4V.apk
-- **iOS IPA:** https://expo.dev/artifacts/eas/vVwBfP5UeZuX5RQiagngQ2.ipa
-- **API Endpoint:** https://crmdev.wisedrive.com/api
-- **Theme:** Dark (#0B1120 background, #3B82F6 primary)
+- **Design:** ✅ Professional Light Theme (Blue/White)
+- **Android APK:** https://expo.dev/artifacts/eas/rRMYARcDXqjvP8xZuNuBav.apk
+- **iOS IPA:** https://expo.dev/artifacts/eas/o9WLW5m6TBx5hRgjqoN1Q3.ipa
+- **API Endpoint:** https://crmdev.wisedrive.com/api (✅ Confirmed)
+- **Theme:** Light (#FFFFFF background, #2563EB primary)
 
 ### Build Install Links (Scan QR or open on device)
-- **Android:** https://expo.dev/accounts/kalyandhar/projects/wisedrive-ess/builds/4db9c6ad-54f4-4ed0-8c7d-6f776e62c72b
-- **iOS:** https://expo.dev/accounts/kalyandhar/projects/wisedrive-ess/builds/f2524dbf-d2f4-4916-ae77-6e6f2e57e315
+- **Android:** https://expo.dev/accounts/kalyandhar/projects/wisedrive-ess/builds/d1683eaf-d198-4acc-966f-04c9fafb1b93
+- **iOS:** https://expo.dev/accounts/kalyandhar/projects/wisedrive-ess/builds/b368c1bc-ab38-4dfe-91df-f37ec991bb72
 
 ### Expo Project
 - **Account:** @kalyandhar
