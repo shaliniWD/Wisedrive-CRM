@@ -174,7 +174,7 @@ export default function LeadsPage() {
   const [filterSource, setFilterSource] = useState('');
 
   const [formData, setFormData] = useState({
-    name: '', mobile: '', city: '', source: 'WEBSITE', status: 'NEW',
+    name: '', mobile: '', city: '', source: 'WEBSITE', status: 'NEW LEAD',
     assigned_to: '', reminder_date: '', reminder_time: '', notes: '',
     service_type: '', ad_id: '',
   });
