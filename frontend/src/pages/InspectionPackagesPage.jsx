@@ -117,113 +117,132 @@ const CategoryCard = ({ category, onEdit, onCopy, onToggle }) => {
   );
 };
 
-// Package Card Component
+// Package Card Component - Redesigned for consistency
 const PackageCard = ({ pkg, categories, onEdit, onCopy, onToggle }) => {
   const includedCategories = categories.filter(c => pkg.categories?.includes(c.id));
+  const isActive = pkg.is_active !== false;
+  const isRecommended = pkg.is_recommended && isActive;
   
   return (
     <div 
-      className={`border rounded-xl overflow-hidden transition-all ${pkg.is_active ? 'bg-white' : 'bg-gray-50'}`}
+      className={`border rounded-xl overflow-hidden transition-all h-full flex flex-col ${isActive ? 'bg-white shadow-sm hover:shadow-md' : 'bg-gray-50 border-gray-200'}`}
       data-testid={`package-card-${pkg.id}`}
     >
-      {/* Package Header */}
-      <div className={`p-4 ${pkg.is_recommended && pkg.is_active ? 'bg-gradient-to-r from-blue-600 to-blue-700' : 'bg-slate-50 border-b'}`}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${pkg.is_recommended && pkg.is_active ? 'bg-white/20' : 'bg-white border'} ${!pkg.is_active ? 'opacity-50' : ''}`}>
-              <Package className={`h-5 w-5 ${pkg.is_recommended && pkg.is_active ? 'text-white' : 'text-blue-600'}`} />
-            </div>
-            <div>
-              <h3 className={`font-semibold flex items-center gap-2 ${pkg.is_recommended && pkg.is_active ? 'text-white' : 'text-gray-900'}`}>
-                {pkg.name}
-                {pkg.is_recommended && pkg.is_active && (
-                  <span className="px-2 py-0.5 bg-amber-400 text-amber-900 text-xs font-medium rounded-full flex items-center gap-1">
-                    <Award className="h-3 w-3" /> Recommended
-                  </span>
-                )}
-                {!pkg.is_active && (
-                  <span className="px-2 py-0.5 bg-gray-300 text-gray-600 text-xs font-medium rounded-full">Inactive</span>
-                )}
-              </h3>
-              <div className={`flex items-center gap-3 text-sm ${pkg.is_recommended && pkg.is_active ? 'text-blue-100' : 'text-gray-500'}`}>
-                <span>{pkg.total_check_points}+ Check Points</span>
-                <span>•</span>
-                <span className="font-medium">{pkg.no_of_inspections || 1} Inspection{(pkg.no_of_inspections || 1) > 1 ? 's' : ''}</span>
-              </div>
-            </div>
+      {/* Package Header - Fixed Height */}
+      <div className={`p-4 ${isRecommended ? 'bg-gradient-to-r from-blue-600 to-blue-700' : 'bg-slate-50 border-b'}`}>
+        {/* Status Badge - Top Right */}
+        <div className="flex items-start justify-between gap-2 mb-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            {isRecommended && (
+              <span className="px-2 py-1 bg-amber-400 text-amber-900 text-xs font-semibold rounded-full inline-flex items-center gap-1">
+                <Award className="h-3 w-3" /> Recommended
+              </span>
+            )}
+            {!isActive && (
+              <span className="px-2 py-1 bg-gray-400 text-white text-xs font-semibold rounded-full">
+                Inactive
+              </span>
+            )}
           </div>
-          <div className={`text-right ${pkg.is_recommended && pkg.is_active ? 'text-white' : ''}`}>
-            <p className="text-2xl font-bold">
-              {pkg.currency_symbol}{pkg.price?.toLocaleString('en-IN')}
+          {/* Price - Always visible */}
+          <div className={`text-right flex-shrink-0 ${isRecommended ? 'text-white' : 'text-gray-900'}`}>
+            <p className="text-xl font-bold whitespace-nowrap">
+              {pkg.currency_symbol || '₹'}{(pkg.price || 0).toLocaleString('en-IN')}
             </p>
-            <p className={`text-xs ${pkg.is_recommended && pkg.is_active ? 'text-blue-100' : 'text-gray-500'}`}>Incl. all taxes</p>
+            <p className={`text-xs ${isRecommended ? 'text-blue-100' : 'text-gray-500'}`}>Incl. taxes</p>
+          </div>
+        </div>
+        
+        {/* Package Name & Stats */}
+        <div className="flex items-center gap-3">
+          <div className={`h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 ${isRecommended ? 'bg-white/20' : 'bg-white border'} ${!isActive ? 'opacity-60' : ''}`}>
+            <Package className={`h-5 w-5 ${isRecommended ? 'text-white' : 'text-blue-600'}`} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h3 className={`font-semibold truncate ${isRecommended ? 'text-white' : 'text-gray-900'}`} title={pkg.name}>
+              {pkg.name}
+            </h3>
+            <div className={`flex items-center gap-2 text-xs ${isRecommended ? 'text-blue-100' : 'text-gray-500'}`}>
+              <span className="font-medium">{pkg.total_check_points || 0}+ pts</span>
+              <span>•</span>
+              <span className="font-medium">{pkg.no_of_inspections || 1} inspection{(pkg.no_of_inspections || 1) > 1 ? 's' : ''}</span>
+            </div>
           </div>
         </div>
       </div>
       
-      {/* Included Categories */}
-      <div className="p-4">
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-sm font-medium text-gray-700">Includes:</p>
-          <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full">
-            {pkg.no_of_inspections || 1} Inspection{(pkg.no_of_inspections || 1) > 1 ? 's' : ''}
+      {/* Included Categories - Flex grow to fill space */}
+      <div className="p-4 flex-1 flex flex-col">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Includes</p>
+          <span className="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs font-semibold rounded">
+            {includedCategories.length} {includedCategories.length === 1 ? 'category' : 'categories'}
           </span>
         </div>
-        <div className="space-y-2">
-          {includedCategories.length === 0 ? (
-            <p className="text-sm text-gray-400 italic">No categories assigned</p>
-          ) : includedCategories.map((cat) => (
-            <div key={cat.id} className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-2">
-                <div 
-                  className="h-2 w-2 rounded-full"
-                  style={{ backgroundColor: cat.color || '#3B82F6' }}
-                />
-                <span className="text-gray-700">{cat.name}</span>
-                {cat.is_free && (
-                  <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded">FREE</span>
-                )}
-              </div>
-              <span className="text-gray-500">{cat.check_points} pts</span>
-            </div>
-          ))}
-        </div>
         
-        {/* Actions */}
-        <div className="flex items-center justify-between mt-4 pt-4 border-t">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => onToggle(pkg)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                pkg.is_active ? 'bg-emerald-500' : 'bg-gray-300'
-              }`}
-              data-testid={`toggle-package-${pkg.id}`}
-            >
-              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                pkg.is_active ? 'translate-x-6' : 'translate-x-1'
-              }`} />
-            </button>
-            <span className={`text-sm ${pkg.is_active ? 'text-emerald-600' : 'text-gray-500'}`}>
-              {pkg.is_active ? 'Active' : 'Inactive'}
-            </span>
-          </div>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => onCopy(pkg)}
-              className="p-2 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-              title="Copy & Create New"
-              data-testid={`copy-package-${pkg.id}`}
-            >
-              <Copy className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => onEdit(pkg)}
-              className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-              data-testid={`edit-package-${pkg.id}`}
-            >
-              <Pencil className="h-4 w-4" />
-            </button>
-          </div>
+        <div className="space-y-2 flex-1">
+          {includedCategories.length === 0 ? (
+            <div className="py-3 px-2 bg-gray-50 rounded-lg border border-dashed border-gray-200 text-center">
+              <p className="text-xs text-gray-400">No categories assigned</p>
+            </div>
+          ) : (
+            includedCategories.slice(0, 4).map((cat) => (
+              <div key={cat.id} className="flex items-center justify-between text-sm py-1">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <div 
+                    className="h-2 w-2 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: cat.color || '#3B82F6' }}
+                  />
+                  <span className="text-gray-700 truncate" title={cat.name}>{cat.name}</span>
+                  {cat.is_free && (
+                    <span className="px-1 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded flex-shrink-0">FREE</span>
+                  )}
+                </div>
+                <span className="text-gray-500 text-xs font-medium flex-shrink-0 ml-2">{cat.check_points} pts</span>
+              </div>
+            ))
+          )}
+          {includedCategories.length > 4 && (
+            <p className="text-xs text-gray-400 text-center">+{includedCategories.length - 4} more categories</p>
+          )}
+        </div>
+      </div>
+      
+      {/* Actions Footer - Fixed at bottom */}
+      <div className="px-4 py-3 border-t bg-gray-50/50 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => onToggle(pkg)}
+            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+              isActive ? 'bg-emerald-500' : 'bg-gray-300'
+            }`}
+            data-testid={`toggle-package-${pkg.id}`}
+          >
+            <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform shadow-sm ${
+              isActive ? 'translate-x-5' : 'translate-x-0.5'
+            }`} />
+          </button>
+          <span className={`text-xs font-medium ${isActive ? 'text-emerald-600' : 'text-gray-500'}`}>
+            {isActive ? 'Active' : 'Inactive'}
+          </span>
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => onCopy(pkg)}
+            className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+            title="Copy & Create New"
+            data-testid={`copy-package-${pkg.id}`}
+          >
+            <Copy className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => onEdit(pkg)}
+            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+            title="Edit Package"
+            data-testid={`edit-package-${pkg.id}`}
+          >
+            <Pencil className="h-4 w-4" />
+          </button>
         </div>
       </div>
     </div>
