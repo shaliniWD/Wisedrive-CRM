@@ -2108,7 +2108,7 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[850px] max-h-[90vh] flex flex-col overflow-hidden p-0" data-testid="employee-modal">
+      <DialogContent className="sm:max-w-[900px] max-h-[85vh] flex flex-col overflow-hidden p-0" data-testid="employee-modal">
         <DialogHeader className="px-6 py-4 border-b bg-slate-50 flex-shrink-0">
           <DialogTitle className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white font-medium">
@@ -2121,7 +2121,7 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
           </DialogTitle>
         </DialogHeader>
 
-        <Tabs value={currentTab} onValueChange={setCurrentTab} className="flex flex-col flex-1 min-h-0">
+        <Tabs value={currentTab} onValueChange={setCurrentTab} className="flex flex-col flex-1 min-h-0 overflow-hidden">
           <TabsList className="px-6 border-b bg-white justify-start gap-1 flex-shrink-0 flex-wrap">
             <TabsTrigger value="details" className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 rounded-lg px-4">
               <Users className="h-4 w-4 mr-2" /> Details
