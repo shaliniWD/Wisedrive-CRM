@@ -2933,15 +2933,28 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
                           <td className="px-4 py-3 text-center">
                             <div className="flex justify-center gap-1">
                               {doc.document_url && (
-                                <a 
-                                  href={`${process.env.REACT_APP_BACKEND_URL}${doc.document_url}`} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer" 
+                                <button 
+                                  onClick={async () => {
+                                    try {
+                                      const response = await hrApi.downloadEmployeeDocument(employee.id, doc.document_url.split('/').pop());
+                                      const blob = new Blob([response.data], { type: doc.content_type || 'application/octet-stream' });
+                                      const url = window.URL.createObjectURL(blob);
+                                      const link = document.createElement('a');
+                                      link.href = url;
+                                      link.download = doc.file_name || doc.document_name || 'document';
+                                      document.body.appendChild(link);
+                                      link.click();
+                                      document.body.removeChild(link);
+                                      window.URL.revokeObjectURL(url);
+                                    } catch (error) {
+                                      toast.error('Failed to download document');
+                                    }
+                                  }}
                                   className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
                                   title="View/Download"
                                 >
                                   <Download className="h-4 w-4" />
-                                </a>
+                                </button>
                               )}
                               {!doc.verified && (
                                 <button
