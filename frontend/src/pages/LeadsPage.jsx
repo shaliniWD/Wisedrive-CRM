@@ -155,6 +155,7 @@ export default function LeadsPage() {
   const [cities, setCities] = useState([]);
   const [sources, setSources] = useState([]);
   const [statuses, setStatuses] = useState([]);
+  const [inspectionPackages, setInspectionPackages] = useState([]); // Active packages from settings
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -191,7 +192,7 @@ export default function LeadsPage() {
 
   const [paymentFormData, setPaymentFormData] = useState({
     hasCarDetails: 'yes', carNo: '', carMake: '', carModel: '', carYear: '',
-    fuelType: '', carColor: '', carConfirmed: false, packageType: '',
+    fuelType: '', carColor: '', carConfirmed: false, packageId: '', // Changed from packageType to packageId
     numberOfCars: '1', discountType: '', discountValue: '', city: '',
     inspectionDate: '', inspectionTime: '', address: '', latitude: '',
     longitude: '', customerMobile: '', customerName: '',
