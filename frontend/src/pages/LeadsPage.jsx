@@ -1166,6 +1166,134 @@ export default function LeadsPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Notes & Activities Drawer */}
+      <Sheet open={isNotesDrawerOpen} onOpenChange={setIsNotesDrawerOpen}>
+        <SheetContent className="sm:max-w-[500px] p-0 flex flex-col" data-testid="notes-drawer">
+          <SheetHeader className="px-6 py-4 border-b bg-gradient-to-r from-slate-50 to-slate-100">
+            <SheetTitle className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white font-medium">
+                {selectedLeadForNotes?.name?.charAt(0)?.toUpperCase()}
+              </div>
+              <div>
+                <div className="font-semibold text-gray-900">{selectedLeadForNotes?.name}</div>
+                <div className="text-xs text-gray-500 font-normal">{selectedLeadForNotes?.mobile}</div>
+              </div>
+            </SheetTitle>
+          </SheetHeader>
+
+          <Tabs value={notesTab} onValueChange={setNotesTab} className="flex-1 flex flex-col">
+            <TabsList className="grid w-full grid-cols-2 mx-6 my-3" style={{ width: 'calc(100% - 48px)' }}>
+              <TabsTrigger value="notes" className="flex items-center gap-2" data-testid="notes-tab">
+                <StickyNote className="h-4 w-4" /> Notes
+              </TabsTrigger>
+              <TabsTrigger value="activities" className="flex items-center gap-2" data-testid="activities-tab">
+                <Activity className="h-4 w-4" /> Activity Log
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="notes" className="flex-1 flex flex-col px-6 pb-6 mt-0">
+              {/* Add Note Section */}
+              <div className="bg-slate-50 rounded-xl p-4 border mb-4">
+                <Label className="text-sm font-medium mb-2 block">Add a note</Label>
+                <div className="flex gap-2">
+                  <textarea
+                    value={newNote}
+                    onChange={(e) => setNewNote(e.target.value)}
+                    placeholder="Write your note here..."
+                    className="flex-1 min-h-[60px] px-3 py-2 border rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    data-testid="new-note-input"
+                  />
+                </div>
+                <div className="flex justify-end mt-2">
+                  <Button 
+                    onClick={handleAddNote} 
+                    disabled={savingNote || !newNote.trim()}
+                    size="sm"
+                    className="bg-gradient-to-r from-blue-600 to-blue-700"
+                    data-testid="add-note-button"
+                  >
+                    {savingNote ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Send className="h-4 w-4 mr-1" />}
+                    Add Note
+                  </Button>
+                </div>
+              </div>
+
+              {/* Notes List */}
+              <div className="flex-1 overflow-y-auto space-y-3">
+                {loadingNotes ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+                  </div>
+                ) : leadNotes.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <StickyNote className="h-10 w-10 mx-auto mb-2 text-gray-300" />
+                    <p className="text-sm">No notes yet. Add the first note!</p>
+                  </div>
+                ) : (
+                  leadNotes.map((note) => (
+                    <div key={note.id} className="bg-white border rounded-xl p-4 shadow-sm">
+                      <div className="flex items-start gap-3">
+                        <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium text-xs flex-shrink-0">
+                          {note.user_name?.charAt(0)?.toUpperCase() || 'U'}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2 mb-1">
+                            <span className="font-medium text-sm text-gray-900">{note.user_name || 'Unknown'}</span>
+                            <span className="text-xs text-gray-400">{formatDateTime(note.created_at)}</span>
+                          </div>
+                          <p className="text-sm text-gray-700 whitespace-pre-wrap">{note.note}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="activities" className="flex-1 overflow-y-auto px-6 pb-6 mt-0">
+              {loadingNotes ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+                </div>
+              ) : leadActivities.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <Activity className="h-10 w-10 mx-auto mb-2 text-gray-300" />
+                  <p className="text-sm">No activities recorded yet.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {leadActivities.map((activity) => (
+                    <div key={activity.id} className="relative pl-6 pb-4 border-l-2 border-slate-200 last:pb-0">
+                      <div className="absolute -left-2 top-0 h-4 w-4 rounded-full bg-slate-300 border-2 border-white"></div>
+                      <div className="bg-white border rounded-lg p-3 shadow-sm">
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <span className="text-xs font-medium text-blue-600 uppercase tracking-wide">
+                            {activity.action?.replace(/_/g, ' ')}
+                          </span>
+                          <span className="text-xs text-gray-400">{formatDateTime(activity.created_at)}</span>
+                        </div>
+                        <p className="text-sm text-gray-700">
+                          {activity.action === 'status_changed' && (
+                            <>Status changed from <span className="font-medium">{activity.old_value || 'N/A'}</span> to <span className="font-medium">{activity.new_value}</span></>
+                          )}
+                          {activity.action === 'note_added' && 'Note was added'}
+                          {activity.action === 'assigned' && `Assigned to ${activity.new_value}`}
+                          {activity.action === 'payment_link_sent' && 'Payment link was sent'}
+                          {activity.action === 'reminder_set' && `Reminder set for ${activity.new_value}`}
+                          {!['status_changed', 'note_added', 'assigned', 'payment_link_sent', 'reminder_set'].includes(activity.action) && 
+                            (activity.details || activity.action?.replace(/_/g, ' '))}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">by {activity.user_name || 'System'}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
