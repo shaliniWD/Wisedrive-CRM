@@ -605,7 +605,7 @@ export default function LeadsPage() {
           <tbody className="divide-y divide-gray-100">
             {loading ? (
               <tr>
-                <td colSpan={8} className="text-center py-12">
+                <td colSpan={9} className="text-center py-12">
                   <div className="flex items-center justify-center gap-2">
                     <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
                     <span className="text-gray-500">Loading leads...</span>
@@ -614,7 +614,7 @@ export default function LeadsPage() {
               </tr>
             ) : paginatedLeads.length === 0 ? (
               <tr>
-                <td colSpan={8} className="text-center py-12">
+                <td colSpan={9} className="text-center py-12">
                   <Users className="h-12 w-12 text-gray-300 mx-auto mb-3" />
                   <p className="text-gray-500">No leads found</p>
                 </td>
