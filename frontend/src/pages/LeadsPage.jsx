@@ -1224,8 +1224,8 @@ export default function LeadsPage() {
                 } finally { 
                   setSaving(false); 
                 }
-              }} disabled={saving || !paymentFormData.packageType} className="bg-gradient-to-r from-blue-600 to-blue-700">
-                {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null} Send Payment Link
+              }} disabled={saving || !paymentFormData.packageId} className="bg-gradient-to-r from-blue-600 to-blue-700">
+                {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null} Send Payment Link (₹{calculateFinalAmount().toLocaleString()})
               </Button>
             )}
           </div>
