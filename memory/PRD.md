@@ -97,9 +97,16 @@ Build a scalable automotive platform "Wisedrive" that evolved into a monolithic 
 
 ## Mobile App Builds
 
-### Latest Build: v1.1.0
-- **Android APK:** https://expo.dev/artifacts/eas/2BoXpMji7HnT55pcbV8bN7.apk
-- **iOS IPA:** https://expo.dev/artifacts/eas/gDtaAd1T6XnnFCUmiyQpnf.ipa
+### Latest Build: v1.2.0 (with Leave Rules)
+- **Android APK:** https://expo.dev/artifacts/eas/7W4cXsbCUAyC8bSdcbFL63.apk
+- **iOS IPA:** https://expo.dev/artifacts/eas/3Z4u5m65Ykd7UteqTZa22V.ipa
+
+### Features in v1.2.0:
+- Period-based leave balance (monthly/quarterly)
+- No carry forward policy
+- Disabled Apply button when leaves exhausted
+- LOP days tracking
+- Error messages for insufficient leaves
 
 ---
 
