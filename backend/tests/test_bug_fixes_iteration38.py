@@ -61,7 +61,8 @@ class TestAuthentication:
         """Test ESS Mobile App login"""
         response = requests.post(f"{BASE_URL}/api/ess/v1/auth/login", json={
             "email": HR_EMAIL,
-            "password": DEFAULT_PASSWORD
+            "password": DEFAULT_PASSWORD,
+            "device": TEST_DEVICE
         })
         assert response.status_code == 200, f"ESS login failed: {response.text}"
         data = response.json()
