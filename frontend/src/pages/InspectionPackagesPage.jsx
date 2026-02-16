@@ -130,9 +130,11 @@ const PackageCard = ({ pkg, categories, onEdit, onToggle, onDelete }) => {
                   </span>
                 )}
               </h3>
-              <p className={`text-sm ${pkg.is_recommended ? 'text-blue-100' : 'text-gray-500'}`}>
-                {pkg.total_check_points}+ Check Points
-              </p>
+              <div className={`flex items-center gap-3 text-sm ${pkg.is_recommended ? 'text-blue-100' : 'text-gray-500'}`}>
+                <span>{pkg.total_check_points}+ Check Points</span>
+                <span>•</span>
+                <span className="font-medium">{pkg.no_of_inspections || 1} Inspection{(pkg.no_of_inspections || 1) > 1 ? 's' : ''}</span>
+              </div>
             </div>
           </div>
           <div className={`text-right ${pkg.is_recommended ? 'text-white' : ''}`}>
@@ -146,9 +148,16 @@ const PackageCard = ({ pkg, categories, onEdit, onToggle, onDelete }) => {
       
       {/* Included Categories */}
       <div className="p-4">
-        <p className="text-sm font-medium text-gray-700 mb-3">Includes:</p>
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-sm font-medium text-gray-700">Includes:</p>
+          <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full">
+            {pkg.no_of_inspections || 1} Inspection{(pkg.no_of_inspections || 1) > 1 ? 's' : ''}
+          </span>
+        </div>
         <div className="space-y-2">
-          {includedCategories.map((cat) => (
+          {includedCategories.length === 0 ? (
+            <p className="text-sm text-gray-400 italic">No categories assigned</p>
+          ) : includedCategories.map((cat) => (
             <div key={cat.id} className="flex items-center justify-between text-sm">
               <div className="flex items-center gap-2">
                 <div 
