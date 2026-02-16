@@ -135,6 +135,8 @@ All users use password: `password123`
 
 ### P0 - Immediate (To Complete Project)
 - [x] Build final APK/IPA with new design ✅ DONE
+- [x] Salary structure matching CRM exactly ✅ DONE
+- [x] Navigation restructuring (hub-based) ✅ DONE
 - [ ] User acceptance testing on actual mobile devices (IN PROGRESS)
 
 ### P1 - High Priority
@@ -156,14 +158,14 @@ All users use password: `password123`
 
 ### Latest Mobile Builds (February 16, 2026)
 - **Design:** ✅ Professional Light Theme (Blue/White)
-- **Android APK:** https://expo.dev/artifacts/eas/rRMYARcDXqjvP8xZuNuBav.apk
-- **iOS IPA:** https://expo.dev/artifacts/eas/o9WLW5m6TBx5hRgjqoN1Q3.ipa
+- **Navigation:** ✅ Hub-based from HomeScreen (no bottom tabs)
+- **Salary Structure:** ✅ Individual earnings/deductions matching CRM
 - **API Endpoint:** https://crmdev.wisedrive.com/api (✅ Confirmed)
 - **Theme:** Light (#FFFFFF background, #2563EB primary)
 
 ### Build Install Links (Scan QR or open on device)
-- **Android:** https://expo.dev/accounts/kalyandhar/projects/wisedrive-ess/builds/d1683eaf-d198-4acc-966f-04c9fafb1b93
-- **iOS:** https://expo.dev/accounts/kalyandhar/projects/wisedrive-ess/builds/b368c1bc-ab38-4dfe-91df-f37ec991bb72
+- **Android:** https://expo.dev/accounts/kalyandhar/projects/wisedrive-ess/builds/3486573f-de79-4efe-b91b-b109f82b59bb
+- **iOS:** https://expo.dev/accounts/kalyandhar/projects/wisedrive-ess/builds/9526e90e-069f-466a-9dc4-da5cb8a13209
 
 ### Expo Project
 - **Account:** @kalyandhar
