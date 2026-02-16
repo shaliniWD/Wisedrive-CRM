@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 import { 
   Plus, Loader2, Pencil, Trash2, Search, Settings, Package,
   CheckCircle, X, ListChecks, Car, IndianRupee, Award, Layers,
-  ChevronDown, ChevronUp, GripVertical
+  ChevronDown, ChevronUp, GripVertical, Copy, PauseCircle, PlayCircle
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
