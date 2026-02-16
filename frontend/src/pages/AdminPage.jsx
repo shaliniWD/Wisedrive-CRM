@@ -3166,16 +3166,25 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
 function RoleModal({ isOpen, onClose, role, onSave }) {
   const [form, setForm] = useState({ name: '', code: '', permissions: [], eligible_sick_leaves_per_month: 2, eligible_casual_leaves_per_month: 1 });
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const isEdit = !!role?.id;  // Only true if role has an ID
+  
+  // Preset role codes that cannot be deleted
+  const PRESET_ROLE_CODES = ["CEO", "HR_MANAGER", "FINANCE_MANAGER", "OPERATIONS_MANAGER", "INSPECTOR", "SALES_EXECUTIVE", "EMPLOYEE"];
+  const isPresetRole = role?.code && PRESET_ROLE_CODES.includes(role.code);
 
   useEffect(() => {
     if (isOpen) {
       if (role) {
-        const presetRole = PRESET_ROLES.find(r => r.code === role.code);
+        // Use role's existing permissions, or fall back to preset, or initialize empty
+        const rolePermissions = role.permissions && role.permissions.length > 0 
+          ? role.permissions 
+          : PRESET_ROLES.find(r => r.code === role.code)?.permissions || PAGE_PERMISSIONS.map(p => ({ page: p.id, view: false, edit: false }));
+        
         setForm({
           name: role.name || '',
           code: role.code || '',  // Will be empty for copy operations
-          permissions: presetRole?.permissions || role.permissions || [],
+          permissions: rolePermissions,
           eligible_sick_leaves_per_month: role.eligible_sick_leaves_per_month ?? 2,
           eligible_casual_leaves_per_month: role.eligible_casual_leaves_per_month ?? 1,
         });
@@ -3210,17 +3219,19 @@ function RoleModal({ isOpen, onClose, role, onSave }) {
       if (isEdit && role?.id) {
         await rolesApi.update(role.id, {
           name: form.name,
+          permissions: form.permissions,
           eligible_sick_leaves_per_month: form.eligible_sick_leaves_per_month,
           eligible_casual_leaves_per_month: form.eligible_casual_leaves_per_month,
         });
         toast.success('Role updated successfully');
       } else {
-        // Create new role
+        // Create new role with permissions
         await rolesApi.create({
           name: form.name,
           code: form.code,
           description: '',
           level: 5,
+          permissions: form.permissions,
           eligible_sick_leaves_per_month: form.eligible_sick_leaves_per_month,
           eligible_casual_leaves_per_month: form.eligible_casual_leaves_per_month,
         });
@@ -3234,10 +3245,29 @@ function RoleModal({ isOpen, onClose, role, onSave }) {
     }
   };
 
+  const handleDelete = async () => {
+    if (!role?.id) return;
+    
+    if (!window.confirm(`Are you sure you want to delete the role "${role.name}"? This action cannot be undone.`)) {
+      return;
+    }
+    
+    setDeleting(true);
+    try {
+      await rolesApi.delete(role.id);
+      toast.success('Role deleted successfully');
+      onSave();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to delete role');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]" data-testid="role-modal">
-        <DialogHeader className="border-b pb-4">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col" data-testid="role-modal">
+        <DialogHeader className="border-b pb-4 flex-shrink-0">
           <DialogTitle className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 flex items-center justify-center text-white">
               <Shield className="h-5 w-5" />
@@ -3245,15 +3275,15 @@ function RoleModal({ isOpen, onClose, role, onSave }) {
             {isEdit ? `Edit: ${role?.name}` : 'Add New Role'}
           </DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 pt-4">
+        <div className="space-y-4 pt-4 overflow-y-auto flex-1 pr-2">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-sm font-medium">Role Name *</Label>
-              <Input value={form.name} onChange={(e) => setForm({...form, name: e.target.value})} className="h-10" disabled={isEdit && PRESET_ROLES.find(r => r.code === form.code)} />
+              <Input value={form.name} onChange={(e) => setForm({...form, name: e.target.value})} className="h-10" placeholder="e.g., CTO" />
             </div>
             <div className="space-y-2">
               <Label className="text-sm font-medium">Role Code *</Label>
-              <Input value={form.code} onChange={(e) => setForm({...form, code: e.target.value.toUpperCase().replace(/\s/g, '_')})} className="h-10 font-mono" disabled={isEdit} />
+              <Input value={form.code} onChange={(e) => setForm({...form, code: e.target.value.toUpperCase().replace(/\s/g, '_')})} className="h-10 font-mono" disabled={isEdit} placeholder="e.g., CTO" />
             </div>
           </div>
           
@@ -3337,8 +3367,24 @@ function RoleModal({ isOpen, onClose, role, onSave }) {
               </table>
             </div>
           </div>
+        </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t">
+        <div className="flex justify-between gap-3 pt-4 border-t flex-shrink-0">
+          <div>
+            {isEdit && !isPresetRole && (
+              <Button 
+                variant="destructive" 
+                onClick={handleDelete} 
+                disabled={deleting}
+                data-testid="delete-role-btn"
+              >
+                {deleting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete Role
+              </Button>
+            )}
+          </div>
+          <div className="flex gap-3">
             <Button variant="outline" onClick={onClose}>Cancel</Button>
             <Button onClick={handleSave} disabled={saving} className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800">
               {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />} {isEdit ? 'Update' : 'Create'}
