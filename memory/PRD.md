@@ -40,28 +40,28 @@ WiseDrive is a scalable automotive platform with a CRM system and an Employee Se
 
 ## Completed Features
 
-### ESS Mobile App (February 2026)
+### ESS Mobile App (Updated February 16, 2026)
 - ✅ React Native (Expo) mobile application
 - ✅ Authentication with JWT tokens and device sessions
-- ✅ Employee Profile viewing
+- ✅ Employee Profile viewing (Personal, Bank, Salary tabs)
+- ✅ **Salary Structure matching CRM exactly:**
+  - Earnings: Basic Salary, HRA, Variable Pay/Incentives, Conveyance, Medical Allowance, Special Allowance
+  - Deductions: PF (Employee), Professional Tax, Income Tax (TDS), Other Deductions
 - ✅ Leave Management (apply, view balance, history)
-- ✅ Payslips viewing
+- ✅ Payslips viewing with year filter
 - ✅ Documents management
 - ✅ Holiday Calendar
 - ✅ Push Notifications (FCM integrated)
-- ✅ React Query cache clearing on logout
+- ✅ **Professional Light Theme:**
+  - Clean white background (#FFFFFF) with blue accents (#2563EB)
+  - Modern minimalist UI
+  - **Hub-based navigation from HomeScreen (no bottom tab bar)**
+  - All screens have back buttons for navigation
 - ✅ Pointing to stable domain: `crmdev.wisedrive.com`
-- ✅ **Premium Dark Theme Redesign (December 2025)**
-  - Dark background (#0B1120) with blue accents (#3B82F6)
-  - Modern minimalist UI with refined fonts and icons
-  - Floating bottom tab navigation with gradients
-  - Bento grid dashboard layout
-  - Proper SafeAreaInsets handling for iOS/Android
-  - All testID attributes for testing
 
 ### ESS API Routes (Integrated in Main Backend)
 - ✅ `/api/ess/v1/auth/*` - Authentication (login, logout, refresh)
-- ✅ `/api/ess/v1/profile/*` - Profile, salary, attendance
+- ✅ `/api/ess/v1/profile/*` - Profile, salary (individual fields), attendance
 - ✅ `/api/ess/v1/leave/*` - Leave management
 - ✅ `/api/ess/v1/payslips/*` - Payslip viewing
 - ✅ `/api/ess/v1/documents/*` - Document management
@@ -86,11 +86,14 @@ WiseDrive is a scalable automotive platform with a CRM system and an Employee Se
 - `/app/ess-mobile-app/` - React Native Expo project
 - `/app/ess-mobile-app/src/services/config.ts` - API endpoint config
 - `/app/ess-mobile-app/src/context/AuthContext.tsx` - Auth with cache clearing
+- `/app/ess-mobile-app/src/screens/HomeScreen.tsx` - Main navigation hub
+- `/app/ess-mobile-app/src/screens/ProfileScreen.tsx` - Profile with salary structure
 - `/app/ess-mobile-app/eas.json` - EAS build configuration
 
 ### Backend ESS Routes
 - `/app/backend/routes_ess/auth.py` - Authentication
-- `/app/backend/routes_ess/profile.py` - Profile & holidays
+- `/app/backend/routes_ess/profile.py` - Profile, salary (individual fields), holidays
+- `/app/backend/models_ess/profile.py` - SalarySummary model with all CRM fields
 - `/app/backend/routes_ess/leave.py` - Leave management
 - `/app/backend/routes_ess/payslips.py` - Payslips
 - `/app/backend/routes_ess/documents.py` - Documents
