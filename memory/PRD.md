@@ -40,6 +40,31 @@ Build a scalable automotive platform "Wisedrive" that evolved into a monolithic 
 **Fix Location:** `/app/backend/server.py` line 2238
 **Solution:** Support both variations: `full_time`, `fulltime`, `part_time`, `parttime`
 
+### ROLES TAB FIXES (5 bugs) ✅ ALL FIXED
+
+**BUG #4: Delete Role Feature** ✅ FIXED
+- Added DELETE /api/roles/{role_id} endpoint
+- Protects preset roles (CEO, HR_MANAGER, etc.)
+- Protects roles with assigned employees
+- Delete button shown in edit modal (red, with confirmation)
+
+**BUG #5: Copy Role Not Copying Permissions** ✅ FIXED
+- Added `permissions` field to RoleCreate/RoleUpdate models
+- Fixed RoleModal to use role.permissions instead of PRESET_ROLES
+- Permissions now properly copied when using "Copy" action
+
+**BUG #6: Unable to Edit Role** ✅ FIXED
+- Backend PUT endpoint now accepts and updates permissions
+- Frontend properly sends permissions in update request
+
+**BUG #7: Modal Overflow** ✅ FIXED
+- Added `max-h-[90vh]` and `overflow-y-auto` to DialogContent
+- Modal is now scrollable and contained within viewport
+
+**BUG #8: Button Text (Update vs Create)** ✅ VERIFIED
+- Button shows "Create" for new roles, "Update" for edit mode
+- Already working correctly
+
 ---
 
 ## CRM-to-ESS Field Mapping Reference
