@@ -814,13 +814,27 @@ export default function InspectionPackagesPage() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Description</Label>
-              <Input 
-                value={packageForm.description}
-                onChange={(e) => setPackageForm({ ...packageForm, description: e.target.value })}
-                placeholder="Brief description of this package"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>No. of Inspections *</Label>
+                <Input 
+                  type="number"
+                  min="1"
+                  value={packageForm.no_of_inspections}
+                  onChange={(e) => setPackageForm({ ...packageForm, no_of_inspections: parseInt(e.target.value) || 1 })}
+                  placeholder="1"
+                  data-testid="package-inspections-input"
+                />
+                <p className="text-xs text-gray-500">Number of inspections customer can avail</p>
+              </div>
+              <div className="space-y-2">
+                <Label>Description</Label>
+                <Input 
+                  value={packageForm.description}
+                  onChange={(e) => setPackageForm({ ...packageForm, description: e.target.value })}
+                  placeholder="Brief description"
+                />
+              </div>
             </div>
 
             <div className="flex items-center gap-2">
