@@ -12,7 +12,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://wise-employee-app.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://employee-hub-212.preview.emergentagent.com')
 
 class TestPayrollPreviewUIChanges:
     """Test the new Payroll Preview UI/UX features"""
