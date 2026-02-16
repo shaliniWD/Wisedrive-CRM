@@ -1,4 +1,4 @@
-// Premium Main Navigator - Dark Theme with Floating Tab Bar
+// Professional Main Navigator - Light Theme with Clean Tab Bar
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -6,9 +6,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { LinearGradient } from 'expo-linear-gradient';
 
-import { colors, spacing, fontSize, fontWeight, radius, iconSize } from '../theme';
+import { colors, spacing, fontSize, fontWeight, radius, iconSize, shadows } from '../theme';
 
 // Screens
 import HomeScreen from '../screens/HomeScreen';
@@ -79,7 +78,7 @@ function MoreScreen() {
   const menuItems = [
     { icon: 'folder-outline', label: 'Documents', screen: 'Documents', color: colors.accent },
     { icon: 'sunny-outline', label: 'Holidays', screen: 'HolidayCalendar', color: colors.warning },
-    { icon: 'settings-outline', label: 'Settings', screen: 'Settings', color: colors.text.secondary },
+    { icon: 'settings-outline', label: 'Settings', screen: 'Settings', color: colors.secondary },
   ];
 
   return (
@@ -96,7 +95,7 @@ function MoreScreen() {
             onPress={() => navigation.navigate(item.screen)}
             activeOpacity={0.7}
           >
-            <View style={[styles.moreItemIcon, { backgroundColor: `${item.color}20` }]}>
+            <View style={[styles.moreItemIcon, { backgroundColor: `${item.color}15` }]}>
               <Ionicons name={item.icon as any} size={iconSize.lg} color={item.color} />
             </View>
             <Text style={styles.moreItemLabel}>{item.label}</Text>
@@ -108,7 +107,7 @@ function MoreScreen() {
   );
 }
 
-// Custom Floating Tab Bar
+// Custom Tab Bar - Clean Light Theme
 function CustomTabBar({ state, descriptors, navigation }: any) {
   const insets = useSafeAreaInsets();
 
@@ -120,7 +119,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
   ];
 
   return (
-    <View style={[styles.tabBarWrapper, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
+    <View style={[styles.tabBarWrapper, { paddingBottom: Math.max(insets.bottom, spacing.sm) }]}>
       <View style={styles.tabBarContainer}>
         {state.routes.map((route: any, index: number) => {
           const isFocused = state.index === index;
@@ -146,22 +145,13 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
               style={styles.tabItem}
               activeOpacity={0.7}
             >
-              {isFocused ? (
-                <View style={styles.tabActiveContainer}>
-                  <LinearGradient
-                    colors={colors.gradients.primary}
-                    style={styles.tabActiveGradient}
-                  >
-                    <Ionicons name={tab.icon as any} size={iconSize.lg} color="#FFF" />
-                  </LinearGradient>
-                </View>
-              ) : (
+              <View style={[styles.tabIconContainer, isFocused && styles.tabIconActive]}>
                 <Ionicons 
-                  name={`${tab.icon}-outline` as any} 
+                  name={(isFocused ? tab.icon : `${tab.icon}-outline`) as any}
                   size={iconSize.lg} 
-                  color={colors.text.tertiary} 
+                  color={isFocused ? colors.primary : colors.text.tertiary} 
                 />
-              )}
+              </View>
               <Text style={[styles.tabLabel, isFocused && styles.tabLabelActive]}>
                 {tab.name}
               </Text>
@@ -194,43 +184,29 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    paddingHorizontal: spacing.lg,
+    backgroundColor: colors.background,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
   tabBarContainer: {
     flexDirection: 'row',
-    backgroundColor: colors.surface,
-    borderRadius: radius.xxl,
-    paddingVertical: spacing.sm,
+    paddingTop: spacing.sm,
     paddingHorizontal: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    // Glass effect
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 12,
-      },
-      android: {
-        elevation: 8,
-      },
-    }),
   },
   tabItem: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.xs,
   },
-  tabActiveContainer: {
-    marginBottom: 2,
-  },
-  tabActiveGradient: {
-    width: 44,
+  tabIconContainer: {
+    width: 40,
     height: 32,
-    borderRadius: radius.md,
     justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: radius.md,
+  },
+  tabIconActive: {
+    backgroundColor: colors.primaryLight,
   },
   tabLabel: {
     fontSize: fontSize.xs,
@@ -244,11 +220,12 @@ const styles = StyleSheet.create({
   // More Screen
   moreContainer: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
   },
   moreHeader: {
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.lg,
+    backgroundColor: colors.background,
   },
   moreTitle: {
     fontSize: fontSize.xl,
@@ -256,12 +233,12 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   moreList: {
-    paddingHorizontal: spacing.xl,
+    padding: spacing.xl,
   },
   moreItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
     padding: spacing.lg,
     borderRadius: radius.lg,
     marginBottom: spacing.md,
