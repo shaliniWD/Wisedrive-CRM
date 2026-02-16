@@ -681,13 +681,16 @@ export default function LeadsPage() {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1">
                       <span className="text-sm text-gray-700">{lead.assigned_to_name || lead.assigned_to || '-'}</span>
-                      <button 
-                        onClick={() => openAssignModal(lead)}
-                        className="p-0.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                        data-testid={`assign-employee-${lead.id}`}
-                      >
-                        <Pencil className="h-3 w-3" />
-                      </button>
+                      {/* Hide reassign button for Sales Executives */}
+                      {!isSalesExec && (
+                        <button 
+                          onClick={() => openAssignModal(lead)}
+                          className="p-0.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                          data-testid={`assign-employee-${lead.id}`}
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </button>
+                      )}
                     </div>
                   </td>
                   <td className="px-4 py-3">
