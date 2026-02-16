@@ -44,12 +44,15 @@ export default function LeaveApplyScreen() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leaveHistory'] });
       queryClient.invalidateQueries({ queryKey: ['leaveBalance'] });
-      Alert.alert('Success', 'Leave request submitted successfully', [
+      queryClient.invalidateQueries({ queryKey: ['periodBalance'] });
+      Alert.alert('Success', 'Leave applied successfully!', [
         { text: 'OK', onPress: () => navigation.goBack() }
       ]);
     },
     onError: (error: any) => {
-      Alert.alert('Error', error.message || 'Failed to submit leave request');
+      // Extract error message from API response
+      const errorMessage = error?.response?.data?.detail || error.message || 'Failed to apply leave';
+      Alert.alert('Leave Application Failed', errorMessage);
     },
   });
 
