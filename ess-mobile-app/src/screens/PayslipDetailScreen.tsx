@@ -1,4 +1,4 @@
-// Premium Payslip Detail Screen - Dark Theme
+// Professional Payslip Detail Screen - Light Theme
 import React from 'react';
 import {
   View,
@@ -186,7 +186,6 @@ export default function PayslipDetailScreen() {
   );
 }
 
-// Format label helper
 const formatLabel = (key: string) => {
   return key
     .replace(/_/g, ' ')
@@ -196,7 +195,7 @@ const formatLabel = (key: string) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
   },
   loadingContainer: {
     justifyContent: 'center',
@@ -208,6 +207,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.lg,
+    backgroundColor: colors.background,
   },
   backBtn: {
     width: 40,
@@ -228,16 +228,14 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: radius.md,
-    backgroundColor: `${colors.primary}20`,
+    backgroundColor: colors.primaryLight,
     justifyContent: 'center',
     alignItems: 'center',
   },
   scrollContent: {
     padding: spacing.xl,
-    paddingTop: 0,
     paddingBottom: spacing.xxxxl,
   },
-  // Net Card
   netCard: {
     borderRadius: radius.xl,
     overflow: 'hidden',
@@ -263,7 +261,6 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.6)',
     marginTop: spacing.xs,
   },
-  // Summary Row
   summaryRow: {
     flexDirection: 'row',
     gap: spacing.md,
@@ -271,7 +268,7 @@ const styles = StyleSheet.create({
   },
   summaryCard: {
     flex: 1,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
     borderRadius: radius.lg,
     padding: spacing.lg,
     alignItems: 'center',
@@ -288,7 +285,6 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.semibold,
     marginTop: spacing.xs,
   },
-  // Section
   section: {
     marginBottom: spacing.xl,
   },
@@ -313,7 +309,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   sectionCard: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
     borderRadius: radius.lg,
     padding: spacing.lg,
     borderWidth: 1,
