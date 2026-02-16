@@ -190,16 +190,45 @@ class RBACService:
         if not role_ids:
             return []
         
+        # Mapping from page permission names to tab names
+        PAGE_TO_TAB = {
+            "dashboard": "dashboard",
+            "leads": "leads",
+            "customers": "customers",
+            "inspections": "inspections",
+            "employees": "hr",
+            "hr": "hr",
+            "finance": "finance",
+            "settings": "settings",
+            "reports": "reports",
+        }
+        
         # Aggregate visible tabs from all roles
         visible_tabs = set()
         for role_id in role_ids:
             role = await self.db.roles.find_one(
-                {"id": role_id}, {"_id": 0, "code": 1}
+                {"id": role_id}, {"_id": 0, "code": 1, "permissions": 1}
             )
             if role:
                 role_code = role.get("code", "")
-                tabs = self.TAB_VISIBILITY.get(role_code, [])
-                visible_tabs.update(tabs)
+                role_permissions = role.get("permissions", [])
+                
+                # If role has custom permissions stored, use those
+                if role_permissions and len(role_permissions) > 0:
+                    for perm in role_permissions:
+                        page = perm.get("page", "")
+                        if perm.get("view", False):
+                            # Map page to tab name
+                            tab = PAGE_TO_TAB.get(page, page)
+                            visible_tabs.add(tab)
+                else:
+                    # Fall back to preset visibility for known roles
+                    tabs = self.TAB_VISIBILITY.get(role_code, [])
+                    visible_tabs.update(tabs)
+        
+        # Always include dashboard if any tabs are visible
+        if visible_tabs:
+            visible_tabs.add("dashboard")
         
         return list(visible_tabs)
 
