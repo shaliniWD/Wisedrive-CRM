@@ -15,7 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
-import { getProfile, getLeaveBalance, getAttendanceSummary } from '../services/api';
+import { getProfile, getLeavePeriodBalance, getAttendanceSummary } from '../services/api';
 import { colors, spacing, fontSize, fontWeight, radius, iconSize, shadows } from '../theme';
 
 export default function HomeScreen() {
@@ -29,9 +29,10 @@ export default function HomeScreen() {
     queryFn: getProfile,
   });
 
-  const { data: leaveBalance } = useQuery({
-    queryKey: ['leaveBalance'],
-    queryFn: () => getLeaveBalance(),
+  // Use period-based leave balance (monthly/quarterly)
+  const { data: periodBalance } = useQuery({
+    queryKey: ['periodBalance'],
+    queryFn: () => getLeavePeriodBalance(),
   });
 
   const { data: attendance } = useQuery({
@@ -59,6 +60,10 @@ export default function HomeScreen() {
   };
 
   const firstName = (profile?.name || user?.name || 'User').split(' ')[0];
+
+  // Calculate if user can apply leave
+  const canApplyLeave = periodBalance?.can_apply_casual || periodBalance?.can_apply_sick;
+  const totalAvailable = (periodBalance?.casual_available || 0) + (periodBalance?.sick_available || 0);
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -99,7 +104,7 @@ export default function HomeScreen() {
         }
         contentContainerStyle={styles.scrollContent}
       >
-        {/* Attendance Stats Card */}
+        {/* Period Stats Card */}
         <View style={styles.statsCard}>
           <LinearGradient
             colors={colors.gradients.primary}
@@ -107,24 +112,21 @@ export default function HomeScreen() {
             end={{ x: 1, y: 1 }}
             style={styles.statsGradient}
           >
+            <Text style={styles.periodLabel}>{periodBalance?.period_label || 'This Month'}</Text>
             <View style={styles.statsRow}>
               <View style={styles.statItem}>
-                <Text style={styles.statValue}>{attendance?.present_days || 0}</Text>
-                <Text style={styles.statLabel}>Present</Text>
+                <Text style={styles.statValue}>{totalAvailable}</Text>
+                <Text style={styles.statLabel}>Available</Text>
               </View>
               <View style={styles.statDivider} />
               <View style={styles.statItem}>
-                <Text style={styles.statValue}>{attendance?.working_days || 0}</Text>
-                <Text style={styles.statLabel}>Working Days</Text>
+                <Text style={styles.statValue}>{periodBalance?.total_availed || 0}</Text>
+                <Text style={styles.statLabel}>Availed</Text>
               </View>
               <View style={styles.statDivider} />
               <View style={styles.statItem}>
-                <Text style={styles.statValue}>
-                  {(leaveBalance?.casual_leaves?.available || 0) + 
-                   (leaveBalance?.sick_leaves?.available || 0) + 
-                   (leaveBalance?.earned_leaves?.available || 0)}
-                </Text>
-                <Text style={styles.statLabel}>Leaves Left</Text>
+                <Text style={styles.statValue}>{periodBalance?.lop_days || 0}</Text>
+                <Text style={styles.statLabel}>LOP Days</Text>
               </View>
             </View>
           </LinearGradient>
@@ -133,7 +135,7 @@ export default function HomeScreen() {
         {/* Leave Balance Section - Main Feature */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Leave Balance</Text>
+            <Text style={styles.sectionTitle}>Leave Balance ({periodBalance?.period_label || 'This Period'})</Text>
             <TouchableOpacity 
               testID="view-leaves-btn"
               onPress={() => navigation.navigate('Leave')}
@@ -144,40 +146,51 @@ export default function HomeScreen() {
           <View style={styles.leaveGrid}>
             <LeaveCard 
               label="Casual" 
-              available={leaveBalance?.casual_leaves?.available || 0}
-              total={leaveBalance?.casual_leaves?.total || 12}
+              available={periodBalance?.casual_available || 0}
+              total={periodBalance?.casual_allocated || 1}
               color={colors.success}
+              canApply={periodBalance?.can_apply_casual}
             />
             <LeaveCard 
               label="Sick" 
-              available={leaveBalance?.sick_leaves?.available || 0}
-              total={leaveBalance?.sick_leaves?.total || 12}
+              available={periodBalance?.sick_available || 0}
+              total={periodBalance?.sick_allocated || 2}
               color={colors.warning}
+              canApply={periodBalance?.can_apply_sick}
             />
             <LeaveCard 
-              label="Earned" 
-              available={leaveBalance?.earned_leaves?.available || 0}
-              total={leaveBalance?.earned_leaves?.total || 15}
-              color={colors.primary}
+              label="LOP" 
+              available={periodBalance?.lop_days || 0}
+              total={null}
+              color={colors.error}
+              isLOP={true}
             />
           </View>
           {/* Apply Leave Button */}
           <TouchableOpacity
             testID="apply-leave-btn"
-            style={styles.applyLeaveBtn}
+            style={[styles.applyLeaveBtn, !canApplyLeave && styles.applyLeaveBtnDisabled]}
             onPress={() => navigation.navigate('LeaveApply')}
-            activeOpacity={0.8}
+            activeOpacity={canApplyLeave ? 0.8 : 1}
+            disabled={!canApplyLeave}
           >
             <LinearGradient
-              colors={colors.gradients.primary}
+              colors={canApplyLeave ? colors.gradients.primary : ['#9CA3AF', '#9CA3AF']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.applyLeaveBtnGradient}
             >
               <Ionicons name="add-circle" size={iconSize.lg} color="#FFF" />
-              <Text style={styles.applyLeaveBtnText}>Apply for Leave</Text>
+              <Text style={styles.applyLeaveBtnText}>
+                {canApplyLeave ? 'Apply for Leave' : 'No Leaves Available'}
+              </Text>
             </LinearGradient>
           </TouchableOpacity>
+          {!canApplyLeave && (
+            <Text style={styles.noLeavesText}>
+              All leaves for {periodBalance?.period_label || 'this period'} have been availed
+            </Text>
+          )}
         </View>
 
         {/* Quick Actions */}
@@ -222,12 +235,36 @@ export default function HomeScreen() {
   );
 }
 
-// Leave Card Component
-const LeaveCard = ({ label, available, total, color }: { label: string; available: number; total: number; color: string }) => (
-  <View style={styles.leaveCard}>
+// Leave Card Component - Updated for period balance
+const LeaveCard = ({ 
+  label, 
+  available, 
+  total, 
+  color,
+  canApply,
+  isLOP = false
+}: { 
+  label: string; 
+  available: number; 
+  total: number | null; 
+  color: string;
+  canApply?: boolean;
+  isLOP?: boolean;
+}) => (
+  <View style={[styles.leaveCard, !canApply && !isLOP && styles.leaveCardDisabled]}>
     <View style={[styles.leaveIndicator, { backgroundColor: color }]} />
     <Text style={styles.leaveLabel}>{label}</Text>
-    <Text style={styles.leaveValue}>{available}<Text style={styles.leaveTotal}>/{total}</Text></Text>
+    {isLOP ? (
+      <Text style={[styles.leaveValue, { color: color }]}>{available}</Text>
+    ) : (
+      <Text style={styles.leaveValue}>
+        {available}
+        {total !== null && <Text style={styles.leaveTotal}>/{total}</Text>}
+      </Text>
+    )}
+    {!canApply && !isLOP && available <= 0 && (
+      <Text style={styles.exhaustedText}>Exhausted</Text>
+    )}
   </View>
 );
 
