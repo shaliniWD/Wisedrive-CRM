@@ -1,4 +1,4 @@
-// Premium Leave Screen - Dark Theme
+// Professional Leave Screen - Light Theme
 import React, { useState } from 'react';
 import {
   View,
@@ -111,7 +111,7 @@ export default function LeaveScreen() {
             label="Earned"
             available={leaveBalance?.earned_leaves?.available || 0}
             total={leaveBalance?.earned_leaves?.total || 15}
-            color={colors.accent}
+            color={colors.primary}
           />
         </View>
 
@@ -207,7 +207,7 @@ const BalanceCard = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
   },
   header: {
     flexDirection: 'row',
@@ -215,6 +215,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.lg,
+    backgroundColor: colors.background,
   },
   headerTitle: {
     fontSize: fontSize.xl,
@@ -239,8 +240,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: spacing.xl,
-    paddingTop: 0,
-    paddingBottom: spacing.xxxxl,
+    paddingBottom: spacing.xxxxl + 80,
   },
   // Balance Cards
   balanceRow: {
@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
   },
   balanceCard: {
     flex: 1,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
     borderRadius: radius.lg,
     padding: spacing.lg,
     alignItems: 'center',
@@ -281,10 +281,12 @@ const styles = StyleSheet.create({
   // Filter Tabs
   filterRow: {
     flexDirection: 'row',
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
     borderRadius: radius.md,
     padding: spacing.xs,
     marginBottom: spacing.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   filterTab: {
     flex: 1,
@@ -306,12 +308,10 @@ const styles = StyleSheet.create({
   // History
   historySection: {},
   sectionLabel: {
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.medium,
-    color: colors.text.secondary,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
+    color: colors.text.primary,
     marginBottom: spacing.md,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
   emptyState: {
     alignItems: 'center',
@@ -324,7 +324,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   leaveCard: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
     borderRadius: radius.lg,
     padding: spacing.lg,
     marginBottom: spacing.md,
