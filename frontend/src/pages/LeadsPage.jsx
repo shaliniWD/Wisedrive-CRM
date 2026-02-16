@@ -1038,18 +1038,24 @@ export default function LeadsPage() {
                 }
                 setSaving(true);
                 try {
-                  const paymentLink = `https://rzp.io/l/WD${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-                  await leadsApi.update(selectedLead.id, { 
-                    ...selectedLead, 
-                    payment_link: paymentLink,
-                    inspection_date: paymentFormData.inspectionDate,
-                    inspection_time: paymentFormData.inspectionTime,
-                    inspection_address: paymentFormData.address,
+                  // Use the real Razorpay payment link API
+                  const response = await leadsApi.createPaymentLink(selectedLead.id, {
+                    package_id: paymentFormData.packageType,
+                    amount: calculateFinalAmount(),
+                    description: `${paymentFormData.packageType.charAt(0).toUpperCase() + paymentFormData.packageType.slice(1)} Package - ${paymentFormData.numberOfCars} Car(s)`,
+                    send_via_whatsapp: true
                   });
-                  toast.success('Payment link sent!');
+                  
+                  toast.success(response.data?.whatsapp_sent 
+                    ? 'Payment link sent via WhatsApp!' 
+                    : 'Payment link generated successfully!');
                   setIsPaymentModalOpen(false);
                   fetchData();
-                } catch { toast.error('Failed'); } finally { setSaving(false); }
+                } catch (error) {
+                  toast.error(error.response?.data?.detail || 'Failed to create payment link');
+                } finally { 
+                  setSaving(false); 
+                }
               }} disabled={saving || !paymentFormData.packageType} className="bg-gradient-to-r from-blue-600 to-blue-700">
                 {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null} Send Payment Link
               </Button>
