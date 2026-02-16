@@ -18,7 +18,7 @@ import {
   Plus, Loader2, Pencil, Users, Globe, Search, ChevronDown, ChevronUp,
   FileText, Calendar, DollarSign, History, Eye, X, PauseCircle, PlayCircle,
   Building, Phone, Mail, MapPin, Briefcase, Clock, CheckCircle, AlertCircle, XCircle,
-  Shield, UserX, UserPlus, Settings, Lock, CreditCard, Upload, Trash2, Camera, Download
+  Shield, UserX, UserPlus, Settings, Lock, CreditCard, Upload, Trash2, Camera, Download, Copy
 } from 'lucide-react';
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
