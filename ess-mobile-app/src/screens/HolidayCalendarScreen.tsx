@@ -1,4 +1,4 @@
-// Premium Holiday Calendar Screen - Dark Theme
+// Professional Holiday Calendar Screen - Light Theme
 import React, { useState } from 'react';
 import {
   View,
@@ -13,7 +13,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { format, isSameMonth, parseISO, isAfter } from 'date-fns';
+import { format, parseISO, isAfter, isSameMonth } from 'date-fns';
 import { getHolidays } from '../services/api';
 import { colors, spacing, fontSize, fontWeight, radius, iconSize } from '../theme';
 
@@ -36,7 +36,6 @@ export default function HolidayCalendarScreen() {
     setRefreshing(false);
   };
 
-  // Group holidays by month
   const groupedHolidays = React.useMemo(() => {
     if (!holidays?.length) return {};
     
@@ -105,7 +104,7 @@ export default function HolidayCalendarScreen() {
             <Text style={styles.statLabel}>Total Holidays</Text>
           </View>
           <View style={styles.statCard}>
-            <Ionicons name="time" size={20} color={colors.accent} />
+            <Ionicons name="time" size={20} color={colors.primary} />
             <Text style={styles.statValue}>{upcomingCount}</Text>
             <Text style={styles.statLabel}>Upcoming</Text>
           </View>
@@ -133,7 +132,7 @@ export default function HolidayCalendarScreen() {
                     key={holiday.id} 
                     style={[styles.holidayCard, isPast && styles.holidayCardPast]}
                   >
-                    <View style={styles.dateBox}>
+                    <View style={[styles.dateBox, isPast && styles.dateBoxPast]}>
                       <Text style={[styles.dateDay, isPast && styles.textPast]}>
                         {format(holidayDate, 'd')}
                       </Text>
@@ -165,7 +164,7 @@ export default function HolidayCalendarScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
   },
   header: {
     flexDirection: 'row',
@@ -173,6 +172,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.lg,
+    backgroundColor: colors.background,
   },
   backBtn: {
     width: 40,
@@ -197,6 +197,8 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderRadius: radius.md,
     gap: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   yearText: {
     fontSize: fontSize.sm,
@@ -207,10 +209,8 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: spacing.xl,
-    paddingTop: 0,
     paddingBottom: spacing.xxxxl,
   },
-  // Stats
   statsRow: {
     flexDirection: 'row',
     gap: spacing.md,
@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
     borderRadius: radius.lg,
     padding: spacing.lg,
     alignItems: 'center',
@@ -250,7 +250,6 @@ const styles = StyleSheet.create({
     color: colors.text.tertiary,
     marginTop: spacing.md,
   },
-  // Month Section
   monthSection: {
     marginBottom: spacing.xl,
   },
@@ -262,11 +261,10 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  // Holiday Card
   holidayCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
     padding: spacing.md,
     borderRadius: radius.lg,
     marginBottom: spacing.sm,
@@ -279,19 +277,22 @@ const styles = StyleSheet.create({
   dateBox: {
     width: 48,
     height: 48,
-    backgroundColor: colors.surfaceHighlight,
+    backgroundColor: colors.primaryLight,
     borderRadius: radius.md,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  dateBoxPast: {
+    backgroundColor: colors.surface,
+  },
   dateDay: {
     fontSize: fontSize.lg,
     fontWeight: fontWeight.bold,
-    color: colors.text.primary,
+    color: colors.primary,
   },
   dateWeekday: {
     fontSize: fontSize.xs,
-    color: colors.text.tertiary,
+    color: colors.primary,
   },
   textPast: {
     color: colors.text.tertiary,
@@ -307,7 +308,7 @@ const styles = StyleSheet.create({
   },
   typeBadge: {
     alignSelf: 'flex-start',
-    backgroundColor: colors.surfaceHighlight,
+    backgroundColor: colors.surface,
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
     borderRadius: radius.sm,
