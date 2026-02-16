@@ -223,6 +223,31 @@ async def apply_leave(
     if existing:
         raise HTTPException(status_code=400, detail="You already have a leave request for these dates")
     
+    # Validate leave balance for casual and sick leaves
+    leave_type = leave_data.leave_type.value
+    if leave_type == "casual":
+        if period_balance.casual_available < days_count:
+            if period_balance.casual_available <= 0:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"No casual leaves available for {period_balance.period_label}. You have used all {period_balance.casual_allocated} allocated casual leaves."
+                )
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Insufficient casual leaves. Available: {period_balance.casual_available}, Requested: {days_count}"
+            )
+    elif leave_type == "sick":
+        if period_balance.sick_available < days_count:
+            if period_balance.sick_available <= 0:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"No sick leaves available for {period_balance.period_label}. You have used all {period_balance.sick_allocated} allocated sick leaves."
+                )
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Insufficient sick leaves. Available: {period_balance.sick_available}, Requested: {days_count}"
+            )
+    
     # Create leave request
     leave_id = str(uuid.uuid4())
     leave_record = {
