@@ -193,6 +193,17 @@ export default function SettingsPage() {
       <div className="bg-white rounded-xl border overflow-hidden">
         <div className="flex border-b bg-slate-50">
           <button
+            onClick={() => setActiveTab('inspection_packages')}
+            className={`px-6 py-4 text-sm font-medium flex items-center gap-2 transition-all border-b-2 -mb-px ${
+              activeTab === 'inspection_packages' 
+                ? 'border-blue-600 text-blue-600 bg-white' 
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+            data-testid="inspection-packages-tab"
+          >
+            <Package className="h-4 w-4" /> Inspection Packages
+          </button>
+          <button
             onClick={() => setActiveTab('ad_mapping')}
             className={`px-6 py-4 text-sm font-medium flex items-center gap-2 transition-all border-b-2 -mb-px ${
               activeTab === 'ad_mapping' 
@@ -204,6 +215,11 @@ export default function SettingsPage() {
             <Settings className="h-4 w-4" /> AD ID Mapping
           </button>
         </div>
+
+        {/* Inspection Packages Tab Content */}
+        {activeTab === 'inspection_packages' && (
+          <InspectionPackagesPage />
+        )}
 
         {/* AD ID Mapping Tab Content */}
         {activeTab === 'ad_mapping' && (
