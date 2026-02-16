@@ -1,4 +1,4 @@
-// Premium Settings Screen - Dark Theme
+// Professional Settings Screen - Light Theme
 import React from 'react';
 import {
   View,
@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { colors, spacing, fontSize, fontWeight, radius, iconSize } from '../theme';
@@ -108,11 +109,11 @@ export default function SettingsScreen() {
       >
         {/* User Info Card */}
         <View style={styles.userCard}>
-          <View style={styles.userAvatar}>
+          <LinearGradient colors={colors.gradients.primary} style={styles.userAvatar}>
             <Text style={styles.userAvatarText}>
               {user?.name?.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'U'}
             </Text>
-          </View>
+          </LinearGradient>
           <View style={styles.userInfo}>
             <Text style={styles.userName}>{user?.name || 'User'}</Text>
             <Text style={styles.userEmail}>{user?.email || ''}</Text>
@@ -144,7 +145,7 @@ export default function SettingsScreen() {
                     <Switch
                       value={item.value}
                       onValueChange={item.onToggle}
-                      trackColor={{ false: colors.surfaceHighlight, true: colors.primary }}
+                      trackColor={{ false: colors.border, true: colors.primary }}
                       thumbColor="#FFF"
                     />
                   )}
@@ -183,7 +184,7 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
   },
   header: {
     flexDirection: 'row',
@@ -191,6 +192,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.lg,
+    backgroundColor: colors.background,
   },
   backBtn: {
     width: 40,
@@ -209,14 +211,13 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: spacing.xl,
-    paddingTop: 0,
     paddingBottom: spacing.xxxxl,
   },
   // User Card
   userCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
     padding: spacing.lg,
     borderRadius: radius.lg,
     marginBottom: spacing.xxl,
@@ -227,7 +228,6 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: radius.md,
-    backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   sectionCard: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
@@ -281,7 +281,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: radius.sm,
-    backgroundColor: colors.surfaceHighlight,
+    backgroundColor: colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: spacing.md,
