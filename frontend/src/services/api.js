@@ -347,6 +347,7 @@ export const inspectionPackagesApi = {
   getCategories: (countryId) => axios.get(`${API_URL}/inspection-categories`, { params: { country_id: countryId } }),
   createCategory: (data, countryId) => axios.post(`${API_URL}/inspection-categories`, data, { params: { country_id: countryId } }),
   updateCategory: (id, data) => axios.put(`${API_URL}/inspection-categories/${id}`, data),
+  toggleCategoryStatus: (id) => axios.patch(`${API_URL}/inspection-categories/${id}/toggle-status`),
   deleteCategory: (id) => axios.delete(`${API_URL}/inspection-categories/${id}`),
   
   // Packages
