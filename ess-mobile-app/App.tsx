@@ -41,7 +41,7 @@ export default function App() {
             <NotificationProvider>
               <NavigationContainer>
                 <RootNavigator />
-                <StatusBar style="light" backgroundColor="#0B1120" />
+                <StatusBar style="dark" backgroundColor="#FFFFFF" />
               </NavigationContainer>
             </NotificationProvider>
           </AuthProvider>
