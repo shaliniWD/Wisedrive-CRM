@@ -1911,6 +1911,21 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
     }
   }, [currentTab, employee?.id]);
   
+  // Fetch salary data when tab changes to salary (ensures data persistence)
+  useEffect(() => {
+    const fetchSalaryData = async () => {
+      if (currentTab === 'salary' && employee?.id) {
+        try {
+          const salaryRes = await hrApi.getEmployeeSalary(employee.id);
+          setSalaryForm(salaryRes.data || {});
+        } catch (error) {
+          console.error('Failed to load salary data');
+        }
+      }
+    };
+    fetchSalaryData();
+  }, [currentTab, employee?.id]);
+  
   // Download payslip PDF
   const handleDownloadPayslip = async (payslipId, month, year) => {
     setDownloadingPayslip(payslipId);
