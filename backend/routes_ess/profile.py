@@ -62,10 +62,11 @@ async def get_profile(
         if team:
             team_name = team.get("name")
     
-    # Get reporting manager name
+    # Get reporting manager name - support both field names
+    reporting_manager_id = user.get("reporting_manager_id") or user.get("reports_to")
     manager_name = None
-    if user.get("reporting_manager_id"):
-        manager = await db.users.find_one({"id": user["reporting_manager_id"]}, {"_id": 0, "name": 1})
+    if reporting_manager_id:
+        manager = await db.users.find_one({"id": reporting_manager_id}, {"_id": 0, "name": 1})
         if manager:
             manager_name = manager.get("name")
     
@@ -85,21 +86,27 @@ async def get_profile(
         if on_leave:
             employment_status = "on_leave"
     
+    # Handle multiple field name variations for joining date
+    date_of_joining = user.get("date_of_joining") or user.get("joining_date")
+    
+    # Handle photo URL - support multiple field names
+    photo_url = user.get("photo_url") or user.get("profile_photo") or user.get("avatar_url")
+    
     return EmployeeProfile(
         id=user["id"],
         employee_code=user.get("employee_code", ""),
         name=user.get("name", ""),
         email=user.get("email", ""),
         phone=user.get("phone"),
-        photo_url=user.get("photo_url"),
+        photo_url=photo_url,
         department_name=department_name,
         role_name=role_name,
         country_name=country_name,
         team_name=team_name,
-        date_of_joining=user.get("date_of_joining"),
+        date_of_joining=date_of_joining,
         employment_type=user.get("employment_type", "permanent"),
         employment_status=employment_status,
-        reporting_manager_id=user.get("reporting_manager_id"),
+        reporting_manager_id=reporting_manager_id,
         reporting_manager_name=manager_name,
         date_of_birth=user.get("date_of_birth"),
         gender=user.get("gender"),
