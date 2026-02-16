@@ -871,15 +871,18 @@ class LeadStatusUpdate(BaseModel):
 @api_router.patch("/leads/{lead_id}/status")
 async def update_lead_status(lead_id: str, status_data: LeadStatusUpdate, current_user: dict = Depends(get_current_user)):
     """Inline update of lead status - for quick status changes from the leads table"""
+    from models.lead import LEAD_STATUSES
+    
     existing = await db.leads.find_one({"id": lead_id}, {"_id": 0})
     if not existing:
         raise HTTPException(status_code=404, detail="Lead not found")
     
-    # Validate status
-    valid_statuses = ["NEW", "HOT", "CONTACTED", "INTERESTED", "NOT_INTERESTED", 
-                     "CONVERTED", "RNR", "RCB_WHATSAPP", "FOLLOWUP", "OUT_OF_SERVICE_AREA", "LOST"]
+    # Get valid statuses from model
+    valid_statuses = [s["value"] for s in LEAD_STATUSES]
     if status_data.status not in valid_statuses:
-        raise HTTPException(status_code=400, detail=f"Invalid status. Valid statuses: {', '.join(valid_statuses)}")
+        raise HTTPException(status_code=400, detail=f"Invalid status")
+    
+    old_status = existing.get("status")
     
     update_dict = {
         "status": status_data.status,
@@ -888,6 +891,19 @@ async def update_lead_status(lead_id: str, status_data: LeadStatusUpdate, curren
     }
     
     await db.leads.update_one({"id": lead_id}, {"$set": update_dict})
+    
+    # Log activity
+    activity = {
+        "id": str(uuid.uuid4()),
+        "lead_id": lead_id,
+        "user_id": current_user["id"],
+        "user_name": current_user.get("name", "Unknown"),
+        "action": "status_changed",
+        "old_value": old_status,
+        "new_value": status_data.status,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.lead_activities.insert_one(activity)
     
     lead = await db.leads.find_one({"id": lead_id}, {"_id": 0})
     return lead
