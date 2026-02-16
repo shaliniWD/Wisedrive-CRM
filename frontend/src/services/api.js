@@ -5,12 +5,30 @@ const API_URL = process.env.REACT_APP_BACKEND_URL + '/api';
 // Leads API
 export const leadsApi = {
   getAll: (params) => axios.get(`${API_URL}/leads`, { params }),
+  getById: (id) => axios.get(`${API_URL}/leads/${id}`),
+  getStatuses: () => axios.get(`${API_URL}/leads/statuses`),
   create: (data) => axios.post(`${API_URL}/leads`, data),
   update: (id, data) => axios.put(`${API_URL}/leads/${id}`, data),
   updateStatus: (id, status) => axios.patch(`${API_URL}/leads/${id}/status`, { status }),
   delete: (id) => axios.delete(`${API_URL}/leads/${id}`),
   reassign: (id, data) => axios.post(`${API_URL}/leads/${id}/reassign`, data),
   getReassignmentHistory: (id) => axios.get(`${API_URL}/leads/${id}/reassignment-history`),
+  // Notes
+  getNotes: (id) => axios.get(`${API_URL}/leads/${id}/notes`),
+  addNote: (id, note) => axios.post(`${API_URL}/leads/${id}/notes`, { note }),
+  // Activities
+  getActivities: (id) => axios.get(`${API_URL}/leads/${id}/activities`),
+  // Reminder
+  setReminder: (id, data) => axios.post(`${API_URL}/leads/${id}/reminder`, data),
+  // Payment
+  createPaymentLink: (id, data) => axios.post(`${API_URL}/leads/${id}/payment-link`, data),
+};
+
+// Ad-City Mappings API
+export const adCityMappingsApi = {
+  getAll: () => axios.get(`${API_URL}/settings/ad-city-mappings`),
+  create: (data) => axios.post(`${API_URL}/settings/ad-city-mappings`, data),
+  delete: (adId) => axios.delete(`${API_URL}/settings/ad-city-mappings/${adId}`),
 };
 
 // Customers API
