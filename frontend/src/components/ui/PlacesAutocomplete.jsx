@@ -294,12 +294,7 @@ export function PlacesAutocomplete({
             </button>
           ))}
           <div className="px-3 py-2 text-xs text-gray-400 bg-gray-50 flex items-center gap-1">
-            <span>Powered by</span>
-            <img 
-              src="https://developers.google.com/static/maps/images/google_on_white.png" 
-              alt="Google" 
-              className="h-3"
-            />
+            <span>Powered by Google</span>
           </div>
         </div>
       )}
