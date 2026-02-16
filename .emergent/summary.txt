@@ -1,147 +1,143 @@
 <analysis>**original_problem_statement:**
-The user initially requested to build a scalable automotive platform, Wisedrive, which evolved into a monolithic CRM application. The project's current phase is to build a separate, decoupled Employee Self-Service (ESS) mobile application.
+The user's initial goal was to build a scalable automotive platform, Wisedrive, which evolved into a monolithic CRM application. The current project phase is to build an Employee Self-Service (ESS) mobile application.
 
-The latest user requests have been to:
-1.  **Redesign the App:** The user is unhappy with the current UI, requesting a complete overhaul for a modern, professional look and feel. Specific feedback includes issues with font/icon sizes, bulky navigation, blank headers, and duplicated content.
-2.  **Ensure Data Integrity:** The app must seamlessly sync with the CRM's data. Any data changes in the CRM (hosted at ) must reflect in the mobile app, and data displayed must be specific to the logged-in user.
-3.  **Implement Holiday Calendar:** Add a feature for employees to view the company's holiday calendar.
-4.  **Enable Push Notifications:** Set up production-ready push notifications for events like leave requests and approvals.
-5.  **Provide Mobile App Builds:** Deliver final, installable Android (APK) and iOS (IPA) files.
+The latest user requests, after approving a new light theme, are to perform a major restructuring of the app's navigation and content:
+1.  **Replicate CRM Salary Structure:** The salary details screen in the mobile app must show the exact same earning and deduction fields as the main CRM application.
+2.  **Add Country Select to Payslips:** Implement a country selection dropdown on the Payslips screen. The logic for which countries to show should be based on the employee's joining date (details to be confirmed).
+3.  **Remove All Content Duplication & Footer Navigation:**
+    *   The entire bottom tab bar/footer should be removed.
+    *   All features (Leaves, Payslips, Documents, Holidays, Settings) should be accessible from the main .
+    *   Remove the duplicate Payslips entry from the footer (it's already in Quick Links).
+    *   Remove the duplicate Settings entry from the More menu (it's also on the Profile screen).
+4.  **Redesign Home Screen:** Remove the unnecessary block showing designation/company name. Use that space for the Leaves feature.
+5.  **Confirm API Endpoint:** Ensure the app continues to connect to the stable production endpoint: .
 
 **PRODUCT REQUIREMENTS:**
--   Build a React Native mobile app for employees with a modern, minimalist UI/UX.
+-   Build a React Native mobile app with a minimalist, light-themed UI.
 -   Features: Login, Profile (Personal, Salary, Bank details), Leave Management, Payslips, Documents, Holiday Calendar, and Notifications.
--   The app must connect to a stable production endpoint ().
--   Integrate Firebase Cloud Messaging (FCM) for real-time push notifications.
--   Ensure data is always fresh and user-specific, with no caching issues between sessions.
--   The backend logic for the ESS app must be integrated into the main CRM backend to share the same database and deployment pipeline.
+-   The app must connect to .
+-   The backend logic is integrated into the main CRM backend.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The project consists of the original CRM and the ESS mobile app, whose backend has been merged into the CRM's.
-1.  **Unified Backend ():** The standalone ESS API has been fully integrated into the main CRM FastAPI backend. All ESS routes (e.g., ) and models are now part of the main , sharing its database and deployment lifecycle.
-2.  **React Native App ():** A complete Expo-based React Native project. It includes all necessary screens and features. The agent was in the middle of a second major UI redesign based on specific user feedback.
-3.  **API Endpoint Configuration:** The mobile app is correctly configured to point to the stable custom domain .
-4.  **FCM Integration:** The backend is fully configured for production push notifications using the user's Firebase credentials. The mobile app has been updated to register a native FCM token.
-5.  **Data Seeding:** A major data integrity issue was resolved by seeding the database with correct, user-specific data (salary, leave balances, documents) for all existing users.
+The project consists of a unified FastAPI backend (CRM + ESS) and a React Native (Expo) mobile app. The agent has successfully implemented a complete UI redesign from a dark theme to a light theme based on user feedback. It has also fixed several critical bugs related to app crashes and login failures. The agent has already started the major restructuring by removing the bottom tab navigator and updating several screens to fit the new navigation-hub model centered on the .
 
 **Last working item**:
--   **Last item agent was working:** The agent was performing a second, more comprehensive UI/UX redesign of the entire mobile app, following specific negative feedback from the user on the previous design. The agent had already updated the theme, the main navigator (to be more minimalist), and several screens (, , , ).
+-   **Last item agent was working:** The agent was addressing the user's top-priority request to make the mobile app's salary structure view identical to the CRM's. It had investigated the backend API () and CRM frontend code to identify the correct salary fields. The agent was about to modify the backend API to return the complete salary data.
 -   **Status:** IN PROGRESS
 -   **Agent Testing Done:** N
--   **Which testing method agent to use?** frontend testing agent (After completing the full redesign).
+-   **Which testing method agent to use?** both (First backend, then frontend). The backend API change should be tested with . After the UI is updated, the frontend testing agent should be used to verify the entire restructuring.
 -   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
--   **Issue 1: Mobile App UI/UX is not satisfactory (P0)**
-    -   **Description:** The user rejected the first redesign, calling it old fashioned. Specific complaints included: icons and fonts are too big, the header looks blank, the bottom tab bar is bulky and has too many items, screen height is not adjusted for iOS/Android, and the Documents feature is duplicated (in Profile and as a main tab).
-    -   **Attempted fixes:** The agent began a second, more ambitious redesign. It has already implemented a new minimalist theme, a custom  with a cleaner tab bar and header, and has started overwriting individual screens to match this new aesthetic. The duplicate Documents tab was removed from the profile screen.
+-   **Issue 1: Salary structure in the mobile app does not match the CRM (P0)**
+    -   **Attempted fixes:** The agent has analyzed the CRM frontend and backend API to determine the correct fields:
+        -   **Earnings:** Basic Salary, HRA, Variable Pay/Incentives, Conveyance, Medical Allowance, Special Allowance.
+        -   **Deductions:** PF (Employee), Professional Tax, Income Tax (TDS), Other Deductions.
     -   **Next debug checklist:**
-        1.  Continue the redesign for all remaining screens: , , and .
-        2.  Ensure the new design is consistently applied across the entire application.
-        3.  Specifically address the user's feedback about screen height by using flexible layouts (e.g., Flexbox) and components like  correctly.
-        4.  Refine the new custom header in  to include action icons (e.g., for notifications or settings) as suggested by the user.
-        5.  Review all font sizes, icon sizes, and spacing to conform to a modern, minimalist style.
-    -   **Why fix this issue and what will be achieved with the fix?** This is the user's primary concern. Completing the redesign to their satisfaction is the main blocker for project completion.
+        1.  Modify the Pydantic model for salary (likely ) in the backend to include all required fields.
+        2.  Update the  endpoint in  to populate and return these new fields.
+        3.  Update the UI in  to correctly display all the new earnings and deductions fields.
+    -   **Why fix this issue and what will be achieved with the fix?** This is a direct user requirement to ensure data consistency and accuracy between the two applications.
     -   **Status:** IN PROGRESS
-    -   **Is recurring issue?** Y
-    -   **Should Test frontend/backend/both after fix?** Frontend.
+    -   **Is recurring issue?** N
+    -   **Should Test frontend/backend/both after fix?** Both.
     -   **Blocked on other issue:** None.
 
 **In progress Task List**:
--   **Task 1: Complete Modern Minimalist UI/UX Redesign (P0)**
-    -   **Where to resume:** The agent just overwrote . The next step is to overwrite , , and  with the new design language, and then update the navigation structure.
-    -   **What will be achieved with this?** A visually appealing and professional app that meets the user's explicit design requirements, resolving the main blocker.
+-   **Task 1: Complete App Navigation and UI Restructuring (P0)**
+    -   **Where to resume:** The agent has already removed the bottom tab navigator and redesigned the  to be a central hub. The next step is to complete the salary structure fix (Issue 1), and then proceed with the remaining UI changes.
+    -   **What will be achieved with this?** A streamlined, non-redundant UI that follows the user's exact specifications, improving usability and consolidating all features onto the main screen.
     -   **Status:** IN PROGRESS
-    -   **Should Test frontend/backend/both after fix?** Frontend.
-    -   **Blocked on something:** None.
+    -   **Should Test frontend/backend/both after fix?** Both.
+    -   **Blocked on something:** Blocked on completing Issue 1: Salary structure mismatch.
 
 **Upcoming and Future Tasks**
 **Upcoming Tasks:**
-*   **P0: Build and Deliver Final App Builds:** Once the redesign is complete and approved, generate the final Android APK and iOS IPA files.
-*   **P1: Full User Acceptance Testing (UAT):** User needs to test the final redesigned app on their devices.
+*   **P1: Implement Country Select for Payslips:** Add logic to  for country selection. This will require backend investigation/implementation to fetch the relevant data.
+*   **P2: Full User Acceptance Testing (UAT):** After all restructuring is complete, the user needs to test the app again.
+*   **P3: Build and Deliver Final App Builds:** Once the user approves the restructured app, generate the final Android APK and iOS IPA files.
 
 **Future Tasks:**
-*   **CRM Future Features:**
-    -   Implement Leads, Inspections, and Customer modules.
-    -   Integrate the  library.
-    -   Integrate Razorpay and Invincible Ocean clients.
-*   **Architecture:**
-    -   Plan the migration of the CRM from a monolith to a microservices architecture.
+*   **CRM Features:** Implement Leads, Inspections, and Customer modules.
+*   **Integrations:** Integrate , Razorpay, and Invincible Ocean clients.
+*   **Architecture:** Plan the migration of the CRM from a monolith to a microservices architecture.
 
 **Completed work in this session**
--   **Fixed Critical Build & Login Issues:** Resolved numerous EAS build failures and fixed a critical bug where the ESS API was not running, allowing users to finally log in.
--   **Resolved Data Integrity & Caching:**
-    -   Fixed a major caching bug where data from previous user sessions was displayed. Implemented  on logout.
-    -   Fixed the root cause of incorrect data by writing a script to seed the database with valid, user-specific salary and leave data.
--   **Established Production Deployment Workflow:** Investigated and resolved the  vs. preview URL conflict. The app now correctly points to the stable  domain, and the user understands the deploy vs. rebuild workflow.
--   **Implemented Holiday Calendar Feature:** Added a backend API endpoint and a corresponding mobile screen for viewing company holidays.
--   **Activated Production Push Notifications:** Fully configured the backend FCM service with triggers for leave management and updated the mobile app to use native FCM tokens.
--   **First UI Redesign (Rejected):** Completed a full app redesign which was subsequently rejected by the user, leading to the current redesign task.
+-   **Completed Full UI Redesign (to Light Theme):** Switched the entire mobile application from a dark theme to a light theme as requested by the user.
+-   **Fixed Critical Bugs from Previous Build:**
+    -   Resolved a crash on the .
+    -   Fixed an overlay issue on the  that blocked the login button on iOS.
+    -   Fixed the Android login functionality.
+-   **Initiated Major App Restructuring:**
+    -   Removed the entire bottom tab bar navigation system ().
+    -   Redesigned the  to serve as the new central navigation hub.
+    -   Updated the  and began the process of aligning its salary structure with the CRM.
+
+**Earlier issues found/mentioned but not fixed**
+-   **Screen Height Adjustment:** The initial handoff mentioned a user complaint that height is not adjusted for iOS and android screens. While a test report indicated  was used, this should be explicitly verified during the next round of testing to ensure no content is cut off on different devices.
+
+**Known issue recurrence from previous fork**
+-   **UI/UX Dissatisfaction:** The user is very particular about the UI and app structure. The project has gone through multiple major redesigns. This is a recurring theme, and any further UI work should strictly follow the user's latest instructions.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Monolith Integration:** Merging a previously separate service (ESS API) into an existing monolith (CRM backend) to simplify deployment and database management.
--   **React Query Caching:** Identified and fixed a data caching issue by clearing the React Query cache on user logout.
--   **Stable API Endpoint:** Understood the importance of a stable custom domain () for a mobile application and configured the app and deployment workflow accordingly.
--   **Expo Application Services (EAS):** Used for cloud builds of the Android and iOS applications. Overcame numerous configuration and dependency issues.
--   **Firebase Cloud Messaging (FCM):** Integrated for production push notifications, including backend triggers and frontend token registration.
--   **UI/UX Redesign:** Iterating on application design based on direct user feedback, moving towards a modern, minimalist aesthetic.
+-   **UI/Navigation Refactoring:** Moving from a standard bottom tab navigation model to a centralized, hub-based navigation model on the home screen.
+-   **Data Model Synchronization:** Modifying backend Pydantic models and API endpoints to align with frontend data requirements.
+-   **React Native (Expo) Development:** Extensive work with components, styling, and navigation.
+-   **FastAPI Backend Development:** Modifying routes and models to support frontend changes.
 
 **key DB schema**
-- No schema was changed, but the agent fixed data integrity issues by writing a script to create and link data in the , , and  collections to the correct s in the  collection.
+-   No schema changes are required. The agent must ensure the API layer correctly queries the existing  and  collections to provide all necessary fields.
 
 **All files of reference**
--   : The main server file, modified to integrate all ESS routes.
--   : Defines the API base URL, now pointing to the stable .
--   : Modified to clear React Query cache on logout, fixing a critical data bug.
--   : Overhauled to implement the new, minimalist navigation design.
--   : The new central file for colors, fonts, and spacing for the redesign.
--   All files in : These are being systematically overwritten as part of the redesign task.
+-   : Needs modification for the  endpoint.
+-   : UI needs updating for the new salary structure.
+-   : The new navigation hub.
+-   : Will need to be updated with country selection logic.
+-   : Already updated to remove the bottom tab bar.
+-   : Used as a reference to understand the CRM's salary structure display.
 
 **Critical Info for New Agent**
--   **Design is the #1 Priority:** The user is very focused on the UI/UX. Your main task is to complete the second redesign to their satisfaction. Adhere to modern, minimalist principles: clean lines, ample white space, small fonts/icons, and intuitive navigation.
--   **The Backend is Stable:** The complex issues of API integration, data synchronization, and caching have been resolved. You should not need to touch the backend code unless a new feature requires it. Trust that the data from the API is correct.
--   **Use the Stable Domain:** All mobile app builds must point to . Do not use the preview URL.
--   **Deployment Workflow:** Remember the established workflow: Backend changes require a Deploy on the Emergent platform. Mobile app UI/logic changes require a rebuild (APK/IPA). They are separate actions.
+-   **The user's latest restructuring request is the absolute top priority.** Complete all 6 points from their last message before moving on.
+-   **The app no longer has a bottom tab bar.** All navigation flows from the . Do not attempt to re-implement tab navigation.
+-   **Confirm API Endpoint:** The user is insistent that the API points to . Verify this before every build.
+-   **Backend modification is required first.** The salary structure change cannot be completed on the frontend until the backend API () is updated to provide the necessary data.
 
 **documents and test reports created in this job**
 -   
--   Numerous successful build artifacts (APKs/IPAs) were generated and provided to the user.
+-   
+-   
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** Login failed on both apps. Holiday calendar is missing. Test thoroughly. Start both builds simultaneously.
-2.  **Agent:** Fixes login by pointing to the correct preview URL, adds holiday calendar feature, tests all users, and rebuilds both apps.
-3.  **User:** Data is the same for every login (always shows Priya Sharma's details).
-4.  **Agent:** Fixes React Query caching issue, rebuilds both apps.
-5.  **User:** CRM data is not reflecting in the mobile app. This is a major flaw.
-6.  **Agent:** Fixes the root data integrity issue by seeding the database with correct data linked to the right user IDs. Rebuilds both apps.
-7.  **User:** Asks if the app is connecting to . States that's the requirement.
-8.  **Agent:** After investigation and consulting the support agent, explains the proper deployment workflow and updates the app to point to . Rebuilds both apps.
-9.  **User:** Confirms the sync is now working after they deployed. Asks to set up production Firebase.
-10. **Agent:** Fully configures backend and frontend for FCM push notifications and rebuilds both apps.
-11. **User:** Requests a complete modern redesign of the entire app.
-12. **User:** Rejects the first redesign attempt with specific, critical feedback (fonts/icons too big, bulky footer, duplicate content, etc.).
+1.  **User (Summary):** After receiving the light-theme app builds, the user approved the theme but requested significant structural changes: switch to a light theme, fix an app crash on the documents screen, resolve login issues on both iOS and Android, and confirm the API endpoint is .
+2.  **User (Summary):** After the agent fixed the above issues and provided new builds, the user provided a new, detailed list of required changes:
+    *   Match the salary structure exactly to the CRM.
+    *   Add country select to payslips.
+    *   Remove all duplicate navigation items.
+    *   Remove the entire bottom footer/tab bar.
+    *   Consolidate all features onto the home screen.
+    *   This is the current task list.
 
 **Project Health Check:**
--   **Broken:** The mobile app's UI is considered broken from the user's perspective and is in the middle of a major redesign.
+-   **Broken:** The application is in a state of heavy refactoring. The navigation is partially disassembled, and key data displays (like salary) do not meet user requirements.
 -   **Mocked:** None.
 
 **3rd Party Integrations**
--   **Firebase Cloud Messaging (FCM):** Configured for production push notifications.
--   **Expo Application Services (EAS):** Used for all Android/iOS cloud builds.
+-   **Firebase Cloud Messaging (FCM):** For push notifications.
+-   **Expo Application Services (EAS):** For Android/iOS cloud builds.
 
 **Testing status**
--   **Testing agent used after significant changes:** NO (for the redesign phase).
+-   **Testing agent used after significant changes:** NO (not since the latest user feedback).
 -   **Test files created:** None.
--   **Known regressions:** None.
+-   **Known regressions:** The entire UI/navigation structure is a regression from a stable state, but this is intentional as per the user's request for a complete overhaul.
 
 **Credentials to test flow:**
 -   Test users are available in the CRM database. All use the password .
 -   Examples: , , 
 
 **What agent forgot to execute**
--   The user's feedback included height is not adjusted for iOS and android screens. While the agent acknowledged this in its internal thought process, it has not yet explicitly implemented or verified a fix. This needs to be a key consideration during the rest of the redesign to ensure layouts are responsive and do not get cut off.</analysis>
+-   The agent was correctly proceeding with the user's requests. It had identified the necessary backend files for the salary structure change and was about to modify them. No steps have been forgotten; the task is simply in progress.</analysis>
