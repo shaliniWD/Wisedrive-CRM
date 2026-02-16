@@ -1319,8 +1319,8 @@ async def get_inspection_packages(
     country_id: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
-    """Get all inspection packages with their categories"""
-    query = {"is_active": True}
+    """Get all inspection packages with their categories (including inactive)"""
+    query = {}  # Return all packages, not just active
     if country_id:
         query["country_id"] = country_id
     elif current_user.get("country_id"):
@@ -1333,7 +1333,7 @@ async def get_inspection_packages(
         category_ids = pkg.get("categories", [])
         if category_ids:
             categories = await db.inspection_categories.find(
-                {"id": {"$in": category_ids}, "is_active": True},
+                {"id": {"$in": category_ids}},  # Include all categories
                 {"_id": 0}
             ).sort("order", 1).to_list(20)
             pkg["category_details"] = categories
