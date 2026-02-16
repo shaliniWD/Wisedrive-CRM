@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format } from 'date-fns';
-import { getLeaveBalance, getLeaveHistory } from '../services/api';
+import { getLeavePeriodBalance, getLeaveHistory } from '../services/api';
 import { colors, spacing, fontSize, fontWeight, radius, iconSize } from '../theme';
 
 type LeaveStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
@@ -26,9 +26,10 @@ export default function LeaveScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<'all' | LeaveStatus>('all');
 
-  const { data: leaveBalance } = useQuery({
-    queryKey: ['leaveBalance'],
-    queryFn: () => getLeaveBalance(),
+  // Use period-based balance
+  const { data: periodBalance } = useQuery({
+    queryKey: ['periodBalance'],
+    queryFn: () => getLeavePeriodBalance(),
   });
 
   const { data: leaveHistory } = useQuery({
@@ -38,7 +39,7 @@ export default function LeaveScreen() {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await queryClient.invalidateQueries({ queryKey: ['leaveBalance'] });
+    await queryClient.invalidateQueries({ queryKey: ['periodBalance'] });
     await queryClient.invalidateQueries({ queryKey: ['leaveHistory'] });
     setRefreshing(false);
   };
@@ -47,6 +48,9 @@ export default function LeaveScreen() {
   const filteredLeaves = filter === 'all' 
     ? leaves 
     : leaves.filter((l: any) => l.status === filter);
+
+  // Calculate if user can apply leave
+  const canApplyLeave = periodBalance?.can_apply_casual || periodBalance?.can_apply_sick;
 
   const getStatusStyle = (status: string) => {
     switch (status) {
