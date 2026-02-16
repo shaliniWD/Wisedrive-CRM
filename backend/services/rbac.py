@@ -167,6 +167,11 @@ class RBACService:
                     return {"team_id": user.get("team_id")}
                 
                 if scope == self.SCOPE_OWN:
+                    # For leads.view, only filter by assigned_to (not created_by)
+                    # This ensures sales execs only see leads currently assigned to them
+                    if permission_name == "leads.view":
+                        return {"assigned_to": user_id}
+                    # For other resources, use both assigned_to and created_by
                     return {"$or": [
                         {"assigned_to": user_id},
                         {"created_by": user_id}
