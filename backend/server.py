@@ -1204,14 +1204,15 @@ async def get_inspection_categories(
     country_id: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
-    """Get all inspection categories"""
-    query = {"is_active": True}
+    """Get all inspection categories (including inactive)"""
+    query = {}  # Return all categories, not just active
     if country_id:
         query["country_id"] = country_id
     elif current_user.get("country_id"):
         query["country_id"] = current_user["country_id"]
     
     categories = await db.inspection_categories.find(query, {"_id": 0}).sort("order", 1).to_list(100)
+    return categories
     return categories
 
 
