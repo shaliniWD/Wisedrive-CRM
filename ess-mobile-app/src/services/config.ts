@@ -20,6 +20,7 @@ export const API_ENDPOINTS = {
   // Leave
   LEAVE_APPLY: '/ess/v1/leave/apply',
   LEAVE_BALANCE: '/ess/v1/leave/balance',
+  LEAVE_PERIOD_BALANCE: '/ess/v1/leave/period-balance',
   LEAVE_HISTORY: '/ess/v1/leave/history',
   LEAVE_CANCEL: (id: string) => `/ess/v1/leave/${id}/cancel`,
   LEAVE_DETAIL: (id: string) => `/ess/v1/leave/${id}`,
