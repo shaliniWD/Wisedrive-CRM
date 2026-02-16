@@ -24,6 +24,18 @@ export const leadsApi = {
   createPaymentLink: (id, data) => axios.post(`${API_URL}/leads/${id}/payment-link`, data),
 };
 
+// Vehicle API (Vaahan Integration)
+export const vehicleApi = {
+  // Fetch vehicle details from Vaahan API
+  getDetails: (vehicleNumber) => axios.get(`${API_URL}/vehicle/details/${encodeURIComponent(vehicleNumber)}`),
+  // Save vehicle to database
+  save: (data) => axios.post(`${API_URL}/vehicles`, data),
+  // Get vehicle by ID
+  getById: (id) => axios.get(`${API_URL}/vehicles/${id}`),
+  // Get vehicle by registration number
+  getByRegistration: (regNumber) => axios.get(`${API_URL}/vehicles/by-registration/${encodeURIComponent(regNumber)}`),
+};
+
 // Ad-City Mappings API
 export const adCityMappingsApi = {
   getAll: () => axios.get(`${API_URL}/settings/ad-city-mappings`),
