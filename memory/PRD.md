@@ -65,6 +65,12 @@ Build a scalable automotive platform "Wisedrive" that evolved into a monolithic 
 - Button shows "Create" for new roles, "Update" for edit mode
 - Already working correctly
 
+**BUG #9: Custom Role Users Can't Access Pages** ✅ FIXED
+- **Problem:** Users with custom roles (e.g., CTO) could only see dashboard
+- **Root Cause:** `get_visible_tabs()` in `rbac.py` only checked hardcoded `TAB_VISIBILITY` dictionary
+- **Fix Location:** `/app/backend/services/rbac.py` lines 177-230
+- **Solution:** Modified to check role's stored `permissions` field and convert to visible tabs using `PAGE_TO_TAB` mapping
+
 ---
 
 ## CRM-to-ESS Field Mapping Reference
@@ -77,7 +83,7 @@ Build a scalable automotive platform "Wisedrive" that evolved into a monolithic 
 
 ## Test Results
 
-### Latest Test: Iteration 38
+### Latest Test: Iteration 40
 - **Total Tests:** 16 tests
 - **Pass Rate:** 100%
 - All three bug fixes verified
