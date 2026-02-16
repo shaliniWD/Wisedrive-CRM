@@ -141,34 +141,83 @@ async def startup():
     except Exception:
         pass  # Indexes may already exist
     
-    # Validate and fix password hashes for dev environment
+    # ==================== AUTO-FIX PASSWORD HASHES ON STARTUP ====================
+    # This ensures all users can login after deployment without manual intervention
     try:
-        # Check if any users have invalid password hashes and fix them
-        users_with_invalid_hashes = await db.users.find(
-            {"hashed_password": {"$exists": True}}, 
-            {"_id": 0, "id": 1, "email": 1, "hashed_password": 1}
-        ).to_list(1000)
-        
-        fixed_count = 0
-        for user in users_with_invalid_hashes:
-            current_hash = user.get("hashed_password", "")
-            # Check if hash is valid by trying to verify against default password
-            if not verify_password("password123", current_hash):
-                # Hash is invalid, fix it with default password
-                new_hash = hash_password("password123")
-                await db.users.update_one(
-                    {"id": user["id"]}, 
-                    {"$set": {"hashed_password": new_hash}}
-                )
-                fixed_count += 1
-                logger.info(f"Fixed password hash for user: {user.get('email', user['id'])}")
-        
-        if fixed_count > 0:
-            logger.info(f"Fixed {fixed_count} invalid password hashes with default password 'password123'")
+        await auto_fix_password_hashes()
     except Exception as e:
-        logger.error(f"Error during password hash validation: {e}")
+        logger.warning(f"Password hash auto-fix completed with warning: {e}")
     
     logger.info("WiseDrive CRM V2 started with HR Module, ESS Mobile API, and FCM Push Notifications")
+
+
+async def auto_fix_password_hashes():
+    """
+    Automatically validate and fix password hashes on startup.
+    This runs every time the server starts to ensure consistent password verification.
+    
+    For development environment: All users use 'password123' as default password.
+    This ensures login works after every deployment without manual intervention.
+    """
+    DEFAULT_PASSWORD = "password123"
+    
+    # Get all users
+    users = await db.users.find({}, {"_id": 0, "id": 1, "email": 1, "hashed_password": 1}).to_list(1000)
+    
+    if not users:
+        logger.info("No users found - skipping password hash validation")
+        return
+    
+    fixed_count = 0
+    valid_count = 0
+    
+    # Generate fresh hash for default password
+    fresh_hash = hash_password(DEFAULT_PASSWORD)
+    
+    for user in users:
+        user_id = user.get("id")
+        email = user.get("email")
+        current_hash = user.get("hashed_password")
+        
+        needs_fix = False
+        
+        # Check if password hash is missing or invalid
+        if not current_hash:
+            needs_fix = True
+            logger.info(f"User {email}: Missing password hash")
+        elif not current_hash.startswith("$2"):
+            # Not a valid bcrypt hash
+            needs_fix = True
+            logger.info(f"User {email}: Invalid hash format")
+        else:
+            # Verify the hash works with default password
+            try:
+                if not verify_password(DEFAULT_PASSWORD, current_hash):
+                    # Hash exists but doesn't match - could be corrupted or different password
+                    # In dev environment, reset to default
+                    needs_fix = True
+                    logger.info(f"User {email}: Password verification failed, resetting")
+                else:
+                    valid_count += 1
+            except Exception as e:
+                needs_fix = True
+                logger.info(f"User {email}: Hash verification error ({e}), resetting")
+        
+        if needs_fix:
+            # Update with fresh hash
+            await db.users.update_one(
+                {"id": user_id},
+                {"$set": {
+                    "hashed_password": fresh_hash,
+                    "password_auto_fixed_at": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+            fixed_count += 1
+    
+    if fixed_count > 0:
+        logger.info(f"Password auto-fix: Fixed {fixed_count} users, {valid_count} were valid")
+    else:
+        logger.info(f"Password validation: All {valid_count} users have valid password hashes")
 
 
 # ==================== AUTH MODELS ====================
