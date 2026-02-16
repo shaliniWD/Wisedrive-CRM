@@ -380,6 +380,9 @@ async def login(credentials: UserLogin):
     
     access_token = create_access_token({"sub": user["id"], "email": user["email"]})
     
+    # Get visible tabs for the user
+    visible_tabs = await rbac_service.get_visible_tabs(user["id"])
+    
     return Token(
         access_token=access_token,
         user={
@@ -391,7 +394,8 @@ async def login(credentials: UserLogin):
             "country_id": user.get("country_id"),
             "country_name": country_name,
             "department_id": user.get("department_id"),
-            "team_id": user.get("team_id")
+            "team_id": user.get("team_id"),
+            "visible_tabs": visible_tabs
         }
     )
 
