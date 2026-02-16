@@ -379,6 +379,34 @@ export default function InspectionPackagesPage() {
     }
   };
 
+  // Copy category
+  const handleCopyCategory = (category) => {
+    setEditingCategory(null);  // Creating new, not editing
+    setCategoryForm({
+      name: `${category.name} (Copy)`,
+      description: category.description || '',
+      check_points: category.check_points || 0,
+      icon: category.icon || '',
+      color: category.color || '#3B82F6',
+      items: category.items || [],
+      benefits: category.benefits || [],
+      is_free: category.is_free || false,
+      order: categories.length,
+    });
+    setIsCategoryModalOpen(true);
+  };
+
+  // Toggle category status
+  const handleToggleCategory = async (category) => {
+    try {
+      await inspectionPackagesApi.toggleCategoryStatus(category.id);
+      toast.success(category.is_active !== false ? 'Category deactivated' : 'Category activated');
+      fetchData();
+    } catch (error) {
+      toast.error('Failed to toggle category status');
+    }
+  };
+
   // Package Modal Functions
   const openPackageModal = (pkg = null) => {
     if (pkg) {
