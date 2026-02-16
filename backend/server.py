@@ -489,6 +489,7 @@ async def create_role(data: RoleCreate, current_user: dict = Depends(get_current
         "level": data.level,
         "eligible_sick_leaves_per_month": data.eligible_sick_leaves_per_month,
         "eligible_casual_leaves_per_month": data.eligible_casual_leaves_per_month,
+        "permissions": data.permissions or [],  # Store permissions with role
         "is_active": True,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
