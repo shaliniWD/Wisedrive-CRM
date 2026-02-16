@@ -640,8 +640,8 @@ export default function InspectionPackagesPage() {
                     pkg={pkg}
                     categories={categories}
                     onEdit={openPackageModal}
+                    onCopy={handleCopyPackage}
                     onToggle={handleTogglePackage}
-                    onDelete={handleDeletePackage}
                   />
                 ))}
               </div>
