@@ -196,26 +196,42 @@ async def get_salary_summary(
             currency = country.get("currency", "INR")
             currency_symbol = country.get("currency_symbol", "₹")
     
+    # Calculate earnings totals
+    basic = salary.get("basic_salary") or 0
+    hra_val = salary.get("hra") or 0
+    variable = salary.get("variable_pay") or 0
+    conveyance = salary.get("conveyance_allowance") or 0
+    medical = salary.get("medical_allowance") or 0
+    special = salary.get("special_allowance") or 0
+    
+    # Calculate deductions totals
+    pf = salary.get("pf_employee") or 0
+    pt = salary.get("professional_tax") or 0
+    tds = salary.get("tds") or 0
+    other_ded = salary.get("other_deductions") or 0
+    
+    # Calculate gross and net if not stored
+    gross = salary.get("gross_salary") or (basic + hra_val + variable + conveyance + medical + special)
+    total_ded = pf + pt + tds + other_ded
+    net = salary.get("net_salary") or (gross - total_ded)
+    
     return SalarySummary(
-        gross_salary=salary.get("gross_salary", 0),
-        net_salary=salary.get("net_salary", 0),
+        gross_salary=gross,
+        net_salary=net,
         currency=currency,
         currency_symbol=currency_symbol,
-        basic_salary=salary.get("basic_salary"),
-        hra=salary.get("hra"),
-        other_allowances=(
-            (salary.get("conveyance_allowance") or 0) +
-            (salary.get("medical_allowance") or 0) +
-            (salary.get("special_allowance") or 0) +
-            (salary.get("variable_pay") or 0)
-        ),
-        total_deductions=(
-            (salary.get("pf_employee") or 0) +
-            (salary.get("professional_tax") or 0) +
-            (salary.get("tds") or 0) +
-            (salary.get("esi") or 0) +
-            (salary.get("other_deductions") or 0)
-        )
+        # Earnings (matching CRM structure)
+        basic_salary=basic,
+        hra=hra_val,
+        variable_pay=variable,
+        conveyance=conveyance,
+        medical=medical,
+        special_allowance=special,
+        # Deductions (matching CRM structure)
+        pf_employee=pf,
+        professional_tax=pt,
+        income_tax=tds,
+        other_deductions=other_ded
     )
 
 
