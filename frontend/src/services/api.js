@@ -76,6 +76,7 @@ export const rolesApi = {
   getPermissions: (id) => axios.get(`${API_URL}/roles/${id}/permissions`),
   create: (data) => axios.post(`${API_URL}/roles`, data),
   update: (id, data) => axios.put(`${API_URL}/roles/${id}`, data),
+  delete: (id) => axios.delete(`${API_URL}/roles/${id}`),
 };
 
 // Teams API
