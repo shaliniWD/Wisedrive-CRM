@@ -3151,7 +3151,7 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
 function RoleModal({ isOpen, onClose, role, onSave }) {
   const [form, setForm] = useState({ name: '', code: '', permissions: [], eligible_sick_leaves_per_month: 2, eligible_casual_leaves_per_month: 1 });
   const [saving, setSaving] = useState(false);
-  const isEdit = !!role;
+  const isEdit = !!role?.id;  // Only true if role has an ID
 
   useEffect(() => {
     if (isOpen) {
@@ -3159,7 +3159,7 @@ function RoleModal({ isOpen, onClose, role, onSave }) {
         const presetRole = PRESET_ROLES.find(r => r.code === role.code);
         setForm({
           name: role.name || '',
-          code: role.code || '',
+          code: role.code || '',  // Will be empty for copy operations
           permissions: presetRole?.permissions || role.permissions || [],
           eligible_sick_leaves_per_month: role.eligible_sick_leaves_per_month ?? 2,
           eligible_casual_leaves_per_month: role.eligible_casual_leaves_per_month ?? 1,
