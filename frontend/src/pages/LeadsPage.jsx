@@ -508,16 +508,34 @@ export default function LeadsPage() {
   const endIndex = startIndex + itemsPerPage;
   const paginatedLeads = filteredLeads.slice(startIndex, endIndex);
 
-  // Calculate final amount
-  const calculateFinalAmount = () => {
-    const packages = { basic: 499, silver: 999, gold: 1499, platinum: 2499 };
-    const baseAmount = (packages[paymentFormData.packageType] || 0) * parseInt(paymentFormData.numberOfCars || 1);
+  // Get selected package details
+  const getSelectedPackage = () => {
+    return inspectionPackages.find(p => p.id === paymentFormData.packageId);
+  };
+
+  // Calculate base amount from selected package
+  const getBaseAmount = () => {
+    const pkg = getSelectedPackage();
+    if (!pkg) return 0;
+    return pkg.price * parseInt(paymentFormData.numberOfCars || 1);
+  };
+
+  // Calculate discount amount
+  const getDiscountAmount = () => {
+    const baseAmount = getBaseAmount();
     if (paymentFormData.discountType === 'percent' && paymentFormData.discountValue) {
-      return baseAmount - (baseAmount * parseFloat(paymentFormData.discountValue) / 100);
+      return baseAmount * parseFloat(paymentFormData.discountValue) / 100;
     } else if (paymentFormData.discountType === 'amount' && paymentFormData.discountValue) {
-      return baseAmount - parseFloat(paymentFormData.discountValue);
+      return parseFloat(paymentFormData.discountValue);
     }
-    return baseAmount;
+    return 0;
+  };
+
+  // Calculate final amount after discount
+  const calculateFinalAmount = () => {
+    const baseAmount = getBaseAmount();
+    const discount = getDiscountAmount();
+    return Math.max(0, baseAmount - discount);
   };
 
   return (
