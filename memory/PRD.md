@@ -79,6 +79,8 @@ WiseDrive is a scalable automotive platform with a CRM system and an Employee Se
   - Settings > Inspection Packages tab
   - Create/Edit/Delete inspection categories with check points, items, and benefits
   - Create/Edit/Delete packages that include multiple categories
+  - **Category-to-Package assignment:** Select categories when creating/editing a package
+  - **No. of Inspections:** Define how many inspections customer can avail per package
   - Package pricing with currency support
   - Recommended badge for featured packages
   - Country-based filtering
