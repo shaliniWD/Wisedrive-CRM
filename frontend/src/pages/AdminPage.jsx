@@ -3170,12 +3170,20 @@ function RoleModal({ isOpen, onClose, role, onSave }) {
         });
         toast.success('Role updated successfully');
       } else {
-        // Create new role would need a POST endpoint
-        toast.success('Role created (config-level only)');
+        // Create new role
+        await rolesApi.create({
+          name: form.name,
+          code: form.code,
+          description: '',
+          level: 5,
+          eligible_sick_leaves_per_month: form.eligible_sick_leaves_per_month,
+          eligible_casual_leaves_per_month: form.eligible_casual_leaves_per_month,
+        });
+        toast.success('Role created successfully');
       }
       onSave();
     } catch (error) {
-      toast.error('Failed to save role');
+      toast.error(error.response?.data?.detail || 'Failed to save role');
     } finally {
       setSaving(false);
     }
