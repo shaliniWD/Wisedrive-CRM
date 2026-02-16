@@ -19,6 +19,15 @@ HR_EMAIL = "hr@wisedrive.com"
 ADMIN_EMAIL = "kalyan@wisedrive.com"
 DEFAULT_PASSWORD = "password123"
 
+# ESS Device info for mobile login
+TEST_DEVICE = {
+    "device_id": "test-device-" + str(uuid.uuid4())[:8],
+    "device_name": "Test Device",
+    "platform": "android",
+    "os_version": "14.0",
+    "app_version": "1.0.0"
+}
+
 
 class TestAuthentication:
     """Test authentication and get tokens for subsequent tests"""
