@@ -118,42 +118,45 @@ const CategoryCard = ({ category, onEdit, onCopy, onToggle }) => {
 };
 
 // Package Card Component
-const PackageCard = ({ pkg, categories, onEdit, onToggle, onDelete }) => {
+const PackageCard = ({ pkg, categories, onEdit, onCopy, onToggle }) => {
   const includedCategories = categories.filter(c => pkg.categories?.includes(c.id));
   
   return (
     <div 
-      className={`border rounded-xl overflow-hidden transition-all ${pkg.is_active ? 'bg-white' : 'bg-gray-50 opacity-75'}`}
+      className={`border rounded-xl overflow-hidden transition-all ${pkg.is_active ? 'bg-white' : 'bg-gray-50'}`}
       data-testid={`package-card-${pkg.id}`}
     >
       {/* Package Header */}
-      <div className={`p-4 ${pkg.is_recommended ? 'bg-gradient-to-r from-blue-600 to-blue-700' : 'bg-slate-50 border-b'}`}>
+      <div className={`p-4 ${pkg.is_recommended && pkg.is_active ? 'bg-gradient-to-r from-blue-600 to-blue-700' : 'bg-slate-50 border-b'}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${pkg.is_recommended ? 'bg-white/20' : 'bg-white border'}`}>
-              <Package className={`h-5 w-5 ${pkg.is_recommended ? 'text-white' : 'text-blue-600'}`} />
+            <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${pkg.is_recommended && pkg.is_active ? 'bg-white/20' : 'bg-white border'} ${!pkg.is_active ? 'opacity-50' : ''}`}>
+              <Package className={`h-5 w-5 ${pkg.is_recommended && pkg.is_active ? 'text-white' : 'text-blue-600'}`} />
             </div>
             <div>
-              <h3 className={`font-semibold flex items-center gap-2 ${pkg.is_recommended ? 'text-white' : 'text-gray-900'}`}>
+              <h3 className={`font-semibold flex items-center gap-2 ${pkg.is_recommended && pkg.is_active ? 'text-white' : 'text-gray-900'}`}>
                 {pkg.name}
-                {pkg.is_recommended && (
+                {pkg.is_recommended && pkg.is_active && (
                   <span className="px-2 py-0.5 bg-amber-400 text-amber-900 text-xs font-medium rounded-full flex items-center gap-1">
                     <Award className="h-3 w-3" /> Recommended
                   </span>
                 )}
+                {!pkg.is_active && (
+                  <span className="px-2 py-0.5 bg-gray-300 text-gray-600 text-xs font-medium rounded-full">Inactive</span>
+                )}
               </h3>
-              <div className={`flex items-center gap-3 text-sm ${pkg.is_recommended ? 'text-blue-100' : 'text-gray-500'}`}>
+              <div className={`flex items-center gap-3 text-sm ${pkg.is_recommended && pkg.is_active ? 'text-blue-100' : 'text-gray-500'}`}>
                 <span>{pkg.total_check_points}+ Check Points</span>
                 <span>•</span>
                 <span className="font-medium">{pkg.no_of_inspections || 1} Inspection{(pkg.no_of_inspections || 1) > 1 ? 's' : ''}</span>
               </div>
             </div>
           </div>
-          <div className={`text-right ${pkg.is_recommended ? 'text-white' : ''}`}>
+          <div className={`text-right ${pkg.is_recommended && pkg.is_active ? 'text-white' : ''}`}>
             <p className="text-2xl font-bold">
               {pkg.currency_symbol}{pkg.price?.toLocaleString('en-IN')}
             </p>
-            <p className={`text-xs ${pkg.is_recommended ? 'text-blue-100' : 'text-gray-500'}`}>Incl. all taxes</p>
+            <p className={`text-xs ${pkg.is_recommended && pkg.is_active ? 'text-blue-100' : 'text-gray-500'}`}>Incl. all taxes</p>
           </div>
         </div>
       </div>
@@ -206,18 +209,19 @@ const PackageCard = ({ pkg, categories, onEdit, onToggle, onDelete }) => {
           </div>
           <div className="flex items-center gap-1">
             <button
+              onClick={() => onCopy(pkg)}
+              className="p-2 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+              title="Copy & Create New"
+              data-testid={`copy-package-${pkg.id}`}
+            >
+              <Copy className="h-4 w-4" />
+            </button>
+            <button
               onClick={() => onEdit(pkg)}
               className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
               data-testid={`edit-package-${pkg.id}`}
             >
               <Pencil className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => onDelete(pkg)}
-              className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-              data-testid={`delete-package-${pkg.id}`}
-            >
-              <Trash2 className="h-4 w-4" />
             </button>
           </div>
         </div>
