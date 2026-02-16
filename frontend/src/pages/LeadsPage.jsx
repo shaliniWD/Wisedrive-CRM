@@ -1367,18 +1367,31 @@ export default function LeadsPage() {
                   // Calculate final amount after discount
                   const finalAmount = calculateFinalAmount();
                   
+                  // Prepare inspection schedules data for backend
+                  const schedulesData = inspectionSchedules.map((schedule, index) => ({
+                    vehicle_number: schedule.vehicleNumber || '',
+                    vehicle_data: schedule.vehicleData || null,
+                    inspection_date: schedule.inspectionDate || '',
+                    inspection_time: schedule.inspectionTime || '',
+                    address: schedule.address || '',
+                    latitude: schedule.latitude || null,
+                    longitude: schedule.longitude || null,
+                    slot_number: index + 1,
+                  }));
+                  
                   // Use the real Razorpay payment link API with final amount after discount
                   const response = await leadsApi.createPaymentLink(selectedLead.id, {
                     package_id: paymentFormData.packageId,
                     amount: finalAmount,
-                    description: `${selectedPackage.name} - ${paymentFormData.numberOfCars} Car(s)${getDiscountAmount() > 0 ? ` (Discount Applied)` : ''}`,
+                    description: `${selectedPackage.name} - ${selectedPackage.no_of_inspections || 1} Inspection(s)${getDiscountAmount() > 0 ? ` (Discount Applied)` : ''}`,
                     send_via_whatsapp: true,
                     vehicle_number: paymentFormData.carNo || '',
-                    no_of_cars: parseInt(paymentFormData.numberOfCars),
+                    no_of_inspections: selectedPackage.no_of_inspections || 1,
                     discount_type: paymentFormData.discountType !== 'none' ? paymentFormData.discountType : null,
                     discount_value: paymentFormData.discountValue || null,
                     base_amount: getBaseAmount(),
                     discount_amount: getDiscountAmount(),
+                    inspection_schedules: schedulesData,
                   });
                   
                   toast.success(response.data?.whatsapp_sent 
@@ -1386,6 +1399,7 @@ export default function LeadsPage() {
                     : 'Payment link generated successfully!');
                   setIsPaymentModalOpen(false);
                   setVehicleData(null); // Clear vehicle data
+                  setInspectionSchedules([]); // Clear schedules
                   fetchData();
                 } catch (error) {
                   toast.error(error.response?.data?.detail || 'Failed to create payment link');
