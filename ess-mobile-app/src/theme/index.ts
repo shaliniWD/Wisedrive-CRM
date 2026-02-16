@@ -1,43 +1,44 @@
-// WiseDrive ESS - Premium Dark Theme
-// "The Performance Pro" - Elite & Precise
+// WiseDrive ESS - Professional Light Theme
+// Clean, Modern & Professional
 
 export const colors = {
-  // Core backgrounds
-  background: '#0B1120',
-  surface: '#1E293B',
-  surfaceHighlight: '#334155',
+  // Core backgrounds - Light Theme
+  background: '#FFFFFF',
+  surface: '#F8FAFC',
+  surfaceHighlight: '#F1F5F9',
   
   // Brand colors
-  primary: '#3B82F6',
+  primary: '#2563EB',
+  primaryLight: '#DBEAFE',
   primaryForeground: '#FFFFFF',
   secondary: '#64748B',
   accent: '#0EA5E9',
   
   // Semantic colors
   success: '#10B981',
-  successBg: 'rgba(16, 185, 129, 0.15)',
+  successBg: 'rgba(16, 185, 129, 0.1)',
   warning: '#F59E0B',
-  warningBg: 'rgba(245, 158, 11, 0.15)',
+  warningBg: 'rgba(245, 158, 11, 0.1)',
   error: '#EF4444',
-  errorBg: 'rgba(239, 68, 68, 0.15)',
+  errorBg: 'rgba(239, 68, 68, 0.1)',
   
-  // Text hierarchy
+  // Text hierarchy - Light Theme
   text: {
-    primary: '#F8FAFC',
-    secondary: '#94A3B8',
-    tertiary: '#64748B',
-    inverse: '#0B1120',
+    primary: '#1E293B',
+    secondary: '#64748B',
+    tertiary: '#94A3B8',
+    inverse: '#FFFFFF',
   },
   
   // Border
-  border: '#334155',
-  borderLight: 'rgba(51, 65, 85, 0.5)',
+  border: '#E2E8F0',
+  borderLight: '#F1F5F9',
   
   // Gradients
   gradients: {
-    primary: ['#3B82F6', '#1D4ED8'],
-    surface: ['#1E293B', '#0F172A'],
-    blueGlow: ['rgba(59, 130, 246, 0.2)', 'transparent'],
+    primary: ['#2563EB', '#1D4ED8'],
+    surface: ['#F8FAFC', '#FFFFFF'],
+    blueGlow: ['rgba(37, 99, 235, 0.1)', 'transparent'],
   },
 };
 
@@ -103,7 +104,7 @@ export const componentStyles = {
   },
   input: {
     height: 52,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
@@ -114,23 +115,23 @@ export const componentStyles = {
 export const shadows = {
   sm: {
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   md: {
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
   lg: {
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
-    shadowRadius: 16,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
 };
