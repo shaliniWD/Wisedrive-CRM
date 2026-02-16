@@ -2507,11 +2507,11 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
                       </div>
                       <div className="space-y-2">
                         <Label className="text-xs">Conveyance</Label>
-                        <Input type="number" value={salaryForm.conveyance || ''} onChange={(e) => setSalaryForm({...salaryForm, conveyance: parseFloat(e.target.value) || 0})} className="h-9" placeholder="0" />
+                        <Input type="number" value={salaryForm.conveyance_allowance || ''} onChange={(e) => setSalaryForm({...salaryForm, conveyance_allowance: parseFloat(e.target.value) || 0})} className="h-9" placeholder="0" />
                       </div>
                       <div className="space-y-2">
                         <Label className="text-xs">Medical Allowance</Label>
-                        <Input type="number" value={salaryForm.medical || ''} onChange={(e) => setSalaryForm({...salaryForm, medical: parseFloat(e.target.value) || 0})} className="h-9" placeholder="0" />
+                        <Input type="number" value={salaryForm.medical_allowance || ''} onChange={(e) => setSalaryForm({...salaryForm, medical_allowance: parseFloat(e.target.value) || 0})} className="h-9" placeholder="0" />
                       </div>
                       <div className="space-y-2">
                         <Label className="text-xs">Special Allowance</Label>
