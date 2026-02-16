@@ -213,24 +213,66 @@ export default function LeadsPage() {
   const [loadingNotes, setLoadingNotes] = useState(false);
   const [savingNote, setSavingNote] = useState(false);
   const [notesTab, setNotesTab] = useState('notes'); // 'notes' or 'activities'
+  const [vehicleData, setVehicleData] = useState(null); // Full vehicle data from Vaahan
 
-  // Fetch car details (mock - can be replaced with Vaahan API)
+  // Fetch car details from Vaahan API
   const fetchCarDetails = async (carNumber) => {
     setCarLoading(true);
     setCarError('');
+    setVehicleData(null);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      const mockCarData = {
-        carMake: 'MARUTI SUZUKI INDIA LTD', carModel: 'SWIFT VXI',
-        carYear: '2021', fuelType: 'PETROL', carColor: 'PEARL ARCTIC WHITE',
-      };
-      setPaymentFormData(prev => ({ ...prev, ...mockCarData }));
-      toast.success('Car details fetched successfully');
+      const response = await vehicleApi.getDetails(carNumber);
+      const data = response.data;
+      
+      if (data.success && data.data) {
+        const vehicle = data.data;
+        // Store full vehicle data for saving later
+        setVehicleData(vehicle);
+        
+        // Update form with key details for display
+        setPaymentFormData(prev => ({ 
+          ...prev, 
+          carMake: vehicle.manufacturer || '',
+          carModel: vehicle.model || '',
+          carYear: vehicle.manufacturing_date ? vehicle.manufacturing_date.split('/')[1] : '',
+          fuelType: vehicle.fuel_type || '',
+          carColor: vehicle.color || '',
+          // Additional fields
+          chassisNumber: vehicle.chassis_number || '',
+          engineNumber: vehicle.engine_number || '',
+          registrationDate: vehicle.registration_date || '',
+          rcExpiryDate: vehicle.rc_expiry_date || '',
+          ownerName: vehicle.owner_name || '',
+          insuranceCompany: vehicle.insurance_company || '',
+          insuranceValidUpto: vehicle.insurance_valid_upto || '',
+        }));
+        toast.success('Vehicle details fetched successfully from Vaahan');
+      } else {
+        setCarError(data.error || 'Failed to fetch vehicle details');
+        toast.error(data.error || 'Failed to fetch vehicle details');
+      }
     } catch (error) {
-      setCarError('Failed to fetch car details. Please check the car number.');
-      toast.error('Failed to fetch car details');
+      const errorMsg = error.response?.data?.detail || 'Failed to fetch vehicle details. Please check the registration number.';
+      setCarError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setCarLoading(false);
+    }
+  };
+
+  // Save vehicle to vehicle master
+  const saveVehicleToMaster = async (leadId = null) => {
+    if (!vehicleData) return null;
+    
+    try {
+      const response = await vehicleApi.save({
+        ...vehicleData,
+        lead_id: leadId || selectedLead?.id || '',
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to save vehicle:', error);
+      return null;
     }
   };
 
