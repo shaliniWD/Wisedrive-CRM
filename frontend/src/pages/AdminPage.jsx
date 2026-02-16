@@ -749,13 +749,23 @@ export default function AdminPage({ initialTab = 'employees', embedded = false }
                         <p className="text-xs text-gray-500">{role.code}</p>
                       </div>
                     </div>
-                    <button 
-                      onClick={() => openRoleModal(role)}
-                      className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                      data-testid={`edit-role-${role.code}`}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </button>
+                    <div className="flex gap-1">
+                      <button 
+                        onClick={() => copyRole(role)}
+                        className="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                        title="Copy & Create New"
+                        data-testid={`copy-role-${role.code}`}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </button>
+                      <button 
+                        onClick={() => openRoleModal(role)}
+                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        data-testid={`edit-role-${role.code}`}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <p className="text-xs font-medium text-gray-500 uppercase">Page Access:</p>
@@ -787,12 +797,21 @@ export default function AdminPage({ initialTab = 'employees', embedded = false }
                             <p className="text-xs text-gray-500">{role.code}</p>
                           </div>
                         </div>
-                        <button 
-                          onClick={() => openRoleModal(role)}
-                          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
+                        <div className="flex gap-1">
+                          <button 
+                            onClick={() => copyRole(role)}
+                            className="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                            title="Copy & Create New"
+                          >
+                            <Copy className="h-4 w-4" />
+                          </button>
+                          <button 
+                            onClick={() => openRoleModal(role)}
+                            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
