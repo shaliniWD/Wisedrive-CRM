@@ -514,10 +514,38 @@ async def update_role(role_id: str, data: RoleUpdate, current_user: dict = Depen
     update_data = {k: v for k, v in data.model_dump().items() if v is not None}
     
     if update_data:
+        update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
         await db.roles.update_one({"id": role_id}, {"$set": update_data})
     
     updated_role = await db.roles.find_one({"id": role_id}, {"_id": 0})
     return updated_role
+
+
+@api_router.delete("/roles/{role_id}")
+async def delete_role(role_id: str, current_user: dict = Depends(get_current_user)):
+    """Delete role - Admin/HR only. Cannot delete preset roles or roles with assigned employees."""
+    role_code = current_user.get("role_code", "")
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    role = await db.roles.find_one({"id": role_id})
+    if not role:
+        raise HTTPException(status_code=404, detail="Role not found")
+    
+    # Cannot delete preset roles
+    preset_codes = ["CEO", "HR_MANAGER", "FINANCE_MANAGER", "OPERATIONS_MANAGER", "INSPECTOR", "SALES_EXECUTIVE", "EMPLOYEE"]
+    if role.get("code") in preset_codes:
+        raise HTTPException(status_code=400, detail="Cannot delete preset system roles")
+    
+    # Check if any employees are assigned to this role
+    employees_count = await db.users.count_documents({"role_id": role_id})
+    if employees_count > 0:
+        raise HTTPException(status_code=400, detail=f"Cannot delete role. {employees_count} employee(s) are assigned to this role.")
+    
+    # Delete the role
+    await db.roles.delete_one({"id": role_id})
+    
+    return {"message": "Role deleted successfully", "id": role_id}
 
 
 @api_router.get("/roles/{role_id}/permissions")
