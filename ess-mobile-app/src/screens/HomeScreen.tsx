@@ -1,4 +1,5 @@
-// Professional Home Screen - Light Theme Dashboard
+// WiseDrive ESS - Home Screen (Main Hub)
+// All navigation starts from here - No footer tabs
 import React from 'react';
 import {
   View,
@@ -98,7 +99,7 @@ export default function HomeScreen() {
         }
         contentContainerStyle={styles.scrollContent}
       >
-        {/* Stats Card */}
+        {/* Attendance Stats Card */}
         <View style={styles.statsCard}>
           <LinearGradient
             colors={colors.gradients.primary}
@@ -129,47 +130,15 @@ export default function HomeScreen() {
           </LinearGradient>
         </View>
 
-        {/* Quick Actions */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
-          <View style={styles.actionsRow}>
-            <QuickAction
-              icon="add-circle-outline"
-              label="Apply Leave"
-              color={colors.primary}
-              onPress={() => navigation.navigate('Leave', { screen: 'LeaveApply' })}
-              testID="apply-leave-btn"
-            />
-            <QuickAction
-              icon="document-text-outline"
-              label="Payslips"
-              color={colors.success}
-              onPress={() => navigation.navigate('Payslips')}
-              testID="payslips-btn"
-            />
-            <QuickAction
-              icon="calendar-outline"
-              label="Holidays"
-              color={colors.warning}
-              onPress={() => navigation.navigate('HolidayCalendar')}
-              testID="holidays-btn"
-            />
-            <QuickAction
-              icon="folder-outline"
-              label="Documents"
-              color={colors.accent}
-              onPress={() => navigation.navigate('More', { screen: 'Documents' })}
-              testID="documents-btn"
-            />
-          </View>
-        </View>
-
-        {/* Leave Balance */}
+        {/* Leave Balance Section - Main Feature */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Leave Balance</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Leave')}>
-              <Text style={styles.seeAll}>View all</Text>
+            <TouchableOpacity 
+              testID="view-leaves-btn"
+              onPress={() => navigation.navigate('Leave')}
+            >
+              <Text style={styles.seeAll}>View History</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.leaveGrid}>
@@ -192,30 +161,78 @@ export default function HomeScreen() {
               color={colors.primary}
             />
           </View>
+          {/* Apply Leave Button */}
+          <TouchableOpacity
+            testID="apply-leave-btn"
+            style={styles.applyLeaveBtn}
+            onPress={() => navigation.navigate('LeaveApply')}
+            activeOpacity={0.8}
+          >
+            <LinearGradient
+              colors={colors.gradients.primary}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.applyLeaveBtnGradient}
+            >
+              <Ionicons name="add-circle" size={iconSize.lg} color="#FFF" />
+              <Text style={styles.applyLeaveBtnText}>Apply for Leave</Text>
+            </LinearGradient>
+          </TouchableOpacity>
         </View>
 
-        {/* Role Card */}
-        <TouchableOpacity 
-          style={styles.roleCard}
-          onPress={() => navigation.navigate('Profile')}
-          activeOpacity={0.7}
-        >
-          <View style={styles.roleIcon}>
-            <Ionicons name="briefcase-outline" size={iconSize.lg} color={colors.primary} />
+        {/* Quick Actions */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          <View style={styles.quickActionsGrid}>
+            <QuickActionCard
+              icon="document-text-outline"
+              label="Payslips"
+              color={colors.success}
+              onPress={() => navigation.navigate('Payslips')}
+              testID="payslips-btn"
+            />
+            <QuickActionCard
+              icon="folder-outline"
+              label="Documents"
+              color={colors.accent}
+              onPress={() => navigation.navigate('Documents')}
+              testID="documents-btn"
+            />
+            <QuickActionCard
+              icon="sunny-outline"
+              label="Holidays"
+              color={colors.warning}
+              onPress={() => navigation.navigate('HolidayCalendar')}
+              testID="holidays-btn"
+            />
+            <QuickActionCard
+              icon="settings-outline"
+              label="Settings"
+              color={colors.secondary}
+              onPress={() => navigation.navigate('Settings')}
+              testID="settings-btn"
+            />
           </View>
-          <View style={styles.roleInfo}>
-            <Text style={styles.roleTitle}>{profile?.role_name || 'Employee'}</Text>
-            <Text style={styles.roleDept}>{profile?.department_name || 'WiseDrive'}</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={iconSize.md} color={colors.text.tertiary} />
-        </TouchableOpacity>
+        </View>
+
+        {/* Bottom Padding */}
+        <View style={{ height: spacing.xxxl }} />
       </ScrollView>
     </View>
   );
 }
 
-// Quick Action Component
-const QuickAction = ({ 
+// Leave Card Component
+const LeaveCard = ({ label, available, total, color }: { label: string; available: number; total: number; color: string }) => (
+  <View style={styles.leaveCard}>
+    <View style={[styles.leaveIndicator, { backgroundColor: color }]} />
+    <Text style={styles.leaveLabel}>{label}</Text>
+    <Text style={styles.leaveValue}>{available}<Text style={styles.leaveTotal}>/{total}</Text></Text>
+  </View>
+);
+
+// Quick Action Card Component
+const QuickActionCard = ({ 
   icon, 
   label, 
   color, 
@@ -230,24 +247,15 @@ const QuickAction = ({
 }) => (
   <TouchableOpacity 
     testID={testID}
-    style={styles.actionItem}
+    style={styles.quickActionCard}
     onPress={onPress}
     activeOpacity={0.7}
   >
-    <View style={[styles.actionIconBg, { backgroundColor: `${color}15` }]}>
+    <View style={[styles.quickActionIcon, { backgroundColor: `${color}15` }]}>
       <Ionicons name={icon} size={iconSize.xl} color={color} />
     </View>
-    <Text style={styles.actionLabel}>{label}</Text>
+    <Text style={styles.quickActionLabel}>{label}</Text>
   </TouchableOpacity>
-);
-
-// Leave Card Component
-const LeaveCard = ({ label, available, total, color }: { label: string; available: number; total: number; color: string }) => (
-  <View style={styles.leaveCard}>
-    <View style={[styles.leaveIndicator, { backgroundColor: color }]} />
-    <Text style={styles.leaveLabel}>{label}</Text>
-    <Text style={styles.leaveValue}>{available}<Text style={styles.leaveTotal}>/{total}</Text></Text>
-  </View>
 );
 
 const styles = StyleSheet.create({
@@ -307,7 +315,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: spacing.xl,
-    paddingBottom: spacing.xxxxl + 80,
   },
   // Stats Card
   statsCard: {
@@ -357,40 +364,17 @@ const styles = StyleSheet.create({
     fontSize: fontSize.base,
     fontWeight: fontWeight.semibold,
     color: colors.text.primary,
-    marginBottom: spacing.md,
   },
   seeAll: {
     fontSize: fontSize.sm,
     color: colors.primary,
     fontWeight: fontWeight.medium,
-    marginBottom: spacing.md,
-  },
-  // Quick Actions
-  actionsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  actionItem: {
-    alignItems: 'center',
-    width: '22%',
-  },
-  actionIconBg: {
-    width: 52,
-    height: 52,
-    borderRadius: radius.lg,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-  actionLabel: {
-    fontSize: fontSize.xs,
-    color: colors.text.secondary,
-    textAlign: 'center',
   },
   // Leave Grid
   leaveGrid: {
     flexDirection: 'row',
     gap: spacing.md,
+    marginBottom: spacing.lg,
   },
   leaveCard: {
     flex: 1,
@@ -422,36 +406,50 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.regular,
     color: colors.text.tertiary,
   },
-  // Role Card
-  roleCard: {
+  // Apply Leave Button
+  applyLeaveBtn: {
+    borderRadius: radius.md,
+    overflow: 'hidden',
+    ...shadows.md,
+  },
+  applyLeaveBtnGradient: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.lg,
+    gap: spacing.sm,
+  },
+  applyLeaveBtnText: {
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
+    color: '#FFF',
+  },
+  // Quick Actions Grid
+  quickActionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+  },
+  quickActionCard: {
+    width: '47%',
     backgroundColor: colors.background,
-    padding: spacing.lg,
     borderRadius: radius.lg,
+    padding: spacing.lg,
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: colors.border,
   },
-  roleIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.md,
-    backgroundColor: colors.primaryLight,
+  quickActionIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: radius.lg,
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: spacing.md,
   },
-  roleInfo: {
-    flex: 1,
-    marginLeft: spacing.md,
-  },
-  roleTitle: {
-    fontSize: fontSize.base,
-    fontWeight: fontWeight.medium,
-    color: colors.text.primary,
-  },
-  roleDept: {
+  quickActionLabel: {
     fontSize: fontSize.sm,
-    color: colors.text.secondary,
-    marginTop: 2,
+    color: colors.text.primary,
+    fontWeight: fontWeight.medium,
   },
 });
