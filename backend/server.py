@@ -153,11 +153,15 @@ async def startup():
 
 async def auto_fix_password_hashes():
     """
-    Automatically validate and fix password hashes on startup.
-    This runs every time the server starts to ensure consistent password verification.
+    Automatically validate and fix ONLY corrupted/missing password hashes on startup.
     
-    For development environment: All users use 'password123' as default password.
-    This ensures login works after every deployment without manual intervention.
+    IMPORTANT: This does NOT reset passwords that are working correctly.
+    It only fixes:
+    - Missing password hashes
+    - Invalid bcrypt hash format (not starting with $2)
+    - Corrupted hashes that throw exceptions during verification
+    
+    Users with valid password hashes (even if different from default) are left unchanged.
     """
     DEFAULT_PASSWORD = "password123"
     
@@ -171,7 +175,7 @@ async def auto_fix_password_hashes():
     fixed_count = 0
     valid_count = 0
     
-    # Generate fresh hash for default password
+    # Generate fresh hash for default password (only used for truly broken hashes)
     fresh_hash = hash_password(DEFAULT_PASSWORD)
     
     for user in users:
@@ -181,30 +185,29 @@ async def auto_fix_password_hashes():
         
         needs_fix = False
         
-        # Check if password hash is missing or invalid
+        # Check if password hash is missing
         if not current_hash:
             needs_fix = True
-            logger.info(f"User {email}: Missing password hash")
+            logger.info(f"User {email}: Missing password hash - will fix")
         elif not current_hash.startswith("$2"):
-            # Not a valid bcrypt hash
+            # Not a valid bcrypt hash format
             needs_fix = True
-            logger.info(f"User {email}: Invalid hash format")
+            logger.info(f"User {email}: Invalid hash format (not bcrypt) - will fix")
         else:
-            # Verify the hash works with default password
+            # Hash exists and looks valid - try to verify it doesn't throw errors
+            # We test with a dummy string to check if the hash is structurally valid
             try:
-                if not verify_password(DEFAULT_PASSWORD, current_hash):
-                    # Hash exists but doesn't match - could be corrupted or different password
-                    # In dev environment, reset to default
-                    needs_fix = True
-                    logger.info(f"User {email}: Password verification failed, resetting")
-                else:
-                    valid_count += 1
+                # Just verify the hash is valid bcrypt by checking it doesn't throw
+                # We do NOT reset just because password doesn't match "password123"
+                bcrypt.checkpw(b"test", current_hash.encode('utf-8'))
+                valid_count += 1
             except Exception as e:
+                # Hash is corrupted and throws errors during verification
                 needs_fix = True
-                logger.info(f"User {email}: Hash verification error ({e}), resetting")
+                logger.info(f"User {email}: Corrupted hash (verification error: {e}) - will fix")
         
         if needs_fix:
-            # Update with fresh hash
+            # Only fix truly broken/missing hashes
             await db.users.update_one(
                 {"id": user_id},
                 {"$set": {
@@ -215,7 +218,7 @@ async def auto_fix_password_hashes():
             fixed_count += 1
     
     if fixed_count > 0:
-        logger.info(f"Password auto-fix: Fixed {fixed_count} users, {valid_count} were valid")
+        logger.info(f"Password auto-fix: Fixed {fixed_count} corrupted/missing hashes, {valid_count} were valid")
     else:
         logger.info(f"Password validation: All {valid_count} users have valid password hashes")
 
