@@ -1,204 +1,222 @@
-# WiseDrive CRM + ESS Mobile App - Product Requirements Document
+# Wisedrive CRM & ESS Mobile App - Product Requirements Document
 
-## Project Overview
-WiseDrive is a scalable automotive platform with a CRM system and an Employee Self-Service (ESS) mobile application.
+## Original Problem Statement
+Build a scalable automotive platform "Wisedrive" that evolved into a monolithic CRM application with an Employee Self-Service (ESS) mobile application.
 
-## Architecture
+## Core Applications
+1. **CRM Web Application** - Employee and HR management
+2. **ESS Mobile App** - Employee self-service (React Native/Expo)
 
+## User Personas
+- **CEO** - Full system access
+- **HR Manager** - Employee, payroll, leave management
+- **Employees** - Self-service access via mobile app
+
+---
+
+## CRM-to-ESS Field Mapping Reference
+
+### Personal Profile Fields (ESS API: GET /api/ess/v1/profile)
+
+| # | CRM Field | ESS Field | Status |
+|---|-----------|-----------|--------|
+| 1 | id | id | ✅ VERIFIED |
+| 2 | name | name | ✅ VERIFIED |
+| 3 | email | email | ✅ VERIFIED |
+| 4 | phone | phone | ✅ VERIFIED |
+| 5 | employee_code | employee_code | ✅ VERIFIED |
+| 6 | photo_url / profile_photo / avatar_url | photo_url | ✅ VERIFIED |
+| 7 | department_id → lookup | department_name | ✅ VERIFIED |
+| 8 | role_id → lookup | role_name | ✅ VERIFIED |
+| 9 | country_id → lookup | country_name | ✅ VERIFIED |
+| 10 | team_id → lookup | team_name | ✅ VERIFIED |
+| 11 | joining_date / date_of_joining | date_of_joining | ✅ VERIFIED |
+| 12 | employment_type | employment_type | ✅ VERIFIED |
+| 13 | employment_status | employment_status | ✅ VERIFIED |
+| 14 | reporting_manager_id / reports_to | reporting_manager_id | ✅ VERIFIED |
+| 15 | lookup from reporting_manager_id | reporting_manager_name | ✅ VERIFIED |
+| 16 | date_of_birth | date_of_birth | ✅ VERIFIED |
+| 17 | gender | gender | ✅ VERIFIED |
+| 18 | blood_group | blood_group | ✅ VERIFIED |
+| 19 | emergency_contact_name | emergency_contact_name | ✅ VERIFIED |
+| 20 | emergency_contact_phone | emergency_contact_phone | ✅ VERIFIED |
+
+### Bank Details Fields (ESS API: GET /api/ess/v1/profile/bank-details)
+
+| # | CRM Field | ESS Field | Status |
+|---|-----------|-----------|--------|
+| 1 | bank_name / bank | bank_name | ✅ VERIFIED |
+| 2 | bank_account_number → masked | account_number_masked | ✅ VERIFIED |
+| 3 | ifsc_code / ifsc / bank_ifsc | ifsc_code | ✅ VERIFIED |
+| 4 | bank_account_holder_name / account_holder_name / beneficiary_name | account_holder_name | ✅ VERIFIED |
+
+### Salary Fields (ESS API: GET /api/ess/v1/profile/salary)
+
+| # | CRM Field | ESS Field | Status |
+|---|-----------|-----------|--------|
+| 1 | basic_salary | basic_salary | ✅ VERIFIED |
+| 2 | hra | hra | ✅ VERIFIED |
+| 3 | variable_pay / incentives | variable_pay | ✅ VERIFIED |
+| 4 | conveyance_allowance / conveyance | conveyance | ✅ VERIFIED |
+| 5 | medical_allowance / medical | medical | ✅ VERIFIED |
+| 6 | special_allowance | special_allowance | ✅ VERIFIED |
+| 7 | pf_employee | pf_employee | ✅ VERIFIED |
+| 8 | professional_tax | professional_tax | ✅ VERIFIED |
+| 9 | income_tax / tds | income_tax | ✅ VERIFIED |
+| 10 | other_deductions | other_deductions | ✅ VERIFIED |
+| 11 | calculated | gross_salary | ✅ VERIFIED |
+| 12 | calculated | net_salary | ✅ VERIFIED |
+| 13 | country → lookup | currency | ✅ VERIFIED |
+| 14 | country → lookup | currency_symbol | ✅ VERIFIED |
+
+---
+
+## Implemented Features
+
+### Authentication & Security ✅
+- [x] JWT-based CRM authentication
+- [x] ESS Mobile App authentication with device management
+- [x] Automatic password validation on server startup
+- [x] Removed dangerous `/reset-users` endpoint
+
+### CRM Features ✅
+- [x] Employee CRUD operations
+- [x] Role management with permissions
+- [x] Country/Department/Team management
+- [x] Salary structure management
+- [x] Document management
+- [x] Leave management
+- [x] Inspection Packages feature
+
+### ESS Mobile App Features ✅
+- [x] Login/Logout with device tracking
+- [x] Profile view (Personal, Bank, Salary tabs)
+- [x] Leave application and history
+- [x] Payslip viewing
+- [x] Holiday calendar
+- [x] Notifications
+- [x] Push notifications (FCM)
+
+### Data Sync (CRM → ESS) ✅
+- [x] All profile fields sync correctly
+- [x] Bank details sync with proper masking
+- [x] Salary components sync with field name mapping
+- [x] Photo URL sync
+- [x] Reporting manager sync with name lookup
+
+---
+
+## Testing Status
+
+### Last Test Run: Iteration 37
+- **Total Tests:** 63 tests
+- **Pass Rate:** 100%
+- **Test Categories:**
+  - CRM Authentication: 2 tests ✅
+  - ESS Authentication: 1 test ✅
+  - Personal Profile Fields: 14 tests ✅
+  - Bank Details Fields: 6 tests ✅
+  - Salary Fields: 15 tests ✅
+  - Edit and Sync: 5 tests ✅
+
+### Test Data Verified
+```json
+{
+  "profile": {
+    "id": "0cfacef0-e48f-4023-b7ca-1fcc0b700ff7",
+    "name": "Priya Sharma",
+    "email": "hr@wisedrive.com",
+    "phone": "+919498297673",
+    "photo_url": "https://storage.wisedrive.com/photos/test-c39344e5-9ef7-4999-87db-31761fcd3ae5.jpg",
+    "department_name": "Human Resources",
+    "role_name": "HR Manager",
+    "country_name": "India",
+    "date_of_joining": "2024-03-15",
+    "reporting_manager_id": "7cf43310-c14c-45d0-aa2d-6eb99b04ea1b",
+    "reporting_manager_name": "Kalyan Kumar"
+  },
+  "bank_details": {
+    "bank_name": "Test Bank",
+    "account_number_masked": "XXXX XX78 90",
+    "ifsc_code": "TEST0001234",
+    "account_holder_name": "Test HR User"
+  },
+  "salary": {
+    "gross_salary": 102500.0,
+    "net_salary": 89900.0,
+    "basic_salary": 55000.0,
+    "hra": 22000.0,
+    "variable_pay": 12000.0,
+    "conveyance": 4000.0,
+    "medical": 3500.0,
+    "special_allowance": 6000.0,
+    "pf_employee": 6600.0,
+    "professional_tax": 200.0,
+    "income_tax": 5500.0,
+    "other_deductions": 300.0
+  }
+}
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    crmdev.wisedrive.com                      │
-│                    (Stable Custom Domain)                    │
-└─────────────────────┬───────────────────────────────────────┘
-                      │
-        ┌─────────────┴─────────────┐
-        │                           │
-        ▼                           ▼
-┌───────────────────┐     ┌───────────────────┐
-│   CRM Frontend    │     │   ESS Mobile App  │
-│   (React)         │     │   (React Native)  │
-│   Port 3000       │     │   iOS + Android   │
-└───────────────────┘     └───────────────────┘
-        │                           │
-        └─────────────┬─────────────┘
-                      │
-                      ▼
-        ┌───────────────────────────┐
-        │   FastAPI Backend         │
-        │   /api/* (CRM routes)     │
-        │   /api/ess/v1/* (Mobile)  │
-        │   Port 8001               │
-        └───────────────────────────┘
-                      │
-                      ▼
-        ┌───────────────────────────┐
-        │   MongoDB Database        │
-        │   (Shared between CRM     │
-        │    and Mobile App)        │
-        └───────────────────────────┘
-```
 
-## Completed Features
-
-### ESS Mobile App (Updated February 16, 2026)
-- ✅ React Native (Expo) mobile application
-- ✅ Authentication with JWT tokens and device sessions
-- ✅ Employee Profile viewing (Personal, Bank, Salary tabs)
-- ✅ **Salary Structure matching CRM exactly:**
-  - Earnings: Basic Salary, HRA, Variable Pay/Incentives, Conveyance, Medical Allowance, Special Allowance
-  - Deductions: PF (Employee), Professional Tax, Income Tax (TDS), Other Deductions
-- ✅ Leave Management (apply, view balance, history)
-- ✅ Payslips viewing with year filter
-- ✅ Documents management
-- ✅ Holiday Calendar
-- ✅ Push Notifications (FCM integrated)
-- ✅ **Professional Light Theme:**
-  - Clean white background (#FFFFFF) with blue accents (#2563EB)
-  - Modern minimalist UI
-  - **Hub-based navigation from HomeScreen (no bottom tab bar)**
-  - All screens have back buttons for navigation
-- ✅ Pointing to stable domain: `crmdev.wisedrive.com`
-
-### ESS API Routes (Integrated in Main Backend)
-- ✅ `/api/ess/v1/auth/*` - Authentication (login, logout, refresh)
-- ✅ `/api/ess/v1/profile/*` - Profile, salary (individual fields), attendance
-- ✅ `/api/ess/v1/leave/*` - Leave management
-- ✅ `/api/ess/v1/payslips/*` - Payslip viewing
-- ✅ `/api/ess/v1/documents/*` - Document management
-- ✅ `/api/ess/v1/holidays` - Holiday calendar
-- ✅ `/api/ess/v1/notifications/*` - Push notifications
-
-### CRM Features
-- ✅ Multi-tenant RBAC system
-- ✅ Employee management
-- ✅ Attendance tracking
-- ✅ Payroll management
-- ✅ Leave management
-- ✅ Notification Configuration UI for HR
-- ✅ **Inspection Packages (Updated - February 16, 2026):**
-  - Settings > Inspection Packages tab
-  - Create/Edit inspection categories with check points, items, and benefits
-  - Create/Edit packages that include multiple categories
-  - **Category-to-Package assignment:** Select categories when creating/editing a package
-  - **No. of Inspections:** Define how many inspections customer can avail per package
-  - **Copy & Create:** Duplicate existing packages/categories
-  - **Show Inactive:** Inactive packages/categories visible with badge (no delete option)
-  - **Toggle Status:** Activate/deactivate packages and categories
-  - Package pricing with currency support
-  - Recommended badge for featured packages
-  - Country-based filtering
-- ✅ **HR Module Fixes (February 16, 2026):**
-  - Role creation: POST /api/roles endpoint for creating new roles
-  - Copy role: Duplicate existing roles with modified name/code
-  - Salary field mapping: Using correct field names (conveyance_allowance, medical_allowance)
-  - Document download: Authenticated download through API
-  - Reporting Manager dropdown: Shows list of all active employees
-  - Modal alignment: Wider modal (900px), better overflow handling
-  - ESS Mobile sync: Salary data now correctly synced between CRM and mobile app
-
-### Integrations
-- ✅ Firebase Cloud Messaging (FCM) for push notifications
-- ✅ Expo Application Services (EAS) for mobile builds
-
-## Key Files
-
-### Mobile App
-- `/app/ess-mobile-app/` - React Native Expo project
-- `/app/ess-mobile-app/src/services/config.ts` - API endpoint config
-- `/app/ess-mobile-app/src/context/AuthContext.tsx` - Auth with cache clearing
-- `/app/ess-mobile-app/src/screens/HomeScreen.tsx` - Main navigation hub
-- `/app/ess-mobile-app/src/screens/ProfileScreen.tsx` - Profile with salary structure
-- `/app/ess-mobile-app/eas.json` - EAS build configuration
-
-### Backend ESS Routes
-- `/app/backend/routes_ess/auth.py` - Authentication
-- `/app/backend/routes_ess/profile.py` - Profile, salary (individual fields), holidays
-- `/app/backend/models_ess/profile.py` - SalarySummary model with all CRM fields
-- `/app/backend/routes_ess/leave.py` - Leave management
-- `/app/backend/routes_ess/payslips.py` - Payslips
-- `/app/backend/routes_ess/documents.py` - Documents
-- `/app/backend/routes_ess/notifications.py` - Notifications
-
-### Firebase
-- `/app/ess/api/firebase-credentials.json` - FCM service account
-
-### Inspection Packages
-- `/app/backend/models/inspection_package.py` - Data models for categories and packages
-- `/app/backend/server.py` - API routes for inspection-categories and inspection-packages
-- `/app/frontend/src/pages/InspectionPackagesPage.jsx` - Frontend component
-- `/app/frontend/src/services/api.js` - `inspectionPackagesApi` endpoints
+---
 
 ## Test Credentials
-All users use password: `password123`
+- **CRM URL:** https://crmdev.wisedrive.com
+- **HR User:** hr@wisedrive.com / password123
+- **Admin User:** kalyan@wisedrive.com / password123
 
-| Email | Role |
-|-------|------|
-| kalyan@wisedrive.com | CEO |
-| hr@wisedrive.com | HR Manager |
-| countryhead.in@wisedrive.com | Country Head |
-| finance.in@wisedrive.com | Finance Manager |
-| salesexec1.in@wisedrive.com | Sales Exec |
+---
 
-## Deployment Workflow
+## Future Tasks (Backlog)
 
-### CRM Changes Only
-1. Make changes in CRM code
-2. Click "Deploy" in Emergent
-3. Mobile app automatically gets updated data (no rebuild needed)
+### P1 - Upcoming
+- [ ] Generate final Android APK and iOS IPA builds
 
-### Mobile App Changes Only
-1. Make changes in mobile app code
-2. Run EAS build: `npx eas-cli build --platform all --profile preview`
-3. Download and install new APK/IPA
-4. CRM doesn't need redeployment
+### P2 - CRM Modules
+- [ ] Leads Module
+- [ ] Inspections Module (performing inspections)
+- [ ] Customer Module
 
-### Both Changes
-1. Make changes in both
-2. Deploy CRM first
-3. Then build mobile app
-
-## Future Tasks / Backlog
-
-### P0 - Immediate (To Complete Project)
-- [x] Build final APK/IPA with new design ✅ DONE
-- [x] Salary structure matching CRM exactly ✅ DONE
-- [x] Navigation restructuring (hub-based) ✅ DONE
-- [x] Inspection Packages feature in Settings ✅ DONE (February 16, 2026)
-- [x] **Auto-fix password hashes on startup** ✅ DONE (February 16, 2026)
-  - Automatic password hash validation on every deployment
-  - No manual curl commands needed
-  - All users login with their existing credentials
-- [ ] User acceptance testing on actual mobile devices (IN PROGRESS)
-
-### P1 - High Priority
-- [ ] Leads module in CRM (next up)
-- [ ] Production Firebase setup (replace test credentials)
-- [ ] App Store / Play Store submission preparation
-
-### P2 - Medium Priority
-- [ ] Implement Inspections module in CRM (record actual inspections using packages)
-- [ ] Implement Customer module in CRM
-- [ ] OBD Integration library integration
-
-### P3 - Low Priority
+### P3 - Integrations
+- [ ] OBD-Integration-v1.0
 - [ ] Razorpay payment integration
-- [ ] Invincible Ocean client integration
-- [ ] Microservices architecture migration
+- [ ] Invincible Ocean clients
 
-## Build Information
+---
 
-### Latest Mobile Builds (February 16, 2026)
-- **Design:** ✅ Professional Light Theme (Blue/White)
-- **Navigation:** ✅ Hub-based from HomeScreen (no bottom tabs)
-- **Salary Structure:** ✅ Individual earnings/deductions matching CRM
-- **API Endpoint:** https://crmdev.wisedrive.com/api (✅ Confirmed)
-- **Theme:** Light (#FFFFFF background, #2563EB primary)
+## Code Architecture
 
-### Build Install Links (Scan QR or open on device)
-- **Android:** https://expo.dev/accounts/kalyandhar/projects/wisedrive-ess/builds/3486573f-de79-4efe-b91b-b109f82b59bb
-- **iOS:** https://expo.dev/accounts/kalyandhar/projects/wisedrive-ess/builds/9526e90e-069f-466a-9dc4-da5cb8a13209
+```
+/app/
+├── backend/                  # FastAPI Backend (CRM & ESS)
+│   ├── models/
+│   │   ├── inspection_package.py
+│   │   └── employee.py
+│   ├── models_ess/
+│   │   └── profile.py        # ESS data models
+│   ├── routes_ess/
+│   │   └── profile.py        # ESS profile API with field mappings
+│   ├── tests/
+│   │   └── test_ess_comprehensive_sync.py  # Comprehensive sync tests
+│   └── server.py             # Main backend server
+├── ess-mobile-app/           # React Native (Expo) mobile app
+│   └── src/
+│       ├── screens/
+│       │   └── ProfileScreen.tsx
+│       └── services/
+│           └── api.ts
+└── frontend/                 # React Frontend (CRM)
+    └── src/
+        ├── pages/
+        │   ├── AdminPage.jsx
+        │   └── InspectionPackagesPage.jsx
+        └── services/
+            └── api.js
+```
 
-### Expo Project
-- **Account:** @kalyandhar
-- **Project:** wisedrive-ess
-- **Bundle ID:** com.wisedrive.ess
+---
+
+## Document History
+- **Created:** December 2025
+- **Last Updated:** December 2025
+- **Version:** 1.5
