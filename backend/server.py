@@ -371,11 +371,51 @@ async def get_roles(current_user: dict = Depends(get_current_user)):
     return roles
 
 
+class RoleCreate(BaseModel):
+    name: str
+    code: str
+    description: Optional[str] = None
+    level: int = 5
+    eligible_sick_leaves_per_month: int = 1
+    eligible_casual_leaves_per_month: int = 1
+
+
 class RoleUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
+    level: Optional[int] = None
     eligible_sick_leaves_per_month: Optional[int] = None
     eligible_casual_leaves_per_month: Optional[int] = None
+
+
+@api_router.post("/roles")
+async def create_role(data: RoleCreate, current_user: dict = Depends(get_current_user)):
+    """Create new role - Admin/HR only"""
+    role_code = current_user.get("role_code", "")
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Check if role code already exists
+    existing = await db.roles.find_one({"code": data.code.upper()})
+    if existing:
+        raise HTTPException(status_code=400, detail="Role code already exists")
+    
+    role_dict = {
+        "id": str(uuid.uuid4()),
+        "name": data.name,
+        "code": data.code.upper(),
+        "description": data.description or "",
+        "level": data.level,
+        "eligible_sick_leaves_per_month": data.eligible_sick_leaves_per_month,
+        "eligible_casual_leaves_per_month": data.eligible_casual_leaves_per_month,
+        "is_active": True,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.roles.insert_one(role_dict)
+    role_dict.pop("_id", None)
+    
+    return role_dict
 
 
 @api_router.put("/roles/{role_id}")
