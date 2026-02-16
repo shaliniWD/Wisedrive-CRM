@@ -1647,8 +1647,71 @@ async def razorpay_payment_webhook(request: Request):
                         data={"type": "payment_received", "lead_id": lead_id}
                     )
         
-        logger.info(f"Lead {lead_id} marked as PAID, customer {customer_id} created")
-        return {"status": "payment_processed", "customer_id": customer_id}
+        # Create inspection records from stored schedules
+        no_of_inspections = lead.get("no_of_inspections", 1)
+        inspection_schedules = lead.get("inspection_schedules", [])
+        created_inspections = []
+        
+        for i in range(no_of_inspections):
+            inspection_id = str(uuid.uuid4())
+            
+            # Get schedule data if available
+            schedule_data = inspection_schedules[i] if i < len(inspection_schedules) else {}
+            
+            # Determine inspection status based on available data
+            has_schedule = bool(
+                schedule_data.get("inspection_date") and 
+                schedule_data.get("inspection_time") and 
+                schedule_data.get("address")
+            )
+            
+            inspection = {
+                "id": inspection_id,
+                "country_id": lead.get("country_id") or current_user.get("country_id"),
+                "customer_id": customer_id,
+                "lead_id": lead_id,
+                "order_id": f"ORD-{lead_id[:8].upper()}",
+                "customer_name": lead.get("name"),
+                "customer_mobile": lead.get("mobile"),
+                "car_number": schedule_data.get("vehicle_number") or "",
+                "city": lead.get("city"),
+                "address": schedule_data.get("address") or "",
+                "location_lat": schedule_data.get("latitude"),
+                "location_lng": schedule_data.get("longitude"),
+                "package_id": lead.get("package_id"),
+                "package_type": lead.get("package_name"),
+                "total_amount": amount / no_of_inspections,  # Split amount across inspections
+                "amount_paid": amount / no_of_inspections,
+                "pending_amount": 0,
+                "payment_status": "PAID",
+                "payment_type": "Full",
+                "payment_date": datetime.now(timezone.utc).isoformat(),
+                "razorpay_payment_id": payment_id,
+                "inspection_status": "SCHEDULED" if has_schedule else "UNSCHEDULED",
+                "scheduled_date": schedule_data.get("inspection_date") or None,
+                "scheduled_time": schedule_data.get("inspection_time") or None,
+                "slot_number": i + 1,
+                "inspections_available": 1,
+                "report_status": "pending",
+                "notes": f"Inspection {i + 1} of {no_of_inspections} from lead conversion",
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "created_by": "system"
+            }
+            
+            # Add vehicle details if available
+            if schedule_data.get("vehicle_data"):
+                vd = schedule_data["vehicle_data"]
+                inspection["car_make"] = vd.get("manufacturer", "")
+                inspection["car_model"] = vd.get("model", "")
+                inspection["car_year"] = vd.get("manufacturing_date", "").split("/")[-1] if vd.get("manufacturing_date") else ""
+                inspection["car_color"] = vd.get("color", "")
+                inspection["fuel_type"] = vd.get("fuel_type", "")
+            
+            await db.inspections.insert_one(inspection)
+            created_inspections.append(inspection_id)
+        
+        logger.info(f"Lead {lead_id} marked as PAID, customer {customer_id} created, {len(created_inspections)} inspection(s) created")
+        return {"status": "payment_processed", "customer_id": customer_id, "inspection_ids": created_inspections}
     
     elif event == "payment_link.expired":
         await db.leads.update_one(
