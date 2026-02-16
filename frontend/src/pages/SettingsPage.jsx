@@ -13,8 +13,9 @@ import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { 
   Plus, Loader2, Pencil, Trash2, Search, Settings, RefreshCw,
-  IndianRupee, ToggleLeft, ToggleRight, X
+  IndianRupee, ToggleLeft, ToggleRight, X, Package
 } from 'lucide-react';
+import InspectionPackagesPage from './InspectionPackagesPage';
 
 // Mock API for ad mappings (since backend doesn't have this yet)
 const adMappingsApi = {
