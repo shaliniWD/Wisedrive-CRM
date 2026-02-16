@@ -1,4 +1,4 @@
-// Premium Home Screen - Dark Theme Dashboard
+// Professional Home Screen - Light Theme Dashboard
 import React from 'react';
 import {
   View,
@@ -94,59 +94,39 @@ export default function HomeScreen() {
             refreshing={refreshing} 
             onRefresh={onRefresh} 
             tintColor={colors.primary}
-            colors={[colors.primary]}
           />
         }
         contentContainerStyle={styles.scrollContent}
       >
-        {/* Stats Bento Grid */}
-        <View style={styles.bentoGrid}>
-          <View style={styles.bentoRow}>
-            <View style={[styles.bentoCard, styles.bentoCardLarge]}>
-              <LinearGradient
-                colors={colors.gradients.primary}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.bentoGradient}
-              >
-                <View style={styles.bentoContent}>
-                  <Text style={styles.bentoLargeValue}>{attendance?.present_days || 0}</Text>
-                  <Text style={styles.bentoLargeLabel}>Days Present</Text>
-                </View>
-                <View style={styles.bentoIconContainer}>
-                  <Ionicons name="checkmark-circle" size={32} color="rgba(255,255,255,0.3)" />
-                </View>
-              </LinearGradient>
-            </View>
-            <View style={styles.bentoColumn}>
-              <View style={[styles.bentoCard, styles.bentoCardSmall]}>
-                <Text style={[styles.bentoSmallValue, { color: colors.success }]}>
-                  {leaveBalance?.casual_leaves?.available || 0}
-                </Text>
-                <Text style={styles.bentoSmallLabel}>Casual</Text>
+        {/* Stats Card */}
+        <View style={styles.statsCard}>
+          <LinearGradient
+            colors={colors.gradients.primary}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.statsGradient}
+          >
+            <View style={styles.statsRow}>
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>{attendance?.present_days || 0}</Text>
+                <Text style={styles.statLabel}>Present</Text>
               </View>
-              <View style={[styles.bentoCard, styles.bentoCardSmall]}>
-                <Text style={[styles.bentoSmallValue, { color: colors.warning }]}>
-                  {leaveBalance?.sick_leaves?.available || 0}
+              <View style={styles.statDivider} />
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>{attendance?.working_days || 0}</Text>
+                <Text style={styles.statLabel}>Working Days</Text>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>
+                  {(leaveBalance?.casual_leaves?.available || 0) + 
+                   (leaveBalance?.sick_leaves?.available || 0) + 
+                   (leaveBalance?.earned_leaves?.available || 0)}
                 </Text>
-                <Text style={styles.bentoSmallLabel}>Sick</Text>
+                <Text style={styles.statLabel}>Leaves Left</Text>
               </View>
             </View>
-          </View>
-          <View style={styles.bentoRow}>
-            <View style={[styles.bentoCard, styles.bentoCardMedium]}>
-              <Text style={[styles.bentoSmallValue, { color: colors.accent }]}>
-                {leaveBalance?.earned_leaves?.available || 0}
-              </Text>
-              <Text style={styles.bentoSmallLabel}>Earned Leaves</Text>
-            </View>
-            <View style={[styles.bentoCard, styles.bentoCardMedium]}>
-              <Text style={[styles.bentoSmallValue, { color: colors.text.primary }]}>
-                {attendance?.working_days || 0}
-              </Text>
-              <Text style={styles.bentoSmallLabel}>Working Days</Text>
-            </View>
-          </View>
+          </LinearGradient>
         </View>
 
         {/* Quick Actions */}
@@ -184,8 +164,42 @@ export default function HomeScreen() {
           </View>
         </View>
 
+        {/* Leave Balance */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Leave Balance</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('Leave')}>
+              <Text style={styles.seeAll}>View all</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.leaveGrid}>
+            <LeaveCard 
+              label="Casual" 
+              available={leaveBalance?.casual_leaves?.available || 0}
+              total={leaveBalance?.casual_leaves?.total || 12}
+              color={colors.success}
+            />
+            <LeaveCard 
+              label="Sick" 
+              available={leaveBalance?.sick_leaves?.available || 0}
+              total={leaveBalance?.sick_leaves?.total || 12}
+              color={colors.warning}
+            />
+            <LeaveCard 
+              label="Earned" 
+              available={leaveBalance?.earned_leaves?.available || 0}
+              total={leaveBalance?.earned_leaves?.total || 15}
+              color={colors.primary}
+            />
+          </View>
+        </View>
+
         {/* Role Card */}
-        <View style={styles.roleCard}>
+        <TouchableOpacity 
+          style={styles.roleCard}
+          onPress={() => navigation.navigate('Profile')}
+          activeOpacity={0.7}
+        >
           <View style={styles.roleIcon}>
             <Ionicons name="briefcase-outline" size={iconSize.lg} color={colors.primary} />
           </View>
@@ -194,7 +208,7 @@ export default function HomeScreen() {
             <Text style={styles.roleDept}>{profile?.department_name || 'WiseDrive'}</Text>
           </View>
           <Ionicons name="chevron-forward" size={iconSize.md} color={colors.text.tertiary} />
-        </View>
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );
@@ -220,17 +234,26 @@ const QuickAction = ({
     onPress={onPress}
     activeOpacity={0.7}
   >
-    <View style={[styles.actionIconBg, { backgroundColor: `${color}20` }]}>
-      <Ionicons name={icon} size={iconSize.lg} color={color} />
+    <View style={[styles.actionIconBg, { backgroundColor: `${color}15` }]}>
+      <Ionicons name={icon} size={iconSize.xl} color={color} />
     </View>
     <Text style={styles.actionLabel}>{label}</Text>
   </TouchableOpacity>
 );
 
+// Leave Card Component
+const LeaveCard = ({ label, available, total, color }: { label: string; available: number; total: number; color: string }) => (
+  <View style={styles.leaveCard}>
+    <View style={[styles.leaveIndicator, { backgroundColor: color }]} />
+    <Text style={styles.leaveLabel}>{label}</Text>
+    <Text style={styles.leaveValue}>{available}<Text style={styles.leaveTotal}>/{total}</Text></Text>
+  </View>
+);
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
   },
   header: {
     flexDirection: 'row',
@@ -238,6 +261,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.lg,
+    backgroundColor: colors.background,
   },
   headerLeft: {},
   greeting: {
@@ -283,87 +307,65 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: spacing.xl,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.xxxxl,
+    paddingBottom: spacing.xxxxl + 80,
   },
-  // Bento Grid
-  bentoGrid: {
-    marginBottom: spacing.xxl,
-  },
-  bentoRow: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginBottom: spacing.md,
-  },
-  bentoColumn: {
-    flex: 1,
-    gap: spacing.md,
-  },
-  bentoCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.lg,
-  },
-  bentoCardLarge: {
-    flex: 1.5,
+  // Stats Card
+  statsCard: {
+    borderRadius: radius.xl,
     overflow: 'hidden',
-    padding: 0,
+    marginBottom: spacing.xxl,
+    ...shadows.lg,
   },
-  bentoGradient: {
-    flex: 1,
-    padding: spacing.lg,
+  statsGradient: {
+    padding: spacing.xl,
+  },
+  statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    minHeight: 110,
   },
-  bentoContent: {},
-  bentoIconContainer: {
-    position: 'absolute',
-    right: spacing.lg,
-    top: spacing.lg,
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
   },
-  bentoLargeValue: {
-    fontSize: fontSize.xxxl,
+  statDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+  statValue: {
+    fontSize: fontSize.xxl,
     fontWeight: fontWeight.bold,
     color: '#FFF',
   },
-  bentoLargeLabel: {
-    fontSize: fontSize.sm,
-    color: 'rgba(255,255,255,0.8)',
-    marginTop: spacing.xs,
-  },
-  bentoCardSmall: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  bentoCardMedium: {
-    flex: 1,
-  },
-  bentoSmallValue: {
-    fontSize: fontSize.xl,
-    fontWeight: fontWeight.bold,
-  },
-  bentoSmallLabel: {
+  statLabel: {
     fontSize: fontSize.xs,
-    color: colors.text.secondary,
+    color: 'rgba(255,255,255,0.8)',
     marginTop: spacing.xs,
   },
   // Section
   section: {
     marginBottom: spacing.xxl,
   },
-  sectionTitle: {
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.medium,
-    color: colors.text.secondary,
-    marginBottom: spacing.lg,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
   },
+  sectionTitle: {
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
+    color: colors.text.primary,
+    marginBottom: spacing.md,
+  },
+  seeAll: {
+    fontSize: fontSize.sm,
+    color: colors.primary,
+    fontWeight: fontWeight.medium,
+    marginBottom: spacing.md,
+  },
+  // Quick Actions
   actionsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -373,9 +375,9 @@ const styles = StyleSheet.create({
     width: '22%',
   },
   actionIconBg: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.md,
+    width: 52,
+    height: 52,
+    borderRadius: radius.lg,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: spacing.sm,
@@ -385,11 +387,46 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     textAlign: 'center',
   },
+  // Leave Grid
+  leaveGrid: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  leaveCard: {
+    flex: 1,
+    backgroundColor: colors.background,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  leaveIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginBottom: spacing.sm,
+  },
+  leaveLabel: {
+    fontSize: fontSize.xs,
+    color: colors.text.tertiary,
+    marginBottom: spacing.xs,
+  },
+  leaveValue: {
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.bold,
+    color: colors.text.primary,
+  },
+  leaveTotal: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.regular,
+    color: colors.text.tertiary,
+  },
   // Role Card
   roleCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
     padding: spacing.lg,
     borderRadius: radius.lg,
     borderWidth: 1,
@@ -399,7 +436,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: radius.md,
-    backgroundColor: `${colors.primary}20`,
+    backgroundColor: colors.primaryLight,
     justifyContent: 'center',
     alignItems: 'center',
   },
