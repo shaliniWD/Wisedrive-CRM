@@ -61,7 +61,7 @@ const adMappingsApi = {
 };
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState('ad_mapping');
+  const [activeTab, setActiveTab] = useState('inspection_packages');
   const [adMappings, setAdMappings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
