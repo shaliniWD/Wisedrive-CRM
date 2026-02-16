@@ -1,4 +1,4 @@
-// Premium Approvals Screen - Dark Theme
+// Professional Approvals Screen - Light Theme
 import React, { useState } from 'react';
 import {
   View,
@@ -9,7 +9,6 @@ import {
   RefreshControl,
   ActivityIndicator,
   Alert,
-  TextInput,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -25,7 +24,6 @@ export default function ApprovalsScreen() {
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedLeave, setSelectedLeave] = useState<any>(null);
   const [comments, setComments] = useState('');
 
   const { data: approvals, isLoading } = useQuery({
@@ -38,7 +36,6 @@ export default function ApprovalsScreen() {
       approveRejectLeave(leaveId, action, comments),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pendingApprovals'] });
-      setSelectedLeave(null);
       setComments('');
       Alert.alert('Success', 'Action completed successfully');
     },
@@ -115,11 +112,11 @@ export default function ApprovalsScreen() {
             <View key={leave.id} style={styles.approvalCard}>
               {/* Employee Info */}
               <View style={styles.employeeRow}>
-                <View style={styles.employeeAvatar}>
+                <LinearGradient colors={colors.gradients.primary} style={styles.employeeAvatar}>
                   <Text style={styles.employeeInitials}>
                     {leave.employee_name?.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() || 'U'}
                   </Text>
-                </View>
+                </LinearGradient>
                 <View style={styles.employeeInfo}>
                   <Text style={styles.employeeName}>{leave.employee_name}</Text>
                   <Text style={styles.employeeDept}>{leave.department || 'Employee'}</Text>
@@ -185,7 +182,7 @@ export default function ApprovalsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
   },
   header: {
     flexDirection: 'row',
@@ -193,6 +190,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.lg,
+    backgroundColor: colors.background,
   },
   backBtn: {
     width: 40,
@@ -222,7 +220,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: spacing.xl,
-    paddingTop: 0,
     paddingBottom: spacing.xxxxl,
   },
   loadingContainer: {
@@ -253,9 +250,8 @@ const styles = StyleSheet.create({
     color: colors.text.tertiary,
     marginTop: spacing.xs,
   },
-  // Approval Card
   approvalCard: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
     borderRadius: radius.lg,
     padding: spacing.lg,
     marginBottom: spacing.md,
@@ -271,7 +267,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: radius.md,
-    backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -295,7 +290,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   leaveDaysBadge: {
-    backgroundColor: colors.surfaceHighlight,
+    backgroundColor: colors.surface,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
     borderRadius: radius.sm,
@@ -305,9 +300,8 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.medium,
     color: colors.text.primary,
   },
-  // Leave Details
   leaveDetails: {
-    backgroundColor: colors.surfaceHighlight,
+    backgroundColor: colors.surface,
     borderRadius: radius.md,
     padding: spacing.md,
     marginBottom: spacing.md,
@@ -331,7 +325,6 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     marginTop: spacing.sm,
   },
-  // Actions
   actionsRow: {
     flexDirection: 'row',
     gap: spacing.md,
