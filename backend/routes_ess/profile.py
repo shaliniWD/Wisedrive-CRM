@@ -155,19 +155,41 @@ async def get_bank_details(
     db = request.app.state.db
     user_id = current_user["id"]
     
+    # Get user with all bank-related fields
     user = await db.users.find_one(
         {"id": user_id},
-        {"_id": 0, "bank_name": 1, "bank_account_number_masked": 1, "ifsc_code": 1, "bank_account_holder_name": 1}
+        {"_id": 0}
     )
     
     if not user:
         raise HTTPException(status_code=404, detail="Profile not found")
     
+    # Handle multiple field name variations for bank details
+    bank_name = user.get("bank_name") or user.get("bank")
+    
+    # Account number - try masked first, then generate mask from full number
+    account_number_masked = user.get("bank_account_number_masked")
+    if not account_number_masked:
+        # Try to mask from full account number if available
+        full_account = user.get("bank_account_number") or user.get("account_number")
+        if full_account:
+            # Mask all but last 4 digits
+            account_number_masked = "X" * (len(str(full_account)) - 4) + str(full_account)[-4:]
+    
+    ifsc_code = user.get("ifsc_code") or user.get("ifsc") or user.get("bank_ifsc")
+    
+    account_holder_name = (
+        user.get("bank_account_holder_name") or 
+        user.get("account_holder_name") or 
+        user.get("beneficiary_name") or
+        user.get("name")  # Fall back to employee name
+    )
+    
     return BankDetailsResponse(
-        bank_name=user.get("bank_name"),
-        account_number_masked=user.get("bank_account_number_masked"),
-        ifsc_code=user.get("ifsc_code"),
-        account_holder_name=user.get("bank_account_holder_name")
+        bank_name=bank_name,
+        account_number_masked=account_number_masked,
+        ifsc_code=ifsc_code,
+        account_holder_name=account_holder_name
     )
 
 
