@@ -688,7 +688,8 @@ export default function InspectionPackagesPage() {
                     key={category.id}
                     category={category}
                     onEdit={openCategoryModal}
-                    onDelete={handleDeleteCategory}
+                    onCopy={handleCopyCategory}
+                    onToggle={handleToggleCategory}
                   />
                 ))}
               </div>
