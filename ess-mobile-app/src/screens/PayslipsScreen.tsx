@@ -61,6 +61,13 @@ export default function PayslipsScreen() {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
+        <TouchableOpacity
+          testID="back-btn"
+          style={styles.backBtn}
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="arrow-back" size={iconSize.lg} color={colors.text.primary} />
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>Payslips</Text>
         <View style={styles.yearSelector}>
           {availableYears.slice(0, 3).map((year: number) => (
