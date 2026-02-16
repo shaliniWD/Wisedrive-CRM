@@ -1339,9 +1339,12 @@ async def create_inspection_package(
     else:
         total_points = package.total_check_points
     
+    # Get package data and override total_check_points with calculated value
+    package_data = package.model_dump()
+    package_data["total_check_points"] = total_points
+    
     package_doc = InspectionPackage(
-        **package.model_dump(),
-        total_check_points=total_points,
+        **package_data,
         created_by=current_user.get("id")
     )
     
