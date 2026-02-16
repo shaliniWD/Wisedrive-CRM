@@ -315,6 +315,17 @@ export default function AdminPage({ initialTab = 'employees', embedded = false }
     setIsRoleModalOpen(true);
   };
 
+  // Copy role - opens modal with role data but as new role
+  const copyRole = (role) => {
+    setSelectedRole({
+      ...role,
+      id: null, // Clear ID to create new
+      name: `${role.name} (Copy)`,
+      code: '', // Clear code so user must enter new one
+    });
+    setIsRoleModalOpen(true);
+  };
+
   // Open exit modal
   const openExitModal = (employee) => {
     setSelectedEmployee(employee);
