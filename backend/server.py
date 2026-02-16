@@ -950,6 +950,116 @@ async def get_lead_statuses():
     return LEAD_STATUSES
 
 
+# Vaahan API for vehicle details
+@api_router.get("/vehicle/details/{vehicle_number}")
+async def get_vehicle_details(vehicle_number: str, current_user: dict = Depends(get_current_user)):
+    """Fetch vehicle details from Vaahan API (Invincible Ocean)"""
+    result = await vaahan_service.get_vehicle_details(vehicle_number)
+    
+    if not result.get("success"):
+        raise HTTPException(
+            status_code=400, 
+            detail=result.get("error", "Failed to fetch vehicle details")
+        )
+    
+    return result
+
+
+# Save vehicle to vehicle master
+@api_router.post("/vehicles")
+async def create_vehicle(vehicle_data: dict, current_user: dict = Depends(get_current_user)):
+    """Save vehicle details to vehicle master collection"""
+    vehicle_id = str(uuid.uuid4())
+    
+    vehicle = {
+        "id": vehicle_id,
+        "registration_number": vehicle_data.get("registration_number", ""),
+        "chassis_number": vehicle_data.get("chassis_number", ""),
+        "engine_number": vehicle_data.get("engine_number", ""),
+        "manufacturer": vehicle_data.get("manufacturer", ""),
+        "model": vehicle_data.get("model", ""),
+        "color": vehicle_data.get("color", ""),
+        "fuel_type": vehicle_data.get("fuel_type", ""),
+        "body_type": vehicle_data.get("body_type", ""),
+        "vehicle_class": vehicle_data.get("vehicle_class", ""),
+        "category": vehicle_data.get("category", ""),
+        "manufacturing_date": vehicle_data.get("manufacturing_date", ""),
+        "registration_date": vehicle_data.get("registration_date", ""),
+        "registration_authority": vehicle_data.get("registration_authority", ""),
+        "rc_expiry_date": vehicle_data.get("rc_expiry_date", ""),
+        "owner_name": vehicle_data.get("owner_name", ""),
+        "owner_count": vehicle_data.get("owner_count", ""),
+        "insurance_company": vehicle_data.get("insurance_company", ""),
+        "insurance_valid_upto": vehicle_data.get("insurance_valid_upto", ""),
+        "insurance_policy_number": vehicle_data.get("insurance_policy_number", ""),
+        "tax_valid_upto": vehicle_data.get("tax_valid_upto", ""),
+        "fitness_upto": vehicle_data.get("fitness_upto", ""),
+        "cubic_capacity": vehicle_data.get("cubic_capacity", ""),
+        "gross_weight": vehicle_data.get("gross_weight", ""),
+        "unladen_weight": vehicle_data.get("unladen_weight", ""),
+        "seating_capacity": vehicle_data.get("seating_capacity", ""),
+        "cylinders": vehicle_data.get("cylinders", ""),
+        "emission_norms": vehicle_data.get("emission_norms", ""),
+        "status": vehicle_data.get("status", ""),
+        "financed": vehicle_data.get("financed", False),
+        "financer": vehicle_data.get("financer", ""),
+        "blacklist_status": vehicle_data.get("blacklist_status", False),
+        "is_commercial": vehicle_data.get("is_commercial", False),
+        "lead_id": vehicle_data.get("lead_id", ""),
+        "customer_id": vehicle_data.get("customer_id", ""),
+        "country_id": current_user.get("country_id"),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": current_user["id"],
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "updated_by": current_user["id"],
+    }
+    
+    # Check if vehicle already exists by registration number
+    existing = await db.vehicles.find_one(
+        {"registration_number": vehicle["registration_number"]},
+        {"_id": 0}
+    )
+    
+    if existing:
+        # Update existing vehicle
+        await db.vehicles.update_one(
+            {"registration_number": vehicle["registration_number"]},
+            {"$set": {
+                **vehicle,
+                "id": existing["id"],  # Keep original ID
+                "created_at": existing.get("created_at", vehicle["created_at"]),
+                "created_by": existing.get("created_by", vehicle["created_by"]),
+            }}
+        )
+        return {"id": existing["id"], "message": "Vehicle updated", "is_new": False}
+    else:
+        await db.vehicles.insert_one(vehicle)
+        return {"id": vehicle_id, "message": "Vehicle created", "is_new": True}
+
+
+@api_router.get("/vehicles/{vehicle_id}")
+async def get_vehicle(vehicle_id: str, current_user: dict = Depends(get_current_user)):
+    """Get vehicle by ID"""
+    vehicle = await db.vehicles.find_one({"id": vehicle_id}, {"_id": 0})
+    if not vehicle:
+        raise HTTPException(status_code=404, detail="Vehicle not found")
+    return vehicle
+
+
+@api_router.get("/vehicles/by-registration/{registration_number}")
+async def get_vehicle_by_registration(registration_number: str, current_user: dict = Depends(get_current_user)):
+    """Get vehicle by registration number"""
+    # Clean the registration number
+    clean_number = registration_number.replace(" ", "").replace("-", "").upper()
+    vehicle = await db.vehicles.find_one(
+        {"registration_number": {"$regex": f"^{clean_number}$", "$options": "i"}},
+        {"_id": 0}
+    )
+    if not vehicle:
+        raise HTTPException(status_code=404, detail="Vehicle not found")
+    return vehicle
+
+
 # Get single lead with details
 @api_router.get("/leads/{lead_id}")
 async def get_lead(lead_id: str, current_user: dict = Depends(get_current_user)):
