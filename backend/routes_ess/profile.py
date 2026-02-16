@@ -225,12 +225,12 @@ async def get_salary_summary(
             currency = country.get("currency", "INR")
             currency_symbol = country.get("currency_symbol", "₹")
     
-    # Calculate earnings totals
+    # Calculate earnings totals - support multiple field name variations
     basic = salary.get("basic_salary") or 0
     hra_val = salary.get("hra") or 0
-    variable = salary.get("variable_pay") or 0
-    conveyance = salary.get("conveyance_allowance") or 0
-    medical = salary.get("medical_allowance") or 0
+    variable = salary.get("variable_pay") or salary.get("incentives") or 0
+    conveyance = salary.get("conveyance_allowance") or salary.get("conveyance") or 0
+    medical = salary.get("medical_allowance") or salary.get("medical") or 0
     special = salary.get("special_allowance") or 0
     
     # Calculate deductions totals
