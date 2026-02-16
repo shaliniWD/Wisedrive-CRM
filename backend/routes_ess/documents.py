@@ -147,6 +147,9 @@ async def get_document(
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
     
+    # Handle multiple field name variations for file URL
+    file_url = doc.get("url") or doc.get("document_url") or doc.get("file_url")
+    
     return DocumentResponse(
         id=doc["id"],
         document_type=DocumentType(doc.get("document_type", "other")),
@@ -157,9 +160,9 @@ async def get_document(
         verified_by=doc.get("verified_by_name"),
         verified_at=doc.get("verified_at"),
         rejection_reason=doc.get("rejection_reason"),
-        file_url=doc.get("url"),
+        file_url=file_url,
         file_size=doc.get("file_size"),
-        mime_type=doc.get("mime_type")
+        mime_type=doc.get("mime_type") or doc.get("content_type")
     )
 
 
