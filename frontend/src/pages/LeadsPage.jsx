@@ -327,7 +327,7 @@ export default function LeadsPage() {
   };
 
   const resetForm = () => {
-    setFormData({ name: '', mobile: '', city: '', source: 'WEBSITE', status: 'NEW',
+    setFormData({ name: '', mobile: '', city: '', source: 'WEBSITE', status: 'NEW LEAD',
       assigned_to: '', reminder_date: '', reminder_time: '', notes: '', service_type: '', ad_id: '' });
     setEditingLead(null);
   };
