@@ -1,6 +1,7 @@
 """Leave management routes for ESS Mobile API"""
 from fastapi import APIRouter, HTTPException, Depends, Request, Query
 from datetime import datetime, timezone, timedelta
+from calendar import monthrange
 import uuid
 
 from models_ess.leave import (
@@ -12,6 +13,10 @@ from models_ess.leave import (
     LeaveApprovalAction,
     LeaveStatus,
     LeaveType
+)
+from models_ess.leave_rules import (
+    LeaveAllocationPeriod,
+    PeriodLeaveBalance
 )
 from routes_ess.auth import get_current_user
 
@@ -30,6 +35,140 @@ def calculate_leave_days(start_date: str, end_date: str, is_half_day: bool) -> f
     return float(days)
 
 
+def get_current_period(allocation_period: str) -> tuple:
+    """Get current period start and end dates based on allocation type"""
+    today = datetime.now(timezone.utc)
+    
+    if allocation_period == "quarterly":
+        # Determine current quarter
+        quarter = (today.month - 1) // 3 + 1
+        quarter_start_month = (quarter - 1) * 3 + 1
+        quarter_end_month = quarter * 3
+        
+        # Get last day of quarter end month
+        _, last_day = monthrange(today.year, quarter_end_month)
+        
+        period_start = datetime(today.year, quarter_start_month, 1).strftime("%Y-%m-%d")
+        period_end = datetime(today.year, quarter_end_month, last_day).strftime("%Y-%m-%d")
+        period_label = f"Q{quarter} {today.year}"
+    else:
+        # Monthly allocation
+        _, last_day = monthrange(today.year, today.month)
+        period_start = datetime(today.year, today.month, 1).strftime("%Y-%m-%d")
+        period_end = datetime(today.year, today.month, last_day).strftime("%Y-%m-%d")
+        period_label = today.strftime("%B %Y")
+    
+    return period_start, period_end, period_label
+
+
+async def get_leave_rules(db) -> dict:
+    """Get leave rules from database or return defaults"""
+    rules = await db.leave_rules.find_one({}, {"_id": 0})
+    if not rules:
+        rules = {
+            "allocation_period": "monthly",
+            "carry_forward_enabled": False,
+            "sick_leaves_per_period": 2,
+            "casual_leaves_per_period": 1
+        }
+    return rules
+
+
+async def get_period_leave_balance(db, user_id: str, role: dict = None) -> PeriodLeaveBalance:
+    """Calculate leave balance for current period based on leave rules"""
+    rules = await get_leave_rules(db)
+    allocation_period = rules.get("allocation_period", "monthly")
+    
+    # Get current period dates
+    period_start, period_end, period_label = get_current_period(allocation_period)
+    
+    # Get role-based entitlements or use rules defaults
+    if role:
+        sick_per_period = role.get("eligible_sick_leaves_per_month", rules.get("sick_leaves_per_period", 2))
+        casual_per_period = role.get("eligible_casual_leaves_per_month", rules.get("casual_leaves_per_period", 1))
+    else:
+        sick_per_period = rules.get("sick_leaves_per_period", 2)
+        casual_per_period = rules.get("casual_leaves_per_period", 1)
+    
+    # For quarterly, multiply by 3
+    if allocation_period == "quarterly":
+        sick_allocated = sick_per_period * 3
+        casual_allocated = casual_per_period * 3
+    else:
+        sick_allocated = sick_per_period
+        casual_allocated = casual_per_period
+    
+    # Calculate used leaves for current period
+    leaves_used = await db.leave_requests.aggregate([
+        {
+            "$match": {
+                "employee_id": user_id,
+                "status": "approved",
+                "start_date": {"$gte": period_start, "$lte": period_end}
+            }
+        },
+        {
+            "$group": {
+                "_id": "$leave_type",
+                "total_days": {"$sum": "$days_count"}
+            }
+        }
+    ]).to_list(10)
+    
+    used_by_type = {item["_id"]: item["total_days"] for item in leaves_used}
+    
+    casual_used = used_by_type.get("casual", 0)
+    sick_used = used_by_type.get("sick", 0)
+    lop_days = used_by_type.get("unpaid", 0)
+    
+    # Calculate available (no carry forward from previous period)
+    casual_available = max(0, casual_allocated - casual_used)
+    sick_available = max(0, sick_allocated - sick_used)
+    
+    total_availed = casual_used + sick_used + lop_days
+    
+    return PeriodLeaveBalance(
+        employee_id=user_id,
+        period_type=LeaveAllocationPeriod(allocation_period),
+        period_label=period_label,
+        period_start=period_start,
+        period_end=period_end,
+        casual_allocated=casual_allocated,
+        casual_used=casual_used,
+        casual_available=casual_available,
+        sick_allocated=sick_allocated,
+        sick_used=sick_used,
+        sick_available=sick_available,
+        lop_days=lop_days,
+        total_availed=total_availed,
+        can_apply_casual=casual_available > 0,
+        can_apply_sick=sick_available > 0
+    )
+
+
+@router.get("/leave/period-balance", response_model=PeriodLeaveBalance)
+async def get_leave_period_balance(
+    request: Request,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Get leave balance for current period (month/quarter).
+    
+    Returns:
+    - Period-based allocation (no carry forward from previous periods)
+    - Available leaves for current period
+    - LOP (Loss of Pay) days
+    - Whether employee can apply for more leaves
+    """
+    db = request.app.state.db
+    user_id = current_user["id"]
+    
+    # Get role for entitlements
+    role = await db.roles.find_one({"id": current_user.get("role_id")}, {"_id": 0})
+    
+    return await get_period_leave_balance(db, user_id, role)
+
+
 @router.post("/leave/apply", response_model=LeaveRequestResponse)
 async def apply_leave(
     request: Request,
@@ -42,10 +181,17 @@ async def apply_leave(
     Validates:
     - Start date is not in the past
     - End date is not before start date
-    - Sufficient leave balance (for casual/sick leaves)
+    - Sufficient leave balance for current period (month/quarter)
+    - Cannot exceed period allocation (no carry forward)
     """
     db = request.app.state.db
     user_id = current_user["id"]
+    
+    # Get role for entitlements
+    role = await db.roles.find_one({"id": current_user.get("role_id")}, {"_id": 0})
+    
+    # Get current period balance
+    period_balance = await get_period_leave_balance(db, user_id, role)
     
     # Parse dates
     try:
