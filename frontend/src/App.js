@@ -23,6 +23,7 @@ const SmartRedirect = () => {
   
   // Map tab names to routes - Admin merged into HR
   const tabRouteMap = {
+    dashboard: '/dashboard',
     leads: '/leads',
     customers: '/customers',
     inspections: '/inspections',
@@ -34,11 +35,11 @@ const SmartRedirect = () => {
   // Find the first visible tab and redirect there
   if (visibleTabs && visibleTabs.length > 0) {
     const firstTab = visibleTabs[0];
-    const route = tabRouteMap[firstTab] || '/dashboard';
+    const route = tabRouteMap[firstTab] || '/leads';
     return <Navigate to={route} replace />;
   }
   
-  return <Navigate to="/dashboard" replace />;
+  return <Navigate to="/leads" replace />;
 };
 
 function App() {
