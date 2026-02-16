@@ -2597,7 +2597,7 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
                       <span className="font-semibold text-blue-800 text-lg">Net Salary (Take Home):</span>
                       <span className="font-bold text-blue-800 text-2xl">
                         ₹{formatCurrency(
-                          ((salaryForm.basic_salary||0)+(salaryForm.hra||0)+(salaryForm.variable_pay||0)+(salaryForm.conveyance||0)+(salaryForm.medical||0)+(salaryForm.special_allowance||0)) - 
+                          ((salaryForm.basic_salary||0)+(salaryForm.hra||0)+(salaryForm.variable_pay||0)+(salaryForm.conveyance_allowance||0)+(salaryForm.medical_allowance||0)+(salaryForm.special_allowance||0)) - 
                           ((salaryForm.pf_employee||0)+(salaryForm.professional_tax||0)+(salaryForm.income_tax||0)+(salaryForm.other_deductions||0))
                         )}
                       </span>
