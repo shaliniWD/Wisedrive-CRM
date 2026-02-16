@@ -1197,6 +1197,223 @@ async def delete_garage_employee(emp_id: str, current_user: dict = Depends(get_c
     return {"message": "Garage employee deleted"}
 
 
+# ==================== INSPECTION PACKAGES ROUTES ====================
+
+@api_router.get("/inspection-categories")
+async def get_inspection_categories(
+    country_id: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all inspection categories"""
+    query = {"is_active": True}
+    if country_id:
+        query["country_id"] = country_id
+    elif current_user.get("country_id"):
+        query["country_id"] = current_user["country_id"]
+    
+    categories = await db.inspection_categories.find(query, {"_id": 0}).sort("order", 1).to_list(100)
+    return categories
+
+
+@api_router.post("/inspection-categories")
+async def create_inspection_category(
+    category: InspectionCategoryCreate,
+    country_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create a new inspection category"""
+    # Convert items and benefits to InspectionItem objects
+    items = [InspectionItem(name=i.get("name", ""), description=i.get("description")) for i in category.items]
+    benefits = [InspectionItem(name=b.get("name", ""), description=b.get("description"), is_benefit=True) for b in category.benefits]
+    
+    category_doc = InspectionCategoryDB(
+        name=category.name,
+        description=category.description,
+        check_points=category.check_points,
+        icon=category.icon,
+        color=category.color,
+        items=items,
+        benefits=benefits,
+        is_free=category.is_free,
+        order=category.order,
+        country_id=country_id,
+        created_by=current_user.get("id")
+    )
+    
+    await db.inspection_categories.insert_one(category_doc.model_dump())
+    return category_doc.model_dump()
+
+
+@api_router.put("/inspection-categories/{category_id}")
+async def update_inspection_category(
+    category_id: str,
+    category: InspectionCategoryUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update an inspection category"""
+    update_data = {k: v for k, v in category.model_dump().items() if v is not None}
+    
+    # Convert items and benefits if provided
+    if "items" in update_data:
+        update_data["items"] = [
+            InspectionItem(name=i.get("name", ""), description=i.get("description")).model_dump() 
+            for i in update_data["items"]
+        ]
+    if "benefits" in update_data:
+        update_data["benefits"] = [
+            InspectionItem(name=b.get("name", ""), description=b.get("description"), is_benefit=True).model_dump() 
+            for b in update_data["benefits"]
+        ]
+    
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    update_data["updated_by"] = current_user.get("id")
+    
+    result = await db.inspection_categories.update_one(
+        {"id": category_id},
+        {"$set": update_data}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Category not found")
+    
+    return await db.inspection_categories.find_one({"id": category_id}, {"_id": 0})
+
+
+@api_router.delete("/inspection-categories/{category_id}")
+async def delete_inspection_category(
+    category_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Soft delete an inspection category"""
+    result = await db.inspection_categories.update_one(
+        {"id": category_id},
+        {"$set": {"is_active": False, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Category not found")
+    return {"message": "Category deleted"}
+
+
+@api_router.get("/inspection-packages")
+async def get_inspection_packages(
+    country_id: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all inspection packages with their categories"""
+    query = {"is_active": True}
+    if country_id:
+        query["country_id"] = country_id
+    elif current_user.get("country_id"):
+        query["country_id"] = current_user["country_id"]
+    
+    packages = await db.inspection_packages.find(query, {"_id": 0}).sort("order", 1).to_list(50)
+    
+    # Enrich packages with category details
+    for pkg in packages:
+        category_ids = pkg.get("categories", [])
+        if category_ids:
+            categories = await db.inspection_categories.find(
+                {"id": {"$in": category_ids}, "is_active": True},
+                {"_id": 0}
+            ).sort("order", 1).to_list(20)
+            pkg["category_details"] = categories
+            # Recalculate total check points
+            pkg["total_check_points"] = sum(c.get("check_points", 0) for c in categories)
+    
+    return packages
+
+
+@api_router.post("/inspection-packages")
+async def create_inspection_package(
+    package: InspectionPackageCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create a new inspection package"""
+    # Calculate total check points from categories
+    if package.categories:
+        categories = await db.inspection_categories.find(
+            {"id": {"$in": package.categories}},
+            {"_id": 0, "check_points": 1}
+        ).to_list(20)
+        total_points = sum(c.get("check_points", 0) for c in categories)
+    else:
+        total_points = package.total_check_points
+    
+    package_doc = InspectionPackage(
+        **package.model_dump(),
+        total_check_points=total_points,
+        created_by=current_user.get("id")
+    )
+    
+    await db.inspection_packages.insert_one(package_doc.model_dump())
+    return package_doc.model_dump()
+
+
+@api_router.put("/inspection-packages/{package_id}")
+async def update_inspection_package(
+    package_id: str,
+    package: InspectionPackageUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update an inspection package"""
+    update_data = {k: v for k, v in package.model_dump().items() if v is not None}
+    
+    # Recalculate total check points if categories changed
+    if "categories" in update_data:
+        categories = await db.inspection_categories.find(
+            {"id": {"$in": update_data["categories"]}},
+            {"_id": 0, "check_points": 1}
+        ).to_list(20)
+        update_data["total_check_points"] = sum(c.get("check_points", 0) for c in categories)
+    
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    update_data["updated_by"] = current_user.get("id")
+    
+    result = await db.inspection_packages.update_one(
+        {"id": package_id},
+        {"$set": update_data}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Package not found")
+    
+    return await db.inspection_packages.find_one({"id": package_id}, {"_id": 0})
+
+
+@api_router.patch("/inspection-packages/{package_id}/toggle-status")
+async def toggle_inspection_package_status(
+    package_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Toggle inspection package active status"""
+    package = await db.inspection_packages.find_one({"id": package_id})
+    if not package:
+        raise HTTPException(status_code=404, detail="Package not found")
+    
+    new_status = not package.get("is_active", True)
+    await db.inspection_packages.update_one(
+        {"id": package_id},
+        {"$set": {"is_active": new_status, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    return {"is_active": new_status}
+
+
+@api_router.delete("/inspection-packages/{package_id}")
+async def delete_inspection_package(
+    package_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Soft delete an inspection package"""
+    result = await db.inspection_packages.update_one(
+        {"id": package_id},
+        {"$set": {"is_active": False, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Package not found")
+    return {"message": "Package deleted"}
+
+
 # ==================== ROUND ROBIN ROUTES ====================
 
 @api_router.get("/round-robin/next/{country_id}")
