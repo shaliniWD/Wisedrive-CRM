@@ -193,11 +193,13 @@ export default function LeadsPage() {
 
   const [paymentFormData, setPaymentFormData] = useState({
     hasCarDetails: 'yes', carNo: '', carMake: '', carModel: '', carYear: '',
-    fuelType: '', carColor: '', carConfirmed: false, packageId: '', // Changed from packageType to packageId
-    numberOfCars: '1', discountType: '', discountValue: '', city: '',
-    inspectionDate: '', inspectionTime: '', address: '', latitude: '',
-    longitude: '', customerMobile: '', customerName: '',
+    fuelType: '', carColor: '', carConfirmed: false, packageId: '',
+    discountType: '', discountValue: '', city: '',
+    customerMobile: '', customerName: '',
   });
+
+  // Multiple inspection schedules - one per inspection slot in the package
+  const [inspectionSchedules, setInspectionSchedules] = useState([]);
 
   const [carLoading, setCarLoading] = useState(false);
   const [carError, setCarError] = useState('');
@@ -216,6 +218,66 @@ export default function LeadsPage() {
   const [savingNote, setSavingNote] = useState(false);
   const [notesTab, setNotesTab] = useState('notes'); // 'notes' or 'activities'
   const [vehicleData, setVehicleData] = useState(null); // Full vehicle data from Vaahan
+  
+  // Initialize inspection schedules when package changes
+  const initializeInspectionSchedules = useCallback((pkg) => {
+    if (!pkg) {
+      setInspectionSchedules([]);
+      return;
+    }
+    const count = pkg.no_of_inspections || 1;
+    const newSchedules = Array.from({ length: count }, (_, index) => ({
+      id: `schedule-${index}`,
+      vehicleNumber: index === 0 && paymentFormData.carNo ? paymentFormData.carNo : '',
+      vehicleData: index === 0 && vehicleData ? vehicleData : null,
+      vehicleConfirmed: index === 0 && paymentFormData.carConfirmed,
+      inspectionDate: '',
+      inspectionTime: '',
+      address: '',
+      latitude: '',
+      longitude: '',
+      isLoading: false,
+      error: '',
+    }));
+    setInspectionSchedules(newSchedules);
+  }, [paymentFormData.carNo, paymentFormData.carConfirmed, vehicleData]);
+
+  // Update schedule field
+  const updateSchedule = (index, field, value) => {
+    setInspectionSchedules(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
+  };
+
+  // Fetch vehicle details for a specific schedule
+  const fetchVehicleForSchedule = async (index, vehicleNumber) => {
+    if (!vehicleNumber) return;
+    
+    updateSchedule(index, 'isLoading', true);
+    updateSchedule(index, 'error', '');
+    
+    try {
+      const response = await vehicleApi.getDetails(vehicleNumber);
+      const data = response.data;
+      
+      if (data.success && data.data) {
+        updateSchedule(index, 'vehicleData', data.data);
+        updateSchedule(index, 'vehicleConfirmed', false);
+        toast.success(`Vehicle ${index + 1} details fetched successfully`);
+      } else {
+        updateSchedule(index, 'error', data.error || 'Failed to fetch vehicle details');
+        toast.error(data.error || 'Failed to fetch vehicle details');
+      }
+    } catch (error) {
+      const errorMsg = error.response?.data?.detail || 'Failed to fetch vehicle details';
+      updateSchedule(index, 'error', errorMsg);
+      toast.error(errorMsg);
+    } finally {
+      updateSchedule(index, 'isLoading', false);
+    }
+  };
 
   // Fetch car details from Vaahan API
   const fetchCarDetails = async (carNumber) => {
