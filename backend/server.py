@@ -457,6 +457,7 @@ class RoleCreate(BaseModel):
     level: int = 5
     eligible_sick_leaves_per_month: int = 1
     eligible_casual_leaves_per_month: int = 1
+    permissions: Optional[List[dict]] = None  # List of {page, view, edit}
 
 
 class RoleUpdate(BaseModel):
@@ -465,6 +466,7 @@ class RoleUpdate(BaseModel):
     level: Optional[int] = None
     eligible_sick_leaves_per_month: Optional[int] = None
     eligible_casual_leaves_per_month: Optional[int] = None
+    permissions: Optional[List[dict]] = None  # List of {page, view, edit}
 
 
 @api_router.post("/roles")
