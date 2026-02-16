@@ -597,6 +597,7 @@ export default function LeadsPage() {
               <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Assigned</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Reminder</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Notes</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Source</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Payment Link</th>
             </tr>
