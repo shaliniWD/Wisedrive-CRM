@@ -19,16 +19,16 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 
 // Category Card Component
-const CategoryCard = ({ category, onEdit, onDelete }) => {
+const CategoryCard = ({ category, onEdit, onCopy, onToggle }) => {
   const [expanded, setExpanded] = useState(false);
   
   return (
-    <div className="border rounded-xl bg-white overflow-hidden" data-testid={`category-card-${category.id}`}>
+    <div className={`border rounded-xl overflow-hidden ${category.is_active !== false ? 'bg-white' : 'bg-gray-50'}`} data-testid={`category-card-${category.id}`}>
       <div className="p-4">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
             <div 
-              className="h-12 w-12 rounded-xl flex items-center justify-center"
+              className={`h-12 w-12 rounded-xl flex items-center justify-center ${category.is_active !== false ? '' : 'opacity-50'}`}
               style={{ backgroundColor: category.color ? `${category.color}20` : '#EFF6FF' }}
             >
               <ListChecks className="h-6 w-6" style={{ color: category.color || '#3B82F6' }} />
@@ -39,16 +39,27 @@ const CategoryCard = ({ category, onEdit, onDelete }) => {
                 {category.is_free && (
                   <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-medium rounded-full">FREE</span>
                 )}
+                {category.is_active === false && (
+                  <span className="px-2 py-0.5 bg-gray-200 text-gray-600 text-xs font-medium rounded-full">Inactive</span>
+                )}
               </h3>
               <p className="text-sm text-gray-500">{category.check_points} Check Points</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <button
               onClick={() => setExpanded(!expanded)}
               className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
             >
               {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </button>
+            <button
+              onClick={() => onCopy(category)}
+              className="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+              title="Copy & Create New"
+              data-testid={`copy-category-${category.id}`}
+            >
+              <Copy className="h-4 w-4" />
             </button>
             <button
               onClick={() => onEdit(category)}
@@ -58,11 +69,12 @@ const CategoryCard = ({ category, onEdit, onDelete }) => {
               <Pencil className="h-4 w-4" />
             </button>
             <button
-              onClick={() => onDelete(category)}
-              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-              data-testid={`delete-category-${category.id}`}
+              onClick={() => onToggle(category)}
+              className={`p-2 rounded-lg transition-colors ${category.is_active !== false ? 'text-gray-400 hover:text-amber-600 hover:bg-amber-50' : 'text-gray-400 hover:text-emerald-600 hover:bg-emerald-50'}`}
+              title={category.is_active !== false ? 'Deactivate' : 'Activate'}
+              data-testid={`toggle-category-${category.id}`}
             >
-              <Trash2 className="h-4 w-4" />
+              {category.is_active !== false ? <PauseCircle className="h-4 w-4" /> : <PlayCircle className="h-4 w-4" />}
             </button>
           </div>
         </div>
