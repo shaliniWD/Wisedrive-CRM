@@ -110,6 +110,12 @@ WiseDrive is a scalable automotive platform with a CRM system and an Employee Se
 ### Firebase
 - `/app/ess/api/firebase-credentials.json` - FCM service account
 
+### Inspection Packages
+- `/app/backend/models/inspection_package.py` - Data models for categories and packages
+- `/app/backend/server.py` - API routes for inspection-categories and inspection-packages
+- `/app/frontend/src/pages/InspectionPackagesPage.jsx` - Frontend component
+- `/app/frontend/src/services/api.js` - `inspectionPackagesApi` endpoints
+
 ## Test Credentials
 All users use password: `password123`
 
