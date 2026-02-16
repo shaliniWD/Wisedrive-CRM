@@ -1667,7 +1667,7 @@ async def razorpay_payment_webhook(request: Request):
             
             inspection = {
                 "id": inspection_id,
-                "country_id": lead.get("country_id") or current_user.get("country_id"),
+                "country_id": lead.get("country_id", ""),
                 "customer_id": customer_id,
                 "lead_id": lead_id,
                 "order_id": f"ORD-{lead_id[:8].upper()}",
