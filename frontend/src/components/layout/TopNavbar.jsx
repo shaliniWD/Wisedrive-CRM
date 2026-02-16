@@ -22,8 +22,9 @@ export const TopNavbar = () => {
   const location = useLocation();
 
   // Build navigation in fixed order, only including visible tabs
+  // Dashboard is ONLY shown if it's in visibleTabs
   const navigation = tabOrder
-    .filter(tab => tab === 'dashboard' || visibleTabs.includes(tab))
+    .filter(tab => visibleTabs.includes(tab))
     .map(tab => tabRouteMap[tab])
     .filter(Boolean);
 
