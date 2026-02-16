@@ -145,6 +145,11 @@ const SummaryCard = ({ title, value, icon: Icon, color, onClick, active }) => (
 );
 
 export default function LeadsPage() {
+  const { user } = useAuth();
+  
+  // Check if user is a sales executive (only sees their own leads)
+  const isSalesExec = user?.role_code === 'SALES_EXEC';
+  
   const [leads, setLeads] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [cities, setCities] = useState([]);
