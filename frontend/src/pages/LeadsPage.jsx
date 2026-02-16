@@ -17,7 +17,8 @@ import { toast } from 'sonner';
 import { 
   Search, Plus, Pencil, Loader2, X, Users, TrendingUp, Calendar, 
   Phone, MapPin, Bell, Clock, CreditCard, Copy, ChevronLeft, ChevronRight, Filter,
-  MessageCircle, Link2, ExternalLink, Eye, Flame, ChevronDown, Percent, CalendarDays
+  MessageCircle, Link2, ExternalLink, Eye, Flame, ChevronDown, Percent, CalendarDays,
+  StickyNote, Activity, Send, FileText
 } from 'lucide-react';
 
 // Inline Status Dropdown Component - Click to update status
