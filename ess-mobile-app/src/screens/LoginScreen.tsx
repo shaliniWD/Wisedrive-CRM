@@ -1,5 +1,5 @@
-// Premium Login Screen - Dark Theme
-import React, { useState } from 'react';
+// Professional Login Screen - Light Theme
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,15 +10,15 @@ import {
   Platform,
   ActivityIndicator,
   StatusBar,
-  Dimensions,
+  ScrollView,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { colors, spacing, fontSize, fontWeight, radius, shadows } from '../theme';
-
-const { width, height } = Dimensions.get('window');
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -28,8 +28,15 @@ export default function LoginScreen() {
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
   const { login, isLoading } = useAuth();
   const insets = useSafeAreaInsets();
+  
+  const passwordRef = useRef<TextInput>(null);
+
+  const dismissKeyboard = () => {
+    Keyboard.dismiss();
+  };
 
   const handleLogin = async () => {
+    dismissKeyboard();
     if (!email || !password) {
       setError('Please enter email and password');
       return;
@@ -43,143 +50,157 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.background} />
-      
-      {/* Background */}
-      <LinearGradient
-        colors={['#0B1120', '#1E293B', '#0B1120']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
-      
-      {/* Decorative Elements */}
-      <View style={[styles.glowOrb, styles.glowOrb1]} />
-      <View style={[styles.glowOrb, styles.glowOrb2]} />
-
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
-      >
-        <View style={[styles.content, { paddingTop: insets.top + spacing.xxxxl }]}>
-          {/* Logo Section */}
-          <View style={styles.logoSection}>
-            <View style={styles.logoContainer}>
-              <LinearGradient
-                colors={colors.gradients.primary}
-                style={styles.logoGradient}
-              >
-                <Ionicons name="car-sport" size={28} color="#FFF" />
-              </LinearGradient>
-            </View>
-            <Text style={styles.brandName}>WiseDrive</Text>
-            <Text style={styles.tagline}>Employee Self-Service</Text>
-          </View>
-
-          {/* Login Form */}
-          <View style={styles.formSection}>
-            <Text style={styles.welcomeText}>Welcome back</Text>
-            <Text style={styles.subtitleText}>Sign in to your account</Text>
-
-            {error ? (
-              <View style={styles.errorContainer}>
-                <Ionicons name="alert-circle" size={16} color={colors.error} />
-                <Text style={styles.errorText}>{error}</Text>
-              </View>
-            ) : null}
-
-            <View style={styles.inputGroup}>
-              <View style={[
-                styles.inputWrapper,
-                focusedInput === 'email' && styles.inputFocused
-              ]}>
-                <Ionicons 
-                  name="mail-outline" 
-                  size={18} 
-                  color={focusedInput === 'email' ? colors.primary : colors.text.tertiary} 
-                />
-                <TextInput
-                  testID="email-input"
-                  style={styles.input}
-                  placeholder="Email"
-                  placeholderTextColor={colors.text.tertiary}
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  onFocus={() => setFocusedInput('email')}
-                  onBlur={() => setFocusedInput(null)}
-                />
-              </View>
-
-              <View style={[
-                styles.inputWrapper,
-                focusedInput === 'password' && styles.inputFocused
-              ]}>
-                <Ionicons 
-                  name="lock-closed-outline" 
-                  size={18} 
-                  color={focusedInput === 'password' ? colors.primary : colors.text.tertiary} 
-                />
-                <TextInput
-                  testID="password-input"
-                  style={styles.input}
-                  placeholder="Password"
-                  placeholderTextColor={colors.text.tertiary}
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
-                  onFocus={() => setFocusedInput('password')}
-                  onBlur={() => setFocusedInput(null)}
-                />
-                <TouchableOpacity
-                  testID="toggle-password-btn"
-                  onPress={() => setShowPassword(!showPassword)}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  <Ionicons
-                    name={showPassword ? 'eye-outline' : 'eye-off-outline'}
-                    size={18}
-                    color={colors.text.tertiary}
-                  />
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            <TouchableOpacity
-              testID="login-button"
-              style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
-              onPress={handleLogin}
-              disabled={isLoading}
-              activeOpacity={0.8}
-            >
-              <LinearGradient
-                colors={colors.gradients.primary}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.loginButtonGradient}
-              >
-                {isLoading ? (
-                  <ActivityIndicator color="#FFF" size="small" />
-                ) : (
-                  <>
-                    <Text style={styles.loginButtonText}>Sign In</Text>
-                    <Ionicons name="arrow-forward" size={18} color="#FFF" />
-                  </>
-                )}
-              </LinearGradient>
-            </TouchableOpacity>
-          </View>
-
-          {/* Footer */}
-          <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.xl }]}>
-            <Text style={styles.footerText}>Powered by WiseDrive</Text>
-          </View>
+    <TouchableWithoutFeedback onPress={dismissKeyboard}>
+      <View style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
+        
+        {/* Decorative Background */}
+        <View style={styles.backgroundTop}>
+          <LinearGradient
+            colors={colors.gradients.primary}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.gradientBg}
+          />
         </View>
-      </KeyboardAvoidingView>
-    </View>
+
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardView}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        >
+          <ScrollView 
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={[styles.content, { paddingTop: insets.top + spacing.xxxxl }]}>
+              {/* Logo Section */}
+              <View style={styles.logoSection}>
+                <View style={styles.logoContainer}>
+                  <LinearGradient
+                    colors={colors.gradients.primary}
+                    style={styles.logoGradient}
+                  >
+                    <Ionicons name="car-sport" size={32} color="#FFF" />
+                  </LinearGradient>
+                </View>
+                <Text style={styles.brandName}>WiseDrive</Text>
+                <Text style={styles.tagline}>Employee Self-Service</Text>
+              </View>
+
+              {/* Login Card */}
+              <View style={styles.cardContainer}>
+                <View style={styles.card}>
+                  <Text style={styles.welcomeText}>Welcome back</Text>
+                  <Text style={styles.subtitleText}>Sign in to your account</Text>
+
+                  {error ? (
+                    <View style={styles.errorContainer}>
+                      <Ionicons name="alert-circle" size={16} color={colors.error} />
+                      <Text style={styles.errorText}>{error}</Text>
+                    </View>
+                  ) : null}
+
+                  <View style={styles.inputGroup}>
+                    <View style={[
+                      styles.inputWrapper,
+                      focusedInput === 'email' && styles.inputFocused
+                    ]}>
+                      <Ionicons 
+                        name="mail-outline" 
+                        size={18} 
+                        color={focusedInput === 'email' ? colors.primary : colors.text.tertiary} 
+                      />
+                      <TextInput
+                        testID="email-input"
+                        style={styles.input}
+                        placeholder="Email"
+                        placeholderTextColor={colors.text.tertiary}
+                        value={email}
+                        onChangeText={setEmail}
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        returnKeyType="next"
+                        onSubmitEditing={() => passwordRef.current?.focus()}
+                        onFocus={() => setFocusedInput('email')}
+                        onBlur={() => setFocusedInput(null)}
+                      />
+                    </View>
+
+                    <View style={[
+                      styles.inputWrapper,
+                      focusedInput === 'password' && styles.inputFocused
+                    ]}>
+                      <Ionicons 
+                        name="lock-closed-outline" 
+                        size={18} 
+                        color={focusedInput === 'password' ? colors.primary : colors.text.tertiary} 
+                      />
+                      <TextInput
+                        ref={passwordRef}
+                        testID="password-input"
+                        style={styles.input}
+                        placeholder="Password"
+                        placeholderTextColor={colors.text.tertiary}
+                        value={password}
+                        onChangeText={setPassword}
+                        secureTextEntry={!showPassword}
+                        returnKeyType="done"
+                        onSubmitEditing={handleLogin}
+                        onFocus={() => setFocusedInput('password')}
+                        onBlur={() => setFocusedInput(null)}
+                      />
+                      <TouchableOpacity
+                        testID="toggle-password-btn"
+                        onPress={() => setShowPassword(!showPassword)}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      >
+                        <Ionicons
+                          name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                          size={18}
+                          color={colors.text.tertiary}
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  <TouchableOpacity
+                    testID="login-button"
+                    style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
+                    onPress={handleLogin}
+                    disabled={isLoading}
+                    activeOpacity={0.8}
+                  >
+                    <LinearGradient
+                      colors={colors.gradients.primary}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={styles.loginButtonGradient}
+                    >
+                      {isLoading ? (
+                        <ActivityIndicator color="#FFF" size="small" />
+                      ) : (
+                        <>
+                          <Text style={styles.loginButtonText}>Sign In</Text>
+                          <Ionicons name="arrow-forward" size={18} color="#FFF" />
+                        </>
+                      )}
+                    </LinearGradient>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Footer */}
+              <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.xl }]}>
+                <Text style={styles.footerText}>Powered by WiseDrive</Text>
+              </View>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </View>
+    </TouchableWithoutFeedback>
   );
 }
 
@@ -188,60 +209,65 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  backgroundTop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 280,
+    overflow: 'hidden',
+  },
+  gradientBg: {
+    flex: 1,
+    borderBottomLeftRadius: 40,
+    borderBottomRightRadius: 40,
+  },
   keyboardView: {
     flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
   },
   content: {
     flex: 1,
     paddingHorizontal: spacing.xl,
-    justifyContent: 'space-between',
-  },
-  glowOrb: {
-    position: 'absolute',
-    borderRadius: 999,
-    backgroundColor: colors.primary,
-    opacity: 0.08,
-  },
-  glowOrb1: {
-    width: 300,
-    height: 300,
-    top: -100,
-    right: -100,
-  },
-  glowOrb2: {
-    width: 200,
-    height: 200,
-    bottom: 100,
-    left: -80,
   },
   logoSection: {
     alignItems: 'center',
-    marginBottom: spacing.xxxxl,
+    marginBottom: spacing.xxxl,
   },
   logoContainer: {
     marginBottom: spacing.lg,
   },
   logoGradient: {
-    width: 56,
-    height: 56,
-    borderRadius: radius.lg,
+    width: 64,
+    height: 64,
+    borderRadius: radius.xl,
     justifyContent: 'center',
     alignItems: 'center',
+    ...shadows.lg,
   },
   brandName: {
     fontSize: fontSize.xxl,
     fontWeight: fontWeight.bold,
-    color: colors.text.primary,
+    color: '#FFFFFF',
     letterSpacing: -0.5,
   },
   tagline: {
     fontSize: fontSize.sm,
-    color: colors.text.secondary,
+    color: 'rgba(255,255,255,0.9)',
     marginTop: spacing.xs,
   },
-  formSection: {
+  cardContainer: {
     flex: 1,
     justifyContent: 'center',
+    marginTop: -spacing.xl,
+  },
+  card: {
+    backgroundColor: colors.background,
+    borderRadius: radius.xl,
+    padding: spacing.xxl,
+    ...shadows.lg,
   },
   welcomeText: {
     fontSize: fontSize.xl,
@@ -285,6 +311,7 @@ const styles = StyleSheet.create({
   },
   inputFocused: {
     borderColor: colors.primary,
+    backgroundColor: colors.background,
   },
   input: {
     flex: 1,
@@ -314,7 +341,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     alignItems: 'center',
-    paddingTop: spacing.xl,
+    paddingTop: spacing.xxl,
   },
   footerText: {
     fontSize: fontSize.xs,
