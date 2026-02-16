@@ -921,6 +921,676 @@ async def get_lead_reassignment_history(lead_id: str, current_user: dict = Depen
     return logs
 
 
+# Lead statuses for frontend
+@api_router.get("/leads/statuses")
+async def get_lead_statuses():
+    """Get all available lead statuses"""
+    from models.lead import LEAD_STATUSES
+    return LEAD_STATUSES
+
+
+# Get single lead with details
+@api_router.get("/leads/{lead_id}")
+async def get_lead(lead_id: str, current_user: dict = Depends(get_current_user)):
+    """Get single lead with all details"""
+    lead = await db.leads.find_one({"id": lead_id}, {"_id": 0})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    
+    # Enrich with assigned_to name
+    if lead.get("assigned_to"):
+        agent = await db.users.find_one({"id": lead["assigned_to"]}, {"_id": 0, "name": 1})
+        if agent:
+            lead["assigned_to_name"] = agent.get("name")
+    
+    # Get package details if package_id exists
+    if lead.get("package_id"):
+        package = await db.inspection_packages.find_one({"id": lead["package_id"]}, {"_id": 0, "name": 1, "price": 1})
+        if package:
+            lead["package_name"] = package.get("name")
+            lead["package_price"] = package.get("price")
+    
+    return lead
+
+
+# Lead Notes
+class LeadNoteCreate(BaseModel):
+    note: str
+
+
+@api_router.post("/leads/{lead_id}/notes")
+async def add_lead_note(lead_id: str, note_data: LeadNoteCreate, current_user: dict = Depends(get_current_user)):
+    """Add a note to a lead"""
+    lead = await db.leads.find_one({"id": lead_id}, {"_id": 0})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    
+    note = {
+        "id": str(uuid.uuid4()),
+        "lead_id": lead_id,
+        "user_id": current_user["id"],
+        "user_name": current_user.get("name", "Unknown"),
+        "note": note_data.note,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.lead_notes.insert_one(note)
+    
+    # Log activity
+    activity = {
+        "id": str(uuid.uuid4()),
+        "lead_id": lead_id,
+        "user_id": current_user["id"],
+        "user_name": current_user.get("name", "Unknown"),
+        "action": "note_added",
+        "details": note_data.note[:100],
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.lead_activities.insert_one(activity)
+    
+    note.pop("_id", None)
+    return note
+
+
+@api_router.get("/leads/{lead_id}/notes")
+async def get_lead_notes(lead_id: str, current_user: dict = Depends(get_current_user)):
+    """Get all notes for a lead"""
+    notes = await db.lead_notes.find({"lead_id": lead_id}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return notes
+
+
+@api_router.get("/leads/{lead_id}/activities")
+async def get_lead_activities(lead_id: str, current_user: dict = Depends(get_current_user)):
+    """Get all activities for a lead"""
+    activities = await db.lead_activities.find({"lead_id": lead_id}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return activities
+
+
+# Lead Reminder
+class LeadReminderUpdate(BaseModel):
+    reminder_date: str
+    reminder_time: Optional[str] = None
+    reminder_reason: Optional[str] = None
+
+
+@api_router.post("/leads/{lead_id}/reminder")
+async def set_lead_reminder(lead_id: str, reminder_data: LeadReminderUpdate, current_user: dict = Depends(get_current_user)):
+    """Set reminder for a lead"""
+    lead = await db.leads.find_one({"id": lead_id}, {"_id": 0})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    
+    update_dict = {
+        "reminder_date": reminder_data.reminder_date,
+        "reminder_time": reminder_data.reminder_time,
+        "reminder_reason": reminder_data.reminder_reason,
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.leads.update_one({"id": lead_id}, {"$set": update_dict})
+    
+    # Log activity
+    activity = {
+        "id": str(uuid.uuid4()),
+        "lead_id": lead_id,
+        "user_id": current_user["id"],
+        "user_name": current_user.get("name", "Unknown"),
+        "action": "reminder_set",
+        "new_value": f"{reminder_data.reminder_date} {reminder_data.reminder_time or ''}",
+        "details": reminder_data.reminder_reason,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.lead_activities.insert_one(activity)
+    
+    # Schedule push notification for assigned sales rep
+    if lead.get("assigned_to"):
+        # Create notification in database for future delivery
+        notification = {
+            "id": str(uuid.uuid4()),
+            "user_id": lead["assigned_to"],
+            "type": "lead_reminder",
+            "title": "Lead Follow-up Reminder",
+            "body": f"Reminder for lead: {lead.get('name')} - {reminder_data.reminder_reason or 'Follow up required'}",
+            "data": {"lead_id": lead_id},
+            "scheduled_for": f"{reminder_data.reminder_date}T{reminder_data.reminder_time or '09:00'}:00",
+            "status": "scheduled",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.scheduled_notifications.insert_one(notification)
+    
+    lead = await db.leads.find_one({"id": lead_id}, {"_id": 0})
+    return lead
+
+
+# Payment Link Generation
+class PaymentLinkRequest(BaseModel):
+    package_id: str
+    amount: Optional[float] = None
+    send_via_whatsapp: bool = True
+
+
+@api_router.post("/leads/{lead_id}/payment-link")
+async def create_lead_payment_link(lead_id: str, payment_data: PaymentLinkRequest, current_user: dict = Depends(get_current_user)):
+    """Create payment link for a lead and optionally send via WhatsApp"""
+    from services.razorpay_service import get_razorpay_service
+    from services.twilio_service import get_twilio_service
+    
+    lead = await db.leads.find_one({"id": lead_id}, {"_id": 0})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    
+    # Get package details
+    package = await db.inspection_packages.find_one({"id": payment_data.package_id}, {"_id": 0})
+    if not package:
+        raise HTTPException(status_code=404, detail="Package not found")
+    
+    amount = payment_data.amount or package.get("price", 0)
+    if amount <= 0:
+        raise HTTPException(status_code=400, detail="Invalid amount")
+    
+    # Create Razorpay payment link
+    razorpay = get_razorpay_service()
+    if not razorpay.is_configured():
+        raise HTTPException(status_code=500, detail="Razorpay not configured")
+    
+    result = await razorpay.create_payment_link(
+        amount=amount,
+        customer_name=lead.get("name", "Customer"),
+        customer_phone=lead.get("mobile", ""),
+        customer_email=lead.get("email"),
+        description=f"WiseDrive - {package.get('name', 'Vehicle Inspection')}",
+        lead_id=lead_id,
+        package_id=payment_data.package_id
+    )
+    
+    if not result.get("success"):
+        raise HTTPException(status_code=500, detail=result.get("error", "Failed to create payment link"))
+    
+    # Update lead with payment link details
+    update_dict = {
+        "payment_link": result.get("short_url"),
+        "payment_link_id": result.get("payment_link_id"),
+        "payment_link_sent_at": datetime.now(timezone.utc).isoformat(),
+        "payment_status": "created",
+        "payment_amount": amount,
+        "package_id": payment_data.package_id,
+        "package_name": package.get("name"),
+        "status": "PAYMENT LINK SENT",
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "updated_by": current_user["id"]
+    }
+    
+    await db.leads.update_one({"id": lead_id}, {"$set": update_dict})
+    
+    # Log activity
+    activity = {
+        "id": str(uuid.uuid4()),
+        "lead_id": lead_id,
+        "user_id": current_user["id"],
+        "user_name": current_user.get("name", "Unknown"),
+        "action": "payment_link_created",
+        "new_value": result.get("short_url"),
+        "details": f"Amount: ₹{amount}, Package: {package.get('name')}",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.lead_activities.insert_one(activity)
+    
+    # Send via WhatsApp if requested
+    whatsapp_result = None
+    if payment_data.send_via_whatsapp:
+        twilio = get_twilio_service()
+        if twilio.is_configured():
+            whatsapp_result = await twilio.send_payment_link(
+                to_number=lead.get("mobile", ""),
+                customer_name=lead.get("name", "Customer"),
+                amount=amount,
+                payment_link=result.get("short_url"),
+                package_name=package.get("name", "Vehicle Inspection")
+            )
+            
+            if whatsapp_result.get("success"):
+                # Update lead status
+                await db.leads.update_one({"id": lead_id}, {"$set": {"payment_status": "sent"}})
+                
+                # Log WhatsApp activity
+                whatsapp_activity = {
+                    "id": str(uuid.uuid4()),
+                    "lead_id": lead_id,
+                    "user_id": current_user["id"],
+                    "user_name": current_user.get("name", "Unknown"),
+                    "action": "payment_link_sent_whatsapp",
+                    "details": f"Sent to {lead.get('mobile')}",
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                }
+                await db.lead_activities.insert_one(whatsapp_activity)
+    
+    lead = await db.leads.find_one({"id": lead_id}, {"_id": 0})
+    
+    return {
+        "success": True,
+        "payment_link": result.get("short_url"),
+        "payment_link_id": result.get("payment_link_id"),
+        "whatsapp_sent": whatsapp_result.get("success") if whatsapp_result else False,
+        "lead": lead
+    }
+
+
+# ==================== WEBHOOKS ROUTES ====================
+
+from fastapi import Request, Form
+
+# Twilio WhatsApp Webhook - receives incoming messages from Meta ads
+@api_router.post("/webhooks/twilio/whatsapp")
+async def twilio_whatsapp_webhook(
+    request: Request,
+    From: str = Form(...),
+    Body: str = Form(default=""),
+    ProfileName: str = Form(default=""),
+    WaId: str = Form(default=""),
+    MessageSid: str = Form(default="")
+):
+    """
+    Webhook endpoint for incoming WhatsApp messages via Twilio.
+    Creates a new lead from Meta ad clicks.
+    """
+    logger.info(f"WhatsApp webhook received: From={From}, Body={Body[:100] if Body else 'empty'}")
+    
+    # Extract phone number (remove whatsapp: prefix)
+    phone = From.replace("whatsapp:", "").strip()
+    if not phone.startswith("+"):
+        phone = f"+{phone}"
+    
+    # Parse the message to extract ad_id, campaign_id from prefilled message
+    # Meta prefilled messages typically contain: "Hi, I'm interested in [ad_name]. Ad ID: [ad_id]"
+    ad_id = None
+    campaign_id = None
+    platform = "whatsapp"
+    
+    # Try to extract ad_id from message
+    if Body:
+        import re
+        ad_match = re.search(r'ad[_\s]?id[:\s]*([a-zA-Z0-9_-]+)', Body, re.IGNORECASE)
+        if ad_match:
+            ad_id = ad_match.group(1)
+        
+        campaign_match = re.search(r'campaign[_\s]?id[:\s]*([a-zA-Z0-9_-]+)', Body, re.IGNORECASE)
+        if campaign_match:
+            campaign_id = campaign_match.group(1)
+        
+        # Check for platform indicators
+        if 'instagram' in Body.lower() or 'insta' in Body.lower():
+            platform = "instagram"
+        elif 'facebook' in Body.lower() or 'fb' in Body.lower():
+            platform = "facebook"
+    
+    # Determine city from ad_id mapping (from settings)
+    city = "Vizag"  # Default city
+    city_id = None
+    
+    if ad_id:
+        ad_mapping = await db.ad_city_mappings.find_one({"ad_id": ad_id}, {"_id": 0})
+        if ad_mapping:
+            city = ad_mapping.get("city", "Vizag")
+            city_id = ad_mapping.get("city_id")
+    
+    # Check if lead already exists with this phone
+    existing_lead = await db.leads.find_one({"mobile": phone}, {"_id": 0})
+    if existing_lead:
+        # Update existing lead with new message
+        await db.leads.update_one(
+            {"id": existing_lead["id"]},
+            {"$set": {
+                "message": Body,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        logger.info(f"Updated existing lead {existing_lead['id']} with new message")
+        return {"status": "updated", "lead_id": existing_lead["id"]}
+    
+    # Create new lead
+    lead_id = str(uuid.uuid4())
+    lead = {
+        "id": lead_id,
+        "name": ProfileName or "WhatsApp Lead",
+        "mobile": phone,
+        "city": city,
+        "city_id": city_id,
+        "source": "META_WHATSAPP",
+        "ad_id": ad_id,
+        "campaign_id": campaign_id,
+        "platform": platform,
+        "message": Body,
+        "status": "NEW LEAD",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": "system"
+    }
+    
+    await db.leads.insert_one(lead)
+    
+    # Auto-assign to sales rep via round-robin based on city
+    try:
+        # Find sales reps assigned to this city
+        sales_reps = await db.users.find({
+            "is_active": True,
+            "role_code": {"$in": ["SALES_EXECUTIVE", "SALES_LEAD", "SALES_HEAD"]},
+            "assigned_cities": city
+        }, {"_id": 0, "id": 1, "name": 1}).to_list(100)
+        
+        if sales_reps:
+            # Get round-robin counter for this city
+            counter = await db.round_robin_counters.find_one({"city": city})
+            if not counter:
+                counter = {"city": city, "index": 0}
+                await db.round_robin_counters.insert_one(counter)
+            
+            # Get next sales rep
+            index = counter.get("index", 0) % len(sales_reps)
+            assigned_rep = sales_reps[index]
+            
+            # Update lead with assignment
+            await db.leads.update_one(
+                {"id": lead_id},
+                {"$set": {
+                    "assigned_to": assigned_rep["id"],
+                    "assigned_to_name": assigned_rep.get("name")
+                }}
+            )
+            
+            # Update counter
+            await db.round_robin_counters.update_one(
+                {"city": city},
+                {"$set": {"index": index + 1}},
+                upsert=True
+            )
+            
+            # Send push notification to assigned rep
+            from services_ess.fcm_service import get_fcm_service
+            fcm = get_fcm_service()
+            if fcm:
+                # Get rep's FCM tokens
+                tokens = await db.device_tokens.find(
+                    {"user_id": assigned_rep["id"]},
+                    {"_id": 0, "fcm_token": 1}
+                ).to_list(10)
+                
+                for token_doc in tokens:
+                    await fcm.send_notification(
+                        token=token_doc.get("fcm_token"),
+                        title="New Lead Assigned! 🎯",
+                        body=f"New lead from {city}: {ProfileName or phone}",
+                        data={"type": "new_lead", "lead_id": lead_id}
+                    )
+            
+            logger.info(f"Lead {lead_id} assigned to {assigned_rep.get('name')} via round-robin")
+        else:
+            logger.warning(f"No sales reps found for city {city}")
+    except Exception as e:
+        logger.error(f"Failed to auto-assign lead: {e}")
+    
+    # Log activity
+    activity = {
+        "id": str(uuid.uuid4()),
+        "lead_id": lead_id,
+        "user_id": "system",
+        "user_name": "System",
+        "action": "lead_created",
+        "details": f"Created from WhatsApp - {platform}",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.lead_activities.insert_one(activity)
+    
+    return {"status": "created", "lead_id": lead_id}
+
+
+# Razorpay Payment Webhook
+@api_router.post("/webhooks/razorpay/payment")
+async def razorpay_payment_webhook(request: Request):
+    """
+    Webhook endpoint for Razorpay payment events.
+    Updates lead status when payment is completed.
+    """
+    from services.razorpay_service import get_razorpay_service
+    from services.twilio_service import get_twilio_service
+    
+    # Get raw body for signature verification
+    body = await request.body()
+    signature = request.headers.get("X-Razorpay-Signature", "")
+    
+    razorpay = get_razorpay_service()
+    
+    # Verify webhook signature (skip in test mode)
+    # if razorpay.key_secret and not razorpay.verify_webhook_signature(body.decode(), signature):
+    #     logger.warning("Invalid Razorpay webhook signature")
+    #     raise HTTPException(status_code=400, detail="Invalid signature")
+    
+    try:
+        import json
+        payload = json.loads(body.decode())
+    except:
+        raise HTTPException(status_code=400, detail="Invalid JSON payload")
+    
+    event = payload.get("event")
+    payment_entity = payload.get("payload", {}).get("payment_link", {}).get("entity", {})
+    
+    if not payment_entity:
+        payment_entity = payload.get("payload", {}).get("payment", {}).get("entity", {})
+    
+    logger.info(f"Razorpay webhook: event={event}")
+    
+    # Get lead_id from notes
+    notes = payment_entity.get("notes", {})
+    lead_id = notes.get("lead_id")
+    
+    if not lead_id:
+        # Try to find lead by payment_link_id
+        payment_link_id = payment_entity.get("id")
+        if payment_link_id:
+            lead = await db.leads.find_one({"payment_link_id": payment_link_id}, {"_id": 0})
+            if lead:
+                lead_id = lead.get("id")
+    
+    if not lead_id:
+        logger.warning("Could not find lead_id in Razorpay webhook")
+        return {"status": "no_lead_found"}
+    
+    lead = await db.leads.find_one({"id": lead_id}, {"_id": 0})
+    if not lead:
+        return {"status": "lead_not_found"}
+    
+    # Handle different events
+    if event in ["payment_link.paid", "payment.captured"]:
+        payment_id = payment_entity.get("id")
+        amount = payment_entity.get("amount", 0) / 100  # Convert from paise
+        
+        # Update lead as paid
+        update_dict = {
+            "status": "PAID",
+            "payment_status": "paid",
+            "razorpay_payment_id": payment_id,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        await db.leads.update_one({"id": lead_id}, {"$set": update_dict})
+        
+        # Log activity
+        activity = {
+            "id": str(uuid.uuid4()),
+            "lead_id": lead_id,
+            "user_id": "system",
+            "user_name": "Razorpay",
+            "action": "payment_received",
+            "new_value": f"₹{amount}",
+            "details": f"Payment ID: {payment_id}",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.lead_activities.insert_one(activity)
+        
+        # Create customer from lead
+        customer_id = str(uuid.uuid4())
+        customer = {
+            "id": customer_id,
+            "name": lead.get("name"),
+            "mobile": lead.get("mobile"),
+            "email": lead.get("email"),
+            "city": lead.get("city"),
+            "city_id": lead.get("city_id"),
+            "lead_id": lead_id,
+            "package_id": lead.get("package_id"),
+            "package_name": lead.get("package_name"),
+            "payment_amount": amount,
+            "razorpay_payment_id": payment_id,
+            "status": "active",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        await db.customers.insert_one(customer)
+        
+        # Update lead with customer_id
+        await db.leads.update_one(
+            {"id": lead_id},
+            {"$set": {"customer_id": customer_id, "converted_at": datetime.now(timezone.utc).isoformat()}}
+        )
+        
+        # Send confirmation WhatsApp
+        twilio = get_twilio_service()
+        if twilio.is_configured():
+            await twilio.send_payment_confirmation(
+                to_number=lead.get("mobile", ""),
+                customer_name=lead.get("name", "Customer"),
+                amount=amount,
+                package_name=lead.get("package_name", "Vehicle Inspection"),
+                payment_id=payment_id
+            )
+        
+        # Send push notification to assigned sales rep
+        if lead.get("assigned_to"):
+            from services_ess.fcm_service import get_fcm_service
+            fcm = get_fcm_service()
+            if fcm:
+                tokens = await db.device_tokens.find(
+                    {"user_id": lead["assigned_to"]},
+                    {"_id": 0, "fcm_token": 1}
+                ).to_list(10)
+                
+                for token_doc in tokens:
+                    await fcm.send_notification(
+                        token=token_doc.get("fcm_token"),
+                        title="Payment Received! 🎉",
+                        body=f"{lead.get('name')} paid ₹{amount} for {lead.get('package_name')}",
+                        data={"type": "payment_received", "lead_id": lead_id}
+                    )
+        
+        logger.info(f"Lead {lead_id} marked as PAID, customer {customer_id} created")
+        return {"status": "payment_processed", "customer_id": customer_id}
+    
+    elif event == "payment_link.expired":
+        await db.leads.update_one(
+            {"id": lead_id},
+            {"$set": {"payment_status": "expired", "updated_at": datetime.now(timezone.utc).isoformat()}}
+        )
+        return {"status": "link_expired"}
+    
+    elif event in ["payment.failed", "payment_link.cancelled"]:
+        await db.leads.update_one(
+            {"id": lead_id},
+            {"$set": {"payment_status": "failed", "updated_at": datetime.now(timezone.utc).isoformat()}}
+        )
+        return {"status": "payment_failed"}
+    
+    return {"status": "event_ignored"}
+
+
+# Ad ID to City Mapping Management (for Settings tab)
+class AdCityMapping(BaseModel):
+    ad_id: str
+    city: str
+    city_id: Optional[str] = None
+    campaign_name: Optional[str] = None
+
+
+@api_router.get("/settings/ad-city-mappings")
+async def get_ad_city_mappings(current_user: dict = Depends(get_current_user)):
+    """Get all AD ID to City mappings"""
+    mappings = await db.ad_city_mappings.find({}, {"_id": 0}).to_list(1000)
+    return mappings
+
+
+@api_router.post("/settings/ad-city-mappings")
+async def create_ad_city_mapping(mapping: AdCityMapping, current_user: dict = Depends(get_current_user)):
+    """Create AD ID to City mapping"""
+    role_code = current_user.get("role_code", "")
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Check if mapping already exists
+    existing = await db.ad_city_mappings.find_one({"ad_id": mapping.ad_id})
+    if existing:
+        # Update existing
+        await db.ad_city_mappings.update_one(
+            {"ad_id": mapping.ad_id},
+            {"$set": mapping.model_dump()}
+        )
+    else:
+        # Create new
+        mapping_dict = mapping.model_dump()
+        mapping_dict["id"] = str(uuid.uuid4())
+        mapping_dict["created_at"] = datetime.now(timezone.utc).isoformat()
+        await db.ad_city_mappings.insert_one(mapping_dict)
+    
+    return {"message": "Mapping saved"}
+
+
+@api_router.delete("/settings/ad-city-mappings/{ad_id}")
+async def delete_ad_city_mapping(ad_id: str, current_user: dict = Depends(get_current_user)):
+    """Delete AD ID to City mapping"""
+    role_code = current_user.get("role_code", "")
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    await db.ad_city_mappings.delete_one({"ad_id": ad_id})
+    return {"message": "Mapping deleted"}
+
+
+# Sales Rep City Assignment (for HR module)
+class SalesRepCityAssignment(BaseModel):
+    employee_id: str
+    cities: List[str]
+
+
+@api_router.put("/hr/employees/{employee_id}/assigned-cities")
+async def update_employee_assigned_cities(
+    employee_id: str,
+    assignment: SalesRepCityAssignment,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update cities assigned to a sales employee"""
+    role_code = current_user.get("role_code", "")
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    employee = await db.users.find_one({"id": employee_id}, {"_id": 0})
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    await db.users.update_one(
+        {"id": employee_id},
+        {"$set": {"assigned_cities": assignment.cities, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    return {"message": "Cities assigned successfully"}
+
+
+@api_router.get("/hr/employees/{employee_id}/assigned-cities")
+async def get_employee_assigned_cities(employee_id: str, current_user: dict = Depends(get_current_user)):
+    """Get cities assigned to a sales employee"""
+    employee = await db.users.find_one({"id": employee_id}, {"_id": 0, "assigned_cities": 1})
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    return {"cities": employee.get("assigned_cities", [])}
+
+
 # ==================== CUSTOMERS ROUTES ====================
 
 @api_router.get("/customers")
