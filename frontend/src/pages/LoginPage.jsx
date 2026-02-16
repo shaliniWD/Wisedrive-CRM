@@ -76,7 +76,19 @@ export default function LoginPage() {
   }, []);
 
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    // Redirect to first visible tab instead of dashboard
+    const tabRouteMap = {
+      leads: '/leads',
+      customers: '/customers',
+      inspections: '/inspections',
+      hr: '/hr',
+      finance: '/finance',
+      settings: '/settings',
+      dashboard: '/dashboard',
+    };
+    const firstTab = visibleTabs?.[0];
+    const redirectPath = tabRouteMap[firstTab] || '/leads';
+    return <Navigate to={redirectPath} replace />;
   }
 
   const handleSubmit = async (e) => {
