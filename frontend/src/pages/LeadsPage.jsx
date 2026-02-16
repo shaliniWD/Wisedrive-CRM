@@ -1180,8 +1180,13 @@ export default function LeadsPage() {
                 className="bg-gradient-to-r from-amber-500 to-amber-600">Next Step</Button>
             ) : (
               <Button onClick={async () => {
-                if (!selectedLead || !paymentFormData.packageType) {
+                if (!selectedLead || !paymentFormData.packageId) {
                   toast.error('Please select a package');
+                  return;
+                }
+                const selectedPackage = getSelectedPackage();
+                if (!selectedPackage) {
+                  toast.error('Invalid package selected');
                   return;
                 }
                 setSaving(true);
@@ -1191,13 +1196,21 @@ export default function LeadsPage() {
                     await saveVehicleToMaster(selectedLead.id);
                   }
                   
-                  // Use the real Razorpay payment link API
+                  // Calculate final amount after discount
+                  const finalAmount = calculateFinalAmount();
+                  
+                  // Use the real Razorpay payment link API with final amount after discount
                   const response = await leadsApi.createPaymentLink(selectedLead.id, {
-                    package_id: paymentFormData.packageType,
-                    amount: calculateFinalAmount(),
-                    description: `${paymentFormData.packageType.charAt(0).toUpperCase() + paymentFormData.packageType.slice(1)} Package - ${paymentFormData.numberOfCars} Car(s)`,
+                    package_id: paymentFormData.packageId,
+                    amount: finalAmount,
+                    description: `${selectedPackage.name} - ${paymentFormData.numberOfCars} Car(s)${getDiscountAmount() > 0 ? ` (Discount Applied)` : ''}`,
                     send_via_whatsapp: true,
                     vehicle_number: paymentFormData.carNo || '',
+                    no_of_cars: parseInt(paymentFormData.numberOfCars),
+                    discount_type: paymentFormData.discountType !== 'none' ? paymentFormData.discountType : null,
+                    discount_value: paymentFormData.discountValue || null,
+                    base_amount: getBaseAmount(),
+                    discount_amount: getDiscountAmount(),
                   });
                   
                   toast.success(response.data?.whatsapp_sent 
