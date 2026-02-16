@@ -1132,18 +1132,25 @@ export default function LeadsPage() {
                 }
                 setSaving(true);
                 try {
+                  // Save vehicle to vehicle master if we have vehicle data
+                  if (vehicleData) {
+                    await saveVehicleToMaster(selectedLead.id);
+                  }
+                  
                   // Use the real Razorpay payment link API
                   const response = await leadsApi.createPaymentLink(selectedLead.id, {
                     package_id: paymentFormData.packageType,
                     amount: calculateFinalAmount(),
                     description: `${paymentFormData.packageType.charAt(0).toUpperCase() + paymentFormData.packageType.slice(1)} Package - ${paymentFormData.numberOfCars} Car(s)`,
-                    send_via_whatsapp: true
+                    send_via_whatsapp: true,
+                    vehicle_number: paymentFormData.carNo || '',
                   });
                   
                   toast.success(response.data?.whatsapp_sent 
                     ? 'Payment link sent via WhatsApp!' 
                     : 'Payment link generated successfully!');
                   setIsPaymentModalOpen(false);
+                  setVehicleData(null); // Clear vehicle data
                   fetchData();
                 } catch (error) {
                   toast.error(error.response?.data?.detail || 'Failed to create payment link');
