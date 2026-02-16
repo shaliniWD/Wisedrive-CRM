@@ -547,15 +547,22 @@ export default function LeadsPage() {
             />
           </div>
 
-          <Select value={filterEmployee || 'all'} onValueChange={(v) => { setFilterEmployee(v === 'all' ? '' : v); setCurrentPage(1); }}>
-            <SelectTrigger className="w-[150px] h-10 bg-white text-sm" data-testid="filter-employee">
-              <SelectValue placeholder="Employee" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Employees</SelectItem>
-              {employees.map((emp) => (<SelectItem key={emp.id} value={emp.name}>{emp.name}</SelectItem>))}
-            </SelectContent>
-          </Select>
+          {/* Employee filter - for Sales Execs, only show their name; for others show all */}
+          {isSalesExec ? (
+            <div className="flex items-center px-3 h-10 bg-slate-100 rounded-md text-sm font-medium text-slate-700 border">
+              {user?.name || 'My Leads'}
+            </div>
+          ) : (
+            <Select value={filterEmployee || 'all'} onValueChange={(v) => { setFilterEmployee(v === 'all' ? '' : v); setCurrentPage(1); }}>
+              <SelectTrigger className="w-[150px] h-10 bg-white text-sm" data-testid="filter-employee">
+                <SelectValue placeholder="Employee" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Employees</SelectItem>
+                {employees.map((emp) => (<SelectItem key={emp.id} value={emp.name}>{emp.name}</SelectItem>))}
+              </SelectContent>
+            </Select>
+          )}
 
           <Select value={filterStatus || 'all'} onValueChange={(v) => { setFilterStatus(v === 'all' ? '' : v); setCurrentPage(1); }}>
             <SelectTrigger className="w-[160px] h-10 bg-white text-sm" data-testid="filter-status">
