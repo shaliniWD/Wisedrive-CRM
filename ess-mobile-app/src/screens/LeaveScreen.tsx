@@ -80,11 +80,12 @@ export default function LeaveScreen() {
         <Text style={styles.headerTitle}>Leave</Text>
         <TouchableOpacity
           testID="apply-leave-btn"
-          style={styles.applyBtn}
+          style={[styles.applyBtn, !canApplyLeave && styles.applyBtnDisabled]}
           onPress={() => navigation.navigate('LeaveApply')}
+          disabled={!canApplyLeave}
         >
           <LinearGradient
-            colors={colors.gradients.primary}
+            colors={canApplyLeave ? colors.gradients.primary : ['#9CA3AF', '#9CA3AF']}
             style={styles.applyBtnGradient}
           >
             <Ionicons name="add" size={iconSize.md} color="#FFF" />
@@ -104,27 +105,48 @@ export default function LeaveScreen() {
         }
         contentContainerStyle={styles.scrollContent}
       >
+        {/* Period Label */}
+        <View style={styles.periodHeader}>
+          <Text style={styles.periodLabel}>{periodBalance?.period_label || 'This Month'}</Text>
+          <Text style={styles.periodSubLabel}>
+            {periodBalance?.period_type === 'quarterly' ? 'Quarterly allocation' : 'Monthly allocation'} • No carry forward
+          </Text>
+        </View>
+
         {/* Balance Cards */}
         <View style={styles.balanceRow}>
           <BalanceCard
             label="Casual"
-            available={leaveBalance?.casual_leaves?.available || 0}
-            total={leaveBalance?.casual_leaves?.total || 12}
+            available={periodBalance?.casual_available || 0}
+            total={periodBalance?.casual_allocated || 1}
             color={colors.success}
+            canApply={periodBalance?.can_apply_casual}
           />
           <BalanceCard
             label="Sick"
-            available={leaveBalance?.sick_leaves?.available || 0}
-            total={leaveBalance?.sick_leaves?.total || 12}
+            available={periodBalance?.sick_available || 0}
+            total={periodBalance?.sick_allocated || 2}
             color={colors.warning}
+            canApply={periodBalance?.can_apply_sick}
           />
           <BalanceCard
-            label="Earned"
-            available={leaveBalance?.earned_leaves?.available || 0}
-            total={leaveBalance?.earned_leaves?.total || 15}
-            color={colors.primary}
+            label="LOP"
+            available={periodBalance?.lop_days || 0}
+            total={null}
+            color={colors.error}
+            isLOP={true}
           />
         </View>
+
+        {/* No Leaves Warning */}
+        {!canApplyLeave && (
+          <View style={styles.noLeavesWarning}>
+            <Ionicons name="information-circle" size={iconSize.md} color={colors.warning} />
+            <Text style={styles.noLeavesText}>
+              All leaves for {periodBalance?.period_label || 'this period'} have been availed
+            </Text>
+          </View>
+        )}
 
         {/* Filter Tabs */}
         <View style={styles.filterRow}>
