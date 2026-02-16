@@ -1039,14 +1039,15 @@ export default function LeadsPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label className="text-sm">Select Package *</Label>
-                      <Select value={paymentFormData.packageType || 'select'} onValueChange={(v) => setPaymentFormData({ ...paymentFormData, packageType: v === 'select' ? '' : v })}>
+                      <Select value={paymentFormData.packageId || 'select'} onValueChange={(v) => setPaymentFormData({ ...paymentFormData, packageId: v === 'select' ? '' : v })}>
                         <SelectTrigger className="h-11" data-testid="package-select"><SelectValue placeholder="Select Package" /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="select">-- Select Package --</SelectItem>
-                          <SelectItem value="basic">Basic - ₹499</SelectItem>
-                          <SelectItem value="silver">Silver - ₹999</SelectItem>
-                          <SelectItem value="gold">Gold - ₹1,499</SelectItem>
-                          <SelectItem value="platinum">Platinum - ₹2,499</SelectItem>
+                          {inspectionPackages.map(pkg => (
+                            <SelectItem key={pkg.id} value={pkg.id}>
+                              {pkg.name} - {pkg.no_of_inspections || 1} Inspection{(pkg.no_of_inspections || 1) > 1 ? 's' : ''} - ₹{pkg.price?.toLocaleString()}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -1058,6 +1059,22 @@ export default function LeadsPage() {
                       </Select>
                     </div>
                   </div>
+
+                  {/* Package Details */}
+                  {getSelectedPackage() && (
+                    <div className="bg-blue-50 p-4 rounded-xl border border-blue-200">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <h4 className="font-semibold text-blue-800">{getSelectedPackage().name}</h4>
+                          <p className="text-sm text-blue-600">{getSelectedPackage().no_of_inspections || 1} Inspection(s) included</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm text-blue-600">Package Price</p>
+                          <p className="text-xl font-bold text-blue-800">₹{getSelectedPackage().price?.toLocaleString()}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Discount Section */}
                   <div className="bg-amber-50 p-4 rounded-xl border border-amber-200">
@@ -1090,10 +1107,22 @@ export default function LeadsPage() {
                         </div>
                       )}
                     </div>
-                    {paymentFormData.packageType && (
-                      <div className="mt-4 pt-4 border-t border-amber-200 flex justify-between items-center">
-                        <span className="text-amber-800 font-medium">Final Amount:</span>
-                        <span className="text-2xl font-bold text-amber-800">₹{calculateFinalAmount().toLocaleString()}</span>
+                    {paymentFormData.packageId && (
+                      <div className="mt-4 pt-4 border-t border-amber-200">
+                        <div className="flex justify-between items-center text-sm mb-2">
+                          <span className="text-amber-700">Base Amount ({paymentFormData.numberOfCars} car{paymentFormData.numberOfCars > 1 ? 's' : ''}):</span>
+                          <span className="text-amber-800 font-medium">₹{getBaseAmount().toLocaleString()}</span>
+                        </div>
+                        {getDiscountAmount() > 0 && (
+                          <div className="flex justify-between items-center text-sm mb-2 text-green-700">
+                            <span>Discount ({paymentFormData.discountType === 'percent' ? `${paymentFormData.discountValue}%` : `₹${paymentFormData.discountValue}`}):</span>
+                            <span>- ₹{getDiscountAmount().toLocaleString()}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between items-center pt-2 border-t border-amber-200">
+                          <span className="text-amber-800 font-semibold">Final Amount to Pay:</span>
+                          <span className="text-2xl font-bold text-amber-800">₹{calculateFinalAmount().toLocaleString()}</span>
+                        </div>
                       </div>
                     )}
                   </div>
