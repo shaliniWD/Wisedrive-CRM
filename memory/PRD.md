@@ -151,15 +151,16 @@ All users use password: `password123`
 - [x] Build final APK/IPA with new design ✅ DONE
 - [x] Salary structure matching CRM exactly ✅ DONE
 - [x] Navigation restructuring (hub-based) ✅ DONE
+- [x] Inspection Packages feature in Settings ✅ DONE (February 16, 2026)
 - [ ] User acceptance testing on actual mobile devices (IN PROGRESS)
 
 ### P1 - High Priority
+- [ ] Leads module in CRM (next up)
 - [ ] Production Firebase setup (replace test credentials)
 - [ ] App Store / Play Store submission preparation
 
 ### P2 - Medium Priority
-- [ ] Implement Leads module in CRM
-- [ ] Implement Inspections module in CRM
+- [ ] Implement Inspections module in CRM (record actual inspections using packages)
 - [ ] Implement Customer module in CRM
 - [ ] OBD Integration library integration
 
