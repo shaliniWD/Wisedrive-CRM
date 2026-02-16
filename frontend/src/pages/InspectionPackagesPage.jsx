@@ -846,21 +846,29 @@ export default function InspectionPackagesPage() {
               <Label className="cursor-pointer">Mark as Recommended</Label>
             </div>
 
-            {/* Select Categories */}
+            {/* Select Categories - IMPORTANT SECTION */}
             <div className="space-y-2">
-              <Label>Include Categories</Label>
+              <Label className="text-base font-semibold flex items-center gap-2">
+                <Layers className="h-4 w-4 text-blue-600" />
+                Assign Categories to Package *
+              </Label>
+              <p className="text-xs text-gray-500 mb-2">Select which inspection categories are included in this package</p>
               {categories.length === 0 ? (
-                <p className="text-sm text-gray-500 p-3 bg-amber-50 rounded-lg border border-amber-200">
-                  No categories available. Please create categories first.
-                </p>
+                <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
+                  <p className="text-sm text-amber-800 font-medium">⚠️ No categories available</p>
+                  <p className="text-xs text-amber-600 mt-1">Please create inspection categories first in the "Categories" tab, then come back to create packages.</p>
+                </div>
               ) : (
-                <div className="space-y-2 max-h-60 overflow-y-auto border rounded-lg p-3">
+                <div className="space-y-2 max-h-60 overflow-y-auto border-2 border-blue-200 rounded-lg p-3 bg-blue-50/30">
                   {categories.map((cat) => (
                     <label 
                       key={cat.id} 
-                      className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${
-                        packageForm.categories?.includes(cat.id) ? 'bg-blue-50 border border-blue-200' : 'hover:bg-gray-50 border border-transparent'
+                      className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all ${
+                        packageForm.categories?.includes(cat.id) 
+                          ? 'bg-blue-100 border-2 border-blue-400 shadow-sm' 
+                          : 'bg-white hover:bg-gray-50 border-2 border-gray-200'
                       }`}
+                      data-testid={`category-option-${cat.id}`}
                     >
                       <Checkbox 
                         checked={packageForm.categories?.includes(cat.id)}
@@ -873,10 +881,10 @@ export default function InspectionPackagesPage() {
                             <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded">FREE</span>
                           )}
                         </p>
-                        <p className="text-xs text-gray-500">{cat.check_points} check points</p>
+                        <p className="text-xs text-gray-500">{cat.check_points} check points • {cat.items?.length || 0} items</p>
                       </div>
                       <div 
-                        className="h-3 w-3 rounded-full"
+                        className="h-4 w-4 rounded-full border-2 border-white shadow"
                         style={{ backgroundColor: cat.color || '#3B82F6' }}
                       />
                     </label>
@@ -884,9 +892,14 @@ export default function InspectionPackagesPage() {
                 </div>
               )}
               {packageForm.categories?.length > 0 && (
-                <p className="text-sm text-gray-500">
-                  Total: {categories.filter(c => packageForm.categories?.includes(c.id)).reduce((sum, c) => sum + (c.check_points || 0), 0)} check points
-                </p>
+                <div className="flex items-center justify-between p-2 bg-emerald-50 rounded-lg border border-emerald-200">
+                  <span className="text-sm font-medium text-emerald-700">
+                    {packageForm.categories.length} categories selected
+                  </span>
+                  <span className="text-sm font-bold text-emerald-800">
+                    Total: {categories.filter(c => packageForm.categories?.includes(c.id)).reduce((sum, c) => sum + (c.check_points || 0), 0)} check points
+                  </span>
+                </div>
               )}
             </div>
 
