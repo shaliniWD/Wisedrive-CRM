@@ -106,7 +106,8 @@ export default function LoginPage() {
     try {
       await login(email, password, selectedCountry);
       toast.success('Welcome back!');
-      navigate('/dashboard');
+      // Navigate to / which will use SmartRedirect to go to the correct tab
+      navigate('/');
     } catch (error) {
       console.error('Login error:', error);
       toast.error(error.response?.data?.detail || 'Invalid credentials');
