@@ -1,143 +1,175 @@
 <analysis>**original_problem_statement:**
-The user's initial goal was to build a scalable automotive platform, Wisedrive, which evolved into a monolithic CRM application. The current project phase is to build an Employee Self-Service (ESS) mobile application.
+The user's initial goal was to build a scalable automotive platform, Wisedrive, which evolved into a monolithic CRM application with an Employee Self-Service (ESS) mobile app.
 
-The latest user requests, after approving a new light theme, are to perform a major restructuring of the app's navigation and content:
-1.  **Replicate CRM Salary Structure:** The salary details screen in the mobile app must show the exact same earning and deduction fields as the main CRM application.
-2.  **Add Country Select to Payslips:** Implement a country selection dropdown on the Payslips screen. The logic for which countries to show should be based on the employee's joining date (details to be confirmed).
-3.  **Remove All Content Duplication & Footer Navigation:**
-    *   The entire bottom tab bar/footer should be removed.
-    *   All features (Leaves, Payslips, Documents, Holidays, Settings) should be accessible from the main .
-    *   Remove the duplicate Payslips entry from the footer (it's already in Quick Links).
-    *   Remove the duplicate Settings entry from the More menu (it's also on the Profile screen).
-4.  **Redesign Home Screen:** Remove the unnecessary block showing designation/company name. Use that space for the Leaves feature.
-5.  **Confirm API Endpoint:** Ensure the app continues to connect to the stable production endpoint: .
+The scope has since expanded to include:
+1.  **New Feature (Leave Management):** Implement a comprehensive leave rules system in the CRM (monthly/quarterly allocation, no carry-forward) and update the ESS mobile app to enforce these rules, display correct balances, and provide user feedback.
+2.  **New Feature (Leads Management):** Build a complete 4-phase leads management module.
+    *   **Phase 1 (Creation):** Ingest leads from a Twilio WhatsApp webhook, triggered by Meta ads.
+    *   **Phase 2 (Assignment):** Assign leads to sales agents via a round-robin system based on city.
+    *   **Phase 3 (Follow-up):** Allow agents to update lead status, add notes, and set reminders (with push notifications).
+    *   **Phase 4 (Payment):** Integrate Razorpay to generate and send payment links, with a webhook to confirm payment and convert the lead to a customer.
+3.  **Critical Bug Fixes (UAT):** Address multiple high-priority bugs discovered by the user during testing, including a system-wide password reset issue, document and salary data synchronization problems, and numerous functional and UI bugs in the CRM's HR Roles module.
 
 **PRODUCT REQUIREMENTS:**
--   Build a React Native mobile app with a minimalist, light-themed UI.
--   Features: Login, Profile (Personal, Salary, Bank details), Leave Management, Payslips, Documents, Holiday Calendar, and Notifications.
--   The app must connect to .
--   The backend logic is integrated into the main CRM backend.
+-   **Leads Module:** Must support 22 distinct lead statuses. Assignment should be round-robin by city. Integrations with Twilio and Razorpay are mandatory.
+-   **Leave Rules:** The system must be configurable by HR from the CRM. The ESS mobile app must dynamically adapt to the configured rules (monthly vs. quarterly).
+-   **Bug Fixes:** All reported bugs must be resolved, tested, and verified to prevent recurrence.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The project consists of a unified FastAPI backend (CRM + ESS) and a React Native (Expo) mobile app. The agent has successfully implemented a complete UI redesign from a dark theme to a light theme based on user feedback. It has also fixed several critical bugs related to app crashes and login failures. The agent has already started the major restructuring by removing the bottom tab navigator and updating several screens to fit the new navigation-hub model centered on the .
+The project is a full-stack application with a FastAPI backend, a React CRM frontend, and a React Native (Expo) ESS mobile app.
+
+-   **Leads Management Module:** The entire backend is complete and tested. This includes the Twilio and Razorpay webhook integrations, all API endpoints for the 4-phase lead lifecycle (creation, status updates, notes, payment links), and the round-robin assignment logic.
+-   **Leave Rules Feature:** This feature is fully implemented. The backend APIs for setting and enforcing rules are live. The ESS mobile app UI has been updated to show period-based leave balances and validate applications against the rules. New mobile app builds (APK/IPA) have been generated.
+-   **Bug Fixes:** A significant number of critical bugs have been resolved and verified via automated testing. This includes:
+    -   An incorrect password auto-fix mechanism that was resetting all user passwords.
+    -   Data sync issues for documents and salary between the CRM and ESS app.
+    -   Multiple functional bugs in the CRM's Roles management UI (copy, edit, delete, permissions).
+    -   An RBAC bug preventing users with custom roles from accessing permitted pages.
+-   **Integrations:** Twilio and Razorpay have been installed, configured with user-provided credentials, and integrated into the backend.
 
 **Last working item**:
--   **Last item agent was working:** The agent was addressing the user's top-priority request to make the mobile app's salary structure view identical to the CRM's. It had investigated the backend API () and CRM frontend code to identify the correct salary fields. The agent was about to modify the backend API to return the complete salary data.
--   **Status:** IN PROGRESS
+-   **Last item agent was working:** Integrating the newly completed Leads Management backend with the existing CRM frontend page (). The agent had analyzed the existing page and was preparing to connect it to the new APIs for fetching leads, updating statuses, adding notes, and generating payment links.
+-   **Status:** NOT STARTED
 -   **Agent Testing Done:** N
--   **Which testing method agent to use?** both (First backend, then frontend). The backend API change should be tested with . After the UI is updated, the frontend testing agent should be used to verify the entire restructuring.
+-   **Which testing method agent to use?** Frontend testing agent
 -   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
--   **Issue 1: Salary structure in the mobile app does not match the CRM (P0)**
-    -   **Attempted fixes:** The agent has analyzed the CRM frontend and backend API to determine the correct fields:
-        -   **Earnings:** Basic Salary, HRA, Variable Pay/Incentives, Conveyance, Medical Allowance, Special Allowance.
-        -   **Deductions:** PF (Employee), Professional Tax, Income Tax (TDS), Other Deductions.
-    -   **Next debug checklist:**
-        1.  Modify the Pydantic model for salary (likely ) in the backend to include all required fields.
-        2.  Update the  endpoint in  to populate and return these new fields.
-        3.  Update the UI in  to correctly display all the new earnings and deductions fields.
-    -   **Why fix this issue and what will be achieved with the fix?** This is a direct user requirement to ensure data consistency and accuracy between the two applications.
-    -   **Status:** IN PROGRESS
-    -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?** Both.
-    -   **Blocked on other issue:** None.
+There are no pending issues. The current focus is on new feature development.
 
 **In progress Task List**:
--   **Task 1: Complete App Navigation and UI Restructuring (P0)**
-    -   **Where to resume:** The agent has already removed the bottom tab navigator and redesigned the  to be a central hub. The next step is to complete the salary structure fix (Issue 1), and then proceed with the remaining UI changes.
-    -   **What will be achieved with this?** A streamlined, non-redundant UI that follows the user's exact specifications, improving usability and consolidating all features onto the main screen.
+-   **Task 1:** (P0) Implement the frontend for the Leads Management module.
+    -   **Where to resume:** . This file needs to be updated to use the new backend APIs created in the last session.
+    -   **What will be achieved with this?** The leads management feature will become fully usable by sales agents through the CRM interface, allowing them to see, manage, and process leads through the entire 4-phase lifecycle.
     -   **Status:** IN PROGRESS
-    -   **Should Test frontend/backend/both after fix?** Both.
-    -   **Blocked on something:** Blocked on completing Issue 1: Salary structure mismatch.
+    -   **Should Test frontend/backend/both after fix?** both
+    -   **Blocked on something:** No.
 
 **Upcoming and Future Tasks**
 **Upcoming Tasks:**
-*   **P1: Implement Country Select for Payslips:** Add logic to  for country selection. This will require backend investigation/implementation to fetch the relevant data.
-*   **P2: Full User Acceptance Testing (UAT):** After all restructuring is complete, the user needs to test the app again.
-*   **P3: Build and Deliver Final App Builds:** Once the user approves the restructured app, generate the final Android APK and iOS IPA files.
+*   **P0: User Acceptance Testing (UAT) for Leads Module:** Once the frontend UI is complete, guide the user through testing the entire lead lifecycle.
+*   **P1: Build and Deliver Final App Builds:** If any changes are made to the mobile app, generate and provide the final Android APK and iOS IPA files.
 
 **Future Tasks:**
-*   **CRM Features:** Implement Leads, Inspections, and Customer modules.
-*   **Integrations:** Integrate , Razorpay, and Invincible Ocean clients.
-*   **Architecture:** Plan the migration of the CRM from a monolith to a microservices architecture.
+*   CRM Inspections Module
+*   CRM Customer Module
+*   OBD-Integration-v1.0
+*   Invincible Ocean clients integration
 
 **Completed work in this session**
--   **Completed Full UI Redesign (to Light Theme):** Switched the entire mobile application from a dark theme to a light theme as requested by the user.
--   **Fixed Critical Bugs from Previous Build:**
-    -   Resolved a crash on the .
-    -   Fixed an overlay issue on the  that blocked the login button on iOS.
-    -   Fixed the Android login functionality.
--   **Initiated Major App Restructuring:**
-    -   Removed the entire bottom tab bar navigation system ().
-    -   Redesigned the  to serve as the new central navigation hub.
-    -   Updated the  and began the process of aligning its salary structure with the CRM.
+-   **Leads Management (Backend):**
+    -   Implemented the full backend for the 4-phase leads module in .
+    -   Integrated Twilio for WhatsApp lead ingestion ().
+    -   Integrated Razorpay for payment links and status webhooks ().
+    -   Created service files: , .
+    -   Updated  with 22 new statuses.
+    -   Verified the entire backend flow with a comprehensive test suite ().
+
+-   **Leave Rules Feature:**
+    -   Implemented backend logic in  to support monthly/quarterly leave allocation and validation.
+    -   Created CRM APIs to configure leave rules in .
+    -   Updated ESS mobile app UI (, ) to display period-based balances and enforce rules.
+    -   Generated new APK and IPA builds.
+
+-   **Critical Bug Fixes:**
+    -   **Password Reset:** Fixed  in  to stop resetting valid user passwords.
+    -   **Document Sync:** Corrected field name mismatch ( vs ) in .
+    -   **Salary Sync & Calculation:** Fixed a bug in  where / salary was not calculated for fulltime employees. Also fixed a frontend state issue in  causing salary data to disappear on tab switching.
+    -   **Custom Role Access:** Fixed the RBAC service in  to correctly calculate visible tabs for custom roles based on database permissions.
+    -   **HR Roles Module:** Fixed 5 bugs in  and  related to role deletion, copying permissions, editing, and modal UI.
 
 **Earlier issues found/mentioned but not fixed**
--   **Screen Height Adjustment:** The initial handoff mentioned a user complaint that height is not adjusted for iOS and android screens. While a test report indicated  was used, this should be explicitly verified during the next round of testing to ensure no content is cut off on different devices.
-
-**Known issue recurrence from previous fork**
--   **UI/UX Dissatisfaction:** The user is very particular about the UI and app structure. The project has gone through multiple major redesigns. This is a recurring theme, and any further UI work should strictly follow the user's latest instructions.
+-   **Screen Height Adjustment:** An initial user complaint about screen height differences between iOS and Android for the mobile app remains. This should be explicitly checked during final UAT.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **UI/Navigation Refactoring:** Moving from a standard bottom tab navigation model to a centralized, hub-based navigation model on the home screen.
--   **Data Model Synchronization:** Modifying backend Pydantic models and API endpoints to align with frontend data requirements.
--   **React Native (Expo) Development:** Extensive work with components, styling, and navigation.
--   **FastAPI Backend Development:** Modifying routes and models to support frontend changes.
+-   **Third-Party Webhooks:** Successfully implemented and tested webhooks for both Twilio (incoming WhatsApp messages) and Razorpay (payment status updates).
+-   **Dynamic RBAC:** The Role-Based Access Control service was enhanced to read permissions for custom roles directly from the database, rather than relying on a hardcoded map, making the system extensible.
+-   **Periodic Leave Balance Calculation:** Implemented logic to calculate employee leave balances dynamically based on a configurable period (monthly or quarterly), without carrying over balances.
+-   **Stateful Bug Squashing:** Resolved complex bugs stemming from flawed startup scripts (), data inconsistencies ( vs ), and frontend state management ( in React).
 
 **key DB schema**
--   No schema changes are required. The agent must ensure the API layer correctly queries the existing  and  collections to provide all necessary fields.
+-   **leads:** 
+-   **lead_notes:** 
+-   **lead_activities:** 
+-   **leave_rules:** 
+
+**changes in tech stack**
+-   **Added:**  Python SDK for WhatsApp messaging.
+-   **Added:**  Python SDK for payment processing.
 
 **All files of reference**
--   : Needs modification for the  endpoint.
--   : UI needs updating for the new salary structure.
--   : The new navigation hub.
--   : Will need to be updated with country selection logic.
--   : Already updated to remove the bottom tab bar.
--   : Used as a reference to understand the CRM's salary structure display.
+-   : The central hub for all new backend logic (Leads, Leave Rules) and numerous bug fixes.
+-   : The next file to be worked on for UI integration.
+-   : Location of multiple bug fixes in the HR module.
+-   : Key file for the custom role permission fix.
+-   : Contains the core logic for the new leave rules feature.
+-   : Main UI file for the leave balance display on mobile.
+-   : New service for Twilio integration.
+-   : New service for Razorpay integration.
+
+**key api endpoints**
+-   : Ingests new leads from Twilio.
+-   : Receives payment status updates from Razorpay.
+-   : Generates a Razorpay payment link for a lead.
+-   : Adds a note to a lead.
+-   : Fetches the current leave balance for an employee based on configured rules.
+-   : Deletes a custom role.
+-   : Updates a role, now including permissions.
 
 **Critical Info for New Agent**
--   **The user's latest restructuring request is the absolute top priority.** Complete all 6 points from their last message before moving on.
--   **The app no longer has a bottom tab bar.** All navigation flows from the . Do not attempt to re-implement tab navigation.
--   **Confirm API Endpoint:** The user is insistent that the API points to . Verify this before every build.
--   **Backend modification is required first.** The salary structure change cannot be completed on the frontend until the backend API () is updated to provide the necessary data.
+-   Your immediate task is to build the frontend for the Leads Management module by integrating the existing  with the new, fully-tested backend APIs.
+-   The backend for the leads feature is complete and robust, covering all 4 phases requested by the user. You can trust the APIs in  to work as expected.
+-   The user has provided a comprehensive list of 22 lead statuses in a screenshot; ensure the frontend can handle and display all of them correctly. The backend API  provides this list.
+-   A significant amount of time was spent fixing critical UAT bugs. Be mindful of regression and test thoroughly.
 
 **documents and test reports created in this job**
 -   
 -   
 -   
+-   
+-   
+-   
+-    (updated multiple times)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User (Summary):** After receiving the light-theme app builds, the user approved the theme but requested significant structural changes: switch to a light theme, fix an app crash on the documents screen, resolve login issues on both iOS and Android, and confirm the API endpoint is .
-2.  **User (Summary):** After the agent fixed the above issues and provided new builds, the user provided a new, detailed list of required changes:
-    *   Match the salary structure exactly to the CRM.
-    *   Add country select to payslips.
-    *   Remove all duplicate navigation items.
-    *   Remove the entire bottom footer/tab bar.
-    *   Consolidate all features onto the home screen.
-    *   This is the current task list.
+1.  **User:** Instructed to use the existing Leads tab for the new UI. (PENDING IMPLEMENTATION)
+2.  **User:** Introduced the 4-phase Leads Management module requirements. (BACKEND IMPLEMENTED)
+3.  **User:** Provided Twilio and Razorpay credentials and sandbox details. (ACKNOWLEDGED & USED)
+4.  **User:** Answered clarifying questions about the leads module logic and provided a screenshot of lead statuses. (ACKNOWLEDGED & USED)
+5.  **User:** Requested the new Leave Rules feature and specified requirements for CRM and ESS app. (COMPLETED)
+6.  **User:** Reported a bug where users with custom roles couldn't access their pages. (FIXED)
+7.  **User:** Reported 5 bugs related to the CRM Roles management tab (delete, copy, edit, UI). (FIXED)
+8.  **User:** Reported 3 critical bugs from UAT (password resets, document sync, salary data disappearing). (FIXED)
+9.  **User:** Requested generation of latest APK and IPA builds. (COMPLETED)
+10. **User:** Requested comprehensive testing of CRM-to-ESS data sync. (COMPLETED)
 
 **Project Health Check:**
--   **Broken:** The application is in a state of heavy refactoring. The navigation is partially disassembled, and key data displays (like salary) do not meet user requirements.
--   **Mocked:** None.
+-   **Broken:** None.
+-   **Mocked:** None. Live test credentials for Twilio and Razorpay are in use.
 
 **3rd Party Integrations**
+-   **Twilio:** For WhatsApp messaging. Configured with user's test credentials. Uses the  Python library.
+-   **Razorpay:** For payment processing. Configured with user's live credentials. Uses the  Python library.
 -   **Firebase Cloud Messaging (FCM):** For push notifications.
 -   **Expo Application Services (EAS):** For Android/iOS cloud builds.
 
 **Testing status**
--   **Testing agent used after significant changes:** NO (not since the latest user feedback).
--   **Test files created:** None.
--   **Known regressions:** The entire UI/navigation structure is a regression from a stable state, but this is intentional as per the user's request for a complete overhaul.
+-   **Testing agent used after significant changes:** YES. The testing agent was used to create and run comprehensive test suites after every major feature implementation and bug fix cycle.
+-   **Test files created:**
+    -   
+    -   Test suites for iterations 38, 39, 40, 41, and 42 (files generated by testing agent).
+-   **Known regressions:** None.
 
 **Credentials to test flow:**
--   Test users are available in the CRM database. All use the password .
--   Examples: , , 
+-   **CRM URL:** 
+-   **User:** 
+-   **Password:** 
+-   **Twilio & Razorpay:** Keys are stored in .
 
 **What agent forgot to execute**
--   The agent was correctly proceeding with the user's requests. It had identified the necessary backend files for the salary structure change and was about to modify them. No steps have been forgotten; the task is simply in progress.</analysis>
+The agent has been thorough. The only outstanding item from a very early session is a minor UI note about Screen Height Adjustment on iOS vs. Android, which has not been explicitly addressed but can be checked during final UAT.</analysis>
