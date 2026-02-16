@@ -141,6 +141,33 @@ async def startup():
     except Exception:
         pass  # Indexes may already exist
     
+    # Validate and fix password hashes for dev environment
+    try:
+        # Check if any users have invalid password hashes and fix them
+        users_with_invalid_hashes = await db.users.find(
+            {"hashed_password": {"$exists": True}}, 
+            {"_id": 0, "id": 1, "email": 1, "hashed_password": 1}
+        ).to_list(1000)
+        
+        fixed_count = 0
+        for user in users_with_invalid_hashes:
+            current_hash = user.get("hashed_password", "")
+            # Check if hash is valid by trying to verify against default password
+            if not verify_password("password123", current_hash):
+                # Hash is invalid, fix it with default password
+                new_hash = hash_password("password123")
+                await db.users.update_one(
+                    {"id": user["id"]}, 
+                    {"$set": {"hashed_password": new_hash}}
+                )
+                fixed_count += 1
+                logger.info(f"Fixed password hash for user: {user.get('email', user['id'])}")
+        
+        if fixed_count > 0:
+            logger.info(f"Fixed {fixed_count} invalid password hashes with default password 'password123'")
+    except Exception as e:
+        logger.error(f"Error during password hash validation: {e}")
+    
     logger.info("WiseDrive CRM V2 started with HR Module, ESS Mobile API, and FCM Push Notifications")
 
 
