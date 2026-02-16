@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { leadsApi, employeesApi, utilityApi } from '@/services/api';
+import { useAuth } from '@/contexts/AuthContext';
 import { formatDateTime, formatDate, formatTime } from '@/utils/dateFormat';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
