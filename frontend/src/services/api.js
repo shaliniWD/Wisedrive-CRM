@@ -135,7 +135,7 @@ export const dashboardApi = {
 export const utilityApi = {
   getCities: () => axios.get(`${API_URL}/cities`),
   getLeadSources: () => axios.get(`${API_URL}/lead-sources`),
-  getLeadStatuses: () => axios.get(`${API_URL}/lead-statuses`),
+  getLeadStatuses: () => axios.get(`${API_URL}/leads/statuses`),
 };
 
 // Seed API
