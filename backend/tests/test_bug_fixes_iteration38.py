@@ -420,7 +420,8 @@ class TestEndToEndFlow:
         # ESS Login
         ess_response = requests.post(f"{BASE_URL}/api/ess/v1/auth/login", json={
             "email": HR_EMAIL,
-            "password": DEFAULT_PASSWORD
+            "password": DEFAULT_PASSWORD,
+            "device": TEST_DEVICE
         })
         assert ess_response.status_code == 200, f"ESS login failed: {ess_response.text}"
         ess_token = ess_response.json()["access_token"]
