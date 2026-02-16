@@ -5,6 +5,7 @@ import { formatDateTime, formatDate, formatTime } from '@/utils/dateFormat';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { PlacesAutocomplete } from '@/components/ui/PlacesAutocomplete';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
@@ -25,7 +26,7 @@ import {
   Search, Plus, Pencil, Loader2, X, Users, TrendingUp, Calendar, 
   Phone, MapPin, Bell, Clock, CreditCard, Copy, ChevronLeft, ChevronRight, Filter,
   MessageCircle, Link2, ExternalLink, Eye, Flame, ChevronDown, Percent, CalendarDays,
-  StickyNote, Activity, Send, FileText
+  StickyNote, Activity, Send, FileText, Car, Trash2
 } from 'lucide-react';
 
 // Inline Status Dropdown Component - Click to update status
