@@ -449,6 +449,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...shadows.md,
   },
+  applyLeaveBtnDisabled: {
+    opacity: 0.7,
+  },
   applyLeaveBtnGradient: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -460,6 +463,29 @@ const styles = StyleSheet.create({
     fontSize: fontSize.base,
     fontWeight: fontWeight.semibold,
     color: '#FFF',
+  },
+  noLeavesText: {
+    fontSize: fontSize.xs,
+    color: colors.text.tertiary,
+    textAlign: 'center',
+    marginTop: spacing.sm,
+    fontStyle: 'italic',
+  },
+  leaveCardDisabled: {
+    opacity: 0.6,
+  },
+  exhaustedText: {
+    fontSize: fontSize.xs,
+    color: colors.error,
+    marginTop: spacing.xs,
+    fontWeight: fontWeight.medium,
+  },
+  periodLabel: {
+    fontSize: fontSize.sm,
+    color: 'rgba(255,255,255,0.9)',
+    fontWeight: fontWeight.medium,
+    textAlign: 'center',
+    marginBottom: spacing.md,
   },
   // Quick Actions Grid
   quickActionsGrid: {
