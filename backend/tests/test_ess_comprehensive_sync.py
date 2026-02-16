@@ -850,9 +850,8 @@ class TestSalaryComponentSync:
         """Update salary structure with conveyance_allowance and medical_allowance"""
         crm_headers = {"Authorization": f"Bearer {crm_token}"}
         
-        # Create/update salary structure
+        # Create/update salary structure using correct endpoint
         salary_data = {
-            "user_id": hr_user_id,
             "basic_salary": 55000,
             "hra": 22000,
             "variable_pay": 12000,
@@ -866,8 +865,9 @@ class TestSalaryComponentSync:
             "effective_from": "2024-01-01"
         }
         
+        # Use the correct endpoint: /api/hr/employees/{employee_id}/salary
         response = requests.post(
-            f"{BASE_URL}/api/hr/salary-structures",
+            f"{BASE_URL}/api/hr/employees/{hr_user_id}/salary",
             headers=crm_headers,
             json=salary_data
         )
