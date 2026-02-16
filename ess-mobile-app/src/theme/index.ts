@@ -39,6 +39,8 @@ export const colors = {
     primary: ['#2563EB', '#1D4ED8'],
     surface: ['#F8FAFC', '#FFFFFF'],
     blueGlow: ['rgba(37, 99, 235, 0.1)', 'transparent'],
+    earnings: ['#10B981', '#059669'],
+    deductions: ['#EF4444', '#DC2626'],
   },
 };
 
