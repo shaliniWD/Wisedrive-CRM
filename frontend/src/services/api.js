@@ -339,3 +339,20 @@ export const leaveApi = {
   // Team summary
   getTeamSummary: (teamId, countryId) => axios.get(`${API_URL}/hr/leave/team-summary`, { params: { team_id: teamId, country_id: countryId } }),
 };
+
+// ==================== INSPECTION PACKAGES APIs ====================
+
+export const inspectionPackagesApi = {
+  // Categories
+  getCategories: (countryId) => axios.get(`${API_URL}/inspection-categories`, { params: { country_id: countryId } }),
+  createCategory: (data, countryId) => axios.post(`${API_URL}/inspection-categories`, data, { params: { country_id: countryId } }),
+  updateCategory: (id, data) => axios.put(`${API_URL}/inspection-categories/${id}`, data),
+  deleteCategory: (id) => axios.delete(`${API_URL}/inspection-categories/${id}`),
+  
+  // Packages
+  getPackages: (countryId) => axios.get(`${API_URL}/inspection-packages`, { params: { country_id: countryId } }),
+  createPackage: (data) => axios.post(`${API_URL}/inspection-packages`, data),
+  updatePackage: (id, data) => axios.put(`${API_URL}/inspection-packages/${id}`, data),
+  togglePackageStatus: (id) => axios.patch(`${API_URL}/inspection-packages/${id}/toggle-status`),
+  deletePackage: (id) => axios.delete(`${API_URL}/inspection-packages/${id}`),
+};
