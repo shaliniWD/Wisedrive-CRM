@@ -2349,11 +2349,19 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
                   </div>
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Reporting Manager</Label>
-                    <Select value={form.reporting_manager_id || ''} onValueChange={(v) => setForm({...form, reporting_manager_id: v === 'none' ? '' : v})}>
+                    <Select value={form.reporting_manager_id || 'none'} onValueChange={(v) => setForm({...form, reporting_manager_id: v === 'none' ? '' : v})}>
                       <SelectTrigger className="h-10"><SelectValue placeholder="Select Manager" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="none">None</SelectItem>
-                        {/* Note: This would need employee list passed in */}
+                        {allEmployees
+                          .filter(emp => emp.id !== employee?.id && emp.is_active !== false)
+                          .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+                          .map(emp => (
+                            <SelectItem key={emp.id} value={emp.id}>
+                              {emp.name} {emp.employee_code ? `(${emp.employee_code})` : ''}
+                            </SelectItem>
+                          ))
+                        }
                       </SelectContent>
                     </Select>
                   </div>
