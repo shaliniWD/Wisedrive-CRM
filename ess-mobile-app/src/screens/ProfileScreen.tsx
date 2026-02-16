@@ -1,4 +1,4 @@
-// Premium Profile Screen - Dark Theme
+// Professional Profile Screen - Light Theme
 import React, { useState } from 'react';
 import {
   View,
@@ -16,7 +16,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { getProfile, getBankDetails, getSalarySummary } from '../services/api';
-import { colors, spacing, fontSize, fontWeight, radius, iconSize } from '../theme';
+import { colors, spacing, fontSize, fontWeight, radius, iconSize, shadows } from '../theme';
 
 type TabType = 'personal' | 'bank' | 'salary';
 
@@ -105,24 +105,19 @@ export default function ProfileScreen() {
       >
         {/* Profile Card */}
         <View style={styles.profileCard}>
-          <LinearGradient
-            colors={colors.gradients.surface}
-            style={styles.profileGradient}
-          >
-            <View style={styles.avatarContainer}>
-              <LinearGradient colors={colors.gradients.primary} style={styles.avatar}>
-                <Text style={styles.avatarText}>
-                  {getInitials(profile?.name || user?.name || '')}
-                </Text>
-              </LinearGradient>
-            </View>
-            <Text style={styles.profileName}>{profile?.name || user?.name || 'User'}</Text>
-            <Text style={styles.profileEmail}>{profile?.email || user?.email || ''}</Text>
-            <View style={styles.profileBadge}>
-              <Ionicons name="briefcase" size={14} color={colors.primary} />
-              <Text style={styles.profileRole}>{profile?.role_name || 'Employee'}</Text>
-            </View>
-          </LinearGradient>
+          <View style={styles.avatarContainer}>
+            <LinearGradient colors={colors.gradients.primary} style={styles.avatar}>
+              <Text style={styles.avatarText}>
+                {getInitials(profile?.name || user?.name || '')}
+              </Text>
+            </LinearGradient>
+          </View>
+          <Text style={styles.profileName}>{profile?.name || user?.name || 'User'}</Text>
+          <Text style={styles.profileEmail}>{profile?.email || user?.email || ''}</Text>
+          <View style={styles.profileBadge}>
+            <Ionicons name="briefcase" size={14} color={colors.primary} />
+            <Text style={styles.profileRole}>{profile?.role_name || 'Employee'}</Text>
+          </View>
         </View>
 
         {/* Tabs */}
@@ -212,7 +207,7 @@ const InfoRow = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
   },
   header: {
     flexDirection: 'row',
@@ -220,6 +215,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.lg,
+    backgroundColor: colors.background,
   },
   backBtn: {
     width: 40,
@@ -248,29 +244,25 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: spacing.xl,
-    paddingTop: 0,
     paddingBottom: spacing.xxxxl,
   },
   // Profile Card
   profileCard: {
+    backgroundColor: colors.background,
     borderRadius: radius.xl,
-    overflow: 'hidden',
-    marginBottom: spacing.xl,
-  },
-  profileGradient: {
     padding: spacing.xxl,
     alignItems: 'center',
+    marginBottom: spacing.xl,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: radius.xl,
   },
   avatarContainer: {
     marginBottom: spacing.lg,
   },
   avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -293,7 +285,7 @@ const styles = StyleSheet.create({
   profileBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: `${colors.primary}20`,
+    backgroundColor: colors.primaryLight,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: radius.full,
@@ -307,10 +299,12 @@ const styles = StyleSheet.create({
   // Tabs
   tabsContainer: {
     flexDirection: 'row',
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
     borderRadius: radius.lg,
     padding: spacing.xs,
     marginBottom: spacing.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   tab: {
     flex: 1,
@@ -322,7 +316,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
   },
   tabActive: {
-    backgroundColor: colors.surfaceHighlight,
+    backgroundColor: colors.primaryLight,
   },
   tabText: {
     fontSize: fontSize.sm,
@@ -338,7 +332,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   tabContent: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
     borderRadius: radius.lg,
     padding: spacing.lg,
     borderWidth: 1,
@@ -355,7 +349,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: radius.sm,
-    backgroundColor: colors.surfaceHighlight,
+    backgroundColor: colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: spacing.md,
