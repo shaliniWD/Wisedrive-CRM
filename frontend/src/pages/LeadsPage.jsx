@@ -1113,28 +1113,19 @@ export default function LeadsPage() {
               {modalStep === 2 && (
                 <>
                   <div className="text-lg font-semibold text-gray-900 pb-2 border-b">Step 2: Package & Pricing</div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-sm">Select Package *</Label>
-                      <Select value={paymentFormData.packageId || 'select'} onValueChange={(v) => setPaymentFormData({ ...paymentFormData, packageId: v === 'select' ? '' : v })}>
-                        <SelectTrigger className="h-11" data-testid="package-select"><SelectValue placeholder="Select Package" /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="select">-- Select Package --</SelectItem>
-                          {inspectionPackages.map(pkg => (
-                            <SelectItem key={pkg.id} value={pkg.id}>
-                              {pkg.name} - {pkg.no_of_inspections || 1} Inspection{(pkg.no_of_inspections || 1) > 1 ? 's' : ''} - ₹{pkg.price?.toLocaleString()}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-sm">Number of Cars</Label>
-                      <Select value={paymentFormData.numberOfCars} onValueChange={(v) => setPaymentFormData({ ...paymentFormData, numberOfCars: v })}>
-                        <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
-                        <SelectContent>{[1, 2, 3, 4, 5].map(n => <SelectItem key={n} value={String(n)}>{n} Car{n > 1 ? 's' : ''}</SelectItem>)}</SelectContent>
-                      </Select>
-                    </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm">Select Package *</Label>
+                    <Select value={paymentFormData.packageId || 'select'} onValueChange={(v) => handlePackageSelect(v === 'select' ? '' : v)}>
+                      <SelectTrigger className="h-11" data-testid="package-select"><SelectValue placeholder="Select Package" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="select">-- Select Package --</SelectItem>
+                        {inspectionPackages.map(pkg => (
+                          <SelectItem key={pkg.id} value={pkg.id}>
+                            {pkg.name} - {pkg.no_of_inspections || 1} Inspection{(pkg.no_of_inspections || 1) > 1 ? 's' : ''} - ₹{pkg.price?.toLocaleString()}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   {/* Package Details */}
@@ -1187,7 +1178,7 @@ export default function LeadsPage() {
                     {paymentFormData.packageId && (
                       <div className="mt-4 pt-4 border-t border-amber-200">
                         <div className="flex justify-between items-center text-sm mb-2">
-                          <span className="text-amber-700">Base Amount ({paymentFormData.numberOfCars} car{paymentFormData.numberOfCars > 1 ? 's' : ''}):</span>
+                          <span className="text-amber-700">Package Price:</span>
                           <span className="text-amber-800 font-medium">₹{getBaseAmount().toLocaleString()}</span>
                         </div>
                         {getDiscountAmount() > 0 && (
@@ -1204,46 +1195,146 @@ export default function LeadsPage() {
                     )}
                   </div>
 
-                  {/* Inspection Schedule Section */}
-                  <div className="bg-blue-50 p-4 rounded-xl border border-blue-200">
-                    <h4 className="font-semibold text-blue-800 mb-3 flex items-center gap-2">
-                      <CalendarDays className="h-4 w-4" /> Inspection Schedule (Optional)
-                    </h4>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label className="text-sm">Inspection Date</Label>
-                        <Input 
-                          type="date" 
-                          value={paymentFormData.inspectionDate} 
-                          onChange={(e) => setPaymentFormData({ ...paymentFormData, inspectionDate: e.target.value })}
-                          className="h-10" 
-                          data-testid="inspection-date"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm">Inspection Time</Label>
-                        <Select value={paymentFormData.inspectionTime || 'select'} onValueChange={(v) => setPaymentFormData({ ...paymentFormData, inspectionTime: v === 'select' ? '' : v })}>
-                          <SelectTrigger className="h-10" data-testid="inspection-time"><SelectValue placeholder="Select Time" /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="select">-- Select Time --</SelectItem>
-                            {['09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '02:00 PM', '03:00 PM', '04:00 PM', '05:00 PM', '06:00 PM'].map(t => 
-                              <SelectItem key={t} value={t}>{t}</SelectItem>
-                            )}
-                          </SelectContent>
-                        </Select>
+                  {/* Inspection Schedule Section - Only show if car details were provided in Step 1 */}
+                  {paymentFormData.hasCarDetails === 'yes' && paymentFormData.carConfirmed && inspectionSchedules.length > 0 && (
+                    <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-200">
+                      <h4 className="font-semibold text-emerald-800 mb-3 flex items-center gap-2">
+                        <CalendarDays className="h-4 w-4" /> Inspection Schedule (Optional)
+                      </h4>
+                      <p className="text-sm text-emerald-600 mb-4">
+                        You can schedule inspections now or leave them for later. Unscheduled inspections will appear in the Inspections tab.
+                      </p>
+                      
+                      <div className="space-y-6">
+                        {inspectionSchedules.map((schedule, index) => (
+                          <div key={schedule.id} className="bg-white p-4 rounded-lg border border-emerald-200">
+                            <div className="flex items-center justify-between mb-3">
+                              <h5 className="font-medium text-emerald-800 flex items-center gap-2">
+                                <Car className="h-4 w-4" />
+                                Inspection {index + 1} of {inspectionSchedules.length}
+                              </h5>
+                              {schedule.vehicleConfirmed && (
+                                <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full">
+                                  Vehicle Confirmed
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Vehicle Number Input with Vaahan Lookup */}
+                            <div className="space-y-3">
+                              <div className="flex items-end gap-3">
+                                <div className="flex-1 space-y-1">
+                                  <Label className="text-xs text-gray-600">Vehicle Registration Number</Label>
+                                  <Input
+                                    value={schedule.vehicleNumber}
+                                    onChange={(e) => updateSchedule(index, 'vehicleNumber', e.target.value.toUpperCase())}
+                                    className="h-10 font-mono uppercase"
+                                    placeholder="KA01AB1234"
+                                    disabled={schedule.vehicleConfirmed}
+                                    data-testid={`schedule-${index}-vehicle`}
+                                  />
+                                </div>
+                                {!schedule.vehicleConfirmed && (
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    onClick={() => fetchVehicleForSchedule(index, schedule.vehicleNumber)}
+                                    disabled={!schedule.vehicleNumber || schedule.isLoading}
+                                    className="h-10 bg-emerald-600 hover:bg-emerald-700"
+                                  >
+                                    {schedule.isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Get Details'}
+                                  </Button>
+                                )}
+                              </div>
+
+                              {/* Vehicle Details Display */}
+                              {schedule.vehicleData && (
+                                <div className="bg-emerald-50 p-3 rounded-lg text-sm">
+                                  <div className="grid grid-cols-3 gap-2 text-xs">
+                                    <div><span className="text-gray-500">Make:</span> <span className="font-medium">{schedule.vehicleData.manufacturer}</span></div>
+                                    <div><span className="text-gray-500">Model:</span> <span className="font-medium">{schedule.vehicleData.model}</span></div>
+                                    <div><span className="text-gray-500">Color:</span> <span className="font-medium">{schedule.vehicleData.color}</span></div>
+                                  </div>
+                                  {!schedule.vehicleConfirmed && (
+                                    <label className="flex items-center gap-2 mt-3 pt-2 border-t border-emerald-200 cursor-pointer">
+                                      <input
+                                        type="checkbox"
+                                        checked={schedule.vehicleConfirmed}
+                                        onChange={(e) => updateSchedule(index, 'vehicleConfirmed', e.target.checked)}
+                                        className="w-4 h-4 text-emerald-600 rounded"
+                                      />
+                                      <span className="text-xs font-medium">Confirm vehicle details</span>
+                                    </label>
+                                  )}
+                                </div>
+                              )}
+
+                              {schedule.error && (
+                                <p className="text-xs text-red-600">{schedule.error}</p>
+                              )}
+
+                              {/* Date, Time, and Address */}
+                              <div className="grid grid-cols-2 gap-3 mt-3">
+                                <div className="space-y-1">
+                                  <Label className="text-xs text-gray-600">Preferred Date</Label>
+                                  <Input
+                                    type="date"
+                                    value={schedule.inspectionDate}
+                                    onChange={(e) => updateSchedule(index, 'inspectionDate', e.target.value)}
+                                    className="h-9"
+                                    min={new Date().toISOString().split('T')[0]}
+                                    data-testid={`schedule-${index}-date`}
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-xs text-gray-600">Preferred Time</Label>
+                                  <Select 
+                                    value={schedule.inspectionTime || 'select'} 
+                                    onValueChange={(v) => updateSchedule(index, 'inspectionTime', v === 'select' ? '' : v)}
+                                  >
+                                    <SelectTrigger className="h-9" data-testid={`schedule-${index}-time`}>
+                                      <SelectValue placeholder="Select Time" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="select">-- Select --</SelectItem>
+                                      {['09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '02:00 PM', '03:00 PM', '04:00 PM', '05:00 PM', '06:00 PM'].map(t => 
+                                        <SelectItem key={t} value={t}>{t}</SelectItem>
+                                      )}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              </div>
+                              
+                              <div className="space-y-1">
+                                <Label className="text-xs text-gray-600">Inspection Address</Label>
+                                <PlacesAutocomplete
+                                  value={schedule.address}
+                                  onChange={(value) => updateSchedule(index, 'address', value)}
+                                  onSelect={(place) => {
+                                    updateSchedule(index, 'address', place.address);
+                                    updateSchedule(index, 'latitude', place.latitude);
+                                    updateSchedule(index, 'longitude', place.longitude);
+                                  }}
+                                  placeholder="Start typing address..."
+                                  className="h-9"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                    <div className="space-y-2 mt-4">
-                      <Label className="text-sm">Inspection Address</Label>
-                      <Input 
-                        value={paymentFormData.address} 
-                        onChange={(e) => setPaymentFormData({ ...paymentFormData, address: e.target.value })}
-                        className="h-10" 
-                        placeholder="Enter inspection location address"
-                        data-testid="inspection-address"
-                      />
+                  )}
+
+                  {/* Info message when no car details in Step 1 */}
+                  {paymentFormData.hasCarDetails === 'no' && getSelectedPackage() && (
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                      <p className="text-sm text-slate-600 flex items-center gap-2">
+                        <CalendarDays className="h-4 w-4" />
+                        Inspection scheduling will be available after payment. The {getSelectedPackage().no_of_inspections || 1} inspection(s) will appear in the Inspections tab as "Unscheduled".
+                      </p>
                     </div>
-                  </div>
+                  )}
                 </>
               )}
             </div>
