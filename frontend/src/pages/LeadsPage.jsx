@@ -1469,17 +1469,42 @@ export default function LeadsPage() {
         <DialogContent className="sm:max-w-[400px]" data-testid="assign-employee-modal">
           <DialogHeader className="border-b pb-4">
             <DialogTitle>Reassign Lead</DialogTitle>
+            {assigningLead?.city && (
+              <p className="text-sm text-gray-500 mt-1">
+                Lead City: <span className="font-medium text-blue-600">{assigningLead.city}</span>
+              </p>
+            )}
           </DialogHeader>
           <div className="space-y-4 pt-4">
             <div className="space-y-2">
-              <Label className="text-sm font-medium">Assign To</Label>
-              <Select value={selectedEmployee || 'unassigned'} onValueChange={(v) => setSelectedEmployee(v === 'unassigned' ? '' : v)}>
-                <SelectTrigger className="h-10"><SelectValue placeholder="Select" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="unassigned">-- Select Employee --</SelectItem>
-                  {employees.map((emp) => <SelectItem key={emp.id} value={emp.id}>{emp.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Label className="text-sm font-medium">Assign To (Sales Executives for {assigningLead?.city || 'this city'})</Label>
+              {loadingSalesReps ? (
+                <div className="flex items-center justify-center p-4">
+                  <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
+                  <span className="ml-2 text-sm text-gray-500">Loading sales reps...</span>
+                </div>
+              ) : salesRepsForCity.length === 0 ? (
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                  <p className="text-sm text-amber-800">
+                    No sales executives found for city: <strong>{assigningLead?.city}</strong>
+                  </p>
+                  <p className="text-xs text-amber-600 mt-1">
+                    Please configure sales executives with this city in HR → Employees → Leads Management tab
+                  </p>
+                </div>
+              ) : (
+                <Select value={selectedEmployee || 'unassigned'} onValueChange={(v) => setSelectedEmployee(v === 'unassigned' ? '' : v)}>
+                  <SelectTrigger className="h-10"><SelectValue placeholder="Select Sales Executive" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unassigned">-- Select Sales Executive --</SelectItem>
+                    {salesRepsForCity.map((rep) => (
+                      <SelectItem key={rep.id} value={rep.id}>
+                        {rep.name} {rep.leads_cities?.length > 0 && `(${rep.leads_cities.join(', ')})`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             <div className="space-y-2">
               <Label className="text-sm font-medium">Reason *</Label>
