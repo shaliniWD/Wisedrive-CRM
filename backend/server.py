@@ -999,6 +999,142 @@ async def get_lead_statuses():
     return LEAD_STATUSES
 
 
+@api_router.get("/leads/sales-reps-by-city")
+async def get_sales_reps_by_city(city: str = None, current_user: dict = Depends(get_current_user)):
+    """
+    Get sales representatives for lead assignment.
+    If city is provided, returns only reps assigned to that city.
+    """
+    query = {
+        "is_active": True,
+        "role_code": {"$in": ["SALES_EXEC", "SALES_EXECUTIVE", "SALES_LEAD", "SALES_HEAD"]}
+    }
+    
+    # Filter by city if provided
+    if city:
+        query["$or"] = [
+            {"leads_cities": city},
+            {"leads_cities": {"$in": [city]}},
+            # Also include reps with no city restrictions (empty array or not set)
+            {"leads_cities": {"$exists": False}},
+            {"leads_cities": []},
+            {"leads_cities": None}
+        ]
+    
+    sales_reps = await db.users.find(
+        query,
+        {"_id": 0, "id": 1, "name": 1, "email": 1, "leads_cities": 1}
+    ).sort("name", 1).to_list(100)
+    
+    return sales_reps
+
+
+@api_router.post("/leads/assign-unassigned")
+async def assign_unassigned_leads(current_user: dict = Depends(get_current_user)):
+    """
+    Assign all unassigned leads to sales representatives via round-robin based on city.
+    Called when leads page is refreshed or manually triggered.
+    """
+    # Check permission - only HR or admin can do bulk assignment
+    role_code = current_user.get("role_code", "")
+    if role_code not in ["HR_MANAGER", "CEO", "COUNTRY_HEAD", "ADMIN"]:
+        raise HTTPException(status_code=403, detail="Not authorized for bulk assignment")
+    
+    # Find all unassigned leads
+    unassigned_leads = await db.leads.find(
+        {"$or": [
+            {"assigned_to": None},
+            {"assigned_to": ""},
+            {"assigned_to": {"$exists": False}}
+        ]},
+        {"_id": 0, "id": 1, "city": 1, "name": 1}
+    ).to_list(1000)
+    
+    if not unassigned_leads:
+        return {"message": "No unassigned leads found", "assigned_count": 0}
+    
+    assigned_count = 0
+    failed_count = 0
+    results = []
+    
+    for lead in unassigned_leads:
+        lead_id = lead["id"]
+        lead_city = lead.get("city", "")
+        
+        if not lead_city:
+            results.append({"lead_id": lead_id, "status": "skipped", "reason": "No city specified"})
+            failed_count += 1
+            continue
+        
+        # Find sales reps for this city
+        sales_reps = await db.users.find({
+            "is_active": True,
+            "role_code": {"$in": ["SALES_EXEC", "SALES_EXECUTIVE", "SALES_LEAD", "SALES_HEAD"]},
+            "$or": [
+                {"leads_cities": lead_city},
+                {"leads_cities": {"$in": [lead_city]}}
+            ]
+        }, {"_id": 0, "id": 1, "name": 1}).to_list(100)
+        
+        if not sales_reps:
+            results.append({"lead_id": lead_id, "city": lead_city, "status": "failed", "reason": f"No sales reps for city: {lead_city}"})
+            failed_count += 1
+            continue
+        
+        # Get round-robin counter for this city
+        counter = await db.round_robin_counters.find_one({"city": lead_city})
+        if not counter:
+            counter = {"city": lead_city, "index": 0}
+            await db.round_robin_counters.insert_one(counter)
+        
+        # Get next sales rep
+        index = counter.get("index", 0) % len(sales_reps)
+        assigned_rep = sales_reps[index]
+        
+        # Update lead with assignment
+        await db.leads.update_one(
+            {"id": lead_id},
+            {"$set": {
+                "assigned_to": assigned_rep["id"],
+                "assigned_to_name": assigned_rep.get("name"),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "updated_by": current_user["id"]
+            }}
+        )
+        
+        # Update counter
+        await db.round_robin_counters.update_one(
+            {"city": lead_city},
+            {"$set": {"index": index + 1}},
+            upsert=True
+        )
+        
+        # Log assignment activity
+        activity = {
+            "id": str(uuid.uuid4()),
+            "lead_id": lead_id,
+            "user_id": "system",
+            "user_name": "System",
+            "action": "lead_assigned",
+            "details": f"Bulk assignment via round-robin for {lead_city}",
+            "new_value": f"Assigned to {assigned_rep.get('name')}",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.lead_activities.insert_one(activity)
+        
+        results.append({"lead_id": lead_id, "city": lead_city, "status": "assigned", "assigned_to": assigned_rep.get("name")})
+        assigned_count += 1
+    
+    logger.info(f"Bulk assignment: {assigned_count} assigned, {failed_count} failed")
+    
+    return {
+        "message": f"Assigned {assigned_count} leads, {failed_count} failed",
+        "assigned_count": assigned_count,
+        "failed_count": failed_count,
+        "results": results
+    }
+
+
 # Vaahan API for vehicle details
 @api_router.get("/vehicle/details/{vehicle_number}")
 async def get_vehicle_details(vehicle_number: str, current_user: dict = Depends(get_current_user)):
