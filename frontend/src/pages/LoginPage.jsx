@@ -128,7 +128,7 @@ export default function LoginPage() {
         </div>
         
         <div className="relative z-10">
-          <img src={COMPANY_LOGO_WHITE} alt="WiseDrive" className="h-12" crossOrigin="anonymous" />
+          <img src={COMPANY_LOGO_WHITE} alt="WiseDrive" className="h-12" />
         </div>
         
         <div className="relative z-10 space-y-8">
@@ -161,12 +161,12 @@ export default function LoginPage() {
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center justify-center mb-8">
-            <img src={COMPANY_LOGO_BLUE} alt="WiseDrive" className="h-10" crossOrigin="anonymous" />
+            <img src={COMPANY_LOGO_BLUE} alt="WiseDrive" className="h-10" />
           </div>
 
           <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-8" data-testid="login-card">
             <div className="text-center mb-8">
-              <img src={COMPANY_LOGO_BLUE} alt="WiseDrive" className="h-10 mx-auto mb-6" crossOrigin="anonymous" />
+              <img src={COMPANY_LOGO_BLUE} alt="WiseDrive" className="h-10 mx-auto mb-6" />
               <h2 className="text-2xl font-bold text-slate-900">
                 Welcome back
               </h2>
