@@ -769,12 +769,23 @@ async def get_leads(
     
     leads = await db.leads.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     
-    # Enrich with assigned_to name
-    for lead in leads:
-        if lead.get("assigned_to"):
-            agent = await db.users.find_one({"id": lead["assigned_to"]}, {"_id": 0, "name": 1})
-            if agent:
-                lead["assigned_to_name"] = agent.get("name")
+    # Batch fetch user names for all assigned leads
+    assigned_user_ids = list(set([
+        lead.get("assigned_to") for lead in leads 
+        if lead.get("assigned_to") and not lead.get("assigned_to_name")
+    ]))
+    
+    if assigned_user_ids:
+        users = await db.users.find(
+            {"id": {"$in": assigned_user_ids}},
+            {"_id": 0, "id": 1, "name": 1}
+        ).to_list(100)
+        user_map = {u["id"]: u["name"] for u in users}
+        
+        # Enrich leads with assigned_to_name
+        for lead in leads:
+            if lead.get("assigned_to") and not lead.get("assigned_to_name"):
+                lead["assigned_to_name"] = user_map.get(lead["assigned_to"], lead["assigned_to"])
     
     return leads
 
