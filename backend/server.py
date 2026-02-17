@@ -1505,6 +1505,19 @@ async def twilio_whatsapp_webhook(
                 upsert=True
             )
             
+            # Log assignment activity
+            assignment_activity = {
+                "id": str(uuid.uuid4()),
+                "lead_id": lead_id,
+                "user_id": "system",
+                "user_name": "System",
+                "action": "lead_assigned",
+                "details": f"Auto-assigned via round-robin for {city}",
+                "new_value": f"Assigned to {assigned_rep.get('name')}",
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.lead_activities.insert_one(assignment_activity)
+            
             # Send push notification to assigned rep
             from services_ess.fcm_service import get_fcm_service
             fcm = get_fcm_service()
@@ -1525,21 +1538,31 @@ async def twilio_whatsapp_webhook(
             
             logger.info(f"Lead {lead_id} assigned to {assigned_rep.get('name')} via round-robin")
         else:
-            logger.warning(f"No sales reps found for city {city}")
+            logger.warning(f"No sales reps found for city {city} - lead remains unassigned")
+            # Log unassigned activity
+            unassigned_activity = {
+                "id": str(uuid.uuid4()),
+                "lead_id": lead_id,
+                "user_id": "system",
+                "user_name": "System",
+                "action": "assignment_failed",
+                "details": f"No sales reps found for city: {city}",
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.lead_activities.insert_one(unassigned_activity)
     except Exception as e:
         logger.error(f"Failed to auto-assign lead: {e}")
-    
-    # Log activity
-    activity = {
-        "id": str(uuid.uuid4()),
-        "lead_id": lead_id,
-        "user_id": "system",
-        "user_name": "System",
-        "action": "lead_created",
-        "details": f"Created from WhatsApp - {platform}",
-        "created_at": datetime.now(timezone.utc).isoformat()
-    }
-    await db.lead_activities.insert_one(activity)
+        # Log error activity
+        error_activity = {
+            "id": str(uuid.uuid4()),
+            "lead_id": lead_id,
+            "user_id": "system",
+            "user_name": "System",
+            "action": "assignment_error",
+            "details": f"Error during auto-assignment: {str(e)}",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.lead_activities.insert_one(error_activity)
     
     return {"status": "created", "lead_id": lead_id}
 
