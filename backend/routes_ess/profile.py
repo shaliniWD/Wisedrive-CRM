@@ -398,8 +398,5 @@ async def get_holidays(
             "is_optional": h.get("is_optional", False)
         })
     
-    return {
-        "year": year,
-        "country_id": country_id,
-        "holidays": result
-    }
+    # Return just the array for mobile app compatibility
+    return result
