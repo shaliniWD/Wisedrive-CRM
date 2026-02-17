@@ -26,6 +26,8 @@ export const leadsApi = {
   setReminder: (id, data) => axios.post(`${API_URL}/leads/${id}/reminder`, data),
   // Payment
   createPaymentLink: (id, data) => axios.post(`${API_URL}/leads/${id}/payment-link`, data),
+  // Check payment status manually (Plan B)
+  checkPaymentStatus: (id) => axios.get(`${API_URL}/leads/${id}/check-payment-status`),
 };
 
 // Vehicle API (Vaahan Integration)
