@@ -1434,14 +1434,49 @@ async def twilio_whatsapp_webhook(
     
     await db.leads.insert_one(lead)
     
+    # Log the initial lead creation activity with message
+    initial_activity = {
+        "id": str(uuid.uuid4()),
+        "lead_id": lead_id,
+        "user_id": "system",
+        "user_name": "System",
+        "action": "lead_created",
+        "details": f"Lead created from WhatsApp ({platform})",
+        "new_value": f"Name: {ProfileName or 'Unknown'}, Phone: {phone}, City: {city}",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.lead_activities.insert_one(initial_activity)
+    
+    # Log the customer message
+    if Body:
+        message_activity = {
+            "id": str(uuid.uuid4()),
+            "lead_id": lead_id,
+            "user_id": "system",
+            "user_name": "Customer",
+            "action": "customer_message",
+            "details": "Customer sent a WhatsApp message",
+            "new_value": Body,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.lead_activities.insert_one(message_activity)
+    
     # Auto-assign to sales rep via round-robin based on city
     try:
-        # Find sales reps assigned to this city
+        # Find sales reps assigned to this city (check both leads_cities and assigned_cities fields)
+        # Also check for both SALES_EXEC and SALES_EXECUTIVE role codes
         sales_reps = await db.users.find({
             "is_active": True,
-            "role_code": {"$in": ["SALES_EXECUTIVE", "SALES_LEAD", "SALES_HEAD"]},
-            "assigned_cities": city
+            "role_code": {"$in": ["SALES_EXEC", "SALES_EXECUTIVE", "SALES_LEAD", "SALES_HEAD"]},
+            "$or": [
+                {"leads_cities": city},
+                {"assigned_cities": city},
+                {"leads_cities": {"$in": [city]}},
+                {"assigned_cities": {"$in": [city]}}
+            ]
         }, {"_id": 0, "id": 1, "name": 1}).to_list(100)
+        
+        logger.info(f"Found {len(sales_reps)} sales reps for city {city}: {[r.get('name') for r in sales_reps]}")
         
         if sales_reps:
             # Get round-robin counter for this city
