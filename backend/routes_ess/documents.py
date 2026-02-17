@@ -174,11 +174,13 @@ async def get_document_requirements(
 async def serve_document_file(
     request: Request,
     document_id: str,
+    token: str = Query(default=None, description="Auth token for browser/webview access"),
     current_user: dict = Depends(get_current_user)
 ):
     """
     Serve document file for download/viewing in ESS mobile app.
     Only serves documents belonging to the authenticated user.
+    Supports token via query parameter for browser/webview access.
     """
     from fastapi.responses import FileResponse, Response
     import os
