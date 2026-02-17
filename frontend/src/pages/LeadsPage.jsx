@@ -580,6 +580,38 @@ export default function LeadsPage() {
     }
   };
 
+  // Check payment status manually (Plan B for when webhooks are delayed)
+  const [checkingPayment, setCheckingPayment] = useState({});
+  
+  const handleCheckPaymentStatus = async (leadId) => {
+    setCheckingPayment(prev => ({ ...prev, [leadId]: true }));
+    try {
+      const response = await leadsApi.checkPaymentStatus(leadId);
+      const data = response.data;
+      
+      if (data.payment_status === 'paid') {
+        if (data.was_updated) {
+          toast.success('🎉 Payment confirmed! Lead has been updated.');
+        } else {
+          toast.success('Payment already confirmed.');
+        }
+        fetchData(); // Refresh to show updated status
+      } else if (data.payment_status === 'attempted') {
+        toast.warning('Customer started payment but did not complete.');
+      } else if (data.payment_status === 'expired') {
+        toast.error('Payment link has expired. Please send a new one.');
+      } else if (data.payment_status === 'cancelled') {
+        toast.error('Payment link was cancelled.');
+      } else {
+        toast.info(data.message || 'Waiting for customer to pay.');
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to check payment status');
+    } finally {
+      setCheckingPayment(prev => ({ ...prev, [leadId]: false }));
+    }
+  };
+
   // Calculate stats for sales agent dashboard (matching actual statuses from LEAD_STATUSES)
   const todayNewLeads = leads.filter(l => l.status === 'NEW LEAD' && l.created_at?.startsWith(today)).length;
   const hotLeads = leads.filter(l => l.status === 'HOT LEADS').length;
