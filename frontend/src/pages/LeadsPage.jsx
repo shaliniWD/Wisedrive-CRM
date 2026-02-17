@@ -734,13 +734,31 @@ export default function LeadsPage() {
           <h1 className="text-2xl font-bold text-gray-900">Leads</h1>
           <p className="text-gray-500 mt-1">Manage and track all your sales leads</p>
         </div>
-        <button
-          onClick={() => { resetForm(); setIsModalOpen(true); }}
-          className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 flex items-center gap-2 font-medium shadow-lg shadow-blue-500/25 transition-all"
-          data-testid="add-lead-button"
-        >
-          <Plus className="h-4 w-4" /> Add Lead
-        </button>
+        <div className="flex items-center gap-3">
+          {/* Auto-Assign Button - Only for HR/Admin */}
+          {user && ['HR_MANAGER', 'CEO', 'COUNTRY_HEAD', 'ADMIN', 'HR_ADMIN'].includes(user.role_code) && (
+            <button
+              onClick={() => assignUnassignedLeads(true)}
+              disabled={isAssigning}
+              className="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:from-emerald-600 hover:to-emerald-700 flex items-center gap-2 font-medium shadow-lg shadow-emerald-500/25 transition-all disabled:opacity-50"
+              data-testid="assign-all-button"
+            >
+              {isAssigning ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Users className="h-4 w-4" />
+              )}
+              {isAssigning ? 'Assigning...' : 'Assign Unassigned'}
+            </button>
+          )}
+          <button
+            onClick={() => { resetForm(); setIsModalOpen(true); }}
+            className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 flex items-center gap-2 font-medium shadow-lg shadow-blue-500/25 transition-all"
+            data-testid="add-lead-button"
+          >
+            <Plus className="h-4 w-4" /> Add Lead
+          </button>
+        </div>
       </div>
 
       {/* Sales Agent Dashboard - Action-oriented Summary Cards */}
