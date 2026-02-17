@@ -857,15 +857,23 @@ async def reassign_lead(
         raise HTTPException(status_code=404, detail="Agent not found")
     
     new_agent_name = new_agent.get("name", "Unknown")
+    agent_role = new_agent.get("role_code", "").upper()
     
-    # Validate the agent is a sales executive
-    if new_agent.get("role_code") not in ["SALES_EXEC", "SALES_EXECUTIVE", "SALES_LEAD", "SALES_HEAD"]:
-        raise HTTPException(status_code=400, detail="Lead can only be assigned to sales executives")
+    # Validate the agent is a sales role (flexible matching)
+    if "SALES" not in agent_role:
+        raise HTTPException(status_code=400, detail=f"Lead can only be assigned to sales executives. Current role: {agent_role}")
     
-    # Validate agent has the lead's city in their leads_cities
-    agent_cities = new_agent.get("leads_cities", [])
-    if agent_cities and lead_city and lead_city not in agent_cities:
-        raise HTTPException(status_code=400, detail=f"Agent is not assigned to city: {lead_city}")
+    # Validate agent has the lead's city (check multiple fields)
+    agent_leads_cities = new_agent.get("leads_cities", []) or []
+    agent_assigned_cities = new_agent.get("assigned_cities", []) or []
+    agent_city = new_agent.get("city", "")
+    
+    # Combine all city sources
+    all_agent_cities = list(set(agent_leads_cities + agent_assigned_cities + ([agent_city] if agent_city else [])))
+    
+    # Only validate if agent has any city restrictions
+    if all_agent_cities and lead_city and lead_city not in all_agent_cities:
+        raise HTTPException(status_code=400, detail=f"Agent is not assigned to city: {lead_city}. Agent's cities: {all_agent_cities}")
     
     # Perform direct reassignment (simple update, not round-robin)
     await db.leads.update_one(
