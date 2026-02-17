@@ -160,7 +160,7 @@ export default function ProfileScreen() {
               <View style={styles.tabContent}>
                 <InfoRow icon="id-card-outline" label="Employee ID" value={profile?.employee_code || '-'} />
                 <InfoRow icon="call-outline" label="Phone" value={profile?.phone || '-'} />
-                <InfoRow icon="business-outline" label="Department" value={profile?.department_name || '-'} />
+                <InfoRow icon="briefcase-outline" label="Designation" value={profile?.role_name || '-'} />
                 <InfoRow icon="location-outline" label="Location" value={profile?.location || profile?.country_name || '-'} />
                 <InfoRow icon="calendar-outline" label="Join Date" value={profile?.join_date || '-'} />
               </View>
