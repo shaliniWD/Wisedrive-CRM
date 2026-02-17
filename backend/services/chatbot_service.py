@@ -64,19 +64,28 @@ DO NOT:
 - Share competitor information
 """
         
-        # Menu options
+        # Menu options with button IDs
+        self.MENU_BUTTONS = [
+            {"id": "buy_inspection", "title": "🛒 Buy Inspection"},
+            {"id": "request_callback", "title": "📞 Request Callback"}
+        ]
+        
+        self.PACKAGE_BUTTONS = [
+            {"id": "pkg_basic", "title": "Basic - ₹999"},
+            {"id": "pkg_standard", "title": "Standard - ₹1,999"},
+            {"id": "pkg_premium", "title": "Premium - ₹2,999"}
+        ]
+
         self.GREETING_MESSAGE = """🙏 *Welcome to WiseDrive!*
 
 India's Premium Used Car Inspection Company
 
 We help you make confident decisions when buying a used car with our comprehensive 200+ point inspection.
 
-*How can we help you today?*
+*How can we help you today?*"""
 
-1️⃣ *Buy Inspection* - View our packages and pricing
-2️⃣ *Request Call Back* - Speak with our expert
-
-_Reply with 1 or 2 to continue_"""
+        self.GREETING_HEADER = "WiseDrive"
+        self.GREETING_FOOTER = "Tap a button below to continue"
 
         self.BUY_INSPECTION_MESSAGE = """📋 *Our Inspection Packages*
 
@@ -93,11 +102,9 @@ _Reply with 1 or 2 to continue_"""
 *Premium Inspection - ₹2,999*
 ✓ 200+ point check
 ✓ OBD diagnostic
-✓ Expert consultation
+✓ Expert consultation"""
 
-*Reply with package name to proceed or type "callback" for assistance*"""
-
-        self.CALLBACK_MESSAGE = """📞 *Request Received!*
+        self.CALLBACK_MESSAGE = """📞 *Callback Request Received!*
 
 Our sales representative will call you within the next 30 minutes.
 
