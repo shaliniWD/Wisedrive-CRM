@@ -17,9 +17,11 @@ class EmployeeProfile(BaseModel):
     role_name: Optional[str]
     country_name: Optional[str]
     team_name: Optional[str]
+    location: Optional[str] = None  # Added for frontend compatibility
     
     # Employment info
     date_of_joining: Optional[str]
+    join_date: Optional[str] = None  # Alias for frontend compatibility
     employment_type: Optional[str]  # permanent, contract, freelancer
     employment_status: str  # active, on_leave, exited
     
@@ -47,6 +49,7 @@ class EmployeeProfile(BaseModel):
                 "role_name": "Sales Executive",
                 "country_name": "India",
                 "date_of_joining": "2024-01-15",
+                "join_date": "2024-01-15",
                 "employment_type": "permanent",
                 "employment_status": "active",
                 "reporting_manager_name": "Jane Smith"
