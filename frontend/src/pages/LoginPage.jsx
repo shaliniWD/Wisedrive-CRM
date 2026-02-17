@@ -11,8 +11,9 @@ import { toast } from 'sonner';
 import { Loader2, Mail, Lock, Eye, EyeOff, Shield, ArrowRight, Globe } from 'lucide-react';
 import axios from 'axios';
 
-// Company Logo URL - Blue version with transparent background
-const COMPANY_LOGO = "https://customer-assets.emergentagent.com/job_leadfix-deploy/artifacts/ar0dmd4y_Wisedrive%20New%20Logo%20Horizontal%20Blue%20Trans%20BG.png";
+// Company Logos - Blue version for white backgrounds, White version for blue backgrounds
+const COMPANY_LOGO_BLUE = "https://customer-assets.emergentagent.com/job_leadfix-deploy/artifacts/ar0dmd4y_Wisedrive%20New%20Logo%20Horizontal%20Blue%20Trans%20BG.png";
+const COMPANY_LOGO_WHITE = "https://customer-assets.emergentagent.com/job_leadfix-deploy/artifacts/hwa244n6_Wisedrive%20new%20logo%20CRM%20.png";
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
