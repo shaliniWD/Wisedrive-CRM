@@ -128,7 +128,7 @@ export default function LoginPage() {
         </div>
         
         <div className="relative z-10">
-          <img src={COMPANY_LOGO} alt="WiseDrive" className="h-12" crossOrigin="anonymous" />
+          <img src={COMPANY_LOGO_WHITE} alt="WiseDrive" className="h-12" crossOrigin="anonymous" />
         </div>
         
         <div className="relative z-10 space-y-8">
