@@ -1033,22 +1033,7 @@ async def find_sales_reps_for_city(city: str):
         logger.warning("No sales roles found in database")
         return []
     
-    # Build query - must have a sales role AND be active AND available for leads
-    # AND be assigned to this city
-    query = {
-        "is_active": True,
-        "$or": [
-            {"role_id": {"$in": sales_role_ids}},
-            {"role_ids": {"$elemMatch": {"$in": sales_role_ids}}}
-        ],
-        # Check is_available_for_leads (default to True if not set)
-        "$or": [
-            {"is_available_for_leads": True},
-            {"is_available_for_leads": {"$exists": False}}
-        ]
-    }
-    
-    # City filter - check assigned_cities array
+    # City filter - check assigned_cities array (case-insensitive)
     city_conditions = [
         {"assigned_cities": city},
         {"assigned_cities": {"$elemMatch": {"$eq": city}}},
