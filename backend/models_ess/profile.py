@@ -73,8 +73,10 @@ class BankDetailsResponse(BaseModel):
     """Bank details (masked for security)"""
     bank_name: Optional[str]
     account_number_masked: Optional[str]  # e.g., "XXXX XXXX 1234"
+    account_number: Optional[str] = None  # Alias for frontend compatibility
     ifsc_code: Optional[str]
     account_holder_name: Optional[str]
+    branch_name: Optional[str] = None  # Added for frontend compatibility
 
 
 class SalarySummary(BaseModel):
