@@ -167,6 +167,23 @@ Build a scalable automotive platform "Wisedrive" that evolved into a monolithic 
 
 ## Bug Fixes
 
+### ✅ CTO Role Permissions Fix (February 17, 2026)
+
+**Issue:** New CTO user (`shalini.vyshaka@gmail.com`) could see navigation tabs but couldn't access any data (leads, customers, employees showed empty).
+
+**Root Cause:**
+- The role had `permissions` array (for tab visibility) but zero entries in `role_permissions` collection (for data access scoping)
+- `get_visible_tabs()` uses role's `permissions` array → tabs visible ✅
+- `get_data_filter()` uses `role_permissions` collection → returned `{"id": "NONE"}` blocking all data ❌
+
+**Fix Applied:**
+- Copied all 29 `role_permissions` entries from CEO role to CTO role
+- Each permission has `scope: "all"` for global data access (same as CEO)
+
+**Verification:**
+- CTO user can now see all leads (73), customers (17), employees (19)
+- All navigation tabs functional: Dashboard, Leads, Customers, Inspections, HR Module, Finance, Settings
+
 ### ✅ Lead Auto-Assignment Bug Fix (February 17, 2026)
 
 **Root Cause Analysis:**
