@@ -1885,21 +1885,23 @@ async def razorpay_payment_webhook(request: Request):
         
         # Send push notification to assigned sales rep
         if lead.get("assigned_to"):
-            from services_ess.fcm_service import get_fcm_service
-            fcm = get_fcm_service()
-            if fcm:
-                tokens = await db.device_tokens.find(
-                    {"user_id": lead["assigned_to"]},
-                    {"_id": 0, "fcm_token": 1}
-                ).to_list(10)
-                
-                for token_doc in tokens:
-                    await fcm.send_notification(
-                        token=token_doc.get("fcm_token"),
-                        title="Payment Received! 🎉",
-                        body=f"{lead.get('name')} paid ₹{amount} for {lead.get('package_name')}",
-                        data={"type": "payment_received", "lead_id": lead_id}
-                    )
+            try:
+                if hasattr(app.state, 'fcm_service') and app.state.fcm_service:
+                    fcm = app.state.fcm_service
+                    tokens = await db.device_tokens.find(
+                        {"user_id": lead["assigned_to"]},
+                        {"_id": 0, "fcm_token": 1}
+                    ).to_list(10)
+                    
+                    for token_doc in tokens:
+                        await fcm.send_notification(
+                            token=token_doc.get("fcm_token"),
+                            title="Payment Received! 🎉",
+                            body=f"{lead.get('name')} paid ₹{amount} for {lead.get('package_name')}",
+                            data={"type": "payment_received", "lead_id": lead_id}
+                        )
+            except Exception as fcm_error:
+                logger.warning(f"FCM notification failed: {fcm_error}")
         
         # Create inspection records from stored schedules
         no_of_inspections = lead.get("no_of_inspections", 1)
