@@ -88,11 +88,10 @@ async def get_documents(
     
     documents = []
     for doc in docs:
-        # Handle multiple field name variations for file URL
-        file_url = doc.get("url") or doc.get("document_url") or doc.get("file_url")
-        
-        # Make URL absolute using helper function
-        file_url = make_url_absolute(file_url, base_url)
+        # Generate ESS-specific file URL using document ID
+        # This URL will use ESS authentication and only serve user's own documents
+        doc_id = doc.get("id")
+        file_url = f"{base_url}/api/ess/v1/documents/file/{doc_id}" if doc_id else None
         
         documents.append(DocumentResponse(
             id=doc["id"],
