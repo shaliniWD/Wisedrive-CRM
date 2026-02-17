@@ -105,11 +105,19 @@ export default function ProfileScreen() {
         {/* Profile Card */}
         <View style={styles.profileCard}>
           <View style={styles.avatarContainer}>
-            <LinearGradient colors={colors.gradients.primary} style={styles.avatar}>
-              <Text style={styles.avatarText}>
-                {getInitials(profile?.name || user?.name || '')}
-              </Text>
-            </LinearGradient>
+            {profile?.photo_url ? (
+              <Image 
+                source={{ uri: profile.photo_url }}
+                style={styles.avatarImage}
+                resizeMode="cover"
+              />
+            ) : (
+              <LinearGradient colors={colors.gradients.primary} style={styles.avatar}>
+                <Text style={styles.avatarText}>
+                  {getInitials(profile?.name || user?.name || '')}
+                </Text>
+              </LinearGradient>
+            )}
           </View>
           <Text style={styles.profileName}>{profile?.name || user?.name || 'User'}</Text>
           <Text style={styles.profileEmail}>{profile?.email || user?.email || ''}</Text>
