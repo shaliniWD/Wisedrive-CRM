@@ -833,6 +833,7 @@ async def reassign_lead(
     
     old_agent_id = lead.get("assigned_to")
     old_agent_name = lead.get("assigned_to_name", "Unassigned")
+    lead_city = lead.get("city", "")
     
     # Check permission
     can_reassign = await rbac_service.can_reassign_lead(
@@ -842,19 +843,46 @@ async def reassign_lead(
     if not can_reassign:
         raise HTTPException(status_code=403, detail="Not authorized to reassign leads")
     
-    # Get new agent name
-    new_agent = await db.users.find_one({"id": reassign_data.new_agent_id}, {"_id": 0, "name": 1})
-    new_agent_name = new_agent.get("name", "Unknown") if new_agent else "Unknown"
+    # Get new agent details and validate
+    new_agent = await db.users.find_one({"id": reassign_data.new_agent_id}, {"_id": 0, "name": 1, "role_code": 1, "leads_cities": 1})
+    if not new_agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
     
-    # Perform reassignment
-    await round_robin_service.assign_lead(
-        lead_id=lead_id,
-        country_id=lead["country_id"],
-        team_id=lead.get("team_id"),
-        assigner_id=current_user["id"],
-        manual_agent_id=reassign_data.new_agent_id,
-        reason=reassign_data.reason
+    new_agent_name = new_agent.get("name", "Unknown")
+    
+    # Validate the agent is a sales executive
+    if new_agent.get("role_code") not in ["SALES_EXEC", "SALES_EXECUTIVE", "SALES_LEAD", "SALES_HEAD"]:
+        raise HTTPException(status_code=400, detail="Lead can only be assigned to sales executives")
+    
+    # Validate agent has the lead's city in their leads_cities
+    agent_cities = new_agent.get("leads_cities", [])
+    if agent_cities and lead_city and lead_city not in agent_cities:
+        raise HTTPException(status_code=400, detail=f"Agent is not assigned to city: {lead_city}")
+    
+    # Perform direct reassignment (simple update, not round-robin)
+    await db.leads.update_one(
+        {"id": lead_id},
+        {"$set": {
+            "assigned_to": reassign_data.new_agent_id,
+            "assigned_to_name": new_agent_name,
+            "is_locked": True,  # Lock manual assignments
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "updated_by": current_user["id"]
+        }}
     )
+    
+    # Log reassignment in lead_reassignment_logs
+    log_entry = {
+        "id": str(uuid.uuid4()),
+        "lead_id": lead_id,
+        "old_agent_id": old_agent_id,
+        "new_agent_id": reassign_data.new_agent_id,
+        "reassigned_by": current_user["id"],
+        "reason": reassign_data.reason,
+        "reassignment_type": "manual",
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+    await db.lead_reassignment_logs.insert_one(log_entry)
     
     # Log reassignment activity
     activity = {
