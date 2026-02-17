@@ -1144,31 +1144,31 @@ async def get_sales_reps_by_city(city: str = None, current_user: dict = Depends(
     """
     Get sales representatives for lead assignment.
     If city is provided, returns only reps assigned to that city.
+    Uses role_id to find users with sales roles (not role_code on user doc).
     """
-    query = {
-        "is_active": True,
-        "role_code": {"$regex": "SALES", "$options": "i"}  # Match any role containing "SALES"
-    }
+    # Get sales role IDs first
+    sales_role_ids = await get_sales_role_ids()
     
-    # Filter by city if provided
+    if not sales_role_ids:
+        return []
+    
+    # Base query - active users with sales roles
     if city:
-        query["$or"] = [
-            {"leads_cities": city},
-            {"leads_cities": {"$in": [city]}},
-            {"assigned_cities": city},
-            {"assigned_cities": {"$in": [city]}},
-            {"city": city},
-            {"city": {"$regex": f"^{city}$", "$options": "i"}},
-            # Also include reps with no city restrictions
-            {"leads_cities": {"$exists": False}},
-            {"leads_cities": []},
-            {"leads_cities": None}
-        ]
-    
-    sales_reps = await db.users.find(
-        query,
-        {"_id": 0, "id": 1, "name": 1, "email": 1, "leads_cities": 1, "city": 1, "role_code": 1}
-    ).sort("name", 1).to_list(100)
+        # With city filter - use the helper function
+        sales_reps = await find_sales_reps_for_city(city)
+    else:
+        # No city filter - get all sales reps
+        query = {
+            "is_active": True,
+            "$or": [
+                {"role_id": {"$in": sales_role_ids}},
+                {"role_ids": {"$elemMatch": {"$in": sales_role_ids}}}
+            ]
+        }
+        sales_reps = await db.users.find(
+            query,
+            {"_id": 0, "id": 1, "name": 1, "email": 1, "assigned_cities": 1, "role_id": 1}
+        ).sort("name", 1).to_list(100)
     
     return sales_reps
 
