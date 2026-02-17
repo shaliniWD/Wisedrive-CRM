@@ -1967,6 +1967,19 @@ async def twilio_whatsapp_webhook(
         }
         await db.lead_activities.insert_one(error_activity)
     
+    # Send chatbot greeting to new lead
+    try:
+        from services.chatbot_service import get_chatbot_service
+        chatbot = get_chatbot_service()
+        await chatbot.handle_message(
+            phone=phone,
+            message=Body,
+            lead_id=lead_id,
+            is_existing_lead=False
+        )
+    except Exception as e:
+        logger.error(f"Failed to send chatbot response: {e}")
+    
     return {"status": "created", "lead_id": lead_id}
 
 
