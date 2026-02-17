@@ -1007,40 +1007,121 @@ async def get_lead_reassignment_history(lead_id: str, current_user: dict = Depen
     return logs
 
 
+# Helper function to get sales role IDs
+async def get_sales_role_ids():
+    """
+    Get all role IDs that contain 'SALES' in their code.
+    This is used for finding sales representatives for lead assignment.
+    """
+    sales_roles = await db.roles.find(
+        {"code": {"$regex": "SALES", "$options": "i"}},
+        {"_id": 0, "id": 1, "code": 1}
+    ).to_list(100)
+    return [r["id"] for r in sales_roles]
+
+
+# Helper function to find sales reps for a city
+async def find_sales_reps_for_city(city: str):
+    """
+    Find all active sales reps assigned to a specific city.
+    Checks assigned_cities array AND is_available_for_leads flag.
+    """
+    # First get role IDs for sales roles
+    sales_role_ids = await get_sales_role_ids()
+    
+    if not sales_role_ids:
+        logger.warning("No sales roles found in database")
+        return []
+    
+    # Build query - must have a sales role AND be active AND available for leads
+    # AND be assigned to this city
+    query = {
+        "is_active": True,
+        "$or": [
+            {"role_id": {"$in": sales_role_ids}},
+            {"role_ids": {"$elemMatch": {"$in": sales_role_ids}}}
+        ],
+        # Check is_available_for_leads (default to True if not set)
+        "$or": [
+            {"is_available_for_leads": True},
+            {"is_available_for_leads": {"$exists": False}}
+        ]
+    }
+    
+    # City filter - check assigned_cities array
+    city_conditions = [
+        {"assigned_cities": city},
+        {"assigned_cities": {"$elemMatch": {"$eq": city}}},
+        {"assigned_cities": {"$regex": f"^{city}$", "$options": "i"}}
+    ]
+    
+    # Full query with role, active status, and city
+    full_query = {
+        "is_active": True,
+        "$and": [
+            {
+                "$or": [
+                    {"role_id": {"$in": sales_role_ids}},
+                    {"role_ids": {"$elemMatch": {"$in": sales_role_ids}}}
+                ]
+            },
+            {
+                "$or": [
+                    {"is_available_for_leads": True},
+                    {"is_available_for_leads": {"$exists": False}}
+                ]
+            },
+            {
+                "$or": city_conditions
+            }
+        ]
+    }
+    
+    sales_reps = await db.users.find(
+        full_query,
+        {"_id": 0, "id": 1, "name": 1, "email": 1, "assigned_cities": 1, "role_id": 1}
+    ).to_list(100)
+    
+    return sales_reps
+
+
 # Debug endpoint to check sales rep configuration
 @api_router.get("/leads/debug-sales-reps")
 async def debug_sales_reps(city: str = None, current_user: dict = Depends(get_current_user)):
     """
     Debug endpoint to check sales rep configuration.
-    Shows all users with SALES in their role and their city assignments.
+    Shows all users with SALES roles and their city assignments.
     """
-    # Get all users with SALES in role
+    # Get sales role IDs
+    sales_role_ids = await get_sales_role_ids()
+    
+    # Get all roles for reference
+    all_roles = await db.roles.find(
+        {"code": {"$regex": "SALES", "$options": "i"}},
+        {"_id": 0, "id": 1, "code": 1, "name": 1}
+    ).to_list(100)
+    
+    # Get all users with sales roles
     all_sales = await db.users.find(
-        {"role_code": {"$regex": "SALES", "$options": "i"}},
-        {"_id": 0, "id": 1, "name": 1, "email": 1, "role_code": 1, "is_active": 1, 
+        {
+            "$or": [
+                {"role_id": {"$in": sales_role_ids}},
+                {"role_ids": {"$elemMatch": {"$in": sales_role_ids}}}
+            ]
+        },
+        {"_id": 0, "id": 1, "name": 1, "email": 1, "role_id": 1, "role_ids": 1,
+         "is_active": 1, "is_available_for_leads": 1,
          "city": 1, "leads_cities": 1, "assigned_cities": 1}
     ).to_list(100)
     
-    # Also get users with the specific city
+    # Get users matching the specific city
     matching_for_city = []
     if city:
-        matching_for_city = await db.users.find({
-            "is_active": True,
-            "role_code": {"$regex": "SALES", "$options": "i"},
-            "$or": [
-                {"leads_cities": city},
-                {"leads_cities": {"$in": [city]}},
-                {"assigned_cities": city},
-                {"assigned_cities": {"$in": [city]}},
-                {"city": city},
-                {"city": {"$regex": f"^{city}$", "$options": "i"}},
-                {"leads_cities": {"$exists": False}},
-                {"leads_cities": []},
-                {"leads_cities": None}
-            ]
-        }, {"_id": 0, "id": 1, "name": 1, "email": 1, "role_code": 1}).to_list(100)
+        matching_for_city = await find_sales_reps_for_city(city)
     
     return {
+        "sales_roles": all_roles,
+        "sales_role_ids": sales_role_ids,
         "all_sales_users": all_sales,
         "matching_for_city": {
             "city": city,
