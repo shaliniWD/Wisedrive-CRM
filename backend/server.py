@@ -2081,38 +2081,8 @@ Or type your question and we'll help you!"""
         # First, log what we're looking for
         logger.info(f"Looking for sales reps for city: {city}")
         
-        # Find all potential sales reps (broader search)
-        all_sales_query = {
-            "is_active": True,
-            "role_code": {"$regex": "SALES", "$options": "i"}  # Match any role containing "SALES"
-        }
-        all_sales = await db.users.find(all_sales_query, {"_id": 0, "id": 1, "name": 1, "role_code": 1, "city": 1, "leads_cities": 1, "assigned_cities": 1}).to_list(100)
-        logger.info(f"All sales users found: {[(r.get('name'), r.get('role_code'), r.get('city'), r.get('leads_cities')) for r in all_sales]}")
-        
-        # Find sales reps assigned to this city (check multiple fields)
-        # Check: leads_cities, assigned_cities, AND the direct city field
-        sales_reps = await db.users.find({
-            "is_active": True,
-            "role_code": {"$regex": "SALES", "$options": "i"},  # Match any role containing "SALES"
-            "$or": [
-                # Check leads_cities array
-                {"leads_cities": city},
-                {"leads_cities": {"$in": [city]}},
-                # Check assigned_cities array
-                {"assigned_cities": city},
-                {"assigned_cities": {"$in": [city]}},
-                # Check direct city field (string)
-                {"city": city},
-                {"city": {"$regex": f"^{city}$", "$options": "i"}},  # Case-insensitive match
-                # Include reps with no city restrictions
-                {"$and": [
-                    {"leads_cities": {"$in": [None, []]}},
-                    {"assigned_cities": {"$in": [None, []]}},
-                    {"city": {"$in": [None, ""]}}
-                ]},
-                {"leads_cities": {"$exists": False}},
-            ]
-        }, {"_id": 0, "id": 1, "name": 1, "role_code": 1}).to_list(100)
+        # Use the helper function to find sales reps for this city
+        sales_reps = await find_sales_reps_for_city(city)
         
         logger.info(f"Found {len(sales_reps)} sales reps for city {city}: {[r.get('name') for r in sales_reps]}")
         
