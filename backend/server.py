@@ -1758,16 +1758,56 @@ async def twilio_whatsapp_webhook(
     # Check if lead already exists with this phone
     existing_lead = await db.leads.find_one({"mobile": phone}, {"_id": 0})
     if existing_lead:
-        # Update existing lead with new message
+        # Update existing lead with new message and set status to RCB WHATSAPP
+        old_status = existing_lead.get("status", "")
         await db.leads.update_one(
             {"id": existing_lead["id"]},
             {"$set": {
                 "message": Body,
+                "status": "RCB WHATSAPP",  # Request Call Back via WhatsApp
                 "updated_at": datetime.now(timezone.utc).isoformat()
             }}
         )
-        logger.info(f"Updated existing lead {existing_lead['id']} with new message")
-        return {"status": "updated", "lead_id": existing_lead["id"]}
+        
+        # Log the status change
+        status_activity = {
+            "id": str(uuid.uuid4()),
+            "lead_id": existing_lead["id"],
+            "user_id": "system",
+            "user_name": "System",
+            "action": "status_changed",
+            "old_value": old_status,
+            "new_value": "RCB WHATSAPP",
+            "details": "Customer messaged again on WhatsApp - Requesting callback",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.lead_activities.insert_one(status_activity)
+        
+        # Log the customer message
+        message_activity = {
+            "id": str(uuid.uuid4()),
+            "lead_id": existing_lead["id"],
+            "user_id": "system",
+            "user_name": "Customer",
+            "action": "customer_message",
+            "details": "Customer sent a follow-up WhatsApp message",
+            "new_value": Body,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.lead_activities.insert_one(message_activity)
+        
+        # Send chatbot response to existing customer
+        from services.chatbot_service import get_chatbot_service
+        chatbot = get_chatbot_service()
+        await chatbot.handle_message(
+            phone=phone,
+            message=Body,
+            lead_id=existing_lead["id"],
+            is_existing_lead=True
+        )
+        
+        logger.info(f"Updated existing lead {existing_lead['id']} status to RCB WHATSAPP")
+        return {"status": "updated", "lead_id": existing_lead["id"], "new_status": "RCB WHATSAPP"}
     
     # Create new lead
     lead_id = str(uuid.uuid4())
