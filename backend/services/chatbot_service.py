@@ -137,26 +137,16 @@ _Type your question or wait for our callback!_"""
             
             # Determine response based on state and message
             if is_existing_lead:
-                # Existing lead messaging again - they want callback
+                # Existing lead messaging again - handle based on their input
                 response = await self._handle_existing_lead(phone, message, lead_id, conversation)
             else:
-                # New lead - send greeting
+                # New lead - send interactive greeting
                 response = await self._handle_new_lead(phone, message, lead_id)
             
             # Save conversation state
             await self._save_conversation_state(lead_id, conversation)
             
-            # Send response via Twilio
-            if response and self.twilio:
-                await self.twilio.send_message(
-                    to_number=phone,
-                    message=response
-                )
-                
-                # Log the bot response
-                await self._log_bot_response(lead_id, response)
-            
-            return {"success": True, "response_sent": bool(response)}
+            return response
             
         except Exception as e:
             logger.error(f"Chatbot error for lead {lead_id}: {e}")
