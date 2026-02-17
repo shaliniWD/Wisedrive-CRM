@@ -1,9 +1,10 @@
 """Twilio WhatsApp Service for Lead Management"""
 import os
 import logging
+import json
 from twilio.rest import Client
 from twilio.request_validator import RequestValidator
-from typing import Optional
+from typing import Optional, List, Dict
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +38,166 @@ class TwilioService:
         if not self.validator:
             return False
         return self.validator.validate(url, params, signature)
+    
+    async def send_interactive_buttons(
+        self,
+        to_number: str,
+        body_text: str,
+        buttons: List[Dict[str, str]],
+        header_text: Optional[str] = None,
+        footer_text: Optional[str] = None
+    ) -> dict:
+        """
+        Send an interactive button message via WhatsApp.
+        Supports up to 3 buttons.
+        
+        Args:
+            to_number: Phone number in E.164 format
+            body_text: Main message body
+            buttons: List of button dicts with 'id' and 'title' keys (max 3)
+            header_text: Optional header text
+            footer_text: Optional footer text
+            
+        Returns:
+            dict with message_sid and status
+        """
+        if not self.client:
+            logger.error("Twilio client not initialized")
+            return {"success": False, "error": "Twilio not configured"}
+        
+        try:
+            # Format numbers for WhatsApp
+            from_whatsapp = f"whatsapp:{self.whatsapp_number}"
+            to_whatsapp = f"whatsapp:{to_number}" if not to_number.startswith("whatsapp:") else to_number
+            
+            # Build interactive message structure
+            # WhatsApp Interactive Button format via Twilio Content API
+            interactive_content = {
+                "type": "button",
+                "body": {
+                    "text": body_text
+                },
+                "action": {
+                    "buttons": [
+                        {
+                            "type": "reply",
+                            "reply": {
+                                "id": btn.get("id", f"btn_{i}"),
+                                "title": btn.get("title", f"Option {i+1}")[:20]  # Max 20 chars
+                            }
+                        }
+                        for i, btn in enumerate(buttons[:3])  # Max 3 buttons
+                    ]
+                }
+            }
+            
+            if header_text:
+                interactive_content["header"] = {
+                    "type": "text",
+                    "text": header_text
+                }
+            
+            if footer_text:
+                interactive_content["footer"] = {
+                    "text": footer_text
+                }
+            
+            # Send using Twilio's content_sid for templates or ContentType for interactive
+            # For sandbox/testing, we use the MessagingServiceSid approach
+            msg = self.client.messages.create(
+                from_=from_whatsapp,
+                to=to_whatsapp,
+                content_sid=None,  # Will be set when using templates
+                body=None,
+                persistent_action=[
+                    json.dumps({
+                        "type": "interactive",
+                        "interactive": interactive_content
+                    })
+                ]
+            )
+            
+            logger.info(f"Interactive WhatsApp message sent to {to_number}, SID: {msg.sid}")
+            return {
+                "success": True,
+                "message_sid": msg.sid,
+                "status": msg.status
+            }
+            
+        except Exception as e:
+            error_str = str(e)
+            logger.warning(f"Interactive message failed, falling back to text: {e}")
+            
+            # Fallback to regular text message with button instructions
+            fallback_message = body_text
+            if header_text:
+                fallback_message = f"*{header_text}*\n\n{fallback_message}"
+            
+            fallback_message += "\n\n"
+            for i, btn in enumerate(buttons[:3]):
+                fallback_message += f"*Reply {btn.get('id', i+1)}* - {btn.get('title', f'Option {i+1}')}\n"
+            
+            if footer_text:
+                fallback_message += f"\n_{footer_text}_"
+            
+            return await self.send_whatsapp_message(to_number, fallback_message)
+    
+    async def send_interactive_list(
+        self,
+        to_number: str,
+        body_text: str,
+        button_text: str,
+        sections: List[Dict],
+        header_text: Optional[str] = None,
+        footer_text: Optional[str] = None
+    ) -> dict:
+        """
+        Send an interactive list message via WhatsApp.
+        Supports up to 10 items in list.
+        
+        Args:
+            to_number: Phone number in E.164 format
+            body_text: Main message body
+            button_text: Text on the list button (max 20 chars)
+            sections: List of section dicts with 'title' and 'rows' (list items)
+            header_text: Optional header text
+            footer_text: Optional footer text
+        """
+        if not self.client:
+            return {"success": False, "error": "Twilio not configured"}
+        
+        try:
+            from_whatsapp = f"whatsapp:{self.whatsapp_number}"
+            to_whatsapp = f"whatsapp:{to_number}" if not to_number.startswith("whatsapp:") else to_number
+            
+            # For now, fall back to text message with list format
+            # Interactive lists require WhatsApp Business API with templates
+            fallback_message = body_text
+            if header_text:
+                fallback_message = f"*{header_text}*\n\n{fallback_message}"
+            
+            fallback_message += f"\n\n📋 *{button_text}*\n"
+            
+            for section in sections:
+                if section.get("title"):
+                    fallback_message += f"\n*{section['title']}*\n"
+                for row in section.get("rows", []):
+                    row_id = row.get("id", "")
+                    row_title = row.get("title", "")
+                    row_desc = row.get("description", "")
+                    fallback_message += f"  • *{row_id}* - {row_title}"
+                    if row_desc:
+                        fallback_message += f"\n    {row_desc}"
+                    fallback_message += "\n"
+            
+            if footer_text:
+                fallback_message += f"\n_{footer_text}_"
+            
+            return await self.send_whatsapp_message(to_number, fallback_message)
+            
+        except Exception as e:
+            logger.error(f"Failed to send interactive list: {e}")
+            return {"success": False, "error": str(e)}
     
     async def send_whatsapp_message(
         self,
