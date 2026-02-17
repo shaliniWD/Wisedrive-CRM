@@ -1015,7 +1015,7 @@ async def get_sales_reps_by_city(city: str = None, current_user: dict = Depends(
     """
     query = {
         "is_active": True,
-        "role_code": {"$in": ["SALES_EXEC", "SALES_EXECUTIVE", "SALES_LEAD", "SALES_HEAD"]}
+        "role_code": {"$regex": "SALES", "$options": "i"}  # Match any role containing "SALES"
     }
     
     # Filter by city if provided
@@ -1023,7 +1023,11 @@ async def get_sales_reps_by_city(city: str = None, current_user: dict = Depends(
         query["$or"] = [
             {"leads_cities": city},
             {"leads_cities": {"$in": [city]}},
-            # Also include reps with no city restrictions (empty array or not set)
+            {"assigned_cities": city},
+            {"assigned_cities": {"$in": [city]}},
+            {"city": city},
+            {"city": {"$regex": f"^{city}$", "$options": "i"}},
+            # Also include reps with no city restrictions
             {"leads_cities": {"$exists": False}},
             {"leads_cities": []},
             {"leads_cities": None}
@@ -1031,7 +1035,7 @@ async def get_sales_reps_by_city(city: str = None, current_user: dict = Depends(
     
     sales_reps = await db.users.find(
         query,
-        {"_id": 0, "id": 1, "name": 1, "email": 1, "leads_cities": 1}
+        {"_id": 0, "id": 1, "name": 1, "email": 1, "leads_cities": 1, "city": 1, "role_code": 1}
     ).sort("name", 1).to_list(100)
     
     return sales_reps
