@@ -332,6 +332,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  avatarImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: colors.border,
+  },
   avatarText: {
     fontSize: fontSize.xxl,
     fontWeight: fontWeight.bold,
