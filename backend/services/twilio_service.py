@@ -140,6 +140,13 @@ Thank you for choosing WiseDrive! 🚗
 Team WiseDrive"""
         
         return await self.send_whatsapp_message(to_number, message)
+    
+    async def send_message(self, to_number: str, message: str) -> dict:
+        """
+        Simple wrapper to send a WhatsApp message.
+        Used by chatbot service.
+        """
+        return await self.send_whatsapp_message(to_number, message)
 
 
 # Singleton instance
