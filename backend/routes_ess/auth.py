@@ -18,7 +18,7 @@ from models_ess.auth import (
 )
 
 router = APIRouter()
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)  # Don't auto-error, allow query param fallback
 
 # JWT Configuration
 SECRET_KEY = os.environ.get('JWT_SECRET', 'wisedrive-ess-secure-secret-key-2024-production-env')
