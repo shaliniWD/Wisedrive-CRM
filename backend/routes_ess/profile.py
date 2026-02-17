@@ -92,6 +92,9 @@ async def get_profile(
     # Handle photo URL - support multiple field names
     photo_url = user.get("photo_url") or user.get("profile_photo") or user.get("avatar_url")
     
+    # Get location info
+    location = user.get("location") or user.get("city")
+    
     return EmployeeProfile(
         id=user["id"],
         employee_code=user.get("employee_code", ""),
@@ -103,7 +106,9 @@ async def get_profile(
         role_name=role_name,
         country_name=country_name,
         team_name=team_name,
+        location=location,
         date_of_joining=date_of_joining,
+        join_date=date_of_joining,  # Alias for frontend compatibility
         employment_type=user.get("employment_type", "permanent"),
         employment_status=employment_status,
         reporting_manager_id=reporting_manager_id,
