@@ -2058,20 +2058,41 @@ Or type your question and we'll help you!"""
         }
         await db.lead_activities.insert_one(error_activity)
     
-    # Send chatbot greeting to new lead
-    try:
-        from services.chatbot_service import get_chatbot_service
-        chatbot = get_chatbot_service()
-        await chatbot.handle_message(
-            phone=phone,
-            message=Body,
-            lead_id=lead_id,
-            is_existing_lead=False
-        )
-    except Exception as e:
-        logger.error(f"Failed to send chatbot response: {e}")
+    # Greeting message for new leads
+    greeting_message = """🙏 *Welcome to WiseDrive!*
+
+India's Premium Used Car Inspection Company
+
+We help you make confident decisions when buying a used car with our comprehensive 200+ point inspection.
+
+*How can we help you today?*
+
+*Reply with:*
+1️⃣ - View inspection packages
+2️⃣ - Request a callback
+
+Or type your question!"""
+
+    # Log the bot response
+    bot_activity = {
+        "id": str(uuid.uuid4()),
+        "lead_id": lead_id,
+        "user_id": "chatbot",
+        "user_name": "WiseDrive Bot",
+        "action": "chatbot_response",
+        "details": "Welcome message sent to new lead",
+        "new_value": "Greeting message",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.lead_activities.insert_one(bot_activity)
     
-    return {"status": "created", "lead_id": lead_id}
+    # Return TwiML response with greeting
+    twiml_response = f'''<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+    <Message>{greeting_message}</Message>
+</Response>'''
+    
+    return Response(content=twiml_response, media_type="application/xml")
 
 
 # Razorpay Payment Webhook
