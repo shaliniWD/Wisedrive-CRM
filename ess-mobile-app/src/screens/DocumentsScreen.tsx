@@ -87,8 +87,10 @@ export default function DocumentsScreen() {
     }
   };
 
-  // Safe array access
-  const documentList = Array.isArray(documents) ? documents : [];
+  // Safe array access - handle both array and object with documents property
+  const documentList = Array.isArray(documents) 
+    ? documents 
+    : (documents?.documents || []);
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
