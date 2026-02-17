@@ -13,6 +13,10 @@ export const leadsApi = {
   delete: (id) => axios.delete(`${API_URL}/leads/${id}`),
   reassign: (id, data) => axios.post(`${API_URL}/leads/${id}/reassign`, data),
   getReassignmentHistory: (id) => axios.get(`${API_URL}/leads/${id}/reassignment-history`),
+  // Sales reps for assignment
+  getSalesRepsByCity: (city) => axios.get(`${API_URL}/leads/sales-reps-by-city`, { params: { city } }),
+  // Bulk assign unassigned leads
+  assignUnassigned: () => axios.post(`${API_URL}/leads/assign-unassigned`),
   // Notes
   getNotes: (id) => axios.get(`${API_URL}/leads/${id}/notes`),
   addNote: (id, note) => axios.post(`${API_URL}/leads/${id}/notes`, { note }),
