@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 
 // Company Logo URL
-const COMPANY_LOGO = "https://customer-assets.emergentagent.com/job_crm-employee-hub/artifacts/6eac372o_Wisedrive%20New%20Logo%20Horizontal%20Blue%20Trans%20BG.png";
+const COMPANY_LOGO = "https://customer-assets.emergentagent.com/job_leadfix-deploy/artifacts/ar0dmd4y_Wisedrive%20New%20Logo%20Horizontal%20Blue%20Trans%20BG.png";
 
 // Month names
 const MONTHS = [
