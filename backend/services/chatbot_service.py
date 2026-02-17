@@ -205,7 +205,7 @@ _Type your question or wait for our callback!_"""
         message: str,
         lead_id: str,
         conversation: Dict[str, Any]
-    ) -> str:
+    ) -> Dict[str, Any]:
         """Handle message from existing lead based on conversation state"""
         message_lower = message.lower().strip()
         current_state = conversation.get("current_state", "initial")
@@ -217,46 +217,119 @@ _Type your question or wait for our callback!_"""
             "timestamp": datetime.now(timezone.utc).isoformat()
         })
         
-        # Handle menu selections
-        if message_lower in ["1", "buy inspection", "buy", "inspection", "packages"]:
-            conversation["current_state"] = "viewing_packages"
-            return self.BUY_INSPECTION_MESSAGE
+        response_text = None
+        use_buttons = False
+        buttons = []
+        header = None
+        footer = None
         
-        elif message_lower in ["2", "callback", "call back", "call", "request call back", "rcb"]:
+        # Handle button clicks (button IDs) and text inputs
+        if message_lower in ["buy_inspection", "1", "buy inspection", "buy", "inspection", "packages"]:
+            conversation["current_state"] = "viewing_packages"
+            response_text = self.BUY_INSPECTION_MESSAGE
+            use_buttons = True
+            buttons = self.PACKAGE_BUTTONS
+            footer = "Tap a package to proceed"
+        
+        elif message_lower in ["request_callback", "2", "callback", "call back", "call", "request call back", "rcb"]:
             conversation["current_state"] = "callback_requested"
             # Update lead status
             await self.db.leads.update_one(
                 {"id": lead_id},
                 {"$set": {"status": "RCB WHATSAPP"}}
             )
-            return self.CALLBACK_MESSAGE
+            response_text = self.CALLBACK_MESSAGE
         
-        elif message_lower in ["basic", "basic inspection"]:
+        elif message_lower in ["pkg_basic", "basic", "basic inspection"]:
             conversation["current_state"] = "package_selected"
             conversation["selected_package"] = "basic"
-            return self._get_package_confirmation("Basic", 999)
+            response_text = self._get_package_confirmation("Basic", 999)
+            use_buttons = True
+            buttons = [
+                {"id": "confirm_callback", "title": "📞 Yes, Call Me"},
+                {"id": "ask_question", "title": "❓ Ask Question"}
+            ]
         
-        elif message_lower in ["standard", "standard inspection"]:
+        elif message_lower in ["pkg_standard", "standard", "standard inspection"]:
             conversation["current_state"] = "package_selected"
             conversation["selected_package"] = "standard"
-            return self._get_package_confirmation("Standard", 1999)
+            response_text = self._get_package_confirmation("Standard", 1999)
+            use_buttons = True
+            buttons = [
+                {"id": "confirm_callback", "title": "📞 Yes, Call Me"},
+                {"id": "ask_question", "title": "❓ Ask Question"}
+            ]
         
-        elif message_lower in ["premium", "premium inspection"]:
+        elif message_lower in ["pkg_premium", "premium", "premium inspection"]:
             conversation["current_state"] = "package_selected"
             conversation["selected_package"] = "premium"
-            return self._get_package_confirmation("Premium", 2999)
+            response_text = self._get_package_confirmation("Premium", 2999)
+            use_buttons = True
+            buttons = [
+                {"id": "confirm_callback", "title": "📞 Yes, Call Me"},
+                {"id": "ask_question", "title": "❓ Ask Question"}
+            ]
         
-        elif message_lower in ["hi", "hello", "hey", "menu", "start"]:
+        elif message_lower in ["confirm_callback", "yes", "yes call me", "call me"]:
+            conversation["current_state"] = "callback_confirmed"
+            await self.db.leads.update_one(
+                {"id": lead_id},
+                {"$set": {"status": "RCB WHATSAPP"}}
+            )
+            response_text = self.CALLBACK_MESSAGE
+        
+        elif message_lower in ["hi", "hello", "hey", "menu", "start", "main menu"]:
             conversation["current_state"] = "initial"
-            return self.GREETING_MESSAGE
+            # Send interactive greeting
+            if self.twilio:
+                result = await self.twilio.send_interactive_buttons(
+                    to_number=phone,
+                    body_text=self.GREETING_MESSAGE,
+                    buttons=self.MENU_BUTTONS,
+                    header_text=self.GREETING_HEADER,
+                    footer_text=self.GREETING_FOOTER
+                )
+                await self._log_bot_response(lead_id, f"[Interactive Menu] {self.GREETING_MESSAGE}")
+                return result
+        
+        elif message_lower == "ask_question":
+            response_text = """❓ *What would you like to know?*
+
+You can ask about:
+• Inspection process
+• Service areas & cities
+• Pricing details
+• Report delivery time
+
+_Type your question below_"""
         
         else:
             # Use AI for context-aware response
             if AI_AVAILABLE and self.api_key:
-                return await self._get_ai_response(message, lead_id, conversation)
+                response_text = await self._get_ai_response(message, lead_id, conversation)
             else:
-                # Fallback to template
-                return self._get_fallback_response(current_state)
+                response_text = self._get_fallback_response(current_state)
+        
+        # Send response
+        if response_text and self.twilio:
+            if use_buttons and buttons:
+                result = await self.twilio.send_interactive_buttons(
+                    to_number=phone,
+                    body_text=response_text,
+                    buttons=buttons,
+                    header_text=header,
+                    footer_text=footer
+                )
+            else:
+                result = await self.twilio.send_message(
+                    to_number=phone,
+                    message=response_text
+                )
+            
+            await self._log_bot_response(lead_id, response_text)
+            return result
+        
+        return {"success": False, "error": "No response generated"}
     
     def _get_package_confirmation(self, package_name: str, price: int) -> str:
         """Generate package confirmation message"""
