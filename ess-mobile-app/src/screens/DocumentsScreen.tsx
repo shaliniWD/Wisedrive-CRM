@@ -47,9 +47,14 @@ export default function DocumentsScreen() {
   const handleDocumentPress = async (doc: any) => {
     if (doc?.file_url) {
       try {
-        const canOpen = await Linking.canOpenURL(doc.file_url);
+        // Get the access token and append it to URL for authentication
+        const token = await getAccessToken();
+        const separator = doc.file_url.includes('?') ? '&' : '?';
+        const urlWithToken = token ? `${doc.file_url}${separator}token=${token}` : doc.file_url;
+        
+        const canOpen = await Linking.canOpenURL(urlWithToken);
         if (canOpen) {
-          await Linking.openURL(doc.file_url);
+          await Linking.openURL(urlWithToken);
         } else {
           Alert.alert('Error', 'Unable to open this document');
         }
