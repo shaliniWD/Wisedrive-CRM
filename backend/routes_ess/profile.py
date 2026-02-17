@@ -89,8 +89,14 @@ async def get_profile(
     # Handle multiple field name variations for joining date
     date_of_joining = user.get("date_of_joining") or user.get("joining_date")
     
-    # Handle photo URL - support multiple field names
+    # Handle photo URL - support multiple field names and ensure absolute URL
+    import os
+    base_url = os.environ.get("API_BASE_URL", "")
     photo_url = user.get("photo_url") or user.get("profile_photo") or user.get("avatar_url")
+    
+    # If photo_url is a relative path, prepend base URL
+    if photo_url and photo_url.startswith("/"):
+        photo_url = f"{base_url}{photo_url}" if base_url else photo_url
     
     # Get location info
     location = user.get("location") or user.get("city")
