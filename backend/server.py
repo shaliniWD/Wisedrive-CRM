@@ -831,6 +831,9 @@ async def reassign_lead(
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
     
+    old_agent_id = lead.get("assigned_to")
+    old_agent_name = lead.get("assigned_to_name", "Unassigned")
+    
     # Check permission
     can_reassign = await rbac_service.can_reassign_lead(
         current_user["id"],
@@ -838,6 +841,10 @@ async def reassign_lead(
     )
     if not can_reassign:
         raise HTTPException(status_code=403, detail="Not authorized to reassign leads")
+    
+    # Get new agent name
+    new_agent = await db.users.find_one({"id": reassign_data.new_agent_id}, {"_id": 0, "name": 1})
+    new_agent_name = new_agent.get("name", "Unknown") if new_agent else "Unknown"
     
     # Perform reassignment
     await round_robin_service.assign_lead(
@@ -848,6 +855,20 @@ async def reassign_lead(
         manual_agent_id=reassign_data.new_agent_id,
         reason=reassign_data.reason
     )
+    
+    # Log reassignment activity
+    activity = {
+        "id": str(uuid.uuid4()),
+        "lead_id": lead_id,
+        "user_id": current_user["id"],
+        "user_name": current_user.get("name", "Unknown"),
+        "action": "lead_reassigned",
+        "old_value": f"{old_agent_name}",
+        "new_value": f"{new_agent_name}",
+        "details": reassign_data.reason or "Manual reassignment",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.lead_activities.insert_one(activity)
     
     lead = await db.leads.find_one({"id": lead_id}, {"_id": 0})
     return lead
