@@ -421,7 +421,35 @@ export default function LeadsPage() {
     }
   }, [search, filterEmployee, filterStatus, filterCity, filterSource, user?.country_id]);
 
+  // Auto-assign unassigned leads on page load (for HR/admin users only)
+  const assignUnassignedLeads = useCallback(async () => {
+    // Only HR managers and admins can trigger bulk assignment
+    if (!user || !['HR_MANAGER', 'CEO', 'COUNTRY_HEAD', 'ADMIN'].includes(user.role_code)) {
+      return;
+    }
+    
+    try {
+      const response = await leadsApi.assignUnassigned();
+      if (response.data?.assigned_count > 0) {
+        toast.success(`${response.data.assigned_count} lead(s) auto-assigned`);
+        // Refresh the data to show updated assignments
+        fetchData();
+      }
+    } catch (error) {
+      // Silent fail - don't show error toast for auto-assignment
+      console.log('Auto-assignment skipped:', error.response?.data?.detail || error.message);
+    }
+  }, [user, fetchData]);
+
   useEffect(() => { fetchData(); }, [fetchData]);
+  
+  // Run auto-assignment once when page loads (only for authorized users)
+  useEffect(() => {
+    if (!loading && user) {
+      assignUnassignedLeads();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]); // Only run when loading completes
 
   const handleSubmit = async (e) => {
     e.preventDefault();
