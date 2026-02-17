@@ -171,6 +171,10 @@ export default function LeadsPage() {
   const [modalStep, setModalStep] = useState(1);
   const [activeFilter, setActiveFilter] = useState('all');
 
+  // Sales reps for assignment (filtered by city)
+  const [salesRepsForCity, setSalesRepsForCity] = useState([]);
+  const [loadingSalesReps, setLoadingSalesReps] = useState(false);
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
