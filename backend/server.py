@@ -1007,6 +1007,49 @@ async def get_lead_reassignment_history(lead_id: str, current_user: dict = Depen
     return logs
 
 
+# Debug endpoint to check sales rep configuration
+@api_router.get("/leads/debug-sales-reps")
+async def debug_sales_reps(city: str = None, current_user: dict = Depends(get_current_user)):
+    """
+    Debug endpoint to check sales rep configuration.
+    Shows all users with SALES in their role and their city assignments.
+    """
+    # Get all users with SALES in role
+    all_sales = await db.users.find(
+        {"role_code": {"$regex": "SALES", "$options": "i"}},
+        {"_id": 0, "id": 1, "name": 1, "email": 1, "role_code": 1, "is_active": 1, 
+         "city": 1, "leads_cities": 1, "assigned_cities": 1}
+    ).to_list(100)
+    
+    # Also get users with the specific city
+    matching_for_city = []
+    if city:
+        matching_for_city = await db.users.find({
+            "is_active": True,
+            "role_code": {"$regex": "SALES", "$options": "i"},
+            "$or": [
+                {"leads_cities": city},
+                {"leads_cities": {"$in": [city]}},
+                {"assigned_cities": city},
+                {"assigned_cities": {"$in": [city]}},
+                {"city": city},
+                {"city": {"$regex": f"^{city}$", "$options": "i"}},
+                {"leads_cities": {"$exists": False}},
+                {"leads_cities": []},
+                {"leads_cities": None}
+            ]
+        }, {"_id": 0, "id": 1, "name": 1, "email": 1, "role_code": 1}).to_list(100)
+    
+    return {
+        "all_sales_users": all_sales,
+        "matching_for_city": {
+            "city": city,
+            "count": len(matching_for_city),
+            "users": matching_for_city
+        }
+    }
+
+
 # Lead statuses for frontend
 @api_router.get("/leads/statuses")
 async def get_lead_statuses():
