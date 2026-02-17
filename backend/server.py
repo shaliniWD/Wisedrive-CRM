@@ -1708,6 +1708,7 @@ async def check_lead_payment_status(lead_id: str, current_user: dict = Depends(g
 # ==================== WEBHOOKS ROUTES ====================
 
 from fastapi import Request, Form
+from fastapi.responses import Response
 
 # Twilio WhatsApp Webhook - receives incoming messages from Meta ads
 @api_router.post("/webhooks/twilio/whatsapp")
@@ -1722,8 +1723,12 @@ async def twilio_whatsapp_webhook(
     """
     Webhook endpoint for incoming WhatsApp messages via Twilio.
     Creates a new lead from Meta ad clicks.
+    Returns TwiML response for immediate reply.
     """
     logger.info(f"WhatsApp webhook received: From={From}, Body={Body[:100] if Body else 'empty'}")
+    
+    # Default response message
+    response_message = ""
     
     # Extract phone number (remove whatsapp: prefix)
     phone = From.replace("whatsapp:", "").strip()
