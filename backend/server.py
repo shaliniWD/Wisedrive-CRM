@@ -1033,6 +1033,8 @@ async def find_sales_reps_for_city(city: str):
         logger.warning("No sales roles found in database")
         return []
     
+    logger.info(f"Looking for sales reps for city: '{city}' with role_ids: {sales_role_ids}")
+    
     # City filter - check assigned_cities array (case-insensitive)
     city_conditions = [
         {"assigned_cities": city},
@@ -1062,10 +1064,14 @@ async def find_sales_reps_for_city(city: str):
         ]
     }
     
+    logger.info(f"Full query for finding sales reps: {full_query}")
+    
     sales_reps = await db.users.find(
         full_query,
-        {"_id": 0, "id": 1, "name": 1, "email": 1, "assigned_cities": 1, "role_id": 1}
+        {"_id": 0, "id": 1, "name": 1, "email": 1, "assigned_cities": 1, "role_id": 1, "is_available_for_leads": 1}
     ).to_list(100)
+    
+    logger.info(f"Found {len(sales_reps)} sales reps for city '{city}': {[r.get('name') for r in sales_reps]}")
     
     return sales_reps
 
