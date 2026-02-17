@@ -1712,23 +1712,25 @@ async def twilio_whatsapp_webhook(
             }
             await db.lead_activities.insert_one(assignment_activity)
             
-            # Send push notification to assigned rep
-            from services_ess.fcm_service import get_fcm_service
-            fcm = get_fcm_service()
-            if fcm:
-                # Get rep's FCM tokens
-                tokens = await db.device_tokens.find(
-                    {"user_id": assigned_rep["id"]},
-                    {"_id": 0, "fcm_token": 1}
-                ).to_list(10)
-                
-                for token_doc in tokens:
-                    await fcm.send_notification(
-                        token=token_doc.get("fcm_token"),
-                        title="New Lead Assigned! 🎯",
-                        body=f"New lead from {city}: {ProfileName or phone}",
-                        data={"type": "new_lead", "lead_id": lead_id}
-                    )
+            # Send push notification to assigned rep (if FCM is configured)
+            try:
+                if hasattr(app.state, 'fcm_service') and app.state.fcm_service:
+                    fcm = app.state.fcm_service
+                    # Get rep's FCM tokens
+                    tokens = await db.device_tokens.find(
+                        {"user_id": assigned_rep["id"]},
+                        {"_id": 0, "fcm_token": 1}
+                    ).to_list(10)
+                    
+                    for token_doc in tokens:
+                        await fcm.send_notification(
+                            token=token_doc.get("fcm_token"),
+                            title="New Lead Assigned! 🎯",
+                            body=f"New lead from {city}: {ProfileName or phone}",
+                            data={"type": "new_lead", "lead_id": lead_id}
+                        )
+            except Exception as fcm_error:
+                logger.warning(f"FCM notification failed: {fcm_error}")
             
             logger.info(f"Lead {lead_id} assigned to {assigned_rep.get('name')} via round-robin")
         else:
