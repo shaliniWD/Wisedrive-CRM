@@ -1066,13 +1066,17 @@ async def assign_unassigned_leads(current_user: dict = Depends(get_current_user)
             failed_count += 1
             continue
         
-        # Find sales reps for this city
+        # Find sales reps for this city (including those with no city restrictions)
         sales_reps = await db.users.find({
             "is_active": True,
             "role_code": {"$in": ["SALES_EXEC", "SALES_EXECUTIVE", "SALES_LEAD", "SALES_HEAD"]},
             "$or": [
                 {"leads_cities": lead_city},
-                {"leads_cities": {"$in": [lead_city]}}
+                {"leads_cities": {"$in": [lead_city]}},
+                # Also include reps with no city restrictions
+                {"leads_cities": {"$exists": False}},
+                {"leads_cities": []},
+                {"leads_cities": None}
             ]
         }, {"_id": 0, "id": 1, "name": 1}).to_list(100)
         
