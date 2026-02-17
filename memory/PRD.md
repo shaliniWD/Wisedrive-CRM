@@ -223,6 +223,7 @@ Returns:
 - **Version:** 2.4
 
 ## Changelog
+- v2.5 (Feb 17, 2026): **CTO Role Permissions Fix** - Copied 29 role_permissions from CEO role to CTO role, enabling full data access for the new CTO user
 - v2.4 (Feb 17, 2026): **Critical Bug Fix: Lead Auto-Assignment** - Fixed query to correctly use role_id lookup against roles collection, check assigned_cities array, and is_available_for_leads flag
 - v2.3 (Feb 16, 2026): **Payment Modal Enhancements** - Removed "Number of Cars", added conditional inspection scheduling with Google Places autocomplete, leads-to-inspections integration
 - v2.2 (Feb 16, 2026): Vaahan API integration - Real vehicle RC data from Invincible Ocean API
