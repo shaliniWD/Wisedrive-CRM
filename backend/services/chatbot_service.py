@@ -181,9 +181,23 @@ _Type your question or wait for our callback!_"""
         phone: str,
         message: str,
         lead_id: str
-    ) -> str:
-        """Handle message from new lead - send greeting"""
-        return self.GREETING_MESSAGE
+    ) -> Dict[str, Any]:
+        """Handle message from new lead - send interactive greeting with buttons"""
+        if self.twilio:
+            # Send interactive button message
+            result = await self.twilio.send_interactive_buttons(
+                to_number=phone,
+                body_text=self.GREETING_MESSAGE,
+                buttons=self.MENU_BUTTONS,
+                header_text=self.GREETING_HEADER,
+                footer_text=self.GREETING_FOOTER
+            )
+            
+            # Log the bot response
+            await self._log_bot_response(lead_id, f"[Interactive Greeting] {self.GREETING_MESSAGE}")
+            
+            return result
+        return {"success": False, "error": "Twilio not configured"}
     
     async def _handle_existing_lead(
         self,
