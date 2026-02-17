@@ -183,6 +183,9 @@ async def get_bank_details(
     
     ifsc_code = user.get("ifsc_code") or user.get("ifsc") or user.get("bank_ifsc")
     
+    # Branch name - support multiple field names
+    branch_name = user.get("branch_name") or user.get("bank_branch") or user.get("branch")
+    
     account_holder_name = (
         user.get("bank_account_holder_name") or 
         user.get("account_holder_name") or 
@@ -193,8 +196,10 @@ async def get_bank_details(
     return BankDetailsResponse(
         bank_name=bank_name,
         account_number_masked=account_number_masked,
+        account_number=account_number_masked,  # Alias for frontend compatibility
         ifsc_code=ifsc_code,
-        account_holder_name=account_holder_name
+        account_holder_name=account_holder_name,
+        branch_name=branch_name
     )
 
 
