@@ -120,6 +120,8 @@ Build a scalable automotive platform "Wisedrive" that evolved into a monolithic 
 |------|-------|----------|
 | HR Manager | hr@wisedrive.com | password123 |
 | Sales Executive | divya@wisedrive.com | password123 |
+| CTO | shalini.vyshaka@gmail.com | password123 |
+| ESS Test User | bhaskar@wisedrive.com | Welcome@123 |
 
 ---
 
