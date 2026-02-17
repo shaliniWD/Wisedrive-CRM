@@ -1530,6 +1530,173 @@ async def create_lead_payment_link(lead_id: str, payment_data: PaymentLinkReques
     }
 
 
+@api_router.get("/leads/{lead_id}/check-payment-status")
+async def check_lead_payment_status(lead_id: str, current_user: dict = Depends(get_current_user)):
+    """
+    Manually check payment status for a lead.
+    This is Plan B - the primary method is webhook (automatic).
+    
+    Sales rep can use this to manually verify if customer has paid.
+    """
+    from services.razorpay_service import get_razorpay_service
+    
+    lead = await db.leads.find_one({"id": lead_id}, {"_id": 0})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    
+    payment_link_id = lead.get("payment_link_id")
+    if not payment_link_id:
+        return {
+            "success": False,
+            "message": "No payment link found for this lead",
+            "payment_status": lead.get("payment_status", "none"),
+            "lead_status": lead.get("status")
+        }
+    
+    # If already paid, return immediately
+    if lead.get("payment_status") == "paid":
+        return {
+            "success": True,
+            "message": "Payment already received",
+            "payment_status": "paid",
+            "razorpay_payment_id": lead.get("razorpay_payment_id"),
+            "lead_status": lead.get("status")
+        }
+    
+    # Check with Razorpay
+    razorpay = get_razorpay_service()
+    if not razorpay.is_configured():
+        raise HTTPException(status_code=500, detail="Razorpay not configured")
+    
+    result = await razorpay.get_payment_link(payment_link_id)
+    
+    if not result.get("success"):
+        return {
+            "success": False,
+            "message": f"Failed to check payment status: {result.get('error')}",
+            "payment_status": lead.get("payment_status", "unknown")
+        }
+    
+    payment_link = result.get("payment_link", {})
+    razorpay_status = payment_link.get("status")  # created, attempted, paid, cancelled, expired
+    
+    # If payment is completed on Razorpay but we didn't receive webhook
+    if razorpay_status == "paid" and lead.get("payment_status") != "paid":
+        # Get payment details
+        payments = payment_link.get("payments", [])
+        payment_id = payments[0].get("payment_id") if payments else payment_link.get("payment_id")
+        amount = payment_link.get("amount_paid", payment_link.get("amount", 0)) / 100
+        
+        # Update lead as paid (same as webhook would do)
+        update_dict = {
+            "status": "PAID",
+            "payment_status": "paid",
+            "razorpay_payment_id": payment_id,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.leads.update_one({"id": lead_id}, {"$set": update_dict})
+        
+        # Log activity
+        activity = {
+            "id": str(uuid.uuid4()),
+            "lead_id": lead_id,
+            "user_id": current_user["id"],
+            "user_name": current_user.get("name", "Unknown"),
+            "action": "payment_verified_manually",
+            "new_value": f"₹{amount}",
+            "details": f"Payment verified via manual check. Payment ID: {payment_id}",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.lead_activities.insert_one(activity)
+        
+        # Create customer from lead (if not already created)
+        existing_customer = await db.customers.find_one({"lead_id": lead_id}, {"_id": 0})
+        if not existing_customer:
+            customer_id = str(uuid.uuid4())
+            customer = {
+                "id": customer_id,
+                "name": lead.get("name"),
+                "mobile": lead.get("mobile"),
+                "email": lead.get("email"),
+                "city": lead.get("city"),
+                "lead_id": lead_id,
+                "package_id": lead.get("package_id"),
+                "package_name": lead.get("package_name"),
+                "total_paid": amount,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "created_by": current_user["id"]
+            }
+            await db.customers.insert_one(customer)
+            
+            # Create inspection records
+            no_of_inspections = lead.get("no_of_inspections", 1)
+            inspection_schedules = lead.get("inspection_schedules", [])
+            
+            for i in range(no_of_inspections):
+                inspection_id = str(uuid.uuid4())
+                schedule_data = inspection_schedules[i] if i < len(inspection_schedules) else {}
+                
+                has_schedule = bool(
+                    schedule_data.get("inspection_date") and 
+                    schedule_data.get("inspection_time") and 
+                    schedule_data.get("address")
+                )
+                
+                inspection = {
+                    "id": inspection_id,
+                    "customer_id": customer_id,
+                    "lead_id": lead_id,
+                    "customer_name": lead.get("name"),
+                    "customer_mobile": lead.get("mobile"),
+                    "car_number": schedule_data.get("vehicle_number") or "",
+                    "city": lead.get("city"),
+                    "address": schedule_data.get("address") or "",
+                    "package_id": lead.get("package_id"),
+                    "package_type": lead.get("package_name"),
+                    "total_amount": amount / no_of_inspections,
+                    "payment_status": "PAID",
+                    "razorpay_payment_id": payment_id,
+                    "inspection_status": "SCHEDULED" if has_schedule else "UNSCHEDULED",
+                    "scheduled_date": schedule_data.get("inspection_date") or None,
+                    "scheduled_time": schedule_data.get("inspection_time") or None,
+                    "slot_number": i + 1,
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                    "created_by": current_user["id"]
+                }
+                await db.inspections.insert_one(inspection)
+        
+        return {
+            "success": True,
+            "message": "Payment found! CRM has been updated.",
+            "payment_status": "paid",
+            "razorpay_payment_id": payment_id,
+            "amount": amount,
+            "lead_status": "PAID",
+            "was_updated": True
+        }
+    
+    # Map Razorpay status to readable message
+    status_messages = {
+        "created": "Payment link created, waiting for customer to pay",
+        "attempted": "Customer started payment but did not complete",
+        "paid": "Payment completed",
+        "cancelled": "Payment link was cancelled",
+        "expired": "Payment link has expired"
+    }
+    
+    return {
+        "success": True,
+        "message": status_messages.get(razorpay_status, f"Status: {razorpay_status}"),
+        "payment_status": razorpay_status,
+        "razorpay_status": razorpay_status,
+        "lead_status": lead.get("status"),
+        "payment_link": lead.get("payment_link"),
+        "created_at": payment_link.get("created_at"),
+        "expire_by": payment_link.get("expire_by"),
+        "was_updated": False
+    }
+
+
 # ==================== WEBHOOKS ROUTES ====================
 
 from fastapi import Request, Form
