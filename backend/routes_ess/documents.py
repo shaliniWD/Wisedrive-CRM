@@ -15,6 +15,44 @@ from routes_ess.auth import get_current_user
 router = APIRouter()
 
 
+def get_base_url_from_request(request: Request) -> str:
+    """
+    Extract base URL from the incoming request.
+    Handles both direct requests and requests behind a proxy.
+    """
+    # Check for forwarded headers (when behind a proxy like nginx/cloudflare)
+    forwarded_proto = request.headers.get("x-forwarded-proto", "https")
+    forwarded_host = request.headers.get("x-forwarded-host") or request.headers.get("host")
+    
+    if forwarded_host:
+        return f"{forwarded_proto}://{forwarded_host}"
+    
+    # Fallback to request's base URL
+    return str(request.base_url).rstrip("/")
+
+
+def make_url_absolute(url: str, base_url: str) -> str:
+    """
+    Convert a relative URL to absolute URL if needed.
+    """
+    if not url:
+        return url
+    
+    # Already absolute
+    if url.startswith("http://") or url.startswith("https://"):
+        return url
+    
+    # Data URLs (base64 encoded) - leave as is
+    if url.startswith("data:"):
+        return url
+    
+    # Relative URL - make absolute
+    if url.startswith("/"):
+        return f"{base_url}{url}"
+    
+    return url
+
+
 # Required documents by default
 REQUIRED_DOCUMENTS = [
     {"type": "aadhar", "name": "Aadhar Card", "required": True},
@@ -45,9 +83,8 @@ async def get_documents(
         .sort("uploaded_at", -1)\
         .to_list(100)
     
-    # Get the base URL for generating full document URLs
-    import os
-    base_url = os.environ.get("API_BASE_URL", "")
+    # Get the base URL from request for making URLs absolute
+    base_url = get_base_url_from_request(request)
     
     documents = []
     for doc in docs:
