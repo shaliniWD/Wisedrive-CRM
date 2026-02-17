@@ -161,7 +161,7 @@ export default function LoginPage() {
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center justify-center mb-8">
-            <img src={COMPANY_LOGO} alt="WiseDrive" className="h-10" crossOrigin="anonymous" />
+            <img src={COMPANY_LOGO_BLUE} alt="WiseDrive" className="h-10" crossOrigin="anonymous" />
           </div>
 
           <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-8" data-testid="login-card">
