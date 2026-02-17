@@ -91,9 +91,8 @@ async def get_documents(
         # Handle multiple field name variations for file URL
         file_url = doc.get("url") or doc.get("document_url") or doc.get("file_url")
         
-        # If file_url is a relative path, prepend base URL
-        if file_url and file_url.startswith("/api"):
-            file_url = f"{base_url}{file_url}" if base_url else file_url
+        # Make URL absolute using helper function
+        file_url = make_url_absolute(file_url, base_url)
         
         documents.append(DocumentResponse(
             id=doc["id"],
