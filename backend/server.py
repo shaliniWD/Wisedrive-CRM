@@ -1654,6 +1654,7 @@ async def twilio_whatsapp_webhook(
     try:
         # Find sales reps assigned to this city (check both leads_cities and assigned_cities fields)
         # Also check for both SALES_EXEC and SALES_EXECUTIVE role codes
+        # Include reps with no city restrictions (handle all cities)
         sales_reps = await db.users.find({
             "is_active": True,
             "role_code": {"$in": ["SALES_EXEC", "SALES_EXECUTIVE", "SALES_LEAD", "SALES_HEAD"]},
@@ -1661,7 +1662,11 @@ async def twilio_whatsapp_webhook(
                 {"leads_cities": city},
                 {"assigned_cities": city},
                 {"leads_cities": {"$in": [city]}},
-                {"assigned_cities": {"$in": [city]}}
+                {"assigned_cities": {"$in": [city]}},
+                # Include reps with no city restrictions
+                {"leads_cities": {"$exists": False}},
+                {"leads_cities": []},
+                {"leads_cities": None}
             ]
         }, {"_id": 0, "id": 1, "name": 1}).to_list(100)
         
