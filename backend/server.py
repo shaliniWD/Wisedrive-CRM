@@ -1288,6 +1288,61 @@ async def assign_unassigned_leads(current_user: dict = Depends(get_current_user)
     }
 
 
+# Fix missing assigned_to_name for leads
+@api_router.post("/leads/fix-assigned-names")
+async def fix_assigned_names(current_user: dict = Depends(get_current_user)):
+    """
+    One-time utility to populate assigned_to_name for leads that only have assigned_to ID.
+    """
+    # Check permission
+    role_code = current_user.get("role_code", "")
+    if role_code not in ["HR_MANAGER", "CEO", "COUNTRY_HEAD", "ADMIN"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Find leads with assigned_to but no assigned_to_name
+    leads_to_fix = await db.leads.find({
+        "assigned_to": {"$exists": True, "$ne": None, "$ne": ""},
+        "$or": [
+            {"assigned_to_name": {"$exists": False}},
+            {"assigned_to_name": None},
+            {"assigned_to_name": ""}
+        ]
+    }, {"_id": 0, "id": 1, "assigned_to": 1}).to_list(1000)
+    
+    if not leads_to_fix:
+        return {"message": "No leads need fixing", "fixed_count": 0}
+    
+    # Get all unique user IDs
+    user_ids = list(set([lead["assigned_to"] for lead in leads_to_fix]))
+    
+    # Fetch user names
+    users = await db.users.find(
+        {"id": {"$in": user_ids}},
+        {"_id": 0, "id": 1, "name": 1}
+    ).to_list(100)
+    
+    user_map = {u["id"]: u["name"] for u in users}
+    
+    # Update leads
+    fixed_count = 0
+    for lead in leads_to_fix:
+        user_id = lead["assigned_to"]
+        user_name = user_map.get(user_id)
+        
+        if user_name:
+            await db.leads.update_one(
+                {"id": lead["id"]},
+                {"$set": {"assigned_to_name": user_name}}
+            )
+            fixed_count += 1
+    
+    return {
+        "message": f"Fixed {fixed_count} leads",
+        "fixed_count": fixed_count,
+        "total_checked": len(leads_to_fix)
+    }
+
+
 # Vaahan API for vehicle details
 @api_router.get("/vehicle/details/{vehicle_number}")
 async def get_vehicle_details(vehicle_number: str, current_user: dict = Depends(get_current_user)):
