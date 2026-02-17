@@ -171,6 +171,63 @@ async def get_document_requirements(
     )
 
 
+@router.get("/documents/file/{document_id}")
+async def serve_document_file(
+    request: Request,
+    document_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Serve document file for download/viewing in ESS mobile app.
+    Only serves documents belonging to the authenticated user.
+    """
+    from fastapi.responses import FileResponse, Response
+    import os
+    
+    db = request.app.state.db
+    user_id = current_user["id"]
+    
+    # Find the document - must belong to current user
+    doc = await db.employee_documents.find_one(
+        {"id": document_id, "user_id": user_id},
+        {"_id": 0}
+    )
+    
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    
+    # Get file path
+    file_path = doc.get("file_path")
+    
+    if not file_path or not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="File not found on server")
+    
+    # Determine content type
+    content_type = doc.get("content_type") or doc.get("mime_type")
+    if not content_type:
+        ext = os.path.splitext(file_path)[1].lower()
+        content_types = {
+            ".pdf": "application/pdf",
+            ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg",
+            ".png": "image/png",
+            ".doc": "application/msword",
+            ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        }
+        content_type = content_types.get(ext, "application/octet-stream")
+    
+    filename = doc.get("file_name") or os.path.basename(file_path)
+    
+    return FileResponse(
+        file_path, 
+        media_type=content_type, 
+        filename=filename,
+        headers={
+            "Content-Disposition": f'inline; filename="{filename}"'
+        }
+    )
+
+
 @router.get("/documents/{document_id}", response_model=DocumentResponse)
 async def get_document(
     request: Request,
