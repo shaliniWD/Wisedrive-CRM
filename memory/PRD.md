@@ -222,7 +222,7 @@ Returns:
 ## Document History
 - **Created:** December 2025
 - **Last Updated:** February 17, 2026
-- **Version:** 2.4
+- **Version:** 2.5
 
 ## Changelog
 - v2.5 (Feb 17, 2026): **CTO Role Permissions Fix** - Copied 29 role_permissions from CEO role to CTO role, enabling full data access for the new CTO user
