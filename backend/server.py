@@ -1178,6 +1178,7 @@ async def assign_unassigned_leads(current_user: dict = Depends(get_current_user)
     """
     Assign all unassigned leads to sales representatives via round-robin based on city.
     Called when leads page is refreshed or manually triggered.
+    Uses role_id to find sales reps and assigned_cities for city matching.
     """
     # Check permission - only HR or admin can do bulk assignment
     role_code = current_user.get("role_code", "")
@@ -1210,23 +1211,10 @@ async def assign_unassigned_leads(current_user: dict = Depends(get_current_user)
             failed_count += 1
             continue
         
-        # Find sales reps for this city (including those with no city restrictions)
-        sales_reps = await db.users.find({
-            "is_active": True,
-            "role_code": {"$regex": "SALES", "$options": "i"},  # Match any role containing "SALES"
-            "$or": [
-                {"leads_cities": lead_city},
-                {"leads_cities": {"$in": [lead_city]}},
-                {"assigned_cities": lead_city},
-                {"assigned_cities": {"$in": [lead_city]}},
-                {"city": lead_city},
-                {"city": {"$regex": f"^{lead_city}$", "$options": "i"}},
-                # Also include reps with no city restrictions
-                {"leads_cities": {"$exists": False}},
-                {"leads_cities": []},
-                {"leads_cities": None}
-            ]
-        }, {"_id": 0, "id": 1, "name": 1}).to_list(100)
+        # Find sales reps for this city using the helper function
+        sales_reps = await find_sales_reps_for_city(lead_city)
+        
+        logger.info(f"Found {len(sales_reps)} sales reps for city '{lead_city}': {[r.get('name') for r in sales_reps]}")
         
         if not sales_reps:
             results.append({"lead_id": lead_id, "city": lead_city, "status": "failed", "reason": f"No sales reps for city: {lead_city}"})
