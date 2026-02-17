@@ -151,6 +151,7 @@ Build a scalable automotive platform "Wisedrive" that evolved into a monolithic 
 ## Future Tasks (Backlog)
 
 ### P0 - UAT & Deployment
+- [x] **Critical Bug Fix: Lead Auto-Assignment (February 17, 2026)**
 - [ ] User Acceptance Testing for Payment Modal changes
 - [ ] User Acceptance Testing for complete Leads Module
 - [ ] Production deployment
@@ -164,12 +165,48 @@ Build a scalable automotive platform "Wisedrive" that evolved into a monolithic 
 
 ---
 
+## Bug Fixes
+
+### ✅ Lead Auto-Assignment Bug Fix (February 17, 2026)
+
+**Root Cause Analysis:**
+The lead assignment query was incorrectly using `role_code` field directly on users collection. In reality:
+- Users have `role_id` (reference to roles collection)
+- Role codes (e.g., `SALES_EXEC`) are stored in the `roles` collection
+- The query never matched because users don't have `role_code` field
+
+**Fix Applied:**
+1. Created helper function `get_sales_role_ids()` - Gets role IDs for all SALES roles
+2. Created helper function `find_sales_reps_for_city(city)` - Finds sales reps using:
+   - `role_id` lookup (checks against sales role IDs)
+   - `assigned_cities` array check
+   - `is_available_for_leads` flag check
+3. Updated all assignment endpoints to use the new helper function:
+   - `POST /api/leads/assign-unassigned` (bulk assignment)
+   - Twilio WhatsApp webhook (auto-assignment on new lead)
+   - `GET /api/leads/sales-reps-by-city` (dropdown population)
+
+**Enhanced Debug Endpoint:**
+`GET /api/leads/debug-sales-reps?city=Vizag&user_name=Sonu`
+Returns:
+- All roles in system
+- Sales role IDs
+- All sales users with their assignments
+- Users matching the specific city
+- Specific user details with role verification
+
+**Files Modified:**
+- `/app/backend/server.py` - Helper functions, updated queries, enhanced debug endpoint
+
+---
+
 ## Document History
 - **Created:** December 2025
-- **Last Updated:** February 16, 2026
-- **Version:** 2.3
+- **Last Updated:** February 17, 2026
+- **Version:** 2.4
 
 ## Changelog
+- v2.4 (Feb 17, 2026): **Critical Bug Fix: Lead Auto-Assignment** - Fixed query to correctly use role_id lookup against roles collection, check assigned_cities array, and is_available_for_leads flag
 - v2.3 (Feb 16, 2026): **Payment Modal Enhancements** - Removed "Number of Cars", added conditional inspection scheduling with Google Places autocomplete, leads-to-inspections integration
 - v2.2 (Feb 16, 2026): Vaahan API integration - Real vehicle RC data from Invincible Ocean API
 - v2.1 (Feb 16, 2026): RBAC for Sales Executives - leads filtering, Leads-only tab visibility
