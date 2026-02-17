@@ -1078,19 +1078,21 @@ async def find_sales_reps_for_city(city: str):
 
 # Debug endpoint to check sales rep configuration
 @api_router.get("/leads/debug-sales-reps")
-async def debug_sales_reps(city: str = None, current_user: dict = Depends(get_current_user)):
+async def debug_sales_reps(city: str = None, user_name: str = None, current_user: dict = Depends(get_current_user)):
     """
     Debug endpoint to check sales rep configuration.
     Shows all users with SALES roles and their city assignments.
+    Can also search for a specific user by name.
     """
-    # Get sales role IDs
-    sales_role_ids = await get_sales_role_ids()
-    
-    # Get all roles for reference
+    # Get ALL roles for reference
     all_roles = await db.roles.find(
-        {"code": {"$regex": "SALES", "$options": "i"}},
+        {},
         {"_id": 0, "id": 1, "code": 1, "name": 1}
     ).to_list(100)
+    
+    # Get sales role IDs
+    sales_role_ids = await get_sales_role_ids()
+    sales_roles = [r for r in all_roles if r.get("id") in sales_role_ids]
     
     # Get all users with sales roles
     all_sales = await db.users.find(
@@ -1110,15 +1112,35 @@ async def debug_sales_reps(city: str = None, current_user: dict = Depends(get_cu
     if city:
         matching_for_city = await find_sales_reps_for_city(city)
     
+    # Search for specific user by name (case-insensitive)
+    specific_user = None
+    if user_name:
+        specific_user = await db.users.find_one(
+            {"name": {"$regex": user_name, "$options": "i"}},
+            {"_id": 0, "id": 1, "name": 1, "email": 1, "role_id": 1, "role_ids": 1,
+             "is_active": 1, "is_available_for_leads": 1,
+             "city": 1, "leads_cities": 1, "assigned_cities": 1}
+        )
+        if specific_user:
+            # Get role details for this user
+            user_role = await db.roles.find_one({"id": specific_user.get("role_id")}, {"_id": 0})
+            specific_user["role_details"] = user_role
+            specific_user["is_sales_role"] = specific_user.get("role_id") in sales_role_ids
+    
     return {
-        "sales_roles": all_roles,
+        "all_roles": all_roles,
+        "sales_roles": sales_roles,
         "sales_role_ids": sales_role_ids,
         "all_sales_users": all_sales,
         "matching_for_city": {
             "city": city,
             "count": len(matching_for_city),
             "users": matching_for_city
-        }
+        },
+        "specific_user_search": {
+            "search_name": user_name,
+            "user": specific_user
+        } if user_name else None
     }
 
 
