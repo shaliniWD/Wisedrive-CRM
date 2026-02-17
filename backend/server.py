@@ -1809,18 +1809,96 @@ async def twilio_whatsapp_webhook(
         }
         await db.lead_activities.insert_one(message_activity)
         
-        # Send chatbot response to existing customer
-        from services.chatbot_service import get_chatbot_service
-        chatbot = get_chatbot_service()
-        await chatbot.handle_message(
-            phone=phone,
-            message=Body,
-            lead_id=existing_lead["id"],
-            is_existing_lead=True
-        )
-        
         logger.info(f"Updated existing lead {existing_lead['id']} status to RCB WHATSAPP")
-        return {"status": "updated", "lead_id": existing_lead["id"], "new_status": "RCB WHATSAPP"}
+        
+        # Build response based on message content
+        message_lower = Body.lower().strip() if Body else ""
+        
+        if message_lower in ["buy_inspection", "1", "buy inspection", "buy", "inspection", "packages"]:
+            response_message = """📋 *Our Inspection Packages*
+
+*Basic Inspection - ₹999*
+✓ 100+ point check
+✓ Engine & transmission
+✓ Report in 24 hours
+
+*Standard Inspection - ₹1,999*
+✓ 150+ point check
+✓ Road test included
+✓ Detailed report
+
+*Premium Inspection - ₹2,999*
+✓ 200+ point check
+✓ OBD diagnostic
+✓ Expert consultation
+
+*Reply with:*
+• basic - For Basic Package
+• standard - For Standard Package  
+• premium - For Premium Package
+• callback - To speak with our expert"""
+        
+        elif message_lower in ["request_callback", "2", "callback", "call back", "call", "rcb"]:
+            response_message = """📞 *Callback Request Received!*
+
+Our sales representative will call you within the next 30 minutes.
+
+Feel free to ask any questions about:
+• Our inspection process
+• Pricing and packages
+• Service areas
+
+_Type your question or wait for our callback!_"""
+        
+        elif message_lower in ["basic", "pkg_basic"]:
+            response_message = """✅ *Basic Inspection - ₹999*
+
+Great choice! To proceed:
+1. Our sales rep will call you shortly
+2. Share vehicle registration number
+3. Choose inspection date & location
+
+*Reply "callback" for immediate assistance*"""
+        
+        elif message_lower in ["standard", "pkg_standard"]:
+            response_message = """✅ *Standard Inspection - ₹1,999*
+
+Excellent choice! To proceed:
+1. Our sales rep will call you shortly
+2. Share vehicle registration number
+3. Choose inspection date & location
+
+*Reply "callback" for immediate assistance*"""
+        
+        elif message_lower in ["premium", "pkg_premium"]:
+            response_message = """✅ *Premium Inspection - ₹2,999*
+
+Premium choice! To proceed:
+1. Our sales rep will call you shortly
+2. Share vehicle registration number
+3. Choose inspection date & location
+
+*Reply "callback" for immediate assistance*"""
+        
+        else:
+            # Default menu for existing customers
+            response_message = """🙏 *Welcome back to WiseDrive!*
+
+How can we help you today?
+
+*Reply with:*
+1️⃣ - View inspection packages
+2️⃣ - Request a callback
+
+Or type your question and we'll help you!"""
+        
+        # Return TwiML response
+        twiml_response = f'''<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+    <Message>{response_message}</Message>
+</Response>'''
+        
+        return Response(content=twiml_response, media_type="application/xml")
     
     # Create new lead
     lead_id = str(uuid.uuid4())
