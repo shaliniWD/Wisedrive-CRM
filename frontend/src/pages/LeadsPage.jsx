@@ -422,34 +422,63 @@ export default function LeadsPage() {
   }, [search, filterEmployee, filterStatus, filterCity, filterSource, user?.country_id]);
 
   // Auto-assign unassigned leads on page load (for HR/admin users only)
-  const assignUnassignedLeads = useCallback(async () => {
+  const [isAssigning, setIsAssigning] = useState(false);
+  
+  const assignUnassignedLeads = useCallback(async (showToast = true) => {
     // Only HR managers and admins can trigger bulk assignment
-    if (!user || !['HR_MANAGER', 'CEO', 'COUNTRY_HEAD', 'ADMIN'].includes(user.role_code)) {
+    const allowedRoles = ['HR_MANAGER', 'CEO', 'COUNTRY_HEAD', 'ADMIN', 'HR_ADMIN'];
+    if (!user || !allowedRoles.includes(user.role_code)) {
+      console.log('User role not allowed for auto-assignment:', user?.role_code);
       return;
     }
     
+    setIsAssigning(true);
     try {
+      console.log('Triggering auto-assignment for unassigned leads...');
       const response = await leadsApi.assignUnassigned();
+      console.log('Auto-assignment response:', response.data);
+      
       if (response.data?.assigned_count > 0) {
-        toast.success(`${response.data.assigned_count} lead(s) auto-assigned`);
+        if (showToast) {
+          toast.success(`${response.data.assigned_count} lead(s) auto-assigned to sales reps`);
+        }
         // Refresh the data to show updated assignments
-        fetchData();
+        await fetchData();
+      } else if (showToast && response.data?.failed_count > 0) {
+        toast.warning(`${response.data.failed_count} lead(s) could not be assigned (no matching sales reps)`);
       }
+      return response.data;
     } catch (error) {
-      // Silent fail - don't show error toast for auto-assignment
-      console.log('Auto-assignment skipped:', error.response?.data?.detail || error.message);
+      console.error('Auto-assignment error:', error.response?.data || error.message);
+      if (showToast) {
+        toast.error(error.response?.data?.detail || 'Failed to auto-assign leads');
+      }
+    } finally {
+      setIsAssigning(false);
     }
   }, [user, fetchData]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  // Initial data fetch
+  useEffect(() => { 
+    fetchData(); 
+  }, [fetchData]);
   
-  // Run auto-assignment once when page loads (only for authorized users)
+  // Run auto-assignment after initial data load
+  const hasRunAutoAssign = useRef(false);
+  
   useEffect(() => {
-    if (!loading && user) {
-      assignUnassignedLeads();
+    // Only run once after initial load completes
+    if (!loading && user && !hasRunAutoAssign.current) {
+      hasRunAutoAssign.current = true;
+      console.log('Page loaded, triggering auto-assignment...');
+      assignUnassignedLeads(false); // Silent on initial load
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading]); // Only run when loading completes
+  }, [loading, user, assignUnassignedLeads]);
+
+  // Reset the ref when user changes (logout/login)
+  useEffect(() => {
+    hasRunAutoAssign.current = false;
+  }, [user?.id]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
