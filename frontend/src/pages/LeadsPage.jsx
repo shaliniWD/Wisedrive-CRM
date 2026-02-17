@@ -478,15 +478,33 @@ export default function LeadsPage() {
     setIsPaymentModalOpen(true);
   };
 
-  const openAssignModal = (lead) => {
+  const openAssignModal = async (lead) => {
     setAssigningLead(lead);
     setSelectedEmployee(lead.assigned_to || '');
+    setLoadingSalesReps(true);
+    setSalesRepsForCity([]);
+    
+    try {
+      // Fetch sales reps filtered by lead's city
+      const response = await leadsApi.getSalesRepsByCity(lead.city);
+      setSalesRepsForCity(response.data || []);
+    } catch (error) {
+      console.error('Failed to fetch sales reps:', error);
+      toast.error('Failed to load sales representatives');
+    } finally {
+      setLoadingSalesReps(false);
+    }
+    
     setIsAssignModalOpen(true);
   };
 
   const handleAssignEmployee = async () => {
     if (!assigningLead || !reassignReason) {
       toast.error('Please provide a reason for reassignment');
+      return;
+    }
+    if (!selectedEmployee) {
+      toast.error('Please select a sales representative');
       return;
     }
     setSaving(true);
