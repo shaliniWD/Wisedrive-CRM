@@ -174,7 +174,7 @@ export default function DocumentsScreen() {
                   <Ionicons name={getDocIcon(doc.document_type) as any} size={iconSize.lg} color={docColor} />
                 </View>
                 <View style={styles.docInfo}>
-                  <Text style={styles.docTitle} numberOfLines={1}>{doc.name || 'Untitled Document'}</Text>
+                  <Text style={styles.docTitle} numberOfLines={1}>{doc.document_name || doc.name || 'Untitled Document'}</Text>
                   <View style={styles.docMeta}>
                     <Text style={styles.docType}>{doc.document_type || 'Document'}</Text>
                     {doc.created_at && (
