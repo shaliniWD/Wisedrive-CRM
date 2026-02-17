@@ -1950,23 +1950,41 @@ Or type your question and we'll help you!"""
     
     # Auto-assign to sales rep via round-robin based on city
     try:
-        # Find sales reps assigned to this city (check both leads_cities and assigned_cities fields)
-        # Also check for both SALES_EXEC and SALES_EXECUTIVE role codes
-        # Include reps with no city restrictions (handle all cities)
+        # First, log what we're looking for
+        logger.info(f"Looking for sales reps for city: {city}")
+        
+        # Find all potential sales reps (broader search)
+        all_sales_query = {
+            "is_active": True,
+            "role_code": {"$regex": "SALES", "$options": "i"}  # Match any role containing "SALES"
+        }
+        all_sales = await db.users.find(all_sales_query, {"_id": 0, "id": 1, "name": 1, "role_code": 1, "city": 1, "leads_cities": 1, "assigned_cities": 1}).to_list(100)
+        logger.info(f"All sales users found: {[(r.get('name'), r.get('role_code'), r.get('city'), r.get('leads_cities')) for r in all_sales]}")
+        
+        # Find sales reps assigned to this city (check multiple fields)
+        # Check: leads_cities, assigned_cities, AND the direct city field
         sales_reps = await db.users.find({
             "is_active": True,
-            "role_code": {"$in": ["SALES_EXEC", "SALES_EXECUTIVE", "SALES_LEAD", "SALES_HEAD"]},
+            "role_code": {"$regex": "SALES", "$options": "i"},  # Match any role containing "SALES"
             "$or": [
+                # Check leads_cities array
                 {"leads_cities": city},
-                {"assigned_cities": city},
                 {"leads_cities": {"$in": [city]}},
+                # Check assigned_cities array
+                {"assigned_cities": city},
                 {"assigned_cities": {"$in": [city]}},
+                # Check direct city field (string)
+                {"city": city},
+                {"city": {"$regex": f"^{city}$", "$options": "i"}},  # Case-insensitive match
                 # Include reps with no city restrictions
+                {"$and": [
+                    {"leads_cities": {"$in": [None, []]}},
+                    {"assigned_cities": {"$in": [None, []]}},
+                    {"city": {"$in": [None, ""]}}
+                ]},
                 {"leads_cities": {"$exists": False}},
-                {"leads_cities": []},
-                {"leads_cities": None}
             ]
-        }, {"_id": 0, "id": 1, "name": 1}).to_list(100)
+        }, {"_id": 0, "id": 1, "name": 1, "role_code": 1}).to_list(100)
         
         logger.info(f"Found {len(sales_reps)} sales reps for city {city}: {[r.get('name') for r in sales_reps]}")
         
