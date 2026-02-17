@@ -254,9 +254,9 @@ class ESSMobileAppValidator:
         
         # Test date parsing (mobile app uses parseISO)
         try:
-            from datetime import datetime
+            from datetime import datetime as dt
             date_str = holiday.get("date")
-            datetime.fromisoformat(date_str.replace("Z", "+00:00") if "Z" in date_str else date_str.split("T")[0])
+            dt.fromisoformat(date_str.replace("Z", "+00:00") if "Z" in date_str else date_str.split("T")[0])
             self.add_result("Holiday Date Format", True, f"Date format is valid: {date_str}")
         except Exception as e:
             self.add_result("Holiday Date Format", False, f"Invalid date format: {e}")
