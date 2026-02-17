@@ -56,9 +56,21 @@ async def get_current_user(
     request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(security)
 ) -> dict:
-    """Get current user from JWT token"""
+    """Get current user from JWT token (header or query parameter)"""
     try:
-        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        # Try to get token from Authorization header first
+        token = None
+        if credentials and credentials.credentials:
+            token = credentials.credentials
+        
+        # If no header token, check query parameter (for browser/webview access)
+        if not token:
+            token = request.query_params.get("token")
+        
+        if not token:
+            raise HTTPException(status_code=401, detail="Not authenticated")
+        
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         
         if payload.get("type") != "access":
             raise HTTPException(status_code=401, detail="Invalid token type")
