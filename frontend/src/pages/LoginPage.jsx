@@ -166,7 +166,7 @@ export default function LoginPage() {
 
           <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-8" data-testid="login-card">
             <div className="text-center mb-8">
-              <img src={COMPANY_LOGO} alt="WiseDrive" className="h-10 mx-auto mb-6" crossOrigin="anonymous" />
+              <img src={COMPANY_LOGO_BLUE} alt="WiseDrive" className="h-10 mx-auto mb-6" crossOrigin="anonymous" />
               <h2 className="text-2xl font-bold text-slate-900">
                 Welcome back
               </h2>
