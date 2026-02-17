@@ -88,6 +88,10 @@ export const getStoredUser = async () => {
   return userJson ? JSON.parse(userJson) : null;
 };
 
+export const getAccessToken = async () => {
+  return await SecureStore.getItemAsync(ACCESS_TOKEN_KEY);
+};
+
 export const getDeviceId = async () => {
   let deviceId = await SecureStore.getItemAsync(DEVICE_ID_KEY);
   if (!deviceId) {
