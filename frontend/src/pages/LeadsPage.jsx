@@ -1519,7 +1519,11 @@ export default function LeadsPage() {
             </div>
             <div className="flex gap-3 pt-4 border-t">
               <Button variant="outline" onClick={() => setIsAssignModalOpen(false)} className="flex-1">Cancel</Button>
-              <Button onClick={handleAssignEmployee} disabled={saving || !selectedEmployee || !reassignReason} className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700">
+              <Button 
+                onClick={handleAssignEmployee} 
+                disabled={saving || !selectedEmployee || !reassignReason || salesRepsForCity.length === 0} 
+                className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700"
+              >
                 {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Reassign
               </Button>
             </div>
