@@ -124,6 +124,14 @@ async def startup():
     fcm_service = FCMService(db)
     app.state.fcm_service = fcm_service
     
+    # Initialize Chatbot Service
+    from services.chatbot_service import init_chatbot_service
+    from services.twilio_service import get_twilio_service
+    twilio = get_twilio_service()
+    chatbot = init_chatbot_service(db, twilio)
+    app.state.chatbot_service = chatbot
+    logger.info("ChatbotService initialized for WhatsApp")
+    
     # Set db in app.state for ESS routes compatibility
     app.state.db = db
     
