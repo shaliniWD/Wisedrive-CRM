@@ -109,7 +109,7 @@ const PackageCard = ({ pkg, categories, offers, onEdit, onCopy, onToggle }) => {
   return (
     <div className={`border rounded-xl transition-all h-full flex flex-col relative ${isActive ? 'bg-white shadow-sm hover:shadow-md' : 'bg-gray-50 border-gray-200'}`} data-testid={`package-card-${pkg.id}`}>
       {/* Package Header */}
-      <div className={`p-4 ${isRecommended ? 'bg-gradient-to-r from-blue-600 to-blue-700' : isActive ? 'bg-gradient-to-r from-blue-100 to-blue-200 border-b border-blue-200' : 'bg-gray-100 border-b border-gray-200'} rounded-t-xl`}>
+      <div className={`p-4 ${isRecommended ? 'bg-gradient-to-r from-blue-600 to-blue-700' : isActive ? 'bg-gradient-to-r from-blue-200 to-blue-300 border-b border-blue-300' : 'bg-gray-100 border-b border-gray-200'} rounded-t-xl`}>
         <div className="flex items-start justify-between gap-2 mb-3">
           <div className="flex items-center gap-2 flex-wrap">
             {isRecommended && (
