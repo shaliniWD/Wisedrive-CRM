@@ -385,7 +385,15 @@ export default function AdAnalyticsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Ads Management</h1>
-          <p className="text-gray-500 mt-1">Manage ad mappings and track performance</p>
+          <div className="flex items-center gap-3 mt-1">
+            <p className="text-gray-500">Manage ad mappings and track performance</p>
+            {lastUpdated && (
+              <span className="text-xs text-gray-400 flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                Updated {formatLastUpdated(lastUpdated)}
+              </span>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-3">
           {/* Token Status for CEO/CTO */}
