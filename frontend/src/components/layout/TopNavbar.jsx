@@ -9,13 +9,14 @@ const tabRouteMap = {
   leads: { name: 'Leads', href: '/leads' },
   customers: { name: 'Customers', href: '/customers' },
   inspections: { name: 'Inspections', href: '/inspections' },
+  'ad-analytics': { name: 'Ad Analytics', href: '/ad-analytics' },
   hr: { name: 'HR Module', href: '/hr' },
   finance: { name: 'Finance', href: '/finance' },
   settings: { name: 'Settings', href: '/settings' },
 };
 
 // Fixed order for tabs
-const tabOrder = ['dashboard', 'leads', 'customers', 'inspections', 'hr', 'finance', 'settings'];
+const tabOrder = ['dashboard', 'leads', 'customers', 'inspections', 'ad-analytics', 'hr', 'finance', 'settings'];
 
 export const TopNavbar = () => {
   const { user, logout, visibleTabs } = useAuth();
