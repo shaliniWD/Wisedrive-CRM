@@ -154,8 +154,11 @@ Build a scalable automotive platform "Wisedrive" that evolved into a monolithic 
 
 ### P0 - UAT & Deployment
 - [x] **Critical Bug Fix: Lead Auto-Assignment (February 17, 2026)**
+- [x] **CTO Role Permissions Fix (February 17, 2026)**
+- [x] **Inspection Package Payment Enhancements (February 18, 2026)**
 - [ ] User Acceptance Testing for Payment Modal changes
 - [ ] User Acceptance Testing for complete Leads Module
+- [ ] Implement "Collect Balance" button in Inspections tab for remaining payment collection
 - [ ] Production deployment
 
 ### P1 - CRM Modules
