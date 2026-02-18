@@ -1310,7 +1310,7 @@ export default function InspectionsPage() {
                 <span className="text-gray-500">Current Vehicle: </span>
                 <span className="font-mono font-medium">{vehicleEditInspection.car_number || 'Not set'}</span>
                 {vehicleEditInspection.car_make && (
-                  <span className="text-gray-500 ml-2">({vehicleEditInspection.car_make} {vehicleEditInspection.car_model})</span>
+                  <span className="text-gray-500 ml-2">({extractMake(vehicleEditInspection.car_make)} {extractModel(vehicleEditInspection.car_model)})</span>
                 )}
               </div>
             )}
