@@ -190,14 +190,21 @@ const extractModel = (modelStr) => {
 
 // Inspection Status options
 const INSPECTION_STATUSES = [
-  { value: 'NEW_INSPECTION', label: 'New Inspection', color: 'bg-slate-100 text-slate-800' },
-  { value: 'ASSIGNED_TO_MECHANIC', label: 'Assigned to Mechanic', color: 'bg-indigo-100 text-indigo-800' },
-  { value: 'INSPECTION_CONFIRMED', label: 'Confirmed', color: 'bg-cyan-100 text-cyan-800' },
-  { value: 'INSPECTION_STARTED', label: 'Started', color: 'bg-amber-100 text-amber-800' },
-  { value: 'INSPECTION_IN_PROGRESS', label: 'In Progress', color: 'bg-orange-100 text-orange-800' },
-  { value: 'INSPECTION_COMPLETED', label: 'Completed', color: 'bg-emerald-100 text-emerald-800' },
-  { value: 'INSPECTION_CANCELLED_CUSTOMER', label: 'Cancelled (Customer)', color: 'bg-red-100 text-red-800' },
-  { value: 'INSPECTION_CANCELLED_WISEDRIVE', label: 'Cancelled (Wisedrive)', color: 'bg-red-100 text-red-800' },
+  { value: 'NEW_INSPECTION', label: 'New Inspection', color: 'bg-slate-100 text-slate-800', requiresMechanic: false },
+  { value: 'ASSIGNED_TO_MECHANIC', label: 'Assigned to Mechanic', color: 'bg-indigo-100 text-indigo-800', requiresMechanic: true },
+  { value: 'INSPECTION_CONFIRMED', label: 'Confirmed', color: 'bg-cyan-100 text-cyan-800', requiresMechanic: true },
+  { value: 'INSPECTION_STARTED', label: 'Started', color: 'bg-amber-100 text-amber-800', requiresMechanic: true },
+  { value: 'INSPECTION_IN_PROGRESS', label: 'In Progress', color: 'bg-orange-100 text-orange-800', requiresMechanic: true },
+  { value: 'INSPECTION_COMPLETED', label: 'Completed', color: 'bg-emerald-100 text-emerald-800', requiresMechanic: true },
+  { value: 'INSPECTION_RESCHEDULED', label: 'Rescheduled', color: 'bg-purple-100 text-purple-800', requiresMechanic: false },
+  { value: 'INSPECTION_CANCELLED_CUSTOMER', label: 'Cancelled (Customer)', color: 'bg-red-100 text-red-800', requiresMechanic: false },
+  { value: 'INSPECTION_CANCELLED_WISEDRIVE', label: 'Cancelled (Wisedrive)', color: 'bg-red-100 text-red-800', requiresMechanic: false },
+];
+
+// Statuses that require a mechanic to be assigned
+const MECHANIC_REQUIRED_STATUSES = [
+  'ASSIGNED_TO_MECHANIC', 'INSPECTION_CONFIRMED', 'INSPECTION_STARTED',
+  'INSPECTION_IN_PROGRESS', 'INSPECTION_COMPLETED'
 ];
 
 // Inspection Status Badge Component
