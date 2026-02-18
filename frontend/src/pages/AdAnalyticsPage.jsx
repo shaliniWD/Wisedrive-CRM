@@ -701,32 +701,6 @@ export default function AdAnalyticsPage() {
                         </tr>
                       ))
                     )}
-                            <div>
-                              <span className="text-sm font-medium text-emerald-600">
-                                {item.converted_leads}
-                              </span>
-                              <span className="text-xs text-gray-500 ml-1">
-                                ({item.conversion_rate}%)
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-4 text-right">
-                            <span className="text-sm font-semibold text-gray-900">
-                              {formatCurrency(item.total_revenue)}
-                            </span>
-                          </td>
-                          <td className="px-4 py-4 text-right">
-                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
-                              item.roi >= 100 ? 'bg-emerald-100 text-emerald-700' :
-                              item.roi >= 0 ? 'bg-amber-100 text-amber-700' :
-                              'bg-red-100 text-red-700'
-                            }`}>
-                              {item.roi >= 0 ? '+' : ''}{item.roi}%
-                            </span>
-                          </td>
-                        </tr>
-                      ))
-                    )}
                   </tbody>
                 </table>
               </div>
