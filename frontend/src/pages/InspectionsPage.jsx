@@ -473,11 +473,9 @@ export default function InspectionsPage() {
 
   // Handle View Report - opens in new tab
   const handleViewReport = (inspection) => {
-    if (inspection.report_url) {
-      window.open(inspection.report_url, '_blank');
-    } else {
-      toast.error('Report not available yet');
-    }
+    // Open the inspection report page in a new tab
+    const reportUrl = `${window.location.origin}/inspection-report/${inspection.id}`;
+    window.open(reportUrl, '_blank');
   };
 
   // Handle Status Change
