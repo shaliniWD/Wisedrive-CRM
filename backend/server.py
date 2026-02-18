@@ -3340,7 +3340,8 @@ async def get_active_offers(
     current_user: dict = Depends(get_current_user)
 ):
     """Get only active and valid offers (within date range)"""
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(timezone.utc)
+    now_str = now.isoformat()
     query = {"is_active": True}
     if country_id:
         query["country_id"] = country_id
@@ -3353,8 +3354,16 @@ async def get_active_offers(
     for offer in offers:
         valid_from = offer.get("valid_from", "")
         valid_until = offer.get("valid_until", "")
-        if valid_from <= now <= valid_until:
-            valid_offers.append(offer)
+        
+        # Handle both datetime objects and strings
+        if isinstance(valid_from, datetime):
+            valid_from = valid_from.isoformat()
+        if isinstance(valid_until, datetime):
+            valid_until = valid_until.isoformat()
+        
+        if valid_from and valid_until:
+            if valid_from <= now_str <= valid_until:
+                valid_offers.append(offer)
     
     return valid_offers
 
