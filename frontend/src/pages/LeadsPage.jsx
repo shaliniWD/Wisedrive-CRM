@@ -533,6 +533,7 @@ export default function LeadsPage() {
       fuelType: '', carColor: '', carConfirmed: false, packageId: '',
       discountType: 'none', discountValue: '', city: lead.city || '',
       customerMobile: lead.mobile, customerName: lead.name,
+      selectedOfferIds: [], usePartialPayment: false,
     });
     setCarError('');
     setVehicleData(null);
