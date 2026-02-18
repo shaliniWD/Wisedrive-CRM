@@ -260,7 +260,7 @@ Returns:
 ## Document History
 - **Created:** December 2025
 - **Last Updated:** February 18, 2026
-- **Version:** 2.6
+- **Version:** 2.7
 
 ## Changelog
 - v2.7 (Feb 18, 2026): **Payment Modal Package Settings Fix** - Discount, Offers, and Partial Payment sections now only appear when enabled on the package. Fixed active offers query to properly filter by date range.
