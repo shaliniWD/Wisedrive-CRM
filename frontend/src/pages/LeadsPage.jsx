@@ -702,8 +702,11 @@ export default function LeadsPage() {
     return pkg.price;
   };
 
-  // Calculate discount amount
+  // Calculate discount amount from package settings (if allow_discount is enabled)
   const getDiscountAmount = () => {
+    const pkg = getSelectedPackage();
+    if (!pkg?.allow_discount) return 0;
+    
     const baseAmount = getBaseAmount();
     if (paymentFormData.discountType === 'percent' && paymentFormData.discountValue) {
       return baseAmount * parseFloat(paymentFormData.discountValue) / 100;
@@ -713,11 +716,61 @@ export default function LeadsPage() {
     return 0;
   };
 
-  // Calculate final amount after discount
+  // Calculate offer discount amount from selected offers
+  const getOfferDiscountAmount = () => {
+    const pkg = getSelectedPackage();
+    if (!pkg?.allow_offers || !paymentFormData.selectedOfferIds?.length) return 0;
+    
+    const baseAmountAfterDiscount = getBaseAmount() - getDiscountAmount();
+    let offerDiscount = 0;
+    
+    paymentFormData.selectedOfferIds.forEach(offerId => {
+      const offer = availableOffers.find(o => o.id === offerId);
+      if (offer && pkg.applicable_offer_ids?.includes(offerId)) {
+        if (offer.discount_type === 'percentage') {
+          offerDiscount += baseAmountAfterDiscount * offer.discount_value / 100;
+        } else {
+          offerDiscount += offer.discount_value;
+        }
+      }
+    });
+    
+    return offerDiscount;
+  };
+
+  // Get offers applicable to the selected package
+  const getApplicableOffers = () => {
+    const pkg = getSelectedPackage();
+    if (!pkg?.allow_offers || !pkg?.applicable_offer_ids?.length) return [];
+    return availableOffers.filter(o => pkg.applicable_offer_ids.includes(o.id));
+  };
+
+  // Calculate final amount after discount and offers
   const calculateFinalAmount = () => {
     const baseAmount = getBaseAmount();
     const discount = getDiscountAmount();
-    return Math.max(0, baseAmount - discount);
+    const offerDiscount = getOfferDiscountAmount();
+    return Math.max(0, baseAmount - discount - offerDiscount);
+  };
+
+  // Calculate partial payment amount (if enabled)
+  const getPartialPaymentAmount = () => {
+    const pkg = getSelectedPackage();
+    if (!pkg?.allow_partial_payment || !paymentFormData.usePartialPayment) return calculateFinalAmount();
+    
+    const finalAmount = calculateFinalAmount();
+    if (pkg.partial_payment_type === 'percentage') {
+      return Math.round(finalAmount * pkg.partial_payment_value / 100);
+    } else {
+      return Math.min(pkg.partial_payment_value, finalAmount);
+    }
+  };
+
+  // Get remaining balance amount
+  const getRemainingBalance = () => {
+    const pkg = getSelectedPackage();
+    if (!pkg?.allow_partial_payment || !paymentFormData.usePartialPayment) return 0;
+    return calculateFinalAmount() - getPartialPaymentAmount();
   };
 
   // Handle package selection and initialize schedules
