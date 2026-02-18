@@ -8,6 +8,7 @@ class RBACService:
     
     # Role codes
     CEO = "CEO"
+    CTO = "CTO"
     HR_MANAGER = "HR_MANAGER"
     FINANCE_MANAGER = "FINANCE_MANAGER"
     COUNTRY_HEAD = "COUNTRY_HEAD"
@@ -30,6 +31,7 @@ class RBACService:
     # Tab visibility by role code
     TAB_VISIBILITY = {
         CEO: ["leads", "customers", "inspections", "reports", "hr", "settings", "finance", "ad-analytics"],
+        CTO: ["leads", "customers", "inspections", "reports", "hr", "settings", "finance", "ad-analytics"],
         HR_MANAGER: ["leads", "hr", "finance", "ad-analytics"],  # HR sees Leads, HR Module (includes employees) and Finance
         FINANCE_MANAGER: ["finance", "hr"],  # Finance Manager sees Finance and HR Module (for payroll)
         COUNTRY_HEAD: ["leads", "customers", "inspections", "reports", "hr", "settings", "finance", "ad-analytics"],
