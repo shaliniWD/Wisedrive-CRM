@@ -268,9 +268,14 @@ export default function InspectionsPage() {
     setVehicleSearching(true);
     try {
       const response = await vehicleApi.getDetails(newVehicleNumber.toUpperCase().replace(/\s/g, ''));
-      if (response.data) {
-        setVehicleData(response.data);
+      // API returns {success: true, data: {...vehicle details...}}
+      const vehicle = response.data?.data || response.data;
+      if (vehicle && (vehicle.manufacturer || vehicle.model)) {
+        setVehicleData(vehicle);
         toast.success('Vehicle details found!');
+      } else {
+        toast.error('Vehicle not found. You can still proceed manually.');
+        setVehicleData(null);
       }
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Vehicle not found. You can still proceed manually.');
