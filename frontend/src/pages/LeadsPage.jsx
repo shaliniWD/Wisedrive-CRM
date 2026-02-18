@@ -746,7 +746,7 @@ export default function LeadsPage() {
     return availableOffers.filter(o => pkg.applicable_offer_ids.includes(o.id));
   };
 
-  // Calculate final amount after discount and offers
+  // Calculate final amount after discount and offers (this is the TOTAL amount customer needs to pay)
   const calculateFinalAmount = () => {
     const baseAmount = getBaseAmount();
     const discount = getDiscountAmount();
@@ -754,24 +754,31 @@ export default function LeadsPage() {
     return Math.max(0, baseAmount - discount - offerDiscount);
   };
 
-  // Calculate partial payment amount (if enabled)
+  // Get partial payment amount (fixed amount from package settings)
+  // This is what customer pays IMMEDIATELY
   const getPartialPaymentAmount = () => {
     const pkg = getSelectedPackage();
-    if (!pkg?.allow_partial_payment || !paymentFormData.usePartialPayment) return calculateFinalAmount();
+    if (!pkg?.allow_partial_payment || !paymentFormData.usePartialPayment) return 0;
     
     const finalAmount = calculateFinalAmount();
-    if (pkg.partial_payment_type === 'percentage') {
-      return Math.round(finalAmount * pkg.partial_payment_value / 100);
-    } else {
-      return Math.min(pkg.partial_payment_value, finalAmount);
-    }
+    // Partial payment is a fixed amount, but cannot exceed total
+    return Math.min(pkg.partial_payment_value || 0, finalAmount);
   };
 
-  // Get remaining balance amount
+  // Get remaining balance amount (to be collected later via Collect Balance button)
   const getRemainingBalance = () => {
     const pkg = getSelectedPackage();
     if (!pkg?.allow_partial_payment || !paymentFormData.usePartialPayment) return 0;
     return calculateFinalAmount() - getPartialPaymentAmount();
+  };
+
+  // Get the amount to charge now (either full amount or partial payment)
+  const getAmountToPayNow = () => {
+    const pkg = getSelectedPackage();
+    if (pkg?.allow_partial_payment && paymentFormData.usePartialPayment) {
+      return getPartialPaymentAmount();
+    }
+    return calculateFinalAmount();
   };
 
   // Handle package selection and initialize schedules
