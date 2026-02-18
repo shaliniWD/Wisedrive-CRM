@@ -1321,6 +1321,7 @@ async def assign_unassigned_leads(current_user: dict = Depends(get_current_user)
 async def fix_assigned_names(current_user: dict = Depends(get_current_user)):
     """
     One-time utility to populate assigned_to_name for leads that only have assigned_to ID.
+    Also clears invalid assignments where the user no longer exists.
     """
     # Check permission
     role_code = current_user.get("role_code", "")
@@ -1333,12 +1334,13 @@ async def fix_assigned_names(current_user: dict = Depends(get_current_user)):
         "$or": [
             {"assigned_to_name": {"$exists": False}},
             {"assigned_to_name": None},
-            {"assigned_to_name": ""}
+            {"assigned_to_name": ""},
+            {"assigned_to_name": "Unknown Rep"}  # Also fix previously marked as Unknown Rep
         ]
     }, {"_id": 0, "id": 1, "assigned_to": 1}).to_list(1000)
     
     if not leads_to_fix:
-        return {"message": "No leads need fixing", "fixed_count": 0}
+        return {"message": "No leads need fixing", "fixed_count": 0, "cleared_count": 0}
     
     # Get all unique user IDs
     user_ids = list(set([lead["assigned_to"] for lead in leads_to_fix]))
@@ -1353,20 +1355,30 @@ async def fix_assigned_names(current_user: dict = Depends(get_current_user)):
     
     # Update leads
     fixed_count = 0
+    cleared_count = 0
     for lead in leads_to_fix:
         user_id = lead["assigned_to"]
         user_name = user_map.get(user_id)
         
         if user_name:
+            # Valid user - set the name
             await db.leads.update_one(
                 {"id": lead["id"]},
                 {"$set": {"assigned_to_name": user_name}}
             )
             fixed_count += 1
+        else:
+            # Invalid user - clear the assignment
+            await db.leads.update_one(
+                {"id": lead["id"]},
+                {"$set": {"assigned_to": None, "assigned_to_name": None}}
+            )
+            cleared_count += 1
     
     return {
-        "message": f"Fixed {fixed_count} leads",
+        "message": f"Fixed {fixed_count} leads, cleared {cleared_count} invalid assignments",
         "fixed_count": fixed_count,
+        "cleared_count": cleared_count,
         "total_checked": len(leads_to_fix)
     }
 
