@@ -1128,7 +1128,7 @@ export default function InspectionsPage() {
                   <SelectValue placeholder="Select mechanic..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">
+                  <SelectItem value="unassign">
                     <span className="text-gray-500 italic">-- Unassign --</span>
                   </SelectItem>
                   {mechanics.map((mechanic) => (
