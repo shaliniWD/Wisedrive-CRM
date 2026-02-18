@@ -3143,9 +3143,22 @@ async def assign_mechanic_to_inspection(
     
     if request_data.mechanic_id:
         # Assign mechanic
-        mechanic = await db.users.find_one({"id": request_data.mechanic_id}, {"_id": 0, "id": 1, "name": 1})
+        mechanic = await db.users.find_one({"id": request_data.mechanic_id}, {"_id": 0, "id": 1, "name": 1, "inspection_cities": 1})
         if not mechanic:
             raise HTTPException(status_code=404, detail="Mechanic not found")
+        
+        # Validate mechanic's inspection city matches inspection city
+        inspection_city = inspection.get("city", "")
+        mechanic_cities = mechanic.get("inspection_cities", []) or []
+        
+        if mechanic_cities and inspection_city:
+            # Case-insensitive city matching
+            mechanic_cities_lower = [c.lower() for c in mechanic_cities]
+            if inspection_city.lower() not in mechanic_cities_lower:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Mechanic is not assigned to city: {inspection_city}. Mechanic's inspection cities: {', '.join(mechanic_cities)}"
+                )
         
         update_dict["mechanic_id"] = mechanic["id"]
         update_dict["mechanic_name"] = mechanic.get("name", "")
