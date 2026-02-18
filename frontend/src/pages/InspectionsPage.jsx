@@ -265,15 +265,18 @@ export default function InspectionsPage() {
           </Select>
 
           <Select value={filterStatus || 'all'} onValueChange={setFilterStatus}>
-            <SelectTrigger className="w-[180px] h-10 bg-white" data-testid="filter-status">
+            <SelectTrigger className="w-[200px] h-10 bg-white" data-testid="filter-status">
               <SelectValue placeholder="All Status" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="SCHEDULED">Scheduled</SelectItem>
-              <SelectItem value="COMPLETED">Completed</SelectItem>
-              <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-              <SelectItem value="REQUEST_NEWSLOT">Request NewSlot</SelectItem>
+              <SelectItem value="NEW_INSPECTION">New Inspection</SelectItem>
+              <SelectItem value="ASSIGNED_TO_MECHANIC">Assigned to Mechanic</SelectItem>
+              <SelectItem value="INSPECTION_CONFIRMED">Confirmed</SelectItem>
+              <SelectItem value="INSPECTION_STARTED">Started</SelectItem>
+              <SelectItem value="INSPECTION_IN_PROGRESS">In Progress</SelectItem>
+              <SelectItem value="INSPECTION_COMPLETED">Completed</SelectItem>
+              <SelectItem value="CANCELLED">Cancelled</SelectItem>
             </SelectContent>
           </Select>
 
