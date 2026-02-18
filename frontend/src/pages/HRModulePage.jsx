@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Users, Clock, DollarSign, Calendar, Shield, Globe, IndianRupee, CalendarDays } from 'lucide-react';
+import { Users, Clock, DollarSign, Calendar, Shield, Globe, IndianRupee, CalendarDays, MapPin } from 'lucide-react';
 import { hrApi } from '@/services/api';
 
 // Import the full AdminPage content
 import AdminPage from './AdminPage';
 
 // Import HR-specific components
-import { AttendanceDashboard, PayrollDashboard, LeaveManagement, HolidayCalendar } from './HRComponents';
+import { AttendanceDashboard, PayrollDashboard, LeaveManagement, HolidayCalendar, InspectionCityManagement } from './HRComponents';
 
 export default function HRModulePage() {
   const { user } = useAuth();
@@ -19,6 +19,7 @@ export default function HRModulePage() {
   const isFinance = ['CEO', 'FINANCE_MANAGER'].includes(roleCode);
   const isHROrFinance = isHR || isFinance || ['COUNTRY_HEAD'].includes(roleCode);
   const isCEO = roleCode === 'CEO';  // Only CEO can access Countries
+  const isInspectionHead = ['CEO', 'INSPECTION_HEAD', 'HR_MANAGER'].includes(roleCode);
   
   // Currency icon based on user country
   const isIndianUser = user?.country_code === 'IN' || user?.country_name?.toLowerCase().includes('india');
@@ -45,6 +46,7 @@ export default function HRModulePage() {
     { id: 'holidays', label: 'Holiday Calendar', icon: CalendarDays, show: isHR },
     { id: 'payroll', label: 'Payroll', icon: DollarSign, show: isHROrFinance },
     { id: 'leave', label: 'Leave', icon: Calendar, show: true },
+    { id: 'inspection-city', label: 'Inspection City', icon: MapPin, show: isInspectionHead },
     { id: 'roles', label: 'Roles', icon: Shield, show: isHR },
     { id: 'countries', label: 'Countries', icon: Globe, show: isCEO },
   ].filter(t => t.show);
@@ -92,6 +94,9 @@ export default function HRModulePage() {
           
           {/* Leave Tab */}
           {activeTab === 'leave' && <LeaveManagement isHR={isHR} />}
+          
+          {/* Inspection City Tab - Assign cities to mechanics */}
+          {activeTab === 'inspection-city' && isInspectionHead && <InspectionCityManagement />}
           
           {/* Roles Tab - Uses AdminPage roles section */}
           {activeTab === 'roles' && isHR && <AdminPageRolesSection />}
