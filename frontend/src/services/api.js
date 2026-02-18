@@ -220,6 +220,14 @@ export const hrApi = {
   toggleLeadAssignment: (id, data) => axios.patch(`${API_URL}/hr/employees/${id}/lead-assignment`, data),
   updateWeeklyOff: (id, data) => axios.patch(`${API_URL}/hr/employees/${id}/weekly-off`, data),
   
+  // Assigned Cities (for Sales reps)
+  getAssignedCities: (id) => axios.get(`${API_URL}/hr/employees/${id}/assigned-cities`),
+  updateAssignedCities: (id, cities) => axios.put(`${API_URL}/hr/employees/${id}/assigned-cities`, { employee_id: id, cities }),
+  
+  // Inspection Cities (for Mechanics)
+  getInspectionCities: (id) => axios.get(`${API_URL}/hr/employees/${id}/inspection-cities`),
+  updateInspectionCities: (id, cities) => axios.put(`${API_URL}/hr/employees/${id}/inspection-cities`, { employee_id: id, cities }),
+  
   // Countries
   getCountries: () => axios.get(`${API_URL}/hr/countries`),
   getAllCountries: () => axios.get(`${API_URL}/hr/countries/all`),
