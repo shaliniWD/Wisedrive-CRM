@@ -270,7 +270,32 @@ export function InspectionDetailsSection({ data }) {
   const { isEditMode } = useEditMode();
   const [mediaModal, setMediaModal] = useState({ isOpen: false, media: null, type: null });
   
-  const totalCheckpoints = data.reduce((sum, cat) => sum + cat.checkpoints, 0);
+  // Handle missing data gracefully
+  if (!data || !Array.isArray(data) || data.length === 0) {
+    return (
+      <section className="px-4 md:px-0 mt-4 md:mt-6">
+        <div className="mobile-card md:rounded-2xl mb-4">
+          <div className="mobile-card-header flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 md:p-2 rounded-lg bg-muted/50">
+                <ClipboardList className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
+              </div>
+              <h2 className="font-semibold font-display text-base md:text-lg">Inspection Details</h2>
+            </div>
+          </div>
+          <div className="mobile-card-body text-center py-8">
+            <ClipboardList className="h-12 w-12 text-muted-foreground/50 mx-auto mb-3" />
+            <p className="font-medium text-muted-foreground">No inspection data available</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Detailed inspection results will appear here once completed
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+  
+  const totalCheckpoints = data.reduce((sum, cat) => sum + (cat.checkpoints || 0), 0);
 
   const handleMediaClick = (media, type) => {
     setMediaModal({ isOpen: true, media, type });
