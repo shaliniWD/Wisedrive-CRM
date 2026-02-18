@@ -2335,13 +2335,81 @@ async def razorpay_payment_webhook(request: Request):
     
     logger.info(f"Razorpay webhook: event={event}")
     
+    # Get payment_link_id to check if this is a balance payment
+    payment_link_id = payment_entity.get("id")
+    
+    # Check if this is a balance payment for an inspection
+    if payment_link_id:
+        inspection = await db.inspections.find_one(
+            {"balance_payment_link_id": payment_link_id}, 
+            {"_id": 0}
+        )
+        if inspection and event in ["payment_link.paid", "payment.captured"]:
+            # This is a balance payment - handle it separately
+            payment_id = payment_entity.get("id")
+            amount = payment_entity.get("amount", 0) / 100  # Convert from paise
+            
+            # Add payment to transaction history
+            balance_transaction = {
+                "id": str(uuid.uuid4()),
+                "amount": amount,
+                "payment_type": "balance",
+                "payment_method": "razorpay",
+                "razorpay_payment_id": payment_id,
+                "payment_link_id": payment_link_id,
+                "status": "completed",
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            
+            existing_transactions = inspection.get("payment_transactions", [])
+            existing_transactions.append(balance_transaction)
+            
+            # Calculate new totals
+            new_amount_paid = inspection.get("amount_paid", 0) + amount
+            new_balance_due = max(0, inspection.get("balance_due", 0) - amount)
+            new_payment_status = "FULLY_PAID" if new_balance_due <= 0 else "PARTIALLY_PAID"
+            
+            await db.inspections.update_one(
+                {"id": inspection["id"]},
+                {"$set": {
+                    "amount_paid": new_amount_paid,
+                    "balance_due": new_balance_due,
+                    "payment_status": new_payment_status,
+                    "payment_type": "Full" if new_balance_due <= 0 else "Partial",
+                    "payment_transactions": existing_transactions,
+                    "balance_payment_completed_at": datetime.now(timezone.utc).isoformat(),
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+            
+            # Send WhatsApp confirmation for balance payment
+            from services.twilio_service import get_twilio_service
+            twilio = get_twilio_service()
+            if twilio.is_configured() and inspection.get("customer_mobile"):
+                message = f"""✅ *Balance Payment Received*
+
+Dear {inspection.get('customer_name', 'Customer')},
+
+Thank you for completing your payment!
+
+💰 *Amount Paid:* ₹{amount:,.0f}
+📦 *Package:* {inspection.get('package_type', 'Inspection')}
+🚗 *Vehicle:* {inspection.get('car_number', '')}
+
+Your inspection report will be sent shortly.
+
+Thank you for choosing Wisedrive!"""
+                await twilio.send_message(inspection["customer_mobile"], message)
+            
+            logger.info(f"Balance payment processed for inspection {inspection['id']}: ₹{amount}")
+            return {"status": "balance_payment_processed", "inspection_id": inspection["id"]}
+    
     # Get lead_id from notes
     notes = payment_entity.get("notes", {})
     lead_id = notes.get("lead_id")
     
     if not lead_id:
         # Try to find lead by payment_link_id
-        payment_link_id = payment_entity.get("id")
         if payment_link_id:
             lead = await db.leads.find_one({"payment_link_id": payment_link_id}, {"_id": 0})
             if lead:
