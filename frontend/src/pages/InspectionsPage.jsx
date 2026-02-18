@@ -317,10 +317,7 @@ export default function InspectionsPage() {
   // Fetch mechanics list
   const fetchMechanics = useCallback(async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/api/mechanics`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await mechanicsApi.getAll();
       setMechanics(response.data || []);
     } catch (error) {
       console.error('Failed to load mechanics:', error);
