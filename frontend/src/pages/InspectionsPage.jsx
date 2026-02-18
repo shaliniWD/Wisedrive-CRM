@@ -628,6 +628,90 @@ export default function InspectionsPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Collect Balance Confirmation Modal */}
+      <Dialog open={isCollectBalanceModalOpen} onOpenChange={setIsCollectBalanceModalOpen}>
+        <DialogContent className="sm:max-w-[440px]" data-testid="collect-balance-modal">
+          <DialogHeader className="border-b pb-4">
+            <DialogTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-amber-600" />
+              Collect Balance Payment
+            </DialogTitle>
+            <DialogDescription className="text-sm text-gray-500 mt-2">
+              Send a payment link to the customer via WhatsApp to collect the remaining balance.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {collectBalanceInspection && (
+            <div className="space-y-4 pt-4">
+              {/* Customer Info */}
+              <div className="bg-slate-50 rounded-lg p-4 space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white font-medium">
+                    {collectBalanceInspection.customer_name?.charAt(0)?.toUpperCase()}
+                  </div>
+                  <div>
+                    <div className="font-medium text-gray-900">{collectBalanceInspection.customer_name}</div>
+                    <div className="text-sm text-gray-500 font-mono">{collectBalanceInspection.customer_mobile}</div>
+                  </div>
+                </div>
+                
+                <div className="border-t pt-3 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Package:</span>
+                    <span className="font-medium">{collectBalanceInspection.package_type}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Vehicle:</span>
+                    <span className="font-medium font-mono">{collectBalanceInspection.car_number || '-'}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Total Amount:</span>
+                    <span className="font-medium">₹{(collectBalanceInspection.total_amount || 0).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Already Paid:</span>
+                    <span className="font-medium text-emerald-600">₹{(collectBalanceInspection.amount_paid || 0).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-sm border-t pt-2 mt-2">
+                    <span className="text-gray-700 font-medium">Balance Due:</span>
+                    <span className="font-bold text-amber-600 text-lg">₹{(collectBalanceInspection.balance_due || 0).toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Info Message */}
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800">
+                <p>A payment link for <strong>₹{(collectBalanceInspection.balance_due || 0).toLocaleString()}</strong> will be generated and sent to the customer via WhatsApp.</p>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter className="border-t pt-4 mt-4">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => {
+                setIsCollectBalanceModalOpen(false);
+                setCollectBalanceInspection(null);
+              }}
+              disabled={collectingBalance}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleCollectBalance}
+              disabled={collectingBalance}
+              className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700"
+              data-testid="confirm-collect-balance"
+            >
+              {collectingBalance && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              <Send className="h-4 w-4 mr-2" />
+              Send Payment Link
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
