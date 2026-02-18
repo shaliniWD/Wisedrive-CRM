@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { inspectionsApi, utilityApi, vehicleApi } from '@/services/api';
+import { inspectionsApi, utilityApi, vehicleApi, mechanicsApi } from '@/services/api';
 import { formatDate, formatTime, formatDateTime } from '@/utils/dateFormat';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
