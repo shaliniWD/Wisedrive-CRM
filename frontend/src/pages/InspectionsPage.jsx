@@ -1106,17 +1106,6 @@ export default function InspectionsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-              disabled={collectingBalance}
-              className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700"
-              data-testid="confirm-collect-balance"
-            >
-              {collectingBalance && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-              <Send className="h-4 w-4 mr-2" />
-              Send Payment Link
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Vehicle Edit Modal */}
       <Dialog open={isVehicleModalOpen} onOpenChange={setIsVehicleModalOpen}>
