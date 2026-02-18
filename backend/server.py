@@ -26,7 +26,7 @@ from models.inspection import Inspection, InspectionCreate, InspectionUpdate
 from models.inspection_package import (
     InspectionPackage, InspectionPackageCreate, InspectionPackageUpdate,
     InspectionCategoryDB, InspectionCategoryCreate, InspectionCategoryUpdate,
-    InspectionItem
+    InspectionItem, Offer, OfferCreate, OfferUpdate
 )
 from models.audit import AuditLog
 from models.employee import (
