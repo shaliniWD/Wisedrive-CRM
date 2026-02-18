@@ -356,7 +356,7 @@ Returns:
 ## Document History
 - **Created:** December 2025
 - **Last Updated:** February 18, 2026
-- **Version:** 3.4
+- **Version:** 3.5
 
 ## Changelog
 - v3.5 (Feb 18, 2026): **Meta Token Auto-Refresh** - Added automated token management: (1) Token info endpoint shows validity, expiry date, and type. (2) Auto-refresh attempts to renew tokens expiring within threshold. (3) Manual token update UI in Ad Analytics page for CEO/CTO. (4) Token status indicator in header showing days until expiry. (5) Detailed token management modal with instructions.
