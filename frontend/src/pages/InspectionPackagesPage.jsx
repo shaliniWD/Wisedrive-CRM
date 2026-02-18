@@ -107,10 +107,10 @@ const PackageCard = ({ pkg, categories, offers, onEdit, onCopy, onToggle }) => {
   
   return (
     <div className={`border rounded-xl transition-all h-full flex flex-col relative ${isActive ? 'bg-white shadow-sm hover:shadow-md' : 'bg-gray-50 border-gray-200'}`} data-testid={`package-card-${pkg.id}`}>
-      {/* Active Ribbon - shows only for active (non-recommended) packages */}
-      {isActive && !isRecommended && (
+      {/* Active Ribbon - shows for all active packages */}
+      {isActive && (
         <div className="absolute top-0 right-0 overflow-hidden w-20 h-20 z-20">
-          <div className="absolute transform rotate-45 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-[9px] font-bold py-1 right-[-25px] top-[8px] w-[90px] text-center shadow-sm">
+          <div className={`absolute transform rotate-45 text-white text-[9px] font-bold py-1 right-[-25px] top-[8px] w-[90px] text-center shadow-sm ${isRecommended ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' : 'bg-gradient-to-r from-blue-500 to-blue-600'}`}>
             ACTIVE
           </div>
         </div>
