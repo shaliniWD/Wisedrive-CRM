@@ -1,0 +1,185 @@
+<analysis>**original_problem_statement:**
+The user wants to integrate Meta Ads into the CRM to improve lead assignment and track advertising performance.
+
+**PRODUCT REQUIREMENTS:**
+1.  **Meta Ads Integration:**
+    *   **Lead Auto-Assignment:** Incoming leads from Twilio will include a Meta . A new system is needed to map this  to a specific city. The lead should then be auto-assigned to a sales representative in that city using the existing round-robin logic.
+    *   **Ad Performance Tracking:**
+        *   Track the number of leads generated and converted to sales for each .
+        *   Track revenue generated from leads associated with an .
+        *   Utilize the Meta Marketing API to fetch advertising expenditure for each  to calculate ROI.
+        *   Create a new UI to manage Ad ID-to-city mappings.
+        *   Create a new UI dashboard to visualize ad performance (spend vs. revenue, leads, conversion rate).
+
+2.  **Previous  Tab Bugs/Features (All Completed in this Session):**
+    *   Fix incorrect data filtering on the  tab.
+    *   Replace the Unscheduled summary card with a New Inspections card.
+    *   Implement date range filters (Today, This Week, This Month, etc.).
+    *   Implement clickable summary cards to filter the inspections table.
+    *   Move tab navigation to the header and create a new Schedule Inspection modal.
+    *   Implement backend and frontend validation for inspection status changes and city-based mechanic assignments.
+    *   Separate Leads Cities and Inspection Cities in the Country settings.
+
+**User's preferred language**: English
+
+**what currently exists?**
+The application is a full-stack CRM. The agent has just completed a series of significant feature enhancements and bug fixes on the  page, including new validation logic, date filtering, and a complete UI overhaul.
+
+The agent has successfully gathered all necessary credentials (App ID, App Secret, Access Token, Ad Account ID) from the user for the new Meta Ads integration. An integration playbook has been generated via the  tool, and the agent is now ready to begin implementation.
+
+**Last working item**:
+*   **Last item agent was working:** The agent was preparing to start the implementation of the Meta Ads integration after receiving the integration playbook and all necessary credentials from the user.
+*   **Status:** NOT STARTED
+*   **Agent Testing Done:** N
+*   **Which testing method agent to use?** both. This is a large feature requiring both backend API development and a new frontend UI. The testing agent should be used to validate the end-to-end flow, from receiving a lead with an Ad ID to tracking its performance on the new dashboard.
+*   **User Testing Done:** N
+
+**All Pending/In progress Issue list**:
+None. All previously reported issues have been resolved.
+
+**In progress Task List**:
+*   **Task 1: Meta Ads Integration (P0)**
+    *   **Where to resume:** Begin implementation based on the  response. The first step is to securely store the Meta Ads credentials in the  file.
+    *   **What will be achieved with this?** A complete Meta Ads integration for automated lead assignment and performance tracking.
+    *   **Status:** NOT STARTED
+    *   **Should Test frontend/backend/both after fix?** Both
+    *   **Blocked on something:** No
+
+**Upcoming and Future Tasks**
+**Upcoming Tasks:**
+*   **P0:** Implement backend logic for Meta Ads:
+    *   Create a new DB model/table to map  to .
+    *   Modify the Twilio webhook/lead creation endpoint to process the incoming .
+    *   Update the round-robin lead assignment logic to use the city from the Ad ID mapping.
+    *   Create API endpoints to fetch ad performance data (spend) from the Meta API.
+    *   Create API endpoints to surface internal data (leads, revenue) correlated by .
+*   **P1:** Build frontend UI for Meta Ads:
+    *   Create a new page/section in Settings to manage Ad ID-to-city mappings (CRUD).
+    *   Create a new dashboard page to display ad performance analytics.
+*   **P2:** OBD-Integration-v1.0
+*   **P2:** UAT for Inspections & Leads modules
+
+**Future Tasks:**
+*   Refactor  service for better city-based assignment.
+*   Refactor the monolithic Twilio Webhook in .
+*   Mobile app screen height fix (iOS vs Android).
+*   Refactor brittle  in .
+*   Break down large  into smaller components.
+
+**Completed work in this session**
+-   **Meta Ads Requirement Gathering (DONE):**
+    -   Guided the user to obtain all necessary credentials from the Meta for Developers portal (App ID, Secret, Access Token, Ad Account ID).
+    -   Generated a complete integration playbook using .
+-   ** Tab Overhaul & Bug Fixes (DONE):**
+    -   Implemented date range filters (Today, This Week, etc.) and corrected the data fetching logic.
+    -   Replaced the Unscheduled summary card with a New Inspections card.
+    -   Made summary cards clickable to filter the table and added a Clear Filter option.
+    -   Created a new Schedule Inspection modal with Vaahan API and Google Places integration.
+-   **Inspection Status & City Validation (DONE):**
+    -   Implemented backend/frontend logic to require a mechanic for certain status changes.
+    -   Added Inspection City tab to the HR Module and backend validation for city-based mechanic assignments.
+    -   Separated Leads Cities and Inspection Cities in the Country settings modal.
+-   ** UI Fix (DONE):**
+    -   Reverted UI changes to restore the original Active toggle switch in the card footer, per user request.
+
+**Earlier issues found/mentioned but not fixed**
+-   **Issue 1: Mobile App Screen Height**
+    -   A minor UI issue regarding screen height differences on iOS vs. Android for the mobile app remains unaddressed.
+-   **Issue 2: Brittle  in **
+    -   The frontend code for lead auto-assignment was identified for refactoring but has not been addressed yet.
+
+**Known issue recurrence from previous fork**
+-   None.
+
+**Code Architecture**
+
+
+**Key Technical Concepts**
+-   **Third-Party API Integration:** The session focused on requirement gathering, credential management, and playbook generation for the Meta Marketing API.
+-   **Complex UI State Management:** Successfully handled multiple simultaneous filters (tabs, summary cards, date ranges) in React to create a dynamic and responsive data table.
+-   **Backend-Driven Validation:** Implemented robust data integrity checks on the backend for actions like changing inspection status or assigning mechanics, with corresponding error handling on the frontend.
+-   **Iterative UI/UX Development:** Responded to a high volume of user feedback to progressively refactor and enhance the  page UI until it met detailed requirements.
+
+**key DB schema**
+-   **countries** collection:  array was split into  and  arrays.
+-   **users** (employees) collection: Added  array to store designated work cities for mechanics.
+
+**All files of reference**
+-   
+-   
+-   
+-   
+-   
+
+**Areas that need refactoring**:
+-   The  component remains very large and is a candidate for being broken down into smaller sub-components.
+-    will require significant changes to support the new city-based assignment logic from the Meta Ad integration.
+-   The monolithic Twilio webhook in  is becoming more complex and should be considered for refactoring.
+
+**key api endpoints**
+-   : **MODIFIED** to accept  and  query parameters.
+-   : **MODIFIED** with backend validation for mechanic assignment.
+-   : **MODIFIED** with backend validation for mechanic's city.
+-   : **NEW**
+-   : **MODIFIED** to handle  and .
+
+**Critical Info for New Agent**
+-   The immediate and only priority is to **implement the Meta Ads integration**. All preliminary work (requirement gathering, credential collection, playbook generation) is complete.
+-   Start by adding the Meta Ads credentials to the backend environment (). Use keys like , , , and .
+-   Follow the generated playbook to build the feature. The implementation should be broken down into two main parts:
+    1.  **Backend:** Create the Ad ID-to-city mapping model, modify the lead intake process, and build API endpoints for performance tracking.
+    2.  **Frontend:** Create the UI for managing the Ad ID mappings and the new performance dashboard.
+-   All work on the  page is complete. Do not make changes there unless a new bug is reported.
+
+**documents and test reports created in this job**
+-   
+-   
+-   
+-    (Updated with completed features)
+
+**Last 10 User Messages and any pending HUMAN messages**
+1.  **User:** Provided final credentials (Access Token, Ad Account ID) for Meta Ads. (Completed)
+2.  **User:** Asked for guidance on adding permissions in Meta for Developers. (Completed)
+3.  **User:** Stated they found existing Meta apps and asked if they can be used. (Completed)
+4.  **User:** Reported having admin access but still being unable to create a Meta app. (Completed)
+5.  **User:** Shared screenshots of a Meta Business Portfolio error. (Completed)
+6.  **User:** Requested the Meta Ads integration and asked for guidance. (In Progress)
+7.  **User:** Reported several bugs and requested new features on the  tab. (Completed)
+8.  **User:** Requested to revert UI changes on the . (Completed)
+9.  **User:** Reported a bug with the  UI after deployment. (Completed)
+10. **User:** Requested a fix for the date/year wrapping issue on the  table. (Completed)
+
+**Project Health Check:**
+-   **Broken:** None
+-   **Mocked:** None
+
+**3rd Party Integrations**
+-   **Meta (Facebook) Marketing API:** **NEWLY REQUESTED**. Credentials have been obtained. Requires a User API Key.
+-   **Twilio:** For WhatsApp messaging.
+-   **Razorpay:** For payment processing.
+-   **Firebase Cloud Messaging (FCM):** For push notifications.
+-   **Invincible Ocean (Vaahan API):** For vehicle registration data.
+-   **OpenAI GPT:** For the WhatsApp chatbot.
+-   **Google Places API:** For address autocomplete.
+-   **Expo Application Services (EAS):** For building React Native mobile apps.
+
+**Testing status**
+-   **Testing agent used after significant changes:** YES
+-   **Troubleshoot agent used after agent stuck in loop:** NO
+-   **Test files created:**
+    -   
+    -   
+    -   
+-   **Known regressions:** None
+
+**Credentials to test flow:**
+-   **CEO/Settings Access:**  / 
+-   **Inspection Head:**  / 
+-   **Meta Ads Credentials:**
+    -   App ID: 
+    -   App Secret: 
+    -   Ad Account ID: 
+    -   Access Token:  (A long-lived token has been provided).
+
+**What agent forgot to execute**
+-   Nothing. The agent correctly prioritized gathering all necessary information and credentials for the complex Meta Ads integration before starting implementation.</analysis>
