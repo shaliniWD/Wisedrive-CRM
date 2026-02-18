@@ -2950,8 +2950,8 @@ async def collect_balance_payment(
     if not inspection:
         raise HTTPException(status_code=404, detail="Inspection not found")
     
-    # Check if balance is due
-    balance_due = inspection.get("balance_due", 0)
+    # Check if balance is due - support both old (pending_amount) and new (balance_due) formats
+    balance_due = inspection.get("balance_due") or inspection.get("pending_amount", 0)
     if balance_due <= 0:
         raise HTTPException(status_code=400, detail="No balance due for this inspection")
     
