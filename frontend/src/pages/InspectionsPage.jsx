@@ -924,20 +924,21 @@ export default function InspectionsPage() {
       </Dialog>
 
       {/* Collect Balance Confirmation Modal */}
-      <Dialog open={isCollectBalanceModalOpen} onOpenChange={setIsCollectBalanceModalOpen}>
-        <DialogContent className="sm:max-w-[440px]" data-testid="collect-balance-modal">
+      <Dialog open={isCollectBalanceModalOpen} onOpenChange={closeCollectBalanceModal}>
+        <DialogContent className="sm:max-w-[500px]" data-testid="collect-balance-modal">
           <DialogHeader className="border-b pb-4">
             <DialogTitle className="flex items-center gap-2">
               <CreditCard className="h-5 w-5 text-amber-600" />
               Collect Balance Payment
             </DialogTitle>
             <DialogDescription className="text-sm text-gray-500 mt-2">
-              Send a payment link to the customer via WhatsApp to collect the remaining balance.
+              Generate a payment link to collect the remaining balance. You can send via WhatsApp or share offline.
             </DialogDescription>
           </DialogHeader>
           
           {collectBalanceInspection && (
             <div className="space-y-4 pt-4">
+              {/* Customer Info Card */}
               <div className="bg-slate-50 rounded-lg p-4 space-y-3">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white font-medium">
@@ -973,26 +974,138 @@ export default function InspectionsPage() {
                 </div>
               </div>
               
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800">
-                <p>A payment link for <strong>₹{(collectBalanceInspection.balance_due || 0).toLocaleString()}</strong> will be generated and sent to the customer via WhatsApp.</p>
-              </div>
+              {/* Generated Payment Link Section */}
+              {generatedPaymentLink ? (
+                <div className="space-y-3">
+                  {/* Payment Link Display */}
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+                    <div className="flex items-center gap-2 text-emerald-700 font-medium mb-2">
+                      <CheckCircle className="h-4 w-4" />
+                      Payment Link Generated
+                      {generatedPaymentLink.whatsappSent && (
+                        <span className="text-xs bg-emerald-100 px-2 py-0.5 rounded-full">WhatsApp Sent</span>
+                      )}
+                    </div>
+                    
+                    {/* Link URL */}
+                    <div className="flex items-center gap-2 bg-white rounded-lg p-2 border border-emerald-200">
+                      <Link2 className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                      <input 
+                        type="text" 
+                        value={generatedPaymentLink.url || ''} 
+                        readOnly 
+                        className="flex-1 text-sm text-gray-700 bg-transparent outline-none font-mono truncate"
+                      />
+                      <button
+                        onClick={handleCopyPaymentLink}
+                        className="p-1.5 text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 rounded transition-colors"
+                        title="Copy link"
+                      >
+                        <Copy className="h-4 w-4" />
+                      </button>
+                      <a
+                        href={generatedPaymentLink.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                        title="Open link"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </a>
+                    </div>
+                  </div>
+                  
+                  {/* Check Payment Status Section */}
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-blue-700">Check Payment Status</span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleCheckPaymentStatus}
+                        disabled={checkingPaymentStatus}
+                        className="h-8 text-xs"
+                      >
+                        {checkingPaymentStatus ? (
+                          <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                        ) : (
+                          <RefreshCw className="h-3 w-3 mr-1" />
+                        )}
+                        Check Status
+                      </Button>
+                    </div>
+                    
+                    {paymentLinkStatus && (
+                      <div className="mt-2 p-2 bg-white rounded border border-blue-100">
+                        <div className="flex items-center gap-2">
+                          {paymentLinkStatus.status === 'PAID' ? (
+                            <>
+                              <CheckCircle className="h-4 w-4 text-emerald-500" />
+                              <span className="text-sm font-medium text-emerald-700">Payment Received!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Clock className="h-4 w-4 text-amber-500" />
+                              <span className="text-sm font-medium text-amber-700">Payment Pending</span>
+                            </>
+                          )}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          Last checked: {paymentLinkStatus.lastUpdated}
+                          {paymentLinkStatus.status !== 'PAID' && (
+                            <span className="ml-2">• Balance: ₹{paymentLinkStatus.balanceDue?.toLocaleString()}</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800">
+                  <p>A payment link for <strong>₹{(collectBalanceInspection.balance_due || 0).toLocaleString()}</strong> will be generated. Choose to send via WhatsApp or generate for offline sharing.</p>
+                </div>
+              )}
             </div>
           )}
           
-          <DialogFooter className="border-t pt-4 mt-4">
+          <DialogFooter className="border-t pt-4 mt-4 flex-wrap gap-2">
             <Button 
               type="button" 
               variant="outline" 
-              onClick={() => {
-                setIsCollectBalanceModalOpen(false);
-                setCollectBalanceInspection(null);
-              }}
+              onClick={closeCollectBalanceModal}
               disabled={collectingBalance}
             >
-              Cancel
+              {generatedPaymentLink ? 'Close' : 'Cancel'}
             </Button>
-            <Button 
-              onClick={handleCollectBalance}
+            
+            {!generatedPaymentLink && (
+              <>
+                <Button 
+                  onClick={() => handleCollectBalance(false)}
+                  disabled={collectingBalance}
+                  variant="outline"
+                  className="border-amber-300 text-amber-700 hover:bg-amber-50"
+                  data-testid="generate-link-only"
+                >
+                  {collectingBalance && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                  <Link2 className="h-4 w-4 mr-2" />
+                  Generate Link Only
+                </Button>
+                <Button 
+                  onClick={() => handleCollectBalance(true)}
+                  disabled={collectingBalance}
+                  className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700"
+                  data-testid="confirm-collect-balance"
+                >
+                  {collectingBalance && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                  <Send className="h-4 w-4 mr-2" />
+                  Send via WhatsApp
+                </Button>
+              </>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
               disabled={collectingBalance}
               className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700"
               data-testid="confirm-collect-balance"
