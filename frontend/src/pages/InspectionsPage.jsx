@@ -882,32 +882,17 @@ export default function InspectionsPage() {
           >
             <Filter className="h-4 w-4" /> Apply
           </button>
-        </div>
-
-        {/* Tab Buttons */}
-        <div className="flex items-center gap-3 mt-4 pt-4 border-t">
-          <button
-            onClick={() => setActiveTab('unscheduled')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              activeTab === 'unscheduled' 
-                ? 'bg-gray-900 text-white' 
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-            data-testid="unscheduled-tab"
-          >
-            Unscheduled ({unscheduledCount})
-          </button>
-          <button
-            onClick={() => setActiveTab('scheduled')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              activeTab === 'scheduled' 
-                ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white' 
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-            data-testid="scheduled-tab"
-          >
-            Scheduled ({scheduledCount})
-          </button>
+          
+          {/* Card Filter Indicator */}
+          {cardFilter && (
+            <button 
+              onClick={() => setCardFilter(null)}
+              className="px-3 py-2.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg font-medium text-sm flex items-center gap-2"
+            >
+              Filtered: {cardFilter.charAt(0).toUpperCase() + cardFilter.slice(1)}
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
       </div>
 
