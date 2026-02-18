@@ -1364,56 +1364,155 @@ export default function LeadsPage() {
                     </div>
                   )}
 
-                  {/* Discount Section */}
-                  <div className="bg-amber-50 p-4 rounded-xl border border-amber-200">
-                    <h4 className="font-semibold text-amber-800 mb-3 flex items-center gap-2">
-                      <Percent className="h-4 w-4" /> Discount (Optional)
-                    </h4>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label className="text-sm">Discount Type</Label>
-                        <Select value={paymentFormData.discountType || 'none'} onValueChange={(v) => setPaymentFormData({ ...paymentFormData, discountType: v, discountValue: '' })}>
-                          <SelectTrigger className="h-10" data-testid="discount-type"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">No Discount</SelectItem>
-                            <SelectItem value="percent">Percentage (%)</SelectItem>
-                            <SelectItem value="amount">Fixed Amount (₹)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      {paymentFormData.discountType && paymentFormData.discountType !== 'none' && (
+                  {/* Discount Section - Only show if package allows discount */}
+                  {getSelectedPackage()?.allow_discount && (
+                    <div className="bg-amber-50 p-4 rounded-xl border border-amber-200">
+                      <h4 className="font-semibold text-amber-800 mb-3 flex items-center gap-2">
+                        <Percent className="h-4 w-4" /> Discount (Optional)
+                      </h4>
+                      <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label className="text-sm">Discount Value</Label>
-                          <Input 
-                            type="number" 
-                            value={paymentFormData.discountValue} 
-                            onChange={(e) => setPaymentFormData({ ...paymentFormData, discountValue: e.target.value })}
-                            className="h-10" 
-                            placeholder={paymentFormData.discountType === 'percent' ? 'e.g., 10' : 'e.g., 100'}
-                            data-testid="discount-value"
+                          <Label className="text-sm">Discount Type</Label>
+                          <Select value={paymentFormData.discountType || 'none'} onValueChange={(v) => setPaymentFormData({ ...paymentFormData, discountType: v, discountValue: '' })}>
+                            <SelectTrigger className="h-10" data-testid="discount-type"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">No Discount</SelectItem>
+                              <SelectItem value="percent">Percentage (%)</SelectItem>
+                              <SelectItem value="amount">Fixed Amount (₹)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        {paymentFormData.discountType && paymentFormData.discountType !== 'none' && (
+                          <div className="space-y-2">
+                            <Label className="text-sm">Discount Value</Label>
+                            <Input 
+                              type="number" 
+                              value={paymentFormData.discountValue} 
+                              onChange={(e) => setPaymentFormData({ ...paymentFormData, discountValue: e.target.value })}
+                              className="h-10" 
+                              placeholder={paymentFormData.discountType === 'percent' ? 'e.g., 10' : 'e.g., 100'}
+                              data-testid="discount-value"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Offers Section - Only show if package allows offers and has applicable offers */}
+                  {getSelectedPackage()?.allow_offers && getApplicableOffers().length > 0 && (
+                    <div className="bg-orange-50 p-4 rounded-xl border border-orange-200">
+                      <h4 className="font-semibold text-orange-800 mb-3 flex items-center gap-2">
+                        <Gift className="h-4 w-4" /> Apply Offers
+                      </h4>
+                      <p className="text-sm text-orange-600 mb-3">Select offers to apply (multiple can be selected)</p>
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {getApplicableOffers().map((offer) => (
+                          <label 
+                            key={offer.id}
+                            className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all ${
+                              paymentFormData.selectedOfferIds?.includes(offer.id) 
+                                ? 'bg-orange-100 border-2 border-orange-400' 
+                                : 'bg-white border border-gray-200 hover:bg-gray-50'
+                            }`}
+                          >
+                            <Checkbox 
+                              checked={paymentFormData.selectedOfferIds?.includes(offer.id)}
+                              onCheckedChange={(checked) => {
+                                const current = paymentFormData.selectedOfferIds || [];
+                                if (checked) {
+                                  setPaymentFormData({ ...paymentFormData, selectedOfferIds: [...current, offer.id] });
+                                } else {
+                                  setPaymentFormData({ ...paymentFormData, selectedOfferIds: current.filter(id => id !== offer.id) });
+                                }
+                              }}
+                            />
+                            <div className="flex-1">
+                              <p className="font-medium text-gray-900">{offer.name}</p>
+                              <p className="text-xs text-gray-500">
+                                {offer.discount_type === 'percentage' ? `${offer.discount_value}% off` : `₹${offer.discount_value} off`}
+                                {' • '}Valid until {new Date(offer.valid_until).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Partial Payment Section - Only show if package allows partial payment */}
+                  {getSelectedPackage()?.allow_partial_payment && (
+                    <div className="bg-purple-50 p-4 rounded-xl border border-purple-200">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-semibold text-purple-800 flex items-center gap-2">
+                          <CreditCard className="h-4 w-4" /> Partial Payment
+                        </h4>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <Checkbox 
+                            checked={paymentFormData.usePartialPayment}
+                            onCheckedChange={(checked) => setPaymentFormData({ ...paymentFormData, usePartialPayment: checked })}
+                            data-testid="partial-payment-checkbox"
                           />
+                          <span className="text-sm text-purple-700">Enable partial payment</span>
+                        </label>
+                      </div>
+                      {paymentFormData.usePartialPayment && (
+                        <div className="bg-purple-100/50 p-3 rounded-lg">
+                          <p className="text-sm text-purple-700 mb-2">
+                            Customer pays <span className="font-bold">₹{getPartialPaymentAmount().toLocaleString()}</span> now 
+                            ({getSelectedPackage().partial_payment_type === 'percentage' 
+                              ? `${getSelectedPackage().partial_payment_value}%` 
+                              : `₹${getSelectedPackage().partial_payment_value}`} of total)
+                          </p>
+                          <p className="text-sm text-purple-600">
+                            Remaining balance: <span className="font-semibold">₹{getRemainingBalance().toLocaleString()}</span>
+                            {' '}(collected before report delivery)
+                          </p>
                         </div>
                       )}
                     </div>
-                    {paymentFormData.packageId && (
-                      <div className="mt-4 pt-4 border-t border-amber-200">
-                        <div className="flex justify-between items-center text-sm mb-2">
-                          <span className="text-amber-700">Package Price:</span>
-                          <span className="text-amber-800 font-medium">₹{getBaseAmount().toLocaleString()}</span>
+                  )}
+
+                  {/* Price Summary Section */}
+                  {paymentFormData.packageId && (
+                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                      <h4 className="font-semibold text-gray-800 mb-3">Payment Summary</h4>
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-gray-600">Package Price:</span>
+                          <span className="text-gray-800 font-medium">₹{getBaseAmount().toLocaleString()}</span>
                         </div>
                         {getDiscountAmount() > 0 && (
-                          <div className="flex justify-between items-center text-sm mb-2 text-green-700">
+                          <div className="flex justify-between items-center text-sm text-green-700">
                             <span>Discount ({paymentFormData.discountType === 'percent' ? `${paymentFormData.discountValue}%` : `₹${paymentFormData.discountValue}`}):</span>
                             <span>- ₹{getDiscountAmount().toLocaleString()}</span>
                           </div>
                         )}
-                        <div className="flex justify-between items-center pt-2 border-t border-amber-200">
-                          <span className="text-amber-800 font-semibold">Final Amount to Pay:</span>
-                          <span className="text-2xl font-bold text-amber-800">₹{calculateFinalAmount().toLocaleString()}</span>
+                        {getOfferDiscountAmount() > 0 && (
+                          <div className="flex justify-between items-center text-sm text-orange-700">
+                            <span>Offer Discount ({paymentFormData.selectedOfferIds?.length} offer{paymentFormData.selectedOfferIds?.length > 1 ? 's' : ''}):</span>
+                            <span>- ₹{getOfferDiscountAmount().toLocaleString()}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+                          <span className="text-gray-800 font-semibold">Total Amount:</span>
+                          <span className="text-xl font-bold text-gray-800">₹{calculateFinalAmount().toLocaleString()}</span>
                         </div>
+                        {getSelectedPackage()?.allow_partial_payment && paymentFormData.usePartialPayment && (
+                          <>
+                            <div className="flex justify-between items-center text-sm text-purple-700 pt-2 border-t border-purple-200 mt-2">
+                              <span className="font-medium">Amount to Pay Now:</span>
+                              <span className="font-bold text-lg">₹{getPartialPaymentAmount().toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-sm text-gray-500">
+                              <span>Balance (before report):</span>
+                              <span>₹{getRemainingBalance().toLocaleString()}</span>
+                            </div>
+                          </>
+                        )}
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
 
                   {/* Inspection Schedule Section - Only show if car details were provided in Step 1 */}
                   {paymentFormData.hasCarDetails === 'yes' && paymentFormData.carConfirmed && inspectionSchedules.length > 0 && (
