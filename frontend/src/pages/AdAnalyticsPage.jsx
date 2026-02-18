@@ -1,17 +1,21 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { metaAdsApi } from '@/services/api';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { 
   TrendingUp, TrendingDown, Users, IndianRupee, Target, 
   BarChart3, Loader2, RefreshCw, Calendar, Filter,
   ArrowUpRight, ArrowDownRight, Eye, MousePointer,
-  AlertCircle, CheckCircle
+  AlertCircle, CheckCircle, Key, Clock, Settings2, Shield
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from '@/components/ui/dialog';
 
 // Helper to format currency
 const formatCurrency = (amount) => {
