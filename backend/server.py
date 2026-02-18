@@ -2934,6 +2934,8 @@ async def create_inspection(inspection_data: InspectionCreate, current_user: dic
     insp_dict["created_by"] = current_user["id"]
     
     await db.inspections.insert_one(insp_dict)
+    # Remove MongoDB _id before returning
+    insp_dict.pop("_id", None)
     return insp_dict
 
 
