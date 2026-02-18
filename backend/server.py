@@ -8711,6 +8711,146 @@ async def get_ad_performance_analytics(
     }
 
 
+@api_router.get("/meta-ads/ads-with-targeting")
+async def get_ads_with_targeting(current_user: dict = Depends(get_current_user)):
+    """
+    Get all ads with their targeting information (cities, regions).
+    Useful for auto-suggesting city mappings.
+    """
+    role_code = current_user.get("role_code", "")
+    if role_code not in ["CEO", "CTO"]:
+        raise HTTPException(status_code=403, detail="Not authorized - CEO/CTO only")
+    
+    result = await meta_ads_service.get_ads_with_targeting()
+    return result
+
+
+@api_router.post("/meta-ads/sync-status")
+async def sync_ad_statuses(current_user: dict = Depends(get_current_user)):
+    """
+    Manually trigger sync of ad statuses (active/paused) from Meta.
+    Updates our database with current Meta ad statuses.
+    """
+    role_code = current_user.get("role_code", "")
+    if role_code not in ["CEO", "CTO"]:
+        raise HTTPException(status_code=403, detail="Not authorized - CEO/CTO only")
+    
+    statuses = await meta_ads_service.get_all_ad_statuses()
+    
+    if not statuses.get("success"):
+        return {
+            "success": False,
+            "error": statuses.get("error"),
+            "updated_count": 0
+        }
+    
+    status_data = statuses.get("data", {})
+    updated_count = 0
+    new_ads = []
+    
+    for ad_id, status_info in status_data.items():
+        # Check if mapping exists
+        existing = await db.ad_city_mappings.find_one({"ad_id": ad_id})
+        
+        if existing:
+            # Update existing mapping
+            result = await db.ad_city_mappings.update_one(
+                {"ad_id": ad_id},
+                {
+                    "$set": {
+                        "meta_status": status_info.get("status"),
+                        "meta_effective_status": status_info.get("effective_status"),
+                        "is_active": status_info.get("is_active"),
+                        "meta_ad_name": status_info.get("name"),
+                        "status_synced_at": datetime.now(timezone.utc).isoformat()
+                    }
+                }
+            )
+            if result.modified_count > 0:
+                updated_count += 1
+        else:
+            # Track new ads that aren't in our mapping
+            new_ads.append({
+                "ad_id": ad_id,
+                "name": status_info.get("name"),
+                "status": status_info.get("effective_status"),
+                "is_active": status_info.get("is_active")
+            })
+    
+    # Update last sync timestamp
+    await db.system_config.update_one(
+        {"key": "meta_ads_last_sync"},
+        {
+            "$set": {
+                "key": "meta_ads_last_sync",
+                "value": datetime.now(timezone.utc).isoformat(),
+                "sync_type": "manual"
+            }
+        },
+        upsert=True
+    )
+    
+    return {
+        "success": True,
+        "updated_count": updated_count,
+        "total_meta_ads": len(status_data),
+        "new_unmapped_ads": new_ads[:20],  # Return first 20 unmapped ads
+        "synced_at": datetime.now(timezone.utc).isoformat()
+    }
+
+
+@api_router.get("/meta-ads/unmapped-ads")
+async def get_unmapped_ads(current_user: dict = Depends(get_current_user)):
+    """
+    Get list of Meta ads that don't have city mappings in our database.
+    Includes targeting info to help with city assignment.
+    """
+    role_code = current_user.get("role_code", "")
+    if role_code not in ["CEO", "HR_MANAGER", "CTO"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Get all our mappings
+    existing_mappings = await db.ad_city_mappings.find({}, {"ad_id": 1}).to_list(1000)
+    mapped_ids = set(m.get("ad_id") for m in existing_mappings)
+    
+    # Get Meta ads with targeting
+    meta_ads = await meta_ads_service.get_ads_with_targeting()
+    
+    if not meta_ads.get("success"):
+        return {
+            "success": False,
+            "error": meta_ads.get("error"),
+            "data": []
+        }
+    
+    # Filter to unmapped ads
+    unmapped = []
+    for ad in meta_ads.get("data", []):
+        if ad.get("id") not in mapped_ids:
+            # Auto-suggest city from targeting
+            suggested_city = None
+            targeting_cities = ad.get("targeting_cities", [])
+            if targeting_cities:
+                suggested_city = targeting_cities[0]  # Use first targeted city
+            
+            unmapped.append({
+                "ad_id": ad.get("id"),
+                "ad_name": ad.get("name"),
+                "status": ad.get("effective_status"),
+                "adset_name": ad.get("adset_name"),
+                "targeting_cities": targeting_cities,
+                "targeting_regions": ad.get("targeting_regions", []),
+                "suggested_city": suggested_city
+            })
+    
+    return {
+        "success": True,
+        "data": unmapped,
+        "count": len(unmapped),
+        "has_city_targeting": meta_ads.get("has_city_targeting", False)
+    }
+
+
 # Include the router in the main app
 app.include_router(api_router)
 
