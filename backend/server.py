@@ -4768,7 +4768,8 @@ async def get_all_countries(current_user: dict = Depends(get_current_user)):
     """Get all countries including inactive - for admin"""
     role_code = current_user.get("role_code", "")
     
-    if role_code not in ["CEO", "HR_MANAGER"]:
+    # Allow CEO, HR Manager, and any role with settings access (e.g., CTO, Country Head)
+    if role_code not in ["CEO", "CTO", "HR_MANAGER", "COUNTRY_HEAD"]:
         raise HTTPException(status_code=403, detail="Not authorized")
     
     countries = await db.countries.find({}, {"_id": 0}).to_list(100)
