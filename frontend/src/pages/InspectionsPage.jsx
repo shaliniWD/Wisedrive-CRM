@@ -782,7 +782,7 @@ export default function InspectionsPage() {
                     </td>
                     
                     {/* Inspection Status Column - Dropdown */}
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 whitespace-nowrap">
                       <Select 
                         value={inspection.inspection_status} 
                         onValueChange={(value) => handleStatusChange(inspection.id, value)}
@@ -803,13 +803,13 @@ export default function InspectionsPage() {
                     </td>
                     
                     {/* Mechanic Column - Editable */}
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 whitespace-nowrap">
                       <div className="flex items-center gap-2">
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1">
                           {inspection.mechanic_name ? (
                             <div className="flex items-center gap-1.5">
                               <UserCheck className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" />
-                              <span className="text-sm text-gray-700 truncate">{inspection.mechanic_name}</span>
+                              <span className="text-sm text-gray-700">{inspection.mechanic_name}</span>
                             </div>
                           ) : (
                             <span className="text-sm text-gray-400 italic">Not assigned</span>
@@ -831,7 +831,7 @@ export default function InspectionsPage() {
                     </td>
                     
                     {/* Location Column */}
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 whitespace-nowrap">
                       <span className="inline-flex items-center gap-1 text-sm text-blue-600">
                         <MapPin className="h-3.5 w-3.5" />
                         {inspection.city}
@@ -839,7 +839,7 @@ export default function InspectionsPage() {
                     </td>
                     
                     {/* Inspection Report Column */}
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 whitespace-nowrap">
                       <div className="flex items-center gap-1">
                         {/* View Report button - opens in new tab */}
                         <button 
