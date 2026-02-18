@@ -1,16 +1,21 @@
-"""Meta Marketing API Service for Ad Performance Tracking"""
+"""Meta Marketing API Service for Ad Performance Tracking with Token Management"""
 import os
 import httpx
 import logging
 from typing import Optional, Dict, Any, List
 from datetime import datetime, timedelta
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
 class MetaAdsService:
-    """Service for interacting with Meta Marketing API"""
+    """Service for interacting with Meta Marketing API with automatic token refresh"""
     
     def __init__(self):
+        self._load_config()
+    
+    def _load_config(self):
+        """Load configuration from environment"""
         self.app_id = os.environ.get('META_APP_ID')
         self.app_secret = os.environ.get('META_APP_SECRET')
         self.access_token = os.environ.get('META_ACCESS_TOKEN')
@@ -18,9 +23,254 @@ class MetaAdsService:
         self.api_version = os.environ.get('META_API_VERSION', 'v21.0')
         self.base_url = f"https://graph.facebook.com/{self.api_version}"
     
+    def reload_token(self):
+        """Reload token from environment (useful after token update)"""
+        self.access_token = os.environ.get('META_ACCESS_TOKEN')
+    
+    def update_token(self, new_token: str):
+        """Update the access token in memory and environment"""
+        self.access_token = new_token
+        os.environ['META_ACCESS_TOKEN'] = new_token
+    
     def is_configured(self) -> bool:
         """Check if Meta Ads is properly configured"""
         return bool(self.access_token and self.ad_account_id)
+    
+    async def get_token_info(self) -> Dict[str, Any]:
+        """
+        Get information about the current access token including expiry.
+        
+        Returns:
+            Dictionary with token info:
+            - is_valid: Whether token is valid
+            - expires_at: Token expiry timestamp (if available)
+            - expires_in_days: Days until expiry
+            - token_type: 'short_lived' or 'long_lived'
+            - scopes: List of granted permissions
+            - error: Error message if token is invalid
+        """
+        if not self.access_token:
+            return {
+                "is_valid": False,
+                "error": "No access token configured"
+            }
+        
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                # Debug token to get info
+                url = f"{self.base_url}/debug_token"
+                params = {
+                    "input_token": self.access_token,
+                    "access_token": f"{self.app_id}|{self.app_secret}"
+                }
+                
+                response = await client.get(url, params=params)
+                data = response.json()
+                
+                if "error" in data:
+                    return {
+                        "is_valid": False,
+                        "error": data["error"].get("message", "Unknown error")
+                    }
+                
+                token_data = data.get("data", {})
+                is_valid = token_data.get("is_valid", False)
+                expires_at = token_data.get("expires_at", 0)
+                scopes = token_data.get("scopes", [])
+                
+                # Calculate days until expiry
+                expires_in_days = None
+                expires_at_str = None
+                token_type = "unknown"
+                
+                if expires_at:
+                    if expires_at == 0:
+                        # Token never expires (page tokens)
+                        token_type = "never_expires"
+                        expires_in_days = -1
+                    else:
+                        expiry_date = datetime.fromtimestamp(expires_at)
+                        expires_at_str = expiry_date.isoformat()
+                        expires_in_days = (expiry_date - datetime.now()).days
+                        
+                        # Long-lived tokens typically last 60 days
+                        if expires_in_days > 30:
+                            token_type = "long_lived"
+                        else:
+                            token_type = "short_lived"
+                
+                return {
+                    "is_valid": is_valid,
+                    "expires_at": expires_at_str,
+                    "expires_at_timestamp": expires_at,
+                    "expires_in_days": expires_in_days,
+                    "token_type": token_type,
+                    "scopes": scopes,
+                    "app_id": token_data.get("app_id"),
+                    "user_id": token_data.get("user_id")
+                }
+                
+        except Exception as e:
+            logger.error(f"Error getting token info: {str(e)}")
+            return {
+                "is_valid": False,
+                "error": str(e)
+            }
+    
+    async def exchange_for_long_lived_token(self, short_lived_token: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Exchange a short-lived token for a long-lived token (60 days).
+        
+        Args:
+            short_lived_token: The short-lived token to exchange. 
+                             If not provided, uses current access_token.
+        
+        Returns:
+            Dictionary with:
+            - success: Whether exchange was successful
+            - access_token: New long-lived token
+            - expires_in: Seconds until expiry
+            - error: Error message if failed
+        """
+        if not self.app_id or not self.app_secret:
+            return {
+                "success": False,
+                "error": "App ID and App Secret are required for token exchange"
+            }
+        
+        token_to_exchange = short_lived_token or self.access_token
+        if not token_to_exchange:
+            return {
+                "success": False,
+                "error": "No token provided for exchange"
+            }
+        
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                url = f"{self.base_url}/oauth/access_token"
+                params = {
+                    "grant_type": "fb_exchange_token",
+                    "client_id": self.app_id,
+                    "client_secret": self.app_secret,
+                    "fb_exchange_token": token_to_exchange
+                }
+                
+                response = await client.get(url, params=params)
+                data = response.json()
+                
+                if "error" in data:
+                    return {
+                        "success": False,
+                        "error": data["error"].get("message", "Token exchange failed")
+                    }
+                
+                new_token = data.get("access_token")
+                expires_in = data.get("expires_in", 5184000)  # Default 60 days in seconds
+                
+                if new_token:
+                    return {
+                        "success": True,
+                        "access_token": new_token,
+                        "expires_in": expires_in,
+                        "expires_in_days": expires_in // 86400
+                    }
+                else:
+                    return {
+                        "success": False,
+                        "error": "No token returned from exchange"
+                    }
+                    
+        except Exception as e:
+            logger.error(f"Error exchanging token: {str(e)}")
+            return {
+                "success": False,
+                "error": str(e)
+            }
+    
+    async def refresh_long_lived_token(self) -> Dict[str, Any]:
+        """
+        Refresh a long-lived token to extend its validity.
+        Note: This only works for tokens that are still valid and not expired.
+        
+        Returns:
+            Dictionary with refresh result
+        """
+        # First check if current token is valid and long-lived
+        token_info = await self.get_token_info()
+        
+        if not token_info.get("is_valid"):
+            return {
+                "success": False,
+                "error": "Current token is invalid. Please obtain a new token from Meta."
+            }
+        
+        # Exchange current long-lived token for a new one
+        result = await self.exchange_for_long_lived_token()
+        
+        if result.get("success"):
+            logger.info("Successfully refreshed Meta access token")
+        
+        return result
+    
+    async def auto_refresh_if_needed(self, days_threshold: int = 7) -> Dict[str, Any]:
+        """
+        Automatically refresh the token if it will expire within the threshold.
+        
+        Args:
+            days_threshold: Refresh if token expires within this many days
+        
+        Returns:
+            Dictionary with action taken and result
+        """
+        token_info = await self.get_token_info()
+        
+        if not token_info.get("is_valid"):
+            return {
+                "action": "none",
+                "reason": "Token is invalid",
+                "needs_manual_refresh": True,
+                "error": token_info.get("error")
+            }
+        
+        expires_in_days = token_info.get("expires_in_days")
+        
+        if expires_in_days is None:
+            return {
+                "action": "none",
+                "reason": "Could not determine token expiry"
+            }
+        
+        if expires_in_days == -1:
+            return {
+                "action": "none",
+                "reason": "Token never expires"
+            }
+        
+        if expires_in_days > days_threshold:
+            return {
+                "action": "none",
+                "reason": f"Token valid for {expires_in_days} more days",
+                "expires_in_days": expires_in_days
+            }
+        
+        # Token is expiring soon, try to refresh
+        logger.info(f"Token expires in {expires_in_days} days, attempting refresh...")
+        refresh_result = await self.refresh_long_lived_token()
+        
+        if refresh_result.get("success"):
+            return {
+                "action": "refreshed",
+                "reason": f"Token was expiring in {expires_in_days} days",
+                "new_token": refresh_result.get("access_token"),
+                "new_expires_in_days": refresh_result.get("expires_in_days")
+            }
+        else:
+            return {
+                "action": "refresh_failed",
+                "reason": refresh_result.get("error"),
+                "expires_in_days": expires_in_days,
+                "needs_manual_refresh": True
+            }
     
     async def get_ad_insights(
         self,
@@ -78,11 +328,20 @@ class MetaAdsService:
                     }
                 else:
                     error_data = response.json()
-                    logger.error(f"Meta API Error: {error_data}")
+                    error_info = error_data.get("error", {})
+                    error_code = error_info.get("code")
+                    
+                    # Check if it's a token expiry error
+                    if error_code == 190:
+                        logger.error("Meta access token has expired")
+                    else:
+                        logger.error(f"Meta API Error: {error_data}")
+                    
                     return {
                         "success": False,
-                        "error": error_data.get("error", {}).get("message", "Unknown error"),
-                        "error_code": error_data.get("error", {}).get("code"),
+                        "error": error_info.get("message", "Unknown error"),
+                        "error_code": error_code,
+                        "token_expired": error_code == 190,
                         "data": []
                     }
                     
