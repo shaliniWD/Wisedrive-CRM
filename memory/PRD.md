@@ -185,6 +185,48 @@ Build a scalable automotive platform "Wisedrive" that evolved into a monolithic 
 
 ---
 
+### ✅ Inspections Tab Enhancements (February 18, 2026)
+
+**Feature Implementation:**
+Complete enhancement of Inspections tab with inline editing capabilities.
+
+**Key Components:**
+
+1. **Payment Status Column - Collect Balance Button:**
+   - Shows "Collect ₹XXX" button directly in column for partial payments
+   - Opens confirmation modal with customer details and payment breakdown
+   - Generates Razorpay payment link and sends via WhatsApp
+
+2. **Vehicle Edit Modal:**
+   - Click pencil icon to change vehicle number
+   - Integrated with Vaahan API to auto-fetch vehicle details (make, model, year, color, fuel type)
+   - Supports manual entry if API fails
+
+3. **Inspection Status Dropdown:**
+   - Inline dropdown to change status directly in table
+   - Full status lifecycle: New Inspection → Assigned to Mechanic → Confirmed → Started → In Progress → Completed
+   - Cancellation options: Cancelled (Customer), Cancelled (Wisedrive)
+
+4. **Mechanic Assignment Modal:**
+   - Assign, reassign, or unassign mechanics
+   - Shows list of available mechanics from HR Module
+   - Auto-updates status to "Assigned to Mechanic" when first assigned
+
+5. **Schedule Edit Modal:**
+   - Change inspection date and time
+   - Auto-updates status to "Scheduled" when updating from "Unscheduled"
+
+**Backend APIs Added:**
+- `PATCH /api/inspections/{id}/status` - Update inspection status
+- `PATCH /api/inspections/{id}/vehicle` - Update vehicle details
+- `PATCH /api/inspections/{id}/assign-mechanic` - Assign/unassign mechanic
+- `PATCH /api/inspections/{id}/schedule` - Update schedule
+
+**Test Coverage:**
+- `/app/backend/tests/test_inspections_enhancements.py` - 18 tests (94% pass rate)
+
+---
+
 ### ✅ Collect Balance Feature (February 18, 2026)
 
 **Feature Implementation:**
@@ -226,12 +268,13 @@ Complete partial payment lifecycle allowing customers to pay an upfront amount a
 - [x] **CTO Role Permissions Fix (February 17, 2026)**
 - [x] **Inspection Package Payment Enhancements (February 18, 2026)**
 - [x] **Collect Balance Feature (February 18, 2026)** ✅ COMPLETED
+- [x] **Inspections Tab Enhancements (February 18, 2026)** ✅ COMPLETED
 - [ ] User Acceptance Testing for Payment Modal changes
 - [ ] User Acceptance Testing for complete Leads Module
 - [ ] Production deployment
 
 ### P1 - CRM Modules
-- [x] Inspections Module (view scheduled/unscheduled inspections) ✅ ENHANCED with payment tracking
+- [x] Inspections Module (view scheduled/unscheduled inspections) ✅ FULLY ENHANCED with all editing features
 - [ ] Customer Module - Payment history display
 
 ### P2 - Integrations
