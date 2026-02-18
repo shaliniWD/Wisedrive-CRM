@@ -12,33 +12,59 @@ import {
 
 export function RTOVerificationSection({ data }) {
   const { isEditMode } = useEditMode();
-  const allClear = !data.hypothecation && !data.blacklistStatus && data.trafficChallans === 0;
+  
+  // Handle missing data gracefully
+  if (!data) {
+    return (
+      <section className="px-4 md:px-0 mt-4 md:mt-6">
+        <div className="mobile-card md:rounded-2xl">
+          <div className="mobile-card-header flex items-center gap-2">
+            <div className="p-1.5 md:p-2 rounded-lg bg-muted/50">
+              <ShieldCheck className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
+            </div>
+            <h2 className="font-semibold font-display text-base md:text-lg">RTO Verification</h2>
+          </div>
+          <div className="mobile-card-body text-center py-6">
+            <p className="text-sm text-muted-foreground">RTO verification data not available</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+  
+  const trafficChallans = data.trafficChallans || 0;
+  const hypothecation = data.hypothecation || false;
+  const blacklistStatus = data.blacklistStatus || false;
+  const bankNOC = data.bankNOC || 'Not Available';
+  const financierName = data.financierName || '';
+  
+  const allClear = !hypothecation && !blacklistStatus && trafficChallans === 0;
 
   const items = [
     { 
       icon: Banknote, 
       label: 'Traffic Challans', 
-      value: `₹${data.trafficChallans}`,
-      isGood: data.trafficChallans === 0
+      value: `₹${trafficChallans}`,
+      isGood: trafficChallans === 0
     },
     { 
       icon: Building2, 
       label: 'Hypothecation', 
-      value: data.hypothecation ? 'Yes' : 'No',
-      isGood: !data.hypothecation,
-      subtext: data.hypothecation ? `Financier: ${data.financierName}` : null
+      value: hypothecation ? 'Yes' : 'No',
+      isGood: !hypothecation,
+      subtext: hypothecation ? `Financier: ${financierName}` : null
     },
     { 
       icon: FileWarning, 
       label: 'Blacklist', 
-      value: data.blacklistStatus ? 'Yes' : 'No',
-      isGood: !data.blacklistStatus
+      value: blacklistStatus ? 'Yes' : 'No',
+      isGood: !blacklistStatus
     },
     { 
       icon: CheckCircle2, 
       label: 'Bank NOC', 
-      value: data.bankNOC,
-      isGood: data.bankNOC === 'Not Required'
+      value: bankNOC,
+      isGood: bankNOC === 'Not Required'
     }
   ];
 
