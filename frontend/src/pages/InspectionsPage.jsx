@@ -424,6 +424,17 @@ export default function InspectionsPage() {
 
   // Handle Status Change
   const handleStatusChange = async (inspectionId, newStatus) => {
+    // Find the inspection to check if it has a mechanic
+    const inspection = inspections.find(i => i.id === inspectionId);
+    
+    // Check if the new status requires a mechanic
+    if (MECHANIC_REQUIRED_STATUSES.includes(newStatus)) {
+      if (!inspection?.mechanic_id) {
+        toast.error(`Cannot change status to "${INSPECTION_STATUSES.find(s => s.value === newStatus)?.label || newStatus}". Please assign a mechanic first.`);
+        return;
+      }
+    }
+    
     try {
       await inspectionsApi.updateStatus(inspectionId, newStatus);
       toast.success(`Status updated to ${INSPECTION_STATUSES.find(s => s.value === newStatus)?.label || newStatus}`);
