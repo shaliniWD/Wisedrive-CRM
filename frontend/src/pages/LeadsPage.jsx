@@ -1512,19 +1512,21 @@ export default function LeadsPage() {
                         )}
                         <div className="flex justify-between items-center pt-2 border-t border-gray-200">
                           <span className="text-gray-800 font-semibold">Total Amount:</span>
-                          <span className="text-xl font-bold text-gray-800">₹{calculateFinalAmount().toLocaleString()}</span>
+                          <span className={`font-bold ${getSelectedPackage()?.allow_partial_payment && paymentFormData.usePartialPayment ? 'text-gray-500 line-through text-base' : 'text-xl text-gray-800'}`}>
+                            ₹{calculateFinalAmount().toLocaleString()}
+                          </span>
                         </div>
                         {getSelectedPackage()?.allow_partial_payment && paymentFormData.usePartialPayment && (
-                          <>
-                            <div className="flex justify-between items-center text-sm text-purple-700 pt-2 border-t border-purple-200 mt-2">
-                              <span className="font-medium">Amount to Pay Now:</span>
-                              <span className="font-bold text-lg">₹{getPartialPaymentAmount().toLocaleString()}</span>
+                          <div className="bg-purple-100 p-3 rounded-lg mt-2 space-y-2">
+                            <div className="flex justify-between items-center">
+                              <span className="text-purple-800 font-semibold">Pay Now (Partial):</span>
+                              <span className="font-bold text-xl text-purple-800">₹{getPartialPaymentAmount().toLocaleString()}</span>
                             </div>
-                            <div className="flex justify-between items-center text-sm text-gray-500">
-                              <span>Balance (before report):</span>
-                              <span>₹{getRemainingBalance().toLocaleString()}</span>
+                            <div className="flex justify-between items-center text-sm text-purple-600">
+                              <span>Balance (Collect Later):</span>
+                              <span className="font-medium">₹{getRemainingBalance().toLocaleString()}</span>
                             </div>
-                          </>
+                          </div>
                         )}
                       </div>
                     </div>
