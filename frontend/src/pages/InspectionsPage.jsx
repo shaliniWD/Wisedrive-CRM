@@ -157,29 +157,93 @@ export default function InspectionsPage() {
     }
   }, []);
 
-  // Handle Collect Balance action
-  const handleCollectBalance = async () => {
+  // Handle Collect Balance action - Generate Payment Link
+  const handleCollectBalance = async (sendWhatsApp = true) => {
     if (!collectBalanceInspection) return;
     
     setCollectingBalance(true);
     try {
       const response = await inspectionsApi.collectBalance(collectBalanceInspection.id, {
-        send_whatsapp: true,
+        send_whatsapp: sendWhatsApp,
         notes: `Balance collection initiated for inspection ${collectBalanceInspection.id}`
       });
       
-      if (response.data?.whatsapp_sent) {
+      // Store the generated payment link
+      setGeneratedPaymentLink({
+        url: response.data?.payment_link,
+        linkId: response.data?.payment_link_id,
+        amount: collectBalanceInspection.balance_due,
+        whatsappSent: response.data?.whatsapp_sent
+      });
+      
+      if (sendWhatsApp && response.data?.whatsapp_sent) {
         toast.success(`Payment link (₹${collectBalanceInspection.balance_due?.toLocaleString()}) sent via WhatsApp!`);
       } else {
-        toast.success(`Payment link generated: ${response.data?.payment_link}`);
+        toast.success('Payment link generated successfully!');
       }
-      setIsCollectBalanceModalOpen(false);
-      setCollectBalanceInspection(null);
+      
       fetchData();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to generate payment link');
     } finally {
       setCollectingBalance(false);
+    }
+  };
+
+  // Copy payment link to clipboard
+  const handleCopyPaymentLink = () => {
+    if (generatedPaymentLink?.url) {
+      navigator.clipboard.writeText(generatedPaymentLink.url);
+      toast.success('Payment link copied to clipboard!');
+    }
+  };
+
+  // Check payment status
+  const handleCheckPaymentStatus = async () => {
+    if (!collectBalanceInspection) return;
+    
+    setCheckingPaymentStatus(true);
+    try {
+      const response = await inspectionsApi.getById(collectBalanceInspection.id);
+      const inspection = response.data;
+      
+      const isFullyPaid = inspection.payment_status === 'FULLY_PAID' || inspection.payment_status === 'PAID';
+      const balanceDue = inspection.balance_due || inspection.pending_amount || 0;
+      
+      setPaymentLinkStatus({
+        status: isFullyPaid ? 'PAID' : (balanceDue > 0 ? 'PENDING' : 'PAID'),
+        amountPaid: inspection.amount_paid || 0,
+        balanceDue: balanceDue,
+        lastUpdated: new Date().toLocaleTimeString()
+      });
+      
+      if (isFullyPaid) {
+        toast.success('Payment received! Full amount paid.');
+        fetchData();
+      } else {
+        toast.info(`Payment pending. Balance due: ₹${balanceDue.toLocaleString()}`);
+      }
+    } catch (error) {
+      toast.error('Failed to check payment status');
+    } finally {
+      setCheckingPaymentStatus(false);
+    }
+  };
+
+  // Close collect balance modal and reset state
+  const closeCollectBalanceModal = () => {
+    setIsCollectBalanceModalOpen(false);
+    setCollectBalanceInspection(null);
+    setGeneratedPaymentLink(null);
+    setPaymentLinkStatus(null);
+  };
+
+  // Handle View Report - opens in new tab
+  const handleViewReport = (inspection) => {
+    if (inspection.report_url) {
+      window.open(inspection.report_url, '_blank');
+    } else {
+      toast.error('Report not available yet');
     }
   };
 
