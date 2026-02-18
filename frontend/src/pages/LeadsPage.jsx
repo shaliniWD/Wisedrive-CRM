@@ -1744,7 +1744,11 @@ export default function LeadsPage() {
                   setSaving(false); 
                 }
               }} disabled={saving || !paymentFormData.packageId} className="bg-gradient-to-r from-blue-600 to-blue-700">
-                {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null} Send Payment Link (₹{calculateFinalAmount().toLocaleString()})
+                {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null} 
+                Send Payment Link (₹{getAmountToPayNow().toLocaleString()})
+                {getSelectedPackage()?.allow_partial_payment && paymentFormData.usePartialPayment && (
+                  <span className="ml-1 text-xs opacity-75">Partial</span>
+                )}
               </Button>
             )}
           </div>
