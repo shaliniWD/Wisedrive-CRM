@@ -131,12 +131,12 @@ const PackageCard = ({ pkg, categories, offers, onEdit, onCopy, onToggle }) => {
         </div>
         
         <div className="flex items-center gap-3">
-          <div className={`h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 ${isRecommended ? 'bg-white/20' : 'bg-white border'}`}>
+          <div className={`h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 ${isRecommended ? 'bg-white/20' : isActive ? 'bg-white border border-blue-200' : 'bg-white border'}`}>
             <Package className={`h-5 w-5 ${isRecommended ? 'text-white' : 'text-blue-600'}`} />
           </div>
           <div className="min-w-0 flex-1">
-            <h3 className={`font-semibold truncate ${isRecommended ? 'text-white' : 'text-gray-900'}`}>{pkg.name}</h3>
-            <div className={`flex items-center gap-2 text-xs ${isRecommended ? 'text-blue-100' : 'text-gray-500'}`}>
+            <h3 className={`font-semibold truncate ${isRecommended ? 'text-white' : isActive ? 'text-blue-900' : 'text-gray-900'}`}>{pkg.name}</h3>
+            <div className={`flex items-center gap-2 text-xs ${isRecommended ? 'text-blue-100' : isActive ? 'text-blue-600' : 'text-gray-500'}`}>
               <span className="font-medium">{pkg.total_check_points || 0}+ pts</span>
               <span>•</span>
               <span className="font-medium">{pkg.no_of_inspections || 1} inspection{(pkg.no_of_inspections || 1) > 1 ? 's' : ''}</span>
