@@ -520,6 +520,7 @@ export default function AdAnalyticsPage() {
                     <SelectItem value="total_leads">Leads</SelectItem>
                     <SelectItem value="total_revenue">Revenue</SelectItem>
                     <SelectItem value="ad_spend">Ad Spend</SelectItem>
+                    <SelectItem value="cost_per_result">CPR</SelectItem>
                     <SelectItem value="roi">ROI</SelectItem>
                     <SelectItem value="conversion_rate">Conversion</SelectItem>
                   </SelectContent>
