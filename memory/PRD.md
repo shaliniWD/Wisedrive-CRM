@@ -356,7 +356,7 @@ Returns:
 ## Document History
 - **Created:** December 2025
 - **Last Updated:** February 18, 2026
-- **Version:** 3.5
+- **Version:** 3.6
 
 ## Changelog
 - v3.6 (Feb 18, 2026): **Meta Ads Advanced Features** - Four major enhancements to Meta Ads integration: (1) **Auto-Sync Ad Status** - POST /api/meta-ads/sync-status endpoint syncs ad active/paused status from Meta to local database. Updates `is_active`, `meta_status`, `meta_effective_status` fields on ad mappings. Background scheduler syncs every 15 minutes. (2) **Last Updated Timestamp** - Header shows "Updated X min ago" with real-time calculation from `last_updated` field in performance data. (3) **CPR Metric** - Added Cost Per Result (CPR = Total Spend / Total Conversions) to summary cards and performance table. New `overall_cpr` and `overall_cpl` fields in totals. (4) **Unmapped Ads with City Suggestions** - GET /api/meta-ads/unmapped-ads returns ads from Meta without CRM mappings, includes targeting info and auto-suggested city. New UI section in Ad ID Mapping tab shows unmapped ads with "Quick Map" button. Frontend API methods added: `syncStatus()`, `getUnmappedAds()`, `getAdsWithTargeting()`. 100% test coverage (iteration_52).
