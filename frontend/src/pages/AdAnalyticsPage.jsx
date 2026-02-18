@@ -97,6 +97,11 @@ export default function AdAnalyticsPage() {
     ad_id: '', ad_name: '', ad_amount: '', city: '', language: '', campaign: '', source: '',
   });
   
+  // Sync and unmapped ads state
+  const [syncing, setSyncing] = useState(false);
+  const [unmappedAds, setUnmappedAds] = useState([]);
+  const [loadingUnmapped, setLoadingUnmapped] = useState(false);
+  
   const cities = ['Bangalore', 'Chennai', 'Mumbai', 'Delhi', 'Hyderabad', 'Pune', 'Kolkata', 'Ahmedabad', 'Vizag'];
   const languages = ['Hindi', 'English', 'Kannada', 'Tamil', 'Telugu', 'Malayalam', 'Marathi', 'Bengali'];
   const sources = ['Instagram', 'Facebook', 'Google', 'YouTube', 'Website', 'Referral'];
