@@ -779,12 +779,12 @@ export default function InspectionsPage() {
                     </td>
                     
                     {/* Inspection Status Column - Dropdown */}
-                    <td className="px-3 py-3">
+                    <td className="px-4 py-3">
                       <Select 
                         value={inspection.inspection_status} 
                         onValueChange={(value) => handleStatusChange(inspection.id, value)}
                       >
-                        <SelectTrigger className="h-8 text-xs w-[140px] border-gray-200" data-testid={`status-select-${inspection.id}`}>
+                        <SelectTrigger className="h-8 text-xs w-[145px] border-gray-200" data-testid={`status-select-${inspection.id}`}>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -800,13 +800,13 @@ export default function InspectionsPage() {
                     </td>
                     
                     {/* Mechanic Column - Editable */}
-                    <td className="px-3 py-3">
+                    <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                           {inspection.mechanic_name ? (
                             <div className="flex items-center gap-1.5">
-                              <UserCheck className="h-3.5 w-3.5 text-emerald-500" />
-                              <span className="text-sm text-gray-700">{inspection.mechanic_name}</span>
+                              <UserCheck className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" />
+                              <span className="text-sm text-gray-700 truncate">{inspection.mechanic_name}</span>
                             </div>
                           ) : (
                             <span className="text-sm text-gray-400 italic">Not assigned</span>
@@ -818,7 +818,7 @@ export default function InspectionsPage() {
                             setSelectedMechanicId(inspection.mechanic_id || '');
                             setIsMechanicModalOpen(true);
                           }}
-                          className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                          className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors flex-shrink-0"
                           title={inspection.mechanic_name ? "Reassign Mechanic" : "Assign Mechanic"}
                           data-testid={`edit-mechanic-${inspection.id}`}
                         >
@@ -828,7 +828,7 @@ export default function InspectionsPage() {
                     </td>
                     
                     {/* Location Column */}
-                    <td className="px-3 py-3">
+                    <td className="px-4 py-3">
                       <span className="inline-flex items-center gap-1 text-sm text-blue-600">
                         <MapPin className="h-3.5 w-3.5" />
                         {inspection.city}
@@ -836,7 +836,7 @@ export default function InspectionsPage() {
                     </td>
                     
                     {/* Inspection Report Column */}
-                    <td className="px-3 py-3">
+                    <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
                         {/* View Report button - opens in new tab */}
                         <button 
