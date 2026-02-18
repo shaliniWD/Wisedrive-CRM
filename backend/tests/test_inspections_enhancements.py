@@ -45,7 +45,8 @@ class TestInspectionsEnhancements:
         
         if response.status_code == 200:
             data = response.json()
-            self.token = data.get("token")
+            # API returns access_token, not token
+            self.token = data.get("access_token") or data.get("token")
             self.session.headers.update({"Authorization": f"Bearer {self.token}"})
             return self.token
         return None
@@ -90,7 +91,8 @@ class TestInspectionsEnhancements:
         
         assert response.status_code == 200, f"Login failed: {response.text}"
         data = response.json()
-        assert "token" in data, "Token not in response"
+        # API returns access_token, not token
+        assert "access_token" in data or "token" in data, "Token not in response"
         assert "user" in data, "User not in response"
         print(f"✓ Login successful for {data['user'].get('name', TEST_EMAIL)}")
     
