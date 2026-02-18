@@ -1752,6 +1752,7 @@ async def create_lead_payment_link(lead_id: str, payment_data: PaymentLinkReques
                     "user_name": current_user.get("name", "Unknown"),
                     "action": "payment_link_sent_whatsapp",
                     "details": f"Sent to {lead.get('mobile')}",
+                    "new_value": f"₹{amount} for {package.get('name', 'Package')} ({no_of_inspections} inspection{'s' if no_of_inspections > 1 else ''})",
                     "created_at": datetime.now(timezone.utc).isoformat()
                 }
                 await db.lead_activities.insert_one(whatsapp_activity)
