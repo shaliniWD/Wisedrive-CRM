@@ -270,15 +270,21 @@ export default function InspectionsPage() {
       const response = await vehicleApi.getDetails(newVehicleNumber.toUpperCase().replace(/\s/g, ''));
       // API returns {success: true, data: {...vehicle details...}}
       const vehicle = response.data?.data || response.data;
-      if (vehicle && (vehicle.manufacturer || vehicle.model)) {
+      if (vehicle && (vehicle.manufacturer || vehicle.model || vehicle.registration_number)) {
         setVehicleData(vehicle);
         toast.success('Vehicle details found!');
       } else {
-        toast.error('Vehicle not found. You can still proceed manually.');
+        toast.info('Vehicle not found in database. You can enter details manually.');
         setVehicleData(null);
       }
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Vehicle not found. You can still proceed manually.');
+      // Handle common error messages from Vaahan API
+      const errorMsg = error.response?.data?.detail || '';
+      if (errorMsg.includes('Inconvenience') || errorMsg.includes('not found')) {
+        toast.info('Vehicle not found in RC database. You can enter details manually.');
+      } else {
+        toast.error('Unable to fetch vehicle details. You can proceed manually.');
+      }
       setVehicleData(null);
     } finally {
       setVehicleSearching(false);
