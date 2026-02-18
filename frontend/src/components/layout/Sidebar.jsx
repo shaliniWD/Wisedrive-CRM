@@ -8,7 +8,8 @@ import {
   Settings,
   ChevronRight,
   Clock,
-  Wallet
+  Wallet,
+  BarChart3
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -18,6 +19,7 @@ const navigation = [
   { name: 'Leads', href: '/leads', icon: Users },
   { name: 'Customers', href: '/customers', icon: UserCheck },
   { name: 'Inspections', href: '/inspections', icon: ClipboardCheck },
+  { name: 'Ad Analytics', href: '/ad-analytics', icon: BarChart3 },
   { name: 'HR Module', href: '/hr', icon: Clock },
   { name: 'Finance', href: '/finance', icon: Wallet },
   { name: 'Settings', href: '/settings', icon: Settings },
