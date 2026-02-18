@@ -872,6 +872,7 @@ export default function InspectionsPage() {
               )}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 
