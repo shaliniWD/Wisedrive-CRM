@@ -351,6 +351,22 @@ export default function AdAnalyticsPage() {
   }, [adMappings, mappingSearchQuery]);
 
   const totals = performanceData?.totals || {};
+  const lastUpdated = performanceData?.last_updated;
+
+  // Format last updated time
+  const formatLastUpdated = (isoString) => {
+    if (!isoString) return null;
+    const date = new Date(isoString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} min ago`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+  };
 
   if (loading && activeTab === 'performance') {
     return (
