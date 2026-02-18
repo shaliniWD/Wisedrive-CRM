@@ -111,6 +111,9 @@ export default function InspectionsPage() {
   const [isCollectBalanceModalOpen, setIsCollectBalanceModalOpen] = useState(false);
   const [collectBalanceInspection, setCollectBalanceInspection] = useState(null);
   const [collectingBalance, setCollectingBalance] = useState(false);
+  const [generatedPaymentLink, setGeneratedPaymentLink] = useState(null);
+  const [checkingPaymentStatus, setCheckingPaymentStatus] = useState(false);
+  const [paymentLinkStatus, setPaymentLinkStatus] = useState(null);
   
   // Vehicle Edit Modal
   const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
