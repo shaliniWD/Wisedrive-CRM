@@ -376,16 +376,20 @@ export default function LeadsPage() {
     await fetchNotesAndActivities(lead);
   };
 
-  // Add a new note
+  // Add a new note with debounce protection
   const handleAddNote = async () => {
-    if (!newNote.trim() || !selectedLeadForNotes) return;
+    if (!newNote.trim() || !selectedLeadForNotes || savingNote) return;
+    
+    const noteText = newNote.trim();
+    setNewNote(''); // Clear immediately to prevent double submission
     setSavingNote(true);
+    
     try {
-      await leadsApi.addNote(selectedLeadForNotes.id, newNote.trim());
+      await leadsApi.addNote(selectedLeadForNotes.id, noteText);
       toast.success('Note added successfully');
-      setNewNote('');
       await fetchNotesAndActivities(selectedLeadForNotes);
     } catch (error) {
+      setNewNote(noteText); // Restore note on error
       toast.error(error.response?.data?.detail || 'Failed to add note');
     } finally {
       setSavingNote(false);
