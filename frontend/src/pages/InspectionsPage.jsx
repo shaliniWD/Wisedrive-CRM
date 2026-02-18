@@ -253,8 +253,13 @@ const PaymentStatusBadge = ({ status, balanceDue }) => {
 };
 
 // Summary Card Component
-const SummaryCard = ({ title, value, icon: Icon, color, subtitle }) => (
-  <div className="rounded-xl border bg-white p-5">
+const SummaryCard = ({ title, value, icon: Icon, color, subtitle, onClick, active }) => (
+  <div 
+    className={`rounded-xl border bg-white p-5 transition-all cursor-pointer hover:shadow-md ${active ? 'ring-2 ring-blue-500 shadow-md' : ''}`}
+    onClick={onClick}
+    role="button"
+    tabIndex={0}
+  >
     <div className="flex items-start justify-between">
       <div className="space-y-1">
         <p className="text-sm font-medium text-gray-500">{title}</p>
@@ -267,6 +272,7 @@ const SummaryCard = ({ title, value, icon: Icon, color, subtitle }) => (
         color?.includes('emerald') ? 'from-emerald-500 to-emerald-600' : 
         color?.includes('blue') ? 'from-blue-500 to-blue-600' : 
         color?.includes('amber') ? 'from-amber-500 to-amber-600' :
+        color?.includes('purple') ? 'from-purple-500 to-purple-600' :
         'from-gray-500 to-gray-600'
       }`}>
         <Icon className="h-5 w-5 text-white" />
