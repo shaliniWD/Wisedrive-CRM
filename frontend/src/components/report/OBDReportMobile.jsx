@@ -173,10 +173,43 @@ const SystemGroup = ({ system, isEditMode }) => {
 
 export function OBDReportMobile({ data }) {
   const { isEditMode } = useEditMode();
-  const hasErrors = data.totalErrors > 0;
+  
+  // Handle missing or malformed data gracefully
+  if (!data || !data.systems) {
+    return (
+      <section className="px-4 mt-4">
+        <div className="mobile-card">
+          <div className="mobile-card-header flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-muted/50">
+                <Cpu className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <h2 className="font-semibold font-display">OBD-2 Diagnostics</h2>
+            </div>
+            <Badge variant="outline" className="bg-muted/50 text-muted-foreground">
+              Not Available
+            </Badge>
+          </div>
+          <div className="mobile-card-body">
+            <div className="text-center py-8">
+              <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-3">
+                <Cpu className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <p className="font-medium text-muted-foreground">OBD Data Not Connected</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                OBD-2 diagnostic data will appear here once connected
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+  
+  const hasErrors = (data.totalErrors || 0) > 0;
 
-  const criticalTotal = data.systems.reduce((sum, sys) => 
-    sum + sys.faults.filter(f => f.severity === 'critical').length, 0);
+  const criticalTotal = (data.systems || []).reduce((sum, sys) => 
+    sum + (sys.faults || []).filter(f => f.severity === 'critical').length, 0);
 
   return (
     <section className="px-4 mt-4">
@@ -195,7 +228,7 @@ export function OBDReportMobile({ data }) {
               : 'bg-success/10 text-success border-success/20'
             }
           >
-            {data.totalErrors} {data.totalErrors === 1 ? 'Error' : 'Errors'}
+            {data.totalErrors || 0} {(data.totalErrors || 0) === 1 ? 'Error' : 'Errors'}
           </Badge>
         </div>
         
@@ -214,7 +247,7 @@ export function OBDReportMobile({ data }) {
               
               {/* System Groups */}
               <div className="space-y-3">
-                {data.systems.map((system, idx) => (
+                {(data.systems || []).map((system, idx) => (
                   <SystemGroup key={idx} system={system} isEditMode={isEditMode} />
                 ))}
               </div>
