@@ -9,10 +9,10 @@ const tabRouteMap = {
   leads: { name: 'Leads', href: '/leads' },
   customers: { name: 'Customers', href: '/customers' },
   inspections: { name: 'Inspections', href: '/inspections' },
-  'ad-analytics': { name: 'Ad Analytics', href: '/ad-analytics' },
+  'ad-analytics': { name: 'Ads Management', href: '/ad-analytics' },
   hr: { name: 'HR Module', href: '/hr' },
   finance: { name: 'Finance', href: '/finance' },
-  settings: { name: 'Settings', href: '/settings' },
+  settings: { name: 'Services', href: '/settings' },
 };
 
 // Fixed order for tabs
