@@ -1716,11 +1716,17 @@ export default function LeadsPage() {
                     slot_number: index + 1,
                   }));
                   
-                  // Use the real Razorpay payment link API with final amount after discount
+                  // Determine if partial payment is being used
+                  const isPartialPayment = selectedPackage.allow_partial_payment && paymentFormData.usePartialPayment;
+                  const amountToPayNow = getAmountToPayNow();
+                  const balanceDue = isPartialPayment ? getRemainingBalance() : 0;
+                  
+                  // Use the real Razorpay payment link API - send amount to pay NOW (partial or full)
                   const response = await leadsApi.createPaymentLink(selectedLead.id, {
                     package_id: paymentFormData.packageId,
-                    amount: finalAmount,
-                    description: `${selectedPackage.name} - ${selectedPackage.no_of_inspections || 1} Inspection(s)${getDiscountAmount() > 0 ? ` (Discount Applied)` : ''}`,
+                    amount: amountToPayNow, // Amount to charge via Razorpay
+                    total_amount: finalAmount, // Total package amount after discounts
+                    description: `${selectedPackage.name} - ${selectedPackage.no_of_inspections || 1} Inspection(s)${getDiscountAmount() > 0 ? ` (Discount Applied)` : ''}${isPartialPayment ? ' (Partial Payment)' : ''}`,
                     send_via_whatsapp: true,
                     vehicle_number: paymentFormData.carNo || '',
                     no_of_inspections: selectedPackage.no_of_inspections || 1,
@@ -1729,6 +1735,10 @@ export default function LeadsPage() {
                     base_amount: getBaseAmount(),
                     discount_amount: getDiscountAmount(),
                     inspection_schedules: schedulesData,
+                    // Partial payment fields
+                    is_partial_payment: isPartialPayment,
+                    partial_payment_amount: isPartialPayment ? amountToPayNow : null,
+                    balance_due: balanceDue,
                   });
                   
                   toast.success(response.data?.whatsapp_sent 
