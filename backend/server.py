@@ -103,11 +103,15 @@ attendance_service: Optional[AttendanceService] = None
 payroll_service: Optional[PayrollService] = None
 leave_service: Optional[LeaveService] = None
 
+# Meta Ads scheduler
+meta_ads_scheduler = None
+
 
 @app.on_event("startup")
 async def startup():
     global rbac_service, round_robin_service, audit_service
     global attendance_service, payroll_service, leave_service, fcm_service
+    global meta_ads_scheduler
     
     rbac_service = RBACService(db)
     round_robin_service = RoundRobinService(db)
