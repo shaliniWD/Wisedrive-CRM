@@ -3055,7 +3055,13 @@ async def update_inspection_status(
         "NEW_INSPECTION", "ASSIGNED_TO_MECHANIC", "INSPECTION_CONFIRMED",
         "INSPECTION_STARTED", "INSPECTION_IN_PROGRESS", "INSPECTION_COMPLETED",
         "INSPECTION_CANCELLED_CUSTOMER", "INSPECTION_CANCELLED_WISEDRIVE",
-        "SCHEDULED", "UNSCHEDULED"
+        "INSPECTION_RESCHEDULED", "SCHEDULED", "UNSCHEDULED"
+    ]
+    
+    # Statuses that require a mechanic to be assigned
+    mechanic_required_statuses = [
+        "ASSIGNED_TO_MECHANIC", "INSPECTION_CONFIRMED", "INSPECTION_STARTED",
+        "INSPECTION_IN_PROGRESS", "INSPECTION_COMPLETED"
     ]
     
     if inspection_status not in valid_statuses:
@@ -3064,6 +3070,15 @@ async def update_inspection_status(
     inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
     if not inspection:
         raise HTTPException(status_code=404, detail="Inspection not found")
+    
+    # Check if mechanic is required for the new status
+    if inspection_status in mechanic_required_statuses:
+        mechanic_id = inspection.get("mechanic_id")
+        if not mechanic_id:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Cannot change status to '{inspection_status}'. Please assign a mechanic first."
+            )
     
     await db.inspections.update_one(
         {"id": inspection_id},
