@@ -18,6 +18,176 @@ import {
   UserCheck, CalendarClock, RefreshCw, Ban, Copy, ExternalLink, Link2
 } from 'lucide-react';
 
+// Helper function to extract clean Make name from verbose manufacturer string
+const extractMake = (manufacturer) => {
+  if (!manufacturer) return '';
+  const upperMfr = manufacturer.toUpperCase();
+  
+  // Common car brands mapping
+  const brands = [
+    { pattern: /FORD/i, name: 'Ford' },
+    { pattern: /TOYOTA/i, name: 'Toyota' },
+    { pattern: /MARUTI|SUZUKI/i, name: 'Maruti Suzuki' },
+    { pattern: /HYUNDAI/i, name: 'Hyundai' },
+    { pattern: /HONDA/i, name: 'Honda' },
+    { pattern: /TATA/i, name: 'Tata' },
+    { pattern: /MAHINDRA/i, name: 'Mahindra' },
+    { pattern: /KIA/i, name: 'Kia' },
+    { pattern: /SKODA/i, name: 'Skoda' },
+    { pattern: /VOLKSWAGEN|VW/i, name: 'Volkswagen' },
+    { pattern: /BMW/i, name: 'BMW' },
+    { pattern: /MERCEDES|BENZ/i, name: 'Mercedes-Benz' },
+    { pattern: /AUDI/i, name: 'Audi' },
+    { pattern: /NISSAN/i, name: 'Nissan' },
+    { pattern: /RENAULT/i, name: 'Renault' },
+    { pattern: /CHEVROLET/i, name: 'Chevrolet' },
+    { pattern: /JEEP/i, name: 'Jeep' },
+    { pattern: /MG|MORRIS/i, name: 'MG' },
+    { pattern: /VOLVO/i, name: 'Volvo' },
+    { pattern: /JAGUAR/i, name: 'Jaguar' },
+    { pattern: /LAND ROVER/i, name: 'Land Rover' },
+    { pattern: /LEXUS/i, name: 'Lexus' },
+    { pattern: /PORSCHE/i, name: 'Porsche' },
+    { pattern: /FIAT/i, name: 'Fiat' },
+    { pattern: /ISUZU/i, name: 'Isuzu' },
+    { pattern: /DATSUN/i, name: 'Datsun' },
+    { pattern: /FORCE/i, name: 'Force' },
+    { pattern: /ASHOK LEYLAND/i, name: 'Ashok Leyland' },
+    { pattern: /BAJAJ/i, name: 'Bajaj' },
+    { pattern: /HERO/i, name: 'Hero' },
+    { pattern: /TVS/i, name: 'TVS' },
+    { pattern: /ROYAL ENFIELD/i, name: 'Royal Enfield' },
+  ];
+  
+  for (const brand of brands) {
+    if (brand.pattern.test(upperMfr)) {
+      return brand.name;
+    }
+  }
+  
+  // Fallback: return first word if no match
+  return manufacturer.split(' ')[0];
+};
+
+// Helper function to extract clean Model name from verbose model string
+const extractModel = (modelStr) => {
+  if (!modelStr) return '';
+  
+  // Common model names to extract
+  const models = [
+    // Ford
+    { pattern: /ENDEAVOUR/i, name: 'Endeavour' },
+    { pattern: /ECOSPORT/i, name: 'EcoSport' },
+    { pattern: /FIGO/i, name: 'Figo' },
+    { pattern: /ASPIRE/i, name: 'Aspire' },
+    { pattern: /MUSTANG/i, name: 'Mustang' },
+    // Toyota
+    { pattern: /INNOVA/i, name: 'Innova' },
+    { pattern: /FORTUNER/i, name: 'Fortuner' },
+    { pattern: /CAMRY/i, name: 'Camry' },
+    { pattern: /COROLLA/i, name: 'Corolla' },
+    { pattern: /ETIOS/i, name: 'Etios' },
+    { pattern: /GLANZA/i, name: 'Glanza' },
+    { pattern: /URBAN CRUISER/i, name: 'Urban Cruiser' },
+    { pattern: /YARIS/i, name: 'Yaris' },
+    { pattern: /VELLFIRE/i, name: 'Vellfire' },
+    { pattern: /LAND CRUISER/i, name: 'Land Cruiser' },
+    // Maruti Suzuki
+    { pattern: /SWIFT/i, name: 'Swift' },
+    { pattern: /BALENO/i, name: 'Baleno' },
+    { pattern: /DZIRE/i, name: 'Dzire' },
+    { pattern: /ALTO/i, name: 'Alto' },
+    { pattern: /WAGON\s*R/i, name: 'Wagon R' },
+    { pattern: /VITARA BREZZA|BREZZA/i, name: 'Brezza' },
+    { pattern: /ERTIGA/i, name: 'Ertiga' },
+    { pattern: /CIAZ/i, name: 'Ciaz' },
+    { pattern: /CELERIO/i, name: 'Celerio' },
+    { pattern: /IGNIS/i, name: 'Ignis' },
+    { pattern: /S-CROSS|SCROSS/i, name: 'S-Cross' },
+    { pattern: /XL6/i, name: 'XL6' },
+    { pattern: /GRAND VITARA/i, name: 'Grand Vitara' },
+    { pattern: /JIMNY/i, name: 'Jimny' },
+    { pattern: /FRONX/i, name: 'Fronx' },
+    { pattern: /INVICTO/i, name: 'Invicto' },
+    // Hyundai
+    { pattern: /CRETA/i, name: 'Creta' },
+    { pattern: /VENUE/i, name: 'Venue' },
+    { pattern: /I20/i, name: 'i20' },
+    { pattern: /I10/i, name: 'i10' },
+    { pattern: /VERNA/i, name: 'Verna' },
+    { pattern: /TUCSON/i, name: 'Tucson' },
+    { pattern: /ALCAZAR/i, name: 'Alcazar' },
+    { pattern: /AURA/i, name: 'Aura' },
+    { pattern: /SANTRO/i, name: 'Santro' },
+    { pattern: /EXTER/i, name: 'Exter' },
+    // Honda
+    { pattern: /CITY/i, name: 'City' },
+    { pattern: /AMAZE/i, name: 'Amaze' },
+    { pattern: /WR-V|WRV/i, name: 'WR-V' },
+    { pattern: /JAZZ/i, name: 'Jazz' },
+    { pattern: /CIVIC/i, name: 'Civic' },
+    { pattern: /ELEVATE/i, name: 'Elevate' },
+    // Tata
+    { pattern: /NEXON/i, name: 'Nexon' },
+    { pattern: /PUNCH/i, name: 'Punch' },
+    { pattern: /HARRIER/i, name: 'Harrier' },
+    { pattern: /SAFARI/i, name: 'Safari' },
+    { pattern: /ALTROZ/i, name: 'Altroz' },
+    { pattern: /TIAGO/i, name: 'Tiago' },
+    { pattern: /TIGOR/i, name: 'Tigor' },
+    // Mahindra
+    { pattern: /THAR/i, name: 'Thar' },
+    { pattern: /SCORPIO/i, name: 'Scorpio' },
+    { pattern: /XUV700/i, name: 'XUV700' },
+    { pattern: /XUV500/i, name: 'XUV500' },
+    { pattern: /XUV400/i, name: 'XUV400' },
+    { pattern: /XUV300/i, name: 'XUV300' },
+    { pattern: /BOLERO/i, name: 'Bolero' },
+    { pattern: /MARAZZO/i, name: 'Marazzo' },
+    // Kia
+    { pattern: /SELTOS/i, name: 'Seltos' },
+    { pattern: /SONET/i, name: 'Sonet' },
+    { pattern: /CARENS/i, name: 'Carens' },
+    { pattern: /CARNIVAL/i, name: 'Carnival' },
+    // Others
+    { pattern: /POLO/i, name: 'Polo' },
+    { pattern: /VENTO/i, name: 'Vento' },
+    { pattern: /RAPID/i, name: 'Rapid' },
+    { pattern: /OCTAVIA/i, name: 'Octavia' },
+    { pattern: /SUPERB/i, name: 'Superb' },
+    { pattern: /KUSHAQ/i, name: 'Kushaq' },
+    { pattern: /SLAVIA/i, name: 'Slavia' },
+    { pattern: /DUSTER/i, name: 'Duster' },
+    { pattern: /KWID/i, name: 'Kwid' },
+    { pattern: /TRIBER/i, name: 'Triber' },
+    { pattern: /KIGER/i, name: 'Kiger' },
+    { pattern: /HECTOR/i, name: 'Hector' },
+    { pattern: /ASTOR/i, name: 'Astor' },
+    { pattern: /GLOSTER/i, name: 'Gloster' },
+    { pattern: /COMPASS/i, name: 'Compass' },
+    { pattern: /MERIDIAN/i, name: 'Meridian' },
+    { pattern: /WRANGLER/i, name: 'Wrangler' },
+  ];
+  
+  for (const model of models) {
+    if (model.pattern.test(modelStr)) {
+      return model.name;
+    }
+  }
+  
+  // Fallback: Extract main word (usually the longest capitalized word)
+  const words = modelStr.split(/[\s\d.]+/).filter(w => w.length > 2);
+  if (words.length > 0) {
+    // Return the longest word that looks like a model name
+    const filtered = words.filter(w => !/^(PVT|LTD|INDIA|MOTOR|MOTORS|AUTO|AT|MT|AMT|CVT|PETROL|DIESEL|CNG|HYBRID)$/i.test(w));
+    if (filtered.length > 0) {
+      return filtered.reduce((a, b) => a.length >= b.length ? a : b);
+    }
+  }
+  
+  return modelStr.split(' ')[0];
+};
+
 // Inspection Status options
 const INSPECTION_STATUSES = [
   { value: 'NEW_INSPECTION', label: 'New Inspection', color: 'bg-slate-100 text-slate-800' },
