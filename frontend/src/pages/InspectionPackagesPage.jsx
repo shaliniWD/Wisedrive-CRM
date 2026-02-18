@@ -124,9 +124,9 @@ const PackageCard = ({ pkg, categories, offers, onEdit, onCopy, onToggle }) => {
               </span>
             )}
           </div>
-          <div className={`text-right flex-shrink-0 ${isRecommended ? 'text-white' : 'text-gray-900'}`}>
+          <div className={`text-right flex-shrink-0 ${isRecommended ? 'text-white' : isActive ? 'text-blue-900' : 'text-gray-900'}`}>
             <p className="text-xl font-bold whitespace-nowrap">{pkg.currency_symbol || '₹'}{(pkg.price || 0).toLocaleString('en-IN')}</p>
-            <p className={`text-xs ${isRecommended ? 'text-blue-100' : 'text-gray-500'}`}>Incl. taxes</p>
+            <p className={`text-xs ${isRecommended ? 'text-blue-100' : isActive ? 'text-blue-600' : 'text-gray-500'}`}>Incl. taxes</p>
           </div>
         </div>
         
