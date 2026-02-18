@@ -263,6 +263,7 @@ Returns:
 - **Version:** 2.6
 
 ## Changelog
+- v2.7 (Feb 18, 2026): **Payment Modal Package Settings Fix** - Discount, Offers, and Partial Payment sections now only appear when enabled on the package. Fixed active offers query to properly filter by date range.
 - v2.6 (Feb 18, 2026): **Inspection Package Payment Enhancements** - Added partial payment support (fixed/percentage), discount configuration, and promotional offers management. New Offers tab in Settings with CRUD operations. Package modal updated with toggles for partial payments, discounts, and offer linking.
 - v2.5 (Feb 17, 2026): **CTO Role Permissions Fix** - Copied 29 role_permissions from CEO role to CTO role, enabling full data access for the new CTO user
 - v2.4 (Feb 17, 2026): **Critical Bug Fix: Lead Auto-Assignment** - Fixed query to correctly use role_id lookup against roles collection, check assigned_cities array, and is_available_for_leads flag
