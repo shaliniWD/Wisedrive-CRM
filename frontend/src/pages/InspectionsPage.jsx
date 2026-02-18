@@ -686,7 +686,7 @@ export default function InspectionsPage() {
                   return (
                   <tr key={inspection.id} className="hover:bg-slate-50 transition-colors" data-testid={`inspection-row-${inspection.id}`}>
                     {/* Date/Time Column - Editable */}
-                    <td className="px-3 py-3">
+                    <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <div>
                           <div className="font-medium text-gray-900 text-sm">{formatDate(inspection.scheduled_date) || '-'}</div>
@@ -709,25 +709,25 @@ export default function InspectionsPage() {
                     </td>
                     
                     {/* Customer Column */}
-                    <td className="px-3 py-3">
+                    <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <div className="h-8 w-8 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white font-medium text-xs">
+                        <div className="h-8 w-8 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white font-medium text-xs flex-shrink-0">
                           {inspection.customer_name?.charAt(0)?.toUpperCase()}
                         </div>
-                        <div>
-                          <div className="font-medium text-gray-900 text-sm">{inspection.customer_name}</div>
+                        <div className="min-w-0">
+                          <div className="font-medium text-gray-900 text-sm truncate">{inspection.customer_name}</div>
                           <div className="text-xs text-gray-500 font-mono">{inspection.customer_mobile}</div>
                         </div>
                       </div>
                     </td>
                     
                     {/* Vehicle Column - Editable */}
-                    <td className="px-3 py-3">
+                    <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <Car className="h-4 w-4 text-gray-400" />
-                        <div>
+                        <Car className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                        <div className="min-w-0">
                           <div className="text-sm font-mono text-blue-600">{inspection.car_number || '-'}</div>
-                          <div className="text-xs text-gray-400">{inspection.car_make} {inspection.car_model}</div>
+                          <div className="text-xs text-gray-400 truncate">{inspection.car_make} {inspection.car_model}</div>
                         </div>
                         <button 
                           onClick={() => {
@@ -736,7 +736,7 @@ export default function InspectionsPage() {
                             setVehicleData(null);
                             setIsVehicleModalOpen(true);
                           }}
-                          className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                          className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors flex-shrink-0"
                           title="Change Vehicle"
                           data-testid={`edit-vehicle-${inspection.id}`}
                         >
@@ -746,7 +746,7 @@ export default function InspectionsPage() {
                     </td>
                     
                     {/* Payment Status Column - With Collect Balance Button */}
-                    <td className="px-3 py-3">
+                    <td className="px-4 py-3">
                       {hasBalanceDue ? (
                         <div className="space-y-1">
                           <button 
