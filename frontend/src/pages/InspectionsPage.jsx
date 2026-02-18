@@ -216,6 +216,7 @@ const InspectionStatusBadge = ({ status }) => {
     INSPECTION_STARTED: { color: 'bg-amber-100 text-amber-800 border-amber-200', icon: Play, label: 'Started' },
     INSPECTION_IN_PROGRESS: { color: 'bg-orange-100 text-orange-800 border-orange-200', icon: Clock, label: 'In Progress' },
     INSPECTION_COMPLETED: { color: 'bg-emerald-100 text-emerald-800 border-emerald-200', icon: CheckCircle, label: 'Completed' },
+    INSPECTION_RESCHEDULED: { color: 'bg-purple-100 text-purple-800 border-purple-200', icon: RefreshCw, label: 'Rescheduled' },
     INSPECTION_CANCELLED_CUSTOMER: { color: 'bg-red-100 text-red-800 border-red-200', icon: Ban, label: 'Cancelled (C)' },
     INSPECTION_CANCELLED_WISEDRIVE: { color: 'bg-red-100 text-red-800 border-red-200', icon: Ban, label: 'Cancelled (W)' },
     SCHEDULED: { color: 'bg-blue-100 text-blue-800 border-blue-200', icon: Calendar, label: 'Scheduled' },
