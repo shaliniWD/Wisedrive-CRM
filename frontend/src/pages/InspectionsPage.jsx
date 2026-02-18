@@ -634,24 +634,30 @@ export default function InspectionsPage() {
 
   const fetchData = useCallback(async () => {
     try {
+      setLoading(true);
       const params = {};
       if (search) params.search = search;
       if (filterCity && filterCity !== 'all') params.city = filterCity;
       if (filterStatus && filterStatus !== 'all') params.inspection_status = filterStatus;
       params.is_scheduled = activeTab === 'scheduled';
+      
+      // Add date range filtering
+      const { from, to } = getDateRange();
+      if (from) params.date_from = from;
+      if (to) params.date_to = to;
 
       const [inspectionsRes, citiesRes] = await Promise.all([
         inspectionsApi.getAll(params), utilityApi.getCities(),
       ]);
 
-      setInspections(inspectionsRes.data);
-      setCities(citiesRes.data);
+      setInspections(inspectionsRes.data || []);
+      setCities(citiesRes.data || []);
     } catch (error) {
       toast.error('Failed to load inspections');
     } finally {
       setLoading(false);
     }
-  }, [search, filterCity, filterStatus, activeTab]);
+  }, [search, filterCity, filterStatus, activeTab, getDateRange]);
 
   useEffect(() => { fetchData(); fetchMechanics(); }, [fetchData, fetchMechanics]);
 
