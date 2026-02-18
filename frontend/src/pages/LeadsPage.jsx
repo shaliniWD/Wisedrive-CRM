@@ -1453,7 +1453,7 @@ export default function LeadsPage() {
                     <div className="bg-purple-50 p-4 rounded-xl border border-purple-200">
                       <div className="flex items-center justify-between mb-3">
                         <h4 className="font-semibold text-purple-800 flex items-center gap-2">
-                          <CreditCard className="h-4 w-4" /> Partial Payment
+                          <CreditCard className="h-4 w-4" /> Partial Payment Option
                         </h4>
                         <label className="flex items-center gap-2 cursor-pointer">
                           <Checkbox 
@@ -1464,17 +1464,25 @@ export default function LeadsPage() {
                           <span className="text-sm text-purple-700">Enable partial payment</span>
                         </label>
                       </div>
+                      <p className="text-xs text-purple-600 mb-2">
+                        Partial payment for this package: <span className="font-bold">₹{(getSelectedPackage().partial_payment_value || 0).toLocaleString()}</span> (fixed amount)
+                      </p>
                       {paymentFormData.usePartialPayment && (
-                        <div className="bg-purple-100/50 p-3 rounded-lg">
-                          <p className="text-sm text-purple-700 mb-2">
-                            Customer pays <span className="font-bold">₹{getPartialPaymentAmount().toLocaleString()}</span> now 
-                            ({getSelectedPackage().partial_payment_type === 'percentage' 
-                              ? `${getSelectedPackage().partial_payment_value}%` 
-                              : `₹${getSelectedPackage().partial_payment_value}`} of total)
-                          </p>
-                          <p className="text-sm text-purple-600">
-                            Remaining balance: <span className="font-semibold">₹{getRemainingBalance().toLocaleString()}</span>
-                            {' '}(collected before report delivery)
+                        <div className="bg-purple-100/50 p-3 rounded-lg space-y-2">
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="text-purple-700">Total after discounts:</span>
+                            <span className="font-medium text-purple-800">₹{calculateFinalAmount().toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="text-purple-700">Partial payment (now):</span>
+                            <span className="font-bold text-purple-800">- ₹{getPartialPaymentAmount().toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-sm pt-2 border-t border-purple-300">
+                            <span className="text-purple-700 font-medium">Balance (collect later):</span>
+                            <span className="font-bold text-purple-900">₹{getRemainingBalance().toLocaleString()}</span>
+                          </div>
+                          <p className="text-xs text-purple-600 mt-2">
+                            Customer pays ₹{getPartialPaymentAmount().toLocaleString()} now. Remaining ₹{getRemainingBalance().toLocaleString()} will be collected via "Collect Balance" button before report delivery.
                           </p>
                         </div>
                       )}
