@@ -567,25 +567,32 @@ export default function AdAnalyticsPage() {
             </div>
 
             {/* Additional Metrics */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <SummaryCard
+                title="Cost Per Result (CPR)"
+                value={formatCurrency(totals.overall_cpr || 0)}
+                subtext="Avg. cost per sale"
+                icon={Target}
+                color="amber"
+              />
+              <SummaryCard
+                title="Cost Per Lead"
+                value={formatCurrency(totals.overall_cpl || 0)}
+                subtext="Avg. cost per lead"
+                icon={Users}
+                color="purple"
+              />
               <SummaryCard
                 title="Total Impressions"
                 value={formatNumber(totals.total_impressions || 0)}
                 icon={Eye}
-                color="purple"
+                color="blue"
               />
               <SummaryCard
                 title="Total Clicks"
                 value={formatNumber(totals.total_clicks || 0)}
                 icon={MousePointer}
-                color="amber"
-              />
-              <SummaryCard
-                title="Conversion Rate"
-                value={`${totals.overall_conversion_rate || 0}%`}
-                subtext="Leads to sales"
-                icon={BarChart3}
-                color="blue"
+                color="green"
               />
             </div>
 
