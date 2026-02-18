@@ -337,9 +337,10 @@ Returns:
 ## Document History
 - **Created:** December 2025
 - **Last Updated:** February 18, 2026
-- **Version:** 2.9
+- **Version:** 3.0
 
 ## Changelog
+- v3.0 (Feb 18, 2026): **Inspections Tab Full Enhancement** - Added inline editing for all fields: (1) Collect Balance button in Payment Status column, (2) Vehicle edit with Vaahan API integration, (3) Inspection Status dropdown with 8 status options, (4) Mechanic assignment modal, (5) Schedule edit modal. New backend APIs: PATCH /api/inspections/{id}/status, vehicle, assign-mechanic, schedule. 94% test coverage (17/18 tests).
 - v2.9 (Feb 18, 2026): **Collect Balance Feature Complete** - Full implementation of partial payment lifecycle. Inspections page enhanced with Payment Status and Inspection Status columns. "Collect Balance" button generates Razorpay link and sends via WhatsApp. Send Report disabled until full payment. Webhook handles balance payment completion. 100% test coverage (9 tests passing).
 - v2.8 (Feb 18, 2026): **Partial Payment Fixed Amount Implementation** - Simplified partial payment to fixed amount only (removed percentage option). Added clear calculation display in payment modal showing Total → Partial Payment → Balance. Button now shows correct amount to pay. Example: Package ₹1,499 - Discount ₹200 = Total ₹1,299, Partial ₹500, Balance ₹799.
 - v2.7 (Feb 18, 2026): **Payment Modal Package Settings Fix** - Discount, Offers, and Partial Payment sections now only appear when enabled on the package. Fixed active offers query to properly filter by date range.
