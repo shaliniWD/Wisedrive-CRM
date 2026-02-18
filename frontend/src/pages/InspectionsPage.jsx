@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { inspectionsApi, utilityApi } from '@/services/api';
+import { inspectionsApi, utilityApi, vehicleApi } from '@/services/api';
 import { formatDate, formatTime, formatDateTime } from '@/utils/dateFormat';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,8 +14,24 @@ import { toast } from 'sonner';
 import { 
   Search, Loader2, ClipboardCheck, Filter, Calendar, MapPin, 
   Car, User, Download, Eye, Edit2, Clock, CheckCircle, XCircle, 
-  AlertCircle, Play, Plus, Send, CreditCard, DollarSign, FileText
+  AlertCircle, Play, Plus, Send, CreditCard, DollarSign, FileText,
+  UserCheck, CalendarClock, RefreshCw, Ban
 } from 'lucide-react';
+import axios from 'axios';
+
+const API_URL = process.env.REACT_APP_BACKEND_URL;
+
+// Inspection Status options
+const INSPECTION_STATUSES = [
+  { value: 'NEW_INSPECTION', label: 'New Inspection', color: 'bg-slate-100 text-slate-800' },
+  { value: 'ASSIGNED_TO_MECHANIC', label: 'Assigned to Mechanic', color: 'bg-indigo-100 text-indigo-800' },
+  { value: 'INSPECTION_CONFIRMED', label: 'Confirmed', color: 'bg-cyan-100 text-cyan-800' },
+  { value: 'INSPECTION_STARTED', label: 'Started', color: 'bg-amber-100 text-amber-800' },
+  { value: 'INSPECTION_IN_PROGRESS', label: 'In Progress', color: 'bg-orange-100 text-orange-800' },
+  { value: 'INSPECTION_COMPLETED', label: 'Completed', color: 'bg-emerald-100 text-emerald-800' },
+  { value: 'INSPECTION_CANCELLED_CUSTOMER', label: 'Cancelled (Customer)', color: 'bg-red-100 text-red-800' },
+  { value: 'INSPECTION_CANCELLED_WISEDRIVE', label: 'Cancelled (Wisedrive)', color: 'bg-red-100 text-red-800' },
+];
 
 // Inspection Status Badge Component
 const InspectionStatusBadge = ({ status }) => {
@@ -26,9 +42,10 @@ const InspectionStatusBadge = ({ status }) => {
     INSPECTION_STARTED: { color: 'bg-amber-100 text-amber-800 border-amber-200', icon: Play, label: 'Started' },
     INSPECTION_IN_PROGRESS: { color: 'bg-orange-100 text-orange-800 border-orange-200', icon: Clock, label: 'In Progress' },
     INSPECTION_COMPLETED: { color: 'bg-emerald-100 text-emerald-800 border-emerald-200', icon: CheckCircle, label: 'Completed' },
+    INSPECTION_CANCELLED_CUSTOMER: { color: 'bg-red-100 text-red-800 border-red-200', icon: Ban, label: 'Cancelled (C)' },
+    INSPECTION_CANCELLED_WISEDRIVE: { color: 'bg-red-100 text-red-800 border-red-200', icon: Ban, label: 'Cancelled (W)' },
     SCHEDULED: { color: 'bg-blue-100 text-blue-800 border-blue-200', icon: Calendar, label: 'Scheduled' },
     UNSCHEDULED: { color: 'bg-purple-100 text-purple-800 border-purple-200', icon: AlertCircle, label: 'Unscheduled' },
-    CANCELLED: { color: 'bg-red-100 text-red-800 border-red-200', icon: XCircle, label: 'Cancelled' },
   };
   const cfg = config[status] || config.SCHEDULED;
   const Icon = cfg.icon;
@@ -41,11 +58,11 @@ const InspectionStatusBadge = ({ status }) => {
   );
 };
 
-// Payment Status Badge Component
+// Payment Status Badge Component  
 const PaymentStatusBadge = ({ status, balanceDue }) => {
   const config = {
     FULLY_PAID: { color: 'bg-emerald-100 text-emerald-800 border-emerald-200', icon: CheckCircle, label: 'Fully Paid' },
-    PARTIALLY_PAID: { color: 'bg-amber-100 text-amber-800 border-amber-200', icon: DollarSign, label: `Partial (₹${balanceDue?.toLocaleString() || 0} due)` },
+    PARTIALLY_PAID: { color: 'bg-amber-100 text-amber-800 border-amber-200', icon: DollarSign, label: `Partial` },
     PAID: { color: 'bg-emerald-100 text-emerald-800 border-emerald-200', icon: CheckCircle, label: 'Paid' },
     PENDING: { color: 'bg-red-100 text-red-800 border-red-200', icon: AlertCircle, label: 'Pending' },
   };
@@ -85,6 +102,7 @@ const SummaryCard = ({ title, value, icon: Icon, color, subtitle }) => (
 
 export default function InspectionsPage() {
   const [inspections, setInspections] = useState([]);
+  const [mechanics, setMechanics] = useState([]);
   const [cities, setCities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -92,10 +110,28 @@ export default function InspectionsPage() {
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('scheduled');
 
-  // Collect Balance Modal state
+  // Modal states
   const [isCollectBalanceModalOpen, setIsCollectBalanceModalOpen] = useState(false);
   const [collectBalanceInspection, setCollectBalanceInspection] = useState(null);
   const [collectingBalance, setCollectingBalance] = useState(false);
+  
+  // Vehicle Edit Modal
+  const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
+  const [vehicleEditInspection, setVehicleEditInspection] = useState(null);
+  const [vehicleSearching, setVehicleSearching] = useState(false);
+  const [vehicleData, setVehicleData] = useState(null);
+  const [newVehicleNumber, setNewVehicleNumber] = useState('');
+  
+  // Schedule Edit Modal
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [scheduleEditInspection, setScheduleEditInspection] = useState(null);
+  const [newScheduleDate, setNewScheduleDate] = useState('');
+  const [newScheduleTime, setNewScheduleTime] = useState('');
+  
+  // Mechanic Assign Modal
+  const [isMechanicModalOpen, setIsMechanicModalOpen] = useState(false);
+  const [mechanicEditInspection, setMechanicEditInspection] = useState(null);
+  const [selectedMechanicId, setSelectedMechanicId] = useState('');
 
   const [search, setSearch] = useState('');
   const [filterCity, setFilterCity] = useState('');
@@ -107,6 +143,19 @@ export default function InspectionsPage() {
     mechanic_name: '', car_number: '', car_details: '',
     scheduled_date: '', scheduled_time: '', notes: '',
   });
+
+  // Fetch mechanics list
+  const fetchMechanics = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_URL}/api/mechanics`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setMechanics(response.data || []);
+    } catch (error) {
+      console.error('Failed to load mechanics:', error);
+    }
+  }, []);
 
   // Handle Collect Balance action
   const handleCollectBalance = async () => {
@@ -134,9 +183,120 @@ export default function InspectionsPage() {
     }
   };
 
+  // Handle Status Change
+  const handleStatusChange = async (inspectionId, newStatus) => {
+    try {
+      await inspectionsApi.updateStatus(inspectionId, newStatus);
+      toast.success(`Status updated to ${INSPECTION_STATUSES.find(s => s.value === newStatus)?.label || newStatus}`);
+      fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to update status');
+    }
+  };
+
+  // Handle Vehicle Search (Vaahan API)
+  const handleVehicleSearch = async () => {
+    if (!newVehicleNumber || newVehicleNumber.length < 6) {
+      toast.error('Please enter a valid vehicle number');
+      return;
+    }
+    
+    setVehicleSearching(true);
+    try {
+      const response = await vehicleApi.getDetails(newVehicleNumber.toUpperCase().replace(/\s/g, ''));
+      if (response.data) {
+        setVehicleData(response.data);
+        toast.success('Vehicle details found!');
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Vehicle not found. You can still proceed manually.');
+      setVehicleData(null);
+    } finally {
+      setVehicleSearching(false);
+    }
+  };
+
+  // Handle Vehicle Update
+  const handleVehicleUpdate = async () => {
+    if (!vehicleEditInspection || !newVehicleNumber) return;
+    
+    setSaving(true);
+    try {
+      const updateData = {
+        car_number: newVehicleNumber.toUpperCase().replace(/\s/g, ''),
+      };
+      
+      if (vehicleData) {
+        updateData.car_make = vehicleData.manufacturer || vehicleData.make || '';
+        updateData.car_model = vehicleData.model || '';
+        updateData.car_year = vehicleData.manufacturing_date?.split('/')?.pop() || vehicleData.year || '';
+        updateData.car_color = vehicleData.color || '';
+        updateData.fuel_type = vehicleData.fuel_type || '';
+      }
+      
+      await inspectionsApi.updateVehicle(vehicleEditInspection.id, updateData);
+      toast.success('Vehicle updated successfully!');
+      setIsVehicleModalOpen(false);
+      setVehicleEditInspection(null);
+      setVehicleData(null);
+      setNewVehicleNumber('');
+      fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to update vehicle');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Handle Schedule Update
+  const handleScheduleUpdate = async () => {
+    if (!scheduleEditInspection || !newScheduleDate || !newScheduleTime) {
+      toast.error('Please select date and time');
+      return;
+    }
+    
+    setSaving(true);
+    try {
+      await inspectionsApi.updateSchedule(scheduleEditInspection.id, {
+        scheduled_date: newScheduleDate,
+        scheduled_time: newScheduleTime
+      });
+      toast.success('Schedule updated successfully!');
+      setIsScheduleModalOpen(false);
+      setScheduleEditInspection(null);
+      setNewScheduleDate('');
+      setNewScheduleTime('');
+      fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to update schedule');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Handle Mechanic Assignment
+  const handleMechanicAssign = async () => {
+    if (!mechanicEditInspection) return;
+    
+    setSaving(true);
+    try {
+      await inspectionsApi.assignMechanic(mechanicEditInspection.id, selectedMechanicId || null);
+      toast.success(selectedMechanicId ? 'Mechanic assigned successfully!' : 'Mechanic unassigned');
+      setIsMechanicModalOpen(false);
+      setMechanicEditInspection(null);
+      setSelectedMechanicId('');
+      fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to update mechanic');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // Handle Send Report action
   const handleSendReport = async (inspection) => {
-    if (inspection.payment_status !== 'FULLY_PAID' && inspection.payment_status !== 'PAID') {
+    const isFullyPaid = inspection.payment_status === 'FULLY_PAID' || inspection.payment_status === 'PAID';
+    if (!isFullyPaid) {
       toast.error('Cannot send report until full payment is received');
       return;
     }
@@ -171,7 +331,7 @@ export default function InspectionsPage() {
     }
   }, [search, filterCity, filterStatus, activeTab]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => { fetchData(); fetchMechanics(); }, [fetchData, fetchMechanics]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -212,7 +372,7 @@ export default function InspectionsPage() {
 
   const unscheduledCount = inspections.filter(i => !i.scheduled_date).length;
   const scheduledCount = inspections.filter(i => i.scheduled_date).length;
-  const completedCount = inspections.filter(i => i.inspection_status === 'COMPLETED').length;
+  const completedCount = inspections.filter(i => i.inspection_status === 'INSPECTION_COMPLETED').length;
 
   return (
     <div className="p-6 max-w-7xl mx-auto" data-testid="inspections-page">
@@ -270,13 +430,9 @@ export default function InspectionsPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="NEW_INSPECTION">New Inspection</SelectItem>
-              <SelectItem value="ASSIGNED_TO_MECHANIC">Assigned to Mechanic</SelectItem>
-              <SelectItem value="INSPECTION_CONFIRMED">Confirmed</SelectItem>
-              <SelectItem value="INSPECTION_STARTED">Started</SelectItem>
-              <SelectItem value="INSPECTION_IN_PROGRESS">In Progress</SelectItem>
-              <SelectItem value="INSPECTION_COMPLETED">Completed</SelectItem>
-              <SelectItem value="CANCELLED">Cancelled</SelectItem>
+              {INSPECTION_STATUSES.map((s) => (
+                <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
 
@@ -380,7 +536,7 @@ export default function InspectionsPage() {
                       </div>
                     </td>
                     <td className="px-4 py-4">
-                      <PaymentBadge status={inspection.payment_type} />
+                      <PaymentStatusBadge status={inspection.payment_type === 'Partial' ? 'PARTIALLY_PAID' : inspection.payment_status} balanceDue={inspection.balance_due || inspection.pending_amount} />
                     </td>
                     <td className="px-4 py-4">
                       <button 
@@ -412,19 +568,20 @@ export default function InspectionsPage() {
           <table className="w-full">
             <thead>
               <tr className="bg-slate-50 border-b">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Date/Time</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Customer</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Vehicle</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Payment Status</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Inspection Status</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Location</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Actions</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Date/Time</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Customer</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Vehicle</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Payment Status</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Inspection Status</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Mechanic</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Location</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-12">
+                  <td colSpan={8} className="text-center py-12">
                     <div className="flex items-center justify-center gap-2">
                       <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
                       <span className="text-gray-500">Loading inspections...</span>
@@ -433,17 +590,14 @@ export default function InspectionsPage() {
                 </tr>
               ) : inspections.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-12">
+                  <td colSpan={8} className="text-center py-12">
                     <ClipboardCheck className="h-12 w-12 text-gray-300 mx-auto mb-3" />
                     <p className="text-gray-500">No scheduled inspections</p>
                   </td>
                 </tr>
               ) : (
                 inspections.map((inspection) => {
-                  // Handle both old and new payment status formats
                   const isFullyPaid = inspection.payment_status === 'FULLY_PAID' || inspection.payment_status === 'PAID';
-                  // Old format: pending_amount > 0 && payment_type === 'Partial'
-                  // New format: balance_due > 0 && payment_status === 'PARTIALLY_PAID'
                   const actualBalanceDue = inspection.balance_due || inspection.pending_amount || 0;
                   const isPartialPayment = (inspection.payment_status === 'PARTIALLY_PAID') || 
                     (inspection.payment_type === 'Partial' && actualBalanceDue > 0);
@@ -453,93 +607,169 @@ export default function InspectionsPage() {
                   
                   return (
                   <tr key={inspection.id} className="hover:bg-slate-50 transition-colors" data-testid={`inspection-row-${inspection.id}`}>
-                    <td className="px-4 py-4">
-                      <div className="font-medium text-gray-900">{formatDate(inspection.scheduled_date) || '-'}</div>
-                      <div className="text-xs text-gray-400 mt-0.5">{formatTime(inspection.scheduled_time)}</div>
+                    {/* Date/Time Column - Editable */}
+                    <td className="px-3 py-3">
+                      <div className="flex items-center gap-2">
+                        <div>
+                          <div className="font-medium text-gray-900 text-sm">{formatDate(inspection.scheduled_date) || '-'}</div>
+                          <div className="text-xs text-gray-400">{formatTime(inspection.scheduled_time)}</div>
+                        </div>
+                        <button 
+                          onClick={() => {
+                            setScheduleEditInspection(inspection);
+                            setNewScheduleDate(inspection.scheduled_date || '');
+                            setNewScheduleTime(inspection.scheduled_time || '');
+                            setIsScheduleModalOpen(true);
+                          }}
+                          className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                          title="Change Schedule"
+                          data-testid={`edit-schedule-${inspection.id}`}
+                        >
+                          <CalendarClock className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </td>
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white font-medium text-sm">
+                    
+                    {/* Customer Column */}
+                    <td className="px-3 py-3">
+                      <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white font-medium text-xs">
                           {inspection.customer_name?.charAt(0)?.toUpperCase()}
                         </div>
                         <div>
-                          <div className="font-medium text-gray-900">{inspection.customer_name}</div>
-                          <div className="text-sm text-gray-500 font-mono">{inspection.customer_mobile}</div>
+                          <div className="font-medium text-gray-900 text-sm">{inspection.customer_name}</div>
+                          <div className="text-xs text-gray-500 font-mono">{inspection.customer_mobile}</div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-4">
+                    
+                    {/* Vehicle Column - Editable */}
+                    <td className="px-3 py-3">
                       <div className="flex items-center gap-2">
                         <Car className="h-4 w-4 text-gray-400" />
                         <div>
                           <div className="text-sm font-mono text-blue-600">{inspection.car_number || '-'}</div>
                           <div className="text-xs text-gray-400">{inspection.car_make} {inspection.car_model}</div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <PaymentStatusBadge 
-                        status={isPartialPayment ? 'PARTIALLY_PAID' : inspection.payment_status} 
-                        balanceDue={actualBalanceDue} 
-                      />
-                      <div className="text-xs text-gray-500 mt-1">
-                        Paid: ₹{(inspection.amount_paid || 0).toLocaleString()}
-                        {actualBalanceDue > 0 && (
-                          <span className="text-amber-600 ml-1">/ Due: ₹{actualBalanceDue.toLocaleString()}</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <InspectionStatusBadge status={inspection.inspection_status} />
-                    </td>
-                    <td className="px-4 py-4">
-                      <span className="inline-flex items-center gap-1.5 text-sm text-blue-600">
-                        <MapPin className="h-3.5 w-3.5" />
-                        {inspection.city}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-1">
-                        {/* Edit button - always visible for completed inspections */}
                         <button 
-                          onClick={() => openEditModal(inspection)} 
-                          className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="Edit Inspection"
-                          data-testid={`edit-inspection-${inspection.id}`}
+                          onClick={() => {
+                            setVehicleEditInspection(inspection);
+                            setNewVehicleNumber(inspection.car_number || '');
+                            setVehicleData(null);
+                            setIsVehicleModalOpen(true);
+                          }}
+                          className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                          title="Change Vehicle"
+                          data-testid={`edit-vehicle-${inspection.id}`}
                         >
-                          <Edit2 className="h-4 w-4" />
+                          <Edit2 className="h-3.5 w-3.5" />
                         </button>
-                        
-                        {/* Collect Balance button - visible only for partial payments */}
-                        {hasBalanceDue && (
+                      </div>
+                    </td>
+                    
+                    {/* Payment Status Column - With Collect Balance Button */}
+                    <td className="px-3 py-3">
+                      {hasBalanceDue ? (
+                        <div className="space-y-1">
                           <button 
                             onClick={() => {
-                              // Add balance_due for compatibility with old data format
                               setCollectBalanceInspection({
                                 ...inspection,
                                 balance_due: actualBalanceDue
                               });
                               setIsCollectBalanceModalOpen(true);
                             }}
-                            className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg text-xs font-medium hover:from-amber-600 hover:to-amber-700 transition-all shadow-sm flex items-center gap-1"
+                            className="px-2.5 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg text-xs font-medium hover:from-amber-600 hover:to-amber-700 transition-all shadow-sm flex items-center gap-1"
                             title={`Collect Balance: ₹${actualBalanceDue?.toLocaleString()}`}
                             data-testid={`collect-balance-${inspection.id}`}
                           >
-                            <CreditCard className="h-3.5 w-3.5" />
+                            <CreditCard className="h-3 w-3" />
                             Collect ₹{actualBalanceDue?.toLocaleString()}
                           </button>
-                        )}
-                        
+                          <div className="text-xs text-gray-500">
+                            Paid: ₹{(inspection.amount_paid || 0).toLocaleString()}
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <PaymentStatusBadge status={isFullyPaid ? 'FULLY_PAID' : inspection.payment_status} balanceDue={actualBalanceDue} />
+                          <div className="text-xs text-gray-500 mt-1">
+                            ₹{(inspection.amount_paid || 0).toLocaleString()}
+                          </div>
+                        </div>
+                      )}
+                    </td>
+                    
+                    {/* Inspection Status Column - Dropdown */}
+                    <td className="px-3 py-3">
+                      <Select 
+                        value={inspection.inspection_status} 
+                        onValueChange={(value) => handleStatusChange(inspection.id, value)}
+                      >
+                        <SelectTrigger className="h-8 text-xs w-[140px] border-gray-200" data-testid={`status-select-${inspection.id}`}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {INSPECTION_STATUSES.map((status) => (
+                            <SelectItem key={status.value} value={status.value}>
+                              <span className={`px-2 py-0.5 rounded text-xs ${status.color}`}>
+                                {status.label}
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </td>
+                    
+                    {/* Mechanic Column - Editable */}
+                    <td className="px-3 py-3">
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1">
+                          {inspection.mechanic_name ? (
+                            <div className="flex items-center gap-1.5">
+                              <UserCheck className="h-3.5 w-3.5 text-emerald-500" />
+                              <span className="text-sm text-gray-700">{inspection.mechanic_name}</span>
+                            </div>
+                          ) : (
+                            <span className="text-sm text-gray-400 italic">Not assigned</span>
+                          )}
+                        </div>
+                        <button 
+                          onClick={() => {
+                            setMechanicEditInspection(inspection);
+                            setSelectedMechanicId(inspection.mechanic_id || '');
+                            setIsMechanicModalOpen(true);
+                          }}
+                          className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                          title={inspection.mechanic_name ? "Reassign Mechanic" : "Assign Mechanic"}
+                          data-testid={`edit-mechanic-${inspection.id}`}
+                        >
+                          <User className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                    
+                    {/* Location Column */}
+                    <td className="px-3 py-3">
+                      <span className="inline-flex items-center gap-1 text-sm text-blue-600">
+                        <MapPin className="h-3.5 w-3.5" />
+                        {inspection.city}
+                      </span>
+                    </td>
+                    
+                    {/* Actions Column */}
+                    <td className="px-3 py-3">
+                      <div className="flex items-center gap-1">
                         {/* Send Report button - disabled until fully paid */}
                         <button 
                           onClick={() => handleSendReport(inspection)}
                           disabled={!canSendReport}
-                          className={`p-2 rounded-lg transition-colors ${
+                          className={`p-1.5 rounded-lg transition-colors ${
                             canSendReport 
                               ? 'text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50' 
                               : 'text-gray-300 cursor-not-allowed'
                           }`}
-                          title={canSendReport ? 'Send Report' : 'Full payment required to send report'}
+                          title={canSendReport ? 'Send Report' : 'Full payment & completion required'}
                           data-testid={`send-report-${inspection.id}`}
                         >
                           <Send className="h-4 w-4" />
@@ -551,7 +781,7 @@ export default function InspectionsPage() {
                             href={inspection.report_url} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="p-2 text-blue-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            className="p-1.5 text-blue-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                             title="Download Report"
                           >
                             <Download className="h-4 w-4" />
@@ -567,7 +797,7 @@ export default function InspectionsPage() {
         )}
       </div>
 
-      {/* Edit Modal */}
+      {/* Edit Inspection Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="sm:max-w-[560px]" data-testid="inspection-modal">
           <DialogHeader className="border-b pb-4">
@@ -596,31 +826,8 @@ export default function InspectionsPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Inspection Status</Label>
-                <Select value={formData.inspection_status} onValueChange={(v) => setFormData({ ...formData, inspection_status: v })}>
-                  <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="NEW_INSPECTION">New Inspection</SelectItem>
-                    <SelectItem value="ASSIGNED_TO_MECHANIC">Assigned to Mechanic</SelectItem>
-                    <SelectItem value="INSPECTION_CONFIRMED">Confirmed</SelectItem>
-                    <SelectItem value="INSPECTION_STARTED">Started</SelectItem>
-                    <SelectItem value="INSPECTION_IN_PROGRESS">In Progress</SelectItem>
-                    <SelectItem value="INSPECTION_COMPLETED">Completed</SelectItem>
-                    <SelectItem value="SCHEDULED">Scheduled</SelectItem>
-                    <SelectItem value="UNSCHEDULED">Unscheduled</SelectItem>
-                    <SelectItem value="CANCELLED">Cancelled</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
                 <Label className="text-sm font-medium">Car Number</Label>
                 <Input value={formData.car_number} onChange={(e) => setFormData({ ...formData, car_number: e.target.value })} className="h-10 font-mono" placeholder="KA-01-AB-1234" />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Mechanic</Label>
-                <Input value={formData.mechanic_name} onChange={(e) => setFormData({ ...formData, mechanic_name: e.target.value })} className="h-10" placeholder="Assign mechanic" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -665,7 +872,6 @@ export default function InspectionsPage() {
           
           {collectBalanceInspection && (
             <div className="space-y-4 pt-4">
-              {/* Customer Info */}
               <div className="bg-slate-50 rounded-lg p-4 space-y-3">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white font-medium">
@@ -701,7 +907,6 @@ export default function InspectionsPage() {
                 </div>
               </div>
               
-              {/* Info Message */}
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800">
                 <p>A payment link for <strong>₹{(collectBalanceInspection.balance_due || 0).toLocaleString()}</strong> will be generated and sent to the customer via WhatsApp.</p>
               </div>
@@ -729,6 +934,237 @@ export default function InspectionsPage() {
               {collectingBalance && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
               <Send className="h-4 w-4 mr-2" />
               Send Payment Link
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Vehicle Edit Modal */}
+      <Dialog open={isVehicleModalOpen} onOpenChange={setIsVehicleModalOpen}>
+        <DialogContent className="sm:max-w-[500px]" data-testid="vehicle-edit-modal">
+          <DialogHeader className="border-b pb-4">
+            <DialogTitle className="flex items-center gap-2">
+              <Car className="h-5 w-5 text-blue-600" />
+              Change Vehicle
+            </DialogTitle>
+            <DialogDescription className="text-sm text-gray-500 mt-2">
+              Update the vehicle for this inspection. Use Vaahan API to fetch vehicle details.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 pt-4">
+            {vehicleEditInspection && (
+              <div className="bg-slate-50 rounded-lg p-3 text-sm">
+                <span className="text-gray-500">Current Vehicle: </span>
+                <span className="font-mono font-medium">{vehicleEditInspection.car_number || 'Not set'}</span>
+                {vehicleEditInspection.car_make && (
+                  <span className="text-gray-500 ml-2">({vehicleEditInspection.car_make} {vehicleEditInspection.car_model})</span>
+                )}
+              </div>
+            )}
+            
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">New Vehicle Number</Label>
+              <div className="flex gap-2">
+                <Input 
+                  value={newVehicleNumber} 
+                  onChange={(e) => setNewVehicleNumber(e.target.value.toUpperCase())}
+                  placeholder="KA01AB1234"
+                  className="flex-1 font-mono"
+                />
+                <Button 
+                  type="button" 
+                  variant="outline"
+                  onClick={handleVehicleSearch}
+                  disabled={vehicleSearching}
+                >
+                  {vehicleSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                  Search
+                </Button>
+              </div>
+            </div>
+            
+            {vehicleData && (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 space-y-2">
+                <div className="flex items-center gap-2 text-emerald-700 font-medium">
+                  <CheckCircle className="h-4 w-4" />
+                  Vehicle Found
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div><span className="text-gray-500">Make:</span> <span className="font-medium">{vehicleData.manufacturer || vehicleData.make || '-'}</span></div>
+                  <div><span className="text-gray-500">Model:</span> <span className="font-medium">{vehicleData.model || '-'}</span></div>
+                  <div><span className="text-gray-500">Year:</span> <span className="font-medium">{vehicleData.manufacturing_date?.split('/')?.pop() || vehicleData.year || '-'}</span></div>
+                  <div><span className="text-gray-500">Color:</span> <span className="font-medium">{vehicleData.color || '-'}</span></div>
+                  <div><span className="text-gray-500">Fuel:</span> <span className="font-medium">{vehicleData.fuel_type || '-'}</span></div>
+                  <div><span className="text-gray-500">Owner:</span> <span className="font-medium">{vehicleData.owner_name || '-'}</span></div>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter className="border-t pt-4 mt-4">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => {
+                setIsVehicleModalOpen(false);
+                setVehicleEditInspection(null);
+                setVehicleData(null);
+                setNewVehicleNumber('');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleVehicleUpdate}
+              disabled={saving || !newVehicleNumber}
+              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+            >
+              {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              Update Vehicle
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Schedule Edit Modal */}
+      <Dialog open={isScheduleModalOpen} onOpenChange={setIsScheduleModalOpen}>
+        <DialogContent className="sm:max-w-[400px]" data-testid="schedule-edit-modal">
+          <DialogHeader className="border-b pb-4">
+            <DialogTitle className="flex items-center gap-2">
+              <CalendarClock className="h-5 w-5 text-blue-600" />
+              Change Schedule
+            </DialogTitle>
+            <DialogDescription className="text-sm text-gray-500 mt-2">
+              Update the inspection date and time.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 pt-4">
+            {scheduleEditInspection && (
+              <div className="bg-slate-50 rounded-lg p-3 text-sm">
+                <span className="text-gray-500">Customer: </span>
+                <span className="font-medium">{scheduleEditInspection.customer_name}</span>
+                <span className="text-gray-500 ml-2">({scheduleEditInspection.car_number})</span>
+              </div>
+            )}
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Date</Label>
+                <Input 
+                  type="date" 
+                  value={newScheduleDate} 
+                  onChange={(e) => setNewScheduleDate(e.target.value)}
+                  className="h-10"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Time</Label>
+                <Input 
+                  type="time" 
+                  value={newScheduleTime} 
+                  onChange={(e) => setNewScheduleTime(e.target.value)}
+                  className="h-10"
+                />
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter className="border-t pt-4 mt-4">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => {
+                setIsScheduleModalOpen(false);
+                setScheduleEditInspection(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleScheduleUpdate}
+              disabled={saving || !newScheduleDate || !newScheduleTime}
+              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+            >
+              {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              Update Schedule
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Mechanic Assignment Modal */}
+      <Dialog open={isMechanicModalOpen} onOpenChange={setIsMechanicModalOpen}>
+        <DialogContent className="sm:max-w-[400px]" data-testid="mechanic-assign-modal">
+          <DialogHeader className="border-b pb-4">
+            <DialogTitle className="flex items-center gap-2">
+              <User className="h-5 w-5 text-blue-600" />
+              {mechanicEditInspection?.mechanic_id ? 'Reassign Mechanic' : 'Assign Mechanic'}
+            </DialogTitle>
+            <DialogDescription className="text-sm text-gray-500 mt-2">
+              Select a mechanic for this inspection or leave empty to unassign.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 pt-4">
+            {mechanicEditInspection && (
+              <div className="bg-slate-50 rounded-lg p-3 text-sm">
+                <span className="text-gray-500">Inspection: </span>
+                <span className="font-medium">{mechanicEditInspection.customer_name}</span>
+                <span className="text-gray-500 ml-2">({mechanicEditInspection.car_number})</span>
+                {mechanicEditInspection.mechanic_name && (
+                  <div className="mt-1 text-amber-600">
+                    Currently assigned: {mechanicEditInspection.mechanic_name}
+                  </div>
+                )}
+              </div>
+            )}
+            
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Select Mechanic</Label>
+              <Select value={selectedMechanicId} onValueChange={setSelectedMechanicId}>
+                <SelectTrigger className="h-10">
+                  <SelectValue placeholder="Select mechanic..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">
+                    <span className="text-gray-500 italic">-- Unassign --</span>
+                  </SelectItem>
+                  {mechanics.map((mechanic) => (
+                    <SelectItem key={mechanic.id} value={mechanic.id}>
+                      <div className="flex items-center gap-2">
+                        <UserCheck className="h-4 w-4 text-emerald-500" />
+                        {mechanic.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {mechanics.length === 0 && (
+                <p className="text-xs text-gray-500">No mechanics available. Add mechanics in HR Module.</p>
+              )}
+            </div>
+          </div>
+          
+          <DialogFooter className="border-t pt-4 mt-4">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => {
+                setIsMechanicModalOpen(false);
+                setMechanicEditInspection(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleMechanicAssign}
+              disabled={saving}
+              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+            >
+              {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              {selectedMechanicId ? 'Assign' : 'Unassign'}
             </Button>
           </DialogFooter>
         </DialogContent>
