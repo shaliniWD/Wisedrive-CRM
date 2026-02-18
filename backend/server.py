@@ -2831,6 +2831,341 @@ async def delete_inspection(inspection_id: str, current_user: dict = Depends(get
     return {"message": "Inspection deleted"}
 
 
+# ==================== INSPECTION PAYMENT MANAGEMENT ====================
+
+class CollectBalanceRequest(BaseModel):
+    send_whatsapp: bool = True
+    notes: Optional[str] = None
+
+
+@api_router.post("/inspections/{inspection_id}/collect-balance")
+async def collect_balance_payment(
+    inspection_id: str,
+    request_data: CollectBalanceRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Generate balance payment link for partial payment inspection"""
+    from services.razorpay_service import get_razorpay_service
+    from services.twilio_service import get_twilio_service
+    
+    inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
+    if not inspection:
+        raise HTTPException(status_code=404, detail="Inspection not found")
+    
+    # Check if balance is due
+    balance_due = inspection.get("balance_due", 0)
+    if balance_due <= 0:
+        raise HTTPException(status_code=400, detail="No balance due for this inspection")
+    
+    if inspection.get("payment_status") == "FULLY_PAID":
+        raise HTTPException(status_code=400, detail="This inspection is already fully paid")
+    
+    # Create Razorpay payment link for balance
+    razorpay = get_razorpay_service()
+    if not razorpay.is_configured():
+        raise HTTPException(status_code=500, detail="Razorpay not configured")
+    
+    customer_name = inspection.get("customer_name", "Customer")
+    customer_mobile = inspection.get("customer_mobile", "")
+    package_name = inspection.get("package_name", inspection.get("package_type", "Inspection"))
+    car_info = f"{inspection.get('car_make', '')} {inspection.get('car_model', '')} ({inspection.get('car_number', '')})".strip()
+    
+    description = f"Balance Payment - {package_name} - {car_info}"
+    
+    result = await razorpay.create_payment_link(
+        amount=balance_due,
+        customer_name=customer_name,
+        customer_phone=customer_mobile,
+        description=description,
+        lead_id=inspection.get("order_id"),  # Reference
+        package_id=inspection.get("package_id"),
+        expire_by_hours=72  # 3 days to pay balance
+    )
+    
+    if not result.get("success"):
+        raise HTTPException(status_code=500, detail=result.get("error", "Failed to create payment link"))
+    
+    # Create payment transaction record
+    payment_transaction = {
+        "id": str(uuid.uuid4()),
+        "amount": balance_due,
+        "payment_type": "balance",
+        "payment_method": "razorpay",
+        "payment_link_id": result.get("payment_link_id"),
+        "payment_link_url": result.get("short_url"),
+        "status": "pending",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "notes": request_data.notes
+    }
+    
+    # Update inspection with balance payment link
+    existing_transactions = inspection.get("payment_transactions", [])
+    existing_transactions.append(payment_transaction)
+    
+    await db.inspections.update_one(
+        {"id": inspection_id},
+        {"$set": {
+            "balance_payment_link_id": result.get("payment_link_id"),
+            "balance_payment_link_url": result.get("short_url"),
+            "payment_transactions": existing_transactions,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    # Send WhatsApp notification
+    whatsapp_sent = False
+    if request_data.send_whatsapp and customer_mobile:
+        twilio = get_twilio_service()
+        if twilio.is_configured():
+            # Format message
+            message = f"""🔔 *Balance Payment Request*
+
+Dear {customer_name},
+
+Your remaining balance for the vehicle inspection is due.
+
+📦 *Package:* {package_name}
+🚗 *Vehicle:* {car_info}
+💰 *Balance Due:* ₹{balance_due:,.0f}
+
+Please complete your payment to proceed with report delivery.
+
+🔗 *Pay Now:* {result.get("short_url")}
+
+Thank you for choosing Wisedrive!"""
+            
+            whatsapp_result = await twilio.send_message(customer_mobile, message)
+            whatsapp_sent = whatsapp_result.get("success", False)
+    
+    return {
+        "success": True,
+        "payment_link": result.get("short_url"),
+        "payment_link_id": result.get("payment_link_id"),
+        "balance_amount": balance_due,
+        "whatsapp_sent": whatsapp_sent
+    }
+
+
+@api_router.patch("/inspections/{inspection_id}/status")
+async def update_inspection_status(
+    inspection_id: str,
+    inspection_status: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update inspection status"""
+    valid_statuses = [
+        "NEW_INSPECTION", "ASSIGNED_TO_MECHANIC", "INSPECTION_CONFIRMED",
+        "INSPECTION_STARTED", "INSPECTION_IN_PROGRESS", "INSPECTION_COMPLETED"
+    ]
+    
+    if inspection_status not in valid_statuses:
+        raise HTTPException(status_code=400, detail=f"Invalid status. Valid: {valid_statuses}")
+    
+    inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
+    if not inspection:
+        raise HTTPException(status_code=404, detail="Inspection not found")
+    
+    await db.inspections.update_one(
+        {"id": inspection_id},
+        {"$set": {
+            "inspection_status": inspection_status,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "updated_by": current_user["id"]
+        }}
+    )
+    
+    return {"success": True, "inspection_status": inspection_status}
+
+
+class SendReportRequest(BaseModel):
+    send_whatsapp: bool = True
+    send_email: bool = False
+    email: Optional[str] = None
+
+
+@api_router.post("/inspections/{inspection_id}/send-report")
+async def send_inspection_report(
+    inspection_id: str,
+    request_data: SendReportRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Send inspection report - only allowed if fully paid"""
+    from services.twilio_service import get_twilio_service
+    
+    inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
+    if not inspection:
+        raise HTTPException(status_code=404, detail="Inspection not found")
+    
+    # Check payment status
+    if inspection.get("payment_status") != "FULLY_PAID":
+        raise HTTPException(
+            status_code=400, 
+            detail="Cannot send report. Full payment required. Current status: " + inspection.get("payment_status", "PENDING")
+        )
+    
+    # Check inspection status
+    if inspection.get("inspection_status") != "INSPECTION_COMPLETED":
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot send report. Inspection must be completed first."
+        )
+    
+    # Check if report exists
+    report_url = inspection.get("report_url")
+    if not report_url:
+        raise HTTPException(status_code=400, detail="No report available to send")
+    
+    customer_name = inspection.get("customer_name", "Customer")
+    customer_mobile = inspection.get("customer_mobile", "")
+    package_name = inspection.get("package_name", inspection.get("package_type", "Inspection"))
+    car_info = f"{inspection.get('car_make', '')} {inspection.get('car_model', '')} ({inspection.get('car_number', '')})".strip()
+    
+    # Send via WhatsApp
+    whatsapp_sent = False
+    if request_data.send_whatsapp and customer_mobile:
+        twilio = get_twilio_service()
+        if twilio.is_configured():
+            message = f"""✅ *Inspection Report Ready*
+
+Dear {customer_name},
+
+Your vehicle inspection report is now ready!
+
+🚗 *Vehicle:* {car_info}
+📦 *Package:* {package_name}
+
+📄 *View Report:* {report_url}
+
+Thank you for choosing Wisedrive for your vehicle inspection!
+
+For any queries, please contact us."""
+            
+            whatsapp_result = await twilio.send_message(customer_mobile, message)
+            whatsapp_sent = whatsapp_result.get("success", False)
+    
+    # Update inspection
+    await db.inspections.update_one(
+        {"id": inspection_id},
+        {"$set": {
+            "report_sent": True,
+            "report_sent_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    return {
+        "success": True,
+        "whatsapp_sent": whatsapp_sent,
+        "report_url": report_url
+    }
+
+
+class UpdateReportRequest(BaseModel):
+    report_data: dict
+    report_status: str = "in_review"
+    notes: Optional[str] = None
+
+
+@api_router.put("/inspections/{inspection_id}/report")
+async def update_inspection_report(
+    inspection_id: str,
+    request_data: UpdateReportRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update inspection report data - allowed after inspection is completed"""
+    inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
+    if not inspection:
+        raise HTTPException(status_code=404, detail="Inspection not found")
+    
+    # Only allow editing if inspection is in progress or completed
+    allowed_statuses = ["INSPECTION_IN_PROGRESS", "INSPECTION_COMPLETED"]
+    if inspection.get("inspection_status") not in allowed_statuses:
+        raise HTTPException(
+            status_code=400,
+            detail="Can only edit report during or after inspection. Current status: " + inspection.get("inspection_status", "NEW_INSPECTION")
+        )
+    
+    await db.inspections.update_one(
+        {"id": inspection_id},
+        {"$set": {
+            "report_data": request_data.report_data,
+            "report_status": request_data.report_status,
+            "notes": request_data.notes if request_data.notes else inspection.get("notes"),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "updated_by": current_user["id"]
+        }}
+    )
+    
+    return {"success": True, "message": "Report updated"}
+
+
+# Get customer payment history
+@api_router.get("/customers/{customer_id}/payment-history")
+async def get_customer_payment_history(
+    customer_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get payment history for a customer including all inspection payments"""
+    customer = await db.customers.find_one({"id": customer_id}, {"_id": 0})
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    
+    # Get all inspections for this customer
+    inspections = await db.inspections.find(
+        {"customer_id": customer_id},
+        {"_id": 0}
+    ).to_list(100)
+    
+    # Compile payment history
+    payment_history = []
+    
+    for inspection in inspections:
+        # Add initial payment transaction
+        if inspection.get("payment_link_id"):
+            payment_history.append({
+                "id": inspection.get("payment_link_id"),
+                "inspection_id": inspection.get("id"),
+                "type": "partial" if inspection.get("payment_type") == "partial" else "full",
+                "amount": inspection.get("partial_payment_amount") or inspection.get("amount_paid", 0),
+                "status": "completed" if inspection.get("amount_paid", 0) > 0 else "pending",
+                "package_name": inspection.get("package_name", inspection.get("package_type")),
+                "car_info": f"{inspection.get('car_make', '')} {inspection.get('car_model', '')} ({inspection.get('car_number', '')})".strip(),
+                "created_at": inspection.get("created_at"),
+                "payment_link_url": inspection.get("payment_link_url")
+            })
+        
+        # Add all transactions from payment_transactions array
+        for txn in inspection.get("payment_transactions", []):
+            payment_history.append({
+                "id": txn.get("id"),
+                "inspection_id": inspection.get("id"),
+                "type": txn.get("payment_type", "payment"),
+                "amount": txn.get("amount", 0),
+                "status": txn.get("status", "pending"),
+                "package_name": inspection.get("package_name", inspection.get("package_type")),
+                "car_info": f"{inspection.get('car_make', '')} {inspection.get('car_model', '')} ({inspection.get('car_number', '')})".strip(),
+                "created_at": txn.get("created_at"),
+                "completed_at": txn.get("completed_at"),
+                "payment_link_url": txn.get("payment_link_url"),
+                "razorpay_payment_id": txn.get("razorpay_payment_id")
+            })
+    
+    # Sort by date, newest first
+    payment_history.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+    
+    # Calculate totals
+    total_paid = sum(p.get("amount", 0) for p in payment_history if p.get("status") == "completed")
+    total_pending = sum(p.get("amount", 0) for p in payment_history if p.get("status") == "pending")
+    
+    return {
+        "customer_id": customer_id,
+        "customer_name": customer.get("name"),
+        "total_paid": total_paid,
+        "total_pending": total_pending,
+        "transactions": payment_history
+    }
+
+
 # ==================== MECHANICS ROUTES ====================
 
 @api_router.get("/mechanics")
