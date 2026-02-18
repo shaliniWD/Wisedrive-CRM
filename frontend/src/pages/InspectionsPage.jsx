@@ -1323,12 +1323,14 @@ export default function InspectionsPage() {
                   onChange={(e) => setNewVehicleNumber(e.target.value.toUpperCase())}
                   placeholder="KA01AB1234"
                   className="flex-1 font-mono"
+                  data-testid="vehicle-number-input"
                 />
                 <Button 
                   type="button" 
                   variant="outline"
                   onClick={handleVehicleSearch}
                   disabled={vehicleSearching}
+                  data-testid="search-vehicle-btn"
                 >
                   {vehicleSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
                   Search
