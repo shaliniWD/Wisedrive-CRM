@@ -26,8 +26,9 @@ import {
   Search, Plus, Pencil, Loader2, X, Users, TrendingUp, Calendar, 
   Phone, MapPin, Bell, Clock, CreditCard, Copy, ChevronLeft, ChevronRight, Filter,
   MessageCircle, Link2, ExternalLink, Eye, Flame, ChevronDown, Percent, CalendarDays,
-  StickyNote, Activity, Send, FileText, Car, Trash2, RefreshCw, CheckCircle
+  StickyNote, Activity, Send, FileText, Car, Trash2, RefreshCw, CheckCircle, Gift
 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 
 // Inline Status Dropdown Component - Click to update status
 const StatusDropdown = ({ lead, statuses, onUpdate }) => {
