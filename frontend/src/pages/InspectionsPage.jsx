@@ -823,35 +823,35 @@ export default function InspectionsPage() {
                       </span>
                     </td>
                     
-                    {/* Actions Column */}
+                    {/* Inspection Report Column */}
                     <td className="px-3 py-3">
                       <div className="flex items-center gap-1">
-                        {/* Send Report button - disabled until fully paid */}
+                        {/* View Report button - opens in new tab */}
                         <button 
-                          onClick={() => handleSendReport(inspection)}
-                          disabled={!canSendReport}
-                          className={`p-1.5 rounded-lg transition-colors ${
-                            canSendReport 
-                              ? 'text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50' 
-                              : 'text-gray-300 cursor-not-allowed'
+                          onClick={() => handleViewReport(inspection)}
+                          disabled={!inspection.report_url}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors ${
+                            inspection.report_url 
+                              ? 'bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200' 
+                              : 'bg-gray-50 text-gray-400 cursor-not-allowed border border-gray-200'
                           }`}
-                          title={canSendReport ? 'Send Report' : 'Full payment & completion required'}
-                          data-testid={`send-report-${inspection.id}`}
+                          title={inspection.report_url ? 'View Report in new tab' : 'Report not available'}
+                          data-testid={`view-report-${inspection.id}`}
                         >
-                          <Send className="h-4 w-4" />
+                          <Eye className="h-3.5 w-3.5" />
+                          View Report
                         </button>
                         
-                        {/* Download Report - if available */}
-                        {inspection.report_url && (
-                          <a 
-                            href={inspection.report_url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="p-1.5 text-blue-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                            title="Download Report"
+                        {/* Send Report button - disabled until fully paid */}
+                        {canSendReport && !inspection.report_url && (
+                          <button 
+                            onClick={() => handleSendReport(inspection)}
+                            className="p-1.5 text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                            title="Send Report via WhatsApp"
+                            data-testid={`send-report-${inspection.id}`}
                           >
-                            <Download className="h-4 w-4" />
-                          </a>
+                            <Send className="h-4 w-4" />
+                          </button>
                         )}
                       </div>
                     </td>
