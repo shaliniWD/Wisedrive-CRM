@@ -411,18 +411,17 @@ export default function InspectionsPage() {
               <tr className="bg-slate-50 border-b">
                 <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Date/Time</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Customer</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Payment</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Location</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Mechanic</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Vehicle</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Payment Status</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Inspection Status</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Location</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-12">
+                  <td colSpan={7} className="text-center py-12">
                     <div className="flex items-center justify-center gap-2">
                       <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
                       <span className="text-gray-500">Loading inspections...</span>
@@ -431,13 +430,19 @@ export default function InspectionsPage() {
                 </tr>
               ) : inspections.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-12">
+                  <td colSpan={7} className="text-center py-12">
                     <ClipboardCheck className="h-12 w-12 text-gray-300 mx-auto mb-3" />
                     <p className="text-gray-500">No scheduled inspections</p>
                   </td>
                 </tr>
               ) : (
-                inspections.map((inspection) => (
+                inspections.map((inspection) => {
+                  const isFullyPaid = inspection.payment_status === 'FULLY_PAID' || inspection.payment_status === 'PAID';
+                  const hasBalanceDue = inspection.balance_due > 0 && inspection.payment_status === 'PARTIALLY_PAID';
+                  const isCompleted = inspection.inspection_status === 'INSPECTION_COMPLETED';
+                  const canSendReport = isFullyPaid && isCompleted;
+                  
+                  return (
                   <tr key={inspection.id} className="hover:bg-slate-50 transition-colors" data-testid={`inspection-row-${inspection.id}`}>
                     <td className="px-4 py-4">
                       <div className="font-medium text-gray-900">{formatDate(inspection.scheduled_date) || '-'}</div>
@@ -455,7 +460,25 @@ export default function InspectionsPage() {
                       </div>
                     </td>
                     <td className="px-4 py-4">
-                      <PaymentBadge status={inspection.payment_status} />
+                      <div className="flex items-center gap-2">
+                        <Car className="h-4 w-4 text-gray-400" />
+                        <div>
+                          <div className="text-sm font-mono text-blue-600">{inspection.car_number || '-'}</div>
+                          <div className="text-xs text-gray-400">{inspection.car_make} {inspection.car_model}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <PaymentStatusBadge status={inspection.payment_status} balanceDue={inspection.balance_due} />
+                      <div className="text-xs text-gray-500 mt-1">
+                        Paid: ₹{(inspection.amount_paid || 0).toLocaleString()}
+                        {inspection.balance_due > 0 && (
+                          <span className="text-amber-600 ml-1">/ Due: ₹{inspection.balance_due.toLocaleString()}</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <InspectionStatusBadge status={inspection.inspection_status} />
                     </td>
                     <td className="px-4 py-4">
                       <span className="inline-flex items-center gap-1.5 text-sm text-blue-600">
@@ -464,44 +487,64 @@ export default function InspectionsPage() {
                       </span>
                     </td>
                     <td className="px-4 py-4">
-                      <StatusBadge status={inspection.inspection_status} />
-                      <div className="text-xs text-gray-400 mt-1">{formatDateTime(inspection.created_at)}</div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <span className="text-sm text-gray-700">{inspection.mechanic_name || '-'}</span>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-2">
-                        <Car className="h-4 w-4 text-gray-400" />
-                        <div>
-                          <div className="text-sm font-mono text-blue-600">{inspection.car_number || '-'}</div>
-                          <div className="text-xs text-gray-400">{inspection.car_details}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1">
+                        {/* Edit button - always visible for completed inspections */}
                         <button 
                           onClick={() => openEditModal(inspection)} 
                           className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="Edit"
+                          title="Edit Inspection"
                           data-testid={`edit-inspection-${inspection.id}`}
                         >
                           <Edit2 className="h-4 w-4" />
                         </button>
-                        {inspection.report_url ? (
-                          <button className="p-2 text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Download Report">
+                        
+                        {/* Collect Balance button - visible only for partial payments */}
+                        {hasBalanceDue && (
+                          <button 
+                            onClick={() => {
+                              setCollectBalanceInspection(inspection);
+                              setIsCollectBalanceModalOpen(true);
+                            }}
+                            className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg text-xs font-medium hover:from-amber-600 hover:to-amber-700 transition-all shadow-sm flex items-center gap-1"
+                            title={`Collect Balance: ₹${inspection.balance_due?.toLocaleString()}`}
+                            data-testid={`collect-balance-${inspection.id}`}
+                          >
+                            <CreditCard className="h-3.5 w-3.5" />
+                            Collect ₹{inspection.balance_due?.toLocaleString()}
+                          </button>
+                        )}
+                        
+                        {/* Send Report button - disabled until fully paid */}
+                        <button 
+                          onClick={() => handleSendReport(inspection)}
+                          disabled={!canSendReport}
+                          className={`p-2 rounded-lg transition-colors ${
+                            canSendReport 
+                              ? 'text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50' 
+                              : 'text-gray-300 cursor-not-allowed'
+                          }`}
+                          title={canSendReport ? 'Send Report' : 'Full payment required to send report'}
+                          data-testid={`send-report-${inspection.id}`}
+                        >
+                          <Send className="h-4 w-4" />
+                        </button>
+                        
+                        {/* Download Report - if available */}
+                        {inspection.report_url && (
+                          <a 
+                            href={inspection.report_url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="p-2 text-blue-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Download Report"
+                          >
                             <Download className="h-4 w-4" />
-                          </button>
-                        ) : (
-                          <button className="p-2 text-gray-500 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors" title="View">
-                            <Eye className="h-4 w-4" />
-                          </button>
+                          </a>
                         )}
                       </div>
                     </td>
                   </tr>
-                ))
+                )})
               )}
             </tbody>
           </table>
