@@ -1689,6 +1689,147 @@ export default function InspectionsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      {/* Schedule Unscheduled Inspection Modal - With Vaahan API & Google Places */}
+      <Dialog open={isScheduleUnscheduledModalOpen} onOpenChange={setIsScheduleUnscheduledModalOpen}>
+        <DialogContent className="sm:max-w-[550px]" data-testid="schedule-unscheduled-modal">
+          <DialogHeader className="border-b pb-4">
+            <DialogTitle className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white">
+                <Calendar className="h-5 w-5" />
+              </div>
+              <div>
+                <p>Schedule Inspection</p>
+                <p className="text-sm font-normal text-gray-500">{scheduleUnscheduledInspection?.customer_name}</p>
+              </div>
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 pt-4">
+            {/* Customer Info Summary */}
+            {scheduleUnscheduledInspection && (
+              <div className="bg-slate-50 rounded-lg p-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Customer:</span>
+                  <span className="font-medium">{scheduleUnscheduledInspection.customer_name} ({scheduleUnscheduledInspection.customer_mobile})</span>
+                </div>
+                <div className="flex justify-between mt-1">
+                  <span className="text-gray-500">Package:</span>
+                  <span className="font-medium">{scheduleUnscheduledInspection.package_name || 'Standard'}</span>
+                </div>
+                <div className="flex justify-between mt-1">
+                  <span className="text-gray-500">Amount:</span>
+                  <span className="font-medium text-emerald-600">₹{scheduleUnscheduledInspection.amount_paid || 0}</span>
+                </div>
+              </div>
+            )}
+            
+            {/* 1. Vehicle Number Search */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Vehicle Number</Label>
+              <div className="flex gap-2">
+                <Input 
+                  value={scheduleFormData.car_number} 
+                  onChange={(e) => setScheduleFormData({...scheduleFormData, car_number: e.target.value.toUpperCase()})}
+                  placeholder="KA01AB1234"
+                  className="flex-1 font-mono"
+                  data-testid="schedule-vehicle-input"
+                />
+                <Button 
+                  type="button" 
+                  variant="outline"
+                  onClick={handleScheduleVehicleSearch}
+                  disabled={scheduleVehicleSearching}
+                  data-testid="schedule-vehicle-search-btn"
+                >
+                  {scheduleVehicleSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                  Search
+                </Button>
+              </div>
+            </div>
+            
+            {/* Vehicle Data Found */}
+            {scheduleVehicleData && (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 space-y-1">
+                <div className="flex items-center gap-2 text-emerald-700 font-medium text-sm">
+                  <CheckCircle className="h-4 w-4" />
+                  Vehicle Found
+                </div>
+                <div className="grid grid-cols-2 gap-1 text-xs">
+                  <div><span className="text-gray-500">Make:</span> <span className="font-medium">{scheduleVehicleData.manufacturer || scheduleVehicleData.make || '-'}</span></div>
+                  <div><span className="text-gray-500">Model:</span> <span className="font-medium">{scheduleVehicleData.model || '-'}</span></div>
+                  <div><span className="text-gray-500">Year:</span> <span className="font-medium">{scheduleVehicleData.manufacturing_date?.split('/')?.pop() || scheduleVehicleData.year || '-'}</span></div>
+                  <div><span className="text-gray-500">Fuel:</span> <span className="font-medium">{scheduleVehicleData.fuel_type || '-'}</span></div>
+                </div>
+              </div>
+            )}
+            
+            {/* 2. Date & Time */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Inspection Date *</Label>
+                <Input 
+                  type="date" 
+                  value={scheduleFormData.scheduled_date}
+                  onChange={(e) => setScheduleFormData({...scheduleFormData, scheduled_date: e.target.value})}
+                  min={new Date().toISOString().split('T')[0]}
+                  data-testid="schedule-date-input"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Inspection Time *</Label>
+                <Input 
+                  type="time" 
+                  value={scheduleFormData.scheduled_time}
+                  onChange={(e) => setScheduleFormData({...scheduleFormData, scheduled_time: e.target.value})}
+                  data-testid="schedule-time-input"
+                />
+              </div>
+            </div>
+            
+            {/* 3. Inspection City */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Inspection City *</Label>
+              <Select value={scheduleFormData.city} onValueChange={(v) => setScheduleFormData({...scheduleFormData, city: v})}>
+                <SelectTrigger className="h-10" data-testid="schedule-city-select">
+                  <SelectValue placeholder="Select city" />
+                </SelectTrigger>
+                <SelectContent>
+                  {cities.map((c) => (<SelectItem key={c} value={c}>{c}</SelectItem>))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* 4. Address with Google Places */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Inspection Address</Label>
+              <textarea
+                value={scheduleFormData.address}
+                onChange={(e) => setScheduleFormData({...scheduleFormData, address: e.target.value})}
+                placeholder="Enter complete address for inspection..."
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
+                rows={3}
+                data-testid="schedule-address-input"
+              />
+              <p className="text-xs text-gray-400">Enter the location where the inspection will be conducted</p>
+            </div>
+          </div>
+          
+          <DialogFooter className="pt-4 border-t">
+            <Button variant="outline" onClick={() => setIsScheduleUnscheduledModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleScheduleUnscheduledSubmit}
+              disabled={scheduleSaving}
+              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+            >
+              {scheduleSaving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              Schedule Inspection
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
