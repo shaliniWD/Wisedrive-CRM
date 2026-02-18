@@ -79,6 +79,20 @@ class InspectionPackageBase(BaseModel):
     is_recommended: bool = False  # Show "Recommended" badge
     order: int = 0  # Display order
     brands_covered: List[str] = []  # List of car brands covered
+    
+    # Partial Payment Configuration
+    allow_partial_payment: bool = False
+    partial_payment_type: str = "percentage"  # "percentage" or "fixed"
+    partial_payment_value: float = 0  # e.g., 50 for 50% or 500 for ₹500
+    
+    # Discount Configuration  
+    allow_discount: bool = False
+    discount_type: str = "percentage"  # "percentage" or "fixed"
+    discount_value: float = 0  # e.g., 10 for 10% or 100 for ₹100
+    
+    # Offers Configuration
+    allow_offers: bool = False
+    applicable_offer_ids: List[str] = []  # List of offer IDs that can be applied
 
 
 class InspectionPackageCreate(InspectionPackageBase):
