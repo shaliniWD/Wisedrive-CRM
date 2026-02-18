@@ -775,7 +775,15 @@ export default function LeadsPage() {
 
   // Handle package selection and initialize schedules
   const handlePackageSelect = (packageId) => {
-    setPaymentFormData(prev => ({ ...prev, packageId }));
+    // Reset discount and offers when package changes
+    setPaymentFormData(prev => ({ 
+      ...prev, 
+      packageId,
+      discountType: 'none',
+      discountValue: '',
+      selectedOfferIds: [],
+      usePartialPayment: false,
+    }));
     if (packageId && packageId !== 'select') {
       const pkg = inspectionPackages.find(p => p.id === packageId);
       if (pkg) {
