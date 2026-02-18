@@ -877,27 +877,25 @@ export default function InspectionPackagesPage() {
                 <Switch checked={packageForm.allow_partial_payment} onCheckedChange={(checked) => setPackageForm({ ...packageForm, allow_partial_payment: checked })} data-testid="allow-partial-payment-switch" />
               </div>
               {packageForm.allow_partial_payment && (
-                <div className="grid grid-cols-2 gap-4 mt-3">
+                <div className="mt-3">
                   <div className="space-y-2">
-                    <Label className="text-sm">Type</Label>
-                    <Select value={packageForm.partial_payment_type} onValueChange={(v) => setPackageForm({ ...packageForm, partial_payment_type: v })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="percentage">Percentage (%)</SelectItem>
-                        <SelectItem value="fixed">Fixed Amount (₹)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm">Value</Label>
+                    <Label className="text-sm">Partial Payment Amount (₹)</Label>
                     <div className="flex items-center gap-2">
-                      <Input type="number" value={packageForm.partial_payment_value} onChange={(e) => setPackageForm({ ...packageForm, partial_payment_value: parseFloat(e.target.value) || 0 })} placeholder={packageForm.partial_payment_type === 'percentage' ? '50' : '500'} />
-                      <span className="text-gray-500">{packageForm.partial_payment_type === 'percentage' ? '%' : '₹'}</span>
+                      <span className="text-lg font-medium text-purple-600">₹</span>
+                      <Input 
+                        type="number" 
+                        value={packageForm.partial_payment_value} 
+                        onChange={(e) => setPackageForm({ ...packageForm, partial_payment_value: parseFloat(e.target.value) || 0, partial_payment_type: 'fixed' })} 
+                        placeholder="e.g., 500"
+                        className="max-w-[200px]"
+                        data-testid="partial-payment-value"
+                      />
                     </div>
+                    <p className="text-xs text-purple-500">This fixed amount will be collected immediately. Example: If package is ₹1,499 and partial payment is ₹500, customer pays ₹500 now, remaining ₹999 later.</p>
                   </div>
                 </div>
               )}
-              <p className="text-xs text-purple-600 mt-2">Customer pays upfront, balance collected before report delivery</p>
+              <p className="text-xs text-purple-600 mt-2">Customer pays partial amount upfront, balance collected via "Collect Balance" button before report delivery</p>
             </div>
 
             {/* Discount Section */}
