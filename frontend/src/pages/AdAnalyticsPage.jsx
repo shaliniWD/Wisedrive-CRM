@@ -233,6 +233,62 @@ export default function AdAnalyticsPage() {
       setTokenLoading(false);
     }
   };
+  
+  // Sync data from Meta
+  const handleSyncNow = async () => {
+    setSyncing(true);
+    try {
+      const result = await metaAdsApi.syncStatus();
+      if (result.data.success) {
+        toast.success(`Synced ${result.data.updated_count} ads from Meta`);
+        // Refresh data after sync
+        fetchPerformanceData(true);
+        if (activeTab === 'mapping') {
+          fetchAdMappings();
+          fetchUnmappedAds();
+        }
+      } else {
+        toast.error(result.data.error || 'Sync failed');
+      }
+    } catch (error) {
+      console.error('Sync error:', error);
+      toast.error('Failed to sync with Meta');
+    } finally {
+      setSyncing(false);
+    }
+  };
+  
+  // Fetch unmapped ads from Meta
+  const fetchUnmappedAds = async () => {
+    setLoadingUnmapped(true);
+    try {
+      const result = await metaAdsApi.getUnmappedAds();
+      if (result.data.success) {
+        setUnmappedAds(result.data.data || []);
+      } else {
+        console.error('Failed to fetch unmapped ads:', result.data.error);
+      }
+    } catch (error) {
+      console.error('Error fetching unmapped ads:', error);
+    } finally {
+      setLoadingUnmapped(false);
+    }
+  };
+  
+  // Quick map an unmapped ad
+  const handleQuickMap = (ad) => {
+    setFormData({
+      ad_id: ad.ad_id || '',
+      ad_name: ad.ad_name || '',
+      ad_amount: '',
+      city: ad.suggested_city || '',
+      language: '',
+      campaign: ad.adset_name || '',
+      source: 'Facebook',
+    });
+    setEditingAd(null);
+    setIsModalOpen(true);
+  };
 
   // Ad Mapping functions
   const handleSubmit = async (e) => {
