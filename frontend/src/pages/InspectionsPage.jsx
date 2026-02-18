@@ -1166,7 +1166,7 @@ export default function InspectionsPage() {
               className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
             >
               {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-              {selectedMechanicId ? 'Assign' : 'Unassign'}
+              {selectedMechanicId && selectedMechanicId !== 'unassign' ? 'Assign' : 'Unassign'}
             </Button>
           </DialogFooter>
         </DialogContent>
