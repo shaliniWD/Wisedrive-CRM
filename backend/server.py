@@ -2701,6 +2701,45 @@ async def get_employee_assigned_cities(employee_id: str, current_user: dict = De
     return {"cities": employee.get("assigned_cities", [])}
 
 
+# Mechanic Inspection City Assignment
+class MechanicCityAssignment(BaseModel):
+    employee_id: str
+    cities: List[str]
+
+
+@api_router.put("/hr/employees/{employee_id}/inspection-cities")
+async def update_employee_inspection_cities(
+    employee_id: str,
+    assignment: MechanicCityAssignment,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update inspection cities assigned to a mechanic"""
+    role_code = current_user.get("role_code", "")
+    if role_code not in ["CEO", "HR_MANAGER", "INSPECTION_HEAD"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    employee = await db.users.find_one({"id": employee_id}, {"_id": 0})
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    await db.users.update_one(
+        {"id": employee_id},
+        {"$set": {"inspection_cities": assignment.cities, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    return {"message": "Inspection cities assigned successfully"}
+
+
+@api_router.get("/hr/employees/{employee_id}/inspection-cities")
+async def get_employee_inspection_cities(employee_id: str, current_user: dict = Depends(get_current_user)):
+    """Get inspection cities assigned to a mechanic"""
+    employee = await db.users.find_one({"id": employee_id}, {"_id": 0, "inspection_cities": 1})
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    return {"cities": employee.get("inspection_cities", [])}
+
+
 # ==================== CUSTOMERS ROUTES ====================
 
 @api_router.get("/customers")
