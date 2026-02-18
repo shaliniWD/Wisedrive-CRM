@@ -3340,17 +3340,23 @@ async def get_active_offers(
     current_user: dict = Depends(get_current_user)
 ):
     """Get only active and valid offers (within date range)"""
-    now = datetime.now(timezone.utc)
-    query = {
-        "is_active": True,
-        "valid_from": {"$lte": now.isoformat()},
-        "valid_until": {"$gte": now.isoformat()}
-    }
+    now = datetime.now(timezone.utc).isoformat()
+    query = {"is_active": True}
     if country_id:
         query["country_id"] = country_id
     
+    # Fetch all active offers and filter by date in Python
     offers = await db.offers.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
-    return offers
+    
+    # Filter by valid date range
+    valid_offers = []
+    for offer in offers:
+        valid_from = offer.get("valid_from", "")
+        valid_until = offer.get("valid_until", "")
+        if valid_from <= now <= valid_until:
+            valid_offers.append(offer)
+    
+    return valid_offers
 
 
 @api_router.post("/offers")
