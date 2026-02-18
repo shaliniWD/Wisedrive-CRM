@@ -478,11 +478,14 @@ export default function InspectionsPage() {
                       </div>
                     </td>
                     <td className="px-4 py-4">
-                      <PaymentStatusBadge status={inspection.payment_status} balanceDue={inspection.balance_due} />
+                      <PaymentStatusBadge 
+                        status={isPartialPayment ? 'PARTIALLY_PAID' : inspection.payment_status} 
+                        balanceDue={actualBalanceDue} 
+                      />
                       <div className="text-xs text-gray-500 mt-1">
                         Paid: ₹{(inspection.amount_paid || 0).toLocaleString()}
-                        {inspection.balance_due > 0 && (
-                          <span className="text-amber-600 ml-1">/ Due: ₹{inspection.balance_due.toLocaleString()}</span>
+                        {actualBalanceDue > 0 && (
+                          <span className="text-amber-600 ml-1">/ Due: ₹{actualBalanceDue.toLocaleString()}</span>
                         )}
                       </div>
                     </td>
