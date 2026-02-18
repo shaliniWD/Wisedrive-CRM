@@ -441,6 +441,148 @@ class MetaAdsService:
                     result[ad_id] = float(insight.get("spend", 0))
         
         return result
+    
+    async def get_ads_with_targeting(self) -> Dict[str, Any]:
+        """
+        Fetch all ads with their targeting information including geo-targeting (cities).
+        This helps auto-suggest city mappings for ads.
+        """
+        if not self.is_configured():
+            return {"error": "Meta Ads not configured", "data": []}
+        
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                # First get all ads with basic info
+                ads_url = f"{self.base_url}/act_{self.ad_account_id}/ads"
+                ads_params = {
+                    "access_token": self.access_token,
+                    "fields": "id,name,status,effective_status,adset_id,campaign_id,created_time",
+                    "limit": 500
+                }
+                
+                ads_response = await client.get(ads_url, params=ads_params)
+                
+                if ads_response.status_code != 200:
+                    error_data = ads_response.json()
+                    return {
+                        "success": False,
+                        "error": error_data.get("error", {}).get("message", "Unknown error"),
+                        "data": []
+                    }
+                
+                ads_data = ads_response.json().get("data", [])
+                
+                # Now get adset targeting info for each unique adset
+                adset_ids = list(set([ad.get("adset_id") for ad in ads_data if ad.get("adset_id")]))
+                adset_targeting = {}
+                
+                for adset_id in adset_ids[:50]:  # Limit to 50 adsets to avoid rate limits
+                    try:
+                        targeting_url = f"{self.base_url}/{adset_id}"
+                        targeting_params = {
+                            "access_token": self.access_token,
+                            "fields": "id,name,targeting"
+                        }
+                        
+                        targeting_response = await client.get(targeting_url, params=targeting_params)
+                        
+                        if targeting_response.status_code == 200:
+                            targeting_data = targeting_response.json()
+                            targeting = targeting_data.get("targeting", {})
+                            
+                            # Extract geo locations (cities)
+                            geo_locations = targeting.get("geo_locations", {})
+                            cities = geo_locations.get("cities", [])
+                            regions = geo_locations.get("regions", [])
+                            countries = geo_locations.get("countries", [])
+                            
+                            adset_targeting[adset_id] = {
+                                "name": targeting_data.get("name", ""),
+                                "cities": [c.get("name", "") for c in cities] if cities else [],
+                                "regions": [r.get("name", "") for r in regions] if regions else [],
+                                "countries": countries or [],
+                                "raw_targeting": targeting
+                            }
+                    except Exception as e:
+                        logger.warning(f"Failed to get targeting for adset {adset_id}: {e}")
+                        continue
+                
+                # Merge targeting info with ads
+                enriched_ads = []
+                for ad in ads_data:
+                    adset_id = ad.get("adset_id")
+                    targeting_info = adset_targeting.get(adset_id, {})
+                    
+                    enriched_ads.append({
+                        "id": ad.get("id"),
+                        "name": ad.get("name"),
+                        "status": ad.get("status"),
+                        "effective_status": ad.get("effective_status"),
+                        "adset_id": adset_id,
+                        "adset_name": targeting_info.get("name", ""),
+                        "campaign_id": ad.get("campaign_id"),
+                        "created_time": ad.get("created_time"),
+                        "targeting_cities": targeting_info.get("cities", []),
+                        "targeting_regions": targeting_info.get("regions", []),
+                        "targeting_countries": targeting_info.get("countries", [])
+                    })
+                
+                return {
+                    "success": True,
+                    "data": enriched_ads,
+                    "has_city_targeting": any(ad.get("targeting_cities") for ad in enriched_ads)
+                }
+                
+        except Exception as e:
+            logger.error(f"Meta API error: {str(e)}")
+            return {"success": False, "error": str(e), "data": []}
+    
+    async def get_all_ad_statuses(self) -> Dict[str, Any]:
+        """
+        Get current status of all ads (active/paused/archived).
+        Used for syncing ad status to our database.
+        """
+        if not self.is_configured():
+            return {"error": "Meta Ads not configured", "data": {}}
+        
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                url = f"{self.base_url}/act_{self.ad_account_id}/ads"
+                params = {
+                    "access_token": self.access_token,
+                    "fields": "id,name,status,effective_status",
+                    "limit": 500
+                }
+                
+                response = await client.get(url, params=params)
+                
+                if response.status_code == 200:
+                    data = response.json().get("data", [])
+                    # Return as dictionary keyed by ad_id
+                    statuses = {}
+                    for ad in data:
+                        statuses[ad.get("id")] = {
+                            "name": ad.get("name"),
+                            "status": ad.get("status"),
+                            "effective_status": ad.get("effective_status"),
+                            "is_active": ad.get("effective_status") == "ACTIVE"
+                        }
+                    return {
+                        "success": True,
+                        "data": statuses,
+                        "count": len(statuses)
+                    }
+                else:
+                    error_data = response.json()
+                    return {
+                        "success": False,
+                        "error": error_data.get("error", {}).get("message", "Unknown error"),
+                        "data": {}
+                    }
+                    
+        except Exception as e:
+            logger.error(f"Meta API error: {str(e)}")
+            return {"success": False, "error": str(e), "data": {}}
 
 
 # Singleton instance
