@@ -796,13 +796,12 @@ export default function InspectionsPage() {
       setCardFilter(null); // Toggle off
     } else {
       setCardFilter(filter);
-      // Auto-switch tab based on filter
-      if (filter === 'unscheduled') {
-        setActiveTab('unscheduled');
-      } else if (filter === 'scheduled' || filter === 'completed') {
-        setActiveTab('scheduled');
-      }
     }
+  };
+  
+  // Handle date range change
+  const handleDateRangeChange = (type) => {
+    setDateRangeType(type);
   };
 
   const unscheduledCount = inspections.filter(i => !i.scheduled_date).length;
