@@ -201,6 +201,8 @@ export default function LeadsPage() {
     fuelType: '', carColor: '', carConfirmed: false, packageId: '',
     discountType: '', discountValue: '', city: '',
     customerMobile: '', customerName: '',
+    selectedOfferIds: [], // Offers selected by sales head
+    usePartialPayment: false, // Whether to use partial payment for this transaction
   });
 
   // Multiple inspection schedules - one per inspection slot in the package
