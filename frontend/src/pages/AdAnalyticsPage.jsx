@@ -67,14 +67,24 @@ const SummaryCard = ({ title, value, subtext, icon: Icon, trend, trendValue, col
 };
 
 export default function AdAnalyticsPage() {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [performanceData, setPerformanceData] = useState(null);
   const [metaStatus, setMetaStatus] = useState({ configured: false });
+  const [tokenInfo, setTokenInfo] = useState(null);
   const [dateRange, setDateRange] = useState('30');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('total_leads');
   const [sortOrder, setSortOrder] = useState('desc');
+  
+  // Token management state
+  const [showTokenModal, setShowTokenModal] = useState(false);
+  const [newToken, setNewToken] = useState('');
+  const [tokenLoading, setTokenLoading] = useState(false);
+  
+  // Check if user can manage tokens (CEO/CTO only)
+  const canManageToken = user?.role_code === 'CEO' || user?.role_code === 'CTO';
 
   // Calculate date range
   const getDateRange = () => {
