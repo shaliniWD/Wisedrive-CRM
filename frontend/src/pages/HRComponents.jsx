@@ -2740,3 +2740,316 @@ function StatusBadge({ status }) {
     </span>
   );
 }
+
+
+// ==================== INSPECTION CITY MANAGEMENT ====================
+export function InspectionCityManagement() {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [mechanics, setMechanics] = useState([]);
+  const [countries, setCountries] = useState([]);
+  const [selectedCountryId, setSelectedCountryId] = useState('');
+  const [selectedMechanic, setSelectedMechanic] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedCities, setSelectedCities] = useState([]);
+  const [availableInspectionCities, setAvailableInspectionCities] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  // Fetch countries and mechanics
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      // Fetch countries
+      const countriesRes = await hrApi.getCountries();
+      const countriesData = countriesRes.data || [];
+      setCountries(countriesData);
+      
+      // Set default country from user
+      const userCountryId = user?.country_id;
+      if (userCountryId && countriesData.find(c => c.id === userCountryId)) {
+        setSelectedCountryId(userCountryId);
+      } else if (countriesData.length > 0) {
+        setSelectedCountryId(countriesData[0].id);
+      }
+    } catch (error) {
+      toast.error('Failed to load countries');
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.country_id]);
+  
+  // Fetch mechanics for selected country
+  const fetchMechanics = useCallback(async () => {
+    if (!selectedCountryId) return;
+    
+    try {
+      // Fetch employees with MECHANIC role for the selected country
+      const response = await hrApi.getEmployees({ country_id: selectedCountryId });
+      const employees = response.data || [];
+      
+      // Filter only mechanics (check role)
+      const mechanicEmployees = employees.filter(emp => {
+        const roleCode = emp.roles?.[0]?.code || emp.role_code || '';
+        return roleCode === 'MECHANIC' || roleCode.toLowerCase().includes('mechanic');
+      });
+      
+      setMechanics(mechanicEmployees);
+      
+      // Update available inspection cities from selected country
+      const selectedCountry = countries.find(c => c.id === selectedCountryId);
+      const inspCities = selectedCountry?.inspection_cities || [];
+      setAvailableInspectionCities(inspCities);
+    } catch (error) {
+      toast.error('Failed to load mechanics');
+    }
+  }, [selectedCountryId, countries]);
+  
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+  
+  useEffect(() => {
+    if (selectedCountryId) {
+      fetchMechanics();
+    }
+  }, [selectedCountryId, fetchMechanics]);
+  
+  // Open modal to edit mechanic's inspection cities
+  const handleEditMechanic = (mechanic) => {
+    setSelectedMechanic(mechanic);
+    setSelectedCities(mechanic.inspection_cities || []);
+    setIsModalOpen(true);
+  };
+  
+  // Save mechanic's inspection cities
+  const handleSaveCities = async () => {
+    if (!selectedMechanic) return;
+    
+    setSaving(true);
+    try {
+      await hrApi.updateInspectionCities(selectedMechanic.id, selectedCities);
+      toast.success(`Inspection cities updated for ${selectedMechanic.name}`);
+      setIsModalOpen(false);
+      fetchMechanics(); // Refresh list
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to update inspection cities');
+    } finally {
+      setSaving(false);
+    }
+  };
+  
+  // Toggle city selection
+  const toggleCity = (city) => {
+    if (selectedCities.includes(city)) {
+      setSelectedCities(selectedCities.filter(c => c !== city));
+    } else {
+      setSelectedCities([...selectedCities, city]);
+    }
+  };
+  
+  // Filter mechanics by search term
+  const filteredMechanics = mechanics.filter(m => 
+    m.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    m.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    m.employee_id?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+  
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
+  
+  return (
+    <div className="p-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div>
+          <h2 className="text-xl font-bold text-gray-900">Inspection City Assignment</h2>
+          <p className="text-sm text-gray-500">Assign inspection cities to mechanics. Mechanics can only be assigned to inspections in their assigned cities.</p>
+        </div>
+        
+        {/* Country Filter */}
+        <div className="flex items-center gap-2">
+          <Select value={selectedCountryId} onValueChange={setSelectedCountryId}>
+            <SelectTrigger className="w-[180px]">
+              <Globe className="h-4 w-4 mr-2 text-gray-500" />
+              <SelectValue placeholder="Select Country" />
+            </SelectTrigger>
+            <SelectContent>
+              {countries.map(c => (
+                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      
+      {/* Info Box */}
+      {availableInspectionCities.length === 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 flex items-start gap-3">
+          <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-amber-800">No Inspection Cities Configured</p>
+            <p className="text-xs text-amber-600 mt-1">
+              Please add inspection cities in the Countries tab (Settings → Countries → Edit Country → Inspection Cities tab) before assigning cities to mechanics.
+            </p>
+          </div>
+        </div>
+      )}
+      
+      {/* Search */}
+      <div className="relative mb-4">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <Input 
+          placeholder="Search mechanics by name or email..." 
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-10 h-10"
+        />
+      </div>
+      
+      {/* Mechanics Table */}
+      {filteredMechanics.length === 0 ? (
+        <div className="text-center py-12 bg-slate-50 rounded-lg border border-dashed">
+          <Users className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+          <p className="text-gray-500 font-medium">No mechanics found</p>
+          <p className="text-sm text-gray-400 mt-1">
+            {searchTerm ? 'Try a different search term' : 'Add employees with "Mechanic" role to see them here'}
+          </p>
+        </div>
+      ) : (
+        <div className="border rounded-lg overflow-hidden">
+          <table className="w-full">
+            <thead className="bg-slate-50 border-b">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Mechanic</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Employee ID</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Assigned Cities</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {filteredMechanics.map(mechanic => (
+                <tr key={mechanic.id} className="hover:bg-slate-50 transition-colors">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="h-9 w-9 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 flex items-center justify-center text-white font-medium text-sm">
+                        {mechanic.name?.charAt(0)?.toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">{mechanic.name}</p>
+                        <p className="text-xs text-gray-500">{mechanic.email}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="text-sm font-mono text-gray-600">{mechanic.employee_id || '-'}</span>
+                  </td>
+                  <td className="px-4 py-3">
+                    {(mechanic.inspection_cities || []).length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {mechanic.inspection_cities.map((city, idx) => (
+                          <span key={idx} className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-medium rounded-full">
+                            {city}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-sm text-gray-400 italic">No cities assigned</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleEditMechanic(mechanic)}
+                      disabled={availableInspectionCities.length === 0}
+                      data-testid={`edit-mechanic-cities-${mechanic.id}`}
+                    >
+                      Edit Cities
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      
+      {/* Edit Modal */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="sm:max-w-[450px]">
+          <DialogHeader className="border-b pb-4">
+            <DialogTitle className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 flex items-center justify-center text-white">
+                {selectedMechanic?.name?.charAt(0)?.toUpperCase()}
+              </div>
+              <div>
+                <p className="font-semibold">{selectedMechanic?.name}</p>
+                <p className="text-sm font-normal text-gray-500">Assign Inspection Cities</p>
+              </div>
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="py-4 space-y-4">
+            <p className="text-sm text-gray-600">
+              Select the cities where this mechanic can perform inspections. Only inspections from these cities can be assigned to them.
+            </p>
+            
+            {/* City Selection */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Available Cities</Label>
+              {availableInspectionCities.length > 0 ? (
+                <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-3 bg-slate-50 rounded-lg">
+                  {availableInspectionCities.map((city, idx) => {
+                    const isSelected = selectedCities.includes(city);
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => toggleCity(city)}
+                        className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors border ${
+                          isSelected 
+                            ? 'bg-purple-600 text-white border-purple-600' 
+                            : 'bg-white text-gray-700 border-gray-200 hover:border-purple-400 hover:text-purple-700'
+                        }`}
+                      >
+                        {isSelected && <CheckCircle className="h-3.5 w-3.5 inline mr-1.5" />}
+                        {city}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 text-center py-4 bg-slate-50 rounded-lg">
+                  No inspection cities available. Add cities in Countries settings.
+                </p>
+              )}
+            </div>
+            
+            {/* Selected Count */}
+            <div className="text-sm text-gray-500">
+              {selectedCities.length} {selectedCities.length === 1 ? 'city' : 'cities'} selected
+            </div>
+          </div>
+          
+          <div className="flex justify-end gap-2 pt-4 border-t">
+            <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
+            <Button 
+              onClick={handleSaveCities}
+              disabled={saving}
+              className="bg-gradient-to-r from-purple-600 to-purple-700"
+            >
+              {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              Save Cities
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
