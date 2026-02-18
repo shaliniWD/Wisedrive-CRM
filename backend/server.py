@@ -1612,7 +1612,8 @@ class InspectionScheduleData(BaseModel):
 
 class PaymentLinkRequest(BaseModel):
     package_id: str
-    amount: Optional[float] = None
+    amount: Optional[float] = None  # Amount to charge NOW via Razorpay
+    total_amount: Optional[float] = None  # Total package amount after discounts
     send_via_whatsapp: bool = True
     description: Optional[str] = None
     vehicle_number: Optional[str] = None
@@ -1622,6 +1623,10 @@ class PaymentLinkRequest(BaseModel):
     base_amount: Optional[float] = None
     discount_amount: Optional[float] = None
     inspection_schedules: Optional[List[InspectionScheduleData]] = None
+    # Partial payment fields
+    is_partial_payment: bool = False
+    partial_payment_amount: Optional[float] = None
+    balance_due: Optional[float] = None
 
 
 @api_router.post("/leads/{lead_id}/payment-link")
