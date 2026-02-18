@@ -1311,13 +1311,8 @@ export default function InspectionsPage() {
                         {/* View Report button - opens in new tab */}
                         <button 
                           onClick={() => handleViewReport(inspection)}
-                          disabled={!inspection.report_url}
-                          className={`px-2 py-1 rounded-lg text-xs font-medium flex items-center gap-1 transition-colors ${
-                            inspection.report_url 
-                              ? 'bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200' 
-                              : 'bg-gray-50 text-gray-400 cursor-not-allowed border border-gray-200'
-                          }`}
-                          title={inspection.report_url ? 'View Report in new tab' : 'Report not available'}
+                          className="px-2 py-1 rounded-lg text-xs font-medium flex items-center gap-1 transition-colors bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200"
+                          title="View Report in new tab"
                           data-testid={`view-report-${inspection.id}`}
                         >
                           <Eye className="h-3 w-3" />
@@ -1325,7 +1320,7 @@ export default function InspectionsPage() {
                         </button>
                         
                         {/* Send Report button - disabled until fully paid */}
-                        {canSendReport && !inspection.report_url && (
+                        {canSendReport && (
                           <button 
                             onClick={() => handleSendReport(inspection)}
                             className="p-1 text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
