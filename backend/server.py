@@ -3053,7 +3053,9 @@ async def update_inspection_status(
     """Update inspection status"""
     valid_statuses = [
         "NEW_INSPECTION", "ASSIGNED_TO_MECHANIC", "INSPECTION_CONFIRMED",
-        "INSPECTION_STARTED", "INSPECTION_IN_PROGRESS", "INSPECTION_COMPLETED"
+        "INSPECTION_STARTED", "INSPECTION_IN_PROGRESS", "INSPECTION_COMPLETED",
+        "INSPECTION_CANCELLED_CUSTOMER", "INSPECTION_CANCELLED_WISEDRIVE",
+        "SCHEDULED", "UNSCHEDULED"
     ]
     
     if inspection_status not in valid_statuses:
@@ -3073,6 +3075,126 @@ async def update_inspection_status(
     )
     
     return {"success": True, "inspection_status": inspection_status}
+
+
+class UpdateVehicleRequest(BaseModel):
+    car_number: str
+    car_make: Optional[str] = None
+    car_model: Optional[str] = None
+    car_year: Optional[str] = None
+    car_color: Optional[str] = None
+    fuel_type: Optional[str] = None
+
+
+@api_router.patch("/inspections/{inspection_id}/vehicle")
+async def update_inspection_vehicle(
+    inspection_id: str,
+    request_data: UpdateVehicleRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update vehicle details for an inspection (when mechanic needs to inspect different car)"""
+    inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
+    if not inspection:
+        raise HTTPException(status_code=404, detail="Inspection not found")
+    
+    update_dict = {
+        "car_number": request_data.car_number,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "updated_by": current_user["id"],
+        "vehicle_change_note": f"Vehicle changed from {inspection.get('car_number', 'N/A')} to {request_data.car_number}"
+    }
+    
+    if request_data.car_make:
+        update_dict["car_make"] = request_data.car_make
+    if request_data.car_model:
+        update_dict["car_model"] = request_data.car_model
+    if request_data.car_year:
+        update_dict["car_year"] = request_data.car_year
+    if request_data.car_color:
+        update_dict["car_color"] = request_data.car_color
+    if request_data.fuel_type:
+        update_dict["fuel_type"] = request_data.fuel_type
+    
+    await db.inspections.update_one({"id": inspection_id}, {"$set": update_dict})
+    
+    updated = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
+    return updated
+
+
+class AssignMechanicRequest(BaseModel):
+    mechanic_id: Optional[str] = None  # None to unassign
+
+
+@api_router.patch("/inspections/{inspection_id}/assign-mechanic")
+async def assign_mechanic_to_inspection(
+    inspection_id: str,
+    request_data: AssignMechanicRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Assign or unassign a mechanic to an inspection"""
+    inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
+    if not inspection:
+        raise HTTPException(status_code=404, detail="Inspection not found")
+    
+    update_dict = {
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "updated_by": current_user["id"]
+    }
+    
+    if request_data.mechanic_id:
+        # Assign mechanic
+        mechanic = await db.users.find_one({"id": request_data.mechanic_id}, {"_id": 0, "id": 1, "name": 1})
+        if not mechanic:
+            raise HTTPException(status_code=404, detail="Mechanic not found")
+        
+        update_dict["mechanic_id"] = mechanic["id"]
+        update_dict["mechanic_name"] = mechanic.get("name", "")
+        
+        # Auto-update status to ASSIGNED_TO_MECHANIC if currently NEW_INSPECTION
+        if inspection.get("inspection_status") == "NEW_INSPECTION":
+            update_dict["inspection_status"] = "ASSIGNED_TO_MECHANIC"
+    else:
+        # Unassign mechanic
+        update_dict["mechanic_id"] = None
+        update_dict["mechanic_name"] = None
+    
+    await db.inspections.update_one({"id": inspection_id}, {"$set": update_dict})
+    
+    updated = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
+    return updated
+
+
+class UpdateScheduleRequest(BaseModel):
+    scheduled_date: str
+    scheduled_time: str
+
+
+@api_router.patch("/inspections/{inspection_id}/schedule")
+async def update_inspection_schedule(
+    inspection_id: str,
+    request_data: UpdateScheduleRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update inspection schedule (date and time)"""
+    inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
+    if not inspection:
+        raise HTTPException(status_code=404, detail="Inspection not found")
+    
+    update_dict = {
+        "scheduled_date": request_data.scheduled_date,
+        "scheduled_time": request_data.scheduled_time,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "updated_by": current_user["id"]
+    }
+    
+    # Update status to SCHEDULED if it was UNSCHEDULED
+    if inspection.get("inspection_status") == "UNSCHEDULED":
+        update_dict["inspection_status"] = "SCHEDULED"
+    
+    await db.inspections.update_one({"id": inspection_id}, {"$set": update_dict})
+    
+    updated = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
+    return updated
 
 
 class SendReportRequest(BaseModel):
