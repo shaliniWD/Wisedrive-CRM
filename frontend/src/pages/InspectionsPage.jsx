@@ -583,14 +583,19 @@ export default function InspectionsPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Status</Label>
+                <Label className="text-sm font-medium">Inspection Status</Label>
                 <Select value={formData.inspection_status} onValueChange={(v) => setFormData({ ...formData, inspection_status: v })}>
                   <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="NEW_INSPECTION">New Inspection</SelectItem>
+                    <SelectItem value="ASSIGNED_TO_MECHANIC">Assigned to Mechanic</SelectItem>
+                    <SelectItem value="INSPECTION_CONFIRMED">Confirmed</SelectItem>
+                    <SelectItem value="INSPECTION_STARTED">Started</SelectItem>
+                    <SelectItem value="INSPECTION_IN_PROGRESS">In Progress</SelectItem>
+                    <SelectItem value="INSPECTION_COMPLETED">Completed</SelectItem>
                     <SelectItem value="SCHEDULED">Scheduled</SelectItem>
-                    <SelectItem value="COMPLETED">Completed</SelectItem>
-                    <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                    <SelectItem value="REQUEST_NEWSLOT">Request NewSlot</SelectItem>
+                    <SelectItem value="UNSCHEDULED">Unscheduled</SelectItem>
+                    <SelectItem value="CANCELLED">Cancelled</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
