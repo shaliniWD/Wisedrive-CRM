@@ -8872,4 +8872,9 @@ app.add_middleware(
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
+    # Stop Meta Ads scheduler
+    global meta_ads_scheduler
+    if meta_ads_scheduler:
+        await meta_ads_scheduler.stop()
+    
     client.close()
