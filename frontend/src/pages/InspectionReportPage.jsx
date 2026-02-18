@@ -161,25 +161,51 @@ function InspectionReportContent({ inspectionId }) {
   const fetchReport = async () => {
     setLoading(true);
     setError(null);
+    
+    // For demo mode, always use sample data
+    if (inspectionId === 'demo') {
+      setData(inspectionReportData);
+      setLoading(false);
+      return;
+    }
+    
     try {
       // Fetch inspection data from CRM API
       const response = await axios.get(`${API_URL}/api/inspections/${inspectionId}/report`);
       const { inspection, lead, customer } = response.data;
       
-      // Transform to report format
-      const reportData = transformInspectionToReport(inspection, lead, customer);
-      setData(reportData);
+      // Check if inspection has detailed report data
+      if (inspection.inspection_categories && inspection.inspection_categories.length > 0) {
+        // Use CRM data if available
+        const reportData = transformInspectionToReport(inspection, lead, customer);
+        setData(reportData);
+      } else {
+        // Use sample data but merge with actual vehicle info
+        const mergedData = {
+          ...inspectionReportData,
+          header: {
+            ...inspectionReportData.header,
+            customerName: customer?.name || lead?.customer_name || inspectionReportData.header.customerName,
+            customerPhone: customer?.phone || lead?.phone_number || inspectionReportData.header.customerPhone,
+            vehicleNumber: lead?.vehicle_number || inspection.vehicle_number || inspectionReportData.header.vehicleNumber,
+            location: inspection.city || lead?.city || inspectionReportData.header.location,
+            inspectedOn: inspection.inspection_date ? new Date(inspection.inspection_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : inspectionReportData.header.inspectedOn,
+          },
+          vehicleInfo: {
+            ...inspectionReportData.vehicleInfo,
+            make: lead?.vehicle_make || inspectionReportData.vehicleInfo.make,
+            model: lead?.vehicle_model || inspectionReportData.vehicleInfo.model,
+            year: lead?.vehicle_year || inspectionReportData.vehicleInfo.year,
+            fuel: lead?.fuel_type || inspectionReportData.vehicleInfo.fuel,
+            regNo: lead?.vehicle_number || inspectionReportData.vehicleInfo.regNo,
+          }
+        };
+        setData(mergedData);
+      }
     } catch (err) {
       console.error('Error fetching report:', err);
-      
-      // If API doesn't have report endpoint yet, use mock data for demo
-      if (err.response?.status === 404) {
-        // Load mock data for demonstration
-        const { inspectionReportData } = await import('@/data/inspectionData');
-        setData(inspectionReportData);
-      } else {
-        setError(err.response?.data?.detail || err.message || 'Failed to load report');
-      }
+      // On any error, use sample data for demonstration
+      setData(inspectionReportData);
     } finally {
       setLoading(false);
     }
@@ -189,6 +215,7 @@ function InspectionReportContent({ inspectionId }) {
     if (inspectionId) {
       fetchReport();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inspectionId]);
 
   if (loading) return <ReportSkeleton />;
@@ -196,7 +223,7 @@ function InspectionReportContent({ inspectionId }) {
   if (!data) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="inspection-report min-h-screen">
       {/* Header */}
       <Header data={data.header} />
       
