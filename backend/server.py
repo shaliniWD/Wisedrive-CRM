@@ -3318,6 +3318,106 @@ async def delete_inspection_package(
     return {"message": "Package deleted"}
 
 
+# ==================== OFFERS ROUTES ====================
+
+@api_router.get("/offers")
+async def get_offers(
+    country_id: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all offers, optionally filtered by country"""
+    query = {}
+    if country_id:
+        query["country_id"] = country_id
+    
+    offers = await db.offers.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return offers
+
+
+@api_router.get("/offers/active")
+async def get_active_offers(
+    country_id: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get only active and valid offers (within date range)"""
+    now = datetime.now(timezone.utc)
+    query = {
+        "is_active": True,
+        "valid_from": {"$lte": now.isoformat()},
+        "valid_until": {"$gte": now.isoformat()}
+    }
+    if country_id:
+        query["country_id"] = country_id
+    
+    offers = await db.offers.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return offers
+
+
+@api_router.post("/offers")
+async def create_offer(
+    offer: OfferCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create a new offer"""
+    offer_doc = Offer(
+        **offer.model_dump(),
+        created_by=current_user["id"]
+    )
+    await db.offers.insert_one(offer_doc.model_dump())
+    return offer_doc.model_dump()
+
+
+@api_router.put("/offers/{offer_id}")
+async def update_offer(
+    offer_id: str,
+    offer: OfferUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update an offer"""
+    update_data = {k: v for k, v in offer.model_dump().items() if v is not None}
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    update_data["updated_by"] = current_user["id"]
+    
+    result = await db.offers.update_one(
+        {"id": offer_id},
+        {"$set": update_data}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Offer not found")
+    
+    return await db.offers.find_one({"id": offer_id}, {"_id": 0})
+
+
+@api_router.patch("/offers/{offer_id}/toggle-status")
+async def toggle_offer_status(
+    offer_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Toggle offer active status"""
+    offer = await db.offers.find_one({"id": offer_id})
+    if not offer:
+        raise HTTPException(status_code=404, detail="Offer not found")
+    
+    new_status = not offer.get("is_active", True)
+    await db.offers.update_one(
+        {"id": offer_id},
+        {"$set": {"is_active": new_status, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    return {"is_active": new_status}
+
+
+@api_router.delete("/offers/{offer_id}")
+async def delete_offer(
+    offer_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Delete an offer"""
+    result = await db.offers.delete_one({"id": offer_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Offer not found")
+    return {"message": "Offer deleted"}
+
+
 # ==================== ROUND ROBIN ROUTES ====================
 
 @api_router.get("/round-robin/next/{country_id}")
