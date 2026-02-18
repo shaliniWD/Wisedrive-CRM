@@ -514,15 +514,19 @@ export default function InspectionsPage() {
                         {hasBalanceDue && (
                           <button 
                             onClick={() => {
-                              setCollectBalanceInspection(inspection);
+                              // Add balance_due for compatibility with old data format
+                              setCollectBalanceInspection({
+                                ...inspection,
+                                balance_due: actualBalanceDue
+                              });
                               setIsCollectBalanceModalOpen(true);
                             }}
                             className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg text-xs font-medium hover:from-amber-600 hover:to-amber-700 transition-all shadow-sm flex items-center gap-1"
-                            title={`Collect Balance: ₹${inspection.balance_due?.toLocaleString()}`}
+                            title={`Collect Balance: ₹${actualBalanceDue?.toLocaleString()}`}
                             data-testid={`collect-balance-${inspection.id}`}
                           >
                             <CreditCard className="h-3.5 w-3.5" />
-                            Collect ₹{inspection.balance_due?.toLocaleString()}
+                            Collect ₹{actualBalanceDue?.toLocaleString()}
                           </button>
                         )}
                         
