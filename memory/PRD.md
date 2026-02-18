@@ -346,9 +346,10 @@ Returns:
 ## Document History
 - **Created:** December 2025
 - **Last Updated:** February 18, 2026
-- **Version:** 3.1
+- **Version:** 3.2
 
 ## Changelog
+- v3.2 (Feb 18, 2026): **Inspection City & Status Validation Feature** - Implemented three major features: (1) Inspection status validation - statuses like "Assigned to Mechanic", "In Progress", "Completed" now require a mechanic to be assigned first, showing error message if attempted without. (2) Country modal now has two sub-tabs: "Leads Cities" and "Inspection Cities" for separate city management. (3) New "Inspection City" tab in HR Module for assigning inspection cities to mechanics. Backend validation ensures mechanics can only be assigned to inspections in their designated cities. 100% test coverage.
 - v3.1 (Feb 18, 2026): **Inspections Page UX Polish** - Fixed two critical UI issues: (1) Intelligent Make/Model parsing - verbose Vaahan API strings like "FORD INDIA PVT LTD" now display as "Ford", "3.2 ENDEAVOUR 4 4 AT TITANIUM" as "Endeavour". Added extractMake() and extractModel() utility functions. (2) Table layout fix - removed horizontal scrollbar by using table-fixed with percentage column widths, Date/Time column now shows time below date. 100% frontend test coverage.
 - v3.0 (Feb 18, 2026): **Inspections Tab Full Enhancement** - Added inline editing for all fields: (1) Collect Balance button in Payment Status column, (2) Vehicle edit with Vaahan API integration, (3) Inspection Status dropdown with 8 status options, (4) Mechanic assignment modal, (5) Schedule edit modal. New backend APIs: PATCH /api/inspections/{id}/status, vehicle, assign-mechanic, schedule. 94% test coverage (17/18 tests).
 - v2.9 (Feb 18, 2026): **Collect Balance Feature Complete** - Full implementation of partial payment lifecycle. Inspections page enhanced with Payment Status and Inspection Status columns. "Collect Balance" button generates Razorpay link and sends via WhatsApp. Send Report disabled until full payment. Webhook handles balance payment completion. 100% test coverage (9 tests passing).
