@@ -157,6 +157,7 @@ export default function LeadsPage() {
   const [sources, setSources] = useState([]);
   const [statuses, setStatuses] = useState([]);
   const [inspectionPackages, setInspectionPackages] = useState([]); // Active packages from settings
+  const [availableOffers, setAvailableOffers] = useState([]); // Active offers for payment modal
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
