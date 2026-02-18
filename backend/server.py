@@ -2616,7 +2616,23 @@ class AdCityMapping(BaseModel):
     ad_id: str
     city: str
     city_id: Optional[str] = None
-    campaign_name: Optional[str] = None
+    ad_name: Optional[str] = None
+    ad_amount: Optional[float] = None
+    language: Optional[str] = None
+    campaign: Optional[str] = None
+    source: Optional[str] = None
+    is_active: bool = True
+
+
+class AdCityMappingUpdate(BaseModel):
+    city: Optional[str] = None
+    city_id: Optional[str] = None
+    ad_name: Optional[str] = None
+    ad_amount: Optional[float] = None
+    language: Optional[str] = None
+    campaign: Optional[str] = None
+    source: Optional[str] = None
+    is_active: Optional[bool] = None
 
 
 @api_router.get("/settings/ad-city-mappings")
@@ -2630,35 +2646,80 @@ async def get_ad_city_mappings(current_user: dict = Depends(get_current_user)):
 async def create_ad_city_mapping(mapping: AdCityMapping, current_user: dict = Depends(get_current_user)):
     """Create AD ID to City mapping"""
     role_code = current_user.get("role_code", "")
-    if role_code not in ["CEO", "HR_MANAGER"]:
+    if role_code not in ["CEO", "HR_MANAGER", "CTO"]:
         raise HTTPException(status_code=403, detail="Not authorized")
     
     # Check if mapping already exists
     existing = await db.ad_city_mappings.find_one({"ad_id": mapping.ad_id})
     if existing:
         # Update existing
+        update_data = mapping.model_dump()
+        update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
         await db.ad_city_mappings.update_one(
             {"ad_id": mapping.ad_id},
-            {"$set": mapping.model_dump()}
+            {"$set": update_data}
         )
+        return {"message": "Mapping updated", "id": existing.get("id")}
     else:
         # Create new
         mapping_dict = mapping.model_dump()
         mapping_dict["id"] = str(uuid.uuid4())
         mapping_dict["created_at"] = datetime.now(timezone.utc).isoformat()
         await db.ad_city_mappings.insert_one(mapping_dict)
+        return {"message": "Mapping created", "id": mapping_dict["id"]}
+
+
+@api_router.put("/settings/ad-city-mappings/{mapping_id}")
+async def update_ad_city_mapping(mapping_id: str, mapping: AdCityMappingUpdate, current_user: dict = Depends(get_current_user)):
+    """Update AD ID to City mapping"""
+    role_code = current_user.get("role_code", "")
+    if role_code not in ["CEO", "HR_MANAGER", "CTO"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
     
-    return {"message": "Mapping saved"}
+    existing = await db.ad_city_mappings.find_one({"id": mapping_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Mapping not found")
+    
+    update_data = {k: v for k, v in mapping.model_dump().items() if v is not None}
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.ad_city_mappings.update_one({"id": mapping_id}, {"$set": update_data})
+    
+    updated = await db.ad_city_mappings.find_one({"id": mapping_id}, {"_id": 0})
+    return updated
+
+
+@api_router.patch("/settings/ad-city-mappings/{mapping_id}/toggle-status")
+async def toggle_ad_mapping_status(mapping_id: str, current_user: dict = Depends(get_current_user)):
+    """Toggle AD mapping active status"""
+    role_code = current_user.get("role_code", "")
+    if role_code not in ["CEO", "HR_MANAGER", "CTO"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    existing = await db.ad_city_mappings.find_one({"id": mapping_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Mapping not found")
+    
+    new_status = not existing.get("is_active", True)
+    await db.ad_city_mappings.update_one(
+        {"id": mapping_id},
+        {"$set": {"is_active": new_status, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    return {"message": "Status updated", "is_active": new_status}
 
 
 @api_router.delete("/settings/ad-city-mappings/{ad_id}")
 async def delete_ad_city_mapping(ad_id: str, current_user: dict = Depends(get_current_user)):
     """Delete AD ID to City mapping"""
     role_code = current_user.get("role_code", "")
-    if role_code not in ["CEO", "HR_MANAGER"]:
+    if role_code not in ["CEO", "HR_MANAGER", "CTO"]:
         raise HTTPException(status_code=403, detail="Not authorized")
     
-    await db.ad_city_mappings.delete_one({"ad_id": ad_id})
+    # Try to delete by id first, then by ad_id
+    result = await db.ad_city_mappings.delete_one({"id": ad_id})
+    if result.deleted_count == 0:
+        await db.ad_city_mappings.delete_one({"ad_id": ad_id})
     return {"message": "Mapping deleted"}
 
 
