@@ -829,7 +829,7 @@ export default function InspectionsPage() {
   return (
     <div className="p-6 max-w-7xl mx-auto" data-testid="inspections-page">
       {/* Page Header with Tabs */}
-      <div className="flex justify-between items-start mb-8">
+      <div className="flex justify-between items-start mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Inspections</h1>
           <p className="text-gray-500 mt-1">Manage and track all vehicle inspections</p>
@@ -862,7 +862,67 @@ export default function InspectionsPage() {
         </div>
       </div>
 
-      {/* Summary Cards - Clickable */}
+      {/* Date Range Quick Selectors */}
+      <div className="flex flex-wrap items-center gap-3 mb-6">
+        <span className="text-sm font-medium text-gray-600">Show:</span>
+        <div className="flex items-center gap-1 p-1 bg-gray-100 rounded-lg">
+          {[
+            { key: 'today', label: 'Today' },
+            { key: 'week', label: 'This Week' },
+            { key: 'month', label: 'This Month' },
+            { key: 'year', label: 'This Year' },
+          ].map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => handleDateRangeChange(key)}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                dateRangeType === key 
+                  ? 'bg-white text-blue-700 shadow-sm' 
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+              data-testid={`date-range-${key}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        
+        {/* Custom Date Range */}
+        <div className="flex items-center gap-2 ml-2">
+          <button
+            onClick={() => handleDateRangeChange('custom')}
+            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors border ${
+              dateRangeType === 'custom' 
+                ? 'bg-blue-50 text-blue-700 border-blue-200' 
+                : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+            }`}
+          >
+            <Calendar className="h-4 w-4 inline mr-1" />
+            Custom
+          </button>
+          {dateRangeType === 'custom' && (
+            <div className="flex items-center gap-2">
+              <Input 
+                type="date" 
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="h-9 w-36"
+                data-testid="date-from"
+              />
+              <span className="text-gray-400">to</span>
+              <Input 
+                type="date" 
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="h-9 w-36"
+                data-testid="date-to"
+              />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Summary Cards - Clickable (replaced Unscheduled with New Inspections) */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-6">
         <SummaryCard 
           title="Total Inspections" 
@@ -889,12 +949,12 @@ export default function InspectionsPage() {
           active={cardFilter === 'completed'}
         />
         <SummaryCard 
-          title="Unscheduled" 
-          value={unscheduledCount} 
-          icon={AlertCircle} 
+          title="New Inspections" 
+          value={newInspectionsCount} 
+          icon={Plus} 
           color="text-purple-600" 
-          onClick={() => handleCardClick('unscheduled')}
-          active={cardFilter === 'unscheduled'}
+          onClick={() => handleCardClick('new')}
+          active={cardFilter === 'new'}
         />
       </div>
 
