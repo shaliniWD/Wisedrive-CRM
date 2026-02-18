@@ -655,6 +655,113 @@ export default function InspectionsPage() {
     setIsModalOpen(true);
   };
 
+  // Open Schedule Modal for Unscheduled Inspection
+  const openScheduleUnscheduledModal = (inspection) => {
+    setScheduleUnscheduledInspection(inspection);
+    setScheduleFormData({
+      car_number: inspection.car_number || '',
+      scheduled_date: '',
+      scheduled_time: '',
+      city: inspection.city || '',
+      address: inspection.address || ''
+    });
+    setScheduleVehicleData(null);
+    setIsScheduleUnscheduledModalOpen(true);
+  };
+  
+  // Search vehicle for schedule modal (Vaahan API)
+  const handleScheduleVehicleSearch = async () => {
+    if (!scheduleFormData.car_number || scheduleFormData.car_number.length < 6) {
+      toast.error('Please enter a valid vehicle number');
+      return;
+    }
+    
+    setScheduleVehicleSearching(true);
+    try {
+      const response = await vehicleApi.getDetails(scheduleFormData.car_number.toUpperCase().replace(/\s/g, ''));
+      const vehicle = response.data?.data || response.data;
+      if (vehicle && (vehicle.manufacturer || vehicle.model || vehicle.registration_number)) {
+        setScheduleVehicleData(vehicle);
+        toast.success('Vehicle details found!');
+      } else {
+        toast.info('Vehicle not found in database. You can proceed manually.');
+        setScheduleVehicleData(null);
+      }
+    } catch (error) {
+      const errorMsg = error.response?.data?.detail || '';
+      if (errorMsg.includes('Inconvenience') || errorMsg.includes('not found')) {
+        toast.info('Vehicle not found in RC database. You can proceed manually.');
+      } else {
+        toast.error('Unable to fetch vehicle details. You can proceed manually.');
+      }
+      setScheduleVehicleData(null);
+    } finally {
+      setScheduleVehicleSearching(false);
+    }
+  };
+  
+  // Submit Schedule for Unscheduled Inspection
+  const handleScheduleUnscheduledSubmit = async () => {
+    if (!scheduleUnscheduledInspection) return;
+    
+    if (!scheduleFormData.scheduled_date || !scheduleFormData.scheduled_time) {
+      toast.error('Please select date and time');
+      return;
+    }
+    if (!scheduleFormData.city) {
+      toast.error('Please select a city');
+      return;
+    }
+    
+    setScheduleSaving(true);
+    try {
+      const updateData = {
+        scheduled_date: scheduleFormData.scheduled_date,
+        scheduled_time: scheduleFormData.scheduled_time,
+        city: scheduleFormData.city,
+        address: scheduleFormData.address,
+        inspection_status: 'NEW_INSPECTION'
+      };
+      
+      // Add vehicle data if searched
+      if (scheduleFormData.car_number) {
+        updateData.car_number = scheduleFormData.car_number.toUpperCase().replace(/\s/g, '');
+      }
+      if (scheduleVehicleData) {
+        updateData.car_make = scheduleVehicleData.manufacturer || scheduleVehicleData.make || '';
+        updateData.car_model = scheduleVehicleData.model || '';
+        updateData.car_year = scheduleVehicleData.manufacturing_date?.split('/')?.pop() || scheduleVehicleData.year || '';
+        updateData.car_color = scheduleVehicleData.color || '';
+        updateData.fuel_type = scheduleVehicleData.fuel_type || '';
+      }
+      
+      await inspectionsApi.updateSchedule(scheduleUnscheduledInspection.id, updateData);
+      toast.success('Inspection scheduled successfully!');
+      setIsScheduleUnscheduledModalOpen(false);
+      setActiveTab('scheduled'); // Switch to scheduled tab
+      fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to schedule inspection');
+    } finally {
+      setScheduleSaving(false);
+    }
+  };
+  
+  // Handle card click filter
+  const handleCardClick = (filter) => {
+    if (cardFilter === filter) {
+      setCardFilter(null); // Toggle off
+    } else {
+      setCardFilter(filter);
+      // Auto-switch tab based on filter
+      if (filter === 'unscheduled') {
+        setActiveTab('unscheduled');
+      } else if (filter === 'scheduled' || filter === 'completed') {
+        setActiveTab('scheduled');
+      }
+    }
+  };
+
   const unscheduledCount = inspections.filter(i => !i.scheduled_date).length;
   const scheduledCount = inspections.filter(i => i.scheduled_date).length;
   const completedCount = inspections.filter(i => i.inspection_status === 'INSPECTION_COMPLETED').length;
