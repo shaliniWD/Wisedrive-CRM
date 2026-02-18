@@ -879,13 +879,13 @@ export default function InspectionsPage() {
                     </td>
                     
                     {/* Customer Column */}
-                    <td className="px-4 py-3 whitespace-nowrap">
+                    <td className="px-3 py-3">
                       <div className="flex items-center gap-2">
-                        <div className="h-8 w-8 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white font-medium text-xs flex-shrink-0">
+                        <div className="h-7 w-7 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white font-medium text-xs flex-shrink-0">
                           {inspection.customer_name?.charAt(0)?.toUpperCase()}
                         </div>
-                        <div>
-                          <div className="font-medium text-gray-900 text-sm">{inspection.customer_name}</div>
+                        <div className="min-w-0">
+                          <div className="font-medium text-gray-900 text-sm truncate">{inspection.customer_name}</div>
                           <div className="text-xs text-gray-500 font-mono">{inspection.customer_mobile}</div>
                         </div>
                       </div>
@@ -918,7 +918,7 @@ export default function InspectionsPage() {
                     </td>
                     
                     {/* Payment Status Column - With Collect Balance Button */}
-                    <td className="px-4 py-3 whitespace-nowrap">
+                    <td className="px-3 py-3">
                       {hasBalanceDue ? (
                         <div className="space-y-1">
                           <button 
@@ -929,7 +929,7 @@ export default function InspectionsPage() {
                               });
                               setIsCollectBalanceModalOpen(true);
                             }}
-                            className="px-2.5 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg text-xs font-medium hover:from-amber-600 hover:to-amber-700 transition-all shadow-sm flex items-center gap-1"
+                            className="px-2 py-1 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg text-xs font-medium hover:from-amber-600 hover:to-amber-700 transition-all shadow-sm flex items-center gap-1"
                             title={`Collect Balance: ₹${actualBalanceDue?.toLocaleString()}`}
                             data-testid={`collect-balance-${inspection.id}`}
                           >
@@ -951,12 +951,12 @@ export default function InspectionsPage() {
                     </td>
                     
                     {/* Inspection Status Column - Dropdown */}
-                    <td className="px-4 py-3 whitespace-nowrap">
+                    <td className="px-3 py-3">
                       <Select 
                         value={inspection.inspection_status} 
                         onValueChange={(value) => handleStatusChange(inspection.id, value)}
                       >
-                        <SelectTrigger className="h-8 text-xs w-[145px] border-gray-200" data-testid={`status-select-${inspection.id}`}>
+                        <SelectTrigger className="h-8 text-xs w-[130px] border-gray-200" data-testid={`status-select-${inspection.id}`}>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -972,13 +972,13 @@ export default function InspectionsPage() {
                     </td>
                     
                     {/* Mechanic Column - Editable */}
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1">
+                    <td className="px-3 py-3">
+                      <div className="flex items-center gap-1">
+                        <div className="flex-1 min-w-0">
                           {inspection.mechanic_name ? (
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1">
                               <UserCheck className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" />
-                              <span className="text-sm text-gray-700">{inspection.mechanic_name}</span>
+                              <span className="text-sm text-gray-700 truncate">{inspection.mechanic_name}</span>
                             </div>
                           ) : (
                             <span className="text-sm text-gray-400 italic">Not assigned</span>
@@ -1000,7 +1000,7 @@ export default function InspectionsPage() {
                     </td>
                     
                     {/* Location Column */}
-                    <td className="px-4 py-3 whitespace-nowrap">
+                    <td className="px-3 py-3">
                       <span className="inline-flex items-center gap-1 text-sm text-blue-600">
                         <MapPin className="h-3.5 w-3.5" />
                         {inspection.city}
@@ -1008,13 +1008,13 @@ export default function InspectionsPage() {
                     </td>
                     
                     {/* Inspection Report Column */}
-                    <td className="px-4 py-3 whitespace-nowrap">
+                    <td className="px-3 py-3">
                       <div className="flex items-center gap-1">
                         {/* View Report button - opens in new tab */}
                         <button 
                           onClick={() => handleViewReport(inspection)}
                           disabled={!inspection.report_url}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors ${
+                          className={`px-2 py-1 rounded-lg text-xs font-medium flex items-center gap-1 transition-colors ${
                             inspection.report_url 
                               ? 'bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200' 
                               : 'bg-gray-50 text-gray-400 cursor-not-allowed border border-gray-200'
@@ -1022,7 +1022,7 @@ export default function InspectionsPage() {
                           title={inspection.report_url ? 'View Report in new tab' : 'Report not available'}
                           data-testid={`view-report-${inspection.id}`}
                         >
-                          <Eye className="h-3.5 w-3.5" />
+                          <Eye className="h-3 w-3" />
                           View Report
                         </button>
                         
@@ -1030,11 +1030,11 @@ export default function InspectionsPage() {
                         {canSendReport && !inspection.report_url && (
                           <button 
                             onClick={() => handleSendReport(inspection)}
-                            className="p-1.5 text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                            className="p-1 text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
                             title="Send Report via WhatsApp"
                             data-testid={`send-report-${inspection.id}`}
                           >
-                            <Send className="h-4 w-4" />
+                            <Send className="h-3.5 w-3.5" />
                           </button>
                         )}
                       </div>
