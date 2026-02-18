@@ -1091,41 +1091,51 @@ export default function LeadsPage() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="space-y-1">
-                      {lead.payment_status === 'paid' || lead.status === 'PAID' ? (
-                        <div className="flex items-center gap-1 text-emerald-600">
+                      {(lead.payment_status === 'paid' || lead.status === 'PAID') && (
+                        <div className="flex items-center gap-1 text-emerald-600 mb-1">
                           <CheckCircle className="h-4 w-4" />
                           <span className="text-xs font-medium">Paid</span>
+                          {lead.payment_amount && (
+                            <span className="text-xs text-gray-500">(₹{lead.payment_amount?.toLocaleString()})</span>
+                          )}
                         </div>
-                      ) : (
-                        <>
-                          <button 
-                            className="px-2.5 py-1 text-xs bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg hover:from-amber-600 hover:to-amber-700 font-medium flex items-center gap-1 shadow-sm"
-                            onClick={() => openPaymentModal(lead)}
-                            data-testid={`send-pay-link-${lead.id}`}
+                      )}
+                      <button 
+                        className={`px-2.5 py-1 text-xs ${
+                          lead.payment_status === 'paid' || lead.status === 'PAID'
+                            ? 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700'
+                            : 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700'
+                        } text-white rounded-lg font-medium flex items-center gap-1 shadow-sm`}
+                        onClick={() => openPaymentModal(lead)}
+                        data-testid={`send-pay-link-${lead.id}`}
+                      >
+                        <CreditCard className="h-3 w-3" />
+                        {lead.payment_status === 'paid' || lead.status === 'PAID' 
+                          ? 'Send (Again)' 
+                          : lead.payment_link ? 'Resend' : 'Send'}
+                      </button>
+                      {lead.payment_link && (
+                        <div className="flex items-center gap-1 flex-wrap">
+                          <button
+                            onClick={() => window.open(lead.payment_link, '_blank')}
+                            className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-0.5"
+                            data-testid={`view-link-${lead.id}`}
                           >
-                            <CreditCard className="h-3 w-3" />
-                            {lead.payment_link ? 'Resend' : 'Send'}
+                            <Eye className="h-3 w-3" /> View
                           </button>
-                          {lead.payment_link && (
-                            <div className="flex items-center gap-1 flex-wrap">
-                              <button
-                                onClick={() => window.open(lead.payment_link, '_blank')}
-                                className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-0.5"
-                                data-testid={`view-link-${lead.id}`}
-                              >
-                                <Eye className="h-3 w-3" /> View
-                              </button>
-                              <span className="text-gray-300">|</span>
-                              <button
-                                onClick={async () => {
-                                  try { await navigator.clipboard.writeText(lead.payment_link); toast.success('Link copied!'); }
-                                  catch (err) { toast.success('Link copied!'); }
-                                }}
-                                className="text-xs text-gray-500 hover:text-gray-700 font-medium flex items-center gap-0.5"
-                                data-testid={`copy-link-${lead.id}`}
-                              >
-                                <Copy className="h-3 w-3" /> Copy
-                              </button>
+                          <span className="text-gray-300">|</span>
+                          <button
+                            onClick={async () => {
+                              try { await navigator.clipboard.writeText(lead.payment_link); toast.success('Link copied!'); }
+                              catch (err) { toast.success('Link copied!'); }
+                            }}
+                            className="text-xs text-gray-500 hover:text-gray-700 font-medium flex items-center gap-0.5"
+                            data-testid={`copy-link-${lead.id}`}
+                          >
+                            <Copy className="h-3 w-3" /> Copy
+                          </button>
+                          {!(lead.payment_status === 'paid' || lead.status === 'PAID') && (
+                            <>
                               <span className="text-gray-300">|</span>
                               <button
                                 onClick={() => handleCheckPaymentStatus(lead.id)}
@@ -1140,9 +1150,9 @@ export default function LeadsPage() {
                                 )}
                                 Check
                               </button>
-                            </div>
+                            </>
                           )}
-                        </>
+                        </div>
                       )}
                     </div>
                   </td>
