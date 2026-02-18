@@ -15,11 +15,8 @@ import {
   Search, Loader2, ClipboardCheck, Filter, Calendar, MapPin, 
   Car, User, Download, Eye, Edit2, Clock, CheckCircle, XCircle, 
   AlertCircle, Play, Plus, Send, CreditCard, DollarSign, FileText,
-  UserCheck, CalendarClock, RefreshCw, Ban
+  UserCheck, CalendarClock, RefreshCw, Ban, Copy, ExternalLink, Link2
 } from 'lucide-react';
-import axios from 'axios';
-
-const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 // Inspection Status options
 const INSPECTION_STATUSES = [
