@@ -106,6 +106,16 @@ export default function AdAnalyticsPage() {
       // Fetch Meta status
       const statusRes = await metaAdsApi.getStatus();
       setMetaStatus(statusRes.data);
+      
+      // Fetch token info if user can manage tokens
+      if (canManageToken) {
+        try {
+          const tokenRes = await metaAdsApi.getTokenInfo();
+          setTokenInfo(tokenRes.data);
+        } catch (err) {
+          console.log('Token info not available');
+        }
+      }
 
       // Fetch performance data
       const { date_from, date_to } = getDateRange();
@@ -117,6 +127,71 @@ export default function AdAnalyticsPage() {
     } finally {
       setLoading(false);
       setRefreshing(false);
+    }
+  };
+  
+  // Token management functions
+  const handleRefreshToken = async () => {
+    setTokenLoading(true);
+    try {
+      const result = await metaAdsApi.refreshToken();
+      if (result.data.success) {
+        toast.success(`Token refreshed! Valid for ${result.data.expires_in_days} days`);
+        fetchData(true);
+      } else {
+        toast.error(result.data.error || 'Failed to refresh token');
+        if (result.data.needs_manual_refresh) {
+          setShowTokenModal(true);
+        }
+      }
+    } catch (error) {
+      toast.error('Failed to refresh token');
+    } finally {
+      setTokenLoading(false);
+    }
+  };
+  
+  const handleAutoRefresh = async () => {
+    setTokenLoading(true);
+    try {
+      const result = await metaAdsApi.autoRefresh(7);
+      if (result.data.action === 'refreshed') {
+        toast.success(`Token auto-refreshed! Valid for ${result.data.new_expires_in_days} days`);
+        fetchData(true);
+      } else if (result.data.action === 'none') {
+        toast.info(result.data.reason);
+      } else if (result.data.needs_manual_refresh) {
+        toast.warning('Token needs manual refresh');
+        setShowTokenModal(true);
+      }
+    } catch (error) {
+      toast.error('Auto-refresh failed');
+    } finally {
+      setTokenLoading(false);
+    }
+  };
+  
+  const handleUpdateToken = async () => {
+    if (!newToken.trim()) {
+      toast.error('Please enter a valid token');
+      return;
+    }
+    
+    setTokenLoading(true);
+    try {
+      const result = await metaAdsApi.updateToken(newToken.trim());
+      if (result.data.success) {
+        toast.success('Token updated successfully!');
+        setShowTokenModal(false);
+        setNewToken('');
+        fetchData(true);
+      } else {
+        toast.error(result.data.error || 'Invalid token');
+      }
+    } catch (error) {
+      toast.error('Failed to update token');
+    } finally {
+      setTokenLoading(false);
     }
   };
 
