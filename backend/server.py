@@ -1681,7 +1681,8 @@ async def create_lead_payment_link(lead_id: str, payment_data: PaymentLinkReques
         "payment_link_id": result.get("payment_link_id"),
         "payment_link_sent_at": datetime.now(timezone.utc).isoformat(),
         "payment_status": "created",
-        "payment_amount": amount,
+        "payment_amount": amount,  # Amount to charge via Razorpay
+        "total_amount": payment_data.total_amount or amount,  # Total package amount after discounts
         "package_id": payment_data.package_id,
         "package_name": package.get("name"),
         "no_of_inspections": no_of_inspections,
@@ -1690,6 +1691,10 @@ async def create_lead_payment_link(lead_id: str, payment_data: PaymentLinkReques
         "base_amount": payment_data.base_amount,
         "discount_amount": payment_data.discount_amount,
         "inspection_schedules": inspection_schedules_data,  # Store schedules for processing on payment
+        # Partial payment fields
+        "is_partial_payment": payment_data.is_partial_payment,
+        "partial_payment_amount": payment_data.partial_payment_amount,
+        "balance_due": payment_data.balance_due,
         "status": "PAYMENT LINK SENT",
         "updated_at": datetime.now(timezone.utc).isoformat(),
         "updated_by": current_user["id"]
