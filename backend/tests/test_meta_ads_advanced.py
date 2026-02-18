@@ -34,7 +34,7 @@ class TestMetaAdsAdvancedFeatures:
         })
         
         if login_response.status_code == 200:
-            token = login_response.json().get("token")
+            token = login_response.json().get("access_token")
             self.session.headers.update({"Authorization": f"Bearer {token}"})
             self.logged_in = True
         else:
@@ -157,7 +157,7 @@ class TestMetaAdsAdvancedFeatures:
         })
         
         if login_response.status_code == 200:
-            token = login_response.json().get("token")
+            token = login_response.json().get("access_token")
             session.headers.update({"Authorization": f"Bearer {token}"})
             
             # Try to access sync-status
