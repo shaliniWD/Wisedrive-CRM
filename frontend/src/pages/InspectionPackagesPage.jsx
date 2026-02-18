@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
@@ -12,9 +13,9 @@ import {
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { 
-  Plus, Loader2, Pencil, Trash2, Search, Settings, Package,
-  CheckCircle, X, ListChecks, Car, IndianRupee, Award, Layers,
-  ChevronDown, ChevronUp, GripVertical, Copy, PauseCircle, PlayCircle
+  Plus, Loader2, Pencil, Trash2, Package, CheckCircle, X, ListChecks,
+  IndianRupee, Award, Layers, ChevronDown, ChevronUp, Copy, PauseCircle,
+  PlayCircle, Gift, Percent, Calendar, Tag, CreditCard, BadgePercent
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -47,33 +48,16 @@ const CategoryCard = ({ category, onEdit, onCopy, onToggle }) => {
             </div>
           </div>
           <div className="flex items-center gap-1">
-            <button
-              onClick={() => setExpanded(!expanded)}
-              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-            >
+            <button onClick={() => setExpanded(!expanded)} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
               {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </button>
-            <button
-              onClick={() => onCopy(category)}
-              className="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-              title="Copy & Create New"
-              data-testid={`copy-category-${category.id}`}
-            >
+            <button onClick={() => onCopy(category)} className="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors" title="Copy & Create New">
               <Copy className="h-4 w-4" />
             </button>
-            <button
-              onClick={() => onEdit(category)}
-              className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-              data-testid={`edit-category-${category.id}`}
-            >
+            <button onClick={() => onEdit(category)} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
               <Pencil className="h-4 w-4" />
             </button>
-            <button
-              onClick={() => onToggle(category)}
-              className={`p-2 rounded-lg transition-colors ${category.is_active !== false ? 'text-gray-400 hover:text-amber-600 hover:bg-amber-50' : 'text-gray-400 hover:text-emerald-600 hover:bg-emerald-50'}`}
-              title={category.is_active !== false ? 'Deactivate' : 'Activate'}
-              data-testid={`toggle-category-${category.id}`}
-            >
+            <button onClick={() => onToggle(category)} className={`p-2 rounded-lg transition-colors ${category.is_active !== false ? 'text-gray-400 hover:text-amber-600 hover:bg-amber-50' : 'text-gray-400 hover:text-emerald-600 hover:bg-emerald-50'}`}>
               {category.is_active !== false ? <PauseCircle className="h-4 w-4" /> : <PlayCircle className="h-4 w-4" />}
             </button>
           </div>
@@ -81,7 +65,6 @@ const CategoryCard = ({ category, onEdit, onCopy, onToggle }) => {
         
         {expanded && (
           <div className="mt-4 pt-4 border-t space-y-4">
-            {/* Main Inspection Items */}
             {category.items && category.items.length > 0 && (
               <div>
                 <h4 className="text-sm font-medium text-gray-700 mb-2">Inspection Items</h4>
@@ -95,8 +78,6 @@ const CategoryCard = ({ category, onEdit, onCopy, onToggle }) => {
                 </div>
               </div>
             )}
-            
-            {/* Additional Benefits */}
             {category.benefits && category.benefits.length > 0 && (
               <div>
                 <h4 className="text-sm font-medium text-gray-700 mb-2">Additional Benefits</h4>
@@ -117,20 +98,17 @@ const CategoryCard = ({ category, onEdit, onCopy, onToggle }) => {
   );
 };
 
-// Package Card Component - Redesigned for consistency
-const PackageCard = ({ pkg, categories, onEdit, onCopy, onToggle }) => {
+// Package Card Component
+const PackageCard = ({ pkg, categories, offers, onEdit, onCopy, onToggle }) => {
   const includedCategories = categories.filter(c => pkg.categories?.includes(c.id));
+  const applicableOffers = offers.filter(o => pkg.applicable_offer_ids?.includes(o.id));
   const isActive = pkg.is_active !== false;
   const isRecommended = pkg.is_recommended && isActive;
   
   return (
-    <div 
-      className={`border rounded-xl overflow-hidden transition-all h-full flex flex-col ${isActive ? 'bg-white shadow-sm hover:shadow-md' : 'bg-gray-50 border-gray-200'}`}
-      data-testid={`package-card-${pkg.id}`}
-    >
-      {/* Package Header - Fixed Height */}
+    <div className={`border rounded-xl overflow-hidden transition-all h-full flex flex-col ${isActive ? 'bg-white shadow-sm hover:shadow-md' : 'bg-gray-50 border-gray-200'}`} data-testid={`package-card-${pkg.id}`}>
+      {/* Package Header */}
       <div className={`p-4 ${isRecommended ? 'bg-gradient-to-r from-blue-600 to-blue-700' : 'bg-slate-50 border-b'}`}>
-        {/* Status Badge - Top Right */}
         <div className="flex items-start justify-between gap-2 mb-3">
           <div className="flex items-center gap-2 flex-wrap">
             {isRecommended && (
@@ -138,30 +116,25 @@ const PackageCard = ({ pkg, categories, onEdit, onCopy, onToggle }) => {
                 <Award className="h-3 w-3" /> Recommended
               </span>
             )}
-            {!isActive && (
-              <span className="px-2 py-1 bg-gray-400 text-white text-xs font-semibold rounded-full">
-                Inactive
+            {!isActive && <span className="px-2 py-1 bg-gray-400 text-white text-xs font-semibold rounded-full">Inactive</span>}
+            {pkg.allow_partial_payment && (
+              <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-semibold rounded-full inline-flex items-center gap-1">
+                <CreditCard className="h-3 w-3" /> Partial Pay
               </span>
             )}
           </div>
-          {/* Price - Always visible */}
           <div className={`text-right flex-shrink-0 ${isRecommended ? 'text-white' : 'text-gray-900'}`}>
-            <p className="text-xl font-bold whitespace-nowrap">
-              {pkg.currency_symbol || '₹'}{(pkg.price || 0).toLocaleString('en-IN')}
-            </p>
+            <p className="text-xl font-bold whitespace-nowrap">{pkg.currency_symbol || '₹'}{(pkg.price || 0).toLocaleString('en-IN')}</p>
             <p className={`text-xs ${isRecommended ? 'text-blue-100' : 'text-gray-500'}`}>Incl. taxes</p>
           </div>
         </div>
         
-        {/* Package Name & Stats */}
         <div className="flex items-center gap-3">
-          <div className={`h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 ${isRecommended ? 'bg-white/20' : 'bg-white border'} ${!isActive ? 'opacity-60' : ''}`}>
+          <div className={`h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 ${isRecommended ? 'bg-white/20' : 'bg-white border'}`}>
             <Package className={`h-5 w-5 ${isRecommended ? 'text-white' : 'text-blue-600'}`} />
           </div>
           <div className="min-w-0 flex-1">
-            <h3 className={`font-semibold truncate ${isRecommended ? 'text-white' : 'text-gray-900'}`} title={pkg.name}>
-              {pkg.name}
-            </h3>
+            <h3 className={`font-semibold truncate ${isRecommended ? 'text-white' : 'text-gray-900'}`}>{pkg.name}</h3>
             <div className={`flex items-center gap-2 text-xs ${isRecommended ? 'text-blue-100' : 'text-gray-500'}`}>
               <span className="font-medium">{pkg.total_check_points || 0}+ pts</span>
               <span>•</span>
@@ -171,13 +144,36 @@ const PackageCard = ({ pkg, categories, onEdit, onCopy, onToggle }) => {
         </div>
       </div>
       
-      {/* Included Categories - Flex grow to fill space */}
+      {/* Package Details */}
       <div className="p-4 flex-1 flex flex-col">
+        {/* Payment & Discount Info */}
+        {(pkg.allow_partial_payment || pkg.allow_discount || pkg.allow_offers) && (
+          <div className="mb-3 space-y-2">
+            {pkg.allow_partial_payment && (
+              <div className="flex items-center gap-2 text-xs bg-purple-50 text-purple-700 px-2 py-1.5 rounded-lg">
+                <CreditCard className="h-3.5 w-3.5" />
+                <span>Partial: {pkg.partial_payment_type === 'percentage' ? `${pkg.partial_payment_value}%` : `₹${pkg.partial_payment_value}`} upfront</span>
+              </div>
+            )}
+            {pkg.allow_discount && (
+              <div className="flex items-center gap-2 text-xs bg-emerald-50 text-emerald-700 px-2 py-1.5 rounded-lg">
+                <BadgePercent className="h-3.5 w-3.5" />
+                <span>Discount: {pkg.discount_type === 'percentage' ? `${pkg.discount_value}%` : `₹${pkg.discount_value}`} off</span>
+              </div>
+            )}
+            {pkg.allow_offers && applicableOffers.length > 0 && (
+              <div className="flex items-center gap-2 text-xs bg-orange-50 text-orange-700 px-2 py-1.5 rounded-lg">
+                <Gift className="h-3.5 w-3.5" />
+                <span>{applicableOffers.length} offer{applicableOffers.length > 1 ? 's' : ''} available</span>
+              </div>
+            )}
+          </div>
+        )}
+        
+        {/* Categories */}
         <div className="flex items-center justify-between mb-2">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Includes</p>
-          <span className="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs font-semibold rounded">
-            {includedCategories.length} {includedCategories.length === 1 ? 'category' : 'categories'}
-          </span>
+          <span className="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs font-semibold rounded">{includedCategories.length} categories</span>
         </div>
         
         <div className="space-y-2 flex-1">
@@ -186,64 +182,101 @@ const PackageCard = ({ pkg, categories, onEdit, onCopy, onToggle }) => {
               <p className="text-xs text-gray-400">No categories assigned</p>
             </div>
           ) : (
-            includedCategories.slice(0, 4).map((cat) => (
+            includedCategories.slice(0, 3).map((cat) => (
               <div key={cat.id} className="flex items-center justify-between text-sm py-1">
                 <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <div 
-                    className="h-2 w-2 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: cat.color || '#3B82F6' }}
-                  />
-                  <span className="text-gray-700 truncate" title={cat.name}>{cat.name}</span>
-                  {cat.is_free && (
-                    <span className="px-1 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded flex-shrink-0">FREE</span>
-                  )}
+                  <div className="h-2 w-2 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color || '#3B82F6' }} />
+                  <span className="text-gray-700 truncate">{cat.name}</span>
                 </div>
                 <span className="text-gray-500 text-xs font-medium flex-shrink-0 ml-2">{cat.check_points} pts</span>
               </div>
             ))
           )}
-          {includedCategories.length > 4 && (
-            <p className="text-xs text-gray-400 text-center">+{includedCategories.length - 4} more categories</p>
+          {includedCategories.length > 3 && (
+            <p className="text-xs text-gray-400 text-center">+{includedCategories.length - 3} more</p>
           )}
         </div>
       </div>
       
-      {/* Actions Footer - Fixed at bottom */}
+      {/* Actions Footer */}
       <div className="px-4 py-3 border-t bg-gray-50/50 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => onToggle(pkg)}
-            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-              isActive ? 'bg-emerald-500' : 'bg-gray-300'
-            }`}
-            data-testid={`toggle-package-${pkg.id}`}
-          >
-            <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform shadow-sm ${
-              isActive ? 'translate-x-5' : 'translate-x-0.5'
-            }`} />
+          <button onClick={() => onToggle(pkg)} className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${isActive ? 'bg-emerald-500' : 'bg-gray-300'}`}>
+            <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform shadow-sm ${isActive ? 'translate-x-5' : 'translate-x-0.5'}`} />
           </button>
-          <span className={`text-xs font-medium ${isActive ? 'text-emerald-600' : 'text-gray-500'}`}>
-            {isActive ? 'Active' : 'Inactive'}
-          </span>
+          <span className={`text-xs font-medium ${isActive ? 'text-emerald-600' : 'text-gray-500'}`}>{isActive ? 'Active' : 'Inactive'}</span>
         </div>
         <div className="flex items-center gap-1">
-          <button
-            onClick={() => onCopy(pkg)}
-            className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-            title="Copy & Create New"
-            data-testid={`copy-package-${pkg.id}`}
-          >
+          <button onClick={() => onCopy(pkg)} className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors" title="Copy">
             <Copy className="h-4 w-4" />
           </button>
-          <button
-            onClick={() => onEdit(pkg)}
-            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-            title="Edit Package"
-            data-testid={`edit-package-${pkg.id}`}
-          >
+          <button onClick={() => onEdit(pkg)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit">
             <Pencil className="h-4 w-4" />
           </button>
         </div>
+      </div>
+    </div>
+  );
+};
+
+// Offer Card Component
+const OfferCard = ({ offer, onEdit, onToggle, onDelete }) => {
+  const now = new Date();
+  const validFrom = new Date(offer.valid_from);
+  const validUntil = new Date(offer.valid_until);
+  const isExpired = validUntil < now;
+  const isUpcoming = validFrom > now;
+  const isCurrentlyValid = !isExpired && !isUpcoming && offer.is_active;
+  
+  return (
+    <div className={`border rounded-xl overflow-hidden ${offer.is_active && !isExpired ? 'bg-white' : 'bg-gray-50'}`} data-testid={`offer-card-${offer.id}`}>
+      <div className="p-4">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`h-12 w-12 rounded-xl flex items-center justify-center ${isCurrentlyValid ? 'bg-gradient-to-br from-orange-400 to-red-500' : 'bg-gray-200'}`}>
+              <Gift className={`h-6 w-6 ${isCurrentlyValid ? 'text-white' : 'text-gray-400'}`} />
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                {offer.name}
+                {isExpired && <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs font-medium rounded-full">Expired</span>}
+                {isUpcoming && <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">Upcoming</span>}
+                {isCurrentlyValid && <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-medium rounded-full">Active</span>}
+                {!offer.is_active && !isExpired && <span className="px-2 py-0.5 bg-gray-200 text-gray-600 text-xs font-medium rounded-full">Disabled</span>}
+              </h3>
+              <p className="text-sm text-gray-500">
+                {offer.discount_type === 'percentage' ? `${offer.discount_value}% off` : `₹${offer.discount_value} off`}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1">
+            <button onClick={() => onEdit(offer)} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+              <Pencil className="h-4 w-4" />
+            </button>
+            <button onClick={() => onToggle(offer)} className={`p-2 rounded-lg transition-colors ${offer.is_active ? 'text-gray-400 hover:text-amber-600 hover:bg-amber-50' : 'text-gray-400 hover:text-emerald-600 hover:bg-emerald-50'}`}>
+              {offer.is_active ? <PauseCircle className="h-4 w-4" /> : <PlayCircle className="h-4 w-4" />}
+            </button>
+            <button onClick={() => onDelete(offer)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+        
+        {/* Validity */}
+        <div className="mt-3 flex items-center gap-4 text-xs text-gray-500">
+          <div className="flex items-center gap-1">
+            <Calendar className="h-3.5 w-3.5" />
+            <span>From: {validFrom.toLocaleDateString()}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Calendar className="h-3.5 w-3.5" />
+            <span>Until: {validUntil.toLocaleDateString()}</span>
+          </div>
+        </div>
+        
+        {offer.description && (
+          <p className="mt-2 text-sm text-gray-600">{offer.description}</p>
+        )}
       </div>
     </div>
   );
@@ -255,41 +288,38 @@ export default function InspectionPackagesPage() {
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState([]);
   const [packages, setPackages] = useState([]);
+  const [offers, setOffers] = useState([]);
   const [countries, setCountries] = useState([]);
   const [selectedCountry, setSelectedCountry] = useState('');
   
   // Modal states
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isPackageModalOpen, setIsPackageModalOpen] = useState(false);
+  const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
   const [editingPackage, setEditingPackage] = useState(null);
+  const [editingOffer, setEditingOffer] = useState(null);
   const [saving, setSaving] = useState(false);
   
   // Category form
   const [categoryForm, setCategoryForm] = useState({
-    name: '',
-    description: '',
-    check_points: 0,
-    icon: '',
-    color: '#3B82F6',
-    items: [],
-    benefits: [],
-    is_free: false,
-    order: 0,
+    name: '', description: '', check_points: 0, icon: '', color: '#3B82F6',
+    items: [], benefits: [], is_free: false, order: 0,
   });
   
-  // Package form
+  // Package form with new fields
   const [packageForm, setPackageForm] = useState({
-    name: '',
-    description: '',
-    price: 0,
-    currency: 'INR',
-    currency_symbol: '₹',
-    categories: [],
-    no_of_inspections: 1,
-    is_recommended: false,
-    order: 0,
-    brands_covered: [],
+    name: '', description: '', price: 0, currency: 'INR', currency_symbol: '₹',
+    categories: [], no_of_inspections: 1, is_recommended: false, order: 0, brands_covered: [],
+    allow_partial_payment: false, partial_payment_type: 'percentage', partial_payment_value: 0,
+    allow_discount: false, discount_type: 'percentage', discount_value: 0,
+    allow_offers: false, applicable_offer_ids: [],
+  });
+  
+  // Offer form
+  const [offerForm, setOfferForm] = useState({
+    name: '', description: '', discount_type: 'percentage', discount_value: 0,
+    valid_from: '', valid_until: '', is_active: true,
   });
   
   // New item inputs
@@ -300,7 +330,6 @@ export default function InspectionPackagesPage() {
     try {
       const response = await hrApi.getAllCountries();
       setCountries(response.data || []);
-      // Auto-select user's country
       if (user?.country_id) {
         setSelectedCountry(user.country_id);
       } else if (response.data?.length > 0) {
@@ -315,15 +344,17 @@ export default function InspectionPackagesPage() {
     if (!selectedCountry) return;
     setLoading(true);
     try {
-      const [categoriesRes, packagesRes] = await Promise.all([
+      const [categoriesRes, packagesRes, offersRes] = await Promise.all([
         inspectionPackagesApi.getCategories(selectedCountry),
         inspectionPackagesApi.getPackages(selectedCountry),
+        inspectionPackagesApi.getOffers(selectedCountry),
       ]);
       setCategories(categoriesRes.data || []);
       setPackages(packagesRes.data || []);
+      setOffers(offersRes.data || []);
     } catch (error) {
       console.error('Failed to load data:', error);
-      toast.error('Failed to load inspection packages');
+      toast.error('Failed to load data');
     } finally {
       setLoading(false);
     }
@@ -337,38 +368,24 @@ export default function InspectionPackagesPage() {
     if (category) {
       setEditingCategory(category);
       setCategoryForm({
-        name: category.name || '',
-        description: category.description || '',
-        check_points: category.check_points || 0,
-        icon: category.icon || '',
-        color: category.color || '#3B82F6',
-        items: category.items || [],
-        benefits: category.benefits || [],
-        is_free: category.is_free || false,
+        name: category.name || '', description: category.description || '',
+        check_points: category.check_points || 0, icon: category.icon || '',
+        color: category.color || '#3B82F6', items: category.items || [],
+        benefits: category.benefits || [], is_free: category.is_free || false,
         order: category.order || 0,
       });
     } else {
       setEditingCategory(null);
       setCategoryForm({
-        name: '',
-        description: '',
-        check_points: 0,
-        icon: '',
-        color: '#3B82F6',
-        items: [],
-        benefits: [],
-        is_free: false,
-        order: categories.length,
+        name: '', description: '', check_points: 0, icon: '', color: '#3B82F6',
+        items: [], benefits: [], is_free: false, order: categories.length,
       });
     }
     setIsCategoryModalOpen(true);
   };
 
   const handleSaveCategory = async () => {
-    if (!categoryForm.name) {
-      toast.error('Please enter category name');
-      return;
-    }
+    if (!categoryForm.name) { toast.error('Please enter category name'); return; }
     setSaving(true);
     try {
       if (editingCategory) {
@@ -387,35 +404,18 @@ export default function InspectionPackagesPage() {
     }
   };
 
-  const handleDeleteCategory = async (category) => {
-    if (!window.confirm(`Delete "${category.name}"? This cannot be undone.`)) return;
-    try {
-      await inspectionPackagesApi.deleteCategory(category.id);
-      toast.success('Category deleted');
-      fetchData();
-    } catch (error) {
-      toast.error('Failed to delete category');
-    }
-  };
-
-  // Copy category
   const handleCopyCategory = (category) => {
-    setEditingCategory(null);  // Creating new, not editing
+    setEditingCategory(null);
     setCategoryForm({
-      name: `${category.name} (Copy)`,
-      description: category.description || '',
-      check_points: category.check_points || 0,
-      icon: category.icon || '',
-      color: category.color || '#3B82F6',
-      items: category.items || [],
-      benefits: category.benefits || [],
-      is_free: category.is_free || false,
+      name: `${category.name} (Copy)`, description: category.description || '',
+      check_points: category.check_points || 0, icon: category.icon || '',
+      color: category.color || '#3B82F6', items: category.items || [],
+      benefits: category.benefits || [], is_free: category.is_free || false,
       order: categories.length,
     });
     setIsCategoryModalOpen(true);
   };
 
-  // Toggle category status
   const handleToggleCategory = async (category) => {
     try {
       await inspectionPackagesApi.toggleCategoryStatus(category.id);
@@ -431,30 +431,28 @@ export default function InspectionPackagesPage() {
     if (pkg) {
       setEditingPackage(pkg);
       setPackageForm({
-        name: pkg.name || '',
-        description: pkg.description || '',
-        price: pkg.price || 0,
-        currency: pkg.currency || 'INR',
-        currency_symbol: pkg.currency_symbol || '₹',
-        categories: pkg.categories || [],
-        no_of_inspections: pkg.no_of_inspections || 1,
-        is_recommended: pkg.is_recommended || false,
-        order: pkg.order || 0,
-        brands_covered: pkg.brands_covered || [],
+        name: pkg.name || '', description: pkg.description || '',
+        price: pkg.price || 0, currency: pkg.currency || 'INR',
+        currency_symbol: pkg.currency_symbol || '₹', categories: pkg.categories || [],
+        no_of_inspections: pkg.no_of_inspections || 1, is_recommended: pkg.is_recommended || false,
+        order: pkg.order || 0, brands_covered: pkg.brands_covered || [],
+        allow_partial_payment: pkg.allow_partial_payment || false,
+        partial_payment_type: pkg.partial_payment_type || 'percentage',
+        partial_payment_value: pkg.partial_payment_value || 0,
+        allow_discount: pkg.allow_discount || false,
+        discount_type: pkg.discount_type || 'percentage',
+        discount_value: pkg.discount_value || 0,
+        allow_offers: pkg.allow_offers || false,
+        applicable_offer_ids: pkg.applicable_offer_ids || [],
       });
     } else {
       setEditingPackage(null);
       setPackageForm({
-        name: '',
-        description: '',
-        price: 0,
-        currency: 'INR',
-        currency_symbol: '₹',
-        categories: [],
-        no_of_inspections: 1,
-        is_recommended: false,
-        order: packages.length,
-        brands_covered: [],
+        name: '', description: '', price: 0, currency: 'INR', currency_symbol: '₹',
+        categories: [], no_of_inspections: 1, is_recommended: false, order: packages.length,
+        brands_covered: [], allow_partial_payment: false, partial_payment_type: 'percentage',
+        partial_payment_value: 0, allow_discount: false, discount_type: 'percentage',
+        discount_value: 0, allow_offers: false, applicable_offer_ids: [],
       });
     }
     setIsPackageModalOpen(true);
@@ -494,69 +492,121 @@ export default function InspectionPackagesPage() {
     }
   };
 
-  // Copy package
   const handleCopyPackage = (pkg) => {
-    setEditingPackage(null);  // Creating new, not editing
+    setEditingPackage(null);
     setPackageForm({
-      name: `${pkg.name} (Copy)`,
-      description: pkg.description || '',
-      price: pkg.price || 0,
-      currency: pkg.currency || 'INR',
-      currency_symbol: pkg.currency_symbol || '₹',
-      categories: pkg.categories || [],
-      no_of_inspections: pkg.no_of_inspections || 1,
-      is_recommended: false,  // Don't copy recommended status
-      order: packages.length,
-      brands_covered: pkg.brands_covered || [],
+      name: `${pkg.name} (Copy)`, description: pkg.description || '',
+      price: pkg.price || 0, currency: pkg.currency || 'INR',
+      currency_symbol: pkg.currency_symbol || '₹', categories: pkg.categories || [],
+      no_of_inspections: pkg.no_of_inspections || 1, is_recommended: false,
+      order: packages.length, brands_covered: pkg.brands_covered || [],
+      allow_partial_payment: pkg.allow_partial_payment || false,
+      partial_payment_type: pkg.partial_payment_type || 'percentage',
+      partial_payment_value: pkg.partial_payment_value || 0,
+      allow_discount: pkg.allow_discount || false,
+      discount_type: pkg.discount_type || 'percentage',
+      discount_value: pkg.discount_value || 0,
+      allow_offers: pkg.allow_offers || false,
+      applicable_offer_ids: pkg.applicable_offer_ids || [],
     });
     setIsPackageModalOpen(true);
   };
 
-  const handleDeletePackage = async (pkg) => {
-    if (!window.confirm(`Delete "${pkg.name}"? This cannot be undone.`)) return;
+  // Offer Modal Functions
+  const openOfferModal = (offer = null) => {
+    if (offer) {
+      setEditingOffer(offer);
+      setOfferForm({
+        name: offer.name || '', description: offer.description || '',
+        discount_type: offer.discount_type || 'percentage',
+        discount_value: offer.discount_value || 0,
+        valid_from: offer.valid_from ? offer.valid_from.split('T')[0] : '',
+        valid_until: offer.valid_until ? offer.valid_until.split('T')[0] : '',
+        is_active: offer.is_active !== false,
+      });
+    } else {
+      setEditingOffer(null);
+      const today = new Date().toISOString().split('T')[0];
+      const nextMonth = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      setOfferForm({
+        name: '', description: '', discount_type: 'percentage', discount_value: 0,
+        valid_from: today, valid_until: nextMonth, is_active: true,
+      });
+    }
+    setIsOfferModalOpen(true);
+  };
+
+  const handleSaveOffer = async () => {
+    if (!offerForm.name || !offerForm.valid_from || !offerForm.valid_until) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+    setSaving(true);
     try {
-      await inspectionPackagesApi.deletePackage(pkg.id);
-      toast.success('Package deleted');
+      const data = {
+        ...offerForm,
+        country_id: selectedCountry,
+        valid_from: new Date(offerForm.valid_from).toISOString(),
+        valid_until: new Date(offerForm.valid_until + 'T23:59:59').toISOString(),
+      };
+      if (editingOffer) {
+        await inspectionPackagesApi.updateOffer(editingOffer.id, data);
+        toast.success('Offer updated');
+      } else {
+        await inspectionPackagesApi.createOffer(data);
+        toast.success('Offer created');
+      }
+      setIsOfferModalOpen(false);
       fetchData();
     } catch (error) {
-      toast.error('Failed to delete package');
+      toast.error('Failed to save offer');
+    } finally {
+      setSaving(false);
     }
   };
 
-  // Add/Remove items
+  const handleToggleOffer = async (offer) => {
+    try {
+      await inspectionPackagesApi.toggleOfferStatus(offer.id);
+      toast.success(offer.is_active ? 'Offer disabled' : 'Offer enabled');
+      fetchData();
+    } catch (error) {
+      toast.error('Failed to toggle offer status');
+    }
+  };
+
+  const handleDeleteOffer = async (offer) => {
+    if (!window.confirm(`Delete "${offer.name}"? This cannot be undone.`)) return;
+    try {
+      await inspectionPackagesApi.deleteOffer(offer.id);
+      toast.success('Offer deleted');
+      fetchData();
+    } catch (error) {
+      toast.error('Failed to delete offer');
+    }
+  };
+
+  // Item management
   const addItem = () => {
     if (!newItem.trim()) return;
-    setCategoryForm({
-      ...categoryForm,
-      items: [...categoryForm.items, { name: newItem.trim() }],
-    });
+    setCategoryForm({ ...categoryForm, items: [...categoryForm.items, { name: newItem.trim() }] });
     setNewItem('');
   };
 
   const removeItem = (index) => {
-    setCategoryForm({
-      ...categoryForm,
-      items: categoryForm.items.filter((_, i) => i !== index),
-    });
+    setCategoryForm({ ...categoryForm, items: categoryForm.items.filter((_, i) => i !== index) });
   };
 
   const addBenefit = () => {
     if (!newBenefit.trim()) return;
-    setCategoryForm({
-      ...categoryForm,
-      benefits: [...categoryForm.benefits, { name: newBenefit.trim() }],
-    });
+    setCategoryForm({ ...categoryForm, benefits: [...categoryForm.benefits, { name: newBenefit.trim() }] });
     setNewBenefit('');
   };
 
   const removeBenefit = (index) => {
-    setCategoryForm({
-      ...categoryForm,
-      benefits: categoryForm.benefits.filter((_, i) => i !== index),
-    });
+    setCategoryForm({ ...categoryForm, benefits: categoryForm.benefits.filter((_, i) => i !== index) });
   };
 
-  // Toggle category selection in package
   const toggleCategoryInPackage = (categoryId) => {
     const current = packageForm.categories || [];
     if (current.includes(categoryId)) {
@@ -566,6 +616,22 @@ export default function InspectionPackagesPage() {
     }
   };
 
+  const toggleOfferInPackage = (offerId) => {
+    const current = packageForm.applicable_offer_ids || [];
+    if (current.includes(offerId)) {
+      setPackageForm({ ...packageForm, applicable_offer_ids: current.filter(id => id !== offerId) });
+    } else {
+      setPackageForm({ ...packageForm, applicable_offer_ids: [...current, offerId] });
+    }
+  };
+
+  // Get active offers for selection
+  const activeOffers = offers.filter(o => {
+    const now = new Date();
+    const validUntil = new Date(o.valid_until);
+    return o.is_active && validUntil >= now;
+  });
+
   const selectedCountryData = countries.find(c => c.id === selectedCountry);
 
   return (
@@ -574,19 +640,16 @@ export default function InspectionPackagesPage() {
       <div className="flex justify-between items-start mb-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Inspection Packages</h1>
-          <p className="text-gray-500 mt-1">Configure inspection categories and packages</p>
+          <p className="text-gray-500 mt-1">Configure packages, categories, and promotional offers</p>
         </div>
         <div className="flex items-center gap-3">
-          {/* Country Selector */}
           <Select value={selectedCountry || 'select'} onValueChange={(v) => setSelectedCountry(v === 'select' ? '' : v)}>
             <SelectTrigger className="w-48" data-testid="country-selector">
               <SelectValue placeholder="Select Country" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="select">-- Select Country --</SelectItem>
-              {countries.map((c) => (
-                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-              ))}
+              {countries.map((c) => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}
             </SelectContent>
           </Select>
         </div>
@@ -595,27 +658,14 @@ export default function InspectionPackagesPage() {
       {/* Tab Navigation */}
       <div className="bg-white rounded-xl border overflow-hidden">
         <div className="flex border-b bg-slate-50">
-          <button
-            onClick={() => setActiveTab('packages')}
-            className={`px-6 py-4 text-sm font-medium flex items-center gap-2 transition-all border-b-2 -mb-px ${
-              activeTab === 'packages' 
-                ? 'border-blue-600 text-blue-600 bg-white' 
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-            data-testid="packages-tab"
-          >
+          <button onClick={() => setActiveTab('packages')} className={`px-6 py-4 text-sm font-medium flex items-center gap-2 transition-all border-b-2 -mb-px ${activeTab === 'packages' ? 'border-blue-600 text-blue-600 bg-white' : 'border-transparent text-gray-500 hover:text-gray-700'}`} data-testid="packages-tab">
             <Package className="h-4 w-4" /> Packages
           </button>
-          <button
-            onClick={() => setActiveTab('categories')}
-            className={`px-6 py-4 text-sm font-medium flex items-center gap-2 transition-all border-b-2 -mb-px ${
-              activeTab === 'categories' 
-                ? 'border-blue-600 text-blue-600 bg-white' 
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-            data-testid="categories-tab"
-          >
+          <button onClick={() => setActiveTab('categories')} className={`px-6 py-4 text-sm font-medium flex items-center gap-2 transition-all border-b-2 -mb-px ${activeTab === 'categories' ? 'border-blue-600 text-blue-600 bg-white' : 'border-transparent text-gray-500 hover:text-gray-700'}`} data-testid="categories-tab">
             <Layers className="h-4 w-4" /> Categories
+          </button>
+          <button onClick={() => setActiveTab('offers')} className={`px-6 py-4 text-sm font-medium flex items-center gap-2 transition-all border-b-2 -mb-px ${activeTab === 'offers' ? 'border-blue-600 text-blue-600 bg-white' : 'border-transparent text-gray-500 hover:text-gray-700'}`} data-testid="offers-tab">
+            <Gift className="h-4 w-4" /> Offers
           </button>
         </div>
 
@@ -623,46 +673,22 @@ export default function InspectionPackagesPage() {
         {activeTab === 'packages' && (
           <div className="p-4">
             <div className="flex justify-between items-center mb-4">
-              <p className="text-sm text-gray-500">
-                Create and manage inspection packages for {selectedCountryData?.name || 'your organization'}
-              </p>
-              <button 
-                className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 flex items-center gap-2 font-medium shadow-lg shadow-blue-500/25 transition-all"
-                onClick={() => openPackageModal()}
-                data-testid="create-package-btn"
-              >
+              <p className="text-sm text-gray-500">Create and manage inspection packages for {selectedCountryData?.name || 'your organization'}</p>
+              <button className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 flex items-center gap-2 font-medium shadow-lg shadow-blue-500/25 transition-all" onClick={() => openPackageModal()} data-testid="create-package-btn">
                 <Plus className="h-4 w-4" /> Create Package
               </button>
             </div>
-
             {loading ? (
-              <div className="text-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto" />
-                <p className="text-gray-500 mt-2">Loading packages...</p>
-              </div>
+              <div className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto" /><p className="text-gray-500 mt-2">Loading...</p></div>
             ) : packages.length === 0 ? (
               <div className="text-center py-12 border rounded-xl bg-gray-50">
                 <Package className="h-12 w-12 text-gray-300 mx-auto mb-3" />
                 <p className="text-gray-500">No packages found</p>
-                <button 
-                  onClick={() => openPackageModal()}
-                  className="mt-3 text-sm text-blue-600 hover:text-blue-700 font-medium"
-                >
-                  Create your first package
-                </button>
+                <button onClick={() => openPackageModal()} className="mt-3 text-sm text-blue-600 hover:text-blue-700 font-medium">Create your first package</button>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {packages.map((pkg) => (
-                  <PackageCard
-                    key={pkg.id}
-                    pkg={pkg}
-                    categories={categories}
-                    onEdit={openPackageModal}
-                    onCopy={handleCopyPackage}
-                    onToggle={handleTogglePackage}
-                  />
-                ))}
+                {packages.map((pkg) => (<PackageCard key={pkg.id} pkg={pkg} categories={categories} offers={offers} onEdit={openPackageModal} onCopy={handleCopyPackage} onToggle={handleTogglePackage} />))}
               </div>
             )}
           </div>
@@ -672,45 +698,47 @@ export default function InspectionPackagesPage() {
         {activeTab === 'categories' && (
           <div className="p-4">
             <div className="flex justify-between items-center mb-4">
-              <p className="text-sm text-gray-500">
-                Define inspection categories and their check points
-              </p>
-              <button 
-                className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 flex items-center gap-2 font-medium shadow-lg shadow-blue-500/25 transition-all"
-                onClick={() => openCategoryModal()}
-                data-testid="create-category-btn"
-              >
+              <p className="text-sm text-gray-500">Define inspection categories and their check points</p>
+              <button className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 flex items-center gap-2 font-medium shadow-lg shadow-blue-500/25 transition-all" onClick={() => openCategoryModal()} data-testid="create-category-btn">
                 <Plus className="h-4 w-4" /> Create Category
               </button>
             </div>
-
             {loading ? (
-              <div className="text-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto" />
-                <p className="text-gray-500 mt-2">Loading categories...</p>
-              </div>
+              <div className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto" /></div>
             ) : categories.length === 0 ? (
               <div className="text-center py-12 border rounded-xl bg-gray-50">
                 <Layers className="h-12 w-12 text-gray-300 mx-auto mb-3" />
                 <p className="text-gray-500">No categories found</p>
-                <button 
-                  onClick={() => openCategoryModal()}
-                  className="mt-3 text-sm text-blue-600 hover:text-blue-700 font-medium"
-                >
-                  Create your first category
-                </button>
+                <button onClick={() => openCategoryModal()} className="mt-3 text-sm text-blue-600 hover:text-blue-700 font-medium">Create your first category</button>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {categories.map((category) => (
-                  <CategoryCard
-                    key={category.id}
-                    category={category}
-                    onEdit={openCategoryModal}
-                    onCopy={handleCopyCategory}
-                    onToggle={handleToggleCategory}
-                  />
-                ))}
+                {categories.map((category) => (<CategoryCard key={category.id} category={category} onEdit={openCategoryModal} onCopy={handleCopyCategory} onToggle={handleToggleCategory} />))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Offers Tab */}
+        {activeTab === 'offers' && (
+          <div className="p-4">
+            <div className="flex justify-between items-center mb-4">
+              <p className="text-sm text-gray-500">Create promotional offers like Christmas specials, New Year discounts</p>
+              <button className="px-5 py-2.5 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl hover:from-orange-600 hover:to-red-600 flex items-center gap-2 font-medium shadow-lg shadow-orange-500/25 transition-all" onClick={() => openOfferModal()} data-testid="create-offer-btn">
+                <Plus className="h-4 w-4" /> Create Offer
+              </button>
+            </div>
+            {loading ? (
+              <div className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin text-orange-500 mx-auto" /></div>
+            ) : offers.length === 0 ? (
+              <div className="text-center py-12 border rounded-xl bg-gray-50">
+                <Gift className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500">No offers created yet</p>
+                <button onClick={() => openOfferModal()} className="mt-3 text-sm text-orange-600 hover:text-orange-700 font-medium">Create your first offer</button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {offers.map((offer) => (<OfferCard key={offer.id} offer={offer} onEdit={openOfferModal} onToggle={handleToggleOffer} onDelete={handleDeleteOffer} />))}
               </div>
             )}
           </div>
@@ -730,129 +758,71 @@ export default function InspectionPackagesPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Category Name *</Label>
-                <Input 
-                  value={categoryForm.name}
-                  onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
-                  placeholder="e.g., Physical/Manual Inspection"
-                  data-testid="category-name-input"
-                />
+                <Input value={categoryForm.name} onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })} placeholder="e.g., Physical/Manual Inspection" data-testid="category-name-input" />
               </div>
               <div className="space-y-2">
                 <Label>Check Points</Label>
-                <Input 
-                  type="number"
-                  value={categoryForm.check_points}
-                  onChange={(e) => setCategoryForm({ ...categoryForm, check_points: parseInt(e.target.value) || 0 })}
-                  placeholder="e.g., 135"
-                  data-testid="category-checkpoints-input"
-                />
+                <Input type="number" value={categoryForm.check_points} onChange={(e) => setCategoryForm({ ...categoryForm, check_points: parseInt(e.target.value) || 0 })} />
               </div>
             </div>
-
             <div className="space-y-2">
               <Label>Description</Label>
-              <Input 
-                value={categoryForm.description}
-                onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
-                placeholder="Brief description of this category"
-              />
+              <Input value={categoryForm.description} onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })} />
             </div>
-
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Color</Label>
                 <div className="flex items-center gap-2">
-                  <input 
-                    type="color"
-                    value={categoryForm.color}
-                    onChange={(e) => setCategoryForm({ ...categoryForm, color: e.target.value })}
-                    className="h-10 w-14 rounded cursor-pointer"
-                  />
-                  <Input 
-                    value={categoryForm.color}
-                    onChange={(e) => setCategoryForm({ ...categoryForm, color: e.target.value })}
-                    className="flex-1"
-                  />
+                  <input type="color" value={categoryForm.color} onChange={(e) => setCategoryForm({ ...categoryForm, color: e.target.value })} className="h-10 w-14 rounded cursor-pointer" />
+                  <Input value={categoryForm.color} onChange={(e) => setCategoryForm({ ...categoryForm, color: e.target.value })} className="flex-1" />
                 </div>
               </div>
               <div className="space-y-2">
                 <Label>Display Order</Label>
-                <Input 
-                  type="number"
-                  value={categoryForm.order}
-                  onChange={(e) => setCategoryForm({ ...categoryForm, order: parseInt(e.target.value) || 0 })}
-                />
+                <Input type="number" value={categoryForm.order} onChange={(e) => setCategoryForm({ ...categoryForm, order: parseInt(e.target.value) || 0 })} />
               </div>
             </div>
-
             <div className="flex items-center gap-2">
-              <Checkbox 
-                checked={categoryForm.is_free}
-                onCheckedChange={(checked) => setCategoryForm({ ...categoryForm, is_free: checked })}
-                data-testid="category-is-free-checkbox"
-              />
-              <Label className="cursor-pointer">Mark as FREE (e.g., Additional Technical Support)</Label>
+              <Checkbox checked={categoryForm.is_free} onCheckedChange={(checked) => setCategoryForm({ ...categoryForm, is_free: checked })} />
+              <Label className="cursor-pointer">Mark as FREE</Label>
             </div>
-
-            {/* Inspection Items */}
+            {/* Items */}
             <div className="space-y-2">
               <Label>Inspection Items</Label>
               <div className="flex gap-2">
-                <Input 
-                  value={newItem}
-                  onChange={(e) => setNewItem(e.target.value)}
-                  placeholder="e.g., Engine & Transmission Check"
-                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addItem())}
-                  data-testid="new-item-input"
-                />
-                <Button type="button" onClick={addItem} variant="outline">
-                  <Plus className="h-4 w-4" />
-                </Button>
+                <Input value={newItem} onChange={(e) => setNewItem(e.target.value)} placeholder="e.g., Engine Check" onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addItem())} />
+                <Button type="button" onClick={addItem} variant="outline"><Plus className="h-4 w-4" /></Button>
               </div>
               <div className="space-y-1 mt-2">
                 {categoryForm.items.map((item, idx) => (
                   <div key={idx} className="flex items-center gap-2 p-2 bg-gray-50 rounded">
                     <CheckCircle className="h-4 w-4 text-emerald-500" />
                     <span className="flex-1 text-sm">{item.name}</span>
-                    <button onClick={() => removeItem(idx)} className="text-gray-400 hover:text-red-500">
-                      <X className="h-4 w-4" />
-                    </button>
+                    <button onClick={() => removeItem(idx)} className="text-gray-400 hover:text-red-500"><X className="h-4 w-4" /></button>
                   </div>
                 ))}
               </div>
             </div>
-
-            {/* Additional Benefits */}
+            {/* Benefits */}
             <div className="space-y-2">
               <Label>Additional Benefits</Label>
               <div className="flex gap-2">
-                <Input 
-                  value={newBenefit}
-                  onChange={(e) => setNewBenefit(e.target.value)}
-                  placeholder="e.g., Flood Vehicle Check"
-                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addBenefit())}
-                  data-testid="new-benefit-input"
-                />
-                <Button type="button" onClick={addBenefit} variant="outline">
-                  <Plus className="h-4 w-4" />
-                </Button>
+                <Input value={newBenefit} onChange={(e) => setNewBenefit(e.target.value)} placeholder="e.g., Flood Check" onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addBenefit())} />
+                <Button type="button" onClick={addBenefit} variant="outline"><Plus className="h-4 w-4" /></Button>
               </div>
               <div className="space-y-1 mt-2">
                 {categoryForm.benefits.map((benefit, idx) => (
                   <div key={idx} className="flex items-center gap-2 p-2 bg-blue-50 rounded">
                     <Plus className="h-4 w-4 text-blue-500" />
                     <span className="flex-1 text-sm">{benefit.name}</span>
-                    <button onClick={() => removeBenefit(idx)} className="text-gray-400 hover:text-red-500">
-                      <X className="h-4 w-4" />
-                    </button>
+                    <button onClick={() => removeBenefit(idx)} className="text-gray-400 hover:text-red-500"><X className="h-4 w-4" /></button>
                   </div>
                 ))}
               </div>
             </div>
-
             <div className="flex justify-end gap-3 pt-4 border-t">
               <Button variant="outline" onClick={() => setIsCategoryModalOpen(false)}>Cancel</Button>
-              <Button onClick={handleSaveCategory} disabled={saving} className="bg-gradient-to-r from-blue-600 to-blue-700" data-testid="save-category-btn">
+              <Button onClick={handleSaveCategory} disabled={saving} className="bg-gradient-to-r from-blue-600 to-blue-700">
                 {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                 {editingCategory ? 'Update' : 'Create'}
               </Button>
@@ -863,7 +833,7 @@ export default function InspectionPackagesPage() {
 
       {/* Package Modal */}
       <Dialog open={isPackageModalOpen} onOpenChange={setIsPackageModalOpen}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto" data-testid="package-modal">
+        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto" data-testid="package-modal">
           <DialogHeader className="border-b pb-4">
             <DialogTitle className="flex items-center gap-2">
               <Package className="h-5 w-5 text-blue-600" />
@@ -871,113 +841,162 @@ export default function InspectionPackagesPage() {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-4">
+            {/* Basic Info */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Package Name *</Label>
-                <Input 
-                  value={packageForm.name}
-                  onChange={(e) => setPackageForm({ ...packageForm, name: e.target.value })}
-                  placeholder="e.g., Standard, Luxury"
-                  data-testid="package-name-input"
-                />
+                <Input value={packageForm.name} onChange={(e) => setPackageForm({ ...packageForm, name: e.target.value })} placeholder="e.g., Standard" data-testid="package-name-input" />
               </div>
               <div className="space-y-2">
                 <Label>Price *</Label>
                 <div className="flex items-center gap-2">
                   <span className="text-lg font-medium text-gray-500">{packageForm.currency_symbol}</span>
-                  <Input 
-                    type="number"
-                    value={packageForm.price}
-                    onChange={(e) => setPackageForm({ ...packageForm, price: parseFloat(e.target.value) || 0 })}
-                    placeholder="1300"
-                    data-testid="package-price-input"
-                  />
+                  <Input type="number" value={packageForm.price} onChange={(e) => setPackageForm({ ...packageForm, price: parseFloat(e.target.value) || 0 })} data-testid="package-price-input" />
                 </div>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>No. of Inspections *</Label>
-                <Input 
-                  type="number"
-                  min="1"
-                  value={packageForm.no_of_inspections}
-                  onChange={(e) => setPackageForm({ ...packageForm, no_of_inspections: parseInt(e.target.value) || 1 })}
-                  placeholder="1"
-                  data-testid="package-inspections-input"
-                />
-                <p className="text-xs text-gray-500">Number of inspections customer can avail</p>
+                <Label>No. of Inspections</Label>
+                <Input type="number" min="1" value={packageForm.no_of_inspections} onChange={(e) => setPackageForm({ ...packageForm, no_of_inspections: parseInt(e.target.value) || 1 })} />
               </div>
-              <div className="space-y-2">
-                <Label>Description</Label>
-                <Input 
-                  value={packageForm.description}
-                  onChange={(e) => setPackageForm({ ...packageForm, description: e.target.value })}
-                  placeholder="Brief description"
-                />
+              <div className="flex items-center gap-2 pt-6">
+                <Checkbox checked={packageForm.is_recommended} onCheckedChange={(checked) => setPackageForm({ ...packageForm, is_recommended: checked })} />
+                <Label className="cursor-pointer">Mark as Recommended</Label>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <Checkbox 
-                checked={packageForm.is_recommended}
-                onCheckedChange={(checked) => setPackageForm({ ...packageForm, is_recommended: checked })}
-                data-testid="package-is-recommended-checkbox"
-              />
-              <Label className="cursor-pointer">Mark as Recommended</Label>
+            {/* Partial Payment Section */}
+            <div className="border rounded-lg p-4 bg-purple-50/50">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <CreditCard className="h-5 w-5 text-purple-600" />
+                  <Label className="font-semibold text-purple-900">Allow Partial Payments</Label>
+                </div>
+                <Switch checked={packageForm.allow_partial_payment} onCheckedChange={(checked) => setPackageForm({ ...packageForm, allow_partial_payment: checked })} data-testid="allow-partial-payment-switch" />
+              </div>
+              {packageForm.allow_partial_payment && (
+                <div className="grid grid-cols-2 gap-4 mt-3">
+                  <div className="space-y-2">
+                    <Label className="text-sm">Type</Label>
+                    <Select value={packageForm.partial_payment_type} onValueChange={(v) => setPackageForm({ ...packageForm, partial_payment_type: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="percentage">Percentage (%)</SelectItem>
+                        <SelectItem value="fixed">Fixed Amount (₹)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm">Value</Label>
+                    <div className="flex items-center gap-2">
+                      <Input type="number" value={packageForm.partial_payment_value} onChange={(e) => setPackageForm({ ...packageForm, partial_payment_value: parseFloat(e.target.value) || 0 })} placeholder={packageForm.partial_payment_type === 'percentage' ? '50' : '500'} />
+                      <span className="text-gray-500">{packageForm.partial_payment_type === 'percentage' ? '%' : '₹'}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <p className="text-xs text-purple-600 mt-2">Customer pays upfront, balance collected before report delivery</p>
             </div>
 
-            {/* Select Categories - IMPORTANT SECTION */}
+            {/* Discount Section */}
+            <div className="border rounded-lg p-4 bg-emerald-50/50">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <BadgePercent className="h-5 w-5 text-emerald-600" />
+                  <Label className="font-semibold text-emerald-900">Allow Discounts</Label>
+                </div>
+                <Switch checked={packageForm.allow_discount} onCheckedChange={(checked) => setPackageForm({ ...packageForm, allow_discount: checked })} data-testid="allow-discount-switch" />
+              </div>
+              {packageForm.allow_discount && (
+                <div className="grid grid-cols-2 gap-4 mt-3">
+                  <div className="space-y-2">
+                    <Label className="text-sm">Type</Label>
+                    <Select value={packageForm.discount_type} onValueChange={(v) => setPackageForm({ ...packageForm, discount_type: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="percentage">Percentage (%)</SelectItem>
+                        <SelectItem value="fixed">Fixed Amount (₹)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm">Value</Label>
+                    <div className="flex items-center gap-2">
+                      <Input type="number" value={packageForm.discount_value} onChange={(e) => setPackageForm({ ...packageForm, discount_value: parseFloat(e.target.value) || 0 })} placeholder={packageForm.discount_type === 'percentage' ? '10' : '100'} />
+                      <span className="text-gray-500">{packageForm.discount_type === 'percentage' ? '%' : '₹'}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Offers Section */}
+            <div className="border rounded-lg p-4 bg-orange-50/50">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Gift className="h-5 w-5 text-orange-600" />
+                  <Label className="font-semibold text-orange-900">Allow Offers</Label>
+                </div>
+                <Switch checked={packageForm.allow_offers} onCheckedChange={(checked) => setPackageForm({ ...packageForm, allow_offers: checked })} data-testid="allow-offers-switch" />
+              </div>
+              {packageForm.allow_offers && (
+                <div className="mt-3">
+                  {activeOffers.length === 0 ? (
+                    <p className="text-sm text-orange-600">No active offers available. Create offers in the "Offers" tab first.</p>
+                  ) : (
+                    <div className="space-y-2 max-h-40 overflow-y-auto">
+                      {activeOffers.map((offer) => (
+                        <label key={offer.id} className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all ${packageForm.applicable_offer_ids?.includes(offer.id) ? 'bg-orange-100 border border-orange-300' : 'bg-white border hover:bg-gray-50'}`}>
+                          <Checkbox checked={packageForm.applicable_offer_ids?.includes(offer.id)} onCheckedChange={() => toggleOfferInPackage(offer.id)} />
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">{offer.name}</p>
+                            <p className="text-xs text-gray-500">
+                              {offer.discount_type === 'percentage' ? `${offer.discount_value}% off` : `₹${offer.discount_value} off`}
+                              {' • '}Valid until {new Date(offer.valid_until).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              <p className="text-xs text-orange-600 mt-2">Sales Head can manually apply these offers during payment</p>
+            </div>
+
+            {/* Categories Selection */}
             <div className="space-y-2">
               <Label className="text-base font-semibold flex items-center gap-2">
                 <Layers className="h-4 w-4 text-blue-600" />
-                Assign Categories to Package *
+                Assign Categories *
               </Label>
-              <p className="text-xs text-gray-500 mb-2">Select which inspection categories are included in this package</p>
               {categories.length === 0 ? (
                 <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
-                  <p className="text-sm text-amber-800 font-medium">⚠️ No categories available</p>
-                  <p className="text-xs text-amber-600 mt-1">Please create inspection categories first in the "Categories" tab, then come back to create packages.</p>
+                  <p className="text-sm text-amber-800 font-medium">No categories available</p>
+                  <p className="text-xs text-amber-600">Create categories first in the "Categories" tab</p>
                 </div>
               ) : (
-                <div className="space-y-2 max-h-60 overflow-y-auto border-2 border-blue-200 rounded-lg p-3 bg-blue-50/30">
+                <div className="space-y-2 max-h-48 overflow-y-auto border-2 border-blue-200 rounded-lg p-3 bg-blue-50/30">
                   {categories.map((cat) => (
-                    <label 
-                      key={cat.id} 
-                      className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all ${
-                        packageForm.categories?.includes(cat.id) 
-                          ? 'bg-blue-100 border-2 border-blue-400 shadow-sm' 
-                          : 'bg-white hover:bg-gray-50 border-2 border-gray-200'
-                      }`}
-                      data-testid={`category-option-${cat.id}`}
-                    >
-                      <Checkbox 
-                        checked={packageForm.categories?.includes(cat.id)}
-                        onCheckedChange={() => toggleCategoryInPackage(cat.id)}
-                      />
+                    <label key={cat.id} className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all ${packageForm.categories?.includes(cat.id) ? 'bg-blue-100 border-2 border-blue-400' : 'bg-white hover:bg-gray-50 border-2 border-gray-200'}`}>
+                      <Checkbox checked={packageForm.categories?.includes(cat.id)} onCheckedChange={() => toggleCategoryInPackage(cat.id)} />
                       <div className="flex-1">
                         <p className="font-medium text-gray-900 flex items-center gap-2">
                           {cat.name}
-                          {cat.is_free && (
-                            <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded">FREE</span>
-                          )}
+                          {cat.is_free && <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded">FREE</span>}
                         </p>
-                        <p className="text-xs text-gray-500">{cat.check_points} check points • {cat.items?.length || 0} items</p>
+                        <p className="text-xs text-gray-500">{cat.check_points} check points</p>
                       </div>
-                      <div 
-                        className="h-4 w-4 rounded-full border-2 border-white shadow"
-                        style={{ backgroundColor: cat.color || '#3B82F6' }}
-                      />
+                      <div className="h-4 w-4 rounded-full" style={{ backgroundColor: cat.color || '#3B82F6' }} />
                     </label>
                   ))}
                 </div>
               )}
               {packageForm.categories?.length > 0 && (
                 <div className="flex items-center justify-between p-2 bg-emerald-50 rounded-lg border border-emerald-200">
-                  <span className="text-sm font-medium text-emerald-700">
-                    {packageForm.categories.length} categories selected
-                  </span>
+                  <span className="text-sm font-medium text-emerald-700">{packageForm.categories.length} categories selected</span>
                   <span className="text-sm font-bold text-emerald-800">
                     Total: {categories.filter(c => packageForm.categories?.includes(c.id)).reduce((sum, c) => sum + (c.check_points || 0), 0)} check points
                   </span>
@@ -990,6 +1009,73 @@ export default function InspectionPackagesPage() {
               <Button onClick={handleSavePackage} disabled={saving} className="bg-gradient-to-r from-blue-600 to-blue-700" data-testid="save-package-btn">
                 {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                 {editingPackage ? 'Update' : 'Create'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Offer Modal */}
+      <Dialog open={isOfferModalOpen} onOpenChange={setIsOfferModalOpen}>
+        <DialogContent className="sm:max-w-[500px]" data-testid="offer-modal">
+          <DialogHeader className="border-b pb-4">
+            <DialogTitle className="flex items-center gap-2">
+              <Gift className="h-5 w-5 text-orange-500" />
+              {editingOffer ? 'Edit Offer' : 'Create Offer'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label>Offer Name *</Label>
+              <Input value={offerForm.name} onChange={(e) => setOfferForm({ ...offerForm, name: e.target.value })} placeholder="e.g., Christmas Special 2026" data-testid="offer-name-input" />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Input value={offerForm.description} onChange={(e) => setOfferForm({ ...offerForm, description: e.target.value })} placeholder="e.g., Get 20% off on all inspections" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Discount Type</Label>
+                <Select value={offerForm.discount_type} onValueChange={(v) => setOfferForm({ ...offerForm, discount_type: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="percentage">Percentage (%)</SelectItem>
+                    <SelectItem value="fixed">Fixed Amount (₹)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Discount Value *</Label>
+                <div className="flex items-center gap-2">
+                  <Input type="number" value={offerForm.discount_value} onChange={(e) => setOfferForm({ ...offerForm, discount_value: parseFloat(e.target.value) || 0 })} placeholder={offerForm.discount_type === 'percentage' ? '20' : '200'} data-testid="offer-discount-input" />
+                  <span className="text-gray-500">{offerForm.discount_type === 'percentage' ? '%' : '₹'}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Valid From *</Label>
+                <Input type="date" value={offerForm.valid_from} onChange={(e) => setOfferForm({ ...offerForm, valid_from: e.target.value })} data-testid="offer-valid-from-input" />
+              </div>
+              <div className="space-y-2">
+                <Label>Valid Until *</Label>
+                <Input type="date" value={offerForm.valid_until} onChange={(e) => setOfferForm({ ...offerForm, valid_until: e.target.value })} data-testid="offer-valid-until-input" />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Checkbox checked={offerForm.is_active} onCheckedChange={(checked) => setOfferForm({ ...offerForm, is_active: checked })} />
+              <Label className="cursor-pointer">Active</Label>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4 border-t">
+              <Button variant="outline" onClick={() => setIsOfferModalOpen(false)}>Cancel</Button>
+              <Button onClick={handleSaveOffer} disabled={saving} className="bg-gradient-to-r from-orange-500 to-red-500" data-testid="save-offer-btn">
+                {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                {editingOffer ? 'Update' : 'Create'}
               </Button>
             </div>
           </div>
