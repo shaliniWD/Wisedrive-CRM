@@ -816,13 +816,13 @@ export default function InspectionsPage() {
           <table className="w-full table-fixed">
             <thead>
               <tr className="bg-slate-50 border-b">
-                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '10%'}}>Date/Time</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '15%'}}>Customer</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '12%'}}>Vehicle</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '14%'}}>Payment</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '9%'}}>Date/Time</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '16%'}}>Customer</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '13%'}}>Vehicle</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '13%'}}>Payment</th>
                 <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '14%'}}>Status</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '12%'}}>Mechanic</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '10%'}}>Location</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '13%'}}>Mechanic</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '9%'}}>Location</th>
                 <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '13%'}}>Report</th>
               </tr>
             </thead>
