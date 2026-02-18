@@ -185,20 +185,54 @@ Build a scalable automotive platform "Wisedrive" that evolved into a monolithic 
 
 ---
 
+### ✅ Collect Balance Feature (February 18, 2026)
+
+**Feature Implementation:**
+Complete partial payment lifecycle allowing customers to pay an upfront amount and balance later.
+
+**Key Components:**
+1. **Inspections Page Enhancements:**
+   - New "Payment Status" column: Shows FULLY_PAID, PARTIALLY_PAID (with balance due), PENDING badges
+   - New "Inspection Status" column: Shows NEW_INSPECTION, ASSIGNED_TO_MECHANIC, INSPECTION_CONFIRMED, INSPECTION_STARTED, INSPECTION_IN_PROGRESS, INSPECTION_COMPLETED, SCHEDULED, UNSCHEDULED
+   - "Collect Balance" button appears for partial payments showing exact balance (e.g., "Collect ₹919")
+   - Confirmation modal shows customer details, payment breakdown, and balance due
+   - "Send Report" button disabled until full payment received
+
+2. **Backend API Enhancements:**
+   - `POST /api/inspections/{id}/collect-balance`: Generates Razorpay payment link for balance
+   - Webhook handles balance payment completion and updates status to FULLY_PAID
+   - WhatsApp notifications sent for balance payment links and confirmations
+
+3. **Payment Data Model:**
+   - Inspections track: amount_paid, balance_due, payment_status, payment_transactions[]
+   - Supports both old format (pending_amount) and new format (balance_due)
+
+**Files Modified:**
+- `/app/frontend/src/pages/InspectionsPage.jsx` - New columns, Collect Balance modal, status badges
+- `/app/frontend/src/services/api.js` - Added collectBalance, updateStatus, sendReport methods
+- `/app/frontend/src/pages/LeadsPage.jsx` - Sends partial payment data to backend
+- `/app/backend/server.py` - Collect balance endpoint, webhook balance handling, payment link request model
+
+**Test Coverage:**
+- `/app/backend/tests/test_collect_balance_feature.py` - 9 tests (100% pass rate)
+- All scenarios tested: API endpoints, validation, UI components
+
+---
+
 ## Future Tasks (Backlog)
 
 ### P0 - UAT & Deployment
 - [x] **Critical Bug Fix: Lead Auto-Assignment (February 17, 2026)**
 - [x] **CTO Role Permissions Fix (February 17, 2026)**
 - [x] **Inspection Package Payment Enhancements (February 18, 2026)**
+- [x] **Collect Balance Feature (February 18, 2026)** ✅ COMPLETED
 - [ ] User Acceptance Testing for Payment Modal changes
 - [ ] User Acceptance Testing for complete Leads Module
-- [ ] Implement "Collect Balance" button in Inspections tab for remaining payment collection
 - [ ] Production deployment
 
 ### P1 - CRM Modules
-- [ ] Inspections Module (view scheduled/unscheduled inspections)
-- [ ] Customer Module
+- [x] Inspections Module (view scheduled/unscheduled inspections) ✅ ENHANCED with payment tracking
+- [ ] Customer Module - Payment history display
 
 ### P2 - Integrations
 - [ ] OBD-Integration-v1.0
