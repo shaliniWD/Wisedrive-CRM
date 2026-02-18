@@ -157,6 +157,13 @@ async def startup():
     except Exception as e:
         logger.warning(f"Password hash auto-fix completed with warning: {e}")
     
+    # Initialize Meta Ads Scheduler for automatic data sync (every 15 minutes)
+    from services.meta_ads_scheduler import MetaAdsScheduler
+    global meta_ads_scheduler
+    meta_ads_scheduler = MetaAdsScheduler(db, meta_ads_service)
+    await meta_ads_scheduler.start()
+    logger.info("Meta Ads Scheduler started (sync every 15 minutes)")
+    
     logger.info("WiseDrive CRM V2 started with HR Module, ESS Mobile API, and FCM Push Notifications")
 
 
