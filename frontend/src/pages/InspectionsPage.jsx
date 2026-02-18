@@ -15,7 +15,7 @@ import {
   Search, Loader2, ClipboardCheck, Filter, Calendar, MapPin, 
   Car, User, Download, Eye, Edit2, Clock, CheckCircle, XCircle, 
   AlertCircle, Play, Plus, Send, CreditCard, DollarSign, FileText,
-  UserCheck, CalendarClock, RefreshCw, Ban, Copy, ExternalLink, Link2
+  UserCheck, CalendarClock, RefreshCw, Ban, Copy, ExternalLink, Link2, X
 } from 'lucide-react';
 
 // Helper function to extract clean Make name from verbose manufacturer string
