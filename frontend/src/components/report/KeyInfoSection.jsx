@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useEditMode } from '@/context/EditModeContext';
+import { useEditMode } from '@/contexts/EditModeContext';
 import { InsuranceModal, TyreModal, RepairsModal } from './MediaModal';
 import { 
   Key,

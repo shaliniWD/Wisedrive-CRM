@@ -1,5 +1,5 @@
 import React from 'react';
-import { useEditMode } from '@/context/EditModeContext';
+import { useEditMode } from '@/contexts/EditModeContext';
 import { 
   FileText, 
   AlertTriangle, 
