@@ -1,0 +1,111 @@
+{
+  "summary": "Collect Balance Feature Testing Complete - All features verified. Backend APIs working correctly, Frontend UI shows Payment Status and Inspection Status columns, Collect Balance buttons appear for partial payments, modal shows correct customer details and balance due, Send Report is disabled until full payment.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "LeadsPage",
+        "issues": ["React hydration warning: <tr> cannot be a child of <span> - This is a console warning in React dev mode, not affecting functionality"]
+      }
+    ]
+  },
+  "features_tested": {
+    "inspections_payment_status_column": {
+      "status": "PASS",
+      "details": "Payment Status column shows badges: 'Partial (₹919 due)', 'Pending' with correct colors (amber for partial, red for pending)"
+    },
+    "inspections_inspection_status_column": {
+      "status": "PASS",
+      "details": "Inspection Status column shows 'Scheduled' badges with blue color"
+    },
+    "collect_balance_button_visibility": {
+      "status": "PASS",
+      "details": "Collect Balance buttons (orange) appear only for partial payment inspections showing amount like 'Collect ₹919', 'Collect ₹229', 'Collect ₹1,617'"
+    },
+    "collect_balance_modal": {
+      "status": "PASS",
+      "details": "Modal shows customer name, mobile, package, vehicle, total amount, already paid, balance due (₹919), and 'Send Payment Link' button"
+    },
+    "collect_balance_api": {
+      "status": "PASS",
+      "details": "POST /api/inspections/{id}/collect-balance returns success with payment_link, payment_link_id, balance_amount, whatsapp_sent"
+    },
+    "collect_balance_api_validation": {
+      "status": "PASS",
+      "details": "API correctly rejects collect-balance for fully paid inspections with 400 error"
+    },
+    "send_report_disabled": {
+      "status": "PASS",
+      "details": "Send Report buttons are disabled (grayed out with cursor-not-allowed) for inspections that are not fully paid"
+    },
+    "send_report_api_validation": {
+      "status": "PASS",
+      "details": "POST /api/inspections/{id}/send-report returns 400 error for partial payment inspections with message about full payment required"
+    },
+    "leads_partial_payment_option": {
+      "status": "PASS",
+      "details": "Payment modal in LeadsPage shows 'Partial Payment Option' section with 'Enable partial payment' checkbox and fixed amount (₹500)"
+    },
+    "old_data_format_support": {
+      "status": "PASS",
+      "details": "Code correctly handles both old format (pending_amount, payment_type='Partial') and new format (balance_due, payment_status='PARTIALLY_PAID')"
+    }
+  },
+  "backend_test_results": {
+    "total_tests": 9,
+    "passed": 9,
+    "failed": 0,
+    "test_file": "/app/backend/tests/test_collect_balance_feature.py",
+    "test_classes": [
+      "TestCollectBalanceFeature - 7 tests PASS (payment_status, inspection_status, partial payment detection, collect-balance API, validation, send-report validation, badges)",
+      "TestLeadsPartialPayment - 2 tests PASS (leads API, inspection packages API)"
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_collect_balance_feature.py",
+    "/app/test_reports/pytest/pytest_collect_balance.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "InspectionsPage.jsx correctly implements PaymentStatusBadge and InspectionStatusBadge components",
+    "Collect Balance button logic correctly checks both old (pending_amount) and new (balance_due) formats",
+    "CollectBalanceRequest model in server.py accepts send_whatsapp and notes parameters",
+    "collect_balance_payment endpoint generates Razorpay link and optionally sends WhatsApp notification",
+    "send_inspection_report endpoint correctly validates payment_status === 'FULLY_PAID' before allowing report send",
+    "LeadsPage.jsx payment modal correctly sends is_partial_payment, partial_payment_amount, and balance_due fields",
+    "data-testid attributes present for key elements (collect-balance-{id}, send-report-{id}, collect-balance-modal, confirm-collect-balance)"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_collect_balance_feature.py"
+  ],
+  "success_rate": {
+    "backend": "100% (9/9 tests passed)",
+    "frontend": "100% (all features verified via UI testing)"
+  },
+  "test_credentials": {
+    "inspection_head": {
+      "email": "insphead.in@wisedrive.com",
+      "password": "password123",
+      "country": "India (IN)"
+    },
+    "hr_manager": {
+      "email": "hr@wisedrive.com",
+      "password": "password123",
+      "country": "India (IN)"
+    }
+  },
+  "seed_data_used": "Existing inspection data with pending_amount > 0 (Rahul - KA05NC8137 with ₹919 pending, Karthik - KA02NC9663 with ₹229 pending, Divya - KA01NC7581 with ₹1,617 pending)",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Collect Balance feature fully implemented and tested. Test file /app/backend/tests/test_collect_balance_feature.py covers all API scenarios. UI has proper columns, buttons, and modals with data-testid attributes for automated testing. Both old data format (pending_amount) and new format (balance_due) are supported.",
+  "mocked_apis": {
+    "has_mocked_apis": false,
+    "mocked_apis_list": [],
+    "note": "Using real Razorpay and Twilio services"
+  }
+}
