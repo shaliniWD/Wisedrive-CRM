@@ -8305,6 +8305,156 @@ async def get_meta_ads_status(current_user: dict = Depends(get_current_user)):
     }
 
 
+@api_router.get("/meta-ads/token-info")
+async def get_meta_token_info(current_user: dict = Depends(get_current_user)):
+    """
+    Get information about the current Meta access token.
+    Returns token validity, expiry date, and type.
+    """
+    role_code = current_user.get("role_code", "")
+    if role_code not in ["CEO", "CTO"]:
+        raise HTTPException(status_code=403, detail="Not authorized - CEO/CTO only")
+    
+    token_info = await meta_ads_service.get_token_info()
+    return {
+        "configured": meta_ads_service.is_configured(),
+        "app_id": meta_ads_service.app_id,
+        "ad_account_id": meta_ads_service.ad_account_id,
+        **token_info
+    }
+
+
+@api_router.post("/meta-ads/refresh-token")
+async def refresh_meta_token(current_user: dict = Depends(get_current_user)):
+    """
+    Attempt to refresh the Meta access token.
+    This exchanges the current long-lived token for a new one.
+    """
+    role_code = current_user.get("role_code", "")
+    if role_code not in ["CEO", "CTO"]:
+        raise HTTPException(status_code=403, detail="Not authorized - CEO/CTO only")
+    
+    result = await meta_ads_service.refresh_long_lived_token()
+    
+    if result.get("success"):
+        # Update the token in memory
+        new_token = result.get("access_token")
+        meta_ads_service.update_token(new_token)
+        
+        # Store the new token in database for persistence
+        await db.system_config.update_one(
+            {"key": "meta_access_token"},
+            {"$set": {
+                "key": "meta_access_token",
+                "value": new_token,
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "updated_by": current_user.get("id")
+            }},
+            upsert=True
+        )
+        
+        return {
+            "success": True,
+            "message": "Token refreshed successfully",
+            "expires_in_days": result.get("expires_in_days")
+        }
+    else:
+        return {
+            "success": False,
+            "error": result.get("error"),
+            "needs_manual_refresh": True,
+            "instructions": "Please generate a new token from Meta for Developers portal"
+        }
+
+
+@api_router.post("/meta-ads/auto-refresh")
+async def auto_refresh_meta_token(
+    days_threshold: int = 7,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Automatically refresh the token if it's expiring within the threshold.
+    Default threshold is 7 days.
+    """
+    role_code = current_user.get("role_code", "")
+    if role_code not in ["CEO", "CTO"]:
+        raise HTTPException(status_code=403, detail="Not authorized - CEO/CTO only")
+    
+    result = await meta_ads_service.auto_refresh_if_needed(days_threshold)
+    
+    if result.get("action") == "refreshed":
+        # Update the token in memory and database
+        new_token = result.get("new_token")
+        meta_ads_service.update_token(new_token)
+        
+        await db.system_config.update_one(
+            {"key": "meta_access_token"},
+            {"$set": {
+                "key": "meta_access_token",
+                "value": new_token,
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "updated_by": current_user.get("id")
+            }},
+            upsert=True
+        )
+    
+    return result
+
+
+class MetaTokenUpdateRequest(BaseModel):
+    access_token: str
+
+
+@api_router.post("/meta-ads/update-token")
+async def update_meta_token(
+    request: MetaTokenUpdateRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Manually update the Meta access token.
+    Use this when you have a new token from Meta for Developers portal.
+    """
+    role_code = current_user.get("role_code", "")
+    if role_code not in ["CEO", "CTO"]:
+        raise HTTPException(status_code=403, detail="Not authorized - CEO/CTO only")
+    
+    new_token = request.access_token.strip()
+    
+    if not new_token:
+        raise HTTPException(status_code=400, detail="Access token is required")
+    
+    # Update in memory
+    meta_ads_service.update_token(new_token)
+    
+    # Verify the new token
+    token_info = await meta_ads_service.get_token_info()
+    
+    if not token_info.get("is_valid"):
+        return {
+            "success": False,
+            "error": "The provided token is invalid",
+            "details": token_info.get("error")
+        }
+    
+    # Store in database for persistence
+    await db.system_config.update_one(
+        {"key": "meta_access_token"},
+        {"$set": {
+            "key": "meta_access_token",
+            "value": new_token,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "updated_by": current_user.get("id")
+        }},
+        upsert=True
+    )
+    
+    return {
+        "success": True,
+        "message": "Token updated successfully",
+        "token_info": token_info
+    }
+
+
 @api_router.get("/meta-ads/insights")
 async def get_meta_ads_insights(
     date_from: str = None,
