@@ -54,6 +54,10 @@ export const adCityMappingsApi = {
 // Meta Ads Analytics API
 export const metaAdsApi = {
   getStatus: () => axios.get(`${API_URL}/meta-ads/status`),
+  getTokenInfo: () => axios.get(`${API_URL}/meta-ads/token-info`),
+  refreshToken: () => axios.post(`${API_URL}/meta-ads/refresh-token`),
+  autoRefresh: (daysThreshold = 7) => axios.post(`${API_URL}/meta-ads/auto-refresh`, null, { params: { days_threshold: daysThreshold } }),
+  updateToken: (accessToken) => axios.post(`${API_URL}/meta-ads/update-token`, { access_token: accessToken }),
   getInsights: (params) => axios.get(`${API_URL}/meta-ads/insights`, { params }),
   getCampaigns: () => axios.get(`${API_URL}/meta-ads/campaigns`),
   getAds: () => axios.get(`${API_URL}/meta-ads/ads`),
