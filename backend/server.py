@@ -1530,7 +1530,8 @@ async def add_lead_note(lead_id: str, note_data: LeadNoteCreate, current_user: d
         "user_id": current_user["id"],
         "user_name": current_user.get("name", "Unknown"),
         "action": "note_added",
-        "details": note_data.note[:100],
+        "details": f"Added a note ({len(note_data.note)} chars)",
+        "new_value": note_data.note[:500],  # Store note content (truncate if very long)
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.lead_activities.insert_one(activity)
