@@ -796,8 +796,13 @@ async def get_leads(
         # Enrich leads with assigned_to_name
         for lead in leads:
             if lead.get("assigned_to") and not lead.get("assigned_to_name"):
-                # Use user name if found, otherwise show "Unknown Rep" instead of raw UUID
-                lead["assigned_to_name"] = user_map.get(lead["assigned_to"], "Unknown Rep")
+                user_name = user_map.get(lead["assigned_to"])
+                if user_name:
+                    lead["assigned_to_name"] = user_name
+                else:
+                    # User no longer exists - clear the invalid assignment
+                    lead["assigned_to"] = None
+                    lead["assigned_to_name"] = None
     
     return leads
 
