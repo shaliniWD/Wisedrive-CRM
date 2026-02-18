@@ -92,6 +92,11 @@ export default function InspectionsPage() {
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('scheduled');
 
+  // Collect Balance Modal state
+  const [isCollectBalanceModalOpen, setIsCollectBalanceModalOpen] = useState(false);
+  const [collectBalanceInspection, setCollectBalanceInspection] = useState(null);
+  const [collectingBalance, setCollectingBalance] = useState(false);
+
   const [search, setSearch] = useState('');
   const [filterCity, setFilterCity] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
@@ -102,6 +107,48 @@ export default function InspectionsPage() {
     mechanic_name: '', car_number: '', car_details: '',
     scheduled_date: '', scheduled_time: '', notes: '',
   });
+
+  // Handle Collect Balance action
+  const handleCollectBalance = async () => {
+    if (!collectBalanceInspection) return;
+    
+    setCollectingBalance(true);
+    try {
+      const response = await inspectionsApi.collectBalance(collectBalanceInspection.id, {
+        send_whatsapp: true,
+        notes: `Balance collection initiated for inspection ${collectBalanceInspection.id}`
+      });
+      
+      if (response.data?.whatsapp_sent) {
+        toast.success(`Payment link (₹${collectBalanceInspection.balance_due?.toLocaleString()}) sent via WhatsApp!`);
+      } else {
+        toast.success(`Payment link generated: ${response.data?.payment_link}`);
+      }
+      setIsCollectBalanceModalOpen(false);
+      setCollectBalanceInspection(null);
+      fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to generate payment link');
+    } finally {
+      setCollectingBalance(false);
+    }
+  };
+
+  // Handle Send Report action
+  const handleSendReport = async (inspection) => {
+    if (inspection.payment_status !== 'FULLY_PAID' && inspection.payment_status !== 'PAID') {
+      toast.error('Cannot send report until full payment is received');
+      return;
+    }
+    
+    try {
+      await inspectionsApi.sendReport(inspection.id, { send_via_whatsapp: true });
+      toast.success('Report sent successfully!');
+      fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to send report');
+    }
+  };
 
   const fetchData = useCallback(async () => {
     try {
