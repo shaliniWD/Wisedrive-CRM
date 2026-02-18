@@ -1345,8 +1345,8 @@ export default function InspectionsPage() {
                   Vehicle Found
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div><span className="text-gray-500">Make:</span> <span className="font-medium">{vehicleData.manufacturer || vehicleData.make || '-'}</span></div>
-                  <div><span className="text-gray-500">Model:</span> <span className="font-medium">{vehicleData.model || '-'}</span></div>
+                  <div><span className="text-gray-500">Make:</span> <span className="font-medium">{extractMake(vehicleData.manufacturer || vehicleData.make) || '-'}</span></div>
+                  <div><span className="text-gray-500">Model:</span> <span className="font-medium">{extractModel(vehicleData.model) || '-'}</span></div>
                   <div><span className="text-gray-500">Year:</span> <span className="font-medium">{vehicleData.manufacturing_date?.split('/')?.pop() || vehicleData.year || '-'}</span></div>
                   <div><span className="text-gray-500">Color:</span> <span className="font-medium">{vehicleData.color || '-'}</span></div>
                   <div><span className="text-gray-500">Fuel:</span> <span className="font-medium">{vehicleData.fuel_type || '-'}</span></div>
