@@ -8645,16 +8645,18 @@ async def get_ad_performance_analytics(
         conversion_rate = (converted_leads / total_leads * 100) if total_leads > 0 else 0
         roi = ((total_revenue - ad_spend) / ad_spend * 100) if ad_spend > 0 else 0
         cost_per_lead = ad_spend / total_leads if total_leads > 0 else 0
+        cost_per_result = ad_spend / converted_leads if converted_leads > 0 else 0  # CPR - Cost Per Result/Conversion
         revenue_per_lead = total_revenue / converted_leads if converted_leads > 0 else 0
         
         performance_data.append({
             "ad_id": ad_id,
-            "ad_name": ad_mapping.get("ad_name", ""),
+            "ad_name": ad_mapping.get("ad_name") or ad_mapping.get("meta_ad_name", ""),
             "city": ad_mapping.get("city", ""),
             "source": ad_mapping.get("source", ""),
             "language": ad_mapping.get("language", ""),
             "campaign": ad_mapping.get("campaign", ""),
             "is_active": ad_mapping.get("is_active", True),
+            "meta_status": ad_mapping.get("meta_effective_status", ""),
             # Meta metrics
             "ad_spend": round(ad_spend, 2),
             "impressions": impressions,
@@ -8667,6 +8669,7 @@ async def get_ad_performance_analytics(
             "conversion_rate": round(conversion_rate, 2),
             "roi": round(roi, 2),
             "cost_per_lead": round(cost_per_lead, 2),
+            "cost_per_result": round(cost_per_result, 2),  # CPR
             "revenue_per_lead": round(revenue_per_lead, 2)
         })
     
