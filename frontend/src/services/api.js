@@ -403,4 +403,12 @@ export const inspectionPackagesApi = {
   updatePackage: (id, data) => axios.put(`${API_URL}/inspection-packages/${id}`, data),
   togglePackageStatus: (id) => axios.patch(`${API_URL}/inspection-packages/${id}/toggle-status`),
   deletePackage: (id) => axios.delete(`${API_URL}/inspection-packages/${id}`),
+  
+  // Offers
+  getOffers: (countryId) => axios.get(`${API_URL}/offers`, { params: { country_id: countryId } }),
+  getActiveOffers: (countryId) => axios.get(`${API_URL}/offers/active`, { params: { country_id: countryId } }),
+  createOffer: (data) => axios.post(`${API_URL}/offers`, data),
+  updateOffer: (id, data) => axios.put(`${API_URL}/offers/${id}`, data),
+  toggleOfferStatus: (id) => axios.patch(`${API_URL}/offers/${id}/toggle-status`),
+  deleteOffer: (id) => axios.delete(`${API_URL}/offers/${id}`),
 };
