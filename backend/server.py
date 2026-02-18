@@ -2992,6 +2992,44 @@ async def get_inspection(inspection_id: str, current_user: dict = Depends(get_cu
     return inspection
 
 
+@api_router.get("/inspections/{inspection_id}/report")
+async def get_inspection_report(inspection_id: str):
+    """
+    Get inspection report data (public endpoint for viewing reports)
+    Returns inspection details along with lead and customer info
+    """
+    inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
+    if not inspection:
+        raise HTTPException(status_code=404, detail="Inspection not found")
+    
+    # Get associated lead
+    lead = None
+    if inspection.get("lead_id"):
+        lead = await db.leads.find_one({"id": inspection["lead_id"]}, {"_id": 0})
+    
+    # Get customer info
+    customer = None
+    if lead and lead.get("customer_id"):
+        customer = await db.customers.find_one({"id": lead["customer_id"]}, {"_id": 0})
+    elif inspection.get("customer_id"):
+        customer = await db.customers.find_one({"id": inspection["customer_id"]}, {"_id": 0})
+    
+    # Get mechanic name
+    mechanic_name = None
+    if inspection.get("mechanic_id"):
+        mechanic = await db.users.find_one({"id": inspection["mechanic_id"]}, {"_id": 0, "name": 1})
+        mechanic_name = mechanic.get("name") if mechanic else None
+    
+    # Add mechanic name to inspection
+    inspection["mechanic_name"] = mechanic_name
+    
+    return {
+        "inspection": inspection,
+        "lead": lead,
+        "customer": customer
+    }
+
+
 @api_router.post("/inspections")
 async def create_inspection(inspection_data: InspectionCreate, current_user: dict = Depends(get_current_user)):
     """Create a new inspection"""
