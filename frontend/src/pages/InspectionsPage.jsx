@@ -280,8 +280,10 @@ export default function InspectionsPage() {
     
     setSaving(true);
     try {
-      await inspectionsApi.assignMechanic(mechanicEditInspection.id, selectedMechanicId || null);
-      toast.success(selectedMechanicId ? 'Mechanic assigned successfully!' : 'Mechanic unassigned');
+      // If "unassign" is selected, pass null to unassign
+      const mechanicId = selectedMechanicId === 'unassign' ? null : (selectedMechanicId || null);
+      await inspectionsApi.assignMechanic(mechanicEditInspection.id, mechanicId);
+      toast.success(mechanicId ? 'Mechanic assigned successfully!' : 'Mechanic unassigned');
       setIsMechanicModalOpen(false);
       setMechanicEditInspection(null);
       setSelectedMechanicId('');
