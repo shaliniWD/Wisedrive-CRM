@@ -205,14 +205,11 @@ const PackageCard = ({ pkg, categories, offers, onEdit, onCopy, onToggle }) => {
       </div>
       
       {/* Actions Footer */}
-      <div className="px-4 py-3 border-t bg-gray-50/50 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <button onClick={() => onToggle(pkg)} className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${isActive ? 'bg-emerald-500' : 'bg-gray-300'}`}>
-            <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform shadow-sm ${isActive ? 'translate-x-5' : 'translate-x-0.5'}`} />
-          </button>
-          <span className={`text-xs font-medium ${isActive ? 'text-emerald-600' : 'text-gray-500'}`}>{isActive ? 'Active' : 'Inactive'}</span>
-        </div>
+      <div className="px-4 py-3 border-t bg-gray-50/50 flex items-center justify-end">
         <div className="flex items-center gap-1">
+          <button onClick={() => onToggle(pkg)} className="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title={isActive ? 'Deactivate' : 'Activate'}>
+            {isActive ? <ToggleRight className="h-4 w-4 text-emerald-500" /> : <ToggleLeft className="h-4 w-4" />}
+          </button>
           <button onClick={() => onCopy(pkg)} className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors" title="Copy">
             <Copy className="h-4 w-4" />
           </button>
