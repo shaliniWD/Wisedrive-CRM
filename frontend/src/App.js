@@ -14,6 +14,7 @@ import FinancePage from "@/pages/FinancePage";
 import SettingsPage from "@/pages/SettingsPage";
 import HRModulePage from "@/pages/HRModulePage";
 import NotificationConfigPage from "@/pages/NotificationConfigPage";
+import AdAnalyticsPage from "@/pages/AdAnalyticsPage";
 
 // Smart redirect based on visible tabs
 const SmartRedirect = () => {
@@ -27,6 +28,7 @@ const SmartRedirect = () => {
     leads: '/leads',
     customers: '/customers',
     inspections: '/inspections',
+    'ad-analytics': '/ad-analytics',
     hr: '/hr',
     finance: '/finance',
     settings: '/settings',
@@ -56,6 +58,7 @@ function App() {
             <Route path="/leads" element={<LeadsPage />} />
             <Route path="/customers" element={<CustomersPage />} />
             <Route path="/inspections" element={<InspectionsPage />} />
+            <Route path="/ad-analytics" element={<AdAnalyticsPage />} />
             <Route path="/hr" element={<HRModulePage />} />
             <Route path="/hr/notifications" element={<NotificationConfigPage />} />
             <Route path="/finance" element={<FinancePage />} />
