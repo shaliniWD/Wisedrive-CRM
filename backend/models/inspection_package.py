@@ -13,6 +13,43 @@ class InspectionItem(BaseModel):
     is_benefit: bool = False  # True for "Additional Benefits" items
 
 
+# ============= OFFER MODELS =============
+
+class OfferBase(BaseModel):
+    """Base offer model for promotional discounts"""
+    name: str  # e.g., "Christmas Special", "New Year Offer"
+    description: Optional[str] = None
+    discount_type: str = "percentage"  # "percentage" or "fixed"
+    discount_value: float = 0  # 10 for 10% or 100 for ₹100
+    valid_from: datetime
+    valid_until: datetime
+    is_active: bool = True
+    country_id: str
+
+
+class OfferCreate(OfferBase):
+    pass
+
+
+class OfferUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    discount_type: Optional[str] = None
+    discount_value: Optional[float] = None
+    valid_from: Optional[datetime] = None
+    valid_until: Optional[datetime] = None
+    is_active: Optional[bool] = None
+
+
+class Offer(OfferBase):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_by: Optional[str] = None
+    updated_by: Optional[str] = None
+
+
 class InspectionCategory(BaseModel):
     """Category of inspections (e.g., Physical/Manual, OBD2, RTO)"""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
