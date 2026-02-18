@@ -260,7 +260,7 @@ Returns:
 ## Document History
 - **Created:** December 2025
 - **Last Updated:** February 18, 2026
-- **Version:** 2.7
+- **Version:** 2.8
 
 ## Changelog
 - v2.8 (Feb 18, 2026): **Partial Payment Fixed Amount Implementation** - Simplified partial payment to fixed amount only (removed percentage option). Added clear calculation display in payment modal showing Total → Partial Payment → Balance. Button now shows correct amount to pay. Example: Package ₹1,499 - Discount ₹200 = Total ₹1,299, Partial ₹500, Balance ₹799.
