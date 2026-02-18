@@ -79,11 +79,6 @@ export const inspectionsApi = {
   updateSchedule: (id, data) => axios.patch(`${API_URL}/inspections/${id}/schedule`, data),
 };
 
-// Vehicle API (Vaahan)
-export const vehicleApi = {
-  getDetails: (vehicleNumber) => axios.get(`${API_URL}/vehicle/details/${vehicleNumber}`),
-};
-
 // Users API (V2)
 export const usersApi = {
   getAll: (params) => axios.get(`${API_URL}/users`, { params }),
