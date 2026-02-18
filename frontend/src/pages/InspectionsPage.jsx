@@ -440,8 +440,14 @@ export default function InspectionsPage() {
                 </tr>
               ) : (
                 inspections.map((inspection) => {
+                  // Handle both old and new payment status formats
                   const isFullyPaid = inspection.payment_status === 'FULLY_PAID' || inspection.payment_status === 'PAID';
-                  const hasBalanceDue = inspection.balance_due > 0 && inspection.payment_status === 'PARTIALLY_PAID';
+                  // Old format: pending_amount > 0 && payment_type === 'Partial'
+                  // New format: balance_due > 0 && payment_status === 'PARTIALLY_PAID'
+                  const actualBalanceDue = inspection.balance_due || inspection.pending_amount || 0;
+                  const isPartialPayment = (inspection.payment_status === 'PARTIALLY_PAID') || 
+                    (inspection.payment_type === 'Partial' && actualBalanceDue > 0);
+                  const hasBalanceDue = actualBalanceDue > 0 && isPartialPayment;
                   const isCompleted = inspection.inspection_status === 'INSPECTION_COMPLETED';
                   const canSendReport = isFullyPaid && isCompleted;
                   
