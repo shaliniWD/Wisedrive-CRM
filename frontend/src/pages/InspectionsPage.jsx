@@ -1033,8 +1033,15 @@ export default function InspectionsPage() {
                     <p className="text-gray-500">No scheduled inspections</p>
                   </td>
                 </tr>
+              ) : filteredInspections.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="text-center py-12">
+                    <ClipboardCheck className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-500">No inspections match the filter</p>
+                  </td>
+                </tr>
               ) : (
-                inspections.map((inspection) => {
+                filteredInspections.map((inspection) => {
                   const isFullyPaid = inspection.payment_status === 'FULLY_PAID' || inspection.payment_status === 'PAID';
                   const actualBalanceDue = inspection.balance_due || inspection.pending_amount || 0;
                   const isPartialPayment = (inspection.payment_status === 'PARTIALLY_PAID') || 
