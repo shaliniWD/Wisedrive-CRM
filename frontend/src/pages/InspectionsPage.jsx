@@ -812,27 +812,26 @@ export default function InspectionsPage() {
             </tbody>
           </table>
         ) : (
-          /* Scheduled Tab Table */
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1200px]">
-              <thead>
-                <tr className="bg-slate-50 border-b">
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider w-[120px]">Date/Time</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider w-[180px]">Customer</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider w-[150px]">Vehicle</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider w-[160px]">Payment Status</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider w-[160px]">Inspection Status</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider w-[140px]">Mechanic</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider w-[100px]">Location</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider w-[140px]">Inspection Report</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {loading ? (
-                  <tr>
-                    <td colSpan={8} className="text-center py-12">
-                      <div className="flex items-center justify-center gap-2">
-                        <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+          /* Scheduled Tab Table - NO horizontal scroll */
+          <table className="w-full table-fixed">
+            <thead>
+              <tr className="bg-slate-50 border-b">
+                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '10%'}}>Date/Time</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '15%'}}>Customer</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '12%'}}>Vehicle</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '14%'}}>Payment</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '14%'}}>Status</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '12%'}}>Mechanic</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '10%'}}>Location</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '13%'}}>Report</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {loading ? (
+                <tr>
+                  <td colSpan={8} className="text-center py-12">
+                    <div className="flex items-center justify-center gap-2">
+                      <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
                         <span className="text-gray-500">Loading inspections...</span>
                       </div>
                     </td>
