@@ -118,8 +118,14 @@ export function KeyInfoSection({ data }) {
     return 'poor';
   };
 
-  const minorTotal = data.repairs.filter(r => r.type === 'minor').reduce((sum, r) => sum + r.cost, 0);
-  const majorTotal = data.repairs.filter(r => r.type === 'major').reduce((sum, r) => sum + r.cost, 0);
+  // Safely access repairs array
+  const repairs = data?.repairs || [];
+  const minorTotal = repairs.filter(r => r.type === 'minor').reduce((sum, r) => sum + (r.cost || 0), 0);
+  const majorTotal = repairs.filter(r => r.type === 'major').reduce((sum, r) => sum + (r.cost || 0), 0);
+
+  // Safely access other data
+  const insurance = data?.insurance || {};
+  const tyreDetails = data?.tyreDetails || { avgLife: 0, tyres: [] };
 
   return (
     <section className="px-4 md:px-0 mt-4 md:mt-6">
@@ -133,16 +139,16 @@ export function KeyInfoSection({ data }) {
         
         <div className="mobile-card-body">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-3">
-            <KeyInfoItem icon={Gauge} label="KMs Driven" value={data.kmsDriven} />
-            <KeyInfoItem icon={Settings} label="Engine" status={getConditionStatus(data.engineCondition)} />
-            <KeyInfoItem icon={Sofa} label="Interior" status={getConditionStatus(data.interiorCondition)} />
-            <KeyInfoItem icon={Car} label="Exterior" status={getConditionStatus(data.exteriorCondition)} />
+            <KeyInfoItem icon={Gauge} label="KMs Driven" value={data?.kmsDriven || 0} />
+            <KeyInfoItem icon={Settings} label="Engine" status={getConditionStatus(data?.engineCondition)} />
+            <KeyInfoItem icon={Sofa} label="Interior" status={getConditionStatus(data?.interiorCondition)} />
+            <KeyInfoItem icon={Car} label="Exterior" status={getConditionStatus(data?.exteriorCondition)} />
             
             {/* Insurance with Modal */}
             <KeyInfoItem 
               icon={Shield} 
               label="Insurance" 
-              status={data.insurance.status === 'Expired' ? 'expired' : 'good'}
+              status={insurance.status === 'Expired' ? 'expired' : 'good'}
               hasModal={true}
               onClick={() => setInsuranceModal(true)}
             />
