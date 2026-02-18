@@ -856,12 +856,11 @@ export default function InspectionsPage() {
                   return (
                   <tr key={inspection.id} className="hover:bg-slate-50 transition-colors" data-testid={`inspection-row-${inspection.id}`}>
                     {/* Date/Time Column - Editable */}
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-1.5">
+                    <td className="px-3 py-3">
+                      <div className="flex items-center gap-1">
+                        <div className="flex flex-col">
                           <span className="font-medium text-gray-900 text-sm">{formatDate(inspection.scheduled_date) || '-'}</span>
-                          <span className="text-gray-400">•</span>
-                          <span className="text-sm text-gray-600">{formatTime(inspection.scheduled_time)}</span>
+                          <span className="text-xs text-gray-500">{formatTime(inspection.scheduled_time)}</span>
                         </div>
                         <button 
                           onClick={() => {
@@ -893,13 +892,13 @@ export default function InspectionsPage() {
                     </td>
                     
                     {/* Vehicle Column - Editable */}
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
+                    <td className="px-3 py-3">
+                      <div className="flex items-center gap-1">
                         <Car className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                        <div>
+                        <div className="min-w-0">
                           <div className="text-sm font-mono text-blue-600">{inspection.car_number || '-'}</div>
                           {(inspection.car_make || inspection.car_model) && (
-                            <div className="text-xs text-gray-400">{inspection.car_make} {inspection.car_model}</div>
+                            <div className="text-xs text-gray-400 truncate">{extractMake(inspection.car_make)} {extractModel(inspection.car_model)}</div>
                           )}
                         </div>
                         <button 
