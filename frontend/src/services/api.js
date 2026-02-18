@@ -46,7 +46,18 @@ export const vehicleApi = {
 export const adCityMappingsApi = {
   getAll: () => axios.get(`${API_URL}/settings/ad-city-mappings`),
   create: (data) => axios.post(`${API_URL}/settings/ad-city-mappings`, data),
-  delete: (adId) => axios.delete(`${API_URL}/settings/ad-city-mappings/${adId}`),
+  update: (id, data) => axios.put(`${API_URL}/settings/ad-city-mappings/${id}`, data),
+  toggleStatus: (id) => axios.patch(`${API_URL}/settings/ad-city-mappings/${id}/toggle-status`),
+  delete: (id) => axios.delete(`${API_URL}/settings/ad-city-mappings/${id}`),
+};
+
+// Meta Ads Analytics API
+export const metaAdsApi = {
+  getStatus: () => axios.get(`${API_URL}/meta-ads/status`),
+  getInsights: (params) => axios.get(`${API_URL}/meta-ads/insights`, { params }),
+  getCampaigns: () => axios.get(`${API_URL}/meta-ads/campaigns`),
+  getAds: () => axios.get(`${API_URL}/meta-ads/ads`),
+  getPerformance: (params) => axios.get(`${API_URL}/meta-ads/performance`, { params }),
 };
 
 // Customers API
