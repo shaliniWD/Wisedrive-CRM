@@ -1,35 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="9" skipped="0" tests="10" time="6.033" timestamp="2026-02-18T18:00:12.076363+00:00" hostname="agent-env-67152afa-7784-46c8-9f14-f57f47a75491"><testcase classname="tests.test_meta_ads_advanced.TestMetaAdsAdvancedFeatures" name="test_01_login_success" time="0.682" /><testcase classname="tests.test_meta_ads_advanced.TestMetaAdsAdvancedFeatures" name="test_02_meta_ads_status" time="0.547"><failure message="AssertionError: Status endpoint failed: {&quot;detail&quot;:&quot;Invalid token&quot;}&#10;assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">tests/test_meta_ads_advanced.py:52: in test_02_meta_ads_status
-    assert response.status_code == 200, f"Status endpoint failed: {response.text}"
-E   AssertionError: Status endpoint failed: {"detail":"Invalid token"}
-E   assert 401 == 200
-E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="tests.test_meta_ads_advanced.TestMetaAdsAdvancedFeatures" name="test_03_meta_ads_token_info" time="0.388"><failure message="AssertionError: Token info failed: {&quot;detail&quot;:&quot;Invalid token&quot;}&#10;assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">tests/test_meta_ads_advanced.py:61: in test_03_meta_ads_token_info
-    assert response.status_code == 200, f"Token info failed: {response.text}"
-E   AssertionError: Token info failed: {"detail":"Invalid token"}
-E   assert 401 == 200
-E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="tests.test_meta_ads_advanced.TestMetaAdsAdvancedFeatures" name="test_04_meta_ads_performance_with_cpr" time="0.591"><failure message="AssertionError: Performance endpoint failed: {&quot;detail&quot;:&quot;Invalid token&quot;}&#10;assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">tests/test_meta_ads_advanced.py:78: in test_04_meta_ads_performance_with_cpr
-    assert response.status_code == 200, f"Performance endpoint failed: {response.text}"
-E   AssertionError: Performance endpoint failed: {"detail":"Invalid token"}
-E   assert 401 == 200
-E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="tests.test_meta_ads_advanced.TestMetaAdsAdvancedFeatures" name="test_05_sync_status_endpoint" time="0.592"><failure message="AssertionError: Sync status failed: {&quot;detail&quot;:&quot;Invalid token&quot;}&#10;assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">tests/test_meta_ads_advanced.py:108: in test_05_sync_status_endpoint
-    assert response.status_code == 200, f"Sync status failed: {response.text}"
-E   AssertionError: Sync status failed: {"detail":"Invalid token"}
-E   assert 401 == 200
-E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="tests.test_meta_ads_advanced.TestMetaAdsAdvancedFeatures" name="test_06_unmapped_ads_endpoint" time="0.671"><failure message="AssertionError: Unmapped ads failed: {&quot;detail&quot;:&quot;Invalid token&quot;}&#10;assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">tests/test_meta_ads_advanced.py:125: in test_06_unmapped_ads_endpoint
-    assert response.status_code == 200, f"Unmapped ads failed: {response.text}"
-E   AssertionError: Unmapped ads failed: {"detail":"Invalid token"}
-E   assert 401 == 200
-E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="tests.test_meta_ads_advanced.TestMetaAdsAdvancedFeatures" name="test_07_sync_status_unauthorized" time="0.858"><failure message="AssertionError: Non-CEO should get 403, got 401&#10;assert 401 == 403&#10; +  where 401 = &lt;Response [401]&gt;.status_code">tests/test_meta_ads_advanced.py:165: in test_07_sync_status_unauthorized
-    assert response.status_code == 403, f"Non-CEO should get 403, got {response.status_code}"
-E   AssertionError: Non-CEO should get 403, got 401
-E   assert 401 == 403
-E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="tests.test_meta_ads_advanced.TestMetaAdsAdvancedFeatures" name="test_08_ad_city_mappings_list" time="0.387"><failure message="AssertionError: Ad mappings list failed: {&quot;detail&quot;:&quot;Invalid token&quot;}&#10;assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">tests/test_meta_ads_advanced.py:173: in test_08_ad_city_mappings_list
-    assert response.status_code == 200, f"Ad mappings list failed: {response.text}"
-E   AssertionError: Ad mappings list failed: {"detail":"Invalid token"}
-E   assert 401 == 200
-E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="tests.test_meta_ads_advanced.TestMetaAdsPerformanceData" name="test_performance_data_structure" time="0.780"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">tests/test_meta_ads_advanced.py:214: in test_performance_data_structure
-    assert response.status_code == 200
-E   assert 401 == 200
-E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="tests.test_meta_ads_advanced.TestMetaAdsPerformanceData" name="test_individual_ad_cpr" time="0.422"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">tests/test_meta_ads_advanced.py:243: in test_individual_ad_cpr
-    assert response.status_code == 200
-E   assert 401 == 200
-E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase></testsuite></testsuites>
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="10" time="9.431" timestamp="2026-02-18T18:00:53.640157+00:00" hostname="agent-env-67152afa-7784-46c8-9f14-f57f47a75491"><testcase classname="tests.test_meta_ads_advanced.TestMetaAdsAdvancedFeatures" name="test_01_login_success" time="3.908" /><testcase classname="tests.test_meta_ads_advanced.TestMetaAdsAdvancedFeatures" name="test_02_meta_ads_status" time="0.524" /><testcase classname="tests.test_meta_ads_advanced.TestMetaAdsAdvancedFeatures" name="test_03_meta_ads_token_info" time="0.556" /><testcase classname="tests.test_meta_ads_advanced.TestMetaAdsAdvancedFeatures" name="test_04_meta_ads_performance_with_cpr" time="0.654" /><testcase classname="tests.test_meta_ads_advanced.TestMetaAdsAdvancedFeatures" name="test_05_sync_status_endpoint" time="0.613" /><testcase classname="tests.test_meta_ads_advanced.TestMetaAdsAdvancedFeatures" name="test_06_unmapped_ads_endpoint" time="0.565" /><testcase classname="tests.test_meta_ads_advanced.TestMetaAdsAdvancedFeatures" name="test_07_sync_status_unauthorized" time="0.941" /><testcase classname="tests.test_meta_ads_advanced.TestMetaAdsAdvancedFeatures" name="test_08_ad_city_mappings_list" time="0.409"><failure message="AssertionError: Mapping should have is_active&#10;assert 'is_active' in {'ad_id': 'default', 'campaign_name': 'Default Campaign', 'city': 'Vizag', 'id': 'f263eb1b-afba-40dc-9fe0-e17dd10e7af9'}">tests/test_meta_ads_advanced.py:184: in test_08_ad_city_mappings_list
+    assert "is_active" in first_mapping, "Mapping should have is_active"
+E   AssertionError: Mapping should have is_active
+E   assert 'is_active' in {'ad_id': 'default', 'campaign_name': 'Default Campaign', 'city': 'Vizag', 'id': 'f263eb1b-afba-40dc-9fe0-e17dd10e7af9'}</failure></testcase><testcase classname="tests.test_meta_ads_advanced.TestMetaAdsPerformanceData" name="test_performance_data_structure" time="0.531" /><testcase classname="tests.test_meta_ads_advanced.TestMetaAdsPerformanceData" name="test_individual_ad_cpr" time="0.650" /></testsuite></testsuites>
