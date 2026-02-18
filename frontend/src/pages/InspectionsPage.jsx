@@ -472,8 +472,9 @@ export default function InspectionsPage() {
       };
       
       if (vehicleData) {
-        updateData.car_make = vehicleData.manufacturer || vehicleData.make || '';
-        updateData.car_model = vehicleData.model || '';
+        // Save extracted clean make/model names
+        updateData.car_make = extractMake(vehicleData.manufacturer || vehicleData.make) || '';
+        updateData.car_model = extractModel(vehicleData.model) || '';
         updateData.car_year = vehicleData.manufacturing_date?.split('/')?.pop() || vehicleData.year || '';
         updateData.car_color = vehicleData.color || '';
         updateData.fuel_type = vehicleData.fuel_type || '';
