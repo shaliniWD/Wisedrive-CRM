@@ -77,6 +77,41 @@ Build a scalable automotive platform "Wisedrive" that evolved into a monolithic 
 - Period-based allocation (monthly/quarterly)
 - No carry forward policy
 
+### ✅ Inspection Package Payment Enhancements (February 2026)
+
+**New Features:**
+1. **Partial Payments**
+   - Toggle to enable/disable per package
+   - Type: Percentage (%) or Fixed Amount (₹)
+   - Value: Configurable upfront payment amount
+   - Flow: Customer pays partial → Customer & Inspection created → "Collect Balance" button in Inspections → Remaining payment → Report enabled
+
+2. **Discounts**
+   - Toggle to enable/disable per package
+   - Type: Percentage (%) or Fixed Amount (₹)
+   - Value: Configurable discount amount
+
+3. **Offers Management**
+   - New "Offers" tab in Settings > Inspection Packages
+   - Create promotional offers (e.g., "Christmas Special 2026")
+   - Fields: Name, Description, Discount Type, Value, Valid From/Until, Active status
+   - Multiple offers can be linked to a single package
+   - Sales Head manually selects offers during payment
+
+**API Endpoints:**
+- `GET /api/offers` - List all offers
+- `GET /api/offers/active` - List active offers within valid date range
+- `POST /api/offers` - Create offer
+- `PUT /api/offers/{id}` - Update offer
+- `PATCH /api/offers/{id}/toggle-status` - Toggle active status
+- `DELETE /api/offers/{id}` - Delete offer
+
+**Files Modified:**
+- `/app/backend/models/inspection_package.py` - Added Offer models and package payment fields
+- `/app/backend/server.py` - Added Offers CRUD endpoints
+- `/app/frontend/src/pages/InspectionPackagesPage.jsx` - Added Offers tab and package modal enhancements
+- `/app/frontend/src/services/api.js` - Added offers API methods
+
 ---
 
 ## Third-Party Integrations
