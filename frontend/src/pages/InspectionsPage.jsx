@@ -290,7 +290,12 @@ export default function InspectionsPage() {
   const [editingInspection, setEditingInspection] = useState(null);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('scheduled');
-  const [cardFilter, setCardFilter] = useState(null); // 'total', 'scheduled', 'completed', 'unscheduled'
+  const [cardFilter, setCardFilter] = useState(null); // 'total', 'scheduled', 'completed', 'new'
+
+  // Date Range Filter State
+  const [dateRangeType, setDateRangeType] = useState('today'); // 'today', 'week', 'month', 'year', 'custom'
+  const [dateFrom, setDateFrom] = useState(new Date().toISOString().split('T')[0]);
+  const [dateTo, setDateTo] = useState(new Date().toISOString().split('T')[0]);
 
   // Modal states
   const [isCollectBalanceModalOpen, setIsCollectBalanceModalOpen] = useState(false);
@@ -342,6 +347,38 @@ export default function InspectionsPage() {
     mechanic_name: '', car_number: '', car_details: '',
     scheduled_date: '', scheduled_time: '', notes: '',
   });
+  
+  // Calculate date range based on dateRangeType
+  const getDateRange = useCallback(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    switch (dateRangeType) {
+      case 'today':
+        return { from: today.toISOString().split('T')[0], to: today.toISOString().split('T')[0] };
+      case 'week': {
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - today.getDay());
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+        return { from: startOfWeek.toISOString().split('T')[0], to: endOfWeek.toISOString().split('T')[0] };
+      }
+      case 'month': {
+        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        return { from: startOfMonth.toISOString().split('T')[0], to: endOfMonth.toISOString().split('T')[0] };
+      }
+      case 'year': {
+        const startOfYear = new Date(today.getFullYear(), 0, 1);
+        const endOfYear = new Date(today.getFullYear(), 11, 31);
+        return { from: startOfYear.toISOString().split('T')[0], to: endOfYear.toISOString().split('T')[0] };
+      }
+      case 'custom':
+        return { from: dateFrom, to: dateTo };
+      default:
+        return { from: today.toISOString().split('T')[0], to: today.toISOString().split('T')[0] };
+    }
+  }, [dateRangeType, dateFrom, dateTo]);
 
   // Fetch mechanics list
   const fetchMechanics = useCallback(async () => {
