@@ -279,7 +279,9 @@ class CountryBase(BaseModel):
     currency_symbol: str = "₹"
     phone_code: str = "+91"
     is_active: bool = True
-    cities: List[str] = []  # List of city names
+    cities: List[str] = []  # Legacy - kept for backwards compatibility
+    leads_cities: List[str] = []  # Cities for leads management
+    inspection_cities: List[str] = []  # Cities for inspection assignments
 
 
 class CountryCreate(CountryBase):
@@ -293,7 +295,9 @@ class CountryUpdate(BaseModel):
     currency_symbol: Optional[str] = None
     phone_code: Optional[str] = None
     is_active: Optional[bool] = None
-    cities: Optional[List[str]] = None  # List of city names
+    cities: Optional[List[str]] = None  # Legacy
+    leads_cities: Optional[List[str]] = None
+    inspection_cities: Optional[List[str]] = None
 
 
 class Country(CountryBase):
