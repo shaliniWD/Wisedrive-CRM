@@ -206,6 +206,7 @@ class RBACService:
             "finance": "finance",
             "settings": "settings",
             "reports": "reports",
+            "ad-analytics": "ad-analytics",
         }
         
         # Aggregate visible tabs from all roles
