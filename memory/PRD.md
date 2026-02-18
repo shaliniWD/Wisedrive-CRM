@@ -263,6 +263,7 @@ Returns:
 - **Version:** 2.7
 
 ## Changelog
+- v2.8 (Feb 18, 2026): **Partial Payment Fixed Amount Implementation** - Simplified partial payment to fixed amount only (removed percentage option). Added clear calculation display in payment modal showing Total → Partial Payment → Balance. Button now shows correct amount to pay. Example: Package ₹1,499 - Discount ₹200 = Total ₹1,299, Partial ₹500, Balance ₹799.
 - v2.7 (Feb 18, 2026): **Payment Modal Package Settings Fix** - Discount, Offers, and Partial Payment sections now only appear when enabled on the package. Fixed active offers query to properly filter by date range.
 - v2.6 (Feb 18, 2026): **Inspection Package Payment Enhancements** - Added partial payment support (fixed/percentage), discount configuration, and promotional offers management. New Offers tab in Settings with CRUD operations. Package modal updated with toggles for partial payments, discounts, and offer linking.
 - v2.5 (Feb 17, 2026): **CTO Role Permissions Fix** - Copied 29 role_permissions from CEO role to CTO role, enabling full data access for the new CTO user
