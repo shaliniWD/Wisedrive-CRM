@@ -110,6 +110,20 @@ class InspectionPackageUpdate(BaseModel):
     is_recommended: Optional[bool] = None
     order: Optional[int] = None
     brands_covered: Optional[List[str]] = None
+    
+    # Partial Payment Configuration
+    allow_partial_payment: Optional[bool] = None
+    partial_payment_type: Optional[str] = None
+    partial_payment_value: Optional[float] = None
+    
+    # Discount Configuration
+    allow_discount: Optional[bool] = None
+    discount_type: Optional[str] = None
+    discount_value: Optional[float] = None
+    
+    # Offers Configuration
+    allow_offers: Optional[bool] = None
+    applicable_offer_ids: Optional[List[str]] = None
 
 
 class InspectionPackage(InspectionPackageBase):
