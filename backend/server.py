@@ -2864,6 +2864,8 @@ async def get_inspections(
     is_scheduled: Optional[bool] = None,
     mechanic_id: Optional[str] = None,
     country_id: Optional[str] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
     """Get inspections - filtered by RBAC"""
@@ -2892,6 +2894,16 @@ async def get_inspections(
         query["mechanic_id"] = mechanic_id
     if country_id:
         query["country_id"] = country_id
+    
+    # Date range filtering
+    if date_from or date_to:
+        date_query = {}
+        if date_from:
+            date_query["$gte"] = date_from
+        if date_to:
+            date_query["$lte"] = date_to
+        if date_query:
+            query["scheduled_date"] = {**(query.get("scheduled_date") or {}), **date_query}
     
     inspections = await db.inspections.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     
