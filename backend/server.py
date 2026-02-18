@@ -2445,6 +2445,11 @@ async def razorpay_payment_webhook(request: Request):
         inspection_schedules = lead.get("inspection_schedules", [])
         created_inspections = []
         
+        # Determine payment type (partial or full)
+        is_partial_payment = lead.get("is_partial_payment", False)
+        total_package_amount = lead.get("total_amount") or amount  # Total after discounts
+        balance_due = lead.get("balance_due", 0) if is_partial_payment else 0
+        
         for i in range(no_of_inspections):
             inspection_id = str(uuid.uuid4())
             
@@ -2457,6 +2462,11 @@ async def razorpay_payment_webhook(request: Request):
                 schedule_data.get("inspection_time") and 
                 schedule_data.get("address")
             )
+            
+            # Calculate amounts per inspection
+            amount_per_inspection = total_package_amount / no_of_inspections
+            paid_per_inspection = amount / no_of_inspections  # What was actually paid now
+            balance_per_inspection = balance_due / no_of_inspections if is_partial_payment else 0
             
             inspection = {
                 "id": inspection_id,
@@ -2473,11 +2483,11 @@ async def razorpay_payment_webhook(request: Request):
                 "location_lng": schedule_data.get("longitude"),
                 "package_id": lead.get("package_id"),
                 "package_type": lead.get("package_name"),
-                "total_amount": amount / no_of_inspections,  # Split amount across inspections
-                "amount_paid": amount / no_of_inspections,
-                "pending_amount": 0,
-                "payment_status": "PAID",
-                "payment_type": "Full",
+                "total_amount": amount_per_inspection,  # Total including balance
+                "amount_paid": paid_per_inspection,  # What was paid now
+                "balance_due": balance_per_inspection,  # Remaining to collect
+                "payment_status": "PARTIALLY_PAID" if is_partial_payment else "FULLY_PAID",
+                "payment_type": "Partial" if is_partial_payment else "Full",
                 "payment_date": datetime.now(timezone.utc).isoformat(),
                 "razorpay_payment_id": payment_id,
                 "inspection_status": "SCHEDULED" if has_schedule else "UNSCHEDULED",
@@ -2488,7 +2498,17 @@ async def razorpay_payment_webhook(request: Request):
                 "report_status": "pending",
                 "notes": f"Inspection {i + 1} of {no_of_inspections} from lead conversion",
                 "created_at": datetime.now(timezone.utc).isoformat(),
-                "created_by": "system"
+                "created_by": "system",
+                # Payment transaction history
+                "payment_transactions": [{
+                    "id": str(uuid.uuid4()),
+                    "amount": paid_per_inspection,
+                    "payment_type": "initial" if is_partial_payment else "full",
+                    "payment_method": "razorpay",
+                    "razorpay_payment_id": payment_id,
+                    "status": "completed",
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                }]
             }
             
             # Add vehicle details if available
