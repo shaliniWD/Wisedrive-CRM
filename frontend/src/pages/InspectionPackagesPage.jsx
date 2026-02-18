@@ -120,31 +120,26 @@ const PackageCard = ({ pkg, categories, offers, onEdit, onCopy, onToggle }) => {
         )}
         <div className="flex items-start justify-between gap-2 mb-3">
           <div className="flex items-center gap-2 flex-wrap">
-            {isRecommended && (
-              <span className="px-2 py-1 bg-amber-400 text-amber-900 text-xs font-semibold rounded-full inline-flex items-center gap-1">
-                <Award className="h-3 w-3" /> Recommended
-              </span>
-            )}
             {!isActive && <span className="px-2 py-1 bg-gray-400 text-white text-xs font-semibold rounded-full">Inactive</span>}
             {pkg.allow_partial_payment && (
-              <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-semibold rounded-full inline-flex items-center gap-1">
+              <span className={`px-2 py-1 ${isActive ? 'bg-white/20 text-white' : 'bg-purple-100 text-purple-700'} text-xs font-semibold rounded-full inline-flex items-center gap-1`}>
                 <CreditCard className="h-3 w-3" /> Partial Pay
               </span>
             )}
           </div>
-          <div className={`text-right flex-shrink-0 ${isRecommended ? 'text-white' : isActive ? 'text-blue-900' : 'text-gray-900'}`}>
+          <div className={`text-right flex-shrink-0 ${isActive ? 'text-white' : 'text-gray-900'}`}>
             <p className="text-xl font-bold whitespace-nowrap">{pkg.currency_symbol || '₹'}{(pkg.price || 0).toLocaleString('en-IN')}</p>
-            <p className={`text-xs ${isRecommended ? 'text-blue-100' : isActive ? 'text-blue-600' : 'text-gray-500'}`}>Incl. taxes</p>
+            <p className={`text-xs ${isActive ? 'text-blue-100' : 'text-gray-500'}`}>Incl. taxes</p>
           </div>
         </div>
         
         <div className="flex items-center gap-3">
-          <div className={`h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 ${isRecommended ? 'bg-white/20' : isActive ? 'bg-white border border-blue-200' : 'bg-white border'}`}>
-            <Package className={`h-5 w-5 ${isRecommended ? 'text-white' : 'text-blue-600'}`} />
+          <div className={`h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 ${isActive ? 'bg-white/20' : 'bg-white border'}`}>
+            <Package className={`h-5 w-5 ${isActive ? 'text-white' : 'text-blue-600'}`} />
           </div>
           <div className="min-w-0 flex-1">
-            <h3 className={`font-semibold truncate ${isRecommended ? 'text-white' : isActive ? 'text-blue-900' : 'text-gray-900'}`}>{pkg.name}</h3>
-            <div className={`flex items-center gap-2 text-xs ${isRecommended ? 'text-blue-100' : isActive ? 'text-blue-600' : 'text-gray-500'}`}>
+            <h3 className={`font-semibold truncate ${isActive ? 'text-white' : 'text-gray-900'}`}>{pkg.name}</h3>
+            <div className={`flex items-center gap-2 text-xs ${isActive ? 'text-blue-100' : 'text-gray-500'}`}>
               <span className="font-medium">{pkg.total_check_points || 0}+ pts</span>
               <span>•</span>
               <span className="font-medium">{pkg.no_of_inspections || 1} inspection{(pkg.no_of_inspections || 1) > 1 ? 's' : ''}</span>
