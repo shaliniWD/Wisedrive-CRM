@@ -966,18 +966,7 @@ export default function InspectionsPage() {
                     <td className="px-4 py-4">
                       <button 
                         className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg text-xs font-medium hover:from-blue-700 hover:to-blue-800 transition-all shadow-sm"
-                        onClick={() => {
-                          setEditingInspection(inspection);
-                          setFormData({
-                            ...formData,
-                            customer_name: inspection.customer_name,
-                            customer_mobile: inspection.customer_mobile,
-                            city: inspection.city,
-                            car_number: inspection.car_number || '',
-                            payment_status: inspection.payment_status,
-                          });
-                          setIsModalOpen(true);
-                        }}
+                        onClick={() => openScheduleUnscheduledModal(inspection)}
                         data-testid={`schedule-inspection-${inspection.id}`}
                       >
                         Schedule
