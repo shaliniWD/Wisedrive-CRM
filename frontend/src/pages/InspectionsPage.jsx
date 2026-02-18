@@ -1307,7 +1307,7 @@ export default function InspectionsPage() {
                 <span className="text-gray-500">Current Vehicle: </span>
                 <span className="font-mono font-medium">{vehicleEditInspection.car_number || 'Not set'}</span>
                 {vehicleEditInspection.car_make && (
-                  <span className="text-gray-500 ml-2">({extractMake(vehicleEditInspection.car_make)} {extractModel(vehicleEditInspection.car_model)})</span>
+                  <span className="text-gray-500 ml-2">({vehicleEditInspection.car_make} {vehicleEditInspection.car_model})</span>
                 )}
               </div>
             )}
@@ -1342,8 +1342,8 @@ export default function InspectionsPage() {
                   Vehicle Found
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div><span className="text-gray-500">Make:</span> <span className="font-medium">{extractMake(vehicleData.manufacturer || vehicleData.make) || '-'}</span></div>
-                  <div><span className="text-gray-500">Model:</span> <span className="font-medium">{extractModel(vehicleData.model) || '-'}</span></div>
+                  <div><span className="text-gray-500">Make:</span> <span className="font-medium">{vehicleData.manufacturer || vehicleData.make || '-'}</span></div>
+                  <div><span className="text-gray-500">Model:</span> <span className="font-medium">{vehicleData.model || '-'}</span></div>
                   <div><span className="text-gray-500">Year:</span> <span className="font-medium">{vehicleData.manufacturing_date?.split('/')?.pop() || vehicleData.year || '-'}</span></div>
                   <div><span className="text-gray-500">Color:</span> <span className="font-medium">{vehicleData.color || '-'}</span></div>
                   <div><span className="text-gray-500">Fuel:</span> <span className="font-medium">{vehicleData.fuel_type || '-'}</span></div>
