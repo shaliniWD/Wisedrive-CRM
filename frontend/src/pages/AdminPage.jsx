@@ -3398,9 +3398,14 @@ function RoleModal({ isOpen, onClose, role, onSave }) {
 
 // ==================== COUNTRY MODAL ====================
 function CountryModal({ isOpen, onClose, country, onSave }) {
-  const [form, setForm] = useState({ name: '', code: '', currency: 'INR', currency_symbol: '₹', phone_code: '+91', is_active: true, cities: [] });
+  const [form, setForm] = useState({ 
+    name: '', code: '', currency: 'INR', currency_symbol: '₹', phone_code: '+91', is_active: true, 
+    cities: [], leads_cities: [], inspection_cities: [] 
+  });
   const [saving, setSaving] = useState(false);
-  const [newCity, setNewCity] = useState('');
+  const [newLeadsCity, setNewLeadsCity] = useState('');
+  const [newInspectionCity, setNewInspectionCity] = useState('');
+  const [citiesTab, setCitiesTab] = useState('leads'); // 'leads' or 'inspection'
   const isEdit = !!country;
 
   useEffect(() => {
@@ -3409,9 +3414,13 @@ function CountryModal({ isOpen, onClose, country, onSave }) {
         name: country.name || '', code: country.code || '', currency: country.currency || 'INR',
         currency_symbol: country.currency_symbol || '₹', phone_code: country.phone_code || '+91', 
         is_active: country.is_active !== false,
-        cities: country.cities || []
-      } : { name: '', code: '', currency: 'INR', currency_symbol: '₹', phone_code: '+91', is_active: true, cities: [] });
-      setNewCity('');
+        cities: country.cities || [],
+        leads_cities: country.leads_cities || country.cities || [], // Fallback to cities for backwards compatibility
+        inspection_cities: country.inspection_cities || []
+      } : { name: '', code: '', currency: 'INR', currency_symbol: '₹', phone_code: '+91', is_active: true, cities: [], leads_cities: [], inspection_cities: [] });
+      setNewLeadsCity('');
+      setNewInspectionCity('');
+      setCitiesTab('leads');
     }
   }, [isOpen, country]);
 
@@ -3419,8 +3428,10 @@ function CountryModal({ isOpen, onClose, country, onSave }) {
     if (!form.name || !form.code || !form.currency) { toast.error('Please fill required fields'); return; }
     setSaving(true);
     try {
-      if (isEdit) { await hrApi.updateCountry(country.id, form); toast.success('Country updated'); }
-      else { await hrApi.createCountry(form); toast.success('Country created'); }
+      // Also update legacy cities field with leads_cities for backwards compatibility
+      const dataToSave = { ...form, cities: form.leads_cities };
+      if (isEdit) { await hrApi.updateCountry(country.id, dataToSave); toast.success('Country updated'); }
+      else { await hrApi.createCountry(dataToSave); toast.success('Country created'); }
       onSave();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to save');
@@ -3429,20 +3440,36 @@ function CountryModal({ isOpen, onClose, country, onSave }) {
     }
   };
   
-  // Add new city to list
-  const handleAddCity = () => {
-    if (!newCity.trim()) return;
-    if (form.cities.includes(newCity.trim())) {
-      toast.error('City already exists');
+  // Add new leads city
+  const handleAddLeadsCity = () => {
+    if (!newLeadsCity.trim()) return;
+    if (form.leads_cities.includes(newLeadsCity.trim())) {
+      toast.error('City already exists in Leads Cities');
       return;
     }
-    setForm({ ...form, cities: [...form.cities, newCity.trim()] });
-    setNewCity('');
+    setForm({ ...form, leads_cities: [...form.leads_cities, newLeadsCity.trim()] });
+    setNewLeadsCity('');
   };
   
-  // Remove city from list
-  const handleRemoveCity = (cityToRemove) => {
-    setForm({ ...form, cities: form.cities.filter(c => c !== cityToRemove) });
+  // Remove leads city
+  const handleRemoveLeadsCity = (cityToRemove) => {
+    setForm({ ...form, leads_cities: form.leads_cities.filter(c => c !== cityToRemove) });
+  };
+  
+  // Add new inspection city
+  const handleAddInspectionCity = () => {
+    if (!newInspectionCity.trim()) return;
+    if (form.inspection_cities.includes(newInspectionCity.trim())) {
+      toast.error('City already exists in Inspection Cities');
+      return;
+    }
+    setForm({ ...form, inspection_cities: [...form.inspection_cities, newInspectionCity.trim()] });
+    setNewInspectionCity('');
+  };
+  
+  // Remove inspection city
+  const handleRemoveInspectionCity = (cityToRemove) => {
+    setForm({ ...form, inspection_cities: form.inspection_cities.filter(c => c !== cityToRemove) });
   };
 
   const currencies = [
@@ -3455,7 +3482,7 @@ function CountryModal({ isOpen, onClose, country, onSave }) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto" data-testid="country-modal">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto" data-testid="country-modal">
         <DialogHeader className="border-b pb-4">
           <DialogTitle className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 flex items-center justify-center text-white">
@@ -3491,61 +3518,151 @@ function CountryModal({ isOpen, onClose, country, onSave }) {
             </div>
           </div>
           
-          {/* Cities Section */}
+          {/* Cities Section with Sub-Tabs */}
           <div className="space-y-3 pt-3 border-t">
             <div className="flex items-center justify-between">
               <Label className="text-sm font-medium flex items-center gap-2">
                 <MapPin className="h-4 w-4 text-purple-600" />
-                Cities ({form.cities.length})
+                City Management
               </Label>
             </div>
             
-            {/* Add City Input */}
-            <div className="flex gap-2">
-              <Input 
-                value={newCity} 
-                onChange={(e) => setNewCity(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleAddCity()}
-                placeholder="Enter city name..."
-                className="h-9"
-                data-testid="new-city-input"
-              />
-              <Button 
-                type="button" 
-                variant="outline" 
-                size="sm" 
-                onClick={handleAddCity}
-                className="h-9 px-3"
-                data-testid="add-city-btn"
+            {/* Sub-Tabs for Leads Cities and Inspection Cities */}
+            <div className="flex gap-1 p-1 bg-slate-100 rounded-lg">
+              <button
+                type="button"
+                onClick={() => setCitiesTab('leads')}
+                className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  citiesTab === 'leads' 
+                    ? 'bg-white text-blue-700 shadow-sm' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+                data-testid="leads-cities-tab"
               >
-                <Plus className="h-4 w-4" />
-              </Button>
+                Leads Cities ({form.leads_cities.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setCitiesTab('inspection')}
+                className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  citiesTab === 'inspection' 
+                    ? 'bg-white text-purple-700 shadow-sm' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+                data-testid="inspection-cities-tab"
+              >
+                Inspection Cities ({form.inspection_cities.length})
+              </button>
             </div>
             
-            {/* City Tags */}
-            {form.cities.length > 0 ? (
-              <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-2 bg-slate-50 rounded-lg">
-                {form.cities.map((city, index) => (
-                  <span 
-                    key={index} 
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border border-purple-200 text-purple-700 rounded-full text-xs font-medium"
+            {/* Leads Cities Tab Content */}
+            {citiesTab === 'leads' && (
+              <div className="space-y-3">
+                <p className="text-xs text-gray-500">Cities shown in Leads Management module for lead assignments.</p>
+                
+                {/* Add Leads City Input */}
+                <div className="flex gap-2">
+                  <Input 
+                    value={newLeadsCity} 
+                    onChange={(e) => setNewLeadsCity(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddLeadsCity())}
+                    placeholder="Enter city name..."
+                    className="h-9"
+                    data-testid="new-leads-city-input"
+                  />
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleAddLeadsCity}
+                    className="h-9 px-3"
+                    data-testid="add-leads-city-btn"
                   >
-                    <MapPin className="h-3 w-3" />
-                    {city}
-                    <button 
-                      type="button"
-                      onClick={() => handleRemoveCity(city)}
-                      className="ml-0.5 hover:text-red-600 transition-colors"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </span>
-                ))}
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                
+                {/* Leads City Tags */}
+                {form.leads_cities.length > 0 ? (
+                  <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-2 bg-slate-50 rounded-lg">
+                    {form.leads_cities.map((city, index) => (
+                      <span 
+                        key={index} 
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border border-blue-200 text-blue-700 rounded-full text-xs font-medium"
+                      >
+                        <MapPin className="h-3 w-3" />
+                        {city}
+                        <button 
+                          type="button"
+                          onClick={() => handleRemoveLeadsCity(city)}
+                          className="ml-0.5 hover:text-red-600 transition-colors"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-500 text-center py-3 bg-slate-50 rounded-lg">
+                    No leads cities added yet.
+                  </p>
+                )}
               </div>
-            ) : (
-              <p className="text-xs text-gray-500 text-center py-3 bg-slate-50 rounded-lg">
-                No cities added yet. Add cities for leads management.
-              </p>
+            )}
+            
+            {/* Inspection Cities Tab Content */}
+            {citiesTab === 'inspection' && (
+              <div className="space-y-3">
+                <p className="text-xs text-gray-500">Cities available for mechanic assignments in Inspection City tab (HR Module).</p>
+                
+                {/* Add Inspection City Input */}
+                <div className="flex gap-2">
+                  <Input 
+                    value={newInspectionCity} 
+                    onChange={(e) => setNewInspectionCity(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddInspectionCity())}
+                    placeholder="Enter city name..."
+                    className="h-9"
+                    data-testid="new-inspection-city-input"
+                  />
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleAddInspectionCity}
+                    className="h-9 px-3"
+                    data-testid="add-inspection-city-btn"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                
+                {/* Inspection City Tags */}
+                {form.inspection_cities.length > 0 ? (
+                  <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-2 bg-slate-50 rounded-lg">
+                    {form.inspection_cities.map((city, index) => (
+                      <span 
+                        key={index} 
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border border-purple-200 text-purple-700 rounded-full text-xs font-medium"
+                      >
+                        <MapPin className="h-3 w-3" />
+                        {city}
+                        <button 
+                          type="button"
+                          onClick={() => handleRemoveInspectionCity(city)}
+                          className="ml-0.5 hover:text-red-600 transition-colors"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-500 text-center py-3 bg-slate-50 rounded-lg">
+                    No inspection cities added yet.
+                  </p>
+                )}
+              </div>
             )}
           </div>
           
