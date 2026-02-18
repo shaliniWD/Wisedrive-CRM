@@ -9,7 +9,7 @@ import {
   ChevronRight,
   Clock,
   Wallet,
-  BarChart3
+  Megaphone
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -19,10 +19,10 @@ const navigation = [
   { name: 'Leads', href: '/leads', icon: Users },
   { name: 'Customers', href: '/customers', icon: UserCheck },
   { name: 'Inspections', href: '/inspections', icon: ClipboardCheck },
-  { name: 'Ad Analytics', href: '/ad-analytics', icon: BarChart3 },
+  { name: 'Ads Management', href: '/ad-analytics', icon: Megaphone },
   { name: 'HR Module', href: '/hr', icon: Clock },
   { name: 'Finance', href: '/finance', icon: Wallet },
-  { name: 'Settings', href: '/settings', icon: Settings },
+  { name: 'Services', href: '/settings', icon: Settings },
 ];
 
 export const Sidebar = () => {
