@@ -221,10 +221,11 @@ Returns:
 
 ## Document History
 - **Created:** December 2025
-- **Last Updated:** February 17, 2026
-- **Version:** 2.5
+- **Last Updated:** February 18, 2026
+- **Version:** 2.6
 
 ## Changelog
+- v2.6 (Feb 18, 2026): **Inspection Package Payment Enhancements** - Added partial payment support (fixed/percentage), discount configuration, and promotional offers management. New Offers tab in Settings with CRUD operations. Package modal updated with toggles for partial payments, discounts, and offer linking.
 - v2.5 (Feb 17, 2026): **CTO Role Permissions Fix** - Copied 29 role_permissions from CEO role to CTO role, enabling full data access for the new CTO user
 - v2.4 (Feb 17, 2026): **Critical Bug Fix: Lead Auto-Assignment** - Fixed query to correctly use role_id lookup against roles collection, check assigned_cities array, and is_available_for_leads flag
 - v2.3 (Feb 16, 2026): **Payment Modal Enhancements** - Removed "Number of Cars", added conditional inspection scheduling with Google Places autocomplete, leads-to-inspections integration
