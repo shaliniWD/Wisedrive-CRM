@@ -768,26 +768,74 @@ export default function InspectionsPage() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto" data-testid="inspections-page">
-      {/* Page Header */}
+      {/* Page Header with Tabs */}
       <div className="flex justify-between items-start mb-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Inspections</h1>
           <p className="text-gray-500 mt-1">Manage and track all vehicle inspections</p>
         </div>
-        <button
-          onClick={() => { setEditingInspection(null); setFormData({ ...formData, customer_name: '', customer_mobile: '', city: '' }); setIsModalOpen(true); }}
-          className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 flex items-center gap-2 font-medium shadow-lg shadow-blue-500/25 transition-all"
-        >
-          <Plus className="h-4 w-4" /> New Inspection
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => { setActiveTab('unscheduled'); setCardFilter(null); }}
+            className={`px-5 py-2.5 rounded-xl font-medium flex items-center gap-2 transition-all ${
+              activeTab === 'unscheduled' 
+                ? 'bg-gray-900 text-white' 
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+            data-testid="unscheduled-tab"
+          >
+            <AlertCircle className="h-4 w-4" />
+            Unscheduled ({unscheduledCount})
+          </button>
+          <button
+            onClick={() => { setActiveTab('scheduled'); setCardFilter(null); }}
+            className={`px-5 py-2.5 rounded-xl font-medium flex items-center gap-2 transition-all ${
+              activeTab === 'scheduled' 
+                ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg shadow-amber-500/25' 
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+            data-testid="scheduled-tab"
+          >
+            <Calendar className="h-4 w-4" />
+            Scheduled ({scheduledCount})
+          </button>
+        </div>
       </div>
 
-      {/* Summary Cards */}
+      {/* Summary Cards - Clickable */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-6">
-        <SummaryCard title="Total Inspections" value={inspections.length} icon={ClipboardCheck} color="text-blue-700" />
-        <SummaryCard title="Scheduled" value={scheduledCount} icon={Calendar} color="text-amber-600" />
-        <SummaryCard title="Completed" value={completedCount} icon={CheckCircle} color="text-emerald-600" />
-        <SummaryCard title="Unscheduled" value={unscheduledCount} icon={AlertCircle} color="text-purple-600" />
+        <SummaryCard 
+          title="Total Inspections" 
+          value={inspections.length} 
+          icon={ClipboardCheck} 
+          color="text-blue-700" 
+          onClick={() => handleCardClick('total')}
+          active={cardFilter === 'total'}
+        />
+        <SummaryCard 
+          title="Scheduled" 
+          value={scheduledCount} 
+          icon={Calendar} 
+          color="text-amber-600" 
+          onClick={() => handleCardClick('scheduled')}
+          active={cardFilter === 'scheduled'}
+        />
+        <SummaryCard 
+          title="Completed" 
+          value={completedCount} 
+          icon={CheckCircle} 
+          color="text-emerald-600" 
+          onClick={() => handleCardClick('completed')}
+          active={cardFilter === 'completed'}
+        />
+        <SummaryCard 
+          title="Unscheduled" 
+          value={unscheduledCount} 
+          icon={AlertCircle} 
+          color="text-purple-600" 
+          onClick={() => handleCardClick('unscheduled')}
+          active={cardFilter === 'unscheduled'}
+        />
       </div>
 
       {/* Filters Section */}
