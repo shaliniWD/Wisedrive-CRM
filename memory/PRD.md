@@ -118,6 +118,7 @@ Build a scalable automotive platform "Wisedrive" that evolved into a monolithic 
 
 | Service | Status | Purpose |
 |---------|--------|---------|
+| **Meta Marketing API** | **LIVE** | **Ad performance tracking, spend data** |
 | **Google Maps Places API** | **LIVE** | **Address autocomplete in payment modal** |
 | **Vaahan (Invincible Ocean)** | **LIVE** | **Vehicle RC details (100% real-time)** |
 | Twilio | LIVE | WhatsApp messaging for lead ingestion |
@@ -128,6 +129,15 @@ Build a scalable automotive platform "Wisedrive" that evolved into a monolithic 
 ---
 
 ## API Credentials
+
+### Meta Marketing API
+- **App ID:** Stored in `/app/backend/.env` as `META_APP_ID`
+- **App Secret:** Stored in `/app/backend/.env` as `META_APP_SECRET`
+- **Access Token:** Stored in `/app/backend/.env` as `META_ACCESS_TOKEN`
+- **Ad Account ID:** Stored in `/app/backend/.env` as `META_AD_ACCOUNT_ID`
+- **API Version:** v21.0
+- **Features Used:** Ad insights (spend, impressions, clicks), campaigns list
+- **Note:** Access tokens expire periodically. Refresh via Meta for Developers portal.
 
 ### Google Maps API
 - **API Key:** Stored in `/app/frontend/.env` as `REACT_APP_GOOGLE_MAPS_API_KEY`
