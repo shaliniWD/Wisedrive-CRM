@@ -1969,7 +1969,7 @@ export default function LeadsPage() {
               </div>
             </TabsContent>
 
-            <TabsContent value="activities" className="flex-1 overflow-y-auto px-6 pb-6 mt-0">
+            <TabsContent value="activities" className="flex-1 flex flex-col px-6 pb-6 mt-0 overflow-hidden">
               {loadingNotes ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
@@ -1980,32 +1980,164 @@ export default function LeadsPage() {
                   <p className="text-sm">No activities recorded yet.</p>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {leadActivities.map((activity) => (
-                    <div key={activity.id} className="relative pl-6 pb-4 border-l-2 border-slate-200 last:pb-0">
-                      <div className="absolute -left-2 top-0 h-4 w-4 rounded-full bg-slate-300 border-2 border-white"></div>
-                      <div className="bg-white border rounded-lg p-3 shadow-sm">
-                        <div className="flex items-center justify-between gap-2 mb-1">
-                          <span className="text-xs font-medium text-blue-600 uppercase tracking-wide">
-                            {activity.action?.replace(/_/g, ' ')}
-                          </span>
-                          <span className="text-xs text-gray-400">{formatDateTime(activity.created_at)}</span>
+                <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+                  {leadActivities.map((activity) => {
+                    // Determine activity icon and color based on action type
+                    const getActivityStyle = (action) => {
+                      switch(action) {
+                        case 'lead_created': return { bg: 'bg-green-500', icon: '✨' };
+                        case 'lead_assigned': 
+                        case 'assigned': 
+                        case 'reassigned': return { bg: 'bg-blue-500', icon: '👤' };
+                        case 'status_changed': return { bg: 'bg-purple-500', icon: '🔄' };
+                        case 'note_added': return { bg: 'bg-amber-500', icon: '📝' };
+                        case 'payment_link_sent':
+                        case 'payment_link_sent_whatsapp': return { bg: 'bg-emerald-500', icon: '💳' };
+                        case 'customer_message': return { bg: 'bg-cyan-500', icon: '💬' };
+                        case 'reminder_set': return { bg: 'bg-orange-500', icon: '⏰' };
+                        case 'whatsapp_sent':
+                        case 'bot_response': return { bg: 'bg-green-600', icon: '📱' };
+                        default: return { bg: 'bg-slate-400', icon: '📋' };
+                      }
+                    };
+                    
+                    const style = getActivityStyle(activity.action);
+                    
+                    // Format activity description with full details
+                    const getActivityDescription = () => {
+                      switch(activity.action) {
+                        case 'lead_created':
+                          return (
+                            <div>
+                              <span className="font-medium text-green-700">Lead created</span>
+                              {activity.details && <span className="text-gray-600"> - {activity.details}</span>}
+                              {activity.new_value && (
+                                <div className="mt-1 text-xs bg-green-50 p-2 rounded border border-green-100">
+                                  {activity.new_value}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        case 'lead_assigned':
+                        case 'assigned':
+                          return (
+                            <div>
+                              <span className="font-medium text-blue-700">Assigned</span>
+                              {activity.new_value && <span className="text-gray-700"> → <span className="font-medium">{activity.new_value}</span></span>}
+                              {activity.details && <div className="text-xs text-gray-500 mt-0.5">{activity.details}</div>}
+                            </div>
+                          );
+                        case 'reassigned':
+                          return (
+                            <div>
+                              <span className="font-medium text-blue-700">Reassigned</span>
+                              {activity.old_value && <span className="text-gray-600"> from <span className="font-medium">{activity.old_value}</span></span>}
+                              {activity.new_value && <span className="text-gray-700"> → <span className="font-medium">{activity.new_value}</span></span>}
+                            </div>
+                          );
+                        case 'status_changed':
+                          return (
+                            <div>
+                              <span className="font-medium text-purple-700">Status changed</span>
+                              <span className="text-gray-600"> from </span>
+                              <span className="px-1.5 py-0.5 bg-gray-100 rounded text-xs font-medium">{activity.old_value || 'N/A'}</span>
+                              <span className="text-gray-600"> → </span>
+                              <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded text-xs font-medium">{activity.new_value}</span>
+                            </div>
+                          );
+                        case 'note_added':
+                          return (
+                            <div>
+                              <span className="font-medium text-amber-700">Note added</span>
+                              {activity.new_value && (
+                                <div className="mt-1 text-xs bg-amber-50 p-2 rounded border border-amber-100 text-gray-700">
+                                  "{activity.new_value}"
+                                </div>
+                              )}
+                            </div>
+                          );
+                        case 'payment_link_sent':
+                        case 'payment_link_sent_whatsapp':
+                          return (
+                            <div>
+                              <span className="font-medium text-emerald-700">Payment link sent</span>
+                              {activity.action === 'payment_link_sent_whatsapp' && <span className="text-gray-500"> via WhatsApp</span>}
+                              {activity.new_value && (
+                                <div className="mt-1 text-xs bg-emerald-50 p-2 rounded border border-emerald-100">
+                                  <span className="font-medium">Amount:</span> {activity.new_value}
+                                </div>
+                              )}
+                              {activity.details && <div className="text-xs text-gray-500 mt-0.5">{activity.details}</div>}
+                            </div>
+                          );
+                        case 'customer_message':
+                          return (
+                            <div>
+                              <span className="font-medium text-cyan-700">Customer message received</span>
+                              {activity.new_value && (
+                                <div className="mt-1 text-xs bg-cyan-50 p-2 rounded border border-cyan-100 text-gray-700">
+                                  "{activity.new_value}"
+                                </div>
+                              )}
+                            </div>
+                          );
+                        case 'whatsapp_sent':
+                        case 'bot_response':
+                          return (
+                            <div>
+                              <span className="font-medium text-green-700">
+                                {activity.action === 'bot_response' ? 'Bot responded' : 'WhatsApp sent'}
+                              </span>
+                              {activity.new_value && (
+                                <div className="mt-1 text-xs bg-green-50 p-2 rounded border border-green-100 text-gray-700">
+                                  "{activity.new_value}"
+                                </div>
+                              )}
+                            </div>
+                          );
+                        case 'reminder_set':
+                          return (
+                            <div>
+                              <span className="font-medium text-orange-700">Reminder set</span>
+                              {activity.new_value && <span className="text-gray-600"> for <span className="font-medium">{activity.new_value}</span></span>}
+                            </div>
+                          );
+                        default:
+                          return (
+                            <div>
+                              <span className="font-medium text-gray-700">{activity.action?.replace(/_/g, ' ')}</span>
+                              {activity.details && <span className="text-gray-600"> - {activity.details}</span>}
+                              {activity.new_value && <div className="text-xs text-gray-500 mt-0.5">{activity.new_value}</div>}
+                            </div>
+                          );
+                      }
+                    };
+                    
+                    return (
+                      <div key={activity.id} className="relative pl-6 pb-3 border-l-2 border-slate-200 last:pb-0">
+                        <div className={`absolute -left-2 top-0 h-4 w-4 rounded-full ${style.bg} border-2 border-white flex items-center justify-center text-[8px]`}>
+                          {style.icon}
                         </div>
-                        <p className="text-sm text-gray-700">
-                          {activity.action === 'status_changed' && (
-                            <>Status changed from <span className="font-medium">{activity.old_value || 'N/A'}</span> to <span className="font-medium">{activity.new_value}</span></>
-                          )}
-                          {activity.action === 'note_added' && 'Note was added'}
-                          {activity.action === 'assigned' && `Assigned to ${activity.new_value}`}
-                          {activity.action === 'payment_link_sent' && 'Payment link was sent'}
-                          {activity.action === 'reminder_set' && `Reminder set for ${activity.new_value}`}
-                          {!['status_changed', 'note_added', 'assigned', 'payment_link_sent', 'reminder_set'].includes(activity.action) && 
-                            (activity.details || activity.action?.replace(/_/g, ' '))}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">by {activity.user_name || 'System'}</p>
+                        <div className="bg-white border rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow">
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <span className="text-xs font-semibold text-slate-600 uppercase tracking-wide">
+                              {activity.action?.replace(/_/g, ' ')}
+                            </span>
+                            <span className="text-xs text-gray-400 whitespace-nowrap">{formatDateTime(activity.created_at)}</span>
+                          </div>
+                          <div className="text-sm text-gray-700">
+                            {getActivityDescription()}
+                          </div>
+                          <div className="flex items-center gap-1 mt-2 pt-2 border-t border-gray-100">
+                            <div className="h-5 w-5 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 text-[10px] font-medium">
+                              {activity.user_name?.charAt(0)?.toUpperCase() || 'S'}
+                            </div>
+                            <span className="text-xs text-gray-500">by <span className="font-medium">{activity.user_name || 'System'}</span></span>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </TabsContent>
