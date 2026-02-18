@@ -153,14 +153,14 @@ export function KeyInfoSection({ data }) {
               onClick={() => setInsuranceModal(true)}
             />
             
-            <KeyInfoItem icon={AlertTriangle} label="Accident" status={data.accident ? 'yes' : 'no'} />
-            <KeyInfoItem icon={Droplets} label="Flood Damage" status={data.floodDamage ? 'yes' : 'no'} />
+            <KeyInfoItem icon={AlertTriangle} label="Accident" status={data?.accident ? 'yes' : 'no'} />
+            <KeyInfoItem icon={Droplets} label="Flood Damage" status={data?.floodDamage ? 'yes' : 'no'} />
             
             {/* Tyre Life with Modal */}
             <KeyInfoItem 
               icon={CircleDot} 
               label="Tyre Life" 
-              value={data.tyreDetails.avgLife} 
+              value={tyreDetails.avgLife || 0} 
               isPercentage={true}
               hasModal={true}
               onClick={() => setTyreModal(true)}
@@ -193,26 +193,26 @@ export function KeyInfoSection({ data }) {
       <InsuranceModal 
         isOpen={insuranceModal} 
         onClose={() => setInsuranceModal(false)} 
-        insurance={data.insurance}
+        insurance={insurance}
         isEditMode={isEditMode}
       />
       <TyreModal 
         isOpen={tyreModal} 
         onClose={() => setTyreModal(false)} 
-        tyreDetails={data.tyreDetails}
+        tyreDetails={tyreDetails}
         isEditMode={isEditMode}
       />
       <RepairsModal 
         isOpen={minorRepairsModal} 
         onClose={() => setMinorRepairsModal(false)} 
-        repairs={data.repairs}
+        repairs={repairs}
         type="minor"
         isEditMode={isEditMode}
       />
       <RepairsModal 
         isOpen={majorRepairsModal} 
         onClose={() => setMajorRepairsModal(false)} 
-        repairs={data.repairs}
+        repairs={repairs}
         type="major"
         isEditMode={isEditMode}
       />
