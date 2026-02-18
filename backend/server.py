@@ -8685,17 +8685,27 @@ async def get_ad_performance_analytics(
         "total_converted": sum(p["converted_leads"] for p in performance_data),
         "total_revenue": round(sum(p["total_revenue"] for p in performance_data), 2),
         "overall_conversion_rate": 0,
-        "overall_roi": 0
+        "overall_roi": 0,
+        "overall_cpr": 0,  # Cost Per Result
+        "overall_cpl": 0   # Cost Per Lead
     }
     
     if totals["total_leads"] > 0:
         totals["overall_conversion_rate"] = round(totals["total_converted"] / totals["total_leads"] * 100, 2)
+        totals["overall_cpl"] = round(totals["total_ad_spend"] / totals["total_leads"], 2)
+    if totals["total_converted"] > 0:
+        totals["overall_cpr"] = round(totals["total_ad_spend"] / totals["total_converted"], 2)
     if totals["total_ad_spend"] > 0:
         totals["overall_roi"] = round((totals["total_revenue"] - totals["total_ad_spend"]) / totals["total_ad_spend"] * 100, 2)
+    
+    # Get last sync timestamp
+    last_sync = await db.system_config.find_one({"key": "meta_ads_last_sync"})
+    last_updated = last_sync.get("value") if last_sync else None
     
     return {
         "date_range": {"from": date_from, "to": date_to},
         "meta_configured": meta_ads_service.is_configured(),
+        "last_updated": last_updated,
         "totals": totals,
         "data": performance_data
     }
