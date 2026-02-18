@@ -290,6 +290,7 @@ export default function InspectionsPage() {
   const [editingInspection, setEditingInspection] = useState(null);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('scheduled');
+  const [cardFilter, setCardFilter] = useState(null); // 'total', 'scheduled', 'completed', 'unscheduled'
 
   // Modal states
   const [isCollectBalanceModalOpen, setIsCollectBalanceModalOpen] = useState(false);
@@ -306,7 +307,7 @@ export default function InspectionsPage() {
   const [vehicleData, setVehicleData] = useState(null);
   const [newVehicleNumber, setNewVehicleNumber] = useState('');
   
-  // Schedule Edit Modal
+  // Schedule Edit Modal (for existing scheduled inspections)
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [scheduleEditInspection, setScheduleEditInspection] = useState(null);
   const [newScheduleDate, setNewScheduleDate] = useState('');
@@ -316,6 +317,20 @@ export default function InspectionsPage() {
   const [isMechanicModalOpen, setIsMechanicModalOpen] = useState(false);
   const [mechanicEditInspection, setMechanicEditInspection] = useState(null);
   const [selectedMechanicId, setSelectedMechanicId] = useState('');
+  
+  // Schedule Unscheduled Inspection Modal (NEW - with Vaahan API & Google Places)
+  const [isScheduleUnscheduledModalOpen, setIsScheduleUnscheduledModalOpen] = useState(false);
+  const [scheduleUnscheduledInspection, setScheduleUnscheduledInspection] = useState(null);
+  const [scheduleFormData, setScheduleFormData] = useState({
+    car_number: '',
+    scheduled_date: '',
+    scheduled_time: '',
+    city: '',
+    address: ''
+  });
+  const [scheduleVehicleData, setScheduleVehicleData] = useState(null);
+  const [scheduleVehicleSearching, setScheduleVehicleSearching] = useState(false);
+  const [scheduleSaving, setScheduleSaving] = useState(false);
 
   const [search, setSearch] = useState('');
   const [filterCity, setFilterCity] = useState('');
