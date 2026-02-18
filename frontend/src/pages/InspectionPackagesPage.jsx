@@ -107,14 +107,12 @@ const PackageCard = ({ pkg, categories, offers, onEdit, onCopy, onToggle }) => {
   
   return (
     <div className={`border rounded-xl transition-all h-full flex flex-col relative ${isActive ? 'bg-white shadow-sm hover:shadow-md' : 'bg-gray-50 border-gray-200'}`} data-testid={`package-card-${pkg.id}`}>
-      {/* Active Ribbon - shows for all active packages */}
-      {isActive && (
-        <div className="absolute top-0 right-0 overflow-hidden w-20 h-20 z-20">
-          <div className={`absolute transform rotate-45 text-white text-[9px] font-bold py-1 right-[-25px] top-[8px] w-[90px] text-center shadow-sm ${isRecommended ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' : 'bg-gradient-to-r from-blue-500 to-blue-600'}`}>
-            ACTIVE
-          </div>
+      {/* Status Ribbon - blue for active, grey for inactive */}
+      <div className="absolute top-0 right-0 overflow-hidden w-20 h-20 z-20">
+        <div className={`absolute transform rotate-45 text-white text-[9px] font-bold py-1 right-[-25px] top-[8px] w-[90px] text-center shadow-sm ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600' : 'bg-gradient-to-r from-gray-400 to-gray-500'}`}>
+          {isActive ? 'ACTIVE' : 'INACTIVE'}
         </div>
-      )}
+      </div>
       
       {/* Package Header */}
       <div className={`p-4 ${isRecommended ? 'bg-gradient-to-r from-blue-600 to-blue-700' : 'bg-slate-50 border-b'} rounded-t-xl`}>
@@ -125,7 +123,6 @@ const PackageCard = ({ pkg, categories, offers, onEdit, onCopy, onToggle }) => {
                 <Award className="h-3 w-3" /> Recommended
               </span>
             )}
-            {!isActive && <span className="px-2 py-1 bg-gray-400 text-white text-xs font-semibold rounded-full">Inactive</span>}
             {pkg.allow_partial_payment && (
               <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-semibold rounded-full inline-flex items-center gap-1">
                 <CreditCard className="h-3 w-3" /> Partial Pay
