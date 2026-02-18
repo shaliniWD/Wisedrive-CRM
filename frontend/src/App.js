@@ -15,6 +15,7 @@ import SettingsPage from "@/pages/SettingsPage";
 import HRModulePage from "@/pages/HRModulePage";
 import NotificationConfigPage from "@/pages/NotificationConfigPage";
 import AdAnalyticsPage from "@/pages/AdAnalyticsPage";
+import InspectionReportPage from "@/pages/InspectionReportPage";
 
 // Smart redirect based on visible tabs
 const SmartRedirect = () => {
@@ -51,6 +52,10 @@ function App() {
         <Routes>
           {/* Public Routes */}
           <Route path="/login" element={<LoginPage />} />
+          
+          {/* Inspection Report - Public route (opens in new tab) */}
+          <Route path="/inspection-report/:id" element={<InspectionReportPage />} />
+          <Route path="/inspection-report" element={<InspectionReportPage />} />
           
           {/* Protected Routes */}
           <Route element={<MainLayout />}>
