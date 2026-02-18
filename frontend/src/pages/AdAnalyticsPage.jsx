@@ -503,6 +503,21 @@ export default function AdAnalyticsPage() {
             )}
           </div>
           
+          {/* Sync Now Button (CEO/CTO only) */}
+          {canManageToken && metaStatus.configured && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSyncNow}
+              disabled={syncing}
+              className="border-blue-200 text-blue-700 hover:bg-blue-50"
+              data-testid="sync-now-btn"
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
+              {syncing ? 'Syncing...' : 'Sync Now'}
+            </Button>
+          )}
+          
           <Button
             variant="outline"
             size="sm"
