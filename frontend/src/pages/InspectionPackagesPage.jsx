@@ -106,16 +106,18 @@ const PackageCard = ({ pkg, categories, offers, onEdit, onCopy, onToggle }) => {
   const isRecommended = pkg.is_recommended && isActive;
   
   return (
-    <div className={`border rounded-xl overflow-hidden transition-all h-full flex flex-col relative ${isActive ? 'bg-white shadow-sm hover:shadow-md' : 'bg-gray-50 border-gray-200'}`} data-testid={`package-card-${pkg.id}`}>
-      {/* Active Ribbon - shows only for active packages */}
+    <div className={`border rounded-xl transition-all h-full flex flex-col relative ${isActive ? 'bg-white shadow-sm hover:shadow-md' : 'bg-gray-50 border-gray-200'}`} data-testid={`package-card-${pkg.id}`}>
+      {/* Active Ribbon - shows only for active (non-recommended) packages */}
       {isActive && !isRecommended && (
-        <div className="absolute -right-8 top-3 rotate-45 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-[10px] font-bold px-8 py-0.5 shadow-sm z-10">
-          ACTIVE
+        <div className="absolute top-0 right-0 overflow-hidden w-20 h-20 z-20">
+          <div className="absolute transform rotate-45 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-[9px] font-bold py-1 right-[-25px] top-[8px] w-[90px] text-center shadow-sm">
+            ACTIVE
+          </div>
         </div>
       )}
       
       {/* Package Header */}
-      <div className={`p-4 ${isRecommended ? 'bg-gradient-to-r from-blue-600 to-blue-700' : 'bg-slate-50 border-b'}`}>
+      <div className={`p-4 ${isRecommended ? 'bg-gradient-to-r from-blue-600 to-blue-700' : 'bg-slate-50 border-b'} rounded-t-xl`}>
         <div className="flex items-start justify-between gap-2 mb-3">
           <div className="flex items-center gap-2 flex-wrap">
             {isRecommended && (
