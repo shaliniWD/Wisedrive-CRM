@@ -185,22 +185,27 @@ Build a scalable automotive platform "Wisedrive" that evolved into a monolithic 
 
 ---
 
-### ✅ Inspections Tab Enhancements (February 18, 2026)
+### ✅ Inspections Tab Enhancements v2 (February 18, 2026)
 
 **Feature Implementation:**
-Complete enhancement of Inspections tab with inline editing capabilities.
+Complete enhancement of Inspections tab with inline editing and payment link management.
 
 **Key Components:**
 
 1. **Payment Status Column - Collect Balance Button:**
    - Shows "Collect ₹XXX" button directly in column for partial payments
-   - Opens confirmation modal with customer details and payment breakdown
-   - Generates Razorpay payment link and sends via WhatsApp
+   - Opens enhanced modal with two options:
+     - **"Generate Link Only"** - For offline sharing
+     - **"Send via WhatsApp"** - Direct WhatsApp delivery
+   - **View & Copy Link**: Displays generated Razorpay link with copy and open buttons
+   - **Check Payment Status**: Real-time button to verify if payment was received (critical for report release)
 
-2. **Vehicle Edit Modal:**
+2. **Vehicle Edit Modal (Vaahan API):**
    - Click pencil icon to change vehicle number
-   - Integrated with Vaahan API to auto-fetch vehicle details (make, model, year, color, fuel type)
+   - Uses same Vaahan API as LeadsPage payment modal
+   - Auto-fetches vehicle details (make, model, year, color, fuel type)
    - Supports manual entry if API fails
+   - Accommodates mechanic requests to inspect different vehicle on-site
 
 3. **Inspection Status Dropdown:**
    - Inline dropdown to change status directly in table
@@ -213,17 +218,21 @@ Complete enhancement of Inspections tab with inline editing capabilities.
    - Auto-updates status to "Assigned to Mechanic" when first assigned
 
 5. **Schedule Edit Modal:**
-   - Change inspection date and time
+   - Change inspection date and time for postponed/rescheduled inspections
    - Auto-updates status to "Scheduled" when updating from "Unscheduled"
 
-**Backend APIs Added:**
+6. **Inspection Report Column (renamed from Actions):**
+   - **"View Report"** button - Opens inspection report in new tab
+   - Disabled state when report not yet available
+   - **Send Report** icon - Send report via WhatsApp (only for fully paid + completed inspections)
+
+**Backend APIs:**
 - `PATCH /api/inspections/{id}/status` - Update inspection status
 - `PATCH /api/inspections/{id}/vehicle` - Update vehicle details
 - `PATCH /api/inspections/{id}/assign-mechanic` - Assign/unassign mechanic
 - `PATCH /api/inspections/{id}/schedule` - Update schedule
-
-**Test Coverage:**
-- `/app/backend/tests/test_inspections_enhancements.py` - 18 tests (94% pass rate)
+- `POST /api/inspections/{id}/collect-balance` - Generate balance payment link
+- `GET /api/inspections/{id}` - Get inspection details (for payment status check)
 
 ---
 
