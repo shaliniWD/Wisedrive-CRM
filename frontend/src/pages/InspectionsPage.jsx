@@ -8,22 +8,26 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { 
   Search, Loader2, ClipboardCheck, Filter, Calendar, MapPin, 
   Car, User, Download, Eye, Edit2, Clock, CheckCircle, XCircle, 
-  AlertCircle, Play, Plus
+  AlertCircle, Play, Plus, Send, CreditCard, DollarSign, FileText
 } from 'lucide-react';
 
-// Status Badge Component matching FinancePage
-const StatusBadge = ({ status }) => {
+// Inspection Status Badge Component
+const InspectionStatusBadge = ({ status }) => {
   const config = {
-    COMPLETED: { color: 'bg-emerald-100 text-emerald-800 border-emerald-200', icon: CheckCircle, label: 'Completed' },
+    NEW_INSPECTION: { color: 'bg-slate-100 text-slate-800 border-slate-200', icon: Plus, label: 'New' },
+    ASSIGNED_TO_MECHANIC: { color: 'bg-indigo-100 text-indigo-800 border-indigo-200', icon: User, label: 'Assigned' },
+    INSPECTION_CONFIRMED: { color: 'bg-cyan-100 text-cyan-800 border-cyan-200', icon: CheckCircle, label: 'Confirmed' },
+    INSPECTION_STARTED: { color: 'bg-amber-100 text-amber-800 border-amber-200', icon: Play, label: 'Started' },
+    INSPECTION_IN_PROGRESS: { color: 'bg-orange-100 text-orange-800 border-orange-200', icon: Clock, label: 'In Progress' },
+    INSPECTION_COMPLETED: { color: 'bg-emerald-100 text-emerald-800 border-emerald-200', icon: CheckCircle, label: 'Completed' },
     SCHEDULED: { color: 'bg-blue-100 text-blue-800 border-blue-200', icon: Calendar, label: 'Scheduled' },
-    IN_PROGRESS: { color: 'bg-amber-100 text-amber-800 border-amber-200', icon: Play, label: 'In Progress' },
-    REQUEST_NEWSLOT: { color: 'bg-purple-100 text-purple-800 border-purple-200', icon: Clock, label: 'Request Slot' },
+    UNSCHEDULED: { color: 'bg-purple-100 text-purple-800 border-purple-200', icon: AlertCircle, label: 'Unscheduled' },
     CANCELLED: { color: 'bg-red-100 text-red-800 border-red-200', icon: XCircle, label: 'Cancelled' },
   };
   const cfg = config[status] || config.SCHEDULED;
@@ -37,14 +41,21 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-// Payment Badge Component
-const PaymentBadge = ({ status }) => {
-  const isCompleted = status === 'Completed' || status === 'Full';
+// Payment Status Badge Component
+const PaymentStatusBadge = ({ status, balanceDue }) => {
+  const config = {
+    FULLY_PAID: { color: 'bg-emerald-100 text-emerald-800 border-emerald-200', icon: CheckCircle, label: 'Fully Paid' },
+    PARTIALLY_PAID: { color: 'bg-amber-100 text-amber-800 border-amber-200', icon: DollarSign, label: `Partial (₹${balanceDue?.toLocaleString() || 0} due)` },
+    PAID: { color: 'bg-emerald-100 text-emerald-800 border-emerald-200', icon: CheckCircle, label: 'Paid' },
+    PENDING: { color: 'bg-red-100 text-red-800 border-red-200', icon: AlertCircle, label: 'Pending' },
+  };
+  const cfg = config[status] || config.PENDING;
+  const Icon = cfg.icon;
+  
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${
-      isCompleted ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-amber-100 text-amber-800 border-amber-200'
-    }`}>
-      {isCompleted ? 'Paid' : 'Pending'}
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${cfg.color}`}>
+      <Icon className="h-3 w-3" />
+      {cfg.label}
     </span>
   );
 };
