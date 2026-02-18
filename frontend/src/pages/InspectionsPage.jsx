@@ -641,7 +641,7 @@ export default function InspectionsPage() {
                 <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Inspection Status</th>
                 <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Mechanic</th>
                 <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Location</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Actions</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Inspection Report</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
