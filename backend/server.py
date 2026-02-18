@@ -8289,6 +8289,227 @@ async def broadcast_notification(
         "fcm_mode": "production" if not fcm.mock_mode else "mock"
     }
 
+# ============================================
+# META ADS ANALYTICS ENDPOINTS
+# ============================================
+
+from services.meta_ads_service import meta_ads_service
+
+
+@api_router.get("/meta-ads/status")
+async def get_meta_ads_status(current_user: dict = Depends(get_current_user)):
+    """Check if Meta Ads integration is configured"""
+    return {
+        "configured": meta_ads_service.is_configured(),
+        "ad_account_id": meta_ads_service.ad_account_id if meta_ads_service.is_configured() else None
+    }
+
+
+@api_router.get("/meta-ads/insights")
+async def get_meta_ads_insights(
+    date_from: str = None,
+    date_to: str = None,
+    ad_id: str = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Fetch ad insights from Meta Marketing API"""
+    role_code = current_user.get("role_code", "")
+    if role_code not in ["CEO", "HR_MANAGER", "CTO"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    result = await meta_ads_service.get_ad_insights(
+        ad_id=ad_id,
+        date_from=date_from,
+        date_to=date_to
+    )
+    return result
+
+
+@api_router.get("/meta-ads/campaigns")
+async def get_meta_ads_campaigns(current_user: dict = Depends(get_current_user)):
+    """Fetch list of campaigns from Meta"""
+    role_code = current_user.get("role_code", "")
+    if role_code not in ["CEO", "HR_MANAGER", "CTO"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    return await meta_ads_service.get_campaigns_list()
+
+
+@api_router.get("/meta-ads/ads")
+async def get_meta_ads_list(current_user: dict = Depends(get_current_user)):
+    """Fetch list of ads from Meta"""
+    role_code = current_user.get("role_code", "")
+    if role_code not in ["CEO", "HR_MANAGER", "CTO"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    return await meta_ads_service.get_ads_list()
+
+
+@api_router.get("/meta-ads/performance")
+async def get_ad_performance_analytics(
+    date_from: str = None,
+    date_to: str = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Get comprehensive ad performance analytics combining Meta spend data with internal lead/revenue data.
+    This endpoint correlates:
+    - Ad spend from Meta Marketing API
+    - Leads generated per ad_id from internal database
+    - Revenue from converted leads (inspections paid)
+    """
+    role_code = current_user.get("role_code", "")
+    if role_code not in ["CEO", "HR_MANAGER", "CTO"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Default date range: last 30 days
+    if not date_to:
+        date_to = datetime.now().strftime("%Y-%m-%d")
+    if not date_from:
+        date_from = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
+    
+    # Get all ad mappings
+    ad_mappings = await db.ad_city_mappings.find({}, {"_id": 0}).to_list(1000)
+    ad_ids = [m.get("ad_id") for m in ad_mappings if m.get("ad_id")]
+    
+    # Build date filter for leads
+    date_filter = {}
+    if date_from:
+        date_filter["$gte"] = date_from
+    if date_to:
+        date_filter["$lte"] = date_to + "T23:59:59"
+    
+    # Get leads grouped by ad_id
+    lead_pipeline = [
+        {"$match": {"ad_id": {"$exists": True, "$ne": None, "$ne": ""}}},
+    ]
+    if date_filter:
+        lead_pipeline[0]["$match"]["created_at"] = date_filter
+    
+    lead_pipeline.extend([
+        {"$group": {
+            "_id": "$ad_id",
+            "total_leads": {"$sum": 1},
+            "converted_leads": {
+                "$sum": {"$cond": [{"$in": ["$status", ["CONVERTED", "PAID", "BOOKED"]]}, 1, 0]}
+            }
+        }}
+    ])
+    
+    lead_stats = await db.leads.aggregate(lead_pipeline).to_list(1000)
+    lead_stats_by_ad = {stat["_id"]: stat for stat in lead_stats}
+    
+    # Get revenue from inspections linked to leads with ad_id
+    revenue_pipeline = [
+        {"$match": {"payment_status": {"$in": ["FULLY_PAID", "PARTIALLY_PAID"]}}},
+        {"$lookup": {
+            "from": "leads",
+            "localField": "lead_id",
+            "foreignField": "id",
+            "as": "lead"
+        }},
+        {"$unwind": {"path": "$lead", "preserveNullAndEmptyArrays": False}},
+        {"$match": {"lead.ad_id": {"$exists": True, "$ne": None, "$ne": ""}}},
+        {"$group": {
+            "_id": "$lead.ad_id",
+            "total_revenue": {"$sum": "$amount_paid"},
+            "inspection_count": {"$sum": 1}
+        }}
+    ]
+    
+    revenue_stats = await db.inspections.aggregate(revenue_pipeline).to_list(1000)
+    revenue_stats_by_ad = {stat["_id"]: stat for stat in revenue_stats}
+    
+    # Get Meta ad spend data
+    meta_insights = await meta_ads_service.get_ad_insights(date_from=date_from, date_to=date_to)
+    meta_spend_by_ad = {}
+    meta_impressions_by_ad = {}
+    meta_clicks_by_ad = {}
+    
+    if meta_insights.get("success") and meta_insights.get("data"):
+        for insight in meta_insights["data"]:
+            ad_id = insight.get("ad_id")
+            if ad_id:
+                meta_spend_by_ad[ad_id] = float(insight.get("spend", 0))
+                meta_impressions_by_ad[ad_id] = int(insight.get("impressions", 0))
+                meta_clicks_by_ad[ad_id] = int(insight.get("clicks", 0))
+    
+    # Combine all data
+    performance_data = []
+    all_ad_ids = set(ad_ids) | set(lead_stats_by_ad.keys()) | set(revenue_stats_by_ad.keys())
+    
+    for ad_id in all_ad_ids:
+        if not ad_id:
+            continue
+            
+        ad_mapping = next((m for m in ad_mappings if m.get("ad_id") == ad_id), {})
+        lead_stat = lead_stats_by_ad.get(ad_id, {})
+        revenue_stat = revenue_stats_by_ad.get(ad_id, {})
+        
+        total_leads = lead_stat.get("total_leads", 0)
+        converted_leads = lead_stat.get("converted_leads", 0)
+        total_revenue = revenue_stat.get("total_revenue", 0)
+        ad_spend = meta_spend_by_ad.get(ad_id, 0)
+        impressions = meta_impressions_by_ad.get(ad_id, 0)
+        clicks = meta_clicks_by_ad.get(ad_id, 0)
+        
+        # Calculate metrics
+        conversion_rate = (converted_leads / total_leads * 100) if total_leads > 0 else 0
+        roi = ((total_revenue - ad_spend) / ad_spend * 100) if ad_spend > 0 else 0
+        cost_per_lead = ad_spend / total_leads if total_leads > 0 else 0
+        revenue_per_lead = total_revenue / converted_leads if converted_leads > 0 else 0
+        
+        performance_data.append({
+            "ad_id": ad_id,
+            "ad_name": ad_mapping.get("ad_name", ""),
+            "city": ad_mapping.get("city", ""),
+            "source": ad_mapping.get("source", ""),
+            "language": ad_mapping.get("language", ""),
+            "campaign": ad_mapping.get("campaign", ""),
+            "is_active": ad_mapping.get("is_active", True),
+            # Meta metrics
+            "ad_spend": round(ad_spend, 2),
+            "impressions": impressions,
+            "clicks": clicks,
+            # Internal metrics
+            "total_leads": total_leads,
+            "converted_leads": converted_leads,
+            "total_revenue": round(total_revenue, 2),
+            # Calculated metrics
+            "conversion_rate": round(conversion_rate, 2),
+            "roi": round(roi, 2),
+            "cost_per_lead": round(cost_per_lead, 2),
+            "revenue_per_lead": round(revenue_per_lead, 2)
+        })
+    
+    # Sort by total leads descending
+    performance_data.sort(key=lambda x: x["total_leads"], reverse=True)
+    
+    # Calculate totals
+    totals = {
+        "total_ad_spend": round(sum(p["ad_spend"] for p in performance_data), 2),
+        "total_impressions": sum(p["impressions"] for p in performance_data),
+        "total_clicks": sum(p["clicks"] for p in performance_data),
+        "total_leads": sum(p["total_leads"] for p in performance_data),
+        "total_converted": sum(p["converted_leads"] for p in performance_data),
+        "total_revenue": round(sum(p["total_revenue"] for p in performance_data), 2),
+        "overall_conversion_rate": 0,
+        "overall_roi": 0
+    }
+    
+    if totals["total_leads"] > 0:
+        totals["overall_conversion_rate"] = round(totals["total_converted"] / totals["total_leads"] * 100, 2)
+    if totals["total_ad_spend"] > 0:
+        totals["overall_roi"] = round((totals["total_revenue"] - totals["total_ad_spend"]) / totals["total_ad_spend"] * 100, 2)
+    
+    return {
+        "date_range": {"from": date_from, "to": date_to},
+        "meta_configured": meta_ads_service.is_configured(),
+        "totals": totals,
+        "data": performance_data
+    }
+
+
 # Include the router in the main app
 app.include_router(api_router)
 
