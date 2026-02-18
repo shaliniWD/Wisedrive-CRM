@@ -11,6 +11,8 @@ import { InspectionDetailsSection } from '@/components/report/InspectionDetailsS
 import { VehicleDetailsSection } from '@/components/report/VehicleDetailsSection';
 import { Footer } from '@/components/report/Footer';
 import { Skeleton } from '@/components/ui/skeleton';
+import { inspectionReportData } from '@/data/inspectionData';
+import '@/styles/inspection-report.css';
 import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -18,7 +20,7 @@ const API_URL = process.env.REACT_APP_BACKEND_URL;
 // Loading skeleton component
 function ReportSkeleton() {
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+    <div className="inspection-report min-h-screen p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
         <Skeleton className="h-16 w-full" />
         <Skeleton className="h-64 w-full rounded-2xl" />
@@ -36,7 +38,7 @@ function ReportSkeleton() {
 // Error component
 function ReportError({ error, onRetry }) {
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div className="inspection-report min-h-screen flex items-center justify-center p-4">
       <div className="text-center">
         <h2 className="text-xl font-semibold text-red-600 mb-2">Failed to load report</h2>
         <p className="text-gray-500 mb-4">{error}</p>
