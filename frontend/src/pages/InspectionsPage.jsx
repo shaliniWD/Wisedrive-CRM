@@ -856,8 +856,8 @@ export default function InspectionsPage() {
                     <td className="px-3 py-3">
                       <div className="flex items-center gap-1">
                         <div className="flex flex-col">
-                          <span className="font-medium text-gray-900 text-sm">{formatDate(inspection.scheduled_date) || '-'}</span>
-                          <span className="text-xs text-gray-500">{formatTime(inspection.scheduled_time)}</span>
+                          <span className="font-medium text-gray-900 text-sm whitespace-nowrap">{formatDate(inspection.scheduled_date) || '-'}</span>
+                          <span className="text-xs text-gray-500 whitespace-nowrap">{formatTime(inspection.scheduled_time)}</span>
                         </div>
                         <button 
                           onClick={() => {
@@ -866,7 +866,7 @@ export default function InspectionsPage() {
                             setNewScheduleTime(inspection.scheduled_time || '');
                             setIsScheduleModalOpen(true);
                           }}
-                          className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                          className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors flex-shrink-0"
                           title="Change Schedule"
                           data-testid={`edit-schedule-${inspection.id}`}
                         >
