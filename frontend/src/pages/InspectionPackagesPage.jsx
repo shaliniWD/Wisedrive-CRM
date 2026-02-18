@@ -108,8 +108,16 @@ const PackageCard = ({ pkg, categories, offers, onEdit, onCopy, onToggle }) => {
   
   return (
     <div className={`border rounded-xl transition-all h-full flex flex-col relative ${isActive ? 'bg-white shadow-sm hover:shadow-md' : 'bg-gray-50 border-gray-200'}`} data-testid={`package-card-${pkg.id}`}>
-      {/* Package Header */}
-      <div className={`p-4 ${isRecommended ? 'bg-gradient-to-r from-blue-600 to-blue-700' : isActive ? 'bg-gradient-to-r from-blue-200 to-blue-300 border-b border-blue-300' : 'bg-gray-100 border-b border-gray-200'} rounded-t-xl`}>
+      {/* Package Header - Blue for ALL active packages */}
+      <div className={`p-4 ${isActive ? 'bg-gradient-to-r from-blue-600 to-blue-700' : 'bg-gray-100 border-b border-gray-200'} rounded-t-xl`}>
+        {/* Recommended Badge - shown on top for recommended packages */}
+        {isRecommended && (
+          <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 z-10">
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-lg border-2 border-white">
+              ⭐ Recommended
+            </span>
+          </div>
+        )}
         <div className="flex items-start justify-between gap-2 mb-3">
           <div className="flex items-center gap-2 flex-wrap">
             {isRecommended && (
