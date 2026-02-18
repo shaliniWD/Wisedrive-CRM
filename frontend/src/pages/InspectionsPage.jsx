@@ -946,8 +946,15 @@ export default function InspectionsPage() {
                     <p className="text-gray-500">No unscheduled inspections</p>
                   </td>
                 </tr>
+              ) : filteredInspections.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="text-center py-12">
+                    <ClipboardCheck className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-500">No inspections match the filter</p>
+                  </td>
+                </tr>
               ) : (
-                inspections.map((inspection) => (
+                filteredInspections.map((inspection) => (
                   <tr key={inspection.id} className="hover:bg-slate-50 transition-colors" data-testid={`inspection-row-${inspection.id}`}>
                     <td className="px-4 py-4">
                       <div className="text-sm font-medium">{formatDate(inspection.payment_date || inspection.created_at)}</div>
