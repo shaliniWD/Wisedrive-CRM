@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { settingsApi } from '@/services/api';
+import { adCityMappingsApi } from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,49 +16,6 @@ import {
   IndianRupee, ToggleLeft, ToggleRight, X, Package
 } from 'lucide-react';
 import InspectionPackagesPage from './InspectionPackagesPage';
-
-// Mock API for ad mappings (since backend doesn't have this yet)
-const adMappingsApi = {
-  getAll: async () => {
-    const stored = localStorage.getItem('adMappings');
-    return { data: stored ? JSON.parse(stored) : [] };
-  },
-  create: async (data) => {
-    const stored = localStorage.getItem('adMappings');
-    const mappings = stored ? JSON.parse(stored) : [];
-    const newMapping = { ...data, id: Date.now().toString(), is_active: true };
-    mappings.push(newMapping);
-    localStorage.setItem('adMappings', JSON.stringify(mappings));
-    return { data: newMapping };
-  },
-  update: async (id, data) => {
-    const stored = localStorage.getItem('adMappings');
-    const mappings = stored ? JSON.parse(stored) : [];
-    const index = mappings.findIndex(m => m.id === id);
-    if (index !== -1) {
-      mappings[index] = { ...mappings[index], ...data };
-      localStorage.setItem('adMappings', JSON.stringify(mappings));
-    }
-    return { data: mappings[index] };
-  },
-  delete: async (id) => {
-    const stored = localStorage.getItem('adMappings');
-    const mappings = stored ? JSON.parse(stored) : [];
-    const filtered = mappings.filter(m => m.id !== id);
-    localStorage.setItem('adMappings', JSON.stringify(filtered));
-    return { data: { success: true } };
-  },
-  toggleActive: async (id, isActive) => {
-    const stored = localStorage.getItem('adMappings');
-    const mappings = stored ? JSON.parse(stored) : [];
-    const index = mappings.findIndex(m => m.id === id);
-    if (index !== -1) {
-      mappings[index].is_active = isActive;
-      localStorage.setItem('adMappings', JSON.stringify(mappings));
-    }
-    return { data: mappings[index] };
-  }
-};
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('inspection_packages');
@@ -79,44 +36,61 @@ export default function SettingsPage() {
     source: '',
   });
 
-  const cities = ['Bangalore', 'Chennai', 'Mumbai', 'Delhi', 'Hyderabad', 'Pune', 'Kolkata', 'Ahmedabad'];
+  const cities = ['Bangalore', 'Chennai', 'Mumbai', 'Delhi', 'Hyderabad', 'Pune', 'Kolkata', 'Ahmedabad', 'Vizag'];
   const languages = ['Hindi', 'English', 'Kannada', 'Tamil', 'Telugu', 'Malayalam', 'Marathi', 'Bengali'];
   const sources = ['Instagram', 'Facebook', 'Google', 'YouTube', 'Website', 'Referral'];
 
   const fetchAdMappings = async () => {
     setLoading(true);
     try {
-      const response = await adMappingsApi.getAll();
-      setAdMappings(response.data);
+      const response = await adCityMappingsApi.getAll();
+      setAdMappings(response.data || []);
     } catch (error) {
+      console.error('Failed to load ad mappings:', error);
       toast.error('Failed to load ad mappings');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { fetchAdMappings(); }, []);
+  useEffect(() => { 
+    if (activeTab === 'ad_mapping') {
+      fetchAdMappings(); 
+    }
+  }, [activeTab]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.ad_id || !formData.city) {
-      toast.error('Please fill in required fields');
+      toast.error('Please fill in required fields (Ad ID and City)');
       return;
     }
     setSaving(true);
     try {
+      const submitData = {
+        ad_id: formData.ad_id,
+        city: formData.city,
+        ad_name: formData.ad_name || null,
+        ad_amount: formData.ad_amount ? parseFloat(formData.ad_amount) : null,
+        language: formData.language || null,
+        campaign: formData.campaign || null,
+        source: formData.source || null,
+        is_active: true
+      };
+
       if (editingAd) {
-        await adMappingsApi.update(editingAd.id, formData);
+        await adCityMappingsApi.update(editingAd.id, submitData);
         toast.success('Ad mapping updated');
       } else {
-        await adMappingsApi.create(formData);
+        await adCityMappingsApi.create(submitData);
         toast.success('Ad mapping created');
       }
       setIsModalOpen(false);
       resetForm();
       fetchAdMappings();
     } catch (error) {
-      toast.error('Failed to save ad mapping');
+      console.error('Failed to save ad mapping:', error);
+      toast.error(error.response?.data?.detail || 'Failed to save ad mapping');
     } finally {
       setSaving(false);
     }
@@ -148,10 +122,11 @@ export default function SettingsPage() {
 
   const handleToggleActive = async (ad) => {
     try {
-      await adMappingsApi.toggleActive(ad.id, !ad.is_active);
+      await adCityMappingsApi.toggleStatus(ad.id);
       toast.success(ad.is_active ? 'Ad mapping deactivated' : 'Ad mapping activated');
       fetchAdMappings();
     } catch (error) {
+      console.error('Failed to toggle status:', error);
       toast.error('Failed to update status');
     }
   };
@@ -159,10 +134,11 @@ export default function SettingsPage() {
   const handleDelete = async (ad) => {
     if (!window.confirm(`Delete ad mapping "${ad.ad_name || ad.ad_id}"?`)) return;
     try {
-      await adMappingsApi.delete(ad.id);
+      await adCityMappingsApi.delete(ad.id);
       toast.success('Ad mapping deleted');
       fetchAdMappings();
     } catch (error) {
+      console.error('Failed to delete:', error);
       toast.error('Failed to delete');
     }
   };
