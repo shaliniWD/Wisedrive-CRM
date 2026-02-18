@@ -74,6 +74,14 @@ export const inspectionsApi = {
   collectBalance: (id, data) => axios.post(`${API_URL}/inspections/${id}/collect-balance`, data),
   updateStatus: (id, status) => axios.patch(`${API_URL}/inspections/${id}/status`, null, { params: { inspection_status: status } }),
   sendReport: (id, data) => axios.post(`${API_URL}/inspections/${id}/send-report`, data),
+  updateVehicle: (id, data) => axios.patch(`${API_URL}/inspections/${id}/vehicle`, data),
+  assignMechanic: (id, mechanicId) => axios.patch(`${API_URL}/inspections/${id}/assign-mechanic`, { mechanic_id: mechanicId }),
+  updateSchedule: (id, data) => axios.patch(`${API_URL}/inspections/${id}/schedule`, data),
+};
+
+// Vehicle API (Vaahan)
+export const vehicleApi = {
+  getDetails: (vehicleNumber) => axios.get(`${API_URL}/vehicle/details/${vehicleNumber}`),
 };
 
 // Users API (V2)
