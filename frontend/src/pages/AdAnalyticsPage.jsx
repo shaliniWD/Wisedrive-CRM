@@ -168,6 +168,9 @@ export default function AdAnalyticsPage() {
       fetchPerformanceData();
     } else if (activeTab === 'mapping') {
       fetchAdMappings();
+      if (canManageToken) {
+        fetchUnmappedAds();
+      }
     }
   }, [activeTab, dateRange]);
 
