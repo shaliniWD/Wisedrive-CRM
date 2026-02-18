@@ -248,6 +248,30 @@ export default function AdAnalyticsPage() {
           <p className="text-gray-500 mt-1">Track ROI and lead performance across Meta ads</p>
         </div>
         <div className="flex items-center gap-3">
+          {/* Token Status for CEO/CTO */}
+          {canManageToken && tokenInfo && (
+            <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm cursor-pointer ${
+              tokenInfo.is_valid && tokenInfo.expires_in_days > 7
+                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                : tokenInfo.is_valid && tokenInfo.expires_in_days > 0
+                ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                : 'bg-red-50 text-red-700 border border-red-200'
+            }`} onClick={() => setShowTokenModal(true)} title="Click to manage token">
+              <Key className="h-4 w-4" />
+              {tokenInfo.is_valid ? (
+                <span>
+                  {tokenInfo.expires_in_days === -1 
+                    ? 'Token Never Expires' 
+                    : tokenInfo.expires_in_days > 0 
+                    ? `Token: ${tokenInfo.expires_in_days}d left`
+                    : 'Token Expired'}
+                </span>
+              ) : (
+                <span>Token Invalid</span>
+              )}
+            </div>
+          )}
+          
           {/* Meta Status Indicator */}
           <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
             metaStatus.configured 
