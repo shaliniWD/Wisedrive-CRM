@@ -15,7 +15,8 @@ import { toast } from 'sonner';
 import { 
   Plus, Loader2, Pencil, Trash2, Package, CheckCircle, X, ListChecks,
   IndianRupee, Award, Layers, ChevronDown, ChevronUp, Copy, PauseCircle,
-  PlayCircle, Gift, Percent, Calendar, Tag, CreditCard, BadgePercent
+  PlayCircle, Gift, Percent, Calendar, Tag, CreditCard, BadgePercent,
+  ToggleLeft, ToggleRight
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
