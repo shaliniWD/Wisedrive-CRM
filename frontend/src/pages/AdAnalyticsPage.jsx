@@ -616,7 +616,7 @@ export default function AdAnalyticsPage() {
                   <tbody className="divide-y divide-gray-100">
                     {filteredPerformanceData.length === 0 ? (
                       <tr>
-                        <td colSpan={9} className="text-center py-12">
+                        <td colSpan={8} className="text-center py-12">
                           <BarChart3 className="h-12 w-12 text-gray-300 mx-auto mb-3" />
                           <p className="text-gray-500">No ad performance data available</p>
                           <p className="text-sm text-gray-400 mt-1">
@@ -641,9 +641,11 @@ export default function AdAnalyticsPage() {
                                     {item.source}
                                   </span>
                                 )}
-                                {item.language && (
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
-                                    {item.language}
+                                {item.meta_status && (
+                                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                                    item.meta_status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'
+                                  }`}>
+                                    {item.meta_status}
                                   </span>
                                 )}
                                 {!item.is_active && (
@@ -663,21 +665,42 @@ export default function AdAnalyticsPage() {
                             </span>
                           </td>
                           <td className="px-4 py-4 text-right">
-                            <span className="text-sm text-gray-700">
-                              {formatNumber(item.impressions)}
-                            </span>
-                          </td>
-                          <td className="px-4 py-4 text-right">
-                            <span className="text-sm text-gray-700">
-                              {formatNumber(item.clicks)}
-                            </span>
-                          </td>
-                          <td className="px-4 py-4 text-right">
                             <span className="text-sm font-semibold text-blue-600">
                               {item.total_leads}
                             </span>
                           </td>
                           <td className="px-4 py-4 text-right">
+                            <div>
+                              <span className="text-sm font-medium text-emerald-600">
+                                {item.converted_leads}
+                              </span>
+                              <span className="text-xs text-gray-500 ml-1">
+                                ({item.conversion_rate}%)
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 text-right">
+                            <span className="text-sm font-semibold text-gray-900">
+                              {formatCurrency(item.total_revenue)}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 text-right">
+                            <span className={`text-sm font-medium ${item.cost_per_result > 0 ? 'text-amber-600' : 'text-gray-400'}`}>
+                              {item.cost_per_result > 0 ? formatCurrency(item.cost_per_result) : '-'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 text-right">
+                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
+                              item.roi >= 100 ? 'bg-emerald-100 text-emerald-700' :
+                              item.roi >= 0 ? 'bg-amber-100 text-amber-700' :
+                              'bg-red-100 text-red-700'
+                            }`}>
+                              {item.roi >= 0 ? '+' : ''}{item.roi}%
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                             <div>
                               <span className="text-sm font-medium text-emerald-600">
                                 {item.converted_leads}
