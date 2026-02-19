@@ -135,12 +135,12 @@ Build a scalable automotive platform "Wisedrive" that evolved into a monolithic 
 3. **Mechanic Mobile App (DEPRECATED)** - Web-based field inspection app at `/app/mechanic-app/`
 4. **Mechanic Native App (NEW)** - React Native (Expo) field inspection app at `/app/mechanic-app-native/`
 
-### Mechanic Native App - EAS Builds (February 19, 2026)
+### Mechanic Native App - EAS Builds (February 20, 2026)
 
 | Platform | Status | Download URL |
 |----------|--------|--------------|
-| **Android APK** | ✅ Finished | https://expo.dev/artifacts/eas/4JsjJHG9ebBPMDPCrdczvG.apk |
-| **iOS IPA** | ✅ Finished | https://expo.dev/artifacts/eas/dc3MHXy2BzyoEvmUQP1mVB.ipa |
+| **Android APK** | ✅ Finished | https://expo.dev/artifacts/eas/4DvYKhbD7itHzttX59xxtt.apk |
+| **iOS IPA** | ✅ Finished | https://expo.dev/artifacts/eas/kMWRdrQ7wCqg1potJqqtct.ipa |
 
 **Build Details:**
 - SDK Version: 52.0.0
