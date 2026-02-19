@@ -9871,8 +9871,12 @@ async def create_inspection_template(data: InspectionTemplateCreate, current_use
     template.pop("_id", None)
     
     # Enrich response
-    template["partner_name"] = partner.get("name", "Unknown")
-    template["partner_type"] = partner.get("type", "b2c")
+    if partner:
+        template["partner_name"] = partner.get("name", "Unknown")
+        template["partner_type"] = partner.get("type", "b2c")
+    else:
+        template["partner_name"] = "Not Assigned"
+        template["partner_type"] = "b2c"
     template["question_count"] = len(template.get("question_ids", []))
     
     return template
