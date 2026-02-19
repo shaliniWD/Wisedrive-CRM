@@ -1036,6 +1036,11 @@ export default function LeadsPage() {
                       <MapPin className="h-3 w-3 text-gray-400" />
                       {lead.city}
                     </span>
+                    {lead.partner_name && lead.partner_name !== 'B2C Default' && (
+                      <span className="ml-2 px-2 py-0.5 text-xs bg-amber-100 text-amber-800 rounded-full font-medium">
+                        {lead.partner_name}
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1">
