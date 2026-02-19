@@ -356,7 +356,7 @@ Returns:
 ## Document History
 - **Created:** December 2025
 - **Last Updated:** February 19, 2026
-- **Version:** 4.1
+- **Version:** 4.2
 
 ## Changelog
 - v4.2 (Feb 19, 2026): **Partners & Inspection Templates Module** - New feature for client-specific inspection management: (1) **Partners Management** - New "Partners" tab under Services to manage clients (B2C, Bank, Insurance, B2B). Partners have name, type, contact info, address, notes. CRUD operations with toggle active/inactive. (2) **Inspection Templates** - New "Inspection Templates" tab to create client-specific questionnaire sets. Each template links: Partner + selected Questions from global pool + Report Template. Admin can select specific questions by category using checkboxes. (3) **B2C Default Template** - Seed button creates default B2C partner and template with all existing questions. One template can be marked as "Default" for new inspections. (4) **Question Reuse** - Global question pool (from Inspection Q&A) can be reused across multiple templates with different subsets. (5) **Report Templates** - For now all templates use "Default Report" with option to create custom reports in future. New Backend APIs: GET/POST/PUT/DELETE /api/partners, PATCH /api/partners/{id}/toggle, GET/POST/PUT/DELETE /api/inspection-templates, PATCH /api/inspection-templates/{id}/toggle, PATCH /api/inspection-templates/{id}/set-default, POST /api/inspection-templates/seed-default. 100% test coverage (19/19 backend tests, 16/16 frontend features - iteration_58). **Rollback Plan**: Remove 2 tabs from InspectionPackagesPage.jsx if needed - all changes are additive.
