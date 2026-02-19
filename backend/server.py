@@ -9839,10 +9839,12 @@ async def get_inspection_template(template_id: str, current_user: dict = Depends
 @api_router.post("/inspection-templates")
 async def create_inspection_template(data: InspectionTemplateCreate, current_user: dict = Depends(get_current_user)):
     """Create a new inspection template"""
-    # Verify partner exists
-    partner = await db.partners.find_one({"id": data.partner_id}, {"_id": 0})
-    if not partner:
-        raise HTTPException(status_code=400, detail="Partner not found")
+    # Verify partner exists (skip validation for 'placeholder' - used when partner is linked via ReportTemplate)
+    partner = None
+    if data.partner_id and data.partner_id != 'placeholder':
+        partner = await db.partners.find_one({"id": data.partner_id}, {"_id": 0})
+        if not partner:
+            raise HTTPException(status_code=400, detail="Partner not found")
     
     # If setting as default, unset other defaults
     if data.is_default:
