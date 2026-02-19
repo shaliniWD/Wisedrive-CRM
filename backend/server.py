@@ -11365,6 +11365,36 @@ def format_mechanic_notification(template_key: str, **kwargs) -> dict:
     }
 
 
+# ==================== MECHANIC APP STATIC FILE SERVING ====================
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
+# Serve mechanic app static files
+mechanic_app_path = Path("/app/mechanic-app/frontend/build")
+if mechanic_app_path.exists():
+    # Mount static files
+    app.mount("/mechanic-app/static", StaticFiles(directory=mechanic_app_path / "static"), name="mechanic-static")
+    
+    # Serve index.html for all mechanic app routes (SPA routing)
+    @app.get("/mechanic-app/{path:path}")
+    async def serve_mechanic_app(path: str):
+        """Serve mechanic app - handles SPA routing"""
+        # Check if it's a static file
+        file_path = mechanic_app_path / path
+        if file_path.exists() and file_path.is_file():
+            return FileResponse(file_path)
+        
+        # For all other routes, serve index.html (SPA routing)
+        return FileResponse(mechanic_app_path / "index.html")
+    
+    @app.get("/mechanic-app")
+    async def serve_mechanic_app_root():
+        """Serve mechanic app root"""
+        return FileResponse(mechanic_app_path / "index.html")
+    
+    logger.info("Mechanic app mounted at /mechanic-app")
+
+
 # Include the router in the main app
 app.include_router(api_router)
 
