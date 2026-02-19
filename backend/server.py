@@ -3947,6 +3947,62 @@ async def get_customer_notes(customer_id: str, current_user: dict = Depends(get_
     return notes
 
 
+@api_router.put("/customers/{customer_id}/notes/{note_id}")
+async def update_customer_note(customer_id: str, note_id: str, note_data: CustomerNoteCreate, current_user: dict = Depends(get_current_user)):
+    """Update an existing note"""
+    note = await db.customer_notes.find_one({"id": note_id, "customer_id": customer_id}, {"_id": 0})
+    if not note:
+        raise HTTPException(status_code=404, detail="Note not found")
+    
+    old_note = note.get("note", "")
+    await db.customer_notes.update_one(
+        {"id": note_id},
+        {"$set": {"note": note_data.note, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    # Log activity
+    activity = {
+        "id": str(uuid.uuid4()),
+        "customer_id": customer_id,
+        "user_id": current_user["id"],
+        "user_name": current_user.get("name", "Unknown"),
+        "action": "note_updated",
+        "details": f"Updated a note",
+        "old_value": old_note[:200],
+        "new_value": note_data.note[:200],
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.customer_activities.insert_one(activity)
+    
+    updated_note = await db.customer_notes.find_one({"id": note_id}, {"_id": 0})
+    return updated_note
+
+
+@api_router.delete("/customers/{customer_id}/notes/{note_id}")
+async def delete_customer_note(customer_id: str, note_id: str, current_user: dict = Depends(get_current_user)):
+    """Delete a note"""
+    note = await db.customer_notes.find_one({"id": note_id, "customer_id": customer_id}, {"_id": 0})
+    if not note:
+        raise HTTPException(status_code=404, detail="Note not found")
+    
+    await db.customer_notes.delete_one({"id": note_id})
+    
+    # Log activity
+    activity = {
+        "id": str(uuid.uuid4()),
+        "customer_id": customer_id,
+        "user_id": current_user["id"],
+        "user_name": current_user.get("name", "Unknown"),
+        "action": "note_deleted",
+        "details": f"Deleted a note",
+        "old_value": note.get("note", "")[:200],
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.customer_activities.insert_one(activity)
+    
+    return {"success": True, "message": "Note deleted"}
+
+
 @api_router.get("/customers/{customer_id}/activities")
 async def get_customer_activities(customer_id: str, current_user: dict = Depends(get_current_user)):
     """Get all activities for a customer"""
