@@ -11072,6 +11072,262 @@ async def serve_uploaded_file(filename: str):
     return FileResponse(file_path)
 
 
+# ==================== MECHANIC PUSH NOTIFICATIONS ====================
+
+class MechanicPushTokenRequest(BaseModel):
+    device_token: str
+    platform: str = "android"  # android or ios
+    device_info: Optional[dict] = None
+
+
+@api_router.post("/mechanic/push-token")
+async def register_mechanic_push_token(
+    data: MechanicPushTokenRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Register or update mechanic's FCM push token"""
+    mechanic_id = current_user["id"]
+    
+    # Upsert the push token
+    await db.mechanic_push_tokens.update_one(
+        {"mechanic_id": mechanic_id},
+        {
+            "$set": {
+                "mechanic_id": mechanic_id,
+                "device_token": data.device_token,
+                "platform": data.platform,
+                "device_info": data.device_info,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            },
+            "$setOnInsert": {
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+        },
+        upsert=True
+    )
+    
+    # Subscribe to city-based topics for broadcast notifications
+    inspection_cities = current_user.get("inspection_cities", [])
+    if hasattr(app.state, 'fcm_service') and app.state.fcm_service:
+        fcm = app.state.fcm_service
+        for city in inspection_cities:
+            topic = f"mechanic_city_{city.lower().replace(' ', '_')}"
+            await fcm.subscribe_to_topic(data.device_token, topic)
+    
+    return {"success": True, "message": "Push token registered"}
+
+
+@api_router.delete("/mechanic/push-token")
+async def unregister_mechanic_push_token(
+    current_user: dict = Depends(get_current_user)
+):
+    """Remove mechanic's push token (on logout)"""
+    mechanic_id = current_user["id"]
+    
+    # Get existing token to unsubscribe from topics
+    existing = await db.mechanic_push_tokens.find_one(
+        {"mechanic_id": mechanic_id},
+        {"_id": 0, "device_token": 1}
+    )
+    
+    if existing and existing.get("device_token"):
+        # Unsubscribe from city topics
+        inspection_cities = current_user.get("inspection_cities", [])
+        if hasattr(app.state, 'fcm_service') and app.state.fcm_service:
+            fcm = app.state.fcm_service
+            for city in inspection_cities:
+                topic = f"mechanic_city_{city.lower().replace(' ', '_')}"
+                await fcm.unsubscribe_from_topic(existing["device_token"], topic)
+    
+    # Delete the token
+    await db.mechanic_push_tokens.delete_one({"mechanic_id": mechanic_id})
+    
+    return {"success": True, "message": "Push token removed"}
+
+
+@api_router.get("/mechanic/notifications")
+async def get_mechanic_notifications(
+    limit: int = 50,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get notification history for mechanic"""
+    mechanic_id = current_user["id"]
+    
+    notifications = await db.mechanic_notifications.find(
+        {"mechanic_id": mechanic_id},
+        {"_id": 0}
+    ).sort("created_at", -1).limit(limit).to_list(limit)
+    
+    return notifications
+
+
+@api_router.patch("/mechanic/notifications/{notification_id}/read")
+async def mark_notification_read(
+    notification_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Mark a notification as read"""
+    await db.mechanic_notifications.update_one(
+        {"id": notification_id, "mechanic_id": current_user["id"]},
+        {"$set": {"read": True, "read_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    return {"success": True}
+
+
+async def send_mechanic_notification(
+    mechanic_id: str,
+    title: str,
+    body: str,
+    data: Optional[dict] = None,
+    notification_type: str = "general"
+):
+    """
+    Send push notification to a specific mechanic.
+    Also stores the notification in the database for history.
+    """
+    notification_id = str(uuid.uuid4())
+    
+    # Store notification in database
+    notification_doc = {
+        "id": notification_id,
+        "mechanic_id": mechanic_id,
+        "title": title,
+        "body": body,
+        "data": data,
+        "type": notification_type,
+        "read": False,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.mechanic_notifications.insert_one(notification_doc)
+    
+    # Get mechanic's push token
+    push_token_doc = await db.mechanic_push_tokens.find_one(
+        {"mechanic_id": mechanic_id},
+        {"_id": 0, "device_token": 1, "platform": 1}
+    )
+    
+    if not push_token_doc or not push_token_doc.get("device_token"):
+        logger.debug(f"No push token for mechanic {mechanic_id}")
+        return {"status": "no_token", "notification_id": notification_id}
+    
+    # Send via FCM
+    if hasattr(app.state, 'fcm_service') and app.state.fcm_service:
+        fcm = app.state.fcm_service
+        try:
+            if fcm.mock_mode:
+                logger.info(f"[MOCK FCM] Mechanic {mechanic_id}: {title} - {body}")
+                return {"status": "mock_sent", "notification_id": notification_id}
+            
+            # Use FCM service to send
+            result = await fcm._send_fcm_message(
+                device_token=push_token_doc["device_token"],
+                platform=push_token_doc.get("platform", "android"),
+                title=title,
+                body=body,
+                data={"notification_id": notification_id, **(data or {})},
+                image_url=None,
+                badge=None
+            )
+            return {"status": "sent", "notification_id": notification_id, "fcm_result": result}
+        except Exception as e:
+            logger.error(f"FCM send error for mechanic {mechanic_id}: {e}")
+            return {"status": "error", "error": str(e), "notification_id": notification_id}
+    
+    return {"status": "fcm_not_available", "notification_id": notification_id}
+
+
+async def notify_mechanics_in_city(
+    city: str,
+    title: str,
+    body: str,
+    data: Optional[dict] = None,
+    exclude_mechanic_id: Optional[str] = None
+):
+    """
+    Send notification to all mechanics in a specific city.
+    Used when a new inspection becomes available.
+    """
+    # Find all mechanics assigned to this city
+    mechanic_role = await db.roles.find_one({"code": "MECHANIC"}, {"_id": 0, "id": 1})
+    if not mechanic_role:
+        return {"status": "no_mechanic_role", "sent": 0}
+    
+    # Query mechanics with this city in their inspection_cities
+    city_lower = city.lower()
+    mechanics = await db.users.find(
+        {
+            "role_id": mechanic_role["id"],
+            "is_active": True,
+            "$or": [
+                {"inspection_cities": {"$regex": f"^{city}$", "$options": "i"}},
+                {"inspection_cities": city},
+                {"inspection_cities": city_lower}
+            ]
+        },
+        {"_id": 0, "id": 1, "name": 1}
+    ).to_list(100)
+    
+    results = {"sent": 0, "failed": 0, "skipped": 0}
+    
+    for mechanic in mechanics:
+        if exclude_mechanic_id and mechanic["id"] == exclude_mechanic_id:
+            results["skipped"] += 1
+            continue
+        
+        result = await send_mechanic_notification(
+            mechanic_id=mechanic["id"],
+            title=title,
+            body=body,
+            data=data,
+            notification_type="new_inspection"
+        )
+        
+        if result.get("status") in ["sent", "mock_sent"]:
+            results["sent"] += 1
+        elif result.get("status") == "no_token":
+            results["skipped"] += 1
+        else:
+            results["failed"] += 1
+    
+    logger.info(f"Notified mechanics in {city}: {results}")
+    return results
+
+
+# ==================== NOTIFICATION TEMPLATES FOR MECHANICS ====================
+
+MECHANIC_NOTIFICATION_TEMPLATES = {
+    "new_inspection_available": {
+        "title": "New Inspection Available 🚗",
+        "body": "New inspection in {city} - {vehicle}. Tap to view details."
+    },
+    "inspection_assigned": {
+        "title": "Inspection Assigned to You ✅",
+        "body": "You've been assigned: {vehicle} in {city}. Scheduled: {scheduled_time}."
+    },
+    "inspection_reminder": {
+        "title": "Upcoming Inspection ⏰",
+        "body": "Reminder: {vehicle} inspection in {city} at {scheduled_time}."
+    },
+    "inspection_cancelled": {
+        "title": "Inspection Cancelled ❌",
+        "body": "The inspection for {vehicle} in {city} has been cancelled."
+    },
+    "payment_received": {
+        "title": "Payment Confirmed 💰",
+        "body": "Payment received for {vehicle} inspection. You can now start the inspection."
+    }
+}
+
+
+def format_mechanic_notification(template_key: str, **kwargs) -> dict:
+    """Format mechanic notification from template"""
+    template = MECHANIC_NOTIFICATION_TEMPLATES.get(template_key, {})
+    return {
+        "title": template.get("title", "").format(**kwargs),
+        "body": template.get("body", "").format(**kwargs)
+    }
+
+
 # Include the router in the main app
 app.include_router(api_router)
 
