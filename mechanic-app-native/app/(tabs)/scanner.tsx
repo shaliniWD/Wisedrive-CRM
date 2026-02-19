@@ -77,7 +77,7 @@ export default function OBDScannerScreen() {
   const [componentProgress, setComponentProgress] = useState(0);
   const [scannedComponents, setScannedComponents] = useState<Array<{
     name: string;
-    status: 'success' | 'failed' | 'no_response';
+    status: 'success' | 'failed' | 'no_response' | 'scanning';
     dtcsFound: number;
   }>>([]);
   const [totalComponents, setTotalComponents] = useState(0);
