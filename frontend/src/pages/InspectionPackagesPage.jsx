@@ -764,6 +764,16 @@ export default function InspectionPackagesPage() {
         {activeTab === 'qa' && (
           <InspectionQAPage />
         )}
+
+        {/* Partners Tab */}
+        {activeTab === 'partners' && (
+          <PartnersPage />
+        )}
+
+        {/* Inspection Templates Tab */}
+        {activeTab === 'templates' && (
+          <InspectionTemplatesPage />
+        )}
       </div>
 
       {/* Category Modal */}
