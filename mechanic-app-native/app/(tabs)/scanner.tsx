@@ -39,9 +39,9 @@ import { Manufacturer } from '../../src/constants/manufacturers';
 import { getDTCDescription, getComponentForDTC, getDTCSeverity, getSeverityInfo } from '../../src/constants/dtc-descriptions';
 import { getDTCKnowledge } from '../../src/constants/dtc-knowledge-base';
 
-const MODULE = 'MAIN_SCREEN';
+const MODULE = 'OBD_SCANNER';
 
-export default function MainScreen() {
+export default function OBDScannerScreen() {
   const insets = useSafeAreaInsets();
   
   // Modal states
