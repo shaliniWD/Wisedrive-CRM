@@ -1160,7 +1160,11 @@ export default function OBDScannerScreen() {
             <Text style={styles.scanBtnText}>Scan Again</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.homeBtn} onPress={disconnect}>
+          <TouchableOpacity style={styles.homeBtn} onPress={() => {
+            disconnect();
+            clearInspection();
+            router.push('/home');
+          }}>
             <MaterialIcons name="home" size={20} color={Colors.accent} />
             <Text style={styles.homeBtnText}>Back to Home</Text>
           </TouchableOpacity>
