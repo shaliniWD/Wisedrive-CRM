@@ -3264,6 +3264,25 @@ async def create_inspection(inspection_data: InspectionCreate, current_user: dic
     await db.inspections.insert_one(insp_dict)
     # Remove MongoDB _id before returning
     insp_dict.pop("_id", None)
+    
+    # Send push notification to mechanics in the city
+    city = insp_dict.get("city")
+    if city:
+        vehicle = f"{insp_dict.get('make', '')} {insp_dict.get('model', '')}".strip() or insp_dict.get("car_number", "Vehicle")
+        try:
+            await notify_mechanics_in_city(
+                city=city,
+                title="New Inspection Available 🚗",
+                body=f"New inspection in {city} - {vehicle}. Tap to view details.",
+                data={
+                    "type": "new_inspection",
+                    "inspection_id": insp_id,
+                    "city": city
+                }
+            )
+        except Exception as e:
+            logger.warning(f"Failed to send mechanic notification: {e}")
+    
     return insp_dict
 
 
