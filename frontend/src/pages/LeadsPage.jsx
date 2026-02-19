@@ -408,11 +408,12 @@ export default function LeadsPage() {
       if (filterCity && filterCity !== 'all') params.city = filterCity;
       if (filterSource && filterSource !== 'all') params.source = filterSource;
 
-      const [leadsRes, employeesRes, citiesRes, sourcesRes, statusesRes, packagesRes, offersRes] = await Promise.all([
+      const [leadsRes, employeesRes, citiesRes, sourcesRes, statusesRes, packagesRes, offersRes, partnersRes] = await Promise.all([
         leadsApi.getAll(params), employeesApi.getAll(), utilityApi.getCities(),
         utilityApi.getLeadSources(), utilityApi.getLeadStatuses(),
         inspectionPackagesApi.getPackages(user?.country_id),
         inspectionPackagesApi.getActiveOffers(user?.country_id),
+        partnersApi.getPartners({ is_active: true }),
       ]);
 
       setLeads(leadsRes.data);
@@ -428,6 +429,8 @@ export default function LeadsPage() {
       setInspectionPackages(activePackages);
       // Store active offers for payment modal
       setAvailableOffers(offersRes.data || []);
+      // Store partners for lead form
+      setPartners(partnersRes.data || []);
     } catch (error) {
       toast.error('Failed to load leads');
     } finally {
