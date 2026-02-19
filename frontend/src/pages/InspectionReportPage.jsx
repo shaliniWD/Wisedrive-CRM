@@ -12,6 +12,7 @@ import { VehicleDetailsSection } from '@/components/report/VehicleDetailsSection
 import { Footer } from '@/components/report/Footer';
 import { Skeleton } from '@/components/ui/skeleton';
 import { inspectionReportData } from '@/data/inspectionData';
+import { StandardReportStyle, PremiumReportStyle, DetailedTechnicalReportStyle } from '@/components/report/ReportStyles';
 import '@/styles/inspection-report.css';
 import axios from 'axios';
 
