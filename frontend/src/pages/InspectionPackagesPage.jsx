@@ -677,6 +677,12 @@ export default function InspectionPackagesPage() {
           <button onClick={() => setActiveTab('qa')} className={`px-6 py-4 text-sm font-medium flex items-center gap-2 transition-all border-b-2 -mb-px ${activeTab === 'qa' ? 'border-blue-600 text-blue-600 bg-white' : 'border-transparent text-gray-500 hover:text-gray-700'}`} data-testid="qa-tab">
             <HelpCircle className="h-4 w-4" /> Inspection Q&A
           </button>
+          <button onClick={() => setActiveTab('partners')} className={`px-6 py-4 text-sm font-medium flex items-center gap-2 transition-all border-b-2 -mb-px ${activeTab === 'partners' ? 'border-blue-600 text-blue-600 bg-white' : 'border-transparent text-gray-500 hover:text-gray-700'}`} data-testid="partners-tab">
+            <Building2 className="h-4 w-4" /> Partners
+          </button>
+          <button onClick={() => setActiveTab('templates')} className={`px-6 py-4 text-sm font-medium flex items-center gap-2 transition-all border-b-2 -mb-px ${activeTab === 'templates' ? 'border-blue-600 text-blue-600 bg-white' : 'border-transparent text-gray-500 hover:text-gray-700'}`} data-testid="templates-tab">
+            <FileText className="h-4 w-4" /> Inspection Templates
+          </button>
         </div>
 
         {/* Packages Tab */}
