@@ -132,7 +132,28 @@ Build a scalable automotive platform "Wisedrive" that evolved into a monolithic 
 
 1. **CRM Web Application** - Employee, HR, Leads, Customers, Inspections management
 2. **ESS Mobile App** - Employee self-service (React Native/Expo) at `/app/ess-mobile-app/`
-3. **Mechanic Mobile App** - Field inspection app (React) at `/app/mechanic-app/frontend/`
+3. **Mechanic Mobile App (DEPRECATED)** - Web-based field inspection app at `/app/mechanic-app/`
+4. **Mechanic Native App (NEW)** - React Native (Expo) field inspection app at `/app/mechanic-app-native/`
+
+### Mechanic Native App - EAS Builds (February 19, 2026)
+
+| Platform | Status | Download URL |
+|----------|--------|--------------|
+| **Android APK** | ✅ Finished | https://expo.dev/artifacts/eas/8Rv7DDv8KaWGgKwKdMpJBd.apk |
+| **iOS IPA** | ✅ Finished | https://expo.dev/artifacts/eas/h87Z2gx2uhzARsuRW7LNym.ipa |
+
+**Build Details:**
+- SDK Version: 52.0.0
+- App Version: 1.0.0
+- Bundle ID (iOS): com.cleansecar.wisedrive.mechanic
+- Package ID (Android): com.cleansecar.wisedrive.mechanic
+- EAS Project: @kalyandhar/wisedrive-mechanic
+
+**Key Features:**
+- OTP-based mechanic authentication
+- Dynamic questionnaire-based inspections
+- OBD-II scanning support (BLE only - requires BLE-compatible OBD adapter)
+- Push notifications for new job assignments
 
 ---
 
