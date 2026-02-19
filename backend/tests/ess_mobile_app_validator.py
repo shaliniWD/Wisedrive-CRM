@@ -466,7 +466,7 @@ class ESSMobileAppValidator:
 
 def main():
     parser = argparse.ArgumentParser(description="ESS Mobile App Validator")
-    parser.add_argument("--base-url", default="https://auto-leads-hub-2.preview.emergentagent.com/api",
+    parser.add_argument("--base-url", default="https://inspection-qa-crm.preview.emergentagent.com/api",
                        help="Base URL for API (default: preview environment)")
     parser.add_argument("--email", default="salesexec1.in@wisedrive.com",
                        help="Test user email")
