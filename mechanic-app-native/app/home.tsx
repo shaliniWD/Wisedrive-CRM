@@ -132,9 +132,14 @@ export default function HomeScreen() {
           <Text style={styles.greeting}>Hello,</Text>
           <Text style={styles.name}>{mechanic?.name || 'Mechanic'}</Text>
         </View>
-        <TouchableOpacity style={styles.notificationButton}>
-          <Ionicons name="notifications-outline" size={24} color="#1E293B" />
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 12 }}>
+          <TouchableOpacity style={styles.notificationButton}>
+            <Ionicons name="notifications-outline" size={24} color="#1E293B" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.notificationButton} onPress={() => router.push('/profile')}>
+            <Ionicons name="person-circle-outline" size={24} color="#1E293B" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Filters */}
