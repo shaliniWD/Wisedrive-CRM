@@ -327,8 +327,8 @@ export default function InspectionQAPage() {
     setLoading(true);
     try {
       const params = {};
-      if (filterCategory) params.category_id = filterCategory;
-      if (filterActive !== '') params.is_active = filterActive === 'true';
+      if (filterCategory && filterCategory !== 'all') params.category_id = filterCategory;
+      if (filterActive !== 'all') params.is_active = filterActive === 'true';
       
       const [questionsRes, categoriesRes] = await Promise.all([
         inspectionQAApi.getQuestions(params),
