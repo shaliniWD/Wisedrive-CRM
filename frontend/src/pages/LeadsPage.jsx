@@ -1261,6 +1261,33 @@ export default function LeadsPage() {
                 </Select>
               </div>
             </div>
+            {/* Partner/Client Selection */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Partner/Client</Label>
+              <Select 
+                value={formData.partner_id || ''} 
+                onValueChange={(v) => {
+                  const selectedPartner = partners.find(p => p.id === v);
+                  setFormData({ 
+                    ...formData, 
+                    partner_id: v, 
+                    partner_name: selectedPartner?.name || '' 
+                  });
+                }}
+              >
+                <SelectTrigger className="h-10" data-testid="lead-partner-select">
+                  <SelectValue placeholder="Select partner (default: B2C)" />
+                </SelectTrigger>
+                <SelectContent>
+                  {partners.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name} ({p.type.toUpperCase()})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-gray-500">Leave empty for default B2C customer</p>
+            </div>
             <div className="space-y-2">
               <Label className="text-sm font-medium">Notes</Label>
               <textarea 
