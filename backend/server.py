@@ -3924,6 +3924,187 @@ async def get_customer_activities(customer_id: str, current_user: dict = Depends
     return activities
 
 
+@api_router.post("/customers/seed-sample-data")
+async def seed_sample_customer_data(current_user: dict = Depends(get_current_user)):
+    """Create a sample customer with multiple packages and payment transactions for demo purposes"""
+    from datetime import timedelta
+    
+    # Get country and a sales rep
+    country = await db.countries.find_one({"code": "IN"}, {"_id": 0, "id": 1})
+    country_id = country["id"] if country else "c49e1dc6-1450-40c2-9846-56b73369b2b1"
+    
+    sales_role_ids = await get_sales_role_ids()
+    sales_rep = await db.users.find_one({"role_id": {"$in": sales_role_ids}, "is_active": True}, {"_id": 0, "id": 1, "name": 1})
+    
+    # Create sample customer
+    customer_id = str(uuid.uuid4())
+    customer = {
+        "id": customer_id,
+        "country_id": country_id,
+        "name": "Rahul Sharma (Demo)",
+        "mobile": "9876543210",
+        "email": "rahul.sharma.demo@example.com",
+        "city": "Bangalore",
+        "address": "123 MG Road, Indiranagar, Bangalore 560038",
+        "payment_status": "Completed",
+        "total_amount_paid": 4500,
+        "created_at": (datetime.now(timezone.utc) - timedelta(days=45)).isoformat(),
+        "created_by": sales_rep["id"] if sales_rep else current_user["id"]
+    }
+    await db.customers.insert_one(customer)
+    
+    # Create 3 inspections with different payment scenarios
+    inspections_data = [
+        {
+            "package_name": "Premium Inspection",
+            "package_type": "PREMIUM",
+            "car_number": "KA01AB1234",
+            "car_make": "Toyota",
+            "car_model": "Fortuner",
+            "car_year": "2022",
+            "total_amount": 2499,
+            "amount_paid": 2499,
+            "balance_due": 0,
+            "payment_status": "FULLY_PAID",
+            "inspection_status": "INSPECTION_COMPLETED",
+            "days_ago": 45,
+            "payment_transactions": [
+                {"amount": 2499, "status": "completed", "payment_type": "full", "payment_method": "Razorpay", "razorpay_payment_id": "pay_demo123456789"}
+            ]
+        },
+        {
+            "package_name": "Standard Inspection",
+            "package_type": "STANDARD",
+            "car_number": "KA02CD5678",
+            "car_make": "Honda",
+            "car_model": "City",
+            "car_year": "2021",
+            "total_amount": 1499,
+            "amount_paid": 1499,
+            "balance_due": 0,
+            "payment_status": "FULLY_PAID",
+            "inspection_status": "INSPECTION_COMPLETED",
+            "days_ago": 20,
+            "payment_transactions": [
+                {"amount": 500, "status": "completed", "payment_type": "partial", "payment_method": "Razorpay", "razorpay_payment_id": "pay_demo987654321"},
+                {"amount": 999, "status": "completed", "payment_type": "balance", "payment_method": "Razorpay", "razorpay_payment_id": "pay_demo111222333"}
+            ]
+        },
+        {
+            "package_name": "Basic Inspection",
+            "package_type": "BASIC",
+            "car_number": "KA03EF9012",
+            "car_make": "Maruti Suzuki",
+            "car_model": "Swift",
+            "car_year": "2023",
+            "total_amount": 999,
+            "amount_paid": 500,
+            "balance_due": 499,
+            "payment_status": "PARTIAL_PAID",
+            "inspection_status": "NEW_INSPECTION",
+            "days_ago": 3,
+            "payment_transactions": [
+                {"amount": 500, "status": "completed", "payment_type": "partial", "payment_method": "Razorpay", "razorpay_payment_id": "pay_demo444555666"}
+            ]
+        }
+    ]
+    
+    created_inspections = []
+    for insp_data in inspections_data:
+        inspection_id = str(uuid.uuid4())
+        created_date = datetime.now(timezone.utc) - timedelta(days=insp_data["days_ago"])
+        
+        # Build payment transactions
+        txns = []
+        for i, txn in enumerate(insp_data["payment_transactions"]):
+            txn_date = created_date + timedelta(hours=i*2)
+            txns.append({
+                "id": str(uuid.uuid4()),
+                "amount": txn["amount"],
+                "payment_type": txn["payment_type"],
+                "payment_method": txn["payment_method"],
+                "razorpay_payment_id": txn.get("razorpay_payment_id"),
+                "status": txn["status"],
+                "created_at": txn_date.isoformat(),
+                "completed_at": txn_date.isoformat() if txn["status"] == "completed" else None,
+                "payment_link_url": f"https://rzp.io/demo_{inspection_id[:8]}"
+            })
+        
+        inspection = {
+            "id": inspection_id,
+            "country_id": country_id,
+            "customer_id": customer_id,
+            "customer_name": customer["name"],
+            "customer_mobile": customer["mobile"],
+            "car_number": insp_data["car_number"],
+            "car_make": insp_data["car_make"],
+            "car_model": insp_data["car_model"],
+            "car_year": insp_data["car_year"],
+            "city": customer["city"],
+            "address": customer["address"],
+            "package_name": insp_data["package_name"],
+            "package_type": insp_data["package_type"],
+            "total_amount": insp_data["total_amount"],
+            "final_amount": insp_data["total_amount"],
+            "amount_paid": insp_data["amount_paid"],
+            "balance_due": insp_data["balance_due"],
+            "payment_status": insp_data["payment_status"],
+            "payment_type": "partial" if len(insp_data["payment_transactions"]) > 1 else "full",
+            "payment_link_id": f"plink_demo_{inspection_id[:8]}",
+            "payment_link_url": f"https://rzp.io/demo_{inspection_id[:8]}",
+            "payment_transactions": txns,
+            "inspection_status": insp_data["inspection_status"],
+            "inspections_available": 1,
+            "created_at": created_date.isoformat(),
+            "created_by": sales_rep["id"] if sales_rep else current_user["id"]
+        }
+        await db.inspections.insert_one(inspection)
+        created_inspections.append(inspection_id)
+    
+    # Create sample notes
+    notes_data = [
+        {"note": "Customer referred by existing client. Very interested in premium package.", "days_ago": 45},
+        {"note": "Completed first inspection. Customer very satisfied with the report.", "days_ago": 44},
+        {"note": "Customer called back for second car inspection. Offered loyalty discount.", "days_ago": 21},
+        {"note": "Balance payment pending for third inspection. Will follow up tomorrow.", "days_ago": 2},
+    ]
+    
+    for note_info in notes_data:
+        note_date = datetime.now(timezone.utc) - timedelta(days=note_info["days_ago"])
+        note = {
+            "id": str(uuid.uuid4()),
+            "customer_id": customer_id,
+            "user_id": sales_rep["id"] if sales_rep else current_user["id"],
+            "user_name": sales_rep["name"] if sales_rep else current_user.get("name", "System"),
+            "note": note_info["note"],
+            "created_at": note_date.isoformat()
+        }
+        await db.customer_notes.insert_one(note)
+        
+        # Also create activity
+        activity = {
+            "id": str(uuid.uuid4()),
+            "customer_id": customer_id,
+            "user_id": note["user_id"],
+            "user_name": note["user_name"],
+            "action": "note_added",
+            "details": f"Added a note ({len(note_info['note'])} chars)",
+            "new_value": note_info["note"],
+            "created_at": note_date.isoformat()
+        }
+        await db.customer_activities.insert_one(activity)
+    
+    return {
+        "message": "Sample customer data created successfully",
+        "customer_id": customer_id,
+        "customer_name": customer["name"],
+        "inspections_created": len(created_inspections),
+        "notes_created": len(notes_data),
+        "total_paid": 4498,
+        "total_pending": 499
+    }
+
+
 # ==================== MECHANICS ROUTES ====================
 
 @api_router.get("/mechanics")
