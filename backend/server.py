@@ -3768,13 +3768,32 @@ async def get_customer_detailed_payments(
         if insp.get("created_by"):
             user_ids.add(insp.get("created_by"))
     
-    # Also check the lead for the sales rep who converted
+    # Get lead data for meta/ad details
+    lead_data = None
+    meta_info = None
     if customer.get("lead_id"):
-        lead = await db.leads.find_one({"id": customer.get("lead_id")}, {"_id": 0})
-        if lead and lead.get("assigned_to"):
-            user_ids.add(lead.get("assigned_to"))
-        if lead and lead.get("created_by"):
-            user_ids.add(lead.get("created_by"))
+        lead_data = await db.leads.find_one({"id": customer.get("lead_id")}, {"_id": 0})
+        if lead_data:
+            if lead_data.get("assigned_to"):
+                user_ids.add(lead_data.get("assigned_to"))
+            if lead_data.get("created_by"):
+                user_ids.add(lead_data.get("created_by"))
+            
+            # Build meta/ad info
+            meta_info = {
+                "source": lead_data.get("source", "Direct"),
+                "ad_id": lead_data.get("ad_id"),
+                "campaign_id": lead_data.get("campaign_id"),
+                "ad_name": None,
+                "campaign_name": None
+            }
+            
+            # If ad_id exists, try to get ad name from mappings
+            if lead_data.get("ad_id"):
+                ad_mapping = await db.ad_mappings.find_one({"ad_id": lead_data.get("ad_id")}, {"_id": 0})
+                if ad_mapping:
+                    meta_info["ad_name"] = ad_mapping.get("ad_name")
+                    meta_info["campaign_name"] = ad_mapping.get("campaign_name")
     
     # Fetch user names
     user_map = {}
@@ -3832,20 +3851,32 @@ async def get_customer_detailed_payments(
         sales_rep_id = insp.get("created_by")
         sales_rep_name = user_map.get(sales_rep_id, "N/A")
         
-        # Build package info
+        # Determine inspection status label
+        inspection_status = insp.get("inspection_status", "NEW_INSPECTION")
+        has_report = inspection_status == "INSPECTION_COMPLETED"
+        
+        # Build package info with enhanced details
         package_info = {
             "inspection_id": insp.get("id"),
             "package_name": insp.get("package_name") or insp.get("package_type") or "Standard Package",
             "package_id": insp.get("package_id"),
+            "package_type": insp.get("package_type"),
             "car_info": f"{insp.get('car_make', '')} {insp.get('car_model', '')}".strip() or "N/A",
             "car_number": insp.get("car_number") or "N/A",
+            "car_year": insp.get("car_year"),
             "total_amount": insp.get("total_amount", 0) or insp.get("final_amount", 0),
             "amount_paid": insp.get("amount_paid", 0),
             "balance_due": insp.get("balance_due", 0),
             "payment_status": insp.get("payment_status", "PENDING"),
             "inspections_total": insp.get("inspections_available", 1),
-            "inspections_used": 1 if insp.get("inspection_status") == "INSPECTION_COMPLETED" else 0,
-            "inspection_status": insp.get("inspection_status", "NEW_INSPECTION"),
+            "inspections_used": 1 if has_report else 0,
+            "inspection_status": inspection_status,
+            "has_report": has_report,
+            "report_url": f"/inspection-report/{insp.get('id')}" if has_report else None,
+            "scheduled_date": insp.get("scheduled_date"),
+            "scheduled_time": insp.get("scheduled_time"),
+            "mechanic_name": insp.get("mechanic_name"),
+            "city": insp.get("city"),
             "sales_rep_id": sales_rep_id,
             "sales_rep_name": sales_rep_name,
             "created_at": insp.get("created_at"),
@@ -3855,20 +3886,19 @@ async def get_customer_detailed_payments(
     
     # Get original sales rep from lead if available
     original_sales_rep = None
-    if customer.get("lead_id"):
-        lead = await db.leads.find_one({"id": customer.get("lead_id")}, {"_id": 0})
-        if lead:
-            rep_id = lead.get("assigned_to") or lead.get("created_by")
-            original_sales_rep = {
-                "id": rep_id,
-                "name": user_map.get(rep_id, lead.get("assigned_to_name", "N/A"))
-            }
+    if lead_data:
+        rep_id = lead_data.get("assigned_to") or lead_data.get("created_by")
+        original_sales_rep = {
+            "id": rep_id,
+            "name": user_map.get(rep_id, lead_data.get("assigned_to_name", "N/A"))
+        }
     
     return {
         "customer_id": customer_id,
         "customer_name": customer.get("name"),
         "customer_mobile": customer.get("mobile"),
         "original_sales_rep": original_sales_rep,
+        "meta_info": meta_info,
         "total_paid": total_paid,
         "total_pending": total_pending,
         "packages": packages
