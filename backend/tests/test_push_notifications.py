@@ -55,8 +55,10 @@ class TestPushNotificationAPIs:
         })
         assert response.status_code == 200, f"CRM login failed: {response.text}"
         data = response.json()
-        assert "token" in data, "No token in response"
-        return data["token"]
+        # API returns access_token, not token
+        token = data.get("access_token") or data.get("token")
+        assert token, "No token in response"
+        return token
     
     @pytest.fixture(scope="class")
     def mechanic_headers(self, mechanic_token):
@@ -296,7 +298,8 @@ class TestNotificationOnInspectionAssignment:
             "password": CRM_ADMIN_PASSWORD
         })
         assert response.status_code == 200
-        return response.json()["token"]
+        data = response.json()
+        return data.get("access_token") or data.get("token")
     
     @pytest.fixture(scope="class")
     def mechanic_headers(self, mechanic_token):
@@ -491,7 +494,8 @@ class TestNotificationCreationOnNewInspection:
             "password": CRM_ADMIN_PASSWORD
         })
         assert response.status_code == 200
-        return response.json()["token"]
+        data = response.json()
+        return data.get("access_token") or data.get("token")
     
     def test_notification_on_new_inspection_in_city(self, mechanic_token, crm_admin_token):
         """Test notification is created when new inspection is added in mechanic's city"""
