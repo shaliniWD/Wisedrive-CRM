@@ -95,6 +95,8 @@ class LeadUpdate(BaseModel):
     notes: Optional[str] = None
     package_id: Optional[str] = None
     payment_link: Optional[str] = None
+    partner_id: Optional[str] = None
+    partner_name: Optional[str] = None
 
 
 class Lead(LeadBase):
