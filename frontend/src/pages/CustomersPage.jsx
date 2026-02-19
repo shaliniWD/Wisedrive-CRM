@@ -495,19 +495,16 @@ export default function CustomersPage() {
                       </span>
                     </td>
                     
-                    {/* Payment Details - Simplified */}
+                    {/* Payment Details - Single Row */}
                     <td className="px-4 py-4">
-                      <div className="space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <PaymentStatusBadge status={customer.payment_status} />
-                        <div className="flex items-center gap-2 text-xs">
-                          <span className="text-emerald-600 font-medium">₹{(customer.total_paid || 0).toLocaleString()}</span>
-                          {(customer.total_pending || 0) > 0 && (
-                            <>
-                              <span className="text-gray-400">|</span>
-                              <span className="text-red-500">₹{customer.total_pending?.toLocaleString()} due</span>
-                            </>
-                          )}
-                        </div>
+                        <span className="text-emerald-600 font-semibold text-sm">₹{(customer.total_paid || 0).toLocaleString()}</span>
+                        {(customer.total_pending || 0) > 0 && (
+                          <span className="text-red-500 text-xs">+₹{customer.total_pending?.toLocaleString()} due</span>
+                        )}
+                      </div>
+                    </td>
                       </div>
                     </td>
                     
