@@ -10453,6 +10453,143 @@ async def get_report_template_by_partner(partner_id: str, current_user: dict = D
     return template
 
 
+@api_router.get("/inspections/{inspection_id}/questionnaire")
+async def get_inspection_questionnaire(inspection_id: str, current_user: dict = Depends(get_current_user)):
+    """Get the questionnaire for a specific inspection (for mechanic app)"""
+    inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
+    if not inspection:
+        raise HTTPException(status_code=404, detail="Inspection not found")
+    
+    # Get inspection template from the inspection record
+    inspection_template_id = inspection.get("inspection_template_id")
+    
+    if not inspection_template_id:
+        # Fallback to report_template_id and get inspection_template from there
+        report_template_id = inspection.get("report_template_id")
+        if report_template_id:
+            report_template = await db.report_templates.find_one(
+                {"id": report_template_id}, 
+                {"_id": 0, "inspection_template_id": 1}
+            )
+            if report_template:
+                inspection_template_id = report_template.get("inspection_template_id")
+    
+    # If still no inspection template, use default
+    if not inspection_template_id:
+        default_template = await db.inspection_templates.find_one(
+            {"is_default": True, "is_active": True},
+            {"_id": 0}
+        )
+        if default_template:
+            inspection_template_id = default_template.get("id")
+    
+    if not inspection_template_id:
+        raise HTTPException(status_code=404, detail="No inspection template found for this inspection")
+    
+    # Get the inspection template with questions
+    insp_template = await db.inspection_templates.find_one(
+        {"id": inspection_template_id},
+        {"_id": 0}
+    )
+    
+    if not insp_template:
+        raise HTTPException(status_code=404, detail="Inspection template not found")
+    
+    # Get questions
+    question_ids = insp_template.get("question_ids", [])
+    questions = []
+    
+    if question_ids:
+        questions_cursor = await db.inspection_questions.find(
+            {"id": {"$in": question_ids}},
+            {"_id": 0}
+        ).to_list(500)
+        
+        # Sort questions by the order in question_ids
+        question_map = {q["id"]: q for q in questions_cursor}
+        questions = [question_map[qid] for qid in question_ids if qid in question_map]
+    
+    # Get categories for these questions
+    category_ids = list(set(q.get("category_id") for q in questions if q.get("category_id")))
+    categories = await db.inspection_qa_categories.find(
+        {"id": {"$in": category_ids}},
+        {"_id": 0}
+    ).to_list(100)
+    category_map = {c["id"]: c for c in categories}
+    
+    # Enrich questions with category info
+    for q in questions:
+        cat_id = q.get("category_id")
+        if cat_id and cat_id in category_map:
+            q["category_name"] = category_map[cat_id].get("name", "")
+    
+    return {
+        "inspection_id": inspection_id,
+        "inspection_template_id": inspection_template_id,
+        "inspection_template_name": insp_template.get("name", ""),
+        "report_style": inspection.get("report_style", "standard"),
+        "partner_id": inspection.get("partner_id"),
+        "partner_name": inspection.get("partner_name"),
+        "questions": questions,
+        "total_questions": len(questions)
+    }
+
+
+@api_router.get("/inspections/{inspection_id}/report-config")
+async def get_inspection_report_config(inspection_id: str, current_user: dict = Depends(get_current_user)):
+    """Get the report configuration for a specific inspection"""
+    inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
+    if not inspection:
+        raise HTTPException(status_code=404, detail="Inspection not found")
+    
+    report_template_id = inspection.get("report_template_id")
+    
+    if report_template_id:
+        report_template = await db.report_templates.find_one(
+            {"id": report_template_id},
+            {"_id": 0}
+        )
+    else:
+        # Fallback to partner-based lookup
+        partner_id = inspection.get("partner_id")
+        if partner_id:
+            report_template = await db.report_templates.find_one(
+                {"partner_id": partner_id, "is_default": True, "is_active": True},
+                {"_id": 0}
+            )
+        else:
+            # Get B2C default
+            b2c_partner = await db.partners.find_one({"type": "b2c"}, {"_id": 0})
+            if b2c_partner:
+                report_template = await db.report_templates.find_one(
+                    {"partner_id": b2c_partner["id"], "is_default": True, "is_active": True},
+                    {"_id": 0}
+                )
+            else:
+                report_template = None
+    
+    if not report_template:
+        # Return default config
+        return {
+            "inspection_id": inspection_id,
+            "report_style": "standard",
+            "style_info": REPORT_STYLES.get("standard"),
+            "partner_name": inspection.get("partner_name", "B2C Default"),
+            "report_template_name": "Default Report"
+        }
+    
+    return {
+        "inspection_id": inspection_id,
+        "report_template_id": report_template.get("id"),
+        "report_template_name": report_template.get("name"),
+        "report_style": report_template.get("report_style", "standard"),
+        "style_info": REPORT_STYLES.get(report_template.get("report_style", "standard")),
+        "partner_id": report_template.get("partner_id"),
+        "partner_name": inspection.get("partner_name", ""),
+        "inspection_template_id": report_template.get("inspection_template_id")
+    }
+
+
 # Include the router in the main app
 app.include_router(api_router)
 
