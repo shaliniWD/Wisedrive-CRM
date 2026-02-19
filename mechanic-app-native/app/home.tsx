@@ -7,10 +7,12 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
+  Image,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '../src/context/AuthContext';
 import { inspectionsApi } from '../src/lib/api';
 
@@ -25,68 +27,120 @@ interface Inspection {
   customerPhone: string;
   customerAddress: string;
   packageName: string;
+  isNew?: boolean;
 }
 
-const StatusBadge = ({ status }: { status: string }) => {
-  const colors: Record<string, { bg: string; text: string }> = {
-    NEW: { bg: '#DBEAFE', text: '#1D4ED8' },
-    ACCEPTED: { bg: '#D1FAE5', text: '#059669' },
-    COMPLETED: { bg: '#E0E7FF', text: '#4338CA' },
-    REJECTED: { bg: '#FEE2E2', text: '#DC2626' },
+const WISEDRIVE_LOGO = 'https://cdn.prod.website-files.com/66ce56aafd5dd215e64eaf55/66cfed41bae84b8ac2e1e62f_Asset%2012-p-500.png';
+
+// Status indicator dot component
+const StatusDot = ({ status }: { status: string }) => {
+  const colors: Record<string, string> = {
+    active: '#3B82F6',
+    completed: '#10B981',
+    rejected: '#EF4444',
   };
-  const color = colors[status] || colors.NEW;
+  return <View style={[styles.statusDot, { backgroundColor: colors[status] || colors.active }]} />;
+};
+
+// Collapsible section component
+const CollapsibleSection = ({ 
+  title, 
+  count, 
+  status, 
+  children, 
+  defaultExpanded = false 
+}: { 
+  title: string; 
+  count: number; 
+  status: string; 
+  children: React.ReactNode;
+  defaultExpanded?: boolean;
+}) => {
+  const [expanded, setExpanded] = useState(defaultExpanded);
 
   return (
-    <View style={[styles.badge, { backgroundColor: color.bg }]}>
-      <Text style={[styles.badgeText, { color: color.text }]}>{status}</Text>
+    <View style={styles.sectionContainer}>
+      <TouchableOpacity 
+        style={styles.sectionHeader} 
+        onPress={() => setExpanded(!expanded)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.sectionLeft}>
+          <StatusDot status={status} />
+          <Text style={styles.sectionTitle}>{title} ({count})</Text>
+        </View>
+        <Ionicons 
+          name={expanded ? 'chevron-up' : 'chevron-down'} 
+          size={20} 
+          color="#94A3B8" 
+        />
+      </TouchableOpacity>
+      {expanded && children}
     </View>
   );
 };
 
-const InspectionCard = ({ inspection }: { inspection: Inspection }) => {
-  const handlePress = () => {
-    router.push(`/inspection/${inspection.id}`);
-  };
+// Inspection card component
+const InspectionCard = ({ 
+  inspection, 
+  onAccept, 
+  onReject,
+  showActions = true,
+}: { 
+  inspection: Inspection; 
+  onAccept?: () => void; 
+  onReject?: () => void;
+  showActions?: boolean;
+}) => {
+  const date = new Date(inspection.scheduledAt);
+  const formattedDate = `${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase()} ${date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}`;
 
   return (
-    <TouchableOpacity style={styles.card} onPress={handlePress} activeOpacity={0.7}>
+    <View style={styles.inspectionCard}>
       <View style={styles.cardHeader}>
-        <View style={styles.vehicleInfo}>
-          <Ionicons name="car" size={20} color="#3B82F6" />
-          <Text style={styles.vehicleNumber}>{inspection.vehicleNumber || 'N/A'}</Text>
-        </View>
-        <StatusBadge status={inspection.status} />
+        <Text style={styles.vehicleNumber}>{inspection.vehicleNumber || 'N/A'}</Text>
+        {inspection.status === 'NEW' && (
+          <View style={styles.newBadge}>
+            <Text style={styles.newBadgeText}>NEW</Text>
+          </View>
+        )}
       </View>
-
-      <Text style={styles.makeModel}>{inspection.makeModelVariant || 'Vehicle Details'}</Text>
-
+      
+      <Text style={styles.vehicleModel}>{inspection.makeModelVariant || 'Vehicle'}</Text>
+      
       <View style={styles.cardDetails}>
-        <View style={styles.detailRow}>
-          <Ionicons name="person" size={16} color="#64748B" />
-          <Text style={styles.detailText}>{inspection.customerName}</Text>
-        </View>
-        <View style={styles.detailRow}>
-          <Ionicons name="location" size={16} color="#64748B" />
+        <View style={styles.detailItem}>
+          <Ionicons name="location-outline" size={14} color="#94A3B8" />
           <Text style={styles.detailText}>{inspection.city}</Text>
         </View>
-        <View style={styles.detailRow}>
-          <Ionicons name="calendar" size={16} color="#64748B" />
-          <Text style={styles.detailText}>
-            {new Date(inspection.scheduledAt).toLocaleDateString('en-IN', {
-              day: 'numeric',
-              month: 'short',
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
-          </Text>
-        </View>
+        <Text style={styles.detailSeparator}>-</Text>
+        <Text style={styles.detailText}>{formattedDate}</Text>
       </View>
 
-      <TouchableOpacity style={styles.startButton} onPress={handlePress}>
-        <Text style={styles.startButtonText}>View Details</Text>
-        <Ionicons name="chevron-forward" size={20} color="#3B82F6" />
-      </TouchableOpacity>
-    </TouchableOpacity>
+      {showActions && inspection.status === 'NEW' && (
+        <View style={styles.cardActions}>
+          <TouchableOpacity style={styles.rejectButton} onPress={onReject}>
+            <Ionicons name="close" size={18} color="#EF4444" />
+            <Text style={styles.rejectButtonText}>Reject</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.acceptButton} onPress={onAccept}>
+            <Ionicons name="checkmark" size={18} color="#FFF" />
+            <Text style={styles.acceptButtonText}>Accept</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {inspection.status === 'ACCEPTED' && (
+        <TouchableOpacity 
+          style={styles.startInspectionButton}
+          onPress={() => router.push(`/start-inspection/${inspection.id}`)}
+        >
+          <MaterialIcons name="play-arrow" size={20} color="#FFF" />
+          <Text style={styles.startInspectionText}>Start Inspection</Text>
+        </TouchableOpacity>
+      )}
+    </View>
   );
 };
 
@@ -95,96 +149,246 @@ export default function HomeScreen() {
   const [inspections, setInspections] = useState<Inspection[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeFilter, setActiveFilter] = useState('all');
+  const [rejectModalVisible, setRejectModalVisible] = useState(false);
+  const [selectedInspection, setSelectedInspection] = useState<Inspection | null>(null);
+
+  const rejectReasons = [
+    'Not available at the scheduled time',
+    'Location too far',
+    'Vehicle type not supported',
+    'Already have another inspection',
+    'Other',
+  ];
 
   const fetchInspections = useCallback(async () => {
     try {
-      const params: any = {};
-      if (activeFilter !== 'all') {
-        params.status = activeFilter.toUpperCase();
-      }
-      const data = await inspectionsApi.getInspections(params);
-      setInspections(data);
+      const data = await inspectionsApi.getAll();
+      // Mark new inspections
+      const withNewFlag = data.map((insp: Inspection) => ({
+        ...insp,
+        status: insp.status === 'NEW' ? 'NEW' : insp.status,
+      }));
+      setInspections(withNewFlag);
     } catch (error) {
-      console.log('Error fetching inspections:', error);
+      console.error('Error fetching inspections:', error);
     } finally {
       setIsLoading(false);
       setRefreshing(false);
     }
-  }, [activeFilter]);
+  }, []);
 
   useEffect(() => {
     fetchInspections();
   }, [fetchInspections]);
 
-  const onRefresh = () => {
+  const handleRefresh = () => {
     setRefreshing(true);
     fetchInspections();
   };
 
-  const filters = ['all', 'new', 'accepted', 'completed'];
+  const handleAccept = async (inspection: Inspection) => {
+    try {
+      await inspectionsApi.accept(inspection.id);
+      fetchInspections();
+    } catch (error) {
+      console.error('Error accepting inspection:', error);
+    }
+  };
+
+  const handleRejectPress = (inspection: Inspection) => {
+    setSelectedInspection(inspection);
+    setRejectModalVisible(true);
+  };
+
+  const handleRejectConfirm = async (reason: string) => {
+    if (!selectedInspection) return;
+    try {
+      await inspectionsApi.reject(selectedInspection.id, reason);
+      setRejectModalVisible(false);
+      setSelectedInspection(null);
+      fetchInspections();
+    } catch (error) {
+      console.error('Error rejecting inspection:', error);
+    }
+  };
+
+  // Group inspections by status
+  const activeInspections = inspections.filter(i => i.status === 'NEW' || i.status === 'ACCEPTED');
+  const completedInspections = inspections.filter(i => i.status === 'COMPLETED');
+  const rejectedInspections = inspections.filter(i => i.status === 'REJECTED');
+
+  const today = new Date();
+  const dayName = today.toLocaleDateString('en-US', { weekday: 'long' });
+
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#3B82F6" />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <View>
-          <Text style={styles.greeting}>Hello,</Text>
-          <Text style={styles.name}>{mechanic?.name || 'Mechanic'}</Text>
+        <TouchableOpacity style={styles.menuButton}>
+          <Ionicons name="menu" size={24} color="#1E293B" />
+        </TouchableOpacity>
+        
+        <View style={styles.logoContainer}>
+          <View style={styles.logoIcon}>
+            <Text style={styles.logoIconText}>W</Text>
+          </View>
+          <View style={styles.logoTextContainer}>
+            <Text style={styles.logoText}>WISEDRIVE</Text>
+            <Text style={styles.logoTagline}>INSPECT. DRIVE. SMART.</Text>
+          </View>
         </View>
-        <View style={{ flexDirection: 'row', gap: 12 }}>
-          <TouchableOpacity style={styles.notificationButton}>
-            <Ionicons name="notifications-outline" size={24} color="#1E293B" />
+
+        <View style={styles.headerRight}>
+          <TouchableOpacity style={styles.iconButton}>
+            <Ionicons name="calendar-outline" size={22} color="#1E293B" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.notificationButton} onPress={() => router.push('/profile')}>
-            <Ionicons name="person-circle-outline" size={24} color="#1E293B" />
+          <TouchableOpacity style={styles.iconButton} onPress={() => router.push('/profile')}>
+            <Ionicons name="funnel-outline" size={22} color="#1E293B" />
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Filters */}
-      <View style={styles.filterContainer}>
-        {filters.map((filter) => (
-          <TouchableOpacity
-            key={filter}
-            style={[styles.filterButton, activeFilter === filter && styles.filterButtonActive]}
-            onPress={() => setActiveFilter(filter)}
-          >
-            <Text
-              style={[
-                styles.filterText,
-                activeFilter === filter && styles.filterTextActive,
-              ]}
-            >
-              {filter.charAt(0).toUpperCase() + filter.slice(1)}
-            </Text>
-          </TouchableOpacity>
-        ))}
+      {/* Date Banner */}
+      <View style={styles.dateBanner}>
+        <View style={styles.dateIconContainer}>
+          <Ionicons name="calendar" size={24} color="#FFF" />
+        </View>
+        <View style={styles.dateTextContainer}>
+          <Text style={styles.dateLabel}>VIEWING INSPECTIONS FOR</Text>
+          <Text style={styles.dateValue}>Today</Text>
+        </View>
+        <Text style={styles.dayName}>{dayName}</Text>
       </View>
 
-      {/* Inspections List */}
-      {isLoading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#3B82F6" />
-        </View>
-      ) : (
+      {/* Content */}
+      <View style={styles.content}>
+        <Text style={styles.pageTitle}>Inspections</Text>
+        <Text style={styles.locationSubtitle}>{mechanic?.city || 'Bangalore'}</Text>
+
         <FlatList
-          data={inspections}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <InspectionCard inspection={item} />}
-          contentContainerStyle={styles.listContent}
+          data={[1]} // Dummy data to render sections
+          keyExtractor={() => 'sections'}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#3B82F6" />
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
           }
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Ionicons name="clipboard-outline" size={64} color="#CBD5E1" />
-              <Text style={styles.emptyText}>No inspections found</Text>
-              <Text style={styles.emptySubtext}>Pull down to refresh</Text>
-            </View>
-          }
+          showsVerticalScrollIndicator={false}
+          renderItem={() => (
+            <>
+              {/* Active Section */}
+              <CollapsibleSection 
+                title="Active" 
+                count={activeInspections.length} 
+                status="active"
+                defaultExpanded={true}
+              >
+                {activeInspections.map((inspection) => (
+                  <InspectionCard
+                    key={inspection.id}
+                    inspection={inspection}
+                    onAccept={() => handleAccept(inspection)}
+                    onReject={() => handleRejectPress(inspection)}
+                  />
+                ))}
+                {activeInspections.length === 0 && (
+                  <Text style={styles.emptyText}>No active inspections</Text>
+                )}
+              </CollapsibleSection>
+
+              {/* Completed Section */}
+              <CollapsibleSection 
+                title="Completed" 
+                count={completedInspections.length} 
+                status="completed"
+              >
+                {completedInspections.map((inspection) => (
+                  <InspectionCard
+                    key={inspection.id}
+                    inspection={inspection}
+                    showActions={false}
+                  />
+                ))}
+                {completedInspections.length === 0 && (
+                  <Text style={styles.emptyText}>No completed inspections</Text>
+                )}
+              </CollapsibleSection>
+
+              {/* Rejected Section */}
+              <CollapsibleSection 
+                title="Rejected" 
+                count={rejectedInspections.length} 
+                status="rejected"
+              >
+                {rejectedInspections.map((inspection) => (
+                  <InspectionCard
+                    key={inspection.id}
+                    inspection={inspection}
+                    showActions={false}
+                  />
+                ))}
+                {rejectedInspections.length === 0 && (
+                  <Text style={styles.emptyText}>No rejected inspections</Text>
+                )}
+              </CollapsibleSection>
+            </>
+          )}
+          contentContainerStyle={styles.listContent}
         />
-      )}
+      </View>
+
+      {/* Reject Modal */}
+      <Modal
+        visible={rejectModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setRejectModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Reject Inspection</Text>
+              <TouchableOpacity onPress={() => setRejectModalVisible(false)}>
+                <Ionicons name="close" size={24} color="#1E293B" />
+              </TouchableOpacity>
+            </View>
+            
+            <Text style={styles.modalSubtitle}>
+              Please select a reason for rejecting this inspection
+            </Text>
+
+            {rejectReasons.map((reason, index) => (
+              <TouchableOpacity
+                key={index}
+                style={styles.reasonOption}
+                onPress={() => handleRejectConfirm(reason)}
+              >
+                <Text style={styles.reasonText}>{reason}</Text>
+              </TouchableOpacity>
+            ))}
+
+            <TouchableOpacity 
+              style={styles.rejectConfirmButton}
+              onPress={() => handleRejectConfirm('Other')}
+            >
+              <Text style={styles.rejectConfirmText}>Reject</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.cancelButton}
+              onPress={() => setRejectModalVisible(false)}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -194,153 +398,343 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8FAFC',
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-  },
-  greeting: {
-    fontSize: 14,
-    color: '#64748B',
-  },
-  name: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1E293B',
-  },
-  notificationButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#FFF',
+  loadingContainer: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: '#F8FAFC',
   },
-  filterContainer: {
+  
+  // Header
+  header: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    marginBottom: 16,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#FFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  menuButton: {
+    padding: 4,
+  },
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  logoIcon: {
+    width: 32,
+    height: 32,
+    backgroundColor: '#1E293B',
+    borderRadius: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  logoIconText: {
+    color: '#FFF',
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  logoTextContainer: {
+    alignItems: 'flex-start',
+  },
+  logoText: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#1E293B',
+    letterSpacing: 1,
+  },
+  logoTagline: {
+    fontSize: 8,
+    color: '#64748B',
+    letterSpacing: 0.5,
+  },
+  headerRight: {
+    flexDirection: 'row',
     gap: 8,
   },
-  filterButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#FFF',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+  iconButton: {
+    padding: 6,
   },
-  filterButtonActive: {
+
+  // Date Banner
+  dateBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E0F2FE',
+    marginHorizontal: 16,
+    marginTop: 16,
+    padding: 16,
+    borderRadius: 12,
+  },
+  dateIconContainer: {
+    width: 48,
+    height: 48,
     backgroundColor: '#3B82F6',
-    borderColor: '#3B82F6',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
-  filterText: {
-    fontSize: 14,
-    fontWeight: '500',
+  dateTextContainer: {
+    flex: 1,
+  },
+  dateLabel: {
+    fontSize: 11,
     color: '#64748B',
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
-  filterTextActive: {
-    color: '#FFF',
+  dateValue: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#1E293B',
+    marginTop: 2,
+  },
+  dayName: {
+    fontSize: 14,
+    color: '#64748B',
+    fontWeight: '500',
+  },
+
+  // Content
+  content: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 20,
+  },
+  pageTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1E293B',
+  },
+  locationSubtitle: {
+    fontSize: 14,
+    color: '#94A3B8',
+    marginTop: 2,
+    marginBottom: 16,
   },
   listContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingBottom: 100,
   },
-  card: {
-    backgroundColor: '#FFF',
-    borderRadius: 16,
-    padding: 16,
+
+  // Section
+  sectionContainer: {
     marginBottom: 12,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFF',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  sectionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  statusDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 12,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1E293B',
+  },
+
+  // Inspection Card
+  inspectionCard: {
+    backgroundColor: '#FFF',
+    marginTop: 8,
+    marginLeft: 22,
+    padding: 16,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
-  },
-  vehicleInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    marginBottom: 4,
   },
   vehicleNumber: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 20,
+    fontWeight: '700',
     color: '#1E293B',
   },
-  badge: {
+  newBadge: {
+    backgroundColor: '#DBEAFE',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
   },
-  badgeText: {
-    fontSize: 12,
-    fontWeight: '600',
+  newBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#3B82F6',
   },
-  makeModel: {
+  vehicleModel: {
     fontSize: 14,
-    color: '#475569',
-    marginBottom: 12,
+    color: '#64748B',
+    marginBottom: 8,
   },
   cardDetails: {
-    gap: 6,
-    marginBottom: 12,
-  },
-  detailRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    marginBottom: 16,
+  },
+  detailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   detailText: {
     fontSize: 13,
-    color: '#64748B',
+    color: '#94A3B8',
+    marginLeft: 4,
   },
-  startButton: {
+  detailSeparator: {
+    color: '#CBD5E1',
+    marginHorizontal: 8,
+  },
+  cardActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  rejectButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  rejectButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#EF4444',
+    marginLeft: 6,
+  },
+  acceptButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
+    backgroundColor: '#10B981',
     paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
+    paddingHorizontal: 24,
+    borderRadius: 8,
   },
-  startButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#3B82F6',
+  acceptButtonText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FFF',
+    marginLeft: 6,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
+  startInspectionButton: {
+    flexDirection: 'row',
     alignItems: 'center',
-  },
-  emptyContainer: {
-    flex: 1,
     justifyContent: 'center',
-    alignItems: 'center',
-    paddingTop: 100,
+    backgroundColor: '#3B82F6',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+  },
+  startInspectionText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FFF',
+    marginLeft: 6,
   },
   emptyText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#64748B',
-    marginTop: 16,
-  },
-  emptySubtext: {
     fontSize: 14,
     color: '#94A3B8',
-    marginTop: 4,
+    textAlign: 'center',
+    paddingVertical: 20,
+    paddingLeft: 22,
+  },
+
+  // Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  modalContent: {
+    backgroundColor: '#FFF',
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1E293B',
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: '#64748B',
+    marginBottom: 20,
+  },
+  reasonOption: {
+    backgroundColor: '#F8FAFC',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  reasonText: {
+    fontSize: 15,
+    color: '#1E293B',
+  },
+  rejectConfirmButton: {
+    backgroundColor: '#FEE2E2',
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  rejectConfirmText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#EF4444',
+  },
+  cancelButton: {
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#64748B',
   },
 });
