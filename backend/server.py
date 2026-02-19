@@ -9889,10 +9889,12 @@ async def update_inspection_template(template_id: str, data: InspectionTemplateC
     if not existing:
         raise HTTPException(status_code=404, detail="Template not found")
     
-    # Verify partner exists
-    partner = await db.partners.find_one({"id": data.partner_id}, {"_id": 0})
-    if not partner:
-        raise HTTPException(status_code=400, detail="Partner not found")
+    # Verify partner exists (skip validation for 'placeholder')
+    partner = None
+    if data.partner_id and data.partner_id != 'placeholder':
+        partner = await db.partners.find_one({"id": data.partner_id}, {"_id": 0})
+        if not partner:
+            raise HTTPException(status_code=400, detail="Partner not found")
     
     # If setting as default, unset other defaults
     if data.is_default and not existing.get("is_default"):
@@ -9918,9 +9920,15 @@ async def update_inspection_template(template_id: str, data: InspectionTemplateC
     updated = await db.inspection_templates.find_one({"id": template_id}, {"_id": 0})
     
     # Enrich response
-    updated["partner_name"] = partner.get("name", "Unknown")
-    updated["partner_type"] = partner.get("type", "b2c")
+    if partner:
+        updated["partner_name"] = partner.get("name", "Unknown")
+        updated["partner_type"] = partner.get("type", "b2c")
+    else:
+        updated["partner_name"] = "Not Assigned"
+        updated["partner_type"] = "b2c"
     updated["question_count"] = len(updated.get("question_ids", []))
+    
+    return updated
     
     return updated
 
