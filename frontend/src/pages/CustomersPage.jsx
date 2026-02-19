@@ -14,27 +14,31 @@ import { CustomerDetailsModal } from '@/components/CustomerDetailsModal';
 import { toast } from 'sonner';
 import { 
   Search, Loader2, UserCheck, Filter, ChevronLeft, ChevronRight, 
-  Plus, Eye, Edit2, X, Calendar, MapPin, Phone, User
+  Plus, Eye, Edit2, MapPin, Phone, User, CreditCard, Package,
+  MessageSquare, IndianRupee, AlertCircle, CheckCircle
 } from 'lucide-react';
 
-// Status Badge Component matching FinancePage
-const StatusBadge = ({ status }) => {
+// Status Badge Component
+const PaymentStatusBadge = ({ status }) => {
   const config = {
-    Completed: { color: 'bg-emerald-100 text-emerald-800 border-emerald-200', label: 'Completed' },
-    PENDING: { color: 'bg-amber-100 text-amber-800 border-amber-200', label: 'Pending' },
-    Pending: { color: 'bg-amber-100 text-amber-800 border-amber-200', label: 'Pending' },
+    Completed: { color: 'bg-emerald-100 text-emerald-700 border-emerald-200', label: 'Paid' },
+    PENDING: { color: 'bg-amber-100 text-amber-700 border-amber-200', label: 'Pending' },
+    Pending: { color: 'bg-amber-100 text-amber-700 border-amber-200', label: 'Pending' },
+    PARTIAL_PAID: { color: 'bg-blue-100 text-blue-700 border-blue-200', label: 'Partial' },
   };
   const cfg = config[status] || config.PENDING;
   
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${cfg.color}`}>
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${cfg.color}`}>
+      {status === 'Completed' && <CheckCircle className="h-3 w-3" />}
+      {status === 'PENDING' && <AlertCircle className="h-3 w-3" />}
       {cfg.label}
     </span>
   );
 };
 
 // Summary Card Component
-const SummaryCard = ({ title, value, icon: Icon, color }) => (
+const SummaryCard = ({ title, value, icon: Icon, color, bgColor }) => (
   <div className="rounded-xl border bg-white p-5">
     <div className="flex items-start justify-between">
       <div className="space-y-1">
@@ -43,7 +47,7 @@ const SummaryCard = ({ title, value, icon: Icon, color }) => (
           {typeof value === 'number' ? value.toLocaleString() : value}
         </p>
       </div>
-      <div className={`p-3 rounded-xl bg-gradient-to-r ${color?.includes('emerald') ? 'from-emerald-500 to-emerald-600' : color?.includes('blue') ? 'from-blue-500 to-blue-600' : 'from-gray-500 to-gray-600'}`}>
+      <div className={`p-3 rounded-xl ${bgColor || 'bg-gradient-to-r from-gray-500 to-gray-600'}`}>
         <Icon className="h-5 w-5 text-white" />
       </div>
     </div>
@@ -68,6 +72,7 @@ export default function CustomersPage() {
 
   const [search, setSearch] = useState('');
   const [filterCity, setFilterCity] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
 
   const [formData, setFormData] = useState({
     name: '', mobile: '', city: '', payment_status: 'PENDING', notes: '',
@@ -78,6 +83,7 @@ export default function CustomersPage() {
       const params = {};
       if (search) params.search = search;
       if (filterCity && filterCity !== 'all') params.city = filterCity;
+      if (filterStatus && filterStatus !== 'all') params.payment_status = filterStatus;
 
       const [customersRes, citiesRes] = await Promise.all([
         customersApi.getAll(params), utilityApi.getCities(),
@@ -90,7 +96,7 @@ export default function CustomersPage() {
     } finally {
       setLoading(false);
     }
-  }, [search, filterCity]);
+  }, [search, filterCity, filterStatus]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -147,6 +153,7 @@ export default function CustomersPage() {
   // Stats calculations
   const completedCount = customers.filter(c => c.payment_status === 'Completed').length;
   const pendingCount = customers.filter(c => c.payment_status !== 'Completed').length;
+  const totalRevenue = customers.reduce((sum, c) => sum + (c.total_paid || 0), 0);
 
   return (
     <div className="p-6 max-w-7xl mx-auto" data-testid="customers-page">
@@ -154,7 +161,7 @@ export default function CustomersPage() {
       <div className="flex justify-between items-start mb-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Customers</h1>
-          <p className="text-gray-500 mt-1">Manage your customer database and records</p>
+          <p className="text-gray-500 mt-1">Manage your customer database and payment records</p>
         </div>
         <button
           onClick={openCreateModal}
@@ -166,10 +173,35 @@ export default function CustomersPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
-        <SummaryCard title="Total Customers" value={customers.length} icon={UserCheck} color="text-blue-700" />
-        <SummaryCard title="Payments Completed" value={completedCount} icon={UserCheck} color="text-emerald-600" />
-        <SummaryCard title="Payments Pending" value={pendingCount} icon={UserCheck} color="text-amber-600" />
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-6">
+        <SummaryCard 
+          title="Total Customers" 
+          value={customers.length} 
+          icon={UserCheck} 
+          color="text-blue-700" 
+          bgColor="bg-gradient-to-r from-blue-500 to-blue-600"
+        />
+        <SummaryCard 
+          title="Payments Completed" 
+          value={completedCount} 
+          icon={CheckCircle} 
+          color="text-emerald-600" 
+          bgColor="bg-gradient-to-r from-emerald-500 to-emerald-600"
+        />
+        <SummaryCard 
+          title="Payments Pending" 
+          value={pendingCount} 
+          icon={AlertCircle} 
+          color="text-amber-600" 
+          bgColor="bg-gradient-to-r from-amber-500 to-amber-600"
+        />
+        <SummaryCard 
+          title="Total Revenue" 
+          value={`₹${totalRevenue.toLocaleString()}`} 
+          icon={IndianRupee} 
+          color="text-purple-600" 
+          bgColor="bg-gradient-to-r from-purple-500 to-purple-600"
+        />
       </div>
 
       {/* Filters Section */}
@@ -198,115 +230,188 @@ export default function CustomersPage() {
             </SelectContent>
           </Select>
 
+          <Select value={filterStatus || 'all'} onValueChange={(v) => { setFilterStatus(v === 'all' ? '' : v); setCurrentPage(1); }}>
+            <SelectTrigger className="w-[180px] h-10 bg-white" data-testid="filter-status">
+              <CreditCard className="h-4 w-4 text-gray-400 mr-2" />
+              <SelectValue placeholder="All Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="Completed">Completed</SelectItem>
+              <SelectItem value="PENDING">Pending</SelectItem>
+            </SelectContent>
+          </Select>
+
           <button 
             onClick={fetchData}
             className="px-4 py-2.5 border rounded-lg hover:bg-gray-50 font-medium text-sm flex items-center gap-2"
           >
-            <Filter className="h-4 w-4" /> Apply Filters
+            <Filter className="h-4 w-4" /> Apply
           </button>
-        </div>
-
-        {/* Quick Filters */}
-        <div className="flex items-center gap-3 mt-4 pt-4 border-t">
-          <span className="text-sm text-gray-500">Quick filters:</span>
-          {['Today', 'This Week', 'This Month', 'This Year'].map((period) => (
-            <button 
-              key={period} 
-              className="text-sm text-blue-600 hover:text-blue-700 hover:underline"
-            >
-              {period}
-            </button>
-          ))}
         </div>
       </div>
 
       {/* Data Table */}
       <div className="bg-white rounded-xl border overflow-hidden">
-        <table className="w-full">
-          <thead>
-            <tr className="bg-slate-50 border-b">
-              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Customer ID</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Customer</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">City</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Payment Status</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {loading ? (
-              <tr>
-                <td colSpan={5} className="text-center py-12">
-                  <div className="flex items-center justify-center gap-2">
-                    <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
-                    <span className="text-gray-500">Loading customers...</span>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-slate-50 border-b">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Customer</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">City</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                  <div className="flex items-center gap-1">
+                    <CreditCard className="h-3.5 w-3.5" /> Payment
                   </div>
-                </td>
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                  <div className="flex items-center gap-1">
+                    <Package className="h-3.5 w-3.5" /> Packages
+                  </div>
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Sales Rep</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                  <div className="flex items-center gap-1">
+                    <MessageSquare className="h-3.5 w-3.5" /> Notes
+                  </div>
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Actions</th>
               </tr>
-            ) : paginatedCustomers.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="text-center py-12">
-                  <UserCheck className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500">No customers found</p>
-                </td>
-              </tr>
-            ) : (
-              paginatedCustomers.map((customer, idx) => (
-                <tr key={customer.id} className="hover:bg-slate-50 transition-colors" data-testid={`customer-row-${customer.id}`}>
-                  <td className="px-4 py-4">
-                    <div className="font-medium text-gray-900">#{3100 + startIndex + idx}</div>
-                    <div className="text-xs text-gray-400 mt-0.5">{formatDateTime(customer.created_at)}</div>
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="h-9 w-9 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white font-medium text-sm">
-                        {customer.name?.charAt(0)?.toUpperCase()}
-                      </div>
-                      <div>
-                        <div className="font-medium text-gray-900">{customer.name}</div>
-                        <div className="text-sm text-gray-500 font-mono">{customer.mobile}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-4">
-                    <span className="inline-flex items-center gap-1.5 text-sm text-gray-700">
-                      <MapPin className="h-3.5 w-3.5 text-gray-400" />
-                      {customer.city}
-                    </span>
-                  </td>
-                  <td className="px-4 py-4">
-                    <StatusBadge status={customer.payment_status} />
-                    <button 
-                      className="block mt-1.5 text-xs text-blue-600 hover:text-blue-700 font-medium"
-                      onClick={() => openDetailsModal(customer.id)}
-                      data-testid={`details-btn-${customer.id}`}
-                    >
-                      View Details
-                    </button>
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="flex items-center gap-2">
-                      <button 
-                        onClick={() => openDetailsModal(customer.id)}
-                        className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="View"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </button>
-                      <button 
-                        onClick={() => openEditModal(customer)} 
-                        className="p-2 text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-                        title="Edit"
-                        data-testid={`edit-customer-${customer.id}`}
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </button>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {loading ? (
+                <tr>
+                  <td colSpan={7} className="text-center py-12">
+                    <div className="flex items-center justify-center gap-2">
+                      <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+                      <span className="text-gray-500">Loading customers...</span>
                     </div>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : paginatedCustomers.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="text-center py-12">
+                    <UserCheck className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-500">No customers found</p>
+                  </td>
+                </tr>
+              ) : (
+                paginatedCustomers.map((customer) => (
+                  <tr 
+                    key={customer.id} 
+                    className="hover:bg-slate-50 transition-colors cursor-pointer" 
+                    data-testid={`customer-row-${customer.id}`}
+                    onClick={() => openDetailsModal(customer.id)}
+                  >
+                    {/* Customer Name & Number */}
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white font-medium text-sm shrink-0">
+                          {customer.name?.charAt(0)?.toUpperCase()}
+                        </div>
+                        <div>
+                          <div className="font-medium text-gray-900">{customer.name}</div>
+                          <div className="text-sm text-gray-500 font-mono flex items-center gap-1">
+                            <Phone className="h-3 w-3" />
+                            {customer.mobile}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    
+                    {/* City */}
+                    <td className="px-4 py-4">
+                      <span className="inline-flex items-center gap-1.5 text-sm text-gray-700">
+                        <MapPin className="h-3.5 w-3.5 text-gray-400" />
+                        {customer.city || '-'}
+                      </span>
+                    </td>
+                    
+                    {/* Payment Details */}
+                    <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
+                      <div className="space-y-1">
+                        <PaymentStatusBadge status={customer.payment_status} />
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="text-emerald-600 font-medium">₹{(customer.total_paid || 0).toLocaleString()}</span>
+                          {(customer.total_pending || 0) > 0 && (
+                            <>
+                              <span className="text-gray-400">|</span>
+                              <span className="text-red-500">₹{customer.total_pending?.toLocaleString()} due</span>
+                            </>
+                          )}
+                        </div>
+                        <button 
+                          className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                          onClick={(e) => { e.stopPropagation(); openDetailsModal(customer.id); }}
+                          data-testid={`view-payments-${customer.id}`}
+                        >
+                          View Details →
+                        </button>
+                      </div>
+                    </td>
+                    
+                    {/* Packages */}
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-1.5">
+                        <Package className="h-4 w-4 text-blue-500" />
+                        <span className="font-medium text-gray-900">{customer.total_packages || 0}</span>
+                        <span className="text-gray-500 text-sm">packages</span>
+                      </div>
+                    </td>
+                    
+                    {/* Sales Rep */}
+                    <td className="px-4 py-4">
+                      {customer.sales_rep_name && customer.sales_rep_name !== 'N/A' ? (
+                        <div className="flex items-center gap-2">
+                          <div className="h-6 w-6 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 text-xs font-medium">
+                            {customer.sales_rep_name?.charAt(0)?.toUpperCase()}
+                          </div>
+                          <span className="text-sm text-gray-700">{customer.sales_rep_name}</span>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-gray-400">-</span>
+                      )}
+                    </td>
+                    
+                    {/* Notes Count */}
+                    <td className="px-4 py-4">
+                      <button 
+                        className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-blue-600"
+                        onClick={(e) => { e.stopPropagation(); openDetailsModal(customer.id); }}
+                        data-testid={`view-notes-${customer.id}`}
+                      >
+                        <MessageSquare className="h-4 w-4" />
+                        <span>{customer.notes_count || 0}</span>
+                      </button>
+                    </td>
+                    
+                    {/* Actions */}
+                    <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center gap-2">
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); openDetailsModal(customer.id); }}
+                          className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="View Details"
+                          data-testid={`view-customer-${customer.id}`}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); openEditModal(customer); }}
+                          className="p-2 text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                          title="Edit"
+                          data-testid={`edit-customer-${customer.id}`}
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
         
         {/* Pagination */}
         {!loading && customers.length > 0 && (
@@ -450,6 +555,7 @@ export default function CustomersPage() {
         isOpen={isDetailsModalOpen}
         onClose={() => setIsDetailsModalOpen(false)}
         customerId={selectedCustomerId}
+        onCustomerUpdated={fetchData}
       />
     </div>
   );
