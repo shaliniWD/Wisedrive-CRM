@@ -152,8 +152,10 @@ Build a scalable automotive platform "Wisedrive" that evolved into a monolithic 
 **Key Features:**
 - OTP-based mechanic authentication
 - Dynamic questionnaire-based inspections
-- OBD-II scanning support (BLE only - requires BLE-compatible OBD adapter)
+- **Full OBD-II Scanner UI** - BLE device discovery, ELM327 initialization, DTC scanning (Modes 03, 07, 0A), enhanced multi-module ECU scanning, UDS diagnostics, Live Data collection
+- **OBD Features:** Manufacturer selector (225+ makes with year), Raw Data capture, Scan History, Debug Logs, DTC Details with causes/symptoms/solutions
 - Push notifications for new job assignments
+- Note: Requires BLE-compatible OBD-II adapter (Bluetooth Classic not supported)
 
 ---
 
