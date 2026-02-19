@@ -10109,10 +10109,10 @@ class ReportTemplateCreate(BaseModel):
 # Pre-defined report styles with different layouts
 REPORT_STYLES = {
     "standard": {
-        "name": "Standard Report",
-        "description": "Clean, simple layout with essential information",
+        "name": "WiseDrive Standard",
+        "description": "Original comprehensive report with all sections - RTO, OBD, detailed inspections",
         "preview_color": "#3B82F6",  # Blue
-        "features": ["Basic vehicle info", "Pass/Fail summary", "Key findings"]
+        "features": ["Full vehicle assessment", "RTO verification", "OBD-2 diagnostics", "Detailed category inspection", "AI summary"]
     },
     "premium": {
         "name": "Premium Report",
@@ -10125,6 +10125,12 @@ REPORT_STYLES = {
         "description": "Technical report with all inspection data and metrics",
         "preview_color": "#059669",  # Green
         "features": ["Technical specifications", "Component-wise breakdown", "Scoring metrics", "Historical comparison"]
+    },
+    "simple": {
+        "name": "Simple Report",
+        "description": "Clean, minimal layout with essential information only",
+        "preview_color": "#6B7280",  # Gray
+        "features": ["Basic vehicle info", "Pass/Fail summary", "Key findings list"]
     }
 }
 
