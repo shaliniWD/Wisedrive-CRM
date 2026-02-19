@@ -11,8 +11,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '../../src/context/AuthContext';
-import { inspectionsApi } from '../../src/lib/api';
+import { useAuth } from '../src/context/AuthContext';
+import { inspectionsApi } from '../src/lib/api';
 
 interface Inspection {
   id: string;
