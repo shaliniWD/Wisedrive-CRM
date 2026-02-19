@@ -38,11 +38,13 @@ import { ManufacturerSelector } from '../../src/components/ManufacturerSelector'
 import { Manufacturer } from '../../src/constants/manufacturers';
 import { getDTCDescription, getComponentForDTC, getDTCSeverity, getSeverityInfo } from '../../src/constants/dtc-descriptions';
 import { getDTCKnowledge } from '../../src/constants/dtc-knowledge-base';
+import { useInspection } from '../../src/context/InspectionContext';
 
 const MODULE = 'OBD_SCANNER';
 
 export default function OBDScannerScreen() {
   const insets = useSafeAreaInsets();
+  const { currentInspectionId, currentInspection, clearInspection } = useInspection();
   
   // Modal states
   const [historyVisible, setHistoryVisible] = useState(false);
