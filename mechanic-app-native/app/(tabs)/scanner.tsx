@@ -2483,7 +2483,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.bg,
     borderRadius: Radius.md,
     padding: Spacing.md,
-    fontSize: FontSize.md,
+    fontSize: FontSize.base,
     color: Colors.text,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -2606,7 +2606,7 @@ const styles = StyleSheet.create({
     color: Colors.textInverse,
   },
   dtcDetailDesc: {
-    fontSize: FontSize.md,
+    fontSize: FontSize.base,
     color: Colors.text,
     lineHeight: 22,
     marginBottom: Spacing.sm,
@@ -2643,7 +2643,7 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border,
   },
   dtcDetailSectionTitle: {
-    fontSize: FontSize.md,
+    fontSize: FontSize.base,
     fontWeight: '700',
     color: Colors.text,
   },
