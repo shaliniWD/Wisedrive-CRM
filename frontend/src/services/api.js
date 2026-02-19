@@ -212,6 +212,28 @@ export const inspectionQAApi = {
   reorderQuestions: (questionIds) => axios.patch(`${API_URL}/inspection-qa/questions/reorder`, { question_ids: questionIds }),
 };
 
+// Partners API
+export const partnersApi = {
+  getPartners: (params) => axios.get(`${API_URL}/partners`, { params }),
+  getPartner: (id) => axios.get(`${API_URL}/partners/${id}`),
+  createPartner: (data) => axios.post(`${API_URL}/partners`, data),
+  updatePartner: (id, data) => axios.put(`${API_URL}/partners/${id}`, data),
+  deletePartner: (id) => axios.delete(`${API_URL}/partners/${id}`),
+  togglePartner: (id) => axios.patch(`${API_URL}/partners/${id}/toggle`),
+};
+
+// Inspection Templates API
+export const inspectionTemplatesApi = {
+  getTemplates: (params) => axios.get(`${API_URL}/inspection-templates`, { params }),
+  getTemplate: (id) => axios.get(`${API_URL}/inspection-templates/${id}`),
+  createTemplate: (data) => axios.post(`${API_URL}/inspection-templates`, data),
+  updateTemplate: (id, data) => axios.put(`${API_URL}/inspection-templates/${id}`, data),
+  deleteTemplate: (id) => axios.delete(`${API_URL}/inspection-templates/${id}`),
+  toggleTemplate: (id) => axios.patch(`${API_URL}/inspection-templates/${id}/toggle`),
+  setDefault: (id) => axios.patch(`${API_URL}/inspection-templates/${id}/set-default`),
+  seedDefault: () => axios.post(`${API_URL}/inspection-templates/seed-default`),
+};
+
 // Comprehensive HR API
 export const hrApi = {
   // Dashboard Stats
