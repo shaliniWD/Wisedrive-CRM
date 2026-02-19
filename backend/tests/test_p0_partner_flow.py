@@ -265,15 +265,18 @@ class TestP0PartnerFlow:
         assert response.status_code == 200, f"Failed to get report styles: {response.text}"
         
         styles = response.json()
-        assert isinstance(styles, list), "Styles should be a list"
+        # API returns a dictionary with style keys
+        assert isinstance(styles, dict), "Styles should be a dictionary"
         assert len(styles) >= 3, "Should have at least 3 styles (standard, premium, detailed)"
         
-        style_names = [s.get("id") for s in styles]
-        assert "standard" in style_names, "Should have 'standard' style"
-        assert "premium" in style_names, "Should have 'premium' style"
-        assert "detailed" in style_names, "Should have 'detailed' style"
+        style_keys = list(styles.keys())
+        assert "standard" in style_keys, "Should have 'standard' style"
+        assert "premium" in style_keys, "Should have 'premium' style"
+        assert "detailed" in style_keys, "Should have 'detailed' style"
         
-        print(f"✓ Found {len(styles)} report styles: {style_names}")
+        print(f"✓ Found {len(styles)} report styles: {style_keys}")
+        for key, style in styles.items():
+            print(f"  - {key}: {style.get('name')}")
     
     # ==================== CLEANUP ====================
     
