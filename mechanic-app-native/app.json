@@ -17,7 +17,7 @@
     ],
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.wisedrive.mechanic",
+      "bundleIdentifier": "com.cleansecar.wisedrive.mechanic",
       "infoPlist": {
         "NSBluetoothAlwaysUsageDescription": "This app uses Bluetooth to connect to OBD-II scanners for vehicle diagnostics.",
         "NSBluetoothPeripheralUsageDescription": "This app uses Bluetooth to connect to OBD-II scanners for vehicle diagnostics.",
@@ -33,7 +33,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#1E3A5F"
       },
-      "package": "com.wisedrive.mechanic",
+      "package": "com.cleansecar.wisedrive.mechanic",
       "permissions": [
         "android.permission.BLUETOOTH",
         "android.permission.BLUETOOTH_ADMIN",
