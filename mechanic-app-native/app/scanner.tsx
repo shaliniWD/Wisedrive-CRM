@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import { 
   Colors, 
@@ -25,20 +26,20 @@ import {
   APP_VERSION,
   APP_BUILD,
   WISEDRIVE_LOGO_HORIZONTAL,
-} from '../../src/constants/theme';
-import { BLEDevice, ScannerState, ELM327InitStep, DTCResult, ScanSession, DTCCategoryColors, VehicleInfo, LogEntry, LogLevel, LogLevelNames, LogLevelColors, DTCCategory, DTCCategoryNames } from '../../src/types';
-import { LiveDataReading, LiveDataCategoryColors, LiveDataCategoryIcons } from '../../src/types/live-data';
-import { createBLEAdapter, BLEAdapterInterface } from '../../src/services/ble-adapter';
-import { ELM327Service, ScanProgressCallback } from '../../src/services/elm327';
-import { parseOBDResponseV2 } from '../../src/services/dtc-parser-v2';
-import { parseLiveDataResponse, getPriorityPIDs, createScanResultJSON } from '../../src/services/live-data-parser';
-import { logger, generateId } from '../../src/services/logger';
-import { saveScanSession, getScanSessions, clearAllData } from '../../src/services/database';
-import { ManufacturerSelector } from '../../src/components/ManufacturerSelector';
-import { Manufacturer } from '../../src/constants/manufacturers';
-import { getDTCDescription, getComponentForDTC, getDTCSeverity, getSeverityInfo } from '../../src/constants/dtc-descriptions';
-import { getDTCKnowledge } from '../../src/constants/dtc-knowledge-base';
-import { useInspection } from '../../src/context/InspectionContext';
+} from '../src/constants/theme';
+import { BLEDevice, ScannerState, ELM327InitStep, DTCResult, ScanSession, DTCCategoryColors, VehicleInfo, LogEntry, LogLevel, LogLevelNames, LogLevelColors, DTCCategory, DTCCategoryNames } from '../src/types';
+import { LiveDataReading, LiveDataCategoryColors, LiveDataCategoryIcons } from '../src/types/live-data';
+import { createBLEAdapter, BLEAdapterInterface } from '../src/services/ble-adapter';
+import { ELM327Service, ScanProgressCallback } from '../src/services/elm327';
+import { parseOBDResponseV2 } from '../src/services/dtc-parser-v2';
+import { parseLiveDataResponse, getPriorityPIDs, createScanResultJSON } from '../src/services/live-data-parser';
+import { logger, generateId } from '../src/services/logger';
+import { saveScanSession, getScanSessions, clearAllData } from '../src/services/database';
+import { ManufacturerSelector } from '../src/components/ManufacturerSelector';
+import { Manufacturer } from '../src/constants/manufacturers';
+import { getDTCDescription, getComponentForDTC, getDTCSeverity, getSeverityInfo } from '../src/constants/dtc-descriptions';
+import { getDTCKnowledge } from '../src/constants/dtc-knowledge-base';
+import { useInspection } from '../src/context/InspectionContext';
 
 const MODULE = 'OBD_SCANNER';
 
