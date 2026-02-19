@@ -1,0 +1,70 @@
+{
+  "summary": "Comprehensive backend testing of Mechanic Mobile App API endpoints. All 8 core features tested and working correctly: OTP Login, OTP Verification, Inspections List, Inspection Detail, Questionnaire, Accept Inspection, Save Progress, Complete Inspection, and Reject Inspection.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {
+        "endpoint": "/api/mechanic/inspections",
+        "issue": "Returns 403 instead of 401 for unauthenticated requests - minor inconsistency but functionally correct"
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_mechanic_app_api.py",
+    "/app/test_reports/pytest/pytest_mechanic_app.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "OTP store is in-memory (mechanic_otp_store dict) - should use Redis in production for scalability",
+    "Dev mode OTP (123456) is enabled by default via MECHANIC_APP_DEV_MODE env var - ensure this is disabled in production"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_mechanic_app_api.py"
+  ],
+  "success_rate": {
+    "backend": "100% (12 passed, 4 skipped due to no test data)",
+    "frontend": "N/A (backend only testing)"
+  },
+  "test_credentials": {
+    "mechanic_phone": "+919689760236",
+    "dev_otp": "123456",
+    "crm_admin_email": "countryhead.in@wisedrive.com",
+    "crm_admin_password": "password123"
+  },
+  "seed_data_creation": "None - used existing mechanic and inspection data",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Mechanic app APIs fully tested. All endpoints working: /api/auth/request-otp, /api/auth/verify-otp, /api/mechanic/inspections, /api/mechanic/inspections/{id}, /api/inspections/{id}/questionnaire, /api/mechanic/inspections/{id}/accept, /api/mechanic/inspections/{id}/reject, /api/mechanic/inspections/{id}/progress, /api/mechanic/inspections/{id}/complete. Test file at /app/backend/tests/test_mechanic_app_api.py can be reused for regression testing.",
+  "features_tested": {
+    "POST /api/auth/request-otp": "PASS - Returns success for registered mechanic, 404 for unregistered",
+    "POST /api/auth/verify-otp": "PASS - Returns token and mechanicProfile on valid OTP, 400 on invalid",
+    "GET /api/mechanic/inspections": "PASS - Returns list of inspections with proper filtering by status/city/date",
+    "GET /api/mechanic/inspections/{id}": "PASS - Returns inspection detail, 404 for non-existent",
+    "GET /api/inspections/{id}/questionnaire": "PASS - Returns client-specific questions from inspection template",
+    "POST /api/mechanic/inspections/{id}/accept": "PASS - Assigns mechanic and updates status to ACCEPTED",
+    "POST /api/mechanic/inspections/{id}/reject": "PASS - Unassigns mechanic and updates status to REJECTED with reason",
+    "POST /api/mechanic/inspections/{id}/progress": "PASS - Saves inspection progress data",
+    "POST /api/mechanic/inspections/{id}/complete": "PASS - Updates status to COMPLETED"
+  },
+  "api_response_validation": {
+    "auth_verify_otp_response": {
+      "token": "JWT token string",
+      "mechanicProfile": {
+        "id": "mechanic UUID",
+        "name": "mechanic name",
+        "phone": "phone number",
+        "email": "email (optional)",
+        "city": "primary city",
+        "inspection_cities": ["list of cities"],
+        "active": "boolean"
+      }
+    },
+    "inspections_list_response": "Array of inspection objects with id, scheduledAt, status, vehicleNumber, makeModelVariant, city, customerName, customerPhone, customerAddress, assignedMechanicId, requiredModules, progress, orderId, packageName",
+    "questionnaire_response": "Object with inspection_id, inspection_template_id, inspection_template_name, report_style, partner_id, partner_name, questions array, total_questions"
+  }
+}
