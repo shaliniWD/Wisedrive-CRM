@@ -30,6 +30,7 @@ interface Inspection {
 
 export default function InspectionDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { setCurrentInspection } = useInspection();
   const [inspection, setInspection] = useState<Inspection | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAccepting, setIsAccepting] = useState(false);
