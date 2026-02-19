@@ -29,7 +29,8 @@
     "production": {
       "android": {
         "buildType": "apk",
-        "credentialsSource": "remote"
+        "credentialsSource": "remote",
+        "withoutCredentials": true
       },
       "ios": {
         "resourceClass": "m-medium"
