@@ -9652,6 +9652,392 @@ async def reorder_inspection_questions(
     return {"success": True, "message": f"Reordered {len(question_ids)} questions"}
 
 
+# ==================== PARTNERS API ====================
+
+class PartnerCreate(BaseModel):
+    name: str
+    type: str  # b2c, bank, insurance, b2b
+    contact_person: Optional[str] = None
+    contact_email: Optional[str] = None
+    contact_phone: Optional[str] = None
+    address: Optional[str] = None
+    notes: Optional[str] = None
+    is_active: Optional[bool] = True
+
+
+@api_router.get("/partners")
+async def get_partners(
+    type: Optional[str] = None,
+    is_active: Optional[bool] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all partners/clients"""
+    query = {}
+    if type:
+        query["type"] = type
+    if is_active is not None:
+        query["is_active"] = is_active
+    
+    partners = await db.partners.find(query, {"_id": 0}).sort("name", 1).to_list(500)
+    return partners
+
+
+@api_router.get("/partners/{partner_id}")
+async def get_partner(partner_id: str, current_user: dict = Depends(get_current_user)):
+    """Get a single partner by ID"""
+    partner = await db.partners.find_one({"id": partner_id}, {"_id": 0})
+    if not partner:
+        raise HTTPException(status_code=404, detail="Partner not found")
+    return partner
+
+
+@api_router.post("/partners")
+async def create_partner(data: PartnerCreate, current_user: dict = Depends(get_current_user)):
+    """Create a new partner"""
+    partner = {
+        "id": str(uuid.uuid4()),
+        "name": data.name,
+        "type": data.type,
+        "contact_person": data.contact_person,
+        "contact_email": data.contact_email,
+        "contact_phone": data.contact_phone,
+        "address": data.address,
+        "notes": data.notes,
+        "is_active": data.is_active if data.is_active is not None else True,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": current_user["id"],
+        "created_by_name": current_user.get("name", "")
+    }
+    
+    await db.partners.insert_one(partner)
+    partner.pop("_id", None)
+    return partner
+
+
+@api_router.put("/partners/{partner_id}")
+async def update_partner(partner_id: str, data: PartnerCreate, current_user: dict = Depends(get_current_user)):
+    """Update a partner"""
+    existing = await db.partners.find_one({"id": partner_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Partner not found")
+    
+    update_data = {
+        "name": data.name,
+        "type": data.type,
+        "contact_person": data.contact_person,
+        "contact_email": data.contact_email,
+        "contact_phone": data.contact_phone,
+        "address": data.address,
+        "notes": data.notes,
+        "is_active": data.is_active if data.is_active is not None else True,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "updated_by": current_user["id"],
+        "updated_by_name": current_user.get("name", "")
+    }
+    
+    await db.partners.update_one({"id": partner_id}, {"$set": update_data})
+    updated = await db.partners.find_one({"id": partner_id}, {"_id": 0})
+    return updated
+
+
+@api_router.delete("/partners/{partner_id}")
+async def delete_partner(partner_id: str, current_user: dict = Depends(get_current_user)):
+    """Delete a partner"""
+    existing = await db.partners.find_one({"id": partner_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Partner not found")
+    
+    # Check if partner is used in any inspection template
+    templates_using = await db.inspection_templates.count_documents({"partner_id": partner_id})
+    if templates_using > 0:
+        raise HTTPException(status_code=400, detail=f"Cannot delete partner: used in {templates_using} inspection template(s)")
+    
+    await db.partners.delete_one({"id": partner_id})
+    return {"success": True, "message": "Partner deleted"}
+
+
+@api_router.patch("/partners/{partner_id}/toggle")
+async def toggle_partner(partner_id: str, current_user: dict = Depends(get_current_user)):
+    """Toggle active status of a partner"""
+    existing = await db.partners.find_one({"id": partner_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Partner not found")
+    
+    new_status = not existing.get("is_active", True)
+    await db.partners.update_one(
+        {"id": partner_id}, 
+        {"$set": {"is_active": new_status, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    return {"success": True, "is_active": new_status}
+
+
+# ==================== INSPECTION TEMPLATES API ====================
+
+class InspectionTemplateCreate(BaseModel):
+    name: str
+    partner_id: str
+    description: Optional[str] = None
+    question_ids: List[str] = []
+    report_template_id: Optional[str] = None  # For future use
+    is_default: Optional[bool] = False
+    is_active: Optional[bool] = True
+
+
+@api_router.get("/inspection-templates")
+async def get_inspection_templates(
+    partner_id: Optional[str] = None,
+    is_active: Optional[bool] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all inspection templates"""
+    query = {}
+    if partner_id:
+        query["partner_id"] = partner_id
+    if is_active is not None:
+        query["is_active"] = is_active
+    
+    templates = await db.inspection_templates.find(query, {"_id": 0}).sort("name", 1).to_list(500)
+    
+    # Enrich with partner name and question count
+    for template in templates:
+        partner = await db.partners.find_one({"id": template.get("partner_id")}, {"_id": 0, "name": 1, "type": 1})
+        template["partner_name"] = partner.get("name", "Unknown") if partner else "Unknown"
+        template["partner_type"] = partner.get("type", "b2c") if partner else "b2c"
+        template["question_count"] = len(template.get("question_ids", []))
+    
+    return templates
+
+
+@api_router.get("/inspection-templates/{template_id}")
+async def get_inspection_template(template_id: str, current_user: dict = Depends(get_current_user)):
+    """Get a single inspection template by ID with full question details"""
+    template = await db.inspection_templates.find_one({"id": template_id}, {"_id": 0})
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+    
+    # Get partner info
+    partner = await db.partners.find_one({"id": template.get("partner_id")}, {"_id": 0})
+    template["partner"] = partner
+    
+    # Get full question details
+    question_ids = template.get("question_ids", [])
+    if question_ids:
+        questions = await db.inspection_questions.find(
+            {"id": {"$in": question_ids}}, 
+            {"_id": 0}
+        ).to_list(500)
+        # Sort by the order in question_ids
+        question_map = {q["id"]: q for q in questions}
+        template["questions"] = [question_map[qid] for qid in question_ids if qid in question_map]
+    else:
+        template["questions"] = []
+    
+    return template
+
+
+@api_router.post("/inspection-templates")
+async def create_inspection_template(data: InspectionTemplateCreate, current_user: dict = Depends(get_current_user)):
+    """Create a new inspection template"""
+    # Verify partner exists
+    partner = await db.partners.find_one({"id": data.partner_id}, {"_id": 0})
+    if not partner:
+        raise HTTPException(status_code=400, detail="Partner not found")
+    
+    # If setting as default, unset other defaults
+    if data.is_default:
+        await db.inspection_templates.update_many(
+            {"is_default": True},
+            {"$set": {"is_default": False}}
+        )
+    
+    template = {
+        "id": str(uuid.uuid4()),
+        "name": data.name,
+        "partner_id": data.partner_id,
+        "description": data.description,
+        "question_ids": data.question_ids,
+        "report_template_id": data.report_template_id,
+        "is_default": data.is_default if data.is_default is not None else False,
+        "is_active": data.is_active if data.is_active is not None else True,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": current_user["id"],
+        "created_by_name": current_user.get("name", "")
+    }
+    
+    await db.inspection_templates.insert_one(template)
+    template.pop("_id", None)
+    
+    # Enrich response
+    template["partner_name"] = partner.get("name", "Unknown")
+    template["partner_type"] = partner.get("type", "b2c")
+    template["question_count"] = len(template.get("question_ids", []))
+    
+    return template
+
+
+@api_router.put("/inspection-templates/{template_id}")
+async def update_inspection_template(template_id: str, data: InspectionTemplateCreate, current_user: dict = Depends(get_current_user)):
+    """Update an inspection template"""
+    existing = await db.inspection_templates.find_one({"id": template_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Template not found")
+    
+    # Verify partner exists
+    partner = await db.partners.find_one({"id": data.partner_id}, {"_id": 0})
+    if not partner:
+        raise HTTPException(status_code=400, detail="Partner not found")
+    
+    # If setting as default, unset other defaults
+    if data.is_default and not existing.get("is_default"):
+        await db.inspection_templates.update_many(
+            {"is_default": True, "id": {"$ne": template_id}},
+            {"$set": {"is_default": False}}
+        )
+    
+    update_data = {
+        "name": data.name,
+        "partner_id": data.partner_id,
+        "description": data.description,
+        "question_ids": data.question_ids,
+        "report_template_id": data.report_template_id,
+        "is_default": data.is_default if data.is_default is not None else False,
+        "is_active": data.is_active if data.is_active is not None else True,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "updated_by": current_user["id"],
+        "updated_by_name": current_user.get("name", "")
+    }
+    
+    await db.inspection_templates.update_one({"id": template_id}, {"$set": update_data})
+    updated = await db.inspection_templates.find_one({"id": template_id}, {"_id": 0})
+    
+    # Enrich response
+    updated["partner_name"] = partner.get("name", "Unknown")
+    updated["partner_type"] = partner.get("type", "b2c")
+    updated["question_count"] = len(updated.get("question_ids", []))
+    
+    return updated
+
+
+@api_router.delete("/inspection-templates/{template_id}")
+async def delete_inspection_template(template_id: str, current_user: dict = Depends(get_current_user)):
+    """Delete an inspection template"""
+    existing = await db.inspection_templates.find_one({"id": template_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Template not found")
+    
+    # Don't allow deleting default template
+    if existing.get("is_default"):
+        raise HTTPException(status_code=400, detail="Cannot delete the default template")
+    
+    await db.inspection_templates.delete_one({"id": template_id})
+    return {"success": True, "message": "Template deleted"}
+
+
+@api_router.patch("/inspection-templates/{template_id}/toggle")
+async def toggle_inspection_template(template_id: str, current_user: dict = Depends(get_current_user)):
+    """Toggle active status of an inspection template"""
+    existing = await db.inspection_templates.find_one({"id": template_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Template not found")
+    
+    new_status = not existing.get("is_active", True)
+    await db.inspection_templates.update_one(
+        {"id": template_id}, 
+        {"$set": {"is_active": new_status, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    return {"success": True, "is_active": new_status}
+
+
+@api_router.patch("/inspection-templates/{template_id}/set-default")
+async def set_default_inspection_template(template_id: str, current_user: dict = Depends(get_current_user)):
+    """Set an inspection template as default"""
+    existing = await db.inspection_templates.find_one({"id": template_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Template not found")
+    
+    # Unset all other defaults
+    await db.inspection_templates.update_many(
+        {"is_default": True},
+        {"$set": {"is_default": False}}
+    )
+    
+    # Set this one as default
+    await db.inspection_templates.update_one(
+        {"id": template_id},
+        {"$set": {"is_default": True, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    return {"success": True, "message": "Template set as default"}
+
+
+@api_router.post("/inspection-templates/seed-default")
+async def seed_default_inspection_template(current_user: dict = Depends(get_current_user)):
+    """Seed the B2C Default partner and template with existing questions"""
+    # Check if B2C Default partner already exists
+    existing_partner = await db.partners.find_one({"type": "b2c", "name": "B2C Default"}, {"_id": 0})
+    
+    if not existing_partner:
+        # Create B2C Default partner
+        b2c_partner = {
+            "id": str(uuid.uuid4()),
+            "name": "B2C Default",
+            "type": "b2c",
+            "contact_person": None,
+            "contact_email": None,
+            "contact_phone": None,
+            "address": None,
+            "notes": "Default partner for direct B2C customers",
+            "is_active": True,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_by": current_user["id"],
+            "created_by_name": current_user.get("name", "")
+        }
+        await db.partners.insert_one(b2c_partner)
+        partner_id = b2c_partner["id"]
+    else:
+        partner_id = existing_partner["id"]
+    
+    # Check if B2C Default template already exists
+    existing_template = await db.inspection_templates.find_one({"is_default": True}, {"_id": 0})
+    
+    if not existing_template:
+        # Get all existing question IDs
+        questions = await db.inspection_questions.find({}, {"id": 1, "_id": 0}).to_list(500)
+        question_ids = [q["id"] for q in questions]
+        
+        # Create B2C Default template
+        default_template = {
+            "id": str(uuid.uuid4()),
+            "name": "B2C Default Inspection",
+            "partner_id": partner_id,
+            "description": "Standard inspection template for direct B2C customers",
+            "question_ids": question_ids,
+            "report_template_id": None,
+            "is_default": True,
+            "is_active": True,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_by": current_user["id"],
+            "created_by_name": current_user.get("name", "")
+        }
+        await db.inspection_templates.insert_one(default_template)
+        
+        return {
+            "success": True,
+            "message": "Created B2C Default partner and template",
+            "partner_id": partner_id,
+            "template_id": default_template["id"],
+            "question_count": len(question_ids)
+        }
+    else:
+        return {
+            "success": True,
+            "message": "Default template already exists",
+            "template_id": existing_template["id"]
+        }
+
+
 # Include the router in the main app
 app.include_router(api_router)
 
