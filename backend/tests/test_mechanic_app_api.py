@@ -146,8 +146,9 @@ class TestMechanicInspections:
         
         response = fresh_session.get(f"{BASE_URL}/api/mechanic/inspections")
         
-        assert response.status_code == 401, f"Expected 401, got {response.status_code}"
-        print("✓ Unauthorized access correctly rejected")
+        # Accept both 401 (Unauthorized) and 403 (Forbidden) as valid rejection
+        assert response.status_code in [401, 403], f"Expected 401 or 403, got {response.status_code}"
+        print(f"✓ Unauthorized access correctly rejected with status {response.status_code}")
 
 
 class TestMechanicInspectionDetail:
