@@ -2953,7 +2953,57 @@ async def get_customers(
         # Notes count
         customer["notes_count"] = notes_map.get(cid, 0)
     
+    # Filter by sales_rep_id if specified (post-enrichment filter)
+    if sales_rep_id:
+        customers = [c for c in customers if c.get("sales_rep_id") == sales_rep_id]
+    
     return customers
+
+
+@api_router.get("/customers/sales-reps-with-counts")
+async def get_sales_reps_with_customer_counts(current_user: dict = Depends(get_current_user)):
+    """Get all sales reps with their customer counts"""
+    # Get all sales role IDs
+    sales_role_ids = await get_sales_role_ids()
+    
+    # Get all sales reps
+    sales_reps = await db.users.find(
+        {"role_id": {"$in": sales_role_ids}, "is_active": True},
+        {"_id": 0, "id": 1, "name": 1, "email": 1}
+    ).to_list(100)
+    
+    # Get customer counts per sales rep from leads
+    lead_counts = await db.leads.aggregate([
+        {"$match": {"assigned_to": {"$ne": None}, "payment_status": "paid"}},
+        {"$group": {"_id": "$assigned_to", "count": {"$sum": 1}}}
+    ]).to_list(100)
+    
+    lead_count_map = {lc["_id"]: lc["count"] for lc in lead_counts}
+    
+    # Also count customers created by each user
+    customer_counts = await db.customers.aggregate([
+        {"$match": {"created_by": {"$ne": None}}},
+        {"$group": {"_id": "$created_by", "count": {"$sum": 1}}}
+    ]).to_list(100)
+    
+    customer_count_map = {cc["_id"]: cc["count"] for cc in customer_counts}
+    
+    # Combine counts and return
+    result = []
+    for rep in sales_reps:
+        rep_id = rep["id"]
+        count = lead_count_map.get(rep_id, 0) + customer_count_map.get(rep_id, 0)
+        result.append({
+            "id": rep_id,
+            "name": rep["name"],
+            "email": rep.get("email"),
+            "customer_count": count
+        })
+    
+    # Sort by customer count descending
+    result.sort(key=lambda x: x["customer_count"], reverse=True)
+    
+    return result
 
 
 @api_router.get("/customers/{customer_id}")
