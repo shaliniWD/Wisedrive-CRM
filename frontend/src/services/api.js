@@ -200,6 +200,18 @@ export const seedApi = {
   clearAndSeed: () => axios.post(`${API_URL}/seed/clear`),
 };
 
+// Inspection Q&A API
+export const inspectionQAApi = {
+  getQuestions: (params) => axios.get(`${API_URL}/inspection-qa/questions`, { params }),
+  getQuestion: (id) => axios.get(`${API_URL}/inspection-qa/questions/${id}`),
+  createQuestion: (data) => axios.post(`${API_URL}/inspection-qa/questions`, data),
+  updateQuestion: (id, data) => axios.put(`${API_URL}/inspection-qa/questions/${id}`, data),
+  deleteQuestion: (id) => axios.delete(`${API_URL}/inspection-qa/questions/${id}`),
+  toggleQuestion: (id) => axios.patch(`${API_URL}/inspection-qa/questions/${id}/toggle`),
+  getCategories: () => axios.get(`${API_URL}/inspection-qa/categories`),
+  reorderQuestions: (questionIds) => axios.patch(`${API_URL}/inspection-qa/questions/reorder`, { question_ids: questionIds }),
+};
+
 // Comprehensive HR API
 export const hrApi = {
   // Dashboard Stats
