@@ -21,7 +21,10 @@
       "infoPlist": {
         "NSBluetoothAlwaysUsageDescription": "This app uses Bluetooth to connect to OBD-II scanners for vehicle diagnostics.",
         "NSBluetoothPeripheralUsageDescription": "This app uses Bluetooth to connect to OBD-II scanners for vehicle diagnostics.",
-        "UIBackgroundModes": ["bluetooth-central", "remote-notification"],
+        "UIBackgroundModes": [
+          "bluetooth-central",
+          "remote-notification"
+        ],
         "ITSAppUsesNonExemptEncryption": false
       }
     },
@@ -49,7 +52,10 @@
         "react-native-ble-plx",
         {
           "isBackgroundEnabled": true,
-          "modes": ["peripheral", "central"],
+          "modes": [
+            "peripheral",
+            "central"
+          ],
           "bluetoothAlwaysPermission": "Allow $(PRODUCT_NAME) to connect to OBD-II scanners"
         }
       ]
@@ -62,9 +68,7 @@
       "router": {
         "origin": false
       },
-      "eas": {
-        "projectId": "auto"
-      }
+      "eas": {}
     }
   }
 }
