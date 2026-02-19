@@ -234,6 +234,20 @@ export const inspectionTemplatesApi = {
   seedDefault: () => axios.post(`${API_URL}/inspection-templates/seed-default`),
 };
 
+// Report Templates API
+export const reportTemplatesApi = {
+  getTemplates: (params) => axios.get(`${API_URL}/report-templates`, { params }),
+  getTemplate: (id) => axios.get(`${API_URL}/report-templates/${id}`),
+  createTemplate: (data) => axios.post(`${API_URL}/report-templates`, data),
+  updateTemplate: (id, data) => axios.put(`${API_URL}/report-templates/${id}`, data),
+  deleteTemplate: (id) => axios.delete(`${API_URL}/report-templates/${id}`),
+  toggleTemplate: (id) => axios.patch(`${API_URL}/report-templates/${id}/toggle`),
+  setDefault: (id) => axios.patch(`${API_URL}/report-templates/${id}/set-default`),
+  getStyles: () => axios.get(`${API_URL}/report-templates/styles`),
+  seedSamples: () => axios.post(`${API_URL}/report-templates/seed-samples`),
+  getByPartner: (partnerId) => axios.get(`${API_URL}/report-templates/by-partner/${partnerId}`),
+};
+
 // Comprehensive HR API
 export const hrApi = {
   // Dashboard Stats
