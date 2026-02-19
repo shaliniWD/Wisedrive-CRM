@@ -188,7 +188,7 @@ export default function HomeScreen() {
 
   const handleAccept = async (inspection: Inspection) => {
     try {
-      await inspectionsApi.accept(inspection.id);
+      await inspectionsApi.acceptInspection(inspection.id);
       fetchInspections();
     } catch (error) {
       console.error('Error accepting inspection:', error);
