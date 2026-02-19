@@ -138,9 +138,13 @@ class TestMechanicInspections:
             data = response.json()
             print(f"✓ Status filter '{status}': {len(data)} inspections")
     
-    def test_get_inspections_unauthorized(self, api_client):
+    def test_get_inspections_unauthorized(self):
         """Test inspections endpoint without auth"""
-        response = api_client.get(f"{BASE_URL}/api/mechanic/inspections")
+        # Use fresh session without auth token
+        fresh_session = requests.Session()
+        fresh_session.headers.update({"Content-Type": "application/json"})
+        
+        response = fresh_session.get(f"{BASE_URL}/api/mechanic/inspections")
         
         assert response.status_code == 401, f"Expected 401, got {response.status_code}"
         print("✓ Unauthorized access correctly rejected")
