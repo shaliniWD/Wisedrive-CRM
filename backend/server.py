@@ -10596,6 +10596,482 @@ async def get_inspection_report_config(inspection_id: str, current_user: dict = 
     }
 
 
+# ==================== MECHANIC APP ENDPOINTS ====================
+# These endpoints are specifically for the mobile mechanic app
+
+import random
+import string
+
+# Store OTPs in memory (in production, use Redis or similar)
+mechanic_otp_store = {}
+
+class MechanicOtpRequest(BaseModel):
+    phone: str
+
+class MechanicOtpVerify(BaseModel):
+    phone: str
+    otp: str
+
+class InspectionAcceptReject(BaseModel):
+    reason: Optional[str] = None
+
+class InspectionProgressUpdate(BaseModel):
+    category_id: Optional[str] = None
+    question_id: Optional[str] = None
+    answer: Optional[dict] = None
+    progress_data: Optional[dict] = None
+
+
+@api_router.post("/auth/request-otp")
+async def mechanic_request_otp(data: MechanicOtpRequest):
+    """Request OTP for mechanic login via phone number"""
+    phone = data.phone.strip().replace(" ", "")
+    
+    # Check if phone number is registered as a mechanic
+    mechanic_role = await db.roles.find_one({"code": "MECHANIC"}, {"_id": 0, "id": 1})
+    if not mechanic_role:
+        raise HTTPException(status_code=500, detail="Mechanic role not configured")
+    
+    mechanic = await db.users.find_one({
+        "$or": [
+            {"phone": phone},
+            {"phone": {"$regex": phone[-10:] + "$"}},  # Match last 10 digits
+            {"mobile": phone},
+            {"mobile": {"$regex": phone[-10:] + "$"}}
+        ],
+        "role_id": mechanic_role["id"],
+        "is_active": True
+    }, {"_id": 0})
+    
+    if not mechanic:
+        raise HTTPException(
+            status_code=404, 
+            detail="You are not onboarded yet. Please contact Wisedrive support."
+        )
+    
+    # Generate 6-digit OTP
+    otp = ''.join(random.choices(string.digits, k=6))
+    
+    # Store OTP with expiration (5 minutes)
+    mechanic_otp_store[phone] = {
+        "otp": otp,
+        "mechanic_id": mechanic["id"],
+        "expires_at": datetime.now(timezone.utc) + timedelta(minutes=5)
+    }
+    
+    # In production, send OTP via SMS (Twilio)
+    # For now, log it for testing
+    logger.info(f"OTP for mechanic {phone}: {otp}")
+    
+    # TODO: Integrate Twilio SMS for production
+    # For development, we'll use a fixed OTP: 123456
+    if os.environ.get("MECHANIC_APP_DEV_MODE", "true").lower() == "true":
+        mechanic_otp_store[phone]["otp"] = "123456"
+    
+    return {"success": True, "message": "OTP sent successfully"}
+
+
+@api_router.post("/auth/verify-otp")
+async def mechanic_verify_otp(data: MechanicOtpVerify):
+    """Verify OTP and return auth token for mechanic"""
+    phone = data.phone.strip().replace(" ", "")
+    otp = data.otp.strip()
+    
+    stored = mechanic_otp_store.get(phone)
+    
+    if not stored:
+        raise HTTPException(status_code=400, detail="OTP expired or not requested")
+    
+    if datetime.now(timezone.utc) > stored["expires_at"]:
+        del mechanic_otp_store[phone]
+        raise HTTPException(status_code=400, detail="OTP expired")
+    
+    if stored["otp"] != otp:
+        raise HTTPException(status_code=400, detail="Invalid OTP")
+    
+    # Get mechanic profile
+    mechanic = await db.users.find_one({"id": stored["mechanic_id"]}, {"_id": 0, "hashed_password": 0})
+    if not mechanic:
+        raise HTTPException(status_code=404, detail="Mechanic not found")
+    
+    # Clear OTP
+    del mechanic_otp_store[phone]
+    
+    # Get inspection cities
+    inspection_cities = mechanic.get("inspection_cities", [])
+    
+    # Create token
+    access_token = create_access_token({
+        "sub": mechanic["id"],
+        "email": mechanic.get("email", ""),
+        "is_mechanic_app": True
+    })
+    
+    mechanic_profile = {
+        "id": mechanic["id"],
+        "name": mechanic.get("name", ""),
+        "phone": phone,
+        "email": mechanic.get("email", ""),
+        "city": inspection_cities[0] if inspection_cities else "",
+        "inspection_cities": inspection_cities,
+        "active": mechanic.get("is_active", True)
+    }
+    
+    return {
+        "token": access_token,
+        "mechanicProfile": mechanic_profile
+    }
+
+
+@api_router.get("/mechanic/inspections")
+async def get_mechanic_inspections(
+    date: Optional[str] = None,
+    city: Optional[str] = None,
+    status: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get inspections for mechanic app - shows inspections assigned to or available for the mechanic"""
+    mechanic_id = current_user["id"]
+    mechanic_cities = current_user.get("inspection_cities", [])
+    
+    # Base query: inspections that are either:
+    # 1. Assigned to this mechanic
+    # 2. Unassigned but in mechanic's cities (NEW status only)
+    query = {
+        "$or": [
+            {"mechanic_id": mechanic_id},
+            {
+                "mechanic_id": None,
+                "city": {"$in": [c.lower() for c in mechanic_cities] + mechanic_cities},
+                "inspection_status": "NEW"
+            }
+        ]
+    }
+    
+    # Filter by date
+    if date:
+        query["scheduled_date"] = {"$regex": f"^{date}"}
+    
+    # Filter by city
+    if city:
+        city_lower = city.lower()
+        query["city"] = {"$regex": f"^{city}$", "$options": "i"}
+    
+    # Filter by status (map mechanic app status to CRM status)
+    status_map = {
+        "NEW": ["NEW", "PENDING"],
+        "ACCEPTED": ["ACCEPTED", "IN_PROGRESS"],
+        "COMPLETED": ["COMPLETED"],
+        "REJECTED": ["REJECTED", "CANCELLED"]
+    }
+    
+    if status:
+        crm_statuses = status_map.get(status, [status])
+        if "$or" in query:
+            # Combine with existing $or
+            original_or = query["$or"]
+            query["$and"] = [
+                {"$or": original_or},
+                {"inspection_status": {"$in": crm_statuses}}
+            ]
+            del query["$or"]
+        else:
+            query["inspection_status"] = {"$in": crm_statuses}
+    
+    inspections = await db.inspections.find(query, {"_id": 0}).sort("scheduled_date", -1).to_list(100)
+    
+    # Transform to mechanic app format
+    result = []
+    for insp in inspections:
+        # Map CRM status to mechanic app status
+        crm_status = insp.get("inspection_status", "NEW")
+        if crm_status in ["COMPLETED"]:
+            app_status = "COMPLETED"
+        elif crm_status in ["REJECTED", "CANCELLED"]:
+            app_status = "REJECTED"
+        elif crm_status in ["ACCEPTED", "IN_PROGRESS"]:
+            app_status = "ACCEPTED"
+        else:
+            app_status = "NEW"
+        
+        result.append({
+            "id": insp.get("id"),
+            "scheduledAt": insp.get("scheduled_date") or insp.get("created_at"),
+            "status": app_status,
+            "vehicleNumber": insp.get("car_number", ""),
+            "makeModelVariant": f"{insp.get('make', '')} {insp.get('model', '')} {insp.get('variant', '')}".strip(),
+            "city": insp.get("city", ""),
+            "customerName": insp.get("customer_name", ""),
+            "customerPhone": insp.get("customer_mobile", ""),
+            "customerAddress": insp.get("address", ""),
+            "assignedMechanicId": insp.get("mechanic_id"),
+            "requiredModules": {
+                "photos": True,
+                "sound": False,
+                "obd": False
+            },
+            "progress": insp.get("inspection_progress", {
+                "photosDone": False,
+                "soundDone": False,
+                "obdDone": False,
+                "notesDone": False
+            }),
+            "orderId": insp.get("order_id"),
+            "packageName": insp.get("inspection_package_name", "Standard Inspection")
+        })
+    
+    return result
+
+
+@api_router.get("/mechanic/inspections/{inspection_id}")
+async def get_mechanic_inspection_detail(
+    inspection_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get detailed inspection info for mechanic app"""
+    inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
+    if not inspection:
+        raise HTTPException(status_code=404, detail="Inspection not found")
+    
+    # Map CRM status to mechanic app status
+    crm_status = inspection.get("inspection_status", "NEW")
+    if crm_status in ["COMPLETED"]:
+        app_status = "COMPLETED"
+    elif crm_status in ["REJECTED", "CANCELLED"]:
+        app_status = "REJECTED"
+    elif crm_status in ["ACCEPTED", "IN_PROGRESS"]:
+        app_status = "ACCEPTED"
+    else:
+        app_status = "NEW"
+    
+    return {
+        "id": inspection.get("id"),
+        "scheduledAt": inspection.get("scheduled_date") or inspection.get("created_at"),
+        "status": app_status,
+        "vehicleNumber": inspection.get("car_number", ""),
+        "makeModelVariant": f"{inspection.get('make', '')} {inspection.get('model', '')} {inspection.get('variant', '')}".strip(),
+        "city": inspection.get("city", ""),
+        "customerName": inspection.get("customer_name", ""),
+        "customerPhone": inspection.get("customer_mobile", ""),
+        "customerAddress": inspection.get("address", ""),
+        "assignedMechanicId": inspection.get("mechanic_id"),
+        "requiredModules": {
+            "photos": True,
+            "sound": False,
+            "obd": False
+        },
+        "progress": inspection.get("inspection_progress", {
+            "photosDone": False,
+            "soundDone": False,
+            "obdDone": False,
+            "notesDone": False
+        }),
+        "orderId": inspection.get("order_id"),
+        "packageName": inspection.get("inspection_package_name", "Standard Inspection"),
+        "partnerId": inspection.get("partner_id"),
+        "partnerName": inspection.get("partner_name")
+    }
+
+
+@api_router.post("/mechanic/inspections/{inspection_id}/accept")
+async def mechanic_accept_inspection(
+    inspection_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Mechanic accepts an inspection"""
+    inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
+    if not inspection:
+        raise HTTPException(status_code=404, detail="Inspection not found")
+    
+    # Check if already assigned
+    if inspection.get("mechanic_id") and inspection.get("mechanic_id") != current_user["id"]:
+        raise HTTPException(status_code=400, detail="Inspection already assigned to another mechanic")
+    
+    # Update inspection
+    update_data = {
+        "mechanic_id": current_user["id"],
+        "mechanic_name": current_user.get("name", ""),
+        "inspection_status": "ACCEPTED",
+        "accepted_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.inspections.update_one({"id": inspection_id}, {"$set": update_data})
+    
+    updated = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
+    
+    return {
+        "id": updated.get("id"),
+        "status": "ACCEPTED",
+        "assignedMechanicId": current_user["id"],
+        "message": "Inspection accepted successfully"
+    }
+
+
+@api_router.post("/mechanic/inspections/{inspection_id}/reject")
+async def mechanic_reject_inspection(
+    inspection_id: str,
+    data: InspectionAcceptReject,
+    current_user: dict = Depends(get_current_user)
+):
+    """Mechanic rejects an inspection"""
+    inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
+    if not inspection:
+        raise HTTPException(status_code=404, detail="Inspection not found")
+    
+    # Update inspection - unassign and set status
+    update_data = {
+        "mechanic_id": None,
+        "mechanic_name": None,
+        "inspection_status": "REJECTED",
+        "rejection_reason": data.reason,
+        "rejected_by": current_user["id"],
+        "rejected_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.inspections.update_one({"id": inspection_id}, {"$set": update_data})
+    
+    return {
+        "id": inspection_id,
+        "status": "REJECTED",
+        "rejectionReason": data.reason,
+        "message": "Inspection rejected"
+    }
+
+
+@api_router.post("/mechanic/inspections/{inspection_id}/progress")
+async def mechanic_save_progress(
+    inspection_id: str,
+    data: InspectionProgressUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Save inspection progress from mechanic app"""
+    inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
+    if not inspection:
+        raise HTTPException(status_code=404, detail="Inspection not found")
+    
+    # Check if mechanic is assigned
+    if inspection.get("mechanic_id") != current_user["id"]:
+        raise HTTPException(status_code=403, detail="You are not assigned to this inspection")
+    
+    # Update progress
+    current_progress = inspection.get("inspection_progress", {})
+    if data.progress_data:
+        current_progress.update(data.progress_data)
+    
+    # Store individual question answers
+    answers = inspection.get("inspection_answers", {})
+    if data.question_id and data.answer:
+        answers[data.question_id] = {
+            "answer": data.answer,
+            "answered_at": datetime.now(timezone.utc).isoformat(),
+            "answered_by": current_user["id"]
+        }
+    
+    update_data = {
+        "inspection_progress": current_progress,
+        "inspection_answers": answers,
+        "inspection_status": "IN_PROGRESS",
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.inspections.update_one({"id": inspection_id}, {"$set": update_data})
+    
+    return {
+        "id": inspection_id,
+        "progress": current_progress,
+        "message": "Progress saved"
+    }
+
+
+@api_router.post("/mechanic/inspections/{inspection_id}/complete")
+async def mechanic_complete_inspection(
+    inspection_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Mark inspection as completed by mechanic"""
+    inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
+    if not inspection:
+        raise HTTPException(status_code=404, detail="Inspection not found")
+    
+    # Check if mechanic is assigned
+    if inspection.get("mechanic_id") != current_user["id"]:
+        raise HTTPException(status_code=403, detail="You are not assigned to this inspection")
+    
+    update_data = {
+        "inspection_status": "COMPLETED",
+        "completed_at": datetime.now(timezone.utc).isoformat(),
+        "completed_by": current_user["id"],
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.inspections.update_one({"id": inspection_id}, {"$set": update_data})
+    
+    return {
+        "id": inspection_id,
+        "status": "COMPLETED",
+        "message": "Inspection completed successfully"
+    }
+
+
+@api_router.post("/uploads")
+async def mechanic_upload_file(
+    file: UploadFile = File(...),
+    type: str = Form("photo"),
+    inspection_id: Optional[str] = Form(None),
+    current_user: dict = Depends(get_current_user)
+):
+    """Upload file from mechanic app (photos, videos, documents)"""
+    # Validate file type
+    allowed_types = {
+        "photo": ["image/jpeg", "image/png", "image/webp", "image/heic"],
+        "video": ["video/mp4", "video/quicktime", "video/webm"],
+        "document": ["application/pdf", "image/jpeg", "image/png"]
+    }
+    
+    if type not in allowed_types:
+        raise HTTPException(status_code=400, detail=f"Invalid type: {type}")
+    
+    # Create upload directory
+    upload_dir = Path("/app/storage/uploads")
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Generate unique filename
+    ext = Path(file.filename).suffix or ".jpg"
+    filename = f"{uuid.uuid4()}{ext}"
+    file_path = upload_dir / filename
+    
+    # Save file
+    content = await file.read()
+    with open(file_path, "wb") as f:
+        f.write(content)
+    
+    # Return URL
+    # In production, this would be a CDN URL or signed URL
+    backend_url = os.environ.get("REACT_APP_BACKEND_URL", "")
+    file_url = f"{backend_url}/api/files/{filename}"
+    
+    return {
+        "url": file_url,
+        "filename": filename,
+        "type": type,
+        "size": len(content)
+    }
+
+
+@api_router.get("/files/{filename}")
+async def serve_uploaded_file(filename: str):
+    """Serve uploaded files"""
+    from fastapi.responses import FileResponse
+    
+    file_path = Path("/app/storage/uploads") / filename
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    return FileResponse(file_path)
+
+
 # Include the router in the main app
 app.include_router(api_router)
 
