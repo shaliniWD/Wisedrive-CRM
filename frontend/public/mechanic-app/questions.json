@@ -1,0 +1,35 @@
+{
+  "engine": [
+    { "id": "e1", "type": "yes_no", "q": "Is engine oil at proper level?" },
+    { "id": "e2", "type": "choice", "q": "Engine oil condition?", "opts": ["Clean", "Dirty", "Very Dirty", "Replace"] },
+    { "id": "e3", "type": "cond_1", "q": "Any engine noise?", "sub": { "q": "Noise type?", "opts": ["Knocking", "Ticking", "Rattling", "Squealing"] }},
+    { "id": "e4", "type": "cond_2", "q": "Any visible leak?", "subs": [{ "q": "Leak type?", "opts": ["Oil", "Coolant", "Fuel"] }, { "q": "Severity?", "opts": ["Minor", "Moderate", "Severe"] }]},
+    { "id": "e5", "type": "photo", "q": "Photo of engine bay", "sub": { "q": "Engine condition?", "opts": ["Excellent", "Good", "Fair", "Poor"] }},
+    { "id": "e6", "type": "video", "q": "Record engine sound (10s)", "dur": 10 },
+    { "id": "e7", "type": "video_q", "q": "Record engine idle", "dur": 15, "subs": [{ "q": "Idle smooth?", "opts": ["Yes", "No"] }, { "q": "RPM stable?", "opts": ["Stable", "Fluctuating"] }]}
+  ],
+  "transmission": [
+    { "id": "t1", "type": "yes_no", "q": "Transmission fluid at proper level?" },
+    { "id": "t2", "type": "choice", "q": "Fluid color?", "opts": ["Red/Pink", "Brown", "Dark/Black"] },
+    { "id": "t3", "type": "cond_1", "q": "Any gear shifting issues?", "sub": { "q": "Which gear?", "opts": ["1st", "2nd", "3rd", "4th", "5th", "Reverse"] }},
+    { "id": "t4", "type": "photo", "q": "Photo of transmission", "sub": { "q": "Any leaks?", "opts": ["Yes", "No"] }}
+  ],
+  "battery": [
+    { "id": "b1", "type": "choice", "q": "Terminal condition?", "opts": ["Clean", "Slight Corrosion", "Heavy Corrosion"] },
+    { "id": "b2", "type": "yes_no", "q": "Battery securely mounted?" },
+    { "id": "b3", "type": "photo", "q": "Photo of battery", "sub": { "q": "Battery age?", "opts": ["Recent", "Old", "Not Visible"] }}
+  ],
+  "suspension": [
+    { "id": "s1", "type": "yes_no", "q": "Shock absorbers working properly?" },
+    { "id": "s2", "type": "cond_2", "q": "Any brake issues?", "subs": [{ "q": "Which brake?", "opts": ["FL", "FR", "RL", "RR", "Multiple"] }, { "q": "Issue type?", "opts": ["Worn Pads", "Damaged Disc", "Noise"] }]},
+    { "id": "s3", "type": "choice", "q": "Brake pad thickness?", "opts": ["Good (>5mm)", "Moderate", "Low (<3mm)", "Replace"] },
+    { "id": "s4", "type": "video_q", "q": "Record bounce test", "dur": 10, "subs": [{ "q": "Response?", "opts": ["Normal", "Bouncy", "Stiff"] }]}
+  ],
+  "tires": [
+    { "id": "ti1", "type": "choice", "q": "Front left tread?", "opts": ["Good", "Moderate", "Low", "Bald"] },
+    { "id": "ti2", "type": "choice", "q": "Front right tread?", "opts": ["Good", "Moderate", "Low", "Bald"] },
+    { "id": "ti3", "type": "cond_1", "q": "Any tire damage?", "sub": { "q": "Damage type?", "opts": ["Crack", "Bulge", "Puncture", "Uneven Wear"] }},
+    { "id": "ti4", "type": "photo", "q": "Photo of spare tire", "sub": { "q": "Condition?", "opts": ["Good", "Fair", "Poor", "Missing"] }},
+    { "id": "ti5", "type": "yes_no", "q": "All tire tools present?" }
+  ]
+}
