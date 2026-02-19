@@ -81,6 +81,8 @@ export const customersApi = {
   // Notes & Activities
   getNotes: (id) => axios.get(`${API_URL}/customers/${id}/notes`),
   addNote: (id, note) => axios.post(`${API_URL}/customers/${id}/notes`, { note }),
+  updateNote: (customerId, noteId, note) => axios.put(`${API_URL}/customers/${customerId}/notes/${noteId}`, { note }),
+  deleteNote: (customerId, noteId) => axios.delete(`${API_URL}/customers/${customerId}/notes/${noteId}`),
   getActivities: (id) => axios.get(`${API_URL}/customers/${id}/activities`),
   // Sales reps with counts
   getSalesRepsWithCounts: () => axios.get(`${API_URL}/customers/sales-reps-with-counts`),
