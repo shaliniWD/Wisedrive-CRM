@@ -505,8 +505,6 @@ export default function CustomersPage() {
                         )}
                       </div>
                     </td>
-                      </div>
-                    </td>
                     
                     {/* Packages */}
                     <td className="px-4 py-4">
