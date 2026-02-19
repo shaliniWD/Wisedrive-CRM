@@ -250,9 +250,48 @@ function InspectionReportContent({ inspectionId }) {
   if (reportStyle === 'detailed') {
     return <DetailedTechnicalReportStyle data={data} />;
   }
+  
+  if (reportStyle === 'simple') {
+    return <StandardReportStyle data={data} />;
+  }
 
-  // Standard: Use the new StandardReportStyle (blue theme, simple layout)
-  return <StandardReportStyle data={data} />;
+  // Default/Standard: Original comprehensive WiseDrive report design
+  return (
+    <div className="inspection-report min-h-screen">
+      {/* Header */}
+      <Header data={data.header} />
+      
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto pb-8">
+        {/* Hero Section */}
+        <HeroSection 
+          header={data.header} 
+          vehicleInfo={data.vehicleInfo} 
+        />
+        
+        {/* AI Assessment Summary */}
+        <AssessmentSummary data={data.assessmentSummary} />
+        
+        {/* Vehicle Details (Collapsible) */}
+        <VehicleDetailsSection data={data.vehicleInfo} />
+        
+        {/* Key Information with Modals */}
+        <KeyInfoSection data={data.keyInfo} />
+        
+        {/* RTO Verification */}
+        <RTOVerificationSection data={data.rtoVerification} />
+        
+        {/* OBD-2 Report */}
+        <OBDReportMobile data={data.obdReport} />
+        
+        {/* Inspection Details with Horizontal Scroll */}
+        <InspectionDetailsSection data={data.inspectionCategories} />
+      </main>
+      
+      {/* Footer */}
+      <Footer data={data.footer} />
+    </div>
+  );
 }
 
 export default function InspectionReportPage() {
