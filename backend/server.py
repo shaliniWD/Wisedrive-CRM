@@ -817,6 +817,13 @@ async def create_lead(lead_data: LeadCreate, current_user: dict = Depends(get_cu
     if not lead_dict.get("country_id"):
         lead_dict["country_id"] = current_user.get("country_id")
     
+    # Set default B2C partner if not specified
+    if not lead_dict.get("partner_id"):
+        b2c_partner = await db.partners.find_one({"type": "b2c"}, {"_id": 0, "id": 1, "name": 1})
+        if b2c_partner:
+            lead_dict["partner_id"] = b2c_partner["id"]
+            lead_dict["partner_name"] = b2c_partner.get("name", "B2C Default")
+    
     lead_dict["id"] = lead_id
     lead_dict["created_at"] = datetime.now(timezone.utc).isoformat()
     lead_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
