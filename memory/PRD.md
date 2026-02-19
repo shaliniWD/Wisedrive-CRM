@@ -356,7 +356,7 @@ Returns:
 ## Document History
 - **Created:** December 2025
 - **Last Updated:** February 19, 2026
-- **Version:** 4.3
+- **Version:** 4.4
 
 ## Changelog
 - v4.4 (Feb 19, 2026): **P0 Complete Flow - Partner to Report** - Full implementation of client-specific inspection workflow: (1) **Lead Partner Assignment** - Added partner_id, partner_name fields to Lead model. Leads page now has "Partner/Client" dropdown in Add/Edit modal with all active partners (B2C Default, HDFC Bank, etc.). Default B2C partner auto-assigned if not specified. Partner badge shows next to city for non-B2C leads. (2) **Customer Partner Inheritance** - When lead converts to customer via payment, partner_id and partner_name are carried forward to customer record. Customer details show partner badge. (3) **Inspection Template Linking** - Inspection creation now includes report_template_id, inspection_template_id, report_style from the partner's default report template. If partner has no report template, falls back to B2C Default. (4) **Mechanic App APIs** - GET /api/inspections/{id}/questionnaire returns questions based on inspection_template_id for mechanic app. Includes category info, answer types, sub-questions. GET /api/inspections/{id}/report-config returns report style and template configuration for report generation. (5) **Complete Flow**: Lead (partner) → Payment → Customer (inherits partner) → Inspection (has report_template_id from partner's default report template) → Mechanic App (loads questionnaire) → Report (uses report_style). 93% backend test coverage (13/14 tests), 100% frontend test coverage (iteration_60).
