@@ -2,7 +2,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // API Base URL - Update this for production
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://obd-mechanic-app.preview.emergentagent.com/api';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://automotive-inspector.preview.emergentagent.com/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
