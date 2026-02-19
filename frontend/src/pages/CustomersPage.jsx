@@ -14,8 +14,9 @@ import { CustomerDetailsModal } from '@/components/CustomerDetailsModal';
 import { toast } from 'sonner';
 import { 
   Search, Loader2, UserCheck, Filter, ChevronLeft, ChevronRight, 
-  Plus, Eye, Edit2, MapPin, Phone, User, CreditCard, Package,
-  MessageSquare, IndianRupee, AlertCircle, CheckCircle
+  Plus, MapPin, Phone, User, CreditCard, Package,
+  MessageSquare, IndianRupee, AlertCircle, CheckCircle, Calendar,
+  Database
 } from 'lucide-react';
 
 // Status Badge Component
@@ -54,13 +55,53 @@ const SummaryCard = ({ title, value, icon: Icon, color, bgColor }) => (
   </div>
 );
 
+// Date range preset buttons
+const DATE_PRESETS = [
+  { key: 'today', label: 'Today' },
+  { key: 'week', label: 'This Week' },
+  { key: 'month', label: 'This Month' },
+  { key: 'year', label: 'This Year' },
+  { key: 'custom', label: 'Custom' },
+];
+
+const getDateRange = (preset) => {
+  const today = new Date();
+  let from, to;
+  
+  switch(preset) {
+    case 'today':
+      from = to = today.toISOString().split('T')[0];
+      break;
+    case 'week':
+      const weekStart = new Date(today);
+      weekStart.setDate(today.getDate() - today.getDay());
+      from = weekStart.toISOString().split('T')[0];
+      to = today.toISOString().split('T')[0];
+      break;
+    case 'month':
+      from = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+      to = today.toISOString().split('T')[0];
+      break;
+    case 'year':
+      from = new Date(today.getFullYear(), 0, 1).toISOString().split('T')[0];
+      to = today.toISOString().split('T')[0];
+      break;
+    default:
+      from = to = '';
+  }
+  
+  return { from, to };
+};
+
 export default function CustomersPage() {
   const [customers, setCustomers] = useState([]);
   const [cities, setCities] = useState([]);
+  const [salesReps, setSalesReps] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [seedingData, setSeedingData] = useState(false);
   
   // Customer Details Modal state
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -70,9 +111,16 @@ export default function CustomersPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
 
+  // Filter states
   const [search, setSearch] = useState('');
   const [filterCity, setFilterCity] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
+  const [filterSalesRep, setFilterSalesRep] = useState('');
+  
+  // Date filter states
+  const [dateRangeType, setDateRangeType] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
 
   const [formData, setFormData] = useState({
     name: '', mobile: '', city: '', payment_status: 'PENDING', notes: '',
@@ -84,21 +132,44 @@ export default function CustomersPage() {
       if (search) params.search = search;
       if (filterCity && filterCity !== 'all') params.city = filterCity;
       if (filterStatus && filterStatus !== 'all') params.payment_status = filterStatus;
+      if (filterSalesRep && filterSalesRep !== 'all') params.sales_rep_id = filterSalesRep;
+      if (dateFrom) params.date_from = dateFrom;
+      if (dateTo) params.date_to = dateTo;
 
-      const [customersRes, citiesRes] = await Promise.all([
-        customersApi.getAll(params), utilityApi.getCities(),
+      const [customersRes, citiesRes, salesRepsRes] = await Promise.all([
+        customersApi.getAll(params), 
+        utilityApi.getCities(),
+        customersApi.getSalesRepsWithCounts(),
       ]);
 
       setCustomers(customersRes.data);
       setCities(citiesRes.data);
+      setSalesReps(salesRepsRes.data || []);
     } catch (error) {
       toast.error('Failed to load customers');
     } finally {
       setLoading(false);
     }
-  }, [search, filterCity, filterStatus]);
+  }, [search, filterCity, filterStatus, filterSalesRep, dateFrom, dateTo]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  const handleDatePresetChange = (preset) => {
+    setDateRangeType(preset);
+    if (preset === 'custom') {
+      // Keep current dates for custom
+      return;
+    }
+    if (preset === '') {
+      setDateFrom('');
+      setDateTo('');
+      return;
+    }
+    const { from, to } = getDateRange(preset);
+    setDateFrom(from);
+    setDateTo(to);
+    setCurrentPage(1);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -124,7 +195,21 @@ export default function CustomersPage() {
     }
   };
 
-  const openEditModal = (customer) => {
+  const handleSeedSampleData = async () => {
+    setSeedingData(true);
+    try {
+      const res = await customersApi.seedSampleData();
+      toast.success(`Sample customer "${res.data.customer_name}" created with ${res.data.inspections_created} packages!`);
+      fetchData();
+    } catch (error) {
+      toast.error('Failed to create sample data');
+    } finally {
+      setSeedingData(false);
+    }
+  };
+
+  const openEditModal = (customer, e) => {
+    if (e) e.stopPropagation();
     setEditingCustomer(customer);
     setFormData({
       name: customer.name, mobile: customer.mobile, city: customer.city,
@@ -158,18 +243,80 @@ export default function CustomersPage() {
   return (
     <div className="p-6 max-w-7xl mx-auto" data-testid="customers-page">
       {/* Page Header */}
-      <div className="flex justify-between items-start mb-8">
+      <div className="flex justify-between items-start mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Customers</h1>
           <p className="text-gray-500 mt-1">Manage your customer database and payment records</p>
         </div>
-        <button
-          onClick={openCreateModal}
-          className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 flex items-center gap-2 font-medium shadow-lg shadow-blue-500/25 transition-all"
-          data-testid="add-customer-btn"
-        >
-          <Plus className="h-4 w-4" /> Add Customer
-        </button>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            onClick={handleSeedSampleData}
+            disabled={seedingData}
+            className="flex items-center gap-2"
+            data-testid="seed-sample-btn"
+          >
+            {seedingData ? <Loader2 className="h-4 w-4 animate-spin" /> : <Database className="h-4 w-4" />}
+            Create Demo Customer
+          </Button>
+          <button
+            onClick={openCreateModal}
+            className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 flex items-center gap-2 font-medium shadow-lg shadow-blue-500/25 transition-all"
+            data-testid="add-customer-btn"
+          >
+            <Plus className="h-4 w-4" /> Add Customer
+          </button>
+        </div>
+      </div>
+
+      {/* Date Range Filter - Above Filters */}
+      <div className="bg-white rounded-xl border p-4 mb-4">
+        <div className="flex items-center gap-3">
+          <Calendar className="h-4 w-4 text-gray-400" />
+          <span className="text-sm font-medium text-gray-600">Date Range:</span>
+          <div className="flex items-center gap-2">
+            {DATE_PRESETS.map((preset) => (
+              <button
+                key={preset.key}
+                onClick={() => handleDatePresetChange(preset.key)}
+                className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-colors ${
+                  dateRangeType === preset.key 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {preset.label}
+              </button>
+            ))}
+            <button
+              onClick={() => handleDatePresetChange('')}
+              className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-colors ${
+                dateRangeType === '' 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              All Time
+            </button>
+          </div>
+          {dateRangeType === 'custom' && (
+            <div className="flex items-center gap-2 ml-4">
+              <Input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => { setDateFrom(e.target.value); setCurrentPage(1); }}
+                className="h-9 w-36"
+              />
+              <span className="text-gray-400">to</span>
+              <Input
+                type="date"
+                value={dateTo}
+                onChange={(e) => { setDateTo(e.target.value); setCurrentPage(1); }}
+                className="h-9 w-36"
+              />
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Summary Cards */}
@@ -207,11 +354,11 @@ export default function CustomersPage() {
       {/* Filters Section */}
       <div className="bg-white rounded-xl border p-4 mb-6">
         <div className="flex flex-wrap items-center gap-4">
-          <div className="flex-1 min-w-[300px] relative">
+          <div className="flex-1 min-w-[250px] relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search by name or mobile number..."
+              placeholder="Search by name or mobile..."
               value={search}
               onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
               className="w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
@@ -220,7 +367,7 @@ export default function CustomersPage() {
           </div>
 
           <Select value={filterCity || 'all'} onValueChange={(v) => { setFilterCity(v === 'all' ? '' : v); setCurrentPage(1); }}>
-            <SelectTrigger className="w-[180px] h-10 bg-white" data-testid="filter-city">
+            <SelectTrigger className="w-[160px] h-10 bg-white" data-testid="filter-city">
               <MapPin className="h-4 w-4 text-gray-400 mr-2" />
               <SelectValue placeholder="All Cities" />
             </SelectTrigger>
@@ -231,7 +378,7 @@ export default function CustomersPage() {
           </Select>
 
           <Select value={filterStatus || 'all'} onValueChange={(v) => { setFilterStatus(v === 'all' ? '' : v); setCurrentPage(1); }}>
-            <SelectTrigger className="w-[180px] h-10 bg-white" data-testid="filter-status">
+            <SelectTrigger className="w-[160px] h-10 bg-white" data-testid="filter-status">
               <CreditCard className="h-4 w-4 text-gray-400 mr-2" />
               <SelectValue placeholder="All Status" />
             </SelectTrigger>
@@ -239,6 +386,21 @@ export default function CustomersPage() {
               <SelectItem value="all">All Status</SelectItem>
               <SelectItem value="Completed">Completed</SelectItem>
               <SelectItem value="PENDING">Pending</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={filterSalesRep || 'all'} onValueChange={(v) => { setFilterSalesRep(v === 'all' ? '' : v); setCurrentPage(1); }}>
+            <SelectTrigger className="w-[200px] h-10 bg-white" data-testid="filter-sales-rep">
+              <User className="h-4 w-4 text-gray-400 mr-2" />
+              <SelectValue placeholder="All Sales Reps" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Sales Reps</SelectItem>
+              {salesReps.map((rep) => (
+                <SelectItem key={rep.id} value={rep.id}>
+                  {rep.name} ({rep.customer_count})
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
 
@@ -275,13 +437,12 @@ export default function CustomersPage() {
                     <MessageSquare className="h-3.5 w-3.5" /> Notes
                   </div>
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-12">
+                  <td colSpan={6} className="text-center py-12">
                     <div className="flex items-center justify-center gap-2">
                       <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
                       <span className="text-gray-500">Loading customers...</span>
@@ -290,9 +451,16 @@ export default function CustomersPage() {
                 </tr>
               ) : paginatedCustomers.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-12">
+                  <td colSpan={6} className="text-center py-12">
                     <UserCheck className="h-12 w-12 text-gray-300 mx-auto mb-3" />
                     <p className="text-gray-500">No customers found</p>
+                    <button
+                      onClick={handleSeedSampleData}
+                      disabled={seedingData}
+                      className="mt-3 text-blue-600 hover:text-blue-700 text-sm font-medium"
+                    >
+                      {seedingData ? 'Creating...' : 'Create demo customer with sample data'}
+                    </button>
                   </td>
                 </tr>
               ) : (
@@ -327,8 +495,8 @@ export default function CustomersPage() {
                       </span>
                     </td>
                     
-                    {/* Payment Details */}
-                    <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
+                    {/* Payment Details - Simplified */}
+                    <td className="px-4 py-4">
                       <div className="space-y-1">
                         <PaymentStatusBadge status={customer.payment_status} />
                         <div className="flex items-center gap-2 text-xs">
@@ -340,13 +508,6 @@ export default function CustomersPage() {
                             </>
                           )}
                         </div>
-                        <button 
-                          className="text-xs text-blue-600 hover:text-blue-700 font-medium"
-                          onClick={(e) => { e.stopPropagation(); openDetailsModal(customer.id); }}
-                          data-testid={`view-payments-${customer.id}`}
-                        >
-                          View Details →
-                        </button>
                       </div>
                     </td>
                     
@@ -355,7 +516,6 @@ export default function CustomersPage() {
                       <div className="flex items-center gap-1.5">
                         <Package className="h-4 w-4 text-blue-500" />
                         <span className="font-medium text-gray-900">{customer.total_packages || 0}</span>
-                        <span className="text-gray-500 text-sm">packages</span>
                       </div>
                     </td>
                     
@@ -375,35 +535,9 @@ export default function CustomersPage() {
                     
                     {/* Notes Count */}
                     <td className="px-4 py-4">
-                      <button 
-                        className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-blue-600"
-                        onClick={(e) => { e.stopPropagation(); openDetailsModal(customer.id); }}
-                        data-testid={`view-notes-${customer.id}`}
-                      >
+                      <div className="flex items-center gap-1.5 text-sm text-gray-600">
                         <MessageSquare className="h-4 w-4" />
                         <span>{customer.notes_count || 0}</span>
-                      </button>
-                    </td>
-                    
-                    {/* Actions */}
-                    <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center gap-2">
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); openDetailsModal(customer.id); }}
-                          className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="View Details"
-                          data-testid={`view-customer-${customer.id}`}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </button>
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); openEditModal(customer); }}
-                          className="p-2 text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-                          title="Edit"
-                          data-testid={`edit-customer-${customer.id}`}
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </button>
                       </div>
                     </td>
                   </tr>
