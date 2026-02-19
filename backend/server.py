@@ -9476,6 +9476,182 @@ async def get_unmapped_ads(current_user: dict = Depends(get_current_user)):
     }
 
 
+# ==================== INSPECTION Q&A ROUTES ====================
+
+class InspectionQuestionCreate(BaseModel):
+    """Model for creating/updating inspection questions"""
+    category_id: str
+    category_name: str
+    question: str
+    answer_type: str  # 'multiple_choice', 'photo', 'video'
+    options: Optional[List[str]] = None  # For multiple choice
+    correct_answer: Optional[str] = None  # For multiple choice
+    video_max_duration: Optional[int] = 45  # Max video duration in seconds
+    sub_question_1: Optional[str] = None
+    sub_answer_type_1: Optional[str] = None
+    sub_options_1: Optional[List[str]] = None
+    sub_correct_answer_1: Optional[str] = None
+    sub_question_2: Optional[str] = None
+    sub_answer_type_2: Optional[str] = None
+    sub_options_2: Optional[List[str]] = None
+    sub_correct_answer_2: Optional[str] = None
+    order: Optional[int] = 0
+    is_mandatory: Optional[bool] = True
+    is_active: Optional[bool] = True
+
+
+@api_router.get("/inspection-qa/questions")
+async def get_inspection_questions(
+    category_id: Optional[str] = None,
+    is_active: Optional[bool] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all inspection Q&A questions"""
+    query = {}
+    if category_id:
+        query["category_id"] = category_id
+    if is_active is not None:
+        query["is_active"] = is_active
+    
+    questions = await db.inspection_questions.find(query, {"_id": 0}).sort("order", 1).to_list(500)
+    return questions
+
+
+@api_router.get("/inspection-qa/questions/{question_id}")
+async def get_inspection_question(question_id: str, current_user: dict = Depends(get_current_user)):
+    """Get a single inspection question by ID"""
+    question = await db.inspection_questions.find_one({"id": question_id}, {"_id": 0})
+    if not question:
+        raise HTTPException(status_code=404, detail="Question not found")
+    return question
+
+
+@api_router.post("/inspection-qa/questions")
+async def create_inspection_question(data: InspectionQuestionCreate, current_user: dict = Depends(get_current_user)):
+    """Create a new inspection question"""
+    question = {
+        "id": str(uuid.uuid4()),
+        "category_id": data.category_id,
+        "category_name": data.category_name,
+        "question": data.question,
+        "answer_type": data.answer_type,
+        "options": data.options or [],
+        "correct_answer": data.correct_answer,
+        "video_max_duration": data.video_max_duration,
+        "sub_question_1": data.sub_question_1,
+        "sub_answer_type_1": data.sub_answer_type_1,
+        "sub_options_1": data.sub_options_1 or [],
+        "sub_correct_answer_1": data.sub_correct_answer_1,
+        "sub_question_2": data.sub_question_2,
+        "sub_answer_type_2": data.sub_answer_type_2,
+        "sub_options_2": data.sub_options_2 or [],
+        "sub_correct_answer_2": data.sub_correct_answer_2,
+        "order": data.order or 0,
+        "is_mandatory": data.is_mandatory if data.is_mandatory is not None else True,
+        "is_active": data.is_active if data.is_active is not None else True,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": current_user["id"],
+        "created_by_name": current_user.get("name", "")
+    }
+    
+    await db.inspection_questions.insert_one(question)
+    question.pop("_id", None)
+    return question
+
+
+@api_router.put("/inspection-qa/questions/{question_id}")
+async def update_inspection_question(question_id: str, data: InspectionQuestionCreate, current_user: dict = Depends(get_current_user)):
+    """Update an inspection question"""
+    existing = await db.inspection_questions.find_one({"id": question_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Question not found")
+    
+    update_data = {
+        "category_id": data.category_id,
+        "category_name": data.category_name,
+        "question": data.question,
+        "answer_type": data.answer_type,
+        "options": data.options or [],
+        "correct_answer": data.correct_answer,
+        "video_max_duration": data.video_max_duration,
+        "sub_question_1": data.sub_question_1,
+        "sub_answer_type_1": data.sub_answer_type_1,
+        "sub_options_1": data.sub_options_1 or [],
+        "sub_correct_answer_1": data.sub_correct_answer_1,
+        "sub_question_2": data.sub_question_2,
+        "sub_answer_type_2": data.sub_answer_type_2,
+        "sub_options_2": data.sub_options_2 or [],
+        "sub_correct_answer_2": data.sub_correct_answer_2,
+        "order": data.order or 0,
+        "is_mandatory": data.is_mandatory if data.is_mandatory is not None else True,
+        "is_active": data.is_active if data.is_active is not None else True,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "updated_by": current_user["id"],
+        "updated_by_name": current_user.get("name", "")
+    }
+    
+    await db.inspection_questions.update_one({"id": question_id}, {"$set": update_data})
+    
+    updated = await db.inspection_questions.find_one({"id": question_id}, {"_id": 0})
+    return updated
+
+
+@api_router.delete("/inspection-qa/questions/{question_id}")
+async def delete_inspection_question(question_id: str, current_user: dict = Depends(get_current_user)):
+    """Delete an inspection question"""
+    existing = await db.inspection_questions.find_one({"id": question_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Question not found")
+    
+    await db.inspection_questions.delete_one({"id": question_id})
+    return {"success": True, "message": "Question deleted"}
+
+
+@api_router.patch("/inspection-qa/questions/{question_id}/toggle")
+async def toggle_inspection_question(question_id: str, current_user: dict = Depends(get_current_user)):
+    """Toggle active status of an inspection question"""
+    existing = await db.inspection_questions.find_one({"id": question_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Question not found")
+    
+    new_status = not existing.get("is_active", True)
+    await db.inspection_questions.update_one(
+        {"id": question_id}, 
+        {"$set": {"is_active": new_status, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    return {"success": True, "is_active": new_status}
+
+
+@api_router.get("/inspection-qa/categories")
+async def get_qa_categories(current_user: dict = Depends(get_current_user)):
+    """Get all unique categories from inspection questions"""
+    pipeline = [
+        {"$group": {"_id": {"id": "$category_id", "name": "$category_name"}, "count": {"$sum": 1}}},
+        {"$project": {"category_id": "$_id.id", "category_name": "$_id.name", "question_count": "$count", "_id": 0}},
+        {"$sort": {"category_name": 1}}
+    ]
+    categories = await db.inspection_questions.aggregate(pipeline).to_list(100)
+    return categories
+
+
+@api_router.patch("/inspection-qa/questions/reorder")
+async def reorder_inspection_questions(
+    data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Reorder questions within a category"""
+    question_ids = data.get("question_ids", [])
+    
+    for idx, qid in enumerate(question_ids):
+        await db.inspection_questions.update_one(
+            {"id": qid},
+            {"$set": {"order": idx}}
+        )
+    
+    return {"success": True, "message": f"Reordered {len(question_ids)} questions"}
+
+
 # Include the router in the main app
 app.include_router(api_router)
 
