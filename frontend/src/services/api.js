@@ -82,6 +82,10 @@ export const customersApi = {
   getNotes: (id) => axios.get(`${API_URL}/customers/${id}/notes`),
   addNote: (id, note) => axios.post(`${API_URL}/customers/${id}/notes`, { note }),
   getActivities: (id) => axios.get(`${API_URL}/customers/${id}/activities`),
+  // Sales reps with counts
+  getSalesRepsWithCounts: () => axios.get(`${API_URL}/customers/sales-reps-with-counts`),
+  // Seed sample data
+  seedSampleData: () => axios.post(`${API_URL}/customers/seed-sample-data`),
 };
 
 // Transactions API
