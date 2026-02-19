@@ -10,11 +10,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { inspectionsApi } from '../../src/lib/api';
+import { useInspection } from '../../src/context/InspectionContext';
 
 export default function StartInspectionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { setCurrentInspection } = useInspection();
   const [inspection, setInspection] = useState<any>(null);
   const [vehicleNumber, setVehicleNumber] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -36,7 +38,7 @@ export default function StartInspectionScreen() {
     }
   };
 
-  const handleConfirm = () => {
+  const handleStartInspection = () => {
     const cleanInput = vehicleNumber.replace(/\s/g, '').toUpperCase();
     const expectedNumber = inspection?.vehicleNumber?.replace(/\s/g, '').toUpperCase();
 
@@ -46,9 +48,11 @@ export default function StartInspectionScreen() {
     }
 
     setIsVerifying(true);
+    // Set current inspection and navigate to OBD Scanner
+    setCurrentInspection(id!, inspection);
     setTimeout(() => {
       setIsVerifying(false);
-      router.push(`/vehicle-details/${id}`);
+      router.push('/scanner');
     }, 500);
   };
 
@@ -69,43 +73,61 @@ export default function StartInspectionScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="chevron-back" size={24} color="#1E293B" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Start Inspection</Text>
+        <View style={styles.logoContainer}>
+          <View style={styles.logoIcon}>
+            <Text style={styles.logoIconText}>W</Text>
+          </View>
+          <View style={styles.logoTextContainer}>
+            <Text style={styles.logoText}>WISEDRIVE</Text>
+            <Text style={styles.logoTagline}>INSPECT. DRIVE. SMART.</Text>
+          </View>
+        </View>
         <View style={{ width: 40 }} />
       </View>
 
       <View style={styles.content}>
-        <Text style={styles.title}>Enter Car Registration No.</Text>
-        <Text style={styles.subtitle}>Enter the vehicle number plate you see in front of you</Text>
-
-        {/* Expected Vehicle Number */}
-        {inspection?.vehicleNumber && (
-          <View style={styles.expectedBox}>
-            <Ionicons name="car" size={20} color="#3B82F6" />
-            <Text style={styles.expectedText}>
-              Expected: <Text style={styles.expectedNumber}>{inspection.vehicleNumber}</Text>
-            </Text>
+        {/* Vehicle Info Card */}
+        <View style={styles.vehicleCard}>
+          <View style={styles.vehicleIconContainer}>
+            <MaterialIcons name="directions-car" size={32} color="#3B82F6" />
           </View>
-        )}
+          <View style={styles.vehicleInfo}>
+            <Text style={styles.vehicleLabel}>Vehicle to Inspect</Text>
+            <Text style={styles.vehicleNumberDisplay}>{inspection?.vehicleNumber || 'N/A'}</Text>
+            <Text style={styles.vehicleModel}>{inspection?.makeModelVariant || 'Vehicle'}</Text>
+          </View>
+        </View>
 
-        <TextInput
-          style={styles.input}
-          placeholder={inspection?.vehicleNumber || 'KA03NC2764'}
-          placeholderTextColor="#94A3B8"
-          value={vehicleNumber}
-          onChangeText={(text) => setVehicleNumber(text.toUpperCase())}
-          autoCapitalize="characters"
-          maxLength={15}
-        />
+        {/* Input Section */}
+        <View style={styles.inputSection}>
+          <Text style={styles.inputLabel}>Enter Car Number</Text>
+          <Text style={styles.inputHint}>Enter the vehicle registration number to verify</Text>
 
+          <TextInput
+            style={styles.input}
+            placeholder="KA03NC2764"
+            placeholderTextColor="#CBD5E1"
+            value={vehicleNumber}
+            onChangeText={(text) => setVehicleNumber(text.toUpperCase())}
+            autoCapitalize="characters"
+            maxLength={15}
+          />
+        </View>
+
+        {/* Start Button */}
         <TouchableOpacity
-          style={[styles.button, vehicleNumber.length < 6 && styles.buttonDisabled]}
-          onPress={handleConfirm}
+          style={[styles.startButton, vehicleNumber.length < 6 && styles.startButtonDisabled]}
+          onPress={handleStartInspection}
           disabled={isVerifying || vehicleNumber.length < 6}
+          activeOpacity={0.8}
         >
           {isVerifying ? (
             <ActivityIndicator color="#FFF" />
           ) : (
-            <Text style={styles.buttonText}>CONFIRM</Text>
+            <>
+              <MaterialIcons name="play-arrow" size={24} color="#FFF" />
+              <Text style={styles.startButtonText}>Start Inspection</Text>
+            </>
           )}
         </TouchableOpacity>
       </View>
@@ -139,76 +161,127 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  logoIcon: {
+    width: 28,
+    height: 28,
+    backgroundColor: '#1E293B',
+    borderRadius: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  logoIconText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  logoTextContainer: {
+    alignItems: 'flex-start',
+  },
+  logoText: {
+    fontSize: 14,
+    fontWeight: '800',
     color: '#1E293B',
+    letterSpacing: 0.5,
+  },
+  logoTagline: {
+    fontSize: 7,
+    color: '#64748B',
+    letterSpacing: 0.3,
   },
   content: {
     flex: 1,
+    padding: 24,
+  },
+  vehicleCard: {
+    backgroundColor: '#FFF',
+    borderRadius: 16,
+    padding: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    marginBottom: 32,
+  },
+  vehicleIconContainer: {
+    width: 64,
+    height: 64,
+    backgroundColor: '#EFF6FF',
+    borderRadius: 12,
     justifyContent: 'center',
-    paddingHorizontal: 24,
+    alignItems: 'center',
+    marginRight: 16,
   },
-  title: {
+  vehicleInfo: {
+    flex: 1,
+  },
+  vehicleLabel: {
+    fontSize: 12,
+    color: '#94A3B8',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  vehicleNumberDisplay: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: '#1E293B',
-    textAlign: 'center',
-    marginBottom: 8,
+    marginTop: 4,
   },
-  subtitle: {
-    fontSize: 16,
+  vehicleModel: {
+    fontSize: 14,
     color: '#64748B',
-    textAlign: 'center',
-    marginBottom: 24,
+    marginTop: 2,
   },
-  expectedBox: {
+  inputSection: {
+    marginBottom: 32,
+  },
+  inputLabel: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1E293B',
+    marginBottom: 4,
+  },
+  inputHint: {
+    fontSize: 14,
+    color: '#64748B',
+    marginBottom: 16,
+  },
+  input: {
+    height: 64,
+    backgroundColor: '#FFF',
+    borderWidth: 2,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    paddingHorizontal: 20,
+    fontSize: 24,
+    fontWeight: '700',
+    textAlign: 'center',
+    letterSpacing: 3,
+    color: '#1E293B',
+  },
+  startButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#10B981',
+    height: 56,
+    borderRadius: 12,
     gap: 8,
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 24,
   },
-  expectedText: {
-    fontSize: 14,
-    color: '#3B82F6',
-  },
-  expectedNumber: {
-    fontWeight: 'bold',
-  },
-  input: {
-    height: 56,
-    backgroundColor: '#FFF',
-    borderWidth: 2,
-    borderColor: '#3B82F6',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    fontSize: 20,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    letterSpacing: 2,
-    color: '#1E293B',
-  },
-  button: {
-    backgroundColor: '#3B82F6',
-    height: 56,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 24,
-  },
-  buttonDisabled: {
+  startButtonDisabled: {
     backgroundColor: '#94A3B8',
   },
-  buttonText: {
+  startButtonText: {
     color: '#FFF',
-    fontSize: 16,
-    fontWeight: '600',
-    letterSpacing: 1,
+    fontSize: 18,
+    fontWeight: '700',
   },
 });
