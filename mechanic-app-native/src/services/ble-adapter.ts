@@ -149,26 +149,19 @@ class MockBLEAdapter implements BLEAdapterInterface {
 
 // ─── Factory: auto-selects adapter based on platform ─────────────
 export function createBLEAdapter(): BLEAdapterInterface {
-  if (Platform.OS === 'android') {
-    try {
-      const { BluetoothClassicAdapter } = require('./bt-classic-adapter');
-      logger.info(MODULE, 'Creating real Bluetooth Classic adapter (Android SPP)');
-      return new BluetoothClassicAdapter();
-    } catch (e: any) {
-      logger.warn(MODULE, 'BT Classic adapter unavailable, using mock', {
-        error: e.message,
-      });
-    }
-  }
-
-  if (Platform.OS === 'ios') {
+  // Use BLE PLX adapter for both Android and iOS (BLE support)
+  if (Platform.OS === 'android' || Platform.OS === 'ios') {
     try {
       const { BLEPLXAdapter } = require('./ble-plx-adapter');
-      logger.info(MODULE, 'Creating real BLE PLX adapter (iOS BLE)');
+      logger.info(MODULE, 'Creating BLE PLX adapter', {
+        platform: Platform.OS,
+        protocol: 'Bluetooth Low Energy',
+      });
       return new BLEPLXAdapter();
     } catch (e: any) {
       logger.warn(MODULE, 'BLE PLX adapter unavailable, using mock', {
         error: e.message,
+        platform: Platform.OS,
       });
     }
   }
