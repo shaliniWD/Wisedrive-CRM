@@ -493,6 +493,11 @@ export default function CustomersPage() {
                         <MapPin className="h-3.5 w-3.5 text-gray-400" />
                         {customer.city || '-'}
                       </span>
+                      {customer.partner_name && customer.partner_name !== 'B2C Default' && (
+                        <span className="ml-2 px-2 py-0.5 text-xs bg-amber-100 text-amber-800 rounded-full font-medium">
+                          {customer.partner_name}
+                        </span>
+                      )}
                     </td>
                     
                     {/* Payment Details - Single Row */}
