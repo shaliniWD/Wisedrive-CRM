@@ -187,10 +187,13 @@ export default function LeadsPage() {
   const [filterCity, setFilterCity] = useState('');
   const [filterSource, setFilterSource] = useState('');
 
+  // Partners list for selection
+  const [partners, setPartners] = useState([]);
+
   const [formData, setFormData] = useState({
     name: '', mobile: '', city: '', source: 'WEBSITE', status: 'NEW LEAD',
     assigned_to: '', reminder_date: '', reminder_time: '', notes: '',
-    service_type: '', ad_id: '',
+    service_type: '', ad_id: '', partner_id: '', partner_name: '',
   });
 
   const [reminderFormData, setReminderFormData] = useState({
