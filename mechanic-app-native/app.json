@@ -12,13 +12,17 @@
       "resizeMode": "contain",
       "backgroundColor": "#1E3A5F"
     },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.wisedrive.mechanic",
       "infoPlist": {
         "NSBluetoothAlwaysUsageDescription": "This app uses Bluetooth to connect to OBD-II scanners for vehicle diagnostics.",
         "NSBluetoothPeripheralUsageDescription": "This app uses Bluetooth to connect to OBD-II scanners for vehicle diagnostics.",
-        "UIBackgroundModes": ["bluetooth-central"]
+        "UIBackgroundModes": ["bluetooth-central", "remote-notification"],
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -53,12 +57,13 @@
     "experiments": {
       "typedRoutes": true
     },
+    "owner": "kalyandhar",
     "extra": {
       "router": {
         "origin": false
       },
       "eas": {
-        "projectId": "your-project-id"
+        "projectId": "auto"
       }
     }
   }
