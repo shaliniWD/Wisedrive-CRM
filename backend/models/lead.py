@@ -55,6 +55,10 @@ class LeadBase(BaseModel):
     notes: Optional[str] = None
     message: Optional[str] = None  # Initial WhatsApp message
     
+    # Partner/Client for inspection flow
+    partner_id: Optional[str] = None  # Links to partners collection
+    partner_name: Optional[str] = None  # Denormalized for display
+    
     # Payment fields
     package_id: Optional[str] = None
     package_name: Optional[str] = None
