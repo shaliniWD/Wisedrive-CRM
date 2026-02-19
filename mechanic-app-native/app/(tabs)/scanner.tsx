@@ -854,27 +854,54 @@ export default function OBDScannerScreen() {
     if (state === 'idle') {
       return (
         <>
-          {/* Inspection ID Input - Top of Home Screen */}
-          <View style={styles.inspectionCard}>
-            <View style={styles.inspectionHeader}>
-              <MaterialIcons name="assignment" size={20} color={Colors.accent} />
-              <Text style={styles.inspectionLabel}>Inspection ID</Text>
-            </View>
-            <TextInput
-              style={styles.inspectionInput}
-              placeholder="Enter inspection ID (e.g., INS-2025-001)"
-              placeholderTextColor={Colors.textMuted}
-              value={inspectionId}
-              onChangeText={setInspectionId}
-              autoCapitalize="characters"
-            />
-            {inspectionId.trim() !== '' && (
+          {/* Active Inspection Card - Show if came from inspection details */}
+          {currentInspection && (
+            <View style={[styles.inspectionCard, { borderColor: Colors.success, borderWidth: 2 }]}>
+              <View style={styles.inspectionHeader}>
+                <MaterialIcons name="assignment" size={20} color={Colors.success} />
+                <Text style={[styles.inspectionLabel, { color: Colors.success }]}>Active Inspection</Text>
+              </View>
+              <View style={{ marginTop: Spacing.sm }}>
+                <Text style={{ fontSize: FontSize.lg, fontWeight: '700', color: Colors.text }}>
+                  {currentInspection.vehicleNumber || 'N/A'}
+                </Text>
+                <Text style={{ fontSize: FontSize.sm, color: Colors.textSecondary, marginTop: 2 }}>
+                  {currentInspection.makeModelVariant || 'Vehicle'}
+                </Text>
+                <Text style={{ fontSize: FontSize.sm, color: Colors.textMuted, marginTop: 4 }}>
+                  Customer: {currentInspection.customerName}
+                </Text>
+              </View>
               <View style={styles.inspectionBadge}>
                 <MaterialIcons name="check-circle" size={14} color={Colors.success} />
-                <Text style={styles.inspectionBadgeText}>ID Set: {inspectionId}</Text>
+                <Text style={styles.inspectionBadgeText}>ID: {currentInspectionId}</Text>
               </View>
-            )}
-          </View>
+            </View>
+          )}
+
+          {/* Manual Inspection ID Input - Only show if no active inspection */}
+          {!currentInspection && (
+            <View style={styles.inspectionCard}>
+              <View style={styles.inspectionHeader}>
+                <MaterialIcons name="assignment" size={20} color={Colors.accent} />
+                <Text style={styles.inspectionLabel}>Inspection ID</Text>
+              </View>
+              <TextInput
+                style={styles.inspectionInput}
+                placeholder="Enter inspection ID (e.g., INS-2025-001)"
+                placeholderTextColor={Colors.textMuted}
+                value={inspectionId}
+                onChangeText={setInspectionId}
+                autoCapitalize="characters"
+              />
+              {inspectionId.trim() !== '' && (
+                <View style={styles.inspectionBadge}>
+                  <MaterialIcons name="check-circle" size={14} color={Colors.success} />
+                  <Text style={styles.inspectionBadgeText}>ID Set: {inspectionId}</Text>
+                </View>
+              )}
+            </View>
+          )}
 
           <View style={styles.vehicleCard}>
             <Text style={styles.cardLabel}>Vehicle Information</Text>
