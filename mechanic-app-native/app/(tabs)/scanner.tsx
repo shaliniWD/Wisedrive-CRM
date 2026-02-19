@@ -104,6 +104,14 @@ export default function OBDScannerScreen() {
   const scanTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const scanActiveRef = useRef<boolean>(false);
 
+  // Set inspection ID from context when it changes
+  useEffect(() => {
+    if (currentInspectionId) {
+      setInspectionId(currentInspectionId);
+      logger.info(MODULE, 'Inspection loaded from context', { inspectionId: currentInspectionId });
+    }
+  }, [currentInspectionId]);
+
   // Refresh logs more frequently and keep updating even in modal
   useEffect(() => {
     loadHistory();
