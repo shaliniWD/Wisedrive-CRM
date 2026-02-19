@@ -2633,6 +2633,13 @@ Thank you for choosing Wisedrive!"""
                 "notes": f"Inspection {i + 1} of {no_of_inspections} from lead conversion",
                 "created_at": datetime.now(timezone.utc).isoformat(),
                 "created_by": "system",
+                # Partner and template info for report generation
+                "partner_id": lead.get("partner_id"),
+                "partner_name": lead.get("partner_name"),
+                "report_template_id": report_template.get("id") if report_template else None,
+                "report_template_name": report_template.get("name") if report_template else None,
+                "report_style": report_template.get("report_style") if report_template else "standard",
+                "inspection_template_id": report_template.get("inspection_template_id") if report_template else None,
                 # Payment transaction history
                 "payment_transactions": [{
                     "id": str(uuid.uuid4()),
