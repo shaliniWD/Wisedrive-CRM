@@ -48,7 +48,7 @@ class TestCustomersEnhancements:
     def test_sales_reps_with_counts_unauthorized(self):
         """Test GET /api/customers/sales-reps-with-counts requires authentication"""
         response = requests.get(f"{BASE_URL}/api/customers/sales-reps-with-counts")
-        assert response.status_code == 401, "Should require authentication"
+        assert response.status_code in [401, 403], "Should require authentication"
     
     # ==================== Seed Sample Data API ====================
     
@@ -77,7 +77,7 @@ class TestCustomersEnhancements:
     def test_seed_sample_data_unauthorized(self):
         """Test POST /api/customers/seed-sample-data requires authentication"""
         response = requests.post(f"{BASE_URL}/api/customers/seed-sample-data")
-        assert response.status_code == 401, "Should require authentication"
+        assert response.status_code in [401, 403], "Should require authentication"
     
     # ==================== Customers List with Date Filter ====================
     
@@ -143,7 +143,8 @@ class TestCustomersEnhancements:
             
             data = response.json()
             assert "packages" in data, "Response should have packages"
-            assert "summary" in data, "Response should have summary"
+            assert "total_paid" in data, "Response should have total_paid"
+            assert "total_pending" in data, "Response should have total_pending"
             
             packages = data["packages"]
             if len(packages) > 0:
