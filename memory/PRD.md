@@ -356,7 +356,7 @@ Returns:
 ## Document History
 - **Created:** December 2025
 - **Last Updated:** February 19, 2026
-- **Version:** 4.0
+- **Version:** 4.1
 
 ## Changelog
 - v4.1 (Feb 19, 2026): **Inspection Q&A UI Enhancements** - Four major UI/UX fixes based on user feedback: (1) **Tab Relocation** - Moved "Inspection Q&A" tab from standalone page to Services tab, now appears alongside Packages, Categories, Offers tabs. (2) **Category Management** - Added "Manage Categories" button that opens modal to view existing categories (Brakes, Engine Health, Exterior Body, Tyres & Wheels), add new categories with name/description, and edit/delete existing categories. (3) **Category Column** - Added "Category" as first column in questions table showing colored category badges. (4) **Sub-Question Answer Types** - Fixed bug where answer type selectors (Multiple Choice, Photo Upload, Video 45s) were missing for sub-questions. Now both Sub-Question 1 and Sub-Question 2 have their own "Answer Type for Sub-Question X" selector. New Backend APIs: GET/POST /api/inspection-qa/categories, PUT/DELETE /api/inspection-qa/categories/{id}. 100% test coverage (iteration_57).
