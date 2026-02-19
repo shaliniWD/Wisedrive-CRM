@@ -162,7 +162,7 @@ export default function HomeScreen() {
 
   const fetchInspections = useCallback(async () => {
     try {
-      const data = await inspectionsApi.getAll();
+      const data = await inspectionsApi.getInspections();
       // Mark new inspections
       const withNewFlag = data.map((insp: Inspection) => ({
         ...insp,
