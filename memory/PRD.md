@@ -356,7 +356,7 @@ Returns:
 ## Document History
 - **Created:** December 2025
 - **Last Updated:** February 19, 2026
-- **Version:** 4.2
+- **Version:** 4.3
 
 ## Changelog
 - v4.3 (Feb 19, 2026): **Report Templates Module - Complete Flow** - Major restructuring of inspection management flow: (1) **Report Templates Tab** - New "Report Templates" tab under Services that connects Partner + Inspection Template + Report Style. This is now the "master" connector that defines client-specific inspection reports. (2) **3 Report Styles** - Standard (blue, clean simple layout), Premium (purple, detailed with photos), Detailed Technical (green, all metrics). Each style has preview card showing features. (3) **Simplified Inspection Templates** - Removed Partner/Report selection from this tab (now called "Questionnaires"). Only contains: Name, Description, Select Questions by category. Partners are now linked via Report Templates. (4) **Create Report Template Modal** - 3-section form: Basic Info (Name, Partner dropdown, Inspection Template dropdown, Description), Select Report Style (3 visual cards), Status (Active/Default toggles). (5) **View Report Preview** - Eye button opens preview modal showing template configuration and report features. (6) **Complete Flow**: Partners → Inspection Templates (Questions) → Report Templates → Lead Assignment → Customer → Inspection Report. New Backend APIs: GET/POST/PUT/DELETE /api/report-templates, PATCH toggle/set-default, GET styles, POST seed-samples, GET by-partner/{id}. REPORT_STYLES constant defines 3 styles with preview colors and features. 100% test coverage (15/15 backend, 11/11 frontend - iteration_59).
