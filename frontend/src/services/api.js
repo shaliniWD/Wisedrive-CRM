@@ -75,6 +75,13 @@ export const customersApi = {
   create: (data) => axios.post(`${API_URL}/customers`, data),
   update: (id, data) => axios.put(`${API_URL}/customers/${id}`, data),
   delete: (id) => axios.delete(`${API_URL}/customers/${id}`),
+  // Payment history
+  getPaymentHistory: (id) => axios.get(`${API_URL}/customers/${id}/payment-history`),
+  getDetailedPayments: (id) => axios.get(`${API_URL}/customers/${id}/detailed-payments`),
+  // Notes & Activities
+  getNotes: (id) => axios.get(`${API_URL}/customers/${id}/notes`),
+  addNote: (id, note) => axios.post(`${API_URL}/customers/${id}/notes`, { note }),
+  getActivities: (id) => axios.get(`${API_URL}/customers/${id}/activities`),
 };
 
 // Transactions API
