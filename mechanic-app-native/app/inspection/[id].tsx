@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { inspectionsApi } from '../../src/lib/api';
+import { useInspection } from '../../src/context/InspectionContext';
 
 interface Inspection {
   id: string;
