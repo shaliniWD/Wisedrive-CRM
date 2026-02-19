@@ -778,6 +778,11 @@ export default function InspectionPackagesPage() {
         {activeTab === 'templates' && (
           <InspectionTemplatesPage />
         )}
+
+        {/* Report Templates Tab */}
+        {activeTab === 'reports' && (
+          <ReportTemplatesPage />
+        )}
       </div>
 
       {/* Category Modal */}
