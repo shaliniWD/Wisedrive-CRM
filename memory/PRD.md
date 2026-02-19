@@ -353,6 +353,69 @@ Returns:
 
 ---
 
+### ✅ Mechanic Mobile App Integration (February 19, 2026)
+
+**Feature Implementation:**
+Complete integration of the mechanic mobile app from the provided GitHub repository. The app allows mechanics to view assigned inspections and complete them using client-specific questionnaires fetched from the CRM backend.
+
+**Key Components:**
+
+1. **Mechanic App Repository Integration:**
+   - Cloned from: `https://github.com/shaliniWD/Mechanic-app-new-v1.0/`
+   - Location: `/app/mechanic-app/frontend/`
+   - Tech Stack: React (Create React App), Shadcn/UI, TailwindCSS
+   - Served as production build on port 3001
+
+2. **OTP-Based Authentication:**
+   - `POST /api/auth/request-otp` - Send OTP to registered mechanic phone number
+   - `POST /api/auth/verify-otp` - Verify OTP and return JWT token + mechanic profile
+   - Dev mode OTP: 123456 (controlled by `MECHANIC_APP_DEV_MODE` env var)
+   - In-memory OTP store with 5-minute expiration
+
+3. **Mechanic Inspection APIs:**
+   - `GET /api/mechanic/inspections` - List inspections assigned to or available for mechanic
+   - `GET /api/mechanic/inspections/{id}` - Get inspection details
+   - `POST /api/mechanic/inspections/{id}/accept` - Accept and get assigned to inspection
+   - `POST /api/mechanic/inspections/{id}/reject` - Reject inspection with reason
+   - `POST /api/mechanic/inspections/{id}/progress` - Save inspection progress
+   - `POST /api/mechanic/inspections/{id}/complete` - Mark inspection as completed
+
+4. **Client-Specific Questionnaire:**
+   - `GET /api/inspections/{id}/questionnaire` - Fetches questions from inspection_template
+   - Questions grouped by category (Engine, Transmission, Battery, Suspension, Tires)
+   - Answer types: yes_no, choice, conditional, photo, video
+   - Categories dynamically loaded based on partner's inspection template
+
+5. **File Upload:**
+   - `POST /api/uploads` - Upload photos/videos during inspection
+   - `GET /api/files/{filename}` - Serve uploaded files
+   - Files stored in `/app/storage/uploads/`
+
+**Data Flow:**
+1. Mechanic logs in via phone OTP
+2. Dashboard shows inspections in their assigned cities (NEW, ACCEPTED, COMPLETED, REJECTED)
+3. Mechanic accepts an inspection → status changes to ACCEPTED
+4. Starts inspection → fetches client-specific questionnaire from CRM
+5. Answers questions category by category with photos/videos
+6. Completes inspection → status changes to COMPLETED
+
+**Files Created/Modified:**
+- `/app/backend/server.py` - Added mechanic app API endpoints (lines 10600-10900)
+- `/app/mechanic-app/frontend/src/lib/api.js` - Updated to use /mechanic/ prefixed endpoints
+- `/app/mechanic-app/frontend/src/pages/InspectionChecklistPage.js` - Dynamic questionnaire loading
+- `/app/mechanic-app/frontend/src/pages/CategoryDetailPage.js` - Question transformation for CRM format
+- `/app/mechanic-app/frontend/.env` - API configuration
+
+**Test Coverage:**
+- 100% backend test coverage (12 tests passed - iteration_62)
+- `/app/backend/tests/test_mechanic_app_api.py` - Comprehensive API tests
+
+**Test Credentials:**
+- Mechanic Phone: +919689760236
+- Dev OTP: 123456
+
+---
+
 ## Document History
 - **Created:** December 2025
 - **Last Updated:** February 19, 2026
