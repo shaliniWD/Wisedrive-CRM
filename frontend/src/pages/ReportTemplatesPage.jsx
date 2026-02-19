@@ -652,7 +652,7 @@ const ReportTemplatesPage = () => {
                   </p>
                   <Button 
                     className="mt-3"
-                    onClick={() => window.open('/inspection-report/sample', '_blank')}
+                    onClick={() => window.open(`/inspection-report/sample?style=${previewTemplate?.report_style || 'standard'}`, '_blank')}
                   >
                     <Eye className="h-4 w-4 mr-2" /> View Sample Report
                   </Button>
