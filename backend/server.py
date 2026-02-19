@@ -2887,18 +2887,18 @@ async def get_customers(
             {"id": {"$in": lead_ids}},
             {"_id": 0, "id": 1, "assigned_to": 1, "assigned_to_name": 1, "created_by": 1}
         ).to_list(500)
-        lead_map = {l["id"]: l for l in leads}
+        lead_map = {lead["id"]: lead for lead in leads}
     
     # Get user names for created_by lookups
     user_ids = set()
     for c in customers:
         if c.get("created_by"):
             user_ids.add(c["created_by"])
-    for l in lead_map.values():
-        if l.get("created_by"):
-            user_ids.add(l["created_by"])
-        if l.get("assigned_to"):
-            user_ids.add(l["assigned_to"])
+    for lead_item in lead_map.values():
+        if lead_item.get("created_by"):
+            user_ids.add(lead_item["created_by"])
+        if lead_item.get("assigned_to"):
+            user_ids.add(lead_item["assigned_to"])
     
     user_map = {}
     if user_ids:
