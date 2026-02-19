@@ -682,7 +682,10 @@ export default function InspectionPackagesPage() {
             <Building2 className="h-4 w-4" /> Partners
           </button>
           <button onClick={() => setActiveTab('templates')} className={`px-6 py-4 text-sm font-medium flex items-center gap-2 transition-all border-b-2 -mb-px ${activeTab === 'templates' ? 'border-blue-600 text-blue-600 bg-white' : 'border-transparent text-gray-500 hover:text-gray-700'}`} data-testid="templates-tab">
-            <FileText className="h-4 w-4" /> Inspection Templates
+            <ClipboardList className="h-4 w-4" /> Inspection Templates
+          </button>
+          <button onClick={() => setActiveTab('reports')} className={`px-6 py-4 text-sm font-medium flex items-center gap-2 transition-all border-b-2 -mb-px ${activeTab === 'reports' ? 'border-blue-600 text-blue-600 bg-white' : 'border-transparent text-gray-500 hover:text-gray-700'}`} data-testid="reports-tab">
+            <FileText className="h-4 w-4" /> Report Templates
           </button>
         </div>
 
