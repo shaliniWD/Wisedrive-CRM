@@ -10038,6 +10038,365 @@ async def seed_default_inspection_template(current_user: dict = Depends(get_curr
         }
 
 
+# ==================== REPORT TEMPLATES API ====================
+
+class ReportTemplateCreate(BaseModel):
+    name: str
+    partner_id: str
+    inspection_template_id: str
+    report_style: str  # standard, premium, detailed
+    description: Optional[str] = None
+    is_default: Optional[bool] = False
+    is_active: Optional[bool] = True
+
+
+# Pre-defined report styles with different layouts
+REPORT_STYLES = {
+    "standard": {
+        "name": "Standard Report",
+        "description": "Clean, simple layout with essential information",
+        "preview_color": "#3B82F6",  # Blue
+        "features": ["Basic vehicle info", "Pass/Fail summary", "Key findings"]
+    },
+    "premium": {
+        "name": "Premium Report",
+        "description": "Detailed layout with photos and comprehensive analysis",
+        "preview_color": "#8B5CF6",  # Purple
+        "features": ["Full vehicle details", "Photo gallery", "Detailed analysis", "Recommendations"]
+    },
+    "detailed": {
+        "name": "Detailed Technical Report",
+        "description": "Technical report with all inspection data and metrics",
+        "preview_color": "#059669",  # Green
+        "features": ["Technical specifications", "Component-wise breakdown", "Scoring metrics", "Historical comparison"]
+    }
+}
+
+
+@api_router.get("/report-templates/styles")
+async def get_report_styles(current_user: dict = Depends(get_current_user)):
+    """Get all available report styles"""
+    return REPORT_STYLES
+
+
+@api_router.get("/report-templates")
+async def get_report_templates(
+    partner_id: Optional[str] = None,
+    is_active: Optional[bool] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all report templates"""
+    query = {}
+    if partner_id:
+        query["partner_id"] = partner_id
+    if is_active is not None:
+        query["is_active"] = is_active
+    
+    templates = await db.report_templates.find(query, {"_id": 0}).sort("name", 1).to_list(500)
+    
+    # Enrich with partner and inspection template info
+    for template in templates:
+        partner = await db.partners.find_one({"id": template.get("partner_id")}, {"_id": 0, "name": 1, "type": 1})
+        template["partner_name"] = partner.get("name", "Unknown") if partner else "Unknown"
+        template["partner_type"] = partner.get("type", "b2c") if partner else "b2c"
+        
+        insp_template = await db.inspection_templates.find_one(
+            {"id": template.get("inspection_template_id")}, 
+            {"_id": 0, "name": 1, "question_ids": 1}
+        )
+        template["inspection_template_name"] = insp_template.get("name", "Unknown") if insp_template else "Unknown"
+        template["question_count"] = len(insp_template.get("question_ids", [])) if insp_template else 0
+        
+        # Add style info
+        style = REPORT_STYLES.get(template.get("report_style", "standard"), REPORT_STYLES["standard"])
+        template["style_info"] = style
+    
+    return templates
+
+
+@api_router.get("/report-templates/{template_id}")
+async def get_report_template(template_id: str, current_user: dict = Depends(get_current_user)):
+    """Get a single report template by ID"""
+    template = await db.report_templates.find_one({"id": template_id}, {"_id": 0})
+    if not template:
+        raise HTTPException(status_code=404, detail="Report template not found")
+    
+    # Get partner info
+    partner = await db.partners.find_one({"id": template.get("partner_id")}, {"_id": 0})
+    template["partner"] = partner
+    
+    # Get inspection template info
+    insp_template = await db.inspection_templates.find_one(
+        {"id": template.get("inspection_template_id")}, 
+        {"_id": 0}
+    )
+    template["inspection_template"] = insp_template
+    
+    # Get questions
+    if insp_template and insp_template.get("question_ids"):
+        questions = await db.inspection_questions.find(
+            {"id": {"$in": insp_template["question_ids"]}},
+            {"_id": 0}
+        ).to_list(500)
+        template["questions"] = questions
+    else:
+        template["questions"] = []
+    
+    # Add style info
+    style = REPORT_STYLES.get(template.get("report_style", "standard"), REPORT_STYLES["standard"])
+    template["style_info"] = style
+    
+    return template
+
+
+@api_router.post("/report-templates")
+async def create_report_template(data: ReportTemplateCreate, current_user: dict = Depends(get_current_user)):
+    """Create a new report template"""
+    # Verify partner exists
+    partner = await db.partners.find_one({"id": data.partner_id}, {"_id": 0})
+    if not partner:
+        raise HTTPException(status_code=400, detail="Partner not found")
+    
+    # Verify inspection template exists
+    insp_template = await db.inspection_templates.find_one({"id": data.inspection_template_id}, {"_id": 0})
+    if not insp_template:
+        raise HTTPException(status_code=400, detail="Inspection template not found")
+    
+    # If setting as default for this partner, unset other defaults
+    if data.is_default:
+        await db.report_templates.update_many(
+            {"partner_id": data.partner_id, "is_default": True},
+            {"$set": {"is_default": False}}
+        )
+    
+    template = {
+        "id": str(uuid.uuid4()),
+        "name": data.name,
+        "partner_id": data.partner_id,
+        "inspection_template_id": data.inspection_template_id,
+        "report_style": data.report_style,
+        "description": data.description,
+        "is_default": data.is_default if data.is_default is not None else False,
+        "is_active": data.is_active if data.is_active is not None else True,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": current_user["id"],
+        "created_by_name": current_user.get("name", "")
+    }
+    
+    await db.report_templates.insert_one(template)
+    template.pop("_id", None)
+    
+    # Enrich response
+    template["partner_name"] = partner.get("name", "Unknown")
+    template["partner_type"] = partner.get("type", "b2c")
+    template["inspection_template_name"] = insp_template.get("name", "Unknown")
+    template["question_count"] = len(insp_template.get("question_ids", []))
+    template["style_info"] = REPORT_STYLES.get(data.report_style, REPORT_STYLES["standard"])
+    
+    return template
+
+
+@api_router.put("/report-templates/{template_id}")
+async def update_report_template(template_id: str, data: ReportTemplateCreate, current_user: dict = Depends(get_current_user)):
+    """Update a report template"""
+    existing = await db.report_templates.find_one({"id": template_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Report template not found")
+    
+    # Verify partner exists
+    partner = await db.partners.find_one({"id": data.partner_id}, {"_id": 0})
+    if not partner:
+        raise HTTPException(status_code=400, detail="Partner not found")
+    
+    # Verify inspection template exists
+    insp_template = await db.inspection_templates.find_one({"id": data.inspection_template_id}, {"_id": 0})
+    if not insp_template:
+        raise HTTPException(status_code=400, detail="Inspection template not found")
+    
+    # If setting as default for this partner, unset other defaults
+    if data.is_default and not existing.get("is_default"):
+        await db.report_templates.update_many(
+            {"partner_id": data.partner_id, "is_default": True, "id": {"$ne": template_id}},
+            {"$set": {"is_default": False}}
+        )
+    
+    update_data = {
+        "name": data.name,
+        "partner_id": data.partner_id,
+        "inspection_template_id": data.inspection_template_id,
+        "report_style": data.report_style,
+        "description": data.description,
+        "is_default": data.is_default if data.is_default is not None else False,
+        "is_active": data.is_active if data.is_active is not None else True,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "updated_by": current_user["id"],
+        "updated_by_name": current_user.get("name", "")
+    }
+    
+    await db.report_templates.update_one({"id": template_id}, {"$set": update_data})
+    updated = await db.report_templates.find_one({"id": template_id}, {"_id": 0})
+    
+    # Enrich response
+    updated["partner_name"] = partner.get("name", "Unknown")
+    updated["partner_type"] = partner.get("type", "b2c")
+    updated["inspection_template_name"] = insp_template.get("name", "Unknown")
+    updated["question_count"] = len(insp_template.get("question_ids", []))
+    updated["style_info"] = REPORT_STYLES.get(data.report_style, REPORT_STYLES["standard"])
+    
+    return updated
+
+
+@api_router.delete("/report-templates/{template_id}")
+async def delete_report_template(template_id: str, current_user: dict = Depends(get_current_user)):
+    """Delete a report template"""
+    existing = await db.report_templates.find_one({"id": template_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Report template not found")
+    
+    await db.report_templates.delete_one({"id": template_id})
+    return {"success": True, "message": "Report template deleted"}
+
+
+@api_router.patch("/report-templates/{template_id}/toggle")
+async def toggle_report_template(template_id: str, current_user: dict = Depends(get_current_user)):
+    """Toggle active status of a report template"""
+    existing = await db.report_templates.find_one({"id": template_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Report template not found")
+    
+    new_status = not existing.get("is_active", True)
+    await db.report_templates.update_one(
+        {"id": template_id}, 
+        {"$set": {"is_active": new_status, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    return {"success": True, "is_active": new_status}
+
+
+@api_router.patch("/report-templates/{template_id}/set-default")
+async def set_default_report_template(template_id: str, current_user: dict = Depends(get_current_user)):
+    """Set a report template as default for its partner"""
+    existing = await db.report_templates.find_one({"id": template_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Report template not found")
+    
+    # Unset other defaults for this partner
+    await db.report_templates.update_many(
+        {"partner_id": existing["partner_id"], "is_default": True},
+        {"$set": {"is_default": False}}
+    )
+    
+    # Set this one as default
+    await db.report_templates.update_one(
+        {"id": template_id},
+        {"$set": {"is_default": True, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    return {"success": True, "message": "Report template set as default"}
+
+
+@api_router.post("/report-templates/seed-samples")
+async def seed_sample_report_templates(current_user: dict = Depends(get_current_user)):
+    """Seed 3 sample report templates with different styles"""
+    # Get B2C Default partner
+    b2c_partner = await db.partners.find_one({"type": "b2c"}, {"_id": 0})
+    if not b2c_partner:
+        raise HTTPException(status_code=400, detail="B2C Default partner not found. Please create partners first.")
+    
+    # Get default inspection template
+    insp_template = await db.inspection_templates.find_one({"is_default": True}, {"_id": 0})
+    if not insp_template:
+        raise HTTPException(status_code=400, detail="Default inspection template not found. Please create inspection templates first.")
+    
+    # Check if we already have report templates
+    existing_count = await db.report_templates.count_documents({})
+    if existing_count >= 3:
+        return {"success": True, "message": f"Already have {existing_count} report templates"}
+    
+    created = []
+    styles_to_create = ["standard", "premium", "detailed"]
+    
+    for idx, style in enumerate(styles_to_create):
+        existing = await db.report_templates.find_one({"report_style": style, "partner_id": b2c_partner["id"]}, {"_id": 0})
+        if existing:
+            continue
+            
+        style_info = REPORT_STYLES[style]
+        template = {
+            "id": str(uuid.uuid4()),
+            "name": f"B2C {style_info['name']}",
+            "partner_id": b2c_partner["id"],
+            "inspection_template_id": insp_template["id"],
+            "report_style": style,
+            "description": style_info["description"],
+            "is_default": idx == 0,  # First one is default
+            "is_active": True,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_by": current_user["id"],
+            "created_by_name": current_user.get("name", "")
+        }
+        await db.report_templates.insert_one(template)
+        created.append(template["name"])
+    
+    return {
+        "success": True,
+        "message": f"Created {len(created)} report templates",
+        "created": created
+    }
+
+
+@api_router.get("/report-templates/by-partner/{partner_id}")
+async def get_report_template_by_partner(partner_id: str, current_user: dict = Depends(get_current_user)):
+    """Get the default report template for a specific partner"""
+    # First try to find default for this partner
+    template = await db.report_templates.find_one(
+        {"partner_id": partner_id, "is_default": True, "is_active": True},
+        {"_id": 0}
+    )
+    
+    # If no default, get any active template for this partner
+    if not template:
+        template = await db.report_templates.find_one(
+            {"partner_id": partner_id, "is_active": True},
+            {"_id": 0}
+        )
+    
+    # If still no template, get the global default (B2C Default)
+    if not template:
+        b2c_partner = await db.partners.find_one({"type": "b2c"}, {"_id": 0})
+        if b2c_partner:
+            template = await db.report_templates.find_one(
+                {"partner_id": b2c_partner["id"], "is_default": True, "is_active": True},
+                {"_id": 0}
+            )
+    
+    if not template:
+        raise HTTPException(status_code=404, detail="No report template found for this partner")
+    
+    # Enrich response
+    partner = await db.partners.find_one({"id": template.get("partner_id")}, {"_id": 0})
+    template["partner"] = partner
+    
+    insp_template = await db.inspection_templates.find_one(
+        {"id": template.get("inspection_template_id")}, 
+        {"_id": 0}
+    )
+    template["inspection_template"] = insp_template
+    
+    if insp_template and insp_template.get("question_ids"):
+        questions = await db.inspection_questions.find(
+            {"id": {"$in": insp_template["question_ids"]}},
+            {"_id": 0}
+        ).to_list(500)
+        template["questions"] = questions
+    else:
+        template["questions"] = []
+    
+    template["style_info"] = REPORT_STYLES.get(template.get("report_style", "standard"), REPORT_STYLES["standard"])
+    
+    return template
+
+
 # Include the router in the main app
 app.include_router(api_router)
 
