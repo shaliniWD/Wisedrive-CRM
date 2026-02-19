@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { inspectionTemplatesApi, partnersApi, inspectionQAApi } from '@/services/api';
+import { inspectionTemplatesApi, inspectionQAApi } from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,52 +7,32 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
-import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { 
-  Plus, Loader2, Pencil, Trash2, FileText, Star, CheckCircle2,
-  Users, Building2, Landmark, ShieldCheck, ChevronDown, ChevronRight,
-  ToggleLeft, ToggleRight, Search, ClipboardList, FileCheck
+  Plus, Loader2, Pencil, Trash2, FileText, Star,
+  ChevronDown, ChevronRight, ToggleLeft, ToggleRight, 
+  Search, ClipboardList
 } from 'lucide-react';
-
-const PARTNER_TYPE_ICONS = {
-  b2c: Users,
-  bank: Landmark,
-  insurance: ShieldCheck,
-  b2b: Building2,
-};
-
-const PARTNER_TYPE_COLORS = {
-  b2c: 'blue',
-  bank: 'green',
-  insurance: 'purple',
-  b2b: 'orange',
-};
 
 // Template Card Component
 const TemplateCard = ({ template, onEdit, onToggle, onDelete, onSetDefault }) => {
-  const TypeIcon = PARTNER_TYPE_ICONS[template.partner_type] || Building2;
-  const color = PARTNER_TYPE_COLORS[template.partner_type] || 'gray';
-  
   return (
     <div 
-      className={`border rounded-xl p-4 ${template.is_active ? 'bg-white' : 'bg-gray-50 opacity-75'} ${template.is_default ? 'ring-2 ring-blue-500' : ''}`}
+      className={`border rounded-xl p-4 ${template.is_active ? 'bg-white' : 'bg-gray-50 opacity-75'} ${template.is_default ? 'ring-2 ring-indigo-500' : ''}`}
       data-testid={`template-card-${template.id}`}
     >
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
-          <div className={`h-12 w-12 rounded-xl flex items-center justify-center bg-${color}-100`}>
-            <FileText className={`h-6 w-6 text-${color}-600`} />
+          <div className="h-12 w-12 rounded-xl flex items-center justify-center bg-indigo-100">
+            <ClipboardList className="h-6 w-6 text-indigo-600" />
           </div>
           <div>
             <h3 className="font-semibold text-gray-900 flex items-center gap-2">
               {template.name}
               {template.is_default && (
-                <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded-full flex items-center gap-1">
+                <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-medium rounded-full flex items-center gap-1">
                   <Star className="h-3 w-3" /> Default
                 </span>
               )}
@@ -60,10 +40,7 @@ const TemplateCard = ({ template, onEdit, onToggle, onDelete, onSetDefault }) =>
                 <span className="px-2 py-0.5 bg-gray-200 text-gray-600 text-xs font-medium rounded-full">Inactive</span>
               )}
             </h3>
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <TypeIcon className="h-4 w-4" />
-              {template.partner_name}
-            </div>
+            <p className="text-sm text-gray-500">{template.question_count} questions</p>
           </div>
         </div>
         <div className="flex items-center gap-1">
@@ -103,18 +80,7 @@ const TemplateCard = ({ template, onEdit, onToggle, onDelete, onSetDefault }) =>
         </div>
       </div>
       
-      {/* Stats */}
-      <div className="mt-4 pt-4 border-t flex items-center gap-4">
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <ClipboardList className="h-4 w-4 text-gray-400" />
-          <span>{template.question_count} Questions</span>
-        </div>
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <FileCheck className="h-4 w-4 text-gray-400" />
-          <span>{template.report_template_id ? 'Custom Report' : 'Default Report'}</span>
-        </div>
-      </div>
-      
+      {/* Description */}
       {template.description && (
         <p className="mt-3 text-sm text-gray-500">{template.description}</p>
       )}
@@ -131,14 +97,12 @@ const CategoryQuestionSelector = ({ category, questions, selectedIds, onToggle }
   
   const handleCategoryToggle = () => {
     if (allSelected) {
-      // Deselect all in this category
       categoryQuestions.forEach(q => {
         if (selectedIds.includes(q.id)) {
           onToggle(q.id);
         }
       });
     } else {
-      // Select all in this category
       categoryQuestions.forEach(q => {
         if (!selectedIds.includes(q.id)) {
           onToggle(q.id);
@@ -204,7 +168,6 @@ const CategoryQuestionSelector = ({ category, questions, selectedIds, onToggle }
 
 const InspectionTemplatesPage = () => {
   const [templates, setTemplates] = useState([]);
-  const [partners, setPartners] = useState([]);
   const [questions, setQuestions] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -218,10 +181,8 @@ const InspectionTemplatesPage = () => {
   // Form state
   const [formData, setFormData] = useState({
     name: '',
-    partner_id: '',
     description: '',
     question_ids: [],
-    report_template_id: null,
     is_default: false,
     is_active: true,
   });
@@ -229,14 +190,12 @@ const InspectionTemplatesPage = () => {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const [templatesRes, partnersRes, questionsRes, categoriesRes] = await Promise.all([
+      const [templatesRes, questionsRes, categoriesRes] = await Promise.all([
         inspectionTemplatesApi.getTemplates(),
-        partnersApi.getPartners({ is_active: true }),
         inspectionQAApi.getQuestions(),
         inspectionQAApi.getCategories(),
       ]);
       setTemplates(templatesRes.data);
-      setPartners(partnersRes.data);
       setQuestions(questionsRes.data);
       setCategories(categoriesRes.data);
     } catch (error) {
@@ -253,17 +212,14 @@ const InspectionTemplatesPage = () => {
 
   const openModal = async (template = null) => {
     if (template) {
-      // Fetch full template details to get question_ids
       try {
         const res = await inspectionTemplatesApi.getTemplate(template.id);
         const fullTemplate = res.data;
         setEditingTemplate(fullTemplate);
         setFormData({
           name: fullTemplate.name || '',
-          partner_id: fullTemplate.partner_id || '',
           description: fullTemplate.description || '',
           question_ids: fullTemplate.question_ids || [],
-          report_template_id: fullTemplate.report_template_id || null,
           is_default: fullTemplate.is_default || false,
           is_active: fullTemplate.is_active !== false,
         });
@@ -276,10 +232,8 @@ const InspectionTemplatesPage = () => {
       setEditingTemplate(null);
       setFormData({
         name: '',
-        partner_id: partners[0]?.id || '',
         description: '',
         question_ids: [],
-        report_template_id: null,
         is_default: false,
         is_active: true,
       });
@@ -309,10 +263,6 @@ const InspectionTemplatesPage = () => {
       toast.error('Template name is required');
       return;
     }
-    if (!formData.partner_id) {
-      toast.error('Please select a partner');
-      return;
-    }
     if (formData.question_ids.length === 0) {
       toast.error('Please select at least one question');
       return;
@@ -320,11 +270,18 @@ const InspectionTemplatesPage = () => {
 
     try {
       setSaving(true);
+      // Add dummy partner_id for backward compatibility (will be linked via ReportTemplate)
+      const saveData = {
+        ...formData,
+        partner_id: editingTemplate?.partner_id || 'placeholder',
+        report_template_id: null,
+      };
+      
       if (editingTemplate) {
-        await inspectionTemplatesApi.updateTemplate(editingTemplate.id, formData);
+        await inspectionTemplatesApi.updateTemplate(editingTemplate.id, saveData);
         toast.success('Template updated');
       } else {
-        await inspectionTemplatesApi.createTemplate(formData);
+        await inspectionTemplatesApi.createTemplate(saveData);
         toast.success('Template created');
       }
       setIsModalOpen(false);
@@ -387,9 +344,7 @@ const InspectionTemplatesPage = () => {
 
   // Filter templates
   const filteredTemplates = templates.filter(template => {
-    const matchesSearch = template.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (template.partner_name && template.partner_name.toLowerCase().includes(searchQuery.toLowerCase()));
-    return matchesSearch;
+    return template.name.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
   // Stats
@@ -404,7 +359,7 @@ const InspectionTemplatesPage = () => {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl p-4 text-white">
-          <p className="text-indigo-100 text-sm">Total Templates</p>
+          <p className="text-indigo-100 text-sm">Total Questionnaires</p>
           <p className="text-2xl font-bold">{stats.total}</p>
         </div>
         <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-4 text-white">
@@ -416,9 +371,17 @@ const InspectionTemplatesPage = () => {
           <p className="text-2xl font-bold">{questions.length}</p>
         </div>
         <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 text-white">
-          <p className="text-purple-100 text-sm">Partners</p>
-          <p className="text-2xl font-bold">{partners.length}</p>
+          <p className="text-purple-100 text-sm">Categories</p>
+          <p className="text-2xl font-bold">{categories.length}</p>
         </div>
+      </div>
+
+      {/* Info Banner */}
+      <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 mb-6">
+        <p className="text-indigo-800 text-sm">
+          <strong>Inspection Templates</strong> define the set of questions for an inspection. 
+          Connect these to Partners via <strong>Report Templates</strong> to complete the flow.
+        </p>
       </div>
 
       {/* Search and Actions */}
@@ -426,7 +389,7 @@ const InspectionTemplatesPage = () => {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
-            placeholder="Search templates..."
+            placeholder="Search questionnaires..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
@@ -439,7 +402,7 @@ const InspectionTemplatesPage = () => {
             onClick={handleSeedDefault}
             data-testid="seed-default-btn"
           >
-            <Star className="h-4 w-4 mr-2" /> Create B2C Default
+            <Star className="h-4 w-4 mr-2" /> Create Default
           </Button>
         )}
         <Button 
@@ -447,7 +410,7 @@ const InspectionTemplatesPage = () => {
           className="bg-gradient-to-r from-indigo-600 to-indigo-700"
           data-testid="add-template-btn"
         >
-          <Plus className="h-4 w-4 mr-2" /> Create Template
+          <Plus className="h-4 w-4 mr-2" /> Create Questionnaire
         </Button>
       </div>
 
@@ -455,21 +418,21 @@ const InspectionTemplatesPage = () => {
       {loading ? (
         <div className="text-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-indigo-600 mx-auto" />
-          <p className="text-gray-500 mt-2">Loading templates...</p>
+          <p className="text-gray-500 mt-2">Loading questionnaires...</p>
         </div>
       ) : filteredTemplates.length === 0 ? (
         <div className="text-center py-12 border rounded-xl bg-gray-50">
-          <FileText className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500">No inspection templates found</p>
-          <p className="text-sm text-gray-400 mt-1">Create a template to define client-specific inspection questionnaires</p>
+          <ClipboardList className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+          <p className="text-gray-500">No inspection questionnaires found</p>
+          <p className="text-sm text-gray-400 mt-1">Create a questionnaire to define inspection questions</p>
           <div className="flex justify-center gap-3 mt-4">
             {!stats.hasDefault && (
               <Button variant="outline" onClick={handleSeedDefault}>
-                <Star className="h-4 w-4 mr-2" /> Create B2C Default
+                <Star className="h-4 w-4 mr-2" /> Create Default
               </Button>
             )}
             <Button onClick={() => openModal()}>
-              <Plus className="h-4 w-4 mr-2" /> Create Template
+              <Plus className="h-4 w-4 mr-2" /> Create Questionnaire
             </Button>
           </div>
         </div>
@@ -493,8 +456,8 @@ const InspectionTemplatesPage = () => {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" data-testid="template-modal">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5 text-indigo-600" />
-              {editingTemplate ? 'Edit Inspection Template' : 'Create Inspection Template'}
+              <ClipboardList className="h-5 w-5 text-indigo-600" />
+              {editingTemplate ? 'Edit Questionnaire' : 'Create Questionnaire'}
             </DialogTitle>
           </DialogHeader>
           
@@ -506,58 +469,23 @@ const InspectionTemplatesPage = () => {
                 Basic Information
               </h4>
               
-              <div className="grid grid-cols-2 gap-4 pl-8">
-                <div className="col-span-2">
-                  <Label>Template Name *</Label>
+              <div className="grid gap-4 pl-8">
+                <div>
+                  <Label>Questionnaire Name *</Label>
                   <Input
                     value={formData.name}
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    placeholder="e.g., HDFC Bank Vehicle Inspection"
+                    placeholder="e.g., Standard Vehicle Inspection"
                     data-testid="template-name-input"
                   />
                 </div>
                 
-                <div className="col-span-2 md:col-span-1">
-                  <Label>Partner/Client *</Label>
-                  <Select 
-                    value={formData.partner_id} 
-                    onValueChange={(value) => setFormData({...formData, partner_id: value})}
-                  >
-                    <SelectTrigger data-testid="partner-select">
-                      <SelectValue placeholder="Select partner" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {partners.map(partner => (
-                        <SelectItem key={partner.id} value={partner.id}>
-                          {partner.name} ({partner.type.toUpperCase()})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="col-span-2 md:col-span-1">
-                  <Label>Report Template</Label>
-                  <Select 
-                    value={formData.report_template_id || 'default'} 
-                    onValueChange={(value) => setFormData({...formData, report_template_id: value === 'default' ? null : value})}
-                  >
-                    <SelectTrigger data-testid="report-select">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="default">Default Report</SelectItem>
-                      {/* Future: Add custom report templates here */}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="col-span-2">
+                <div>
                   <Label>Description</Label>
                   <Textarea
                     value={formData.description}
                     onChange={(e) => setFormData({...formData, description: e.target.value})}
-                    placeholder="Brief description of this inspection template..."
+                    placeholder="Brief description of this questionnaire..."
                     rows={2}
                     data-testid="description-input"
                   />
@@ -618,7 +546,7 @@ const InspectionTemplatesPage = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <Label>Active</Label>
-                    <p className="text-sm text-gray-500">Template can be used for inspections</p>
+                    <p className="text-sm text-gray-500">Questionnaire can be used in Report Templates</p>
                   </div>
                   <Switch
                     checked={formData.is_active}
@@ -630,7 +558,7 @@ const InspectionTemplatesPage = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <Label>Set as Default</Label>
-                    <p className="text-sm text-gray-500">Use this template for new B2C inspections</p>
+                    <p className="text-sm text-gray-500">Use this questionnaire as default</p>
                   </div>
                   <Switch
                     checked={formData.is_default}
@@ -653,7 +581,7 @@ const InspectionTemplatesPage = () => {
               data-testid="save-template-btn"
             >
               {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {editingTemplate ? 'Update Template' : 'Create Template'}
+              {editingTemplate ? 'Update Questionnaire' : 'Create Questionnaire'}
             </Button>
           </div>
         </DialogContent>
