@@ -16,9 +16,10 @@ import {
   Plus, Loader2, Pencil, Trash2, Package, CheckCircle, X, ListChecks,
   IndianRupee, Award, Layers, ChevronDown, ChevronUp, Copy, PauseCircle,
   PlayCircle, Gift, Percent, Calendar, Tag, CreditCard, BadgePercent,
-  ToggleLeft, ToggleRight
+  ToggleLeft, ToggleRight, HelpCircle
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import InspectionQAPage from './InspectionQAPage';
 
 // Category Card Component
 const CategoryCard = ({ category, onEdit, onCopy, onToggle }) => {
