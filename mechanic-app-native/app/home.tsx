@@ -203,7 +203,7 @@ export default function HomeScreen() {
   const handleRejectConfirm = async (reason: string) => {
     if (!selectedInspection) return;
     try {
-      await inspectionsApi.reject(selectedInspection.id, reason);
+      await inspectionsApi.rejectInspection(selectedInspection.id, reason);
       setRejectModalVisible(false);
       setSelectedInspection(null);
       fetchInspections();
