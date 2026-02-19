@@ -128,6 +128,14 @@ Build a scalable automotive platform "Wisedrive" that evolved into a monolithic 
 
 ---
 
+## Core Applications
+
+1. **CRM Web Application** - Employee, HR, Leads, Customers, Inspections management
+2. **ESS Mobile App** - Employee self-service (React Native/Expo) at `/app/ess-mobile-app/`
+3. **Mechanic Mobile App** - Field inspection app (React) at `/app/mechanic-app/frontend/`
+
+---
+
 ## API Credentials
 
 ### Meta Marketing API
