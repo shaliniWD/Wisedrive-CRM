@@ -158,6 +158,11 @@ function InspectionReportContent({ inspectionId }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [reportStyle, setReportStyle] = useState('standard');
+  const [searchParams] = useSearchParams();
+  
+  // Check for style override in URL params
+  const styleOverride = searchParams.get('style');
 
   const fetchReport = async () => {
     setLoading(true);
@@ -166,6 +171,15 @@ function InspectionReportContent({ inspectionId }) {
     // For demo mode, always use sample data
     if (inspectionId === 'demo') {
       setData(inspectionReportData);
+      setReportStyle(styleOverride || 'standard');
+      setLoading(false);
+      return;
+    }
+    
+    // For sample reports with specific styles
+    if (inspectionId === 'sample') {
+      setData(inspectionReportData);
+      setReportStyle(styleOverride || 'standard');
       setLoading(false);
       return;
     }
@@ -174,6 +188,10 @@ function InspectionReportContent({ inspectionId }) {
       // Fetch inspection data from CRM API
       const response = await axios.get(`${API_URL}/api/inspections/${inspectionId}/report`);
       const { inspection, lead, customer } = response.data;
+      
+      // Get the report style from inspection or fallback
+      const inspectionStyle = inspection.report_style || styleOverride || 'standard';
+      setReportStyle(inspectionStyle);
       
       // Check if inspection has detailed report data
       if (inspection.inspection_categories && inspection.inspection_categories.length > 0) {
@@ -207,6 +225,7 @@ function InspectionReportContent({ inspectionId }) {
       console.error('Error fetching report:', err);
       // On any error, use sample data for demonstration
       setData(inspectionReportData);
+      setReportStyle(styleOverride || 'standard');
     } finally {
       setLoading(false);
     }
@@ -217,12 +236,22 @@ function InspectionReportContent({ inspectionId }) {
       fetchReport();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inspectionId]);
+  }, [inspectionId, styleOverride]);
 
   if (loading) return <ReportSkeleton />;
   if (error) return <ReportError error={error} onRetry={fetchReport} />;
   if (!data) return null;
 
+  // Render based on report style
+  if (reportStyle === 'premium') {
+    return <PremiumReportStyle data={data} />;
+  }
+  
+  if (reportStyle === 'detailed') {
+    return <DetailedTechnicalReportStyle data={data} />;
+  }
+
+  // Default: Standard report (original design)
   return (
     <div className="inspection-report min-h-screen">
       {/* Header */}
