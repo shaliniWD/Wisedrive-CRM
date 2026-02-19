@@ -39,9 +39,9 @@ import { Manufacturer } from '../../src/constants/manufacturers';
 import { getDTCDescription, getComponentForDTC, getDTCSeverity, getSeverityInfo } from '../../src/constants/dtc-descriptions';
 import { getDTCKnowledge } from '../../src/constants/dtc-knowledge-base';
 
-const MODULE = 'OBD_SCANNER';
+const MODULE = 'MAIN_SCREEN';
 
-export default function OBDScannerScreen() {
+export default function MainScreen() {
   const insets = useSafeAreaInsets();
   
   // Modal states
@@ -77,7 +77,7 @@ export default function OBDScannerScreen() {
   const [componentProgress, setComponentProgress] = useState(0);
   const [scannedComponents, setScannedComponents] = useState<Array<{
     name: string;
-    status: 'success' | 'failed' | 'no_response' | 'scanning';
+    status: 'success' | 'failed' | 'no_response';
     dtcsFound: number;
   }>>([]);
   const [totalComponents, setTotalComponents] = useState(0);
@@ -2483,7 +2483,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.bg,
     borderRadius: Radius.md,
     padding: Spacing.md,
-    fontSize: FontSize.base,
+    fontSize: FontSize.md,
     color: Colors.text,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -2606,7 +2606,7 @@ const styles = StyleSheet.create({
     color: Colors.textInverse,
   },
   dtcDetailDesc: {
-    fontSize: FontSize.base,
+    fontSize: FontSize.md,
     color: Colors.text,
     lineHeight: 22,
     marginBottom: Spacing.sm,
@@ -2643,7 +2643,7 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border,
   },
   dtcDetailSectionTitle: {
-    fontSize: FontSize.base,
+    fontSize: FontSize.md,
     fontWeight: '700',
     color: Colors.text,
   },
