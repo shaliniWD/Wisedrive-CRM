@@ -2504,10 +2504,38 @@ Thank you for choosing Wisedrive!"""
             "payment_amount": amount,
             "razorpay_payment_id": payment_id,
             "status": "active",
+            # Partner info carried forward from lead
+            "partner_id": lead.get("partner_id"),
+            "partner_name": lead.get("partner_name"),
             "created_at": datetime.now(timezone.utc).isoformat()
         }
         
         await db.customers.insert_one(customer)
+        
+        # Get report template for this partner
+        report_template = None
+        partner_id = lead.get("partner_id")
+        if partner_id:
+            # Find default report template for this partner
+            report_template = await db.report_templates.find_one(
+                {"partner_id": partner_id, "is_default": True, "is_active": True},
+                {"_id": 0}
+            )
+            # Fallback to any active template for this partner
+            if not report_template:
+                report_template = await db.report_templates.find_one(
+                    {"partner_id": partner_id, "is_active": True},
+                    {"_id": 0}
+                )
+        
+        # Fallback to B2C default report template
+        if not report_template:
+            b2c_partner = await db.partners.find_one({"type": "b2c"}, {"_id": 0, "id": 1})
+            if b2c_partner:
+                report_template = await db.report_templates.find_one(
+                    {"partner_id": b2c_partner["id"], "is_default": True, "is_active": True},
+                    {"_id": 0}
+                )
         
         # Update lead with customer_id
         await db.leads.update_one(
