@@ -9,7 +9,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <AuthProvider>
         <InspectionProvider>
-          <StatusBar style="light" />
+          <StatusBar style="dark" />
           <Stack
             screenOptions={{
               headerShown: false,
@@ -18,7 +18,9 @@ export default function RootLayout() {
           >
             <Stack.Screen name="index" />
             <Stack.Screen name="login" />
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="home" />
+            <Stack.Screen name="scanner" />
+            <Stack.Screen name="profile" />
             <Stack.Screen name="inspection/[id]" />
             <Stack.Screen name="start-inspection/[id]" />
             <Stack.Screen name="vehicle-details/[id]" />
@@ -26,6 +28,7 @@ export default function RootLayout() {
             <Stack.Screen name="category/[inspectionId]/[categoryId]" />
             <Stack.Screen name="obd-scan/[id]" />
             <Stack.Screen name="obd-results/[id]" />
+            <Stack.Screen name="scan-detail/[id]" />
           </Stack>
         </InspectionProvider>
       </AuthProvider>
