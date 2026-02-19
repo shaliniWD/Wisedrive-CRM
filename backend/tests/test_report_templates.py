@@ -376,7 +376,7 @@ class TestServicesTabNavigation:
         endpoints = [
             ("/api/inspection-packages", "Packages"),
             ("/api/inspection-categories", "Categories"),
-            ("/api/inspection-offers", "Offers"),
+            ("/api/offers", "Offers"),  # Correct endpoint
             ("/api/inspection-qa/questions", "Inspection Q&A"),
             ("/api/partners", "Partners"),
             ("/api/inspection-templates", "Inspection Templates"),
