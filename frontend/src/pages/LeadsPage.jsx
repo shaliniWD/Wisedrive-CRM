@@ -533,7 +533,7 @@ export default function LeadsPage() {
     setFormData({ name: lead.name, mobile: lead.mobile, city: lead.city, source: lead.source,
       status: lead.status, assigned_to: lead.assigned_to || '', reminder_date: lead.reminder_date || '',
       reminder_time: lead.reminder_time || '', notes: lead.notes || '', service_type: lead.service_type || '',
-      ad_id: lead.ad_id || '' });
+      ad_id: lead.ad_id || '', partner_id: lead.partner_id || '', partner_name: lead.partner_name || '' });
     setIsModalOpen(true);
   };
 
