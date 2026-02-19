@@ -921,7 +921,7 @@ export default function OBDScannerScreen() {
     }
 
     if (state === 'scanning') {
-      const completedComponents = scannedComponents.filter(c => c.status !== 'scanning');
+      const completedComponents = scannedComponents;
       const overallProgress = totalComponents > 0 ? completedComponents.length / totalComponents : 0;
       
       return (
@@ -1449,12 +1449,12 @@ export default function OBDScannerScreen() {
                 <View style={styles.dtcDetailSection}>
                   <View style={styles.dtcDetailSectionHeader}>
                     <MaterialIcons name="build" size={20} color={Colors.success} />
-                    <Text style={styles.dtcDetailSectionTitle}>Recommended Fixes</Text>
+                    <Text style={styles.dtcDetailSectionTitle}>Recommended Solutions</Text>
                   </View>
-                  {knowledge.fixes.map((fix, idx) => (
+                  {knowledge.solutions.map((solution: string, idx: number) => (
                     <View key={idx} style={styles.dtcDetailListItem}>
                       <Text style={styles.dtcDetailListNumber}>{idx + 1}.</Text>
-                      <Text style={styles.dtcDetailListText}>{fix}</Text>
+                      <Text style={styles.dtcDetailListText}>{solution}</Text>
                     </View>
                   ))}
                 </View>
