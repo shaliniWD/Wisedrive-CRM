@@ -66,9 +66,9 @@ export default function InspectionDetailScreen() {
   };
 
   const handleStartInspection = () => {
-    // Set the current inspection in context and navigate to scanner tab
+    // Set the current inspection in context and navigate to scanner
     setCurrentInspection(id!, inspection);
-    router.push('/(tabs)/scanner');
+    router.push('/scanner');
   };
 
   if (isLoading) {
