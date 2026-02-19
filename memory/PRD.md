@@ -435,6 +435,59 @@ Complete integration of the mechanic mobile app from the provided GitHub reposit
 
 ---
 
+### ✅ Mechanic Push Notifications via FCM (February 19, 2026)
+
+**Feature Implementation:**
+Push notifications to alert mechanics when new inspections are assigned in their city or directly to them.
+
+**Key Components:**
+
+1. **Push Token Management:**
+   - `POST /api/mechanic/push-token` - Register FCM device token
+   - `DELETE /api/mechanic/push-token` - Unregister token on logout
+   - Tokens stored in `mechanic_push_tokens` collection with mechanic_id, device_token, platform, device_info
+
+2. **Notification API:**
+   - `GET /api/mechanic/notifications` - Get notification history
+   - `PATCH /api/mechanic/notifications/{id}/read` - Mark notification as read
+
+3. **Notification Triggers:**
+   - **New Inspection in City:** When `POST /api/inspections` is called, notifies all mechanics in that city
+   - **Inspection Assigned:** When `PATCH /api/inspections/{id}/assign-mechanic` is called, notifies the assigned mechanic
+
+4. **Notification Templates:**
+   - `new_inspection_available`: "New Inspection Available 🚗" - "New inspection in {city} - {vehicle}. Tap to view details."
+   - `inspection_assigned`: "Inspection Assigned to You ✅" - "You've been assigned: {vehicle} in {city}. Scheduled: {scheduled_time}."
+   - `inspection_reminder`: "Upcoming Inspection ⏰" - Reminder notifications
+   - `inspection_cancelled`: "Inspection Cancelled ❌" - When inspection is cancelled
+   - `payment_received`: "Payment Confirmed 💰" - When payment is received
+
+5. **Frontend Integration:**
+   - Firebase SDK integrated in mechanic app
+   - AuthContext handles push token registration on login, unregistration on logout
+   - Foreground message handler shows toast notifications
+
+**FCM Status:**
+- **Initialized:** ✅ Yes
+- **Mode:** MOCK MODE (logs notifications, doesn't send to devices)
+- **Production Requirement:** Add Firebase credentials to `/app/backend/firebase-credentials.json`
+
+**Files Created/Modified:**
+- `/app/backend/server.py` - Push notification endpoints and helper functions
+- `/app/mechanic-app/frontend/src/lib/api.js` - Added pushNotificationApi
+- `/app/mechanic-app/frontend/src/lib/pushNotification.js` - NEW: Firebase/FCM integration service
+- `/app/mechanic-app/frontend/src/context/AuthContext.js` - Push token lifecycle management
+
+**Database Collections:**
+- `mechanic_push_tokens` - Stores device tokens (mechanic_id, device_token, platform, device_info, timestamps)
+- `mechanic_notifications` - Notification history (id, mechanic_id, title, body, data, type, read, timestamps)
+
+**Test Coverage:**
+- 100% backend test coverage (14 tests passed - iteration_63)
+- `/app/backend/tests/test_push_notifications.py` - Comprehensive API tests
+
+---
+
 ## Document History
 - **Created:** December 2025
 - **Last Updated:** February 19, 2026
