@@ -3569,6 +3569,24 @@ async def assign_mechanic_to_inspection(
         # Auto-update status to ASSIGNED_TO_MECHANIC if currently NEW_INSPECTION
         if inspection.get("inspection_status") == "NEW_INSPECTION":
             update_dict["inspection_status"] = "ASSIGNED_TO_MECHANIC"
+        
+        # Send push notification to the assigned mechanic
+        try:
+            vehicle = f"{inspection.get('make', '')} {inspection.get('model', '')}".strip() or inspection.get("car_number", "Vehicle")
+            scheduled = inspection.get("scheduled_date", "TBD")
+            await send_mechanic_notification(
+                mechanic_id=mechanic["id"],
+                title="Inspection Assigned to You ✅",
+                body=f"You've been assigned: {vehicle} in {inspection_city}. Scheduled: {scheduled}.",
+                data={
+                    "type": "inspection_assigned",
+                    "inspection_id": inspection_id,
+                    "city": inspection_city
+                },
+                notification_type="inspection_assigned"
+            )
+        except Exception as e:
+            logger.warning(f"Failed to send assignment notification: {e}")
     else:
         # Unassign mechanic
         update_dict["mechanic_id"] = None
