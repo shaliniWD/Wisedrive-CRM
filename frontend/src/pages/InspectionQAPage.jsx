@@ -301,8 +301,8 @@ export default function InspectionQAPage() {
   
   // Filter states
   const [search, setSearch] = useState('');
-  const [filterCategory, setFilterCategory] = useState('');
-  const [filterActive, setFilterActive] = useState('');
+  const [filterCategory, setFilterCategory] = useState('all');
+  const [filterActive, setFilterActive] = useState('all');
   
   // Form state
   const [formData, setFormData] = useState({
