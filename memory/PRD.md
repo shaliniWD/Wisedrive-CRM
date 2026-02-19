@@ -188,13 +188,24 @@ Build a scalable automotive platform "Wisedrive" that evolved into a monolithic 
 │   │   ├── rbac.py              # Role-based access control
 │   │   ├── twilio_service.py    # Twilio WhatsApp
 │   │   └── razorpay_service.py  # Razorpay payments
-│   └── server.py                # API endpoints (payment-link, webhooks, inspections)
-├── ess-mobile-app/              # React Native (Expo) app
-└── frontend/
+│   ├── tests/
+│   │   └── test_mechanic_app_api.py  # Mechanic app API tests
+│   └── server.py                # API endpoints (10600+ lines)
+├── ess-mobile-app/              # React Native (Expo) Employee Self-Service
+├── mechanic-app/                # Mechanic field inspection app
+│   └── frontend/
+│       ├── src/
+│       │   ├── pages/           # LoginPage, DashboardPage, InspectionChecklistPage
+│       │   ├── lib/api.js       # API client
+│       │   └── context/AuthContext.js
+│       └── build/               # Production build (served on port 3001)
+├── storage/
+│   └── uploads/                 # Uploaded photos/videos from mechanic app
+└── frontend/                    # CRM React Web Application
     ├── src/
     │   ├── components/
     │   │   └── ui/
-    │   │       └── PlacesAutocomplete.jsx  # NEW: Google Places component
+    │   │       └── PlacesAutocomplete.jsx  # Google Places component
     │   ├── services/
     │   │   └── api.js           # API functions
     │   └── pages/
