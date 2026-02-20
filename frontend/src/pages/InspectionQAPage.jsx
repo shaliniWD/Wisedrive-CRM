@@ -220,31 +220,65 @@ const AnswerTypeSection = ({ label, answerType, setAnswerType, options, setOptio
     <div className="space-y-3 p-3 bg-gray-50 rounded-lg border">
       <Label className="text-sm font-medium">{label} {required && <span className="text-red-500">*</span>}</Label>
       
-      {/* Answer Type Selection - Always visible */}
-      <div className="grid grid-cols-3 gap-2">
-        {ANSWER_TYPES.map((type) => {
-          const Icon = type.icon;
-          const isSelected = answerType === type.value;
-          return (
-            <button
-              key={type.value}
-              type="button"
-              onClick={() => setAnswerType(type.value)}
-              className={`p-2.5 rounded-lg border-2 transition-all flex flex-col items-center gap-1.5 ${
-                isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300 bg-white'
-              }`}
-            >
-              <Icon className={`h-5 w-5 ${isSelected ? 'text-blue-600' : 'text-gray-400'}`} />
-              <span className={`text-xs font-medium ${isSelected ? 'text-blue-700' : 'text-gray-600'}`}>
-                {type.label}
-              </span>
-            </button>
-          );
-        })}
+      {/* Single Type Selection */}
+      <div>
+        <Label className="text-xs text-gray-500 mb-2 block">Single Answer Type</Label>
+        <div className="grid grid-cols-3 gap-2">
+          {ANSWER_TYPES.slice(0, 3).map((type) => {
+            const Icon = type.icon;
+            const isSelected = answerType === type.value;
+            return (
+              <button
+                key={type.value}
+                type="button"
+                onClick={() => setAnswerType(type.value)}
+                className={`p-2.5 rounded-lg border-2 transition-all flex flex-col items-center gap-1.5 ${
+                  isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300 bg-white'
+                }`}
+              >
+                <Icon className={`h-5 w-5 ${isSelected ? 'text-blue-600' : 'text-gray-400'}`} />
+                <span className={`text-xs font-medium ${isSelected ? 'text-blue-700' : 'text-gray-600'}`}>
+                  {type.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
       
-      {/* Multiple Choice Options */}
-      {answerType === 'multiple_choice' && (
+      {/* Combined Type Selection */}
+      <div>
+        <Label className="text-xs text-gray-500 mb-2 block">Combined (MCQ + Media)</Label>
+        <div className="grid grid-cols-2 gap-2">
+          {ANSWER_TYPES.slice(3).map((type) => {
+            const isSelected = answerType === type.value;
+            return (
+              <button
+                key={type.value}
+                type="button"
+                onClick={() => setAnswerType(type.value)}
+                className={`p-2.5 rounded-lg border-2 transition-all flex items-center justify-center gap-2 ${
+                  isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300 bg-white'
+                }`}
+              >
+                <ListChecks className={`h-4 w-4 ${isSelected ? 'text-blue-600' : 'text-gray-400'}`} />
+                <span className={`text-xs ${isSelected ? 'text-blue-600' : 'text-gray-400'}`}>+</span>
+                {type.value === 'multiple_choice_photo' ? (
+                  <Camera className={`h-4 w-4 ${isSelected ? 'text-blue-600' : 'text-gray-400'}`} />
+                ) : (
+                  <Video className={`h-4 w-4 ${isSelected ? 'text-blue-600' : 'text-gray-400'}`} />
+                )}
+                <span className={`text-xs font-medium ${isSelected ? 'text-blue-700' : 'text-gray-600'}`}>
+                  {type.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      
+      {/* Multiple Choice Options - Show for any type that includes MCQ */}
+      {hasMultipleChoice(answerType) && (
         <div className="space-y-2 mt-3 pt-3 border-t">
           <div className="flex gap-2">
             <Input
@@ -284,14 +318,15 @@ const AnswerTypeSection = ({ label, answerType, setAnswerType, options, setOptio
         </div>
       )}
       
-      {answerType === 'video' && (
+      {/* Media indicators */}
+      {hasVideo(answerType) && (
         <div className="flex items-center gap-2 text-xs text-purple-600 mt-2">
           <Clock className="h-3.5 w-3.5" />
           <span>Video recording limited to 45 seconds</span>
         </div>
       )}
       
-      {answerType === 'photo' && (
+      {hasPhoto(answerType) && (
         <div className="flex items-center gap-2 text-xs text-emerald-600 mt-2">
           <Camera className="h-3.5 w-3.5" />
           <span>Mechanic will capture a photo</span>
