@@ -203,6 +203,12 @@ export default function HomeScreen() {
   const [selectedInspection, setSelectedInspection] = useState<Inspection | null>(null);
   const [selectedReason, setSelectedReason] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Date Filter State
+  const [dateFilterModalVisible, setDateFilterModalVisible] = useState(false);
+  const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'custom'>('all');
+  const [customStartDate, setCustomStartDate] = useState<Date | null>(null);
+  const [customEndDate, setCustomEndDate] = useState<Date | null>(null);
 
   const fetchInspections = useCallback(async () => {
     try {
