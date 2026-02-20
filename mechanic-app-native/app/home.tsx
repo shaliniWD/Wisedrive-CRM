@@ -308,13 +308,22 @@ export default function HomeScreen() {
           <Text style={styles.greeting}>Hello, {mechanic?.name?.split(' ')[0] || 'Mechanic'} 👋</Text>
           <Text style={styles.subtitle}>{mechanic?.city || 'Your inspections for today'}</Text>
         </View>
-        <TouchableOpacity style={styles.profileBtn} onPress={() => router.push('/profile')}>
-          <View style={styles.profileAvatar}>
-            <Text style={styles.profileAvatarText}>
-              {mechanic?.name?.charAt(0)?.toUpperCase() || 'M'}
-            </Text>
-          </View>
-        </TouchableOpacity>
+        <View style={styles.headerRight}>
+          <TouchableOpacity 
+            style={styles.calendarBtn} 
+            onPress={() => setDateFilterModalVisible(true)}
+          >
+            <Ionicons name="calendar-outline" size={24} color="#3B82F6" />
+            {dateFilter !== 'all' && <View style={styles.filterActiveDot} />}
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.profileBtn} onPress={() => router.push('/profile')}>
+            <View style={styles.profileAvatar}>
+              <Text style={styles.profileAvatarText}>
+                {mechanic?.name?.charAt(0)?.toUpperCase() || 'M'}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Tabs */}
