@@ -2,58 +2,85 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
+  TouchableOpacity,
   StyleSheet,
   FlatList,
-  TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
+  Alert,
   Modal,
-  Linking,
-  Platform,
+  ScrollView,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Ionicons, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../src/context/AuthContext';
-import { inspectionsApi } from '../src/lib/api';
+import { useInspection } from '../src/context/InspectionContext';
+import { mechanicApi, inspectionsApi } from '../src/lib/api';
+
+const { width } = Dimensions.get('window');
+
+// Theme colors
+const Colors = {
+  primary: '#6B21A8',
+  primaryLight: '#F3E8FF',
+  primaryDark: '#581C87',
+  gradientStart: '#7E22CE',
+  gradientEnd: '#6B21A8',
+  background: '#F8FAFC',
+  paper: '#FFFFFF',
+  subtle: '#F1F5F9',
+  textPrimary: '#0F172A',
+  textSecondary: '#64748B',
+  textTertiary: '#94A3B8',
+  border: '#E2E8F0',
+  success: '#15803D',
+  successBg: '#DCFCE7',
+  warning: '#B45309',
+  warningBg: '#FEF3C7',
+  error: '#B91C1C',
+  errorBg: '#FEE2E2',
+  info: '#4338CA',
+  infoBg: '#E0E7FF',
+};
 
 interface Inspection {
   id: string;
+  vehicle_number: string;
+  vehicle_model?: string;
+  customer_name?: string;
+  customer_phone?: string;
+  location?: string;
+  city?: string;
   scheduledAt: string;
-  status: string;
-  vehicleNumber: string;
-  makeModelVariant: string;
-  city: string;
-  customerName: string;
-  customerPhone: string;
-  customerAddress: string;
-  packageName: string;
+  status: 'NEW' | 'ACCEPTED' | 'IN_PROGRESS' | 'COMPLETED' | 'REJECTED';
 }
 
+// Rejection reasons
 const REJECTION_REASONS = [
-  'Not available at scheduled time',
-  'Location is too far',
-  'Vehicle type not supported',
-  'Personal emergency',
-  'Already assigned to another inspection',
-  'Other reason',
+  { id: 'distance', label: 'Location too far', icon: 'location-outline' },
+  { id: 'busy', label: 'Already busy', icon: 'time-outline' },
+  { id: 'vehicle', label: 'Vehicle type issue', icon: 'car-outline' },
+  { id: 'timing', label: 'Timing conflict', icon: 'calendar-outline' },
+  { id: 'other', label: 'Other reason', icon: 'ellipsis-horizontal' },
 ];
 
 // Status Badge Component
 const StatusBadge = ({ status }: { status: string }) => {
-  const config: Record<string, { bg: string; text: string; label: string }> = {
-    NEW: { bg: '#FEF3C7', text: '#D97706', label: 'New' },
-    ACCEPTED: { bg: '#D1FAE5', text: '#059669', label: 'Accepted' },
-    IN_PROGRESS: { bg: '#DBEAFE', text: '#2563EB', label: 'In Progress' },
-    COMPLETED: { bg: '#E0E7FF', text: '#4F46E5', label: 'Completed' },
-    REJECTED: { bg: '#FEE2E2', text: '#DC2626', label: 'Rejected' },
-  };
-  const { bg, text, label } = config[status] || config.NEW;
-
+  const config = {
+    NEW: { label: 'New', bg: Colors.infoBg, text: Colors.info },
+    ACCEPTED: { label: 'Accepted', bg: Colors.successBg, text: Colors.success },
+    IN_PROGRESS: { label: 'In Progress', bg: Colors.warningBg, text: Colors.warning },
+    COMPLETED: { label: 'Completed', bg: Colors.successBg, text: Colors.success },
+    REJECTED: { label: 'Rejected', bg: Colors.errorBg, text: Colors.error },
+  }[status] || { label: status, bg: Colors.subtle, text: Colors.textSecondary };
+  
   return (
-    <View style={[styles.statusBadge, { backgroundColor: bg }]}>
-      <Text style={[styles.statusBadgeText, { color: text }]}>{label}</Text>
+    <View style={[styles.badge, { backgroundColor: config.bg }]}>
+      <View style={[styles.badgeDot, { backgroundColor: config.text }]} />
+      <Text style={[styles.badgeText, { color: config.text }]}>{config.label}</Text>
     </View>
   );
 };
@@ -62,141 +89,132 @@ const StatusBadge = ({ status }: { status: string }) => {
 const InspectionCard = ({ 
   inspection, 
   onAccept, 
-  onReject,
-  onStartInspection,
-  onNavigate,
+  onReject, 
+  onStart 
 }: { 
-  inspection: Inspection; 
-  onAccept: () => void; 
+  inspection: Inspection;
+  onAccept: () => void;
   onReject: () => void;
-  onStartInspection: () => void;
-  onNavigate: () => void;
+  onStart: () => void;
 }) => {
-  const date = new Date(inspection.scheduledAt);
-  const formattedDate = date.toLocaleDateString('en-US', { 
-    weekday: 'short',
-    month: 'short', 
-    day: 'numeric' 
-  });
-  const formattedTime = date.toLocaleTimeString('en-US', { 
-    hour: '2-digit', 
-    minute: '2-digit',
-    hour12: true 
-  });
-
-  const isNew = inspection.status === 'NEW';
-  const isAccepted = inspection.status === 'ACCEPTED';
-  const isCompleted = inspection.status === 'COMPLETED';
-  const isRejected = inspection.status === 'REJECTED';
-
+  const scheduledDate = new Date(inspection.scheduledAt);
+  const timeStr = scheduledDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  const dateStr = scheduledDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+  
   return (
     <View style={styles.card}>
       {/* Card Header */}
       <View style={styles.cardHeader}>
-        <View style={styles.cardHeaderLeft}>
-          <View style={styles.carIconContainer}>
-            <MaterialCommunityIcons name="car-side" size={24} color="#3B82F6" />
-          </View>
-          <View>
-            <Text style={styles.vehicleNumber}>{inspection.vehicleNumber}</Text>
-            <Text style={styles.vehicleModel}>{inspection.makeModelVariant}</Text>
-          </View>
-        </View>
+        <Text style={styles.vehicleNumber}>{inspection.vehicle_number || 'KA01AB1234'}</Text>
         <StatusBadge status={inspection.status} />
       </View>
-
-      {/* Card Details */}
-      <View style={styles.cardDetails}>
-        <View style={styles.detailRow}>
-          <Ionicons name="calendar-outline" size={16} color="#64748B" />
-          <Text style={styles.detailText}>{formattedDate} • {formattedTime}</Text>
+      
+      {/* Card Body */}
+      <View style={styles.cardBody}>
+        <View style={styles.cardRow}>
+          <View style={styles.cardDetail}>
+            <Ionicons name="car-sport-outline" size={18} color={Colors.textSecondary} />
+            <Text style={styles.cardDetailText} numberOfLines={1}>
+              {inspection.vehicle_model || 'Vehicle'}
+            </Text>
+          </View>
+          <View style={styles.cardDetail}>
+            <Ionicons name="calendar-outline" size={18} color={Colors.textSecondary} />
+            <Text style={styles.cardDetailText}>{dateStr}, {timeStr}</Text>
+          </View>
         </View>
-        <View style={styles.detailRow}>
-          <Ionicons name="location-outline" size={16} color="#64748B" />
-          <Text style={styles.detailText} numberOfLines={1}>{inspection.city}</Text>
-        </View>
-        <View style={styles.detailRow}>
-          <Ionicons name="person-outline" size={16} color="#64748B" />
-          <Text style={styles.detailText}>{inspection.customerName}</Text>
-        </View>
+        
+        {inspection.location && (
+          <TouchableOpacity style={styles.locationRow} activeOpacity={0.7}>
+            <Ionicons name="location-outline" size={18} color={Colors.primary} />
+            <Text style={styles.locationText} numberOfLines={1}>
+              {inspection.location}{inspection.city ? `, ${inspection.city}` : ''}
+            </Text>
+            <Ionicons name="chevron-forward" size={16} color={Colors.textTertiary} />
+          </TouchableOpacity>
+        )}
+        
+        {inspection.customer_name && (
+          <View style={styles.customerRow}>
+            <Ionicons name="person-outline" size={16} color={Colors.textTertiary} />
+            <Text style={styles.customerText}>{inspection.customer_name}</Text>
+            {inspection.customer_phone && (
+              <TouchableOpacity style={styles.phoneBtn} activeOpacity={0.7}>
+                <Ionicons name="call-outline" size={14} color={Colors.primary} />
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
       </View>
-
+      
       {/* Card Actions */}
-      {isNew && (
-        <View style={styles.cardActions}>
-          <TouchableOpacity 
-            style={styles.rejectBtn} 
-            onPress={onReject}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="close-circle-outline" size={18} color="#EF4444" />
-            <Text style={styles.rejectBtnText}>Reject</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.acceptBtn} 
-            onPress={onAccept}
-            activeOpacity={0.8}
-          >
+      <View style={styles.cardActions}>
+        {inspection.status === 'NEW' && (
+          <>
+            <TouchableOpacity 
+              style={styles.rejectBtn} 
+              onPress={onReject}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.rejectBtnText}>Reject</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity onPress={onAccept} activeOpacity={0.8} style={{ flex: 1 }}>
+              <LinearGradient
+                colors={[Colors.gradientStart, Colors.gradientEnd]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.acceptBtn}
+              >
+                <Text style={styles.acceptBtnText}>Accept</Text>
+                <Ionicons name="checkmark" size={18} color="#FFF" />
+              </LinearGradient>
+            </TouchableOpacity>
+          </>
+        )}
+        
+        {inspection.status === 'ACCEPTED' && (
+          <TouchableOpacity onPress={onStart} activeOpacity={0.8} style={{ flex: 1 }}>
             <LinearGradient
-              colors={['#10B981', '#059669']}
+              colors={[Colors.gradientStart, Colors.gradientEnd]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
-              style={styles.acceptBtnGradient}
+              style={styles.startBtn}
             >
-              <Ionicons name="checkmark-circle" size={20} color="#FFF" />
-              <Text style={styles.acceptBtnText}>Accept Inspection</Text>
+              <Text style={styles.startBtnText}>Start Inspection</Text>
+              <Ionicons name="arrow-forward" size={18} color="#FFF" />
             </LinearGradient>
           </TouchableOpacity>
-        </View>
-      )}
-
-      {isAccepted && (
-        <View style={styles.cardActions}>
-          <TouchableOpacity 
-            style={styles.navigateBtn} 
-            onPress={onNavigate}
-            activeOpacity={0.7}
-          >
-            <MaterialIcons name="navigation" size={20} color="#3B82F6" />
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.startInspectionBtn} 
-            onPress={onStartInspection}
-            activeOpacity={0.8}
-          >
-            <LinearGradient
-              colors={['#3B82F6', '#2563EB']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.startInspectionBtnGradient}
-            >
-              <MaterialIcons name="play-arrow" size={22} color="#FFF" />
-              <Text style={styles.startInspectionBtnText}>Start Inspection</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {(isCompleted || isRejected) && (
-        <View style={styles.cardFooter}>
-          <TouchableOpacity style={styles.viewDetailsBtn}>
-            <Text style={styles.viewDetailsBtnText}>View Details</Text>
-            <Ionicons name="chevron-forward" size={16} color="#64748B" />
-          </TouchableOpacity>
-        </View>
-      )}
+        )}
+        
+        {(inspection.status === 'COMPLETED' || inspection.status === 'REJECTED') && (
+          <View style={styles.completedRow}>
+            <Ionicons 
+              name={inspection.status === 'COMPLETED' ? 'checkmark-circle' : 'close-circle'} 
+              size={20} 
+              color={inspection.status === 'COMPLETED' ? Colors.success : Colors.error} 
+            />
+            <Text style={[
+              styles.completedText,
+              { color: inspection.status === 'COMPLETED' ? Colors.success : Colors.error }
+            ]}>
+              {inspection.status === 'COMPLETED' ? 'Inspection Completed' : 'Rejected'}
+            </Text>
+          </View>
+        )}
+      </View>
     </View>
   );
 };
 
+// Main Component
 export default function HomeScreen() {
   const { mechanic, logout } = useAuth();
+  const { setCurrentInspectionId, setCurrentInspection } = useInspection();
   const [inspections, setInspections] = useState<Inspection[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'all' | 'new' | 'accepted' | 'completed'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'new' | 'accepted' | 'history'>('all');
   
   // Reject Modal State
   const [rejectModalVisible, setRejectModalVisible] = useState(false);
@@ -206,16 +224,14 @@ export default function HomeScreen() {
   
   // Date Filter State
   const [dateFilterModalVisible, setDateFilterModalVisible] = useState(false);
-  const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'custom'>('all');
-  const [customStartDate, setCustomStartDate] = useState<Date | null>(null);
-  const [customEndDate, setCustomEndDate] = useState<Date | null>(null);
+  const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week'>('all');
 
   const fetchInspections = useCallback(async () => {
     try {
-      const data = await inspectionsApi.getInspections();
-      setInspections(data);
+      const data = await mechanicApi.getInspections();
+      setInspections(data || []);
     } catch (error) {
-      console.error('Error fetching inspections:', error);
+      console.error('Failed to fetch inspections:', error);
     } finally {
       setIsLoading(false);
       setRefreshing(false);
@@ -226,62 +242,51 @@ export default function HomeScreen() {
     fetchInspections();
   }, [fetchInspections]);
 
-  const handleRefresh = () => {
-    setRefreshing(true);
-    fetchInspections();
-  };
-
   const handleAccept = async (inspection: Inspection) => {
     try {
-      await inspectionsApi.acceptInspection(inspection.id);
+      await mechanicApi.updateInspectionStatus(inspection.id, 'ACCEPTED');
       fetchInspections();
+      Alert.alert('Success', 'Inspection accepted');
     } catch (error) {
-      console.error('Error accepting inspection:', error);
+      Alert.alert('Error', 'Failed to accept inspection');
     }
   };
 
-  const handleRejectPress = (inspection: Inspection) => {
+  const handleReject = (inspection: Inspection) => {
     setSelectedInspection(inspection);
     setSelectedReason(null);
     setRejectModalVisible(true);
   };
 
-  const handleRejectConfirm = async () => {
+  const submitRejection = async () => {
     if (!selectedInspection || !selectedReason) return;
+    
     setIsSubmitting(true);
     try {
-      await inspectionsApi.rejectInspection(selectedInspection.id, selectedReason);
+      await mechanicApi.updateInspectionStatus(selectedInspection.id, 'REJECTED', selectedReason);
       setRejectModalVisible(false);
-      setSelectedInspection(null);
-      setSelectedReason(null);
       fetchInspections();
+      Alert.alert('Success', 'Inspection rejected');
     } catch (error) {
-      console.error('Error rejecting inspection:', error);
+      Alert.alert('Error', 'Failed to reject inspection');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleStartInspection = (inspection: Inspection) => {
+  const handleStart = (inspection: Inspection) => {
+    setCurrentInspectionId(inspection.id);
+    setCurrentInspection(inspection);
     router.push(`/verify-vehicle/${inspection.id}`);
   };
 
-  const handleNavigate = (inspection: Inspection) => {
-    const address = encodeURIComponent(inspection.customerAddress || inspection.city);
-    const url = Platform.select({
-      ios: `maps:0,0?q=${address}`,
-      android: `geo:0,0?q=${address}`,
-    });
-    if (url) Linking.openURL(url);
-  };
-
-  // Filter inspections based on active tab and date filter
+  // Filter inspections
   const filteredInspections = inspections.filter(i => {
     // Tab filter
     let passesTabFilter = true;
     if (activeTab === 'new') passesTabFilter = i.status === 'NEW';
-    else if (activeTab === 'accepted') passesTabFilter = i.status === 'ACCEPTED';
-    else if (activeTab === 'completed') passesTabFilter = i.status === 'COMPLETED' || i.status === 'REJECTED';
+    else if (activeTab === 'accepted') passesTabFilter = i.status === 'ACCEPTED' || i.status === 'IN_PROGRESS';
+    else if (activeTab === 'history') passesTabFilter = i.status === 'COMPLETED' || i.status === 'REJECTED';
     
     if (!passesTabFilter) return false;
     
@@ -298,108 +303,162 @@ export default function HomeScreen() {
       const weekFromNow = new Date(today);
       weekFromNow.setDate(weekFromNow.getDate() + 7);
       return inspectionDate >= today && inspectionDate < weekFromNow;
-    } else if (dateFilter === 'custom' && customStartDate && customEndDate) {
-      const startDate = new Date(customStartDate);
-      startDate.setHours(0, 0, 0, 0);
-      const endDate = new Date(customEndDate);
-      endDate.setHours(23, 59, 59, 999);
-      return inspectionDate >= startDate && inspectionDate <= endDate;
     }
     
     return true;
   });
 
+  // Get counts for tabs
+  const counts = {
+    all: inspections.length,
+    new: inspections.filter(i => i.status === 'NEW').length,
+    accepted: inspections.filter(i => i.status === 'ACCEPTED' || i.status === 'IN_PROGRESS').length,
+    history: inspections.filter(i => i.status === 'COMPLETED' || i.status === 'REJECTED').length,
+  };
+
   const tabs = [
-    { key: 'all', label: 'All', count: inspections.length },
-    { key: 'new', label: 'New', count: inspections.filter(i => i.status === 'NEW').length },
-    { key: 'accepted', label: 'Accepted', count: inspections.filter(i => i.status === 'ACCEPTED').length },
-    { key: 'completed', label: 'History', count: inspections.filter(i => i.status === 'COMPLETED' || i.status === 'REJECTED').length },
+    { key: 'all', label: 'All', count: counts.all },
+    { key: 'new', label: 'New', count: counts.new },
+    { key: 'accepted', label: 'Accepted', count: counts.accepted },
+    { key: 'history', label: 'History', count: counts.history },
   ];
 
-  if (isLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#3B82F6" />
-        <Text style={styles.loadingText}>Loading inspections...</Text>
-      </View>
-    );
-  }
+  // Get today's date formatted
+  const todayStr = new Date().toLocaleDateString('en-US', { 
+    weekday: 'long', 
+    day: 'numeric', 
+    month: 'long' 
+  });
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
+      {/* Dashboard Header */}
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Text style={styles.greeting}>Hello, {mechanic?.name?.split(' ')[0] || 'Mechanic'} 👋</Text>
-          <Text style={styles.subtitle}>{mechanic?.city || 'Your inspections for today'}</Text>
+        <View style={styles.headerTop}>
+          <View style={styles.headerLeft}>
+            <Text style={styles.greeting}>
+              Hello, {mechanic?.name?.split(' ')[0] || 'Mechanic'} 👋
+            </Text>
+            <Text style={styles.dateText}>{todayStr}</Text>
+          </View>
+          
+          <View style={styles.headerRight}>
+            <TouchableOpacity 
+              style={[styles.iconBtn, dateFilter !== 'all' && styles.iconBtnActive]} 
+              onPress={() => setDateFilterModalVisible(true)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="calendar-outline" size={22} color={dateFilter !== 'all' ? Colors.primary : Colors.textSecondary} />
+              {dateFilter !== 'all' && <View style={styles.filterDot} />}
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.profileBtn} 
+              onPress={() => router.push('/profile')}
+              activeOpacity={0.8}
+            >
+              <LinearGradient
+                colors={[Colors.gradientStart, Colors.gradientEnd]}
+                style={styles.profileAvatar}
+              >
+                <Text style={styles.profileInitial}>
+                  {mechanic?.name?.charAt(0)?.toUpperCase() || 'M'}
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
         </View>
-        <View style={styles.headerRight}>
-          <TouchableOpacity 
-            style={styles.calendarBtn} 
-            onPress={() => setDateFilterModalVisible(true)}
-          >
-            <Ionicons name="calendar-outline" size={24} color="#3B82F6" />
-            {dateFilter !== 'all' && <View style={styles.filterActiveDot} />}
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.profileBtn} onPress={() => router.push('/profile')}>
-            <View style={styles.profileAvatar}>
-              <Text style={styles.profileAvatarText}>
-                {mechanic?.name?.charAt(0)?.toUpperCase() || 'M'}
+        
+        {/* Stats Row */}
+        <View style={styles.statsRow}>
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{counts.new}</Text>
+            <Text style={styles.statLabel}>Pending</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{counts.accepted}</Text>
+            <Text style={styles.statLabel}>In Progress</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{counts.history}</Text>
+            <Text style={styles.statLabel}>Completed</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Tab Bar */}
+      <View style={styles.tabContainer}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabScroll}>
+          {tabs.map((tab) => {
+            const isActive = activeTab === tab.key;
+            return (
+              <TouchableOpacity
+                key={tab.key}
+                style={[styles.tab, isActive && styles.tabActive]}
+                onPress={() => setActiveTab(tab.key as any)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
+                  {tab.label}
+                </Text>
+                {tab.count > 0 && (
+                  <View style={[styles.tabBadge, isActive && styles.tabBadgeActive]}>
+                    <Text style={[styles.tabBadgeText, isActive && styles.tabBadgeTextActive]}>
+                      {tab.count}
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
+
+      {/* Inspection List */}
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors.primary} />
+        </View>
+      ) : (
+        <FlatList
+          data={filteredInspections}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <InspectionCard
+              inspection={item}
+              onAccept={() => handleAccept(item)}
+              onReject={() => handleReject(item)}
+              onStart={() => handleStart(item)}
+            />
+          )}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => { setRefreshing(true); fetchInspections(); }}
+              colors={[Colors.primary]}
+              tintColor={Colors.primary}
+            />
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <View style={styles.emptyIcon}>
+                <MaterialCommunityIcons name="clipboard-check-outline" size={48} color={Colors.primary} />
+              </View>
+              <Text style={styles.emptyTitle}>No Inspections</Text>
+              <Text style={styles.emptyText}>
+                {activeTab === 'new' ? 'No new inspections available' :
+                 activeTab === 'accepted' ? 'No accepted inspections yet' :
+                 activeTab === 'history' ? 'No completed inspections yet' :
+                 'Pull down to refresh'}
               </Text>
             </View>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Tabs */}
-      <View style={styles.tabsContainer}>
-        {tabs.map((tab) => (
-          <TouchableOpacity
-            key={tab.key}
-            style={[styles.tab, activeTab === tab.key && styles.tabActive]}
-            onPress={() => setActiveTab(tab.key as any)}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>
-              {tab.label}
-            </Text>
-            {tab.count > 0 && (
-              <View style={[styles.tabBadge, activeTab === tab.key && styles.tabBadgeActive]}>
-                <Text style={[styles.tabBadgeText, activeTab === tab.key && styles.tabBadgeTextActive]}>
-                  {tab.count}
-                </Text>
-              </View>
-            )}
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      {/* Inspections List */}
-      <FlatList
-        data={filteredInspections}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <InspectionCard
-            inspection={item}
-            onAccept={() => handleAccept(item)}
-            onReject={() => handleRejectPress(item)}
-            onStartInspection={() => handleStartInspection(item)}
-            onNavigate={() => handleNavigate(item)}
-          />
-        )}
-        contentContainerStyle={styles.listContent}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={['#3B82F6']} />
-        }
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <MaterialCommunityIcons name="clipboard-text-outline" size={64} color="#CBD5E1" />
-            <Text style={styles.emptyTitle}>No inspections found</Text>
-            <Text style={styles.emptySubtitle}>Pull down to refresh</Text>
-          </View>
-        }
-      />
+          }
+        />
+      )}
 
       {/* Reject Modal */}
       <Modal
@@ -410,37 +469,43 @@ export default function HomeScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
+            <View style={styles.modalHandle} />
+            
             <View style={styles.modalHeader}>
               <View style={styles.modalIconContainer}>
-                <Ionicons name="close-circle" size={32} color="#EF4444" />
+                <Ionicons name="close-circle" size={32} color={Colors.error} />
               </View>
               <Text style={styles.modalTitle}>Reject Inspection</Text>
-              <Text style={styles.modalSubtitle}>Please select a reason for rejection</Text>
+              <Text style={styles.modalSubtitle}>
+                Please select a reason for rejecting this inspection
+              </Text>
             </View>
 
             <View style={styles.reasonsList}>
-              {REJECTION_REASONS.map((reason, index) => (
+              {REJECTION_REASONS.map((reason) => (
                 <TouchableOpacity
-                  key={index}
+                  key={reason.id}
                   style={[
                     styles.reasonItem,
-                    selectedReason === reason && styles.reasonItemSelected,
+                    selectedReason === reason.id && styles.reasonItemSelected,
                   ]}
-                  onPress={() => setSelectedReason(reason)}
+                  onPress={() => setSelectedReason(reason.id)}
                   activeOpacity={0.7}
                 >
-                  <View style={[
-                    styles.radioOuter,
-                    selectedReason === reason && styles.radioOuterSelected,
-                  ]}>
-                    {selectedReason === reason && <View style={styles.radioInner} />}
-                  </View>
+                  <Ionicons 
+                    name={reason.icon as any} 
+                    size={20} 
+                    color={selectedReason === reason.id ? Colors.primary : Colors.textSecondary} 
+                  />
                   <Text style={[
                     styles.reasonText,
-                    selectedReason === reason && styles.reasonTextSelected,
+                    selectedReason === reason.id && styles.reasonTextSelected
                   ]}>
-                    {reason}
+                    {reason.label}
                   </Text>
+                  {selectedReason === reason.id && (
+                    <Ionicons name="checkmark-circle" size={20} color={Colors.primary} />
+                  )}
                 </TouchableOpacity>
               ))}
             </View>
@@ -449,19 +514,21 @@ export default function HomeScreen() {
               <TouchableOpacity 
                 style={styles.cancelBtn}
                 onPress={() => setRejectModalVisible(false)}
+                activeOpacity={0.8}
               >
                 <Text style={styles.cancelBtnText}>Cancel</Text>
               </TouchableOpacity>
               
               <TouchableOpacity 
                 style={[styles.submitRejectBtn, !selectedReason && styles.submitRejectBtnDisabled]}
-                onPress={handleRejectConfirm}
+                onPress={submitRejection}
                 disabled={!selectedReason || isSubmitting}
+                activeOpacity={0.8}
               >
                 {isSubmitting ? (
                   <ActivityIndicator color="#FFF" size="small" />
                 ) : (
-                  <Text style={styles.submitRejectBtnText}>Submit</Text>
+                  <Text style={styles.submitRejectBtnText}>Confirm Rejection</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -478,15 +545,17 @@ export default function HomeScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
+            <View style={styles.modalHandle} />
+            
             <View style={styles.modalHeader}>
-              <View style={styles.dateFilterIconContainer}>
-                <Ionicons name="calendar" size={32} color="#3B82F6" />
+              <View style={[styles.modalIconContainer, { backgroundColor: Colors.primaryLight }]}>
+                <Ionicons name="calendar" size={32} color={Colors.primary} />
               </View>
               <Text style={styles.modalTitle}>Filter by Date</Text>
-              <Text style={styles.modalSubtitle}>Select a date range to filter inspections</Text>
+              <Text style={styles.modalSubtitle}>Select a date range</Text>
             </View>
 
-            <View style={styles.dateFilterOptions}>
+            <View style={styles.reasonsList}>
               {[
                 { key: 'all', label: 'All Inspections', icon: 'list' },
                 { key: 'today', label: 'Today', icon: 'today' },
@@ -495,31 +564,25 @@ export default function HomeScreen() {
                 <TouchableOpacity
                   key={option.key}
                   style={[
-                    styles.dateFilterOption,
-                    dateFilter === option.key && styles.dateFilterOptionSelected,
+                    styles.reasonItem,
+                    dateFilter === option.key && styles.reasonItemSelected,
                   ]}
-                  onPress={() => {
-                    setDateFilter(option.key as any);
-                    if (option.key !== 'custom') {
-                      setCustomStartDate(null);
-                      setCustomEndDate(null);
-                    }
-                  }}
+                  onPress={() => setDateFilter(option.key as any)}
                   activeOpacity={0.7}
                 >
                   <Ionicons 
                     name={option.icon as any} 
                     size={20} 
-                    color={dateFilter === option.key ? '#3B82F6' : '#64748B'} 
+                    color={dateFilter === option.key ? Colors.primary : Colors.textSecondary} 
                   />
                   <Text style={[
-                    styles.dateFilterOptionText,
-                    dateFilter === option.key && styles.dateFilterOptionTextSelected,
+                    styles.reasonText,
+                    dateFilter === option.key && styles.reasonTextSelected
                   ]}>
                     {option.label}
                   </Text>
                   {dateFilter === option.key && (
-                    <Ionicons name="checkmark-circle" size={20} color="#3B82F6" />
+                    <Ionicons name="checkmark-circle" size={20} color={Colors.primary} />
                   )}
                 </TouchableOpacity>
               ))}
@@ -529,15 +592,24 @@ export default function HomeScreen() {
               <TouchableOpacity 
                 style={styles.cancelBtn}
                 onPress={() => setDateFilterModalVisible(false)}
+                activeOpacity={0.8}
               >
                 <Text style={styles.cancelBtnText}>Close</Text>
               </TouchableOpacity>
               
               <TouchableOpacity 
-                style={styles.applyFilterBtn}
                 onPress={() => setDateFilterModalVisible(false)}
+                activeOpacity={0.8}
+                style={{ flex: 1 }}
               >
-                <Text style={styles.applyFilterBtnText}>Apply Filter</Text>
+                <LinearGradient
+                  colors={[Colors.gradientStart, Colors.gradientEnd]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.applyFilterBtn}
+                >
+                  <Text style={styles.applyFilterBtnText}>Apply Filter</Text>
+                </LinearGradient>
               </TouchableOpacity>
             </View>
           </View>
@@ -550,123 +622,147 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F1F5F9',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F1F5F9',
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 14,
-    color: '#64748B',
+    backgroundColor: Colors.background,
   },
 
   // Header
   header: {
+    backgroundColor: Colors.paper,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#FFF',
+    alignItems: 'flex-start',
+    marginBottom: 16,
   },
   headerLeft: {
     flex: 1,
   },
+  greeting: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    marginBottom: 4,
+  },
+  dateText: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+  },
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 12,
   },
-  calendarBtn: {
+  iconBtn: {
     width: 44,
     height: 44,
-    borderRadius: 22,
-    backgroundColor: '#EFF6FF',
+    borderRadius: 12,
+    backgroundColor: Colors.subtle,
     justifyContent: 'center',
     alignItems: 'center',
-    position: 'relative',
   },
-  filterActiveDot: {
+  iconBtnActive: {
+    backgroundColor: Colors.primaryLight,
+  },
+  filterDot: {
     position: 'absolute',
     top: 8,
     right: 8,
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#EF4444',
+    backgroundColor: Colors.error,
   },
-  greeting: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#1E293B',
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#64748B',
-    marginTop: 2,
-  },
-  profileBtn: {
-    marginLeft: 0,
-  },
+  profileBtn: {},
   profileAvatar: {
     width: 44,
     height: 44,
-    borderRadius: 22,
-    backgroundColor: '#3B82F6',
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  profileAvatarText: {
+  profileInitial: {
     fontSize: 18,
     fontWeight: '700',
     color: '#FFF',
   },
 
-  // Tabs
-  tabsContainer: {
+  // Stats
+  statsRow: {
     flexDirection: 'row',
-    backgroundColor: '#FFF',
+    backgroundColor: Colors.subtle,
+    borderRadius: 12,
+    padding: 12,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statValue: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    marginTop: 2,
+  },
+  statDivider: {
+    width: 1,
+    backgroundColor: Colors.border,
+    marginVertical: 4,
+  },
+
+  // Tabs
+  tabContainer: {
+    backgroundColor: Colors.paper,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  tabScroll: {
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingVertical: 12,
     gap: 8,
   },
   tab: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 20,
-    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: Colors.subtle,
     gap: 6,
   },
   tabActive: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: Colors.primary,
   },
-  tabText: {
+  tabLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#64748B',
+    color: Colors.textSecondary,
   },
-  tabTextActive: {
+  tabLabelActive: {
     color: '#FFF',
   },
   tabBadge: {
-    backgroundColor: '#E2E8F0',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 10,
+    backgroundColor: Colors.paper,
   },
   tabBadgeActive: {
     backgroundColor: 'rgba(255,255,255,0.25)',
   },
   tabBadgeText: {
     fontSize: 12,
-    fontWeight: '700',
-    color: '#64748B',
+    fontWeight: '600',
+    color: Colors.textSecondary,
   },
   tabBadgeTextActive: {
     color: '#FFF',
@@ -675,192 +771,218 @@ const styles = StyleSheet.create({
   // List
   listContent: {
     padding: 16,
-    paddingBottom: 100,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
   // Card
   card: {
-    backgroundColor: '#FFF',
-    borderRadius: 16,
+    backgroundColor: Colors.paper,
+    borderRadius: 20,
     padding: 16,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    borderWidth: 1,
+    borderColor: Colors.border,
+    shadowColor: Colors.textSecondary,
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.06,
-    shadowRadius: 8,
+    shadowRadius: 12,
     elevation: 3,
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     marginBottom: 12,
-  },
-  cardHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  carIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: '#EFF6FF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
   },
   vehicleNumber: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1E293B',
+    color: Colors.textPrimary,
+    letterSpacing: 0.5,
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },
-  vehicleModel: {
-    fontSize: 13,
-    color: '#64748B',
-    marginTop: 2,
-  },
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  statusBadgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-
-  // Card Details
-  cardDetails: {
-    borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
-    paddingTop: 12,
-    marginBottom: 12,
-    gap: 8,
-  },
-  detailRow: {
+  badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+    gap: 6,
   },
-  detailText: {
-    fontSize: 14,
-    color: '#64748B',
+  badgeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  badgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  cardBody: {
+    marginBottom: 12,
+  },
+  cardRow: {
+    flexDirection: 'row',
+    gap: 16,
+    marginBottom: 8,
+  },
+  cardDetail: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  cardDetailText: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    flex: 1,
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    backgroundColor: Colors.primaryLight,
+    borderRadius: 8,
+    marginTop: 4,
+    gap: 6,
+  },
+  locationText: {
+    flex: 1,
+    fontSize: 13,
+    color: Colors.primary,
+    fontWeight: '500',
+  },
+  customerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    gap: 6,
+  },
+  customerText: {
+    flex: 1,
+    fontSize: 13,
+    color: Colors.textTertiary,
+  },
+  phoneBtn: {
+    padding: 6,
+    backgroundColor: Colors.primaryLight,
+    borderRadius: 6,
   },
 
   // Card Actions
   cardActions: {
     flexDirection: 'row',
-    alignItems: 'center',
     gap: 10,
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
+    borderTopColor: Colors.subtle,
     paddingTop: 12,
   },
   rejectBtn: {
-    flexDirection: 'row',
+    flex: 0.4,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: Colors.errorBg,
+    backgroundColor: Colors.errorBg,
     alignItems: 'center',
-    gap: 4,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
   },
   rejectBtnText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#EF4444',
+    color: Colors.error,
   },
   acceptBtn: {
     flex: 1,
-    borderRadius: 10,
-    overflow: 'hidden',
-  },
-  acceptBtnGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
     paddingVertical: 12,
-    gap: 8,
-  },
-  acceptBtnText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#FFF',
-  },
-  navigateBtn: {
-    width: 48,
-    height: 48,
     borderRadius: 12,
-    backgroundColor: '#EFF6FF',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  startInspectionBtn: {
-    flex: 1,
-    borderRadius: 10,
-    overflow: 'hidden',
-  },
-  startInspectionBtnGradient: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
+    alignItems: 'center',
     gap: 6,
   },
-  startInspectionBtnText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#FFF',
-  },
-
-  // Card Footer
-  cardFooter: {
-    borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
-    paddingTop: 12,
-  },
-  viewDetailsBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-  },
-  viewDetailsBtnText: {
+  acceptBtnText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#64748B',
+    color: '#FFF',
+  },
+  startBtn: {
+    paddingVertical: 14,
+    borderRadius: 12,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+  },
+  startBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFF',
+  },
+  completedRow: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 8,
+  },
+  completedText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
 
   // Empty State
-  emptyState: {
+  emptyContainer: {
+    flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
     paddingVertical: 60,
+  },
+  emptyIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: Colors.primaryLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   emptyTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#64748B',
-    marginTop: 16,
+    color: Colors.textPrimary,
+    marginBottom: 8,
   },
-  emptySubtitle: {
+  emptyText: {
     fontSize: 14,
-    color: '#94A3B8',
-    marginTop: 4,
+    color: Colors.textSecondary,
+    textAlign: 'center',
   },
 
   // Modal
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(15, 23, 42, 0.5)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#FFF',
+    backgroundColor: Colors.paper,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
-    maxHeight: '80%',
+    paddingBottom: 40,
+  },
+  modalHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: Colors.border,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 20,
   },
   modalHeader: {
     alignItems: 'center',
@@ -870,7 +992,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#FEE2E2',
+    backgroundColor: Colors.errorBg,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
@@ -878,12 +1000,13 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1E293B',
+    color: Colors.textPrimary,
+    marginBottom: 4,
   },
   modalSubtitle: {
     fontSize: 14,
-    color: '#64748B',
-    marginTop: 4,
+    color: Colors.textSecondary,
+    textAlign: 'center',
   },
 
   // Reasons List
@@ -897,38 +1020,20 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: '#E2E8F0',
+    borderColor: Colors.border,
     gap: 12,
   },
   reasonItemSelected: {
-    borderColor: '#EF4444',
-    backgroundColor: '#FEF2F2',
-  },
-  radioOuter: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 2,
-    borderColor: '#CBD5E1',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  radioOuterSelected: {
-    borderColor: '#EF4444',
-  },
-  radioInner: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#EF4444',
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primaryLight,
   },
   reasonText: {
     flex: 1,
     fontSize: 15,
-    color: '#475569',
+    color: Colors.textSecondary,
   },
   reasonTextSelected: {
-    color: '#1E293B',
+    color: Colors.textPrimary,
     fontWeight: '600',
   },
 
@@ -938,80 +1043,41 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   cancelBtn: {
-    flex: 1,
+    flex: 0.4,
     paddingVertical: 14,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: '#E2E8F0',
+    borderColor: Colors.border,
     alignItems: 'center',
   },
   cancelBtnText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
-    color: '#64748B',
+    color: Colors.textSecondary,
   },
   submitRejectBtn: {
     flex: 1,
     paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: '#EF4444',
+    backgroundColor: Colors.error,
     alignItems: 'center',
   },
   submitRejectBtnDisabled: {
     backgroundColor: '#FDA4AF',
   },
   submitRejectBtnText: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '600',
     color: '#FFF',
   },
-
-  // Date Filter Modal
-  dateFilterIconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#EFF6FF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  dateFilterOptions: {
-    gap: 10,
-    marginBottom: 24,
-  },
-  dateFilterOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 14,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    gap: 12,
-  },
-  dateFilterOptionSelected: {
-    borderColor: '#3B82F6',
-    backgroundColor: '#EFF6FF',
-  },
-  dateFilterOptionText: {
-    flex: 1,
-    fontSize: 15,
-    color: '#475569',
-  },
-  dateFilterOptionTextSelected: {
-    color: '#1E293B',
-    fontWeight: '600',
-  },
   applyFilterBtn: {
-    flex: 1,
     paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: '#3B82F6',
     alignItems: 'center',
   },
   applyFilterBtnText: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '600',
     color: '#FFF',
   },
 });
