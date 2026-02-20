@@ -197,6 +197,7 @@ Build a scalable automotive platform "Wisedrive" that evolved into a monolithic 
 | Sales Executive | divya@wisedrive.com | password123 |
 | CTO | shalini.vyshaka@gmail.com | password123 |
 | ESS Test User | bhaskar@wisedrive.com | Welcome@123 |
+| **Mechanic App** | **Phone: 9611188788** | **OTP: 123456** |
 
 ---
 
