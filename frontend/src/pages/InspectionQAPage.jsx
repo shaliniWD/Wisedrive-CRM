@@ -121,12 +121,17 @@ const QuestionRow = ({ question, onEdit, onDelete, onToggle }) => {
       {/* Answer Type */}
       <td className="px-3 py-3 align-top">
         <AnswerTypeBadge type={question.answer_type} />
-        {question.answer_type === 'multiple_choice' && (
+        {hasMultipleChoice(question.answer_type) && (
           <OptionsDisplay options={question.options} correctAnswer={question.correct_answer} />
         )}
-        {question.answer_type === 'video' && (
+        {hasVideo(question.answer_type) && (
           <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
             <Clock className="h-3 w-3" /> {question.video_max_duration || 45}s max
+          </div>
+        )}
+        {hasPhoto(question.answer_type) && !hasMultipleChoice(question.answer_type) && (
+          <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+            <Camera className="h-3 w-3" /> Photo capture
           </div>
         )}
       </td>
