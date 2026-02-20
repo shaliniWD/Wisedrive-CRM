@@ -23,7 +23,17 @@ const ANSWER_TYPES = [
   { value: 'multiple_choice', label: 'Multiple Choice', icon: ListChecks, color: 'text-blue-600 bg-blue-50' },
   { value: 'photo', label: 'Photo Upload', icon: Camera, color: 'text-emerald-600 bg-emerald-50' },
   { value: 'video', label: 'Video (45s)', icon: Video, color: 'text-purple-600 bg-purple-50' },
+  { value: 'multiple_choice_photo', label: 'MCQ + Photo', icon: Camera, color: 'text-cyan-600 bg-cyan-50' },
+  { value: 'multiple_choice_video', label: 'MCQ + Video', icon: Video, color: 'text-pink-600 bg-pink-50' },
 ];
+
+// Check if answer type includes multiple choice
+const hasMultipleChoice = (type) => type === 'multiple_choice' || type === 'multiple_choice_photo' || type === 'multiple_choice_video';
+
+// Check if answer type includes photo/video
+const hasMedia = (type) => type === 'photo' || type === 'video' || type === 'multiple_choice_photo' || type === 'multiple_choice_video';
+const hasPhoto = (type) => type === 'photo' || type === 'multiple_choice_photo';
+const hasVideo = (type) => type === 'video' || type === 'multiple_choice_video';
 
 // Answer Type Badge
 const AnswerTypeBadge = ({ type }) => {
