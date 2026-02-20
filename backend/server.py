@@ -10937,6 +10937,8 @@ async def get_mechanic_inspection_detail(
         "customerName": inspection.get("customer_name", ""),
         "customerPhone": inspection.get("customer_mobile", ""),
         "customerAddress": inspection.get("address", ""),
+        "latitude": inspection.get("latitude"),
+        "longitude": inspection.get("longitude"),
         "assignedMechanicId": inspection.get("mechanic_id"),
         "requiredModules": {
             "photos": True,
