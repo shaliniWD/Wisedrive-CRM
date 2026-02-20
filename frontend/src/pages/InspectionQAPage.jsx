@@ -150,7 +150,7 @@ const QuestionRow = ({ question, onEdit, onDelete, onToggle }) => {
         {question.sub_answer_type_1 ? (
           <div>
             <AnswerTypeBadge type={question.sub_answer_type_1} />
-            {question.sub_answer_type_1 === 'multiple_choice' && (
+            {hasMultipleChoice(question.sub_answer_type_1) && (
               <OptionsDisplay options={question.sub_options_1} correctAnswer={question.sub_correct_answer_1} />
             )}
           </div>
