@@ -11409,6 +11409,158 @@ def format_mechanic_notification(template_key: str, **kwargs) -> dict:
     }
 
 
+# ==================== TEST DATA SEED FOR MECHANIC APP ====================
+
+@api_router.post("/mechanic/seed-test-data")
+async def seed_mechanic_test_data():
+    """
+    Seed test inspection data for mechanic app testing.
+    Creates sample inspections in Bangalore, Hyderabad, and Chennai with various statuses.
+    """
+    from datetime import timedelta
+    
+    now = datetime.now(timezone.utc)
+    
+    # Sample test inspections
+    test_inspections = [
+        {
+            "id": f"test-insp-{str(uuid.uuid4())[:8]}",
+            "car_number": "KA01AB1234",
+            "make": "Maruti Suzuki",
+            "model": "Swift",
+            "variant": "VXI",
+            "city": "Bangalore",
+            "address": "123, MG Road, Indiranagar, Bangalore",
+            "latitude": 12.9716,
+            "longitude": 77.5946,
+            "customer_name": "Rahul Sharma",
+            "customer_mobile": "+919876543210",
+            "inspection_status": "NEW",
+            "mechanic_id": None,
+            "scheduled_date": (now + timedelta(hours=2)).isoformat(),
+            "inspection_package_name": "Comprehensive Inspection",
+            "created_at": now.isoformat(),
+        },
+        {
+            "id": f"test-insp-{str(uuid.uuid4())[:8]}",
+            "car_number": "KA05CD5678",
+            "make": "Hyundai",
+            "model": "Creta",
+            "variant": "SX",
+            "city": "Bangalore",
+            "address": "456, HSR Layout, Bangalore",
+            "latitude": 12.9121,
+            "longitude": 77.6446,
+            "customer_name": "Priya Patel",
+            "customer_mobile": "+919876543211",
+            "inspection_status": "NEW",
+            "mechanic_id": None,
+            "scheduled_date": (now + timedelta(hours=4)).isoformat(),
+            "inspection_package_name": "Standard Inspection",
+            "created_at": now.isoformat(),
+        },
+        {
+            "id": f"test-insp-{str(uuid.uuid4())[:8]}",
+            "car_number": "TS09EF9012",
+            "make": "Honda",
+            "model": "City",
+            "variant": "ZX",
+            "city": "Hyderabad",
+            "address": "789, Banjara Hills, Hyderabad",
+            "latitude": 17.4126,
+            "longitude": 78.4071,
+            "customer_name": "Vikram Reddy",
+            "customer_mobile": "+919876543212",
+            "inspection_status": "NEW",
+            "mechanic_id": None,
+            "scheduled_date": (now + timedelta(hours=6)).isoformat(),
+            "inspection_package_name": "Premium Inspection",
+            "created_at": now.isoformat(),
+        },
+        {
+            "id": f"test-insp-{str(uuid.uuid4())[:8]}",
+            "car_number": "TN10GH3456",
+            "make": "Toyota",
+            "model": "Fortuner",
+            "variant": "4x4",
+            "city": "Chennai",
+            "address": "321, Anna Nagar, Chennai",
+            "latitude": 13.0827,
+            "longitude": 80.2707,
+            "customer_name": "Karthik Subramaniam",
+            "customer_mobile": "+919876543213",
+            "inspection_status": "NEW",
+            "mechanic_id": None,
+            "scheduled_date": (now + timedelta(days=1)).isoformat(),
+            "inspection_package_name": "Comprehensive Inspection",
+            "created_at": now.isoformat(),
+        },
+        {
+            "id": f"test-insp-{str(uuid.uuid4())[:8]}",
+            "car_number": "KA02IJ7890",
+            "make": "Tata",
+            "model": "Nexon",
+            "variant": "XZ+",
+            "city": "Bangalore",
+            "address": "555, Koramangala 4th Block, Bangalore",
+            "latitude": 12.9352,
+            "longitude": 77.6245,
+            "customer_name": "Amit Kumar",
+            "customer_mobile": "+919876543214",
+            "inspection_status": "ACCEPTED",
+            "mechanic_id": "dev-mechanic-001",
+            "scheduled_date": (now + timedelta(hours=1)).isoformat(),
+            "inspection_package_name": "Standard Inspection",
+            "created_at": (now - timedelta(hours=2)).isoformat(),
+        },
+        {
+            "id": f"test-insp-{str(uuid.uuid4())[:8]}",
+            "car_number": "KA03KL2345",
+            "make": "Mahindra",
+            "model": "XUV700",
+            "variant": "AX7",
+            "city": "Bangalore",
+            "address": "777, Electronic City, Bangalore",
+            "latitude": 12.8399,
+            "longitude": 77.6770,
+            "customer_name": "Sneha Gupta",
+            "customer_mobile": "+919876543215",
+            "inspection_status": "COMPLETED",
+            "mechanic_id": "dev-mechanic-001",
+            "scheduled_date": (now - timedelta(days=1)).isoformat(),
+            "inspection_package_name": "Premium Inspection",
+            "created_at": (now - timedelta(days=2)).isoformat(),
+        },
+    ]
+    
+    # Insert test inspections
+    inserted_count = 0
+    for inspection in test_inspections:
+        # Check if already exists (avoid duplicates on multiple calls)
+        existing = await db.inspections.find_one({"car_number": inspection["car_number"], "city": inspection["city"]})
+        if not existing:
+            await db.inspections.insert_one(inspection)
+            inserted_count += 1
+    
+    return {
+        "success": True,
+        "message": f"Seeded {inserted_count} test inspections",
+        "total_test_inspections": len(test_inspections),
+        "cities": ["Bangalore", "Hyderabad", "Chennai"],
+        "statuses": ["NEW", "ACCEPTED", "COMPLETED"]
+    }
+
+
+@api_router.delete("/mechanic/clear-test-data")
+async def clear_mechanic_test_data():
+    """Clear all test inspection data (inspections with test- prefix in id)"""
+    result = await db.inspections.delete_many({"id": {"$regex": "^test-insp-"}})
+    return {
+        "success": True,
+        "deleted_count": result.deleted_count
+    }
+
+
 # ==================== MECHANIC APP STATIC FILE SERVING ====================
 # Serve mechanic app at /api/mechanic-app for external access
 from fastapi.staticfiles import StaticFiles
