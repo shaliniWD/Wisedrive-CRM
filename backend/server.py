@@ -10741,7 +10741,36 @@ async def mechanic_verify_otp(data: MechanicOtpVerify):
     if stored["otp"] != otp:
         raise HTTPException(status_code=400, detail="Invalid OTP")
     
-    # Get mechanic profile
+    # Handle dev mode mock mechanic
+    if stored.get("is_dev_mode"):
+        # Clear OTP
+        del mechanic_otp_store[phone]
+        
+        # Create mock mechanic profile for dev mode
+        mock_mechanic_id = "dev-mechanic-001"
+        access_token = create_access_token({
+            "sub": mock_mechanic_id,
+            "email": "dev.mechanic@wisedrive.com",
+            "is_mechanic_app": True
+        })
+        
+        mechanic_profile = {
+            "id": mock_mechanic_id,
+            "name": "Dev Mechanic",
+            "phone": phone,
+            "email": "dev.mechanic@wisedrive.com",
+            "city": "Bangalore",
+            "inspection_cities": ["Bangalore", "Hyderabad", "Chennai"],
+            "active": True
+        }
+        
+        return {
+            "success": True,
+            "token": access_token,
+            "mechanicProfile": mechanic_profile
+        }
+    
+    # Get mechanic profile from database
     mechanic = await db.users.find_one({"id": stored["mechanic_id"]}, {"_id": 0, "hashed_password": 0})
     if not mechanic:
         raise HTTPException(status_code=404, detail="Mechanic not found")
