@@ -138,7 +138,7 @@ export default function ChecklistScreen() {
     try {
       await inspectionsApi.completeInspection(inspectionId!);
       Alert.alert('Success', 'Inspection completed successfully!', [
-        { text: 'OK', onPress: () => router.replace('/(tabs)') },
+        { text: 'OK', onPress: () => router.replace('/home') },
       ]);
     } catch (err) {
       Alert.alert('Error', 'Failed to complete inspection');
