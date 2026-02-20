@@ -1,36 +1,55 @@
 {
-  "identity": {
-    "persona": "E1",
-    "mission": "Create a high-end, professional Employee Self-Service (ESS) mobile app that feels like a premium fintech product, not a boring HR tool.",
+  "project_name": "WiseDrive Mechanic App Redesign",
+  "design_philosophy": {
+    "name": "Tech-Utility Precision",
+    "description": "A professional, high-contrast aesthetic that blends automotive reliability with modern SaaS clarity. Uses deep purple for brand authority and slate grays for technical data.",
     "principles": [
-      "Fusion over Imitation: Mix 'Fintech Precision' with 'Hospitality Warmth'.",
-      "Emotion First: The user should feel 'In Control' and 'Valued'.",
-      "Content is King: Data (Leaves, Salary) is the hero. Present it boldly.",
-      "Negative Space: Use generous padding (20px-24px) to create a premium feel.",
-      "Contrast: High contrast text for readability in Dark Mode."
+      "Data Density with Breathing Room: High information density for lists, but generous padding inside containers.",
+      "Tactile Controls: Buttons and inputs should feel 'pressable' and substantial, suitable for usage in a garage environment.",
+      "Visual Hierarchy: Color is used strictly for status and primary actions. Text hierarchy defines the rest."
     ]
   },
-  "theme_strategy": {
-    "mode": "dark",
-    "archetype": "The Performance Pro (Elite & Precise)",
-    "palette": {
-      "background": "#0B1120",
-      "surface": "#1E293B",
-      "surface_highlight": "#334155",
-      "primary": "#3B82F6",
-      "primary_foreground": "#FFFFFF",
-      "secondary": "#64748B",
-      "accent": "#0EA5E9",
-      "success": "#10B981",
-      "warning": "#F59E0B",
-      "error": "#EF4444",
-      "text_primary": "#F8FAFC",
-      "text_secondary": "#94A3B8",
-      "text_tertiary": "#64748B",
-      "border": "#334155"
+  "theme": {
+    "colors": {
+      "primary": {
+        "DEFAULT": "#6B21A8",
+        "light": "#F3E8FF",
+        "dark": "#581C87",
+        "gradient_start": "#7E22CE",
+        "gradient_end": "#6B21A8"
+      },
+      "secondary": {
+        "DEFAULT": "#64748B",
+        "light": "#F1F5F9",
+        "dark": "#334155"
+      },
+      "background": {
+        "default": "#F8FAFC",
+        "paper": "#FFFFFF",
+        "subtle": "#F1F5F9"
+      },
+      "text": {
+        "primary": "#0F172A",
+        "secondary": "#64748B",
+        "tertiary": "#94A3B8",
+        "inverse": "#FFFFFF"
+      },
+      "status": {
+        "success": { "bg": "#DCFCE7", "text": "#15803D" },
+        "warning": { "bg": "#FEF3C7", "text": "#B45309" },
+        "error": { "bg": "#FEE2E2", "text": "#B91C1C" },
+        "info": { "bg": "#E0E7FF", "text": "#4338CA" }
+      },
+      "border": "#E2E8F0"
     },
     "typography": {
       "font_family": "System",
+      "weights": {
+        "regular": "400",
+        "medium": "500",
+        "semibold": "600",
+        "bold": "700"
+      },
       "sizes": {
         "xs": 12,
         "sm": 14,
@@ -38,14 +57,7 @@
         "lg": 18,
         "xl": 20,
         "2xl": 24,
-        "3xl": 32,
-        "4xl": 40
-      },
-      "weights": {
-        "regular": "400",
-        "medium": "500",
-        "semibold": "600",
-        "bold": "700"
+        "3xl": 30
       }
     },
     "spacing": {
@@ -53,126 +65,148 @@
       "sm": 8,
       "md": 12,
       "lg": 16,
-      "xl": 20,
-      "2xl": 24,
-      "3xl": 32,
-      "4xl": 48
+      "xl": 24,
+      "2xl": 32,
+      "3xl": 48
     },
-    "radius": {
+    "borderRadius": {
       "sm": 8,
       "md": 12,
       "lg": 16,
       "xl": 24,
       "full": 9999
+    },
+    "shadows": {
+      "sm": {
+        "shadowColor": "#64748B",
+        "shadowOffset": { "width": 0, "height": 1 },
+        "shadowOpacity": 0.05,
+        "shadowRadius": 2,
+        "elevation": 2
+      },
+      "md": {
+        "shadowColor": "#64748B",
+        "shadowOffset": { "width": 0, "height": 4 },
+        "shadowOpacity": 0.08,
+        "shadowRadius": 8,
+        "elevation": 4
+      }
     }
-  },
-  "layout_strategy": {
-    "safe_area": "Always wrap main content in SafeAreaView or handle insets manually.",
-    "grid_system": "Bento Grid",
-    "padding": "Horizontal padding of 20px (spacing.xl) for all main containers.",
-    "header_height": 60,
-    "bottom_tab_height": 70
   },
   "components": {
     "Button": {
       "base": {
-        "height": 52,
-        "borderRadius": 12,
+        "height": 56,
+        "borderRadius": 16,
         "justifyContent": "center",
         "alignItems": "center",
-        "flexDirection": "row"
+        "flexDirection": "row",
+        "gap": 8
       },
       "primary": {
-        "backgroundColor": "#3B82F6"
+        "backgroundColor": "#6B21A8",
+        "shadowColor": "#6B21A8",
+        "shadowOffset": { "width": 0, "height": 4 },
+        "shadowOpacity": 0.3,
+        "shadowRadius": 8,
+        "elevation": 6
       },
       "secondary": {
-        "backgroundColor": "#334155"
+        "backgroundColor": "#F3E8FF",
+        "borderWidth": 0
+      },
+      "outline": {
+        "backgroundColor": "transparent",
+        "borderWidth": 1.5,
+        "borderColor": "#E2E8F0"
       },
       "text_style": {
-        "color": "#FFFFFF",
         "fontSize": 16,
-        "fontWeight": "600"
-      }
-    },
-    "Card": {
-      "base": {
-        "backgroundColor": "#1E293B",
-        "borderRadius": 16,
-        "padding": 20,
-        "marginBottom": 16,
-        "borderWidth": 1,
-        "borderColor": "#334155"
-      },
-      "elevated": {
-        "shadowColor": "#000",
-        "shadowOffset": { "width": 0, "height": 4 },
-        "shadowOpacity": 0.2,
-        "shadowRadius": 8,
-        "elevation": 4
+        "fontWeight": "600",
+        "letterSpacing": 0.5
       }
     },
     "Input": {
-      "base": {
-        "height": 52,
-        "backgroundColor": "#0F172A",
-        "borderRadius": 12,
+      "container": {
+        "backgroundColor": "#FFFFFF",
+        "borderRadius": 16,
+        "borderWidth": 1.5,
+        "borderColor": "#E2E8F0",
+        "height": 60,
         "paddingHorizontal": 16,
-        "borderWidth": 1,
-        "borderColor": "#334155",
-        "color": "#F8FAFC",
-        "fontSize": 16
+        "flexDirection": "row",
+        "alignItems": "center"
       },
-      "focus": {
-        "borderColor": "#3B82F6"
+      "focused": {
+        "borderColor": "#6B21A8",
+        "backgroundColor": "#FAFAFA"
+      },
+      "text": {
+        "fontSize": 16,
+        "color": "#0F172A"
+      }
+    },
+    "Card": {
+      "container": {
+        "backgroundColor": "#FFFFFF",
+        "borderRadius": 20,
+        "padding": 20,
+        "marginBottom": 16,
+        "borderWidth": 1,
+        "borderColor": "#F1F5F9",
+        "shadowColor": "#64748B",
+        "shadowOffset": { "width": 0, "height": 8 },
+        "shadowOpacity": 0.06,
+        "shadowRadius": 16,
+        "elevation": 3
       }
     }
   },
-  "visual_enhancers": {
-    "gradients": {
-      "primary_card": ["#1E293B", "#0F172A"],
-      "blue_glow": ["rgba(59, 130, 246, 0.2)", "transparent"]
+  "screens": {
+    "login": {
+      "path": "/app/mechanic-app-native/app/login.tsx",
+      "instructions": [
+        "Replace the simple logo circle with a modern header layout.",
+        "Use a 'Split' visual: Top 35% is a subtle purple gradient curve or pattern, Bottom 65% is the white content area.",
+        "Logo should be prominent in the top area with white text.",
+        "Input fields should use the 'Input' component style defined above.",
+        "The 'Continue' button should be a full-width gradient button (Purple to Deep Purple).",
+        "OTP inputs should be individual boxes with rounded corners (12px), slightly larger (60x60), with a focus ring color of #6B21A8."
+      ]
     },
-    "glassmorphism": "Use semi-transparent backgrounds (rgba(30, 41, 59, 0.8)) for floating elements like the bottom tab bar.",
-    "icons": {
-      "library": "@expo/vector-icons",
-      "set": "Ionicons",
-      "style": "Rounded, thin stroke (outline) for inactive, filled for active."
+    "home": {
+      "path": "/app/mechanic-app-native/app/home.tsx",
+      "instructions": [
+        "Header: Remove the simple row. Create a 'Dashboard Header' with a greeting in large bold type (24px) and the date/location in smaller text.",
+        "Tabs: Replace the pill tabs with a 'Segmented Control' look or a cleaner 'Underline' tab system with a purple active indicator.",
+        "Inspection Card Redesign:",
+        "  - Header: Vehicle Number (Bold, 18px) on the left. Status Badge (Pill shape, smaller text) on the right.",
+        "  - Body: 2-column layout. Left: Car Icon + Model Name. Right: Date & Time.",
+        "  - Footer: 'Accept' and 'Reject' buttons should be side-by-side. 'Accept' gets the primary purple gradient. 'Reject' gets a subtle ghost style with red text.",
+        "  - Add a 'Location' row with a map pin icon that is clickable.",
+        "Empty State: Use a more illustrative icon or a soft purple background circle for the icon."
+      ]
+    },
+    "verify_vehicle": {
+      "path": "/app/mechanic-app-native/app/verify-vehicle/[id].tsx",
+      "instructions": [
+        "Input Section: Make the vehicle number input look like a 'License Plate' (Yellow or White background, border, specific font style if possible, or just bold uppercase).",
+        "Verify Button: Large, floating action button or fixed bottom bar style.",
+        "Vehicle Details Card: When verified, show a 'Digital Manifest' card. Dark header with 'Verified' status, white body with grid details.",
+        "Typography: Use Monospace font for the Vehicle Number display to prevent ambiguity (0 vs O)."
+      ]
     }
   },
-  "image_assets": {
-    "login_background": {
-      "url": "https://images.unsplash.com/photo-1767552989959-00c3b2fa7255?crop=entropy&cs=srgb&fm=jpg&q=85",
-      "description": "Modern blue glass building, abstract and professional. Use with a dark overlay (opacity 0.7) for the Login Screen background."
-    },
-    "company_placeholder": {
-      "url": "https://images.unsplash.com/photo-1765366417060-7d87b2e854a0?crop=entropy&cs=srgb&fm=jpg&q=85",
-      "description": "Modern office interior. Use for 'Company Documents' header or generic cover image."
-    }
+  "assets": {
+    "logo_horizontal": "https://customer-assets.emergentagent.com/job_elm-scan-logger/artifacts/yykjisxk_Wisedrive%20New%20Logo%20Horizontal%20Black.png",
+    "logo_icon": "https://customer-assets.emergentagent.com/job_elm-scan-logger/artifacts/j2jaiqie_Wisedrvie%20New%20Logo%20Black.png"
   },
-  "instructions_to_main_agent": [
-    "1. SETUP: Create a 'src/constants/theme.ts' file to export the colors, spacing, and typography defined above. Use this SINGLE source of truth.",
-    "2. NAVIGATION: Use '@react-navigation/bottom-tabs' with a custom tab bar that floats slightly above the bottom (margin: 16, borderRadius: 24).",
-    "3. GRADIENTS: Use 'expo-linear-gradient' for the 'Leave Balance' card to make it pop (Deep Blue to Black).",
-    "4. TYPOGRAPHY: Never use default text sizes. Always define style={theme.typography...}. Use 'Inter' if available, otherwise System font.",
-    "5. DATA-TESTID: Add 'testID' prop to all TouchableOpacity, TextInput, and Pressable components.",
-    "6. SAFE AREA: Use 'react-native-safe-area-context' hooks (useSafeAreaInsets) to handle padding dynamically.",
-    "7. ANIMATION: Use 'LayoutAnimation' or 'react-native-reanimated' for smooth transitions (e.g., expanding a payslip card).",
-    "8. REUSABILITY: Create reusable components: 'AppButton', 'AppCard', 'AppInput', 'ScreenWrapper'.",
-    "9. HEADER: Create a custom 'Header' component with a 'Glass' effect (absolute position, semi-transparent bg) if possible, or just clean solid dark color.",
-    "10. MOCK DATA: Since API integration must not be changed, ensure the UI handles the existing data structure gracefully. If data is missing, show elegant 'skeleton' loaders."
-  ],
-  "universal_guidelines": {
-    "avoid": [
-      "Bulky navigation bars (keep it sleek)",
-      "Generic 'Bootstrap' blue (use the specific #3B82F6)",
-      "Centered text for long paragraphs (left align)",
-      "Full screen loaders (use skeletons)"
-    ],
-    "embrace": [
-      "Dark Mode by default",
-      "Subtle borders (1px solid #334155)",
-      "High contrast for accessibility",
-      "Micro-interactions (scale down on press)"
-    ]
-  }
+  "universal_guidelines": [
+    "Use 'SafeAreaView' from 'react-native-safe-area-context' for all screens.",
+    "Use 'KeyboardAvoidingView' for forms.",
+    "Ensure all touch targets are at least 44x44 points.",
+    "Use 'LinearGradient' for primary buttons to give depth.",
+    "Avoid pure black (#000000). Use Slate 900 (#0F172A) for text.",
+    "All interactive elements must have 'activeOpacity={0.8}' for feedback."
+  ]
 }
