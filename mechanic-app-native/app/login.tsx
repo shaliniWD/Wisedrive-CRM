@@ -19,23 +19,25 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { authApi } from '../src/lib/api';
 import { useAuth } from '../src/context/AuthContext';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
-// Theme colors
+// Professional Blue Theme
 const Colors = {
-  primary: '#6B21A8',
-  primaryLight: '#F3E8FF',
-  primaryDark: '#581C87',
-  gradientStart: '#7E22CE',
-  gradientEnd: '#6B21A8',
-  background: '#F8FAFC',
-  paper: '#FFFFFF',
-  textPrimary: '#0F172A',
-  textSecondary: '#64748B',
-  textTertiary: '#94A3B8',
-  border: '#E2E8F0',
-  success: '#15803D',
-  error: '#B91C1C',
+  primary: '#0066FF',
+  primaryDark: '#0052CC',
+  primaryLight: '#E6F0FF',
+  gradientStart: '#0066FF',
+  gradientEnd: '#0052CC',
+  background: '#FFFFFF',
+  surface: '#F7F9FC',
+  textPrimary: '#1A1A2E',
+  textSecondary: '#5C6370',
+  textMuted: '#9CA3AF',
+  border: '#E5E9F0',
+  borderFocus: '#0066FF',
+  success: '#00C853',
+  error: '#FF3B30',
+  white: '#FFFFFF',
 };
 
 export default function LoginScreen() {
@@ -73,7 +75,6 @@ export default function LoginScreen() {
     newOtp[index] = value;
     setOtp(newOtp);
 
-    // Auto-advance to next input
     if (value && index < 5) {
       otpInputs.current[index + 1]?.focus();
     }
@@ -107,98 +108,96 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header with curved gradient */}
+      {/* Top Section with Logo */}
       <LinearGradient
         colors={[Colors.gradientStart, Colors.gradientEnd]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={styles.headerGradient}
+        style={styles.headerSection}
       >
-        <SafeAreaView edges={['top']} style={styles.headerContent}>
+        <SafeAreaView edges={['top']} style={styles.headerSafeArea}>
           <View style={styles.logoContainer}>
-            <View style={styles.logoIcon}>
-              <Ionicons name="car-sport" size={32} color={Colors.primary} />
+            <View style={styles.logoBox}>
+              <Image 
+                source={require('../assets/icon.png')} 
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
             </View>
-            <Text style={styles.logoText}>WiseDrive</Text>
-            <Text style={styles.logoSubtext}>Partner</Text>
           </View>
         </SafeAreaView>
-        
-        {/* Curved bottom */}
-        <View style={styles.curveContainer}>
-          <View style={styles.curve} />
-        </View>
       </LinearGradient>
 
-      {/* Content Area */}
+      {/* Content Card */}
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.contentArea}
+        style={styles.contentWrapper}
       >
-        <View style={styles.formContainer}>
+        <View style={styles.contentCard}>
           {step === 'phone' ? (
             <>
-              <View style={styles.titleContainer}>
-                <Text style={styles.title}>Welcome</Text>
+              <View style={styles.titleSection}>
+                <Text style={styles.title}>Welcome Back</Text>
                 <Text style={styles.subtitle}>
-                  Enter your phone number to get started
+                  Sign in with your registered mobile number
                 </Text>
               </View>
 
               {/* Phone Input */}
-              <View style={[
-                styles.inputContainer,
-                inputFocused && styles.inputFocused
-              ]}>
-                <View style={styles.countryCode}>
-                  <Text style={styles.flag}>🇮🇳</Text>
-                  <Text style={styles.countryCodeText}>{countryCode}</Text>
-                  <Ionicons name="chevron-down" size={16} color={Colors.textTertiary} />
+              <View style={styles.inputWrapper}>
+                <Text style={styles.inputLabel}>Mobile Number</Text>
+                <View style={[
+                  styles.phoneInputContainer,
+                  inputFocused && styles.inputFocused
+                ]}>
+                  <View style={styles.countryCodeBox}>
+                    <Text style={styles.countryFlag}>🇮🇳</Text>
+                    <Text style={styles.countryCodeText}>{countryCode}</Text>
+                  </View>
+                  <View style={styles.inputDivider} />
+                  <TextInput
+                    style={styles.phoneInput}
+                    placeholder="Enter 10 digit number"
+                    placeholderTextColor={Colors.textMuted}
+                    keyboardType="phone-pad"
+                    maxLength={10}
+                    value={phone}
+                    onChangeText={setPhone}
+                    onFocus={() => setInputFocused(true)}
+                    onBlur={() => setInputFocused(false)}
+                  />
                 </View>
-                <View style={styles.inputDivider} />
-                <TextInput
-                  style={styles.phoneInput}
-                  placeholder="Phone Number"
-                  placeholderTextColor={Colors.textTertiary}
-                  keyboardType="phone-pad"
-                  maxLength={10}
-                  value={phone}
-                  onChangeText={setPhone}
-                  onFocus={() => setInputFocused(true)}
-                  onBlur={() => setInputFocused(false)}
-                />
               </View>
 
               {/* Continue Button */}
               <TouchableOpacity
                 onPress={handleSendOtp}
                 disabled={isLoading || phone.length < 10}
-                activeOpacity={0.8}
+                activeOpacity={0.9}
+                style={styles.buttonWrapper}
               >
                 <LinearGradient
-                  colors={phone.length < 10 ? ['#D1D5DB', '#D1D5DB'] : [Colors.gradientStart, Colors.gradientEnd]}
+                  colors={phone.length < 10 ? ['#C4C4C4', '#A0A0A0'] : [Colors.gradientStart, Colors.gradientEnd]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={styles.primaryButton}
                 >
                   {isLoading ? (
-                    <ActivityIndicator color="#FFF" />
+                    <ActivityIndicator color={Colors.white} />
                   ) : (
-                    <>
-                      <Text style={styles.primaryButtonText}>Continue</Text>
-                      <Ionicons name="arrow-forward" size={20} color="#FFF" />
-                    </>
+                    <Text style={styles.primaryButtonText}>Get OTP</Text>
                   )}
                 </LinearGradient>
               </TouchableOpacity>
 
               <Text style={styles.termsText}>
-                By continuing, you agree to our Terms of Service
+                By continuing, you agree to our{' '}
+                <Text style={styles.termsLink}>Terms & Conditions</Text>
               </Text>
             </>
           ) : (
             <>
-              <View style={styles.titleContainer}>
+              <View style={styles.titleSection}>
                 <Text style={styles.title}>Verify OTP</Text>
                 <Text style={styles.subtitle}>
                   Enter the 6-digit code sent to{'\n'}
@@ -230,21 +229,19 @@ export default function LoginScreen() {
               <TouchableOpacity
                 onPress={handleVerifyOtp}
                 disabled={isLoading || otp.join('').length !== 6}
-                activeOpacity={0.8}
+                activeOpacity={0.9}
+                style={styles.buttonWrapper}
               >
                 <LinearGradient
-                  colors={otp.join('').length !== 6 ? ['#D1D5DB', '#D1D5DB'] : [Colors.gradientStart, Colors.gradientEnd]}
+                  colors={otp.join('').length !== 6 ? ['#C4C4C4', '#A0A0A0'] : [Colors.gradientStart, Colors.gradientEnd]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={styles.primaryButton}
                 >
                   {isLoading ? (
-                    <ActivityIndicator color="#FFF" />
+                    <ActivityIndicator color={Colors.white} />
                   ) : (
-                    <>
-                      <Text style={styles.primaryButtonText}>Verify & Login</Text>
-                      <Ionicons name="checkmark-circle" size={20} color="#FFF" />
-                    </>
+                    <Text style={styles.primaryButtonText}>Verify & Continue</Text>
                   )}
                 </LinearGradient>
               </TouchableOpacity>
@@ -276,95 +273,75 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: Colors.surface,
   },
   
-  // Header Gradient
-  headerGradient: {
-    paddingBottom: 60,
+  // Header
+  headerSection: {
+    height: height * 0.32,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  headerContent: {
-    paddingTop: 20,
-    paddingBottom: 40,
+  headerSafeArea: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
   },
   logoContainer: {
     alignItems: 'center',
   },
-  logoIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 20,
-    backgroundColor: '#FFF',
+  logoBox: {
+    width: 120,
+    height: 120,
+    borderRadius: 24,
+    backgroundColor: Colors.white,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
+    shadowRadius: 24,
+    elevation: 12,
   },
-  logoText: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#FFF',
-    letterSpacing: -0.5,
-  },
-  logoSubtext: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: 'rgba(255,255,255,0.8)',
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-    marginTop: 2,
-  },
-  
-  // Curved bottom
-  curveContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 40,
-    overflow: 'hidden',
-  },
-  curve: {
-    position: 'absolute',
-    bottom: 0,
-    left: -50,
-    right: -50,
-    height: 80,
-    backgroundColor: Colors.background,
-    borderTopLeftRadius: 1000,
-    borderTopRightRadius: 1000,
+  logoImage: {
+    width: 90,
+    height: 90,
   },
   
   // Content
-  contentArea: {
+  contentWrapper: {
     flex: 1,
-    marginTop: -20,
+    marginTop: -40,
   },
-  formContainer: {
+  contentCard: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 20,
+    backgroundColor: Colors.white,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    paddingHorizontal: 28,
+    paddingTop: 36,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 8,
   },
   
   // Title
-  titleContainer: {
+  titleSection: {
     marginBottom: 32,
   },
   title: {
-    fontSize: 30,
+    fontSize: 28,
     fontWeight: '700',
     color: Colors.textPrimary,
+    letterSpacing: -0.5,
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 15,
     color: Colors.textSecondary,
-    lineHeight: 24,
+    lineHeight: 22,
   },
   phoneHighlight: {
     color: Colors.primary,
@@ -372,38 +349,48 @@ const styles = StyleSheet.create({
   },
   
   // Input
-  inputContainer: {
+  inputWrapper: {
+    marginBottom: 24,
+  },
+  inputLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  phoneInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.paper,
-    borderRadius: 16,
+    backgroundColor: Colors.surface,
+    borderRadius: 12,
     borderWidth: 1.5,
     borderColor: Colors.border,
-    height: 60,
-    marginBottom: 20,
+    height: 56,
     overflow: 'hidden',
   },
   inputFocused: {
-    borderColor: Colors.primary,
-    backgroundColor: '#FAFAFA',
+    borderColor: Colors.borderFocus,
+    backgroundColor: Colors.white,
   },
-  countryCode: {
+  countryCodeBox: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 14,
-    gap: 6,
+    gap: 8,
   },
-  flag: {
-    fontSize: 20,
+  countryFlag: {
+    fontSize: 18,
   },
   countryCodeText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: Colors.textPrimary,
   },
   inputDivider: {
     width: 1,
-    height: 28,
+    height: 24,
     backgroundColor: Colors.border,
   },
   phoneInput: {
@@ -411,35 +398,37 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.textPrimary,
     paddingHorizontal: 14,
-    letterSpacing: 1,
-  },
-  
-  // Primary Button
-  primaryButton: {
-    height: 56,
-    borderRadius: 16,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 8,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  primaryButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFF',
+    fontWeight: '500',
     letterSpacing: 0.5,
   },
   
+  // Button
+  buttonWrapper: {
+    marginBottom: 20,
+  },
+  primaryButton: {
+    height: 54,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  primaryButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.white,
+    letterSpacing: 0.3,
+  },
+  
+  // Terms
   termsText: {
     fontSize: 13,
-    color: Colors.textTertiary,
+    color: Colors.textMuted,
     textAlign: 'center',
-    marginTop: 20,
+    lineHeight: 20,
+  },
+  termsLink: {
+    color: Colors.primary,
+    fontWeight: '500',
   },
   
   // OTP
@@ -447,13 +436,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 28,
-    gap: 8,
+    paddingHorizontal: 8,
   },
   otpInput: {
-    width: (width - 48 - 40) / 6,
-    height: 56,
-    borderRadius: 12,
-    backgroundColor: Colors.paper,
+    width: (width - 56 - 48 - 40) / 6,
+    height: 54,
+    borderRadius: 10,
+    backgroundColor: Colors.surface,
     borderWidth: 1.5,
     borderColor: Colors.border,
     fontSize: 22,
@@ -469,15 +458,16 @@ const styles = StyleSheet.create({
   otpActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 24,
+    paddingHorizontal: 8,
   },
   resendText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
     color: Colors.primary,
   },
   changeNumberText: {
-    fontSize: 15,
+    fontSize: 14,
     color: Colors.textSecondary,
+    fontWeight: '500',
   },
 });
