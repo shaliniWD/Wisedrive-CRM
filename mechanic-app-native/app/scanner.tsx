@@ -45,7 +45,7 @@ const MODULE = 'OBD_SCANNER';
 
 export default function OBDScannerScreen() {
   const insets = useSafeAreaInsets();
-  const { currentInspectionId, currentInspection, clearInspection } = useInspection();
+  const { currentInspectionId, currentInspection, clearInspection, setOBDScanResult } = useInspection();
   
   // Modal states
   const [historyVisible, setHistoryVisible] = useState(false);
@@ -726,6 +726,16 @@ export default function OBDScannerScreen() {
 
       await saveScanSession(session);
       await loadHistory();
+      
+      // Update global inspection context with OBD scan results
+      setOBDScanResult({
+        completed: true,
+        dtcCount: allStoredDTCs.size + allPendingDTCs.size + allPermanentDTCs.size,
+        liveDataCount: finalLiveData.length,
+        sessionId: sessionId,
+        timestamp: new Date().toISOString(),
+      });
+      
       setState('results');
 
     } catch (err: any) {
