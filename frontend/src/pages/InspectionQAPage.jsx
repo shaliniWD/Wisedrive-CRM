@@ -39,6 +39,29 @@ const hasVideo = (type) => type === 'video' || type === 'multiple_choice_video';
 const AnswerTypeBadge = ({ type }) => {
   const config = ANSWER_TYPES.find(t => t.value === type) || ANSWER_TYPES[0];
   const Icon = config.icon;
+  
+  // For combined types, show both icons
+  if (type === 'multiple_choice_photo') {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium text-cyan-600 bg-cyan-50">
+        <ListChecks className="h-3 w-3" />
+        <span>+</span>
+        <Camera className="h-3 w-3" />
+        MCQ + Photo
+      </span>
+    );
+  }
+  if (type === 'multiple_choice_video') {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium text-pink-600 bg-pink-50">
+        <ListChecks className="h-3 w-3" />
+        <span>+</span>
+        <Video className="h-3 w-3" />
+        MCQ + Video
+      </span>
+    );
+  }
+  
   return (
     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${config.color}`}>
       <Icon className="h-3 w-3" />
