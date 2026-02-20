@@ -10885,6 +10885,8 @@ async def get_mechanic_inspections(
             "customerName": insp.get("customer_name", ""),
             "customerPhone": insp.get("customer_mobile", ""),
             "customerAddress": insp.get("address", ""),
+            "latitude": insp.get("latitude"),
+            "longitude": insp.get("longitude"),
             "assignedMechanicId": insp.get("mechanic_id"),
             "requiredModules": {
                 "photos": True,
