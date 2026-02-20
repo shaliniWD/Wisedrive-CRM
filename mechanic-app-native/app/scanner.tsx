@@ -1241,7 +1241,7 @@ export default function OBDScannerScreen() {
           <MaterialIcons name="article" size={18} color={Colors.accent} />
           <Text style={styles.navBtnText}>Logs</Text>
         </TouchableOpacity>
-      </View>
+      </View>}
 
       {/* Footer */}
       <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 4) }]}>
