@@ -136,7 +136,7 @@ const InspectionCard = ({
       {/* Header */}
       <View style={styles.cardHeader}>
         <View style={styles.vehicleNumberBox}>
-          <Text style={styles.vehicleNumber}>{inspection.vehicle_number || 'KA01AB1234'}</Text>
+          <Text style={styles.vehicleNumber}>{inspection.vehicleNumber || 'KA01AB1234'}</Text>
         </View>
         <StatusBadge status={inspection.status} />
       </View>
@@ -146,7 +146,7 @@ const InspectionCard = ({
         <View style={styles.detailItem}>
           <Ionicons name="car-outline" size={16} color={Colors.textMuted} />
           <Text style={styles.detailText} numberOfLines={1}>
-            {inspection.vehicle_model || 'Vehicle Model'}
+            {inspection.makeModelVariant || 'Vehicle Model'}
           </Text>
         </View>
         <View style={styles.detailItem}>
@@ -156,7 +156,7 @@ const InspectionCard = ({
       </View>
       
       {/* Location with Navigate */}
-      {(inspection.location || inspection.latitude) && (
+      {(inspection.customerAddress || inspection.latitude) && (
         <TouchableOpacity 
           style={styles.locationBar} 
           onPress={() => openMapsNavigation(inspection)}
@@ -165,7 +165,7 @@ const InspectionCard = ({
           <View style={styles.locationLeft}>
             <Ionicons name="location" size={16} color={Colors.primary} />
             <Text style={styles.locationText} numberOfLines={1}>
-              {inspection.location}{inspection.city ? `, ${inspection.city}` : ''}
+              {inspection.customerAddress}{inspection.city ? `, ${inspection.city}` : ''}
             </Text>
           </View>
           <View style={styles.navigateBtn}>
@@ -176,14 +176,14 @@ const InspectionCard = ({
       )}
       
       {/* Customer Info */}
-      {inspection.customer_name && (
+      {inspection.customerName && (
         <View style={styles.customerBar}>
           <Ionicons name="person-outline" size={14} color={Colors.textMuted} />
-          <Text style={styles.customerName}>{inspection.customer_name}</Text>
-          {inspection.customer_phone && (
+          <Text style={styles.customerName}>{inspection.customerName}</Text>
+          {inspection.customerPhone && (
             <TouchableOpacity 
               style={styles.callBtn}
-              onPress={() => Linking.openURL(`tel:${inspection.customer_phone}`)}
+              onPress={() => Linking.openURL(`tel:${inspection.customerPhone}`)}
             >
               <Ionicons name="call" size={12} color={Colors.primary} />
             </TouchableOpacity>
