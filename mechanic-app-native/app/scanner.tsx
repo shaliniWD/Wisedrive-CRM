@@ -1214,8 +1214,9 @@ export default function OBDScannerScreen() {
         {renderContent()}
       </ScrollView>
 
-      {/* Bottom Navigation */}
-      <View style={[styles.bottomNav, { paddingBottom: Math.max(insets.bottom, 8) }]}>
+      {/* Bottom Navigation - Hidden per user request */}
+      {/* Raw Data, History, and Logs buttons are hidden but modals are still available for debugging */}
+      {false && <View style={[styles.bottomNav, { paddingBottom: Math.max(insets.bottom, 8) }]}>
         <TouchableOpacity style={styles.navBtn} onPress={() => {
           logger.info(MODULE, 'Raw Data button pressed', { rawDataCount: rawDataEntries.length });
           setRawDataVisible(true);
