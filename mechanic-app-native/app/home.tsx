@@ -275,12 +275,37 @@ export default function HomeScreen() {
     if (url) Linking.openURL(url);
   };
 
-  // Filter inspections based on active tab
+  // Filter inspections based on active tab and date filter
   const filteredInspections = inspections.filter(i => {
-    if (activeTab === 'all') return true;
-    if (activeTab === 'new') return i.status === 'NEW';
-    if (activeTab === 'accepted') return i.status === 'ACCEPTED';
-    if (activeTab === 'completed') return i.status === 'COMPLETED' || i.status === 'REJECTED';
+    // Tab filter
+    let passesTabFilter = true;
+    if (activeTab === 'new') passesTabFilter = i.status === 'NEW';
+    else if (activeTab === 'accepted') passesTabFilter = i.status === 'ACCEPTED';
+    else if (activeTab === 'completed') passesTabFilter = i.status === 'COMPLETED' || i.status === 'REJECTED';
+    
+    if (!passesTabFilter) return false;
+    
+    // Date filter
+    const inspectionDate = new Date(i.scheduledAt);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (dateFilter === 'today') {
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      return inspectionDate >= today && inspectionDate < tomorrow;
+    } else if (dateFilter === 'week') {
+      const weekFromNow = new Date(today);
+      weekFromNow.setDate(weekFromNow.getDate() + 7);
+      return inspectionDate >= today && inspectionDate < weekFromNow;
+    } else if (dateFilter === 'custom' && customStartDate && customEndDate) {
+      const startDate = new Date(customStartDate);
+      startDate.setHours(0, 0, 0, 0);
+      const endDate = new Date(customEndDate);
+      endDate.setHours(23, 59, 59, 999);
+      return inspectionDate >= startDate && inspectionDate <= endDate;
+    }
+    
     return true;
   });
 
