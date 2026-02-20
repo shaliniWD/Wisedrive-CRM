@@ -576,6 +576,29 @@ const styles = StyleSheet.create({
   headerLeft: {
     flex: 1,
   },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  calendarBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#EFF6FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  filterActiveDot: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#EF4444',
+  },
   greeting: {
     fontSize: 22,
     fontWeight: '700',
@@ -587,7 +610,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   profileBtn: {
-    marginLeft: 12,
+    marginLeft: 0,
   },
   profileAvatar: {
     width: 44,
