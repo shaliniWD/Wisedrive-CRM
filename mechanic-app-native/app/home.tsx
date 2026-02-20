@@ -211,7 +211,7 @@ const InspectionCard = ({
 // Main Component
 export default function HomeScreen() {
   const { mechanic, logout } = useAuth();
-  const { setCurrentInspectionId, setCurrentInspection } = useInspection();
+  const { setCurrentInspection } = useInspection();
   const [inspections, setInspections] = useState<Inspection[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -229,7 +229,7 @@ export default function HomeScreen() {
 
   const fetchInspections = useCallback(async () => {
     try {
-      const data = await mechanicApi.getInspections();
+      const data = await inspectionsApi.getInspections();
       setInspections(data || []);
     } catch (error) {
       console.error('Failed to fetch inspections:', error);
@@ -245,7 +245,7 @@ export default function HomeScreen() {
 
   const handleAccept = async (inspection: Inspection) => {
     try {
-      await mechanicApi.updateInspectionStatus(inspection.id, 'ACCEPTED');
+      await inspectionsApi.acceptInspection(inspection.id);
       fetchInspections();
       Alert.alert('Success', 'Inspection accepted');
     } catch (error) {
@@ -264,7 +264,7 @@ export default function HomeScreen() {
     
     setIsSubmitting(true);
     try {
-      await mechanicApi.updateInspectionStatus(selectedInspection.id, 'REJECTED', selectedReason);
+      await inspectionsApi.rejectInspection(selectedInspection.id, selectedReason);
       setRejectModalVisible(false);
       fetchInspections();
       Alert.alert('Success', 'Inspection rejected');
@@ -276,8 +276,7 @@ export default function HomeScreen() {
   };
 
   const handleStart = (inspection: Inspection) => {
-    setCurrentInspectionId(inspection.id);
-    setCurrentInspection(inspection);
+    setCurrentInspection(inspection.id, inspection);
     router.push(`/verify-vehicle/${inspection.id}`);
   };
 
