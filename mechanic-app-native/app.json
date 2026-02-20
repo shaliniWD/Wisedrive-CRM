@@ -31,7 +31,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#6B21A8"
+        "backgroundColor": "#0066FF"
       },
       "package": "com.cleansecar.wisedrive.mechanic",
       "permissions": [
