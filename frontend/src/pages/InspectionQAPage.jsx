@@ -527,7 +527,8 @@ export default function InspectionQAPage() {
       return;
     }
     
-    if (formData.answer_type === 'multiple_choice' && formData.options.length < 2) {
+    // Validate multiple choice options for any type that includes MCQ
+    if (hasMultipleChoice(formData.answer_type) && formData.options.length < 2) {
       toast.error('Multiple choice requires at least 2 options');
       return;
     }
