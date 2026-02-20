@@ -89,7 +89,7 @@ const StatusBadge = ({ status }: { status: string }) => {
 
 // Open Maps Navigation
 const openMapsNavigation = (inspection: Inspection) => {
-  const { latitude, longitude, location, city } = inspection;
+  const { latitude, longitude, customerAddress, city } = inspection;
   
   if (latitude && longitude) {
     const scheme = Platform.OS === 'ios' ? 'maps:' : 'geo:';
@@ -106,8 +106,8 @@ const openMapsNavigation = (inspection: Inspection) => {
         Linking.openURL(googleMapsUrl);
       }
     });
-  } else if (location) {
-    const address = encodeURIComponent(`${location}${city ? ', ' + city : ''}, India`);
+  } else if (customerAddress) {
+    const address = encodeURIComponent(`${customerAddress}${city ? ', ' + city : ''}, India`);
     const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${address}`;
     Linking.openURL(googleMapsUrl);
   } else {
