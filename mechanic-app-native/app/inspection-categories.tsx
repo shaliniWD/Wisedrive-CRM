@@ -34,11 +34,13 @@ const MOCK_CATEGORIES: Category[] = [
 ];
 
 export default function InspectionCategoriesScreen() {
-  const { currentInspectionId, currentInspection, clearInspection } = useInspection();
+  const { currentInspectionId, currentInspection, clearInspection, obdScanResult } = useInspection();
   const [categories, setCategories] = useState<Category[]>(MOCK_CATEGORIES);
-  const [obdCompleted, setObdCompleted] = useState(false);
-  const [obdResults, setObdResults] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Derive OBD completion status from global context
+  const obdCompleted = obdScanResult?.completed || false;
+  const obdResults = obdScanResult;
 
   const totalQuestions = categories.reduce((acc, cat) => acc + cat.questionsCount, 0);
   const completedQuestions = categories.reduce((acc, cat) => acc + cat.completedCount, 0);
