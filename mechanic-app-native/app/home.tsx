@@ -11,6 +11,7 @@ import {
   Modal,
   ScrollView,
   Dimensions,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -18,7 +19,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../src/context/AuthContext';
 import { useInspection } from '../src/context/InspectionContext';
-import { mechanicApi, inspectionsApi } from '../src/lib/api';
+import { inspectionsApi } from '../src/lib/api';
 
 const { width } = Dimensions.get('window');
 
