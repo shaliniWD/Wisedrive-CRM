@@ -163,6 +163,12 @@
     }
   },
   "screens": {
+    "global": {
+      "path": "/app/mechanic-app-native/app/_layout.tsx",
+      "instructions": [
+        "Update 'contentStyle' background color to '#F8FAFC' to match the new theme."
+      ]
+    },
     "login": {
       "path": "/app/mechanic-app-native/app/login.tsx",
       "instructions": [
