@@ -75,7 +75,7 @@ export default function LoginScreen() {
       const fullPhone = `${countryCode}${phone}`;
       const response = await authApi.verifyOtp(fullPhone, otpString);
       await login(response.token, response.mechanicProfile);
-      router.replace('/(tabs)');
+      router.replace('/home');
     } catch (error: any) {
       Alert.alert('Error', error.response?.data?.detail || 'Invalid OTP');
     } finally {
