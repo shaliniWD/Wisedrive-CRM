@@ -287,6 +287,19 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         if user_id is None:
             raise HTTPException(status_code=401, detail="Invalid token")
         
+        # Handle dev mechanic app user (special case for testing)
+        if user_id == "dev-mechanic-001" and payload.get("is_mechanic_app"):
+            return {
+                "id": "dev-mechanic-001",
+                "name": "Dev Mechanic",
+                "email": "dev.mechanic@wisedrive.com",
+                "phone": "9611188788",
+                "inspection_cities": ["Bangalore", "Hyderabad", "Chennai"],
+                "is_active": True,
+                "role_code": "MECHANIC",
+                "is_mechanic_app": True
+            }
+        
         user = await db.users.find_one({"id": user_id}, {"_id": 0, "hashed_password": 0})
         if user is None:
             raise HTTPException(status_code=401, detail="User not found")
