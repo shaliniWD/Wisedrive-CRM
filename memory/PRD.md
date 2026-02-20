@@ -139,7 +139,7 @@ Build a scalable automotive platform "Wisedrive" that evolved into a monolithic 
 
 | Platform | Status | Download URL |
 |----------|--------|--------------|
-| **Android APK** | ✅ Finished | https://expo.dev/artifacts/eas/vAw4Mifwk3n5CC6nEqi4jb.apk |
+| **Android APK** | ✅ Finished | https://expo.dev/artifacts/eas/h9riFJQbzXXUgax2ucS4FB.apk |
 
 **Build Details:**
 - SDK Version: 52.0.0
