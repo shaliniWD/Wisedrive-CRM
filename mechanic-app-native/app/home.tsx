@@ -468,6 +468,81 @@ export default function HomeScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Date Filter Modal */}
+      <Modal
+        visible={dateFilterModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setDateFilterModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <View style={styles.dateFilterIconContainer}>
+                <Ionicons name="calendar" size={32} color="#3B82F6" />
+              </View>
+              <Text style={styles.modalTitle}>Filter by Date</Text>
+              <Text style={styles.modalSubtitle}>Select a date range to filter inspections</Text>
+            </View>
+
+            <View style={styles.dateFilterOptions}>
+              {[
+                { key: 'all', label: 'All Inspections', icon: 'list' },
+                { key: 'today', label: 'Today', icon: 'today' },
+                { key: 'week', label: 'This Week', icon: 'calendar-outline' },
+              ].map((option) => (
+                <TouchableOpacity
+                  key={option.key}
+                  style={[
+                    styles.dateFilterOption,
+                    dateFilter === option.key && styles.dateFilterOptionSelected,
+                  ]}
+                  onPress={() => {
+                    setDateFilter(option.key as any);
+                    if (option.key !== 'custom') {
+                      setCustomStartDate(null);
+                      setCustomEndDate(null);
+                    }
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons 
+                    name={option.icon as any} 
+                    size={20} 
+                    color={dateFilter === option.key ? '#3B82F6' : '#64748B'} 
+                  />
+                  <Text style={[
+                    styles.dateFilterOptionText,
+                    dateFilter === option.key && styles.dateFilterOptionTextSelected,
+                  ]}>
+                    {option.label}
+                  </Text>
+                  {dateFilter === option.key && (
+                    <Ionicons name="checkmark-circle" size={20} color="#3B82F6" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity 
+                style={styles.cancelBtn}
+                onPress={() => setDateFilterModalVisible(false)}
+              >
+                <Text style={styles.cancelBtnText}>Close</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.applyFilterBtn}
+                onPress={() => setDateFilterModalVisible(false)}
+              >
+                <Text style={styles.applyFilterBtnText}>Apply Filter</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
