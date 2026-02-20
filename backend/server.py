@@ -10664,6 +10664,21 @@ async def mechanic_request_otp(data: MechanicOtpRequest):
     """Request OTP for mechanic login via phone number"""
     phone = data.phone.strip().replace(" ", "")
     
+    # Dev mode test phone numbers (bypass mechanic check)
+    dev_mode = os.environ.get("MECHANIC_APP_DEV_MODE", "true").lower() == "true"
+    dev_test_phones = ["+919611188788", "9611188788", "+919689760236", "9689760236"]
+    
+    if dev_mode and any(phone.endswith(p[-10:]) for p in dev_test_phones):
+        # For dev mode test phones, create a mock mechanic entry
+        mechanic_otp_store[phone] = {
+            "otp": "123456",
+            "mechanic_id": "dev-mechanic-001",
+            "expires_at": datetime.now(timezone.utc) + timedelta(minutes=5),
+            "is_dev_mode": True
+        }
+        logger.info(f"Dev mode OTP for {phone}: 123456")
+        return {"success": True, "message": "OTP sent successfully"}
+    
     # Check if phone number is registered as a mechanic
     mechanic_role = await db.roles.find_one({"code": "MECHANIC"}, {"_id": 0, "id": 1})
     if not mechanic_role:
@@ -10702,7 +10717,7 @@ async def mechanic_request_otp(data: MechanicOtpRequest):
     
     # TODO: Integrate Twilio SMS for production
     # For development, we'll use a fixed OTP: 123456
-    if os.environ.get("MECHANIC_APP_DEV_MODE", "true").lower() == "true":
+    if dev_mode:
         mechanic_otp_store[phone]["otp"] = "123456"
     
     return {"success": True, "message": "OTP sent successfully"}
