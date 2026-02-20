@@ -49,11 +49,11 @@ const Colors = {
 
 interface Inspection {
   id: string;
-  vehicle_number: string;
-  vehicle_model?: string;
-  customer_name?: string;
-  customer_phone?: string;
-  location?: string;
+  vehicleNumber: string;
+  makeModelVariant?: string;
+  customerName?: string;
+  customerPhone?: string;
+  customerAddress?: string;
   city?: string;
   latitude?: number;
   longitude?: number;
