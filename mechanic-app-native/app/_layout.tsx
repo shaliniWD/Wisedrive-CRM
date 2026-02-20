@@ -13,7 +13,7 @@ export default function RootLayout() {
           <Stack
             screenOptions={{
               headerShown: false,
-              contentStyle: { backgroundColor: '#F8FAFC' },
+              contentStyle: { backgroundColor: '#F1F5F9' },
             }}
           >
             <Stack.Screen name="index" />
@@ -21,7 +21,8 @@ export default function RootLayout() {
             <Stack.Screen name="home" />
             <Stack.Screen name="scanner" />
             <Stack.Screen name="profile" />
-            <Stack.Screen name="inspection/[id]" />
+            <Stack.Screen name="verify-vehicle/[id]" />
+            <Stack.Screen name="inspection-categories" />
             <Stack.Screen name="start-inspection/[id]" />
             <Stack.Screen name="vehicle-details/[id]" />
             <Stack.Screen name="checklist/[id]" />
