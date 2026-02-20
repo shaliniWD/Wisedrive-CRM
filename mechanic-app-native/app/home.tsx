@@ -965,4 +965,53 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FFF',
   },
+
+  // Date Filter Modal
+  dateFilterIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#EFF6FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  dateFilterOptions: {
+    gap: 10,
+    marginBottom: 24,
+  },
+  dateFilterOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    gap: 12,
+  },
+  dateFilterOptionSelected: {
+    borderColor: '#3B82F6',
+    backgroundColor: '#EFF6FF',
+  },
+  dateFilterOptionText: {
+    flex: 1,
+    fontSize: 15,
+    color: '#475569',
+  },
+  dateFilterOptionTextSelected: {
+    color: '#1E293B',
+    fontWeight: '600',
+  },
+  applyFilterBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: '#3B82F6',
+    alignItems: 'center',
+  },
+  applyFilterBtnText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFF',
+  },
 });
