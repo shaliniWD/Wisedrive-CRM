@@ -145,10 +145,17 @@ const CategoryQuestionSelector = ({ category, questions, selectedIds, onToggle }
                   <span className={`px-2 py-0.5 text-xs rounded-full ${
                     question.answer_type === 'multiple_choice' ? 'bg-blue-100 text-blue-700' :
                     question.answer_type === 'photo' ? 'bg-green-100 text-green-700' :
-                    'bg-purple-100 text-purple-700'
+                    question.answer_type === 'video' ? 'bg-purple-100 text-purple-700' :
+                    question.answer_type === 'multiple_choice_photo' ? 'bg-cyan-100 text-cyan-700' :
+                    question.answer_type === 'multiple_choice_video' ? 'bg-pink-100 text-pink-700' :
+                    'bg-gray-100 text-gray-700'
                   }`}>
                     {question.answer_type === 'multiple_choice' ? 'MCQ' : 
-                     question.answer_type === 'photo' ? 'Photo' : 'Video'}
+                     question.answer_type === 'photo' ? 'Photo' : 
+                     question.answer_type === 'video' ? 'Video' :
+                     question.answer_type === 'multiple_choice_photo' ? 'MCQ+Photo' :
+                     question.answer_type === 'multiple_choice_video' ? 'MCQ+Video' :
+                     question.answer_type}
                   </span>
                   {question.sub_question_1 && <span className="text-xs text-gray-400">+1 sub-Q</span>}
                   {question.sub_question_2 && <span className="text-xs text-gray-400">+2 sub-Q</span>}
