@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 class MetaAdsScheduler:
     """
     Background scheduler that periodically syncs Meta Ads data:
-    - Fetches ad spend/performance data every 15 minutes
+    - Fetches ad spend/performance data every 6 hours
     - Syncs ad status (active/paused) to our database
     - Stores last sync timestamp
     """
@@ -18,7 +18,7 @@ class MetaAdsScheduler:
         self.db = db
         self.meta_service = meta_service
         self.is_running = False
-        self.sync_interval_minutes = 15
+        self.sync_interval_hours = 6  # Changed from 15 minutes to 6 hours
         self._task: Optional[asyncio.Task] = None
     
     async def start(self):
@@ -29,7 +29,7 @@ class MetaAdsScheduler:
         
         self.is_running = True
         self._task = asyncio.create_task(self._run_scheduler())
-        logger.info(f"Meta Ads scheduler started (interval: {self.sync_interval_minutes} minutes)")
+        logger.info(f"Meta Ads scheduler started (interval: {self.sync_interval_hours} hours)")
     
     async def stop(self):
         """Stop the background scheduler"""
@@ -50,8 +50,8 @@ class MetaAdsScheduler:
             except Exception as e:
                 logger.error(f"Error in Meta Ads sync: {e}")
             
-            # Wait for next interval
-            await asyncio.sleep(self.sync_interval_minutes * 60)
+            # Wait for next interval (6 hours)
+            await asyncio.sleep(self.sync_interval_hours * 60 * 60)
     
     async def sync_all(self):
         """Run all sync operations"""
@@ -59,18 +59,25 @@ class MetaAdsScheduler:
         
         if not self.meta_service.is_configured():
             logger.warning("Meta Ads not configured, skipping sync")
-            return
+            return {"success": False, "error": "Meta Ads not configured"}
+        
+        results = {
+            "ad_statuses": None,
+            "performance_data": None,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
         
         # Sync ad statuses
-        await self.sync_ad_statuses()
+        results["ad_statuses"] = await self.sync_ad_statuses()
         
         # Sync performance data
-        await self.sync_performance_data()
+        results["performance_data"] = await self.sync_performance_data()
         
         # Update last sync timestamp
         await self.update_sync_timestamp()
         
         logger.info("Meta Ads sync completed")
+        return results
     
     async def sync_ad_statuses(self):
         """Sync ad active/paused status from Meta to our database"""
@@ -78,8 +85,9 @@ class MetaAdsScheduler:
             statuses = await self.meta_service.get_all_ad_statuses()
             
             if not statuses.get("success"):
-                logger.error(f"Failed to fetch ad statuses: {statuses.get('error')}")
-                return
+                error_msg = statuses.get("error", "Unknown error")
+                logger.error(f"Failed to fetch ad statuses: {error_msg}")
+                return {"success": False, "error": error_msg}
             
             status_data = statuses.get("data", {})
             updated_count = 0
@@ -102,9 +110,11 @@ class MetaAdsScheduler:
                     updated_count += 1
             
             logger.info(f"Synced status for {updated_count} ads")
+            return {"success": True, "updated_count": updated_count}
             
         except Exception as e:
             logger.error(f"Error syncing ad statuses: {e}")
+            return {"success": False, "error": str(e)}
     
     async def sync_performance_data(self):
         """Sync performance data (spend, impressions, clicks) from Meta"""
