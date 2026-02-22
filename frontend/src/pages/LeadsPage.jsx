@@ -1329,18 +1329,19 @@ export default function LeadsPage() {
 
       {/* Data Table */}
       <div className="bg-white rounded-xl border overflow-hidden">
-        <table className="w-full table-fixed">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[1000px]">
           <thead>
             <tr className="bg-slate-50 border-b">
-              <th className="w-[90px] px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Date</th>
-              <th className="w-[180px] px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Lead Details</th>
-              <th className="w-[80px] px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">City</th>
-              <th className="w-[100px] px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Assigned</th>
-              <th className="w-[90px] px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Reminder</th>
-              <th className="w-[120px] px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
-              <th className="w-[60px] px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Notes</th>
-              <th className="w-[130px] px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Source</th>
-              <th className="w-[100px] px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Payment</th>
+              <th className="w-[100px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Date</th>
+              <th className="w-[200px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Lead Details</th>
+              <th className="w-[110px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">City</th>
+              <th className="w-[110px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Assigned</th>
+              <th className="w-[100px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Reminder</th>
+              <th className="w-[130px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
+              <th className="w-[80px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Notes</th>
+              <th className="w-[160px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Source</th>
+              <th className="w-[110px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Payment</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -3111,8 +3112,8 @@ export default function LeadsPage() {
             </SheetTitle>
           </SheetHeader>
 
-          <Tabs value={notesTab} onValueChange={setNotesTab} className="flex-1 flex flex-col min-h-0 overflow-hidden">
-            <TabsList className="grid w-full grid-cols-2 mx-6 my-3" style={{ width: 'calc(100% - 48px)' }}>
+          <Tabs value={notesTab} onValueChange={setNotesTab} className="flex-1 flex flex-col min-h-0 h-0">
+            <TabsList className="grid w-full grid-cols-2 mx-6 my-3 flex-shrink-0" style={{ width: 'calc(100% - 48px)' }}>
               <TabsTrigger value="notes" className="flex items-center gap-2" data-testid="notes-tab">
                 <StickyNote className="h-4 w-4" /> Notes
               </TabsTrigger>
@@ -3121,7 +3122,7 @@ export default function LeadsPage() {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="notes" className="flex-1 flex flex-col px-6 pb-6 mt-0">
+            <TabsContent value="notes" className="flex-1 flex flex-col px-6 pb-6 mt-0 min-h-0 h-0 overflow-hidden">
               {/* Add Note Section */}
               <div className="bg-slate-50 rounded-xl p-4 border mb-4">
                 <Label className="text-sm font-medium mb-2 block">Add a note</Label>
@@ -3180,7 +3181,7 @@ export default function LeadsPage() {
               </div>
             </TabsContent>
 
-            <TabsContent value="activities" className="flex-1 flex flex-col px-6 pb-6 mt-0 min-h-0">
+            <TabsContent value="activities" className="flex-1 flex flex-col px-6 pb-6 mt-0 min-h-0 h-0 overflow-hidden">
               {loadingNotes ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
@@ -3191,7 +3192,7 @@ export default function LeadsPage() {
                   <p className="text-sm">No activities recorded yet.</p>
                 </div>
               ) : (
-                <div className="flex-1 overflow-y-auto space-y-3 pr-1 min-h-0">
+                <div className="flex-1 overflow-y-auto space-y-3 pr-1">
                   {leadActivities.map((activity) => {
                     // Determine activity icon and color based on action type
                     const getActivityStyle = (action) => {
