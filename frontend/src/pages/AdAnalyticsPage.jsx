@@ -1132,7 +1132,7 @@ export default function AdAnalyticsPage() {
                         {unmappedAds.length > 0 && (
                           <div className="flex gap-3 mt-2">
                             <span className="inline-flex items-center text-xs px-2 py-1 rounded bg-green-100 text-green-700">
-                              {unmappedWithTargeting} with targeting
+                              {unmappedWithTargeting} with targeting (auto-mapped on refresh)
                             </span>
                             <span className="inline-flex items-center text-xs px-2 py-1 rounded bg-red-100 text-red-700">
                               {unmappedNoTargeting} need manual mapping
@@ -1140,26 +1140,6 @@ export default function AdAnalyticsPage() {
                           </div>
                         )}
                       </div>
-                      {unmappedWithTargeting > 0 && (
-                        <Button
-                          onClick={handleAutoMapFromTargeting}
-                          disabled={autoMapping}
-                          className="bg-green-600 hover:bg-green-700 text-xs"
-                          size="sm"
-                        >
-                          {autoMapping ? (
-                            <>
-                              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                              Auto-Mapping...
-                            </>
-                          ) : (
-                            <>
-                              <Target className="h-3 w-3 mr-1" />
-                              Auto-Map {unmappedWithTargeting} Ads
-                            </>
-                          )}
-                        </Button>
-                      )}
                     </div>
                     
                     {tokenInfo && !tokenInfo.is_valid ? (
