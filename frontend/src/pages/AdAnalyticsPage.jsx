@@ -1540,35 +1540,11 @@ export default function AdAnalyticsPage() {
               </div>
             )}
             
-            {/* Action Buttons */}
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleAutoRefresh}
-                disabled={tokenLoading}
-                className="flex-1"
-              >
-                {tokenLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
-                Auto Refresh
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRefreshToken}
-                disabled={tokenLoading}
-                className="flex-1"
-              >
-                {tokenLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
-                Force Refresh
-              </Button>
-            </div>
-            
-            {/* Manual Token Update */}
+            {/* Manual Token Update - Only option now */}
             <div className="border-t pt-4">
-              <h4 className="font-medium text-sm mb-2">Manual Token Update</h4>
+              <h4 className="font-medium text-sm mb-2">Update Token</h4>
               <p className="text-xs text-gray-500 mb-3">
-                Paste a new access token from{' '}
+                Your token has expired. Get a new access token from{' '}
                 <a 
                   href="https://developers.facebook.com/tools/explorer/" 
                   target="_blank" 
@@ -1577,6 +1553,7 @@ export default function AdAnalyticsPage() {
                 >
                   Meta Graph API Explorer
                 </a>
+                {' '}and paste it below.
               </p>
               <div className="flex gap-2">
                 <Input
