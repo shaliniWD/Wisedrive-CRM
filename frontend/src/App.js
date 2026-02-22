@@ -54,6 +54,9 @@ function App() {
           {/* Public Routes */}
           <Route path="/login" element={<LoginPage />} />
           
+          {/* Meta OAuth Callback - Public route for popup */}
+          <Route path="/meta-oauth-callback" element={<MetaOAuthCallback />} />
+          
           {/* Inspection Report - Public route (opens in new tab) */}
           <Route path="/inspection-report/:id" element={<InspectionReportPage />} />
           <Route path="/inspection-report" element={<InspectionReportPage />} />
