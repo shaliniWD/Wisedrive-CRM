@@ -27,9 +27,10 @@ const PARTNER_TYPES = [
 const getTypeConfig = (type) => PARTNER_TYPES.find(t => t.value === type) || PARTNER_TYPES[0];
 
 // Partner Card Component
-const PartnerCard = ({ partner, onEdit, onToggle, onDelete }) => {
+const PartnerCard = ({ partner, onEdit, onToggle, onDelete, reportTemplates }) => {
   const typeConfig = getTypeConfig(partner.type);
   const TypeIcon = typeConfig.icon;
+  const defaultTemplate = reportTemplates?.find(t => t.id === partner.default_report_template_id);
   
   return (
     <div 
@@ -77,6 +78,17 @@ const PartnerCard = ({ partner, onEdit, onToggle, onDelete }) => {
           )}
         </div>
       </div>
+      
+      {/* Default Report Template */}
+      {defaultTemplate && (
+        <div className="mt-3 p-2 bg-violet-50 rounded-lg border border-violet-100">
+          <div className="flex items-center gap-2 text-sm">
+            <FileText className="h-4 w-4 text-violet-600" />
+            <span className="text-violet-700 font-medium">Default Template:</span>
+            <span className="text-violet-600">{defaultTemplate.name}</span>
+          </div>
+        </div>
+      )}
       
       {/* Contact Info */}
       {(partner.contact_person || partner.contact_email || partner.contact_phone) && (
