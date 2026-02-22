@@ -1336,6 +1336,212 @@ async def assign_unassigned_leads(current_user: dict = Depends(get_current_user)
     }
 
 
+# ==================== BULK CITY REMAP FOR LEADS ====================
+
+class BulkCityRemapRequest(BaseModel):
+    """Request model for bulk city remapping"""
+    from_city: str  # Source city to change FROM (e.g., "Vizag")
+    to_city: str    # Target city to change TO (e.g., "Bangalore")
+    date_from: Optional[str] = None  # Optional: Only remap leads created after this date
+    date_to: Optional[str] = None    # Optional: Only remap leads created before this date
+    reassign_to_sales_rep: bool = True  # Also reassign to sales rep in new city
+
+
+@api_router.post("/leads/bulk-remap-city")
+async def bulk_remap_lead_city(
+    request_data: BulkCityRemapRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Bulk remap leads from one city to another.
+    Used to fix leads that were incorrectly assigned to default city (e.g., Vizag)
+    when they should have been assigned to the correct city from the ad mapping.
+    
+    Also optionally reassigns leads to sales reps in the new city via round-robin.
+    """
+    role_code = current_user.get("role_code", "")
+    if role_code not in ["HR_MANAGER", "CEO", "COUNTRY_HEAD", "ADMIN", "CTO"]:
+        raise HTTPException(status_code=403, detail="Not authorized for bulk city remap")
+    
+    from_city = request_data.from_city.strip()
+    to_city = request_data.to_city.strip()
+    
+    if not from_city or not to_city:
+        raise HTTPException(status_code=400, detail="Both from_city and to_city are required")
+    
+    if from_city.lower() == to_city.lower():
+        raise HTTPException(status_code=400, detail="from_city and to_city cannot be the same")
+    
+    # Build query for leads to remap
+    query = {"city": {"$regex": f"^{from_city}$", "$options": "i"}}
+    
+    # Add date filters if provided
+    if request_data.date_from:
+        query["created_at"] = {"$gte": request_data.date_from}
+    if request_data.date_to:
+        if "created_at" in query:
+            query["created_at"]["$lte"] = request_data.date_to
+        else:
+            query["created_at"] = {"$lte": request_data.date_to}
+    
+    # Find leads to remap
+    leads_to_remap = await db.leads.find(query, {"_id": 0}).to_list(1000)
+    
+    if not leads_to_remap:
+        return {
+            "message": f"No leads found with city '{from_city}'",
+            "remapped_count": 0,
+            "reassigned_count": 0
+        }
+    
+    logger.info(f"Bulk city remap: Found {len(leads_to_remap)} leads to remap from '{from_city}' to '{to_city}'")
+    
+    remapped_count = 0
+    reassigned_count = 0
+    results = []
+    
+    # Get sales reps for the new city (if reassignment is enabled)
+    sales_reps = []
+    if request_data.reassign_to_sales_rep:
+        sales_reps = await find_sales_reps_for_city(to_city)
+        logger.info(f"Found {len(sales_reps)} sales reps for new city '{to_city}'")
+    
+    for lead in leads_to_remap:
+        lead_id = lead["id"]
+        old_city = lead.get("city", "")
+        old_assigned_to = lead.get("assigned_to")
+        old_assigned_to_name = lead.get("assigned_to_name", "Unassigned")
+        
+        # Update lead with new city
+        update_data = {
+            "city": to_city,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "updated_by": current_user["id"],
+            "city_remapped_from": old_city,
+            "city_remapped_at": datetime.now(timezone.utc).isoformat(),
+            "city_remapped_by": current_user["id"]
+        }
+        
+        # Reassign to sales rep in new city if enabled
+        new_assigned_to = None
+        new_assigned_to_name = None
+        
+        if request_data.reassign_to_sales_rep and sales_reps:
+            # Get round-robin counter for new city
+            counter = await db.round_robin_counters.find_one({"city": to_city})
+            if not counter:
+                counter = {"city": to_city, "index": 0}
+                await db.round_robin_counters.insert_one(counter)
+            
+            # Get next sales rep
+            index = counter.get("index", 0) % len(sales_reps)
+            assigned_rep = sales_reps[index]
+            
+            new_assigned_to = assigned_rep["id"]
+            new_assigned_to_name = assigned_rep.get("name")
+            
+            update_data["assigned_to"] = new_assigned_to
+            update_data["assigned_to_name"] = new_assigned_to_name
+            
+            # Update counter
+            await db.round_robin_counters.update_one(
+                {"city": to_city},
+                {"$set": {"index": index + 1}},
+                upsert=True
+            )
+            reassigned_count += 1
+        
+        # Apply update
+        await db.leads.update_one({"id": lead_id}, {"$set": update_data})
+        remapped_count += 1
+        
+        # Log city remap activity
+        activity = {
+            "id": str(uuid.uuid4()),
+            "lead_id": lead_id,
+            "user_id": current_user["id"],
+            "user_name": current_user.get("name", "System"),
+            "action": "city_remapped",
+            "old_value": old_city,
+            "new_value": to_city,
+            "details": f"Bulk city remap from '{old_city}' to '{to_city}'",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.lead_activities.insert_one(activity)
+        
+        # Log reassignment if it happened
+        if new_assigned_to and new_assigned_to != old_assigned_to:
+            reassign_activity = {
+                "id": str(uuid.uuid4()),
+                "lead_id": lead_id,
+                "user_id": current_user["id"],
+                "user_name": current_user.get("name", "System"),
+                "action": "lead_reassigned",
+                "old_value": old_assigned_to_name,
+                "new_value": new_assigned_to_name,
+                "details": f"Reassigned after city remap to '{to_city}'",
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.lead_activities.insert_one(reassign_activity)
+        
+        results.append({
+            "lead_id": lead_id,
+            "lead_name": lead.get("name", "Unknown"),
+            "old_city": old_city,
+            "new_city": to_city,
+            "old_assigned_to": old_assigned_to_name,
+            "new_assigned_to": new_assigned_to_name or old_assigned_to_name,
+            "status": "remapped"
+        })
+    
+    logger.info(f"Bulk city remap complete: {remapped_count} remapped, {reassigned_count} reassigned")
+    
+    return {
+        "message": f"Remapped {remapped_count} leads from '{from_city}' to '{to_city}'",
+        "remapped_count": remapped_count,
+        "reassigned_count": reassigned_count,
+        "from_city": from_city,
+        "to_city": to_city,
+        "results": results
+    }
+
+
+@api_router.get("/leads/city-summary")
+async def get_leads_city_summary(current_user: dict = Depends(get_current_user)):
+    """
+    Get summary of leads by city - useful for identifying city mapping issues.
+    """
+    pipeline = [
+        {"$group": {
+            "_id": "$city",
+            "count": {"$sum": 1},
+            "unassigned_count": {
+                "$sum": {"$cond": [{"$or": [
+                    {"$eq": ["$assigned_to", None]},
+                    {"$eq": ["$assigned_to", ""]},
+                ]}, 1, 0]}
+            }
+        }},
+        {"$sort": {"count": -1}}
+    ]
+    
+    results = await db.leads.aggregate(pipeline).to_list(100)
+    
+    summary = []
+    for r in results:
+        city = r["_id"] or "No City"
+        summary.append({
+            "city": city,
+            "total_leads": r["count"],
+            "unassigned_leads": r["unassigned_count"]
+        })
+    
+    return {
+        "cities": summary,
+        "total_cities": len(summary)
+    }
+
+
 # Fix missing assigned_to_name for leads
 @api_router.post("/leads/fix-assigned-names")
 async def fix_assigned_names(current_user: dict = Depends(get_current_user)):
