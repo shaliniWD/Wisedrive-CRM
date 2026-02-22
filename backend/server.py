@@ -3919,6 +3919,9 @@ class AdCityMapping(BaseModel):
     campaign: Optional[str] = None
     source: Optional[str] = None
     is_active: bool = True
+    # Partner assignment - Option C
+    partner_id: Optional[str] = None
+    partner_name: Optional[str] = None
 
 
 class AdCityMappingUpdate(BaseModel):
@@ -3930,6 +3933,9 @@ class AdCityMappingUpdate(BaseModel):
     campaign: Optional[str] = None
     source: Optional[str] = None
     is_active: Optional[bool] = None
+    # Partner assignment - Option C
+    partner_id: Optional[str] = None
+    partner_name: Optional[str] = None
 
 
 @api_router.get("/settings/ad-city-mappings")
