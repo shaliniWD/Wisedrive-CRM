@@ -6,10 +6,38 @@ Build a scalable automotive platform "Wisedrive" that evolved into a monolithic 
 ## Core Applications
 1. **CRM Web Application** - Employee, HR, and Leads management
 2. **ESS Mobile App** - Employee self-service (React Native/Expo)
+3. **Mechanic Mobile App** - Inspection management for mechanics (React Native/Expo)
 
 ---
 
 ## Completed Features
+
+### ✅ Meta WhatsApp Lead City Fix & Bulk Remap (February 22, 2026)
+
+**Problem Fixed:**
+- Leads from Meta WhatsApp campaigns were being assigned default city "Vizag" instead of correct city from Ad ID mapping
+- CTWA (Click-to-WhatsApp) referral data from Meta ads was not being captured
+
+**Backend Changes:**
+1. **Enhanced WhatsApp Webhook** (`/api/webhooks/twilio/whatsapp`)
+   - Now captures CTWA parameters: `ReferralSourceUrl`, `ReferralHeadline`, `ReferralBody`, `ReferralSourceType`, `CtwaClid`, `ButtonText`
+   - Multi-strategy city lookup: ad_id match → ad_name match from ReferralHeadline → message body match → default fallback
+   - Stores CTWA data on lead for debugging
+
+2. **New API Endpoints:**
+   - `POST /api/leads/bulk-remap-city` - Bulk remap leads from one city to another with optional sales rep reassignment
+   - `GET /api/leads/city-summary` - Get lead count summary by city
+
+**Frontend Changes:**
+1. **New "Remap City" Button** on Leads page (for HR/Admin/CTO)
+2. **City Remap Modal** - Shows city distribution, allows bulk remapping with sales rep reassignment option
+
+**Files Modified:**
+- `/app/backend/server.py` - WhatsApp webhook, bulk remap endpoint, city summary endpoint
+- `/app/frontend/src/services/api.js` - New API methods
+- `/app/frontend/src/pages/LeadsPage.jsx` - Remap City button and modal
+
+---
 
 ### ✅ Payment Modal Enhancements (February 2026)
 
