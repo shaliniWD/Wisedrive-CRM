@@ -79,6 +79,8 @@ export const metaAdsApi = {
   getAdsWithTargeting: () => axios.get(`${API_URL}/meta-ads/ads-with-targeting`),
   // Auto-map from targeting
   autoMapFromTargeting: () => axios.post(`${API_URL}/meta-ads/auto-map-from-targeting`),
+  // ONE-CLICK SYNC: Fetch all Meta ads and create comprehensive ad_name -> city mappings
+  syncAllAdMappings: () => axios.post(`${API_URL}/meta-ads/sync-all-ad-mappings`),
   // Auto-map from current cities (based on lead data)
   autoMapFromCurrentCities: () => axios.post(`${API_URL}/meta-ads/auto-map-from-current-cities`),
   // Scan leads for unmapped ads (works without Meta token)
