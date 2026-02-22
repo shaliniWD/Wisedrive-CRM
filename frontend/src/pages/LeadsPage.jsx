@@ -497,6 +497,55 @@ export default function LeadsPage() {
     hasRunAutoAssign.current = false;
   }, [user?.id]);
 
+  // City Remap Modal State
+  const [isCityRemapModalOpen, setIsCityRemapModalOpen] = useState(false);
+  const [cityRemapData, setCityRemapData] = useState({ fromCity: '', toCity: '', reassignToSalesRep: true });
+  const [citySummary, setCitySummary] = useState([]);
+  const [isRemapping, setIsRemapping] = useState(false);
+  const [isLoadingCitySummary, setIsLoadingCitySummary] = useState(false);
+
+  // Fetch city summary when modal opens
+  const fetchCitySummary = async () => {
+    setIsLoadingCitySummary(true);
+    try {
+      const response = await leadsApi.getCitySummary();
+      setCitySummary(response.data?.cities || []);
+    } catch (error) {
+      toast.error('Failed to load city summary');
+    } finally {
+      setIsLoadingCitySummary(false);
+    }
+  };
+
+  const handleCityRemap = async () => {
+    if (!cityRemapData.fromCity || !cityRemapData.toCity) {
+      toast.error('Please select both source and target cities');
+      return;
+    }
+    if (cityRemapData.fromCity === cityRemapData.toCity) {
+      toast.error('Source and target cities cannot be the same');
+      return;
+    }
+    
+    setIsRemapping(true);
+    try {
+      const response = await leadsApi.bulkRemapCity({
+        from_city: cityRemapData.fromCity,
+        to_city: cityRemapData.toCity,
+        reassign_to_sales_rep: cityRemapData.reassignToSalesRep
+      });
+      
+      toast.success(`${response.data.remapped_count} leads remapped from ${cityRemapData.fromCity} to ${cityRemapData.toCity}`);
+      setIsCityRemapModalOpen(false);
+      setCityRemapData({ fromCity: '', toCity: '', reassignToSalesRep: true });
+      await fetchData(); // Refresh leads
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to remap cities');
+    } finally {
+      setIsRemapping(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name || !formData.mobile || !formData.city) {
