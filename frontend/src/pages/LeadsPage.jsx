@@ -2596,8 +2596,36 @@ export default function LeadsPage() {
                       </div>
                     )}
 
-                    {/* Copy Raw Data Button */}
-                    <div className="flex justify-end">
+                    {/* Action Buttons */}
+                    <div className="flex justify-between items-center">
+                      {/* Delete Button - CEO only */}
+                      {user?.role_code === 'CEO' && (
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={async () => {
+                            if (!window.confirm(`Delete "${investigatorResult.name}" (${investigatorResult.mobile})?\n\nThis will permanently delete all data for this lead.`)) return;
+                            try {
+                              const response = await fetch(`/api/leads/${investigatorResult.lead_id}`, {
+                                method: 'DELETE',
+                                headers: { 'Authorization': `Bearer ${localStorage.getItem('token') || sessionStorage.getItem('token')}` }
+                              });
+                              if (!response.ok) throw new Error('Failed to delete');
+                              toast.success('Lead deleted');
+                              setInvestigatorResult(null);
+                              await fetchData();
+                            } catch (e) {
+                              toast.error('Failed to delete lead');
+                            }
+                          }}
+                          data-testid="delete-investigated-lead-btn"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete Lead
+                        </Button>
+                      )}
+                      
+                      {/* Copy Button */}
                       <Button
                         variant="outline"
                         size="sm"
@@ -2606,6 +2634,7 @@ export default function LeadsPage() {
                           toast.success('Lead data copied to clipboard');
                         }}
                         data-testid="copy-lead-data-btn"
+                        className={user?.role_code !== 'CEO' ? 'ml-auto' : ''}
                       >
                         <Copy className="h-4 w-4 mr-2" />
                         Copy Full Data
