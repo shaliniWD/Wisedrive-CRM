@@ -1159,12 +1159,12 @@ export default function LeadsPage() {
       {/* Sales Agent Dashboard - Action-oriented Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-5">
         <SummaryCard 
-          title="New Leads (Today)" 
-          value={todayNewLeads} 
+          title="New Leads" 
+          value={totalNewLeads} 
           icon={TrendingUp} 
           color="text-blue-700" 
-          onClick={() => { setActiveFilter(activeFilter === 'new_today' ? 'all' : 'new_today'); setCurrentPage(1); }}
-          active={activeFilter === 'new_today'}
+          onClick={() => { setActiveFilter(activeFilter === 'new_leads' ? 'all' : 'new_leads'); setCurrentPage(1); }}
+          active={activeFilter === 'new_leads'}
         />
         <SummaryCard 
           title="Hot Leads" 
