@@ -2097,12 +2097,14 @@ async def investigate_lead_by_phone(phone: str, current_user: dict = Depends(get
         "assigned_to": lead.get("assigned_to"),
         "assigned_to_name": lead.get("assigned_to_name"),
         # Full lead data for debugging
-        "full_lead_data": lead
+        "full_lead_data": lead,
+        # Webhook audit trail for debugging
+        "webhook_audit": lead.get("webhook_audit") or lead.get("last_webhook_audit")
     }
     
     # If it's from META_WHATSAPP, provide extra details
-    if lead.get("source") == "META_WHATSAPP":
-        investigation["is_meta_lead"] = True
+    if lead.get("source") in ["META_WHATSAPP", "DIRECT_WHATSAPP"]:
+        investigation["is_meta_lead"] = lead.get("source") == "META_WHATSAPP"
         investigation["meta_details"] = {
             "ad_id": lead.get("ad_id") or "Not captured",
             "ad_name": lead.get("ad_name") or "Not captured",
