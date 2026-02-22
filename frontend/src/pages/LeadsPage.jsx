@@ -2625,6 +2625,47 @@ export default function LeadsPage() {
                         </Button>
                       )}
                       
+                      {/* Quick Remap Button - shows if lead has ad_name but wrong city */}
+                      {user && ['CEO', 'HR_MANAGER', 'CTO', 'ADMIN'].includes(user.role_code) && investigatorResult.ad_name && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="border-orange-300 text-orange-700 hover:bg-orange-50"
+                          onClick={async () => {
+                            const newCity = window.prompt(
+                              `Enter correct city for ad "${investigatorResult.ad_name}":\n\nThis will:\n1. Update this lead's city\n2. Create a mapping so future leads with this ad name auto-assign to this city`,
+                              investigatorResult.city || ''
+                            );
+                            if (!newCity) return;
+                            
+                            try {
+                              const response = await fetch(`/api/leads/${investigatorResult.lead_id}/remap-city?city=${encodeURIComponent(newCity)}`, {
+                                method: 'POST',
+                                headers: { 'Authorization': `Bearer ${localStorage.getItem('token') || sessionStorage.getItem('token')}` }
+                              });
+                              const data = await response.json();
+                              if (response.ok) {
+                                toast.success(data.message);
+                                if (data.mapping_created) {
+                                  toast.info(data.mapping_note);
+                                }
+                                // Re-search to update the display
+                                handleInvestigateLead();
+                                await fetchData();
+                              } else {
+                                toast.error(data.detail || 'Failed to remap');
+                              }
+                            } catch (e) {
+                              toast.error('Failed to remap city');
+                            }
+                          }}
+                          data-testid="quick-remap-btn"
+                        >
+                          <MapPin className="h-4 w-4 mr-2" />
+                          Remap City
+                        </Button>
+                      )}
+                      
                       {/* Copy Button */}
                       <Button
                         variant="outline"
