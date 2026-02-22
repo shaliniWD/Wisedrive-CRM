@@ -3705,30 +3705,61 @@ Thank you for choosing Wisedrive!"""
         
         await db.customers.insert_one(customer)
         
-        # Get report template for this partner
+        # Get report template for this partner using Option B logic:
+        # 1. First check Partner.default_report_template_id (explicit assignment)
+        # 2. Fallback to Report Template with is_default=true for this partner
+        # 3. Fallback to any active template for this partner
+        # 4. Final fallback to B2C default
         report_template = None
         partner_id = lead.get("partner_id")
+        
         if partner_id:
-            # Find default report template for this partner
-            report_template = await db.report_templates.find_one(
-                {"partner_id": partner_id, "is_default": True, "is_active": True},
-                {"_id": 0}
-            )
-            # Fallback to any active template for this partner
+            # Step 1: Check if partner has explicit default_report_template_id set
+            partner = await db.partners.find_one({"id": partner_id}, {"_id": 0})
+            if partner and partner.get("default_report_template_id"):
+                report_template = await db.report_templates.find_one(
+                    {"id": partner["default_report_template_id"], "is_active": True},
+                    {"_id": 0}
+                )
+                if report_template:
+                    logger.info(f"Using Partner's explicit default_report_template_id: {report_template.get('name')}")
+            
+            # Step 2: Fallback to report template with is_default=true for this partner
+            if not report_template:
+                report_template = await db.report_templates.find_one(
+                    {"partner_id": partner_id, "is_default": True, "is_active": True},
+                    {"_id": 0}
+                )
+                if report_template:
+                    logger.info(f"Using Partner's is_default report template: {report_template.get('name')}")
+            
+            # Step 3: Fallback to any active template for this partner
             if not report_template:
                 report_template = await db.report_templates.find_one(
                     {"partner_id": partner_id, "is_active": True},
                     {"_id": 0}
                 )
+                if report_template:
+                    logger.info(f"Using Partner's first active report template: {report_template.get('name')}")
         
-        # Fallback to B2C default report template
+        # Step 4: Final fallback to B2C default report template
         if not report_template:
-            b2c_partner = await db.partners.find_one({"type": "b2c"}, {"_id": 0, "id": 1})
+            b2c_partner = await db.partners.find_one({"type": "b2c"}, {"_id": 0, "id": 1, "default_report_template_id": 1})
             if b2c_partner:
-                report_template = await db.report_templates.find_one(
-                    {"partner_id": b2c_partner["id"], "is_default": True, "is_active": True},
-                    {"_id": 0}
-                )
+                # First try B2C's explicit default
+                if b2c_partner.get("default_report_template_id"):
+                    report_template = await db.report_templates.find_one(
+                        {"id": b2c_partner["default_report_template_id"], "is_active": True},
+                        {"_id": 0}
+                    )
+                # Then try B2C's is_default template
+                if not report_template:
+                    report_template = await db.report_templates.find_one(
+                        {"partner_id": b2c_partner["id"], "is_default": True, "is_active": True},
+                        {"_id": 0}
+                    )
+            if report_template:
+                logger.info(f"Using B2C fallback report template: {report_template.get('name')}")
         
         # Update lead with customer_id
         await db.leads.update_one(
