@@ -213,17 +213,112 @@ export default function AdAnalyticsPage() {
       const result = await metaAdsApi.autoRefresh(7);
       if (result.data.action === 'refreshed') {
         toast.success(`Token auto-refreshed! Valid for ${result.data.new_expires_in_days} days`);
-        fetchPerformanceData(true);
+        return true;
       } else if (result.data.action === 'none') {
-        toast.info(result.data.reason);
+        // Token is fine, continue
+        return true;
       } else if (result.data.needs_manual_refresh) {
-        toast.warning('Token needs manual refresh');
-        setShowTokenModal(true);
+        return false;
       }
+      return true;
     } catch (error) {
-      toast.error('Auto-refresh failed');
+      return false;
     } finally {
       setTokenLoading(false);
+    }
+  };
+  
+  // UNIFIED REFRESH FUNCTION - Does everything in one click
+  const handleUnifiedRefresh = async () => {
+    setRefreshing(true);
+    
+    try {
+      // Step 1: Check token and try to auto-refresh if needed
+      addDebugLog('Refresh', 'INFO', 'Starting unified refresh...');
+      
+      // Get current token status
+      const tokenResult = await metaAdsApi.getTokenInfo();
+      const currentTokenInfo = tokenResult.data;
+      setTokenInfo(currentTokenInfo);
+      
+      // If token is invalid or about to expire, try to refresh
+      if (!currentTokenInfo.is_valid) {
+        addDebugLog('Token', 'WARNING', 'Token is invalid, attempting auto-refresh...');
+        
+        // Try auto-refresh first
+        try {
+          const autoResult = await metaAdsApi.autoRefresh(7);
+          if (autoResult.data.action === 'refreshed') {
+            addDebugLog('Token', 'SUCCESS', `Token refreshed! Valid for ${autoResult.data.new_expires_in_days} days`);
+            toast.success(`Token refreshed! Valid for ${autoResult.data.new_expires_in_days} days`);
+          } else if (autoResult.data.needs_manual_refresh) {
+            addDebugLog('Token', 'ERROR', 'Token needs manual update - please enter new token');
+            toast.error('Token expired. Please enter a new token from Meta.');
+            setShowTokenModal(true);
+            setRefreshing(false);
+            return;
+          }
+        } catch (autoError) {
+          // Auto-refresh failed, try force refresh
+          try {
+            const forceResult = await metaAdsApi.refreshToken();
+            if (forceResult.data.success) {
+              addDebugLog('Token', 'SUCCESS', `Token force-refreshed! Valid for ${forceResult.data.expires_in_days} days`);
+              toast.success(`Token refreshed! Valid for ${forceResult.data.expires_in_days} days`);
+            } else {
+              addDebugLog('Token', 'ERROR', 'Cannot refresh token - manual update required');
+              toast.error('Token expired. Please enter a new token from Meta.');
+              setShowTokenModal(true);
+              setRefreshing(false);
+              return;
+            }
+          } catch (forceError) {
+            addDebugLog('Token', 'ERROR', 'Token refresh failed - manual update required');
+            toast.error('Token expired. Please enter a new token from Meta.');
+            setShowTokenModal(true);
+            setRefreshing(false);
+            return;
+          }
+        }
+      } else {
+        addDebugLog('Token', 'SUCCESS', `Token valid (${currentTokenInfo.expires_in_days} days left)`);
+      }
+      
+      // Step 2: Sync data from Meta
+      addDebugLog('Sync', 'INFO', 'Syncing ad data from Meta...');
+      try {
+        const syncResult = await metaAdsApi.syncStatus();
+        if (syncResult.data.success) {
+          addDebugLog('Sync', 'SUCCESS', `Synced ${syncResult.data.updated_count || 0} ads from Meta`);
+          toast.success(`Synced ${syncResult.data.updated_count || 0} ads from Meta`);
+        } else {
+          addDebugLog('Sync', 'WARNING', syncResult.data.error || 'Sync returned no data');
+        }
+      } catch (syncError) {
+        addDebugLog('Sync', 'WARNING', 'Could not sync from Meta API - using cached data');
+      }
+      
+      // Step 3: Refresh performance data
+      addDebugLog('Data', 'INFO', 'Fetching performance data...');
+      await fetchPerformanceData(false);
+      addDebugLog('Data', 'SUCCESS', 'Performance data refreshed');
+      
+      // Step 4: If on mapping tab, also refresh mappings
+      if (activeTab === 'mapping') {
+        addDebugLog('Mappings', 'INFO', 'Refreshing ad mappings...');
+        await fetchAdMappings();
+        await fetchAndAutoMapAds();
+        addDebugLog('Mappings', 'SUCCESS', 'Mappings refreshed');
+      }
+      
+      addDebugLog('Refresh', 'DONE', 'Unified refresh complete!');
+      toast.success('Data refreshed successfully!');
+      
+    } catch (error) {
+      addDebugLog('Refresh', 'ERROR', error.message);
+      toast.error('Refresh failed: ' + error.message);
+    } finally {
+      setRefreshing(false);
     }
   };
   
