@@ -11939,6 +11939,7 @@ async def update_inspection_template(template_id: str, data: InspectionTemplateC
         "partner_id": data.partner_id,
         "description": data.description,
         "question_ids": data.question_ids,
+        "category_order": data.category_order or [],  # Save category order
         "report_template_id": data.report_template_id,
         "is_default": data.is_default if data.is_default is not None else False,
         "is_active": data.is_active if data.is_active is not None else True,
@@ -11958,8 +11959,6 @@ async def update_inspection_template(template_id: str, data: InspectionTemplateC
         updated["partner_name"] = "Not Assigned"
         updated["partner_type"] = "b2c"
     updated["question_count"] = len(updated.get("question_ids", []))
-    
-    return updated
     
     return updated
 
