@@ -426,13 +426,17 @@ export default function LeadsPage() {
       if (filterStatus && filterStatus !== 'all') params.lead_status = filterStatus;
       if (filterCity && filterCity !== 'all') params.city = filterCity;
       if (filterSource && filterSource !== 'all') params.source = filterSource;
+      if (filterDateFrom) params.date_from = filterDateFrom;
+      if (filterDateTo) params.date_to = filterDateTo;
 
-      const [leadsRes, employeesRes, citiesRes, sourcesRes, statusesRes, packagesRes, offersRes, partnersRes] = await Promise.all([
+      const [leadsRes, employeesRes, citiesRes, sourcesRes, statusesRes, packagesRes, offersRes, partnersRes, adMappingsRes] = await Promise.all([
         leadsApi.getAll(params), employeesApi.getAll(), utilityApi.getCities(),
         utilityApi.getLeadSources(), utilityApi.getLeadStatuses(),
         inspectionPackagesApi.getPackages(user?.country_id),
         inspectionPackagesApi.getActiveOffers(user?.country_id),
         partnersApi.getPartners({ is_active: true }),
+        // Fetch AD mapped cities
+        fetch(`${process.env.REACT_APP_BACKEND_URL}/api/settings/ad-city-mappings`).then(r => r.json()).catch(() => []),
       ]);
 
       setLeads(leadsRes.data);
@@ -450,12 +454,15 @@ export default function LeadsPage() {
       setAvailableOffers(offersRes.data || []);
       // Store partners for lead form
       setPartners(partnersRes.data || []);
+      // Extract unique cities from AD mappings
+      const mappedCities = [...new Set((adMappingsRes || []).map(m => m.city).filter(Boolean))];
+      setAdMappedCities(mappedCities);
     } catch (error) {
       toast.error('Failed to load leads');
     } finally {
       setLoading(false);
     }
-  }, [search, filterEmployee, filterStatus, filterCity, filterSource, user?.country_id]);
+  }, [search, filterEmployee, filterStatus, filterCity, filterSource, filterDateFrom, filterDateTo, user?.country_id]);
 
   // Auto-assign unassigned leads on page load (for HR/admin users only)
   const [isAssigning, setIsAssigning] = useState(false);
