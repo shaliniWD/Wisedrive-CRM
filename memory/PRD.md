@@ -70,12 +70,26 @@ Build a custom CRM for WiseDrive to manage leads from Meta (Facebook/Instagram) 
 ### Backend
 - **Framework:** FastAPI
 - **Database:** MongoDB
-- **Main file:** `/app/backend/server.py` (>12,000 lines - needs refactoring)
+- **Main file:** `/app/backend/server.py` (~13,800 lines - refactoring in progress)
+- **New Route Structure:** `/app/backend/routes/` (templates created)
+  - `auth.py` - Authentication routes
+  - `leads.py` - Lead management (26+ endpoints)
+  - `partners.py` - Partner CRUD
+  - `webhooks.py` - Twilio webhooks
+  - `meta_ads.py` - Meta API integration
+  - `inspections.py` - Inspection management
 
 ### Frontend
 - **Framework:** React with Shadcn/UI
-- **Main file:** `/app/frontend/src/pages/LeadsPage.jsx` (>3,000 lines - needs refactoring)
-- **Dependencies:** @dnd-kit/core for drag-and-drop
+- **Main file:** `/app/frontend/src/pages/LeadsPage.jsx` (~3,278 lines - refactored)
+- **Extracted Components:** `/app/frontend/src/components/leads/`
+  - `StatusDropdown.jsx` - Lead status dropdown (imported)
+  - `ActivityLog.jsx` - Activity history (imported)
+  - `LeadStats.jsx` - Stats cards (ready)
+  - `LeadFilters.jsx` - Filter UI (ready)
+- **Custom Hooks:** `/app/frontend/src/hooks/`
+  - `useLeads.js` - Lead data management (ready)
+- **Dependencies:** @dnd-kit/core for drag-and-drop, date-fns-tz for timezone
 
 ### Key Collections
 - `leads` - Lead data with ad_id, city, status
