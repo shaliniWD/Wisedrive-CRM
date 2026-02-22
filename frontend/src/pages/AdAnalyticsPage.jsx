@@ -266,11 +266,27 @@ export default function AdAnalyticsPage() {
     }
   };
   
-  // Fetch unmapped ads from Meta
-  const fetchUnmappedAds = async () => {
+  // Fetch unmapped ads from Meta AND auto-map those with targeting
+  const fetchAndAutoMapAds = async () => {
     setLoadingUnmapped(true);
+    setAutoMapping(true);
+    
     try {
-      // Fetch from both Meta API and WhatsApp leads
+      // Step 1: Auto-map ads with geo-targeting first
+      let autoMappedCount = 0;
+      try {
+        const autoMapResult = await metaAdsApi.autoMapFromTargeting();
+        if (autoMapResult.data.success && autoMapResult.data.auto_mapped_count > 0) {
+          autoMappedCount = autoMapResult.data.auto_mapped_count;
+          toast.success(`✅ Auto-mapped ${autoMappedCount} ads based on geo-targeting!`);
+          fetchMappings(); // Refresh mappings table
+        }
+      } catch (autoMapError) {
+        // Auto-map failed (maybe token expired), continue to fetch unmapped
+        console.log('Auto-map skipped:', autoMapError.response?.data?.error || autoMapError.message);
+      }
+      
+      // Step 2: Fetch remaining unmapped ads
       const [metaResult, leadsResult] = await Promise.all([
         metaAdsApi.getUnmappedAds().catch(e => ({ data: { success: false, data: [] } })),
         metaAdsApi.getUnmappedAdsFromLeads().catch(e => ({ data: { success: false, data: [] } }))
@@ -280,6 +296,14 @@ export default function AdAnalyticsPage() {
         setUnmappedAds(metaResult.data.data || []);
         setUnmappedWithTargeting(metaResult.data.with_targeting_count || 0);
         setUnmappedNoTargeting(metaResult.data.no_targeting_count || 0);
+        
+        // Show summary if we auto-mapped some
+        if (autoMappedCount > 0) {
+          const remaining = metaResult.data.count || 0;
+          if (remaining > 0) {
+            toast.info(`${remaining} ads still need manual mapping`);
+          }
+        }
       } else {
         console.error('Failed to fetch unmapped ads from Meta:', metaResult.data.error);
         setUnmappedAds([]);
@@ -293,30 +317,9 @@ export default function AdAnalyticsPage() {
         setUnmappedAdsFromLeads([]);
       }
     } catch (error) {
-      console.error('Error fetching unmapped ads:', error);
+      console.error('Error in fetch and auto-map:', error);
     } finally {
       setLoadingUnmapped(false);
-    }
-  };
-
-  // Auto-map all ads that have clear geo-targeting
-  const handleAutoMapFromTargeting = async () => {
-    setAutoMapping(true);
-    try {
-      const result = await metaAdsApi.autoMapFromTargeting();
-      if (result.data.success) {
-        const { auto_mapped_count, skipped_count } = result.data;
-        if (auto_mapped_count > 0) {
-          toast.success(`✅ Auto-mapped ${auto_mapped_count} ads based on geo-targeting!`);
-        } else {
-          toast.info(`No ads could be auto-mapped. ${skipped_count} ads have ambiguous or no targeting.`);
-        }
-        fetchUnmappedAds();
-        fetchMappings();
-      }
-    } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to auto-map ads');
-    } finally {
       setAutoMapping(false);
     }
   };
@@ -327,7 +330,7 @@ export default function AdAnalyticsPage() {
       const result = await metaAdsApi.mapAdFromLeads(unmapped.id, selectedCity);
       if (result.data.success) {
         toast.success(`Mapped! ${result.data.leads_updated} leads updated to ${selectedCity}`);
-        fetchUnmappedAds();
+        fetchAndAutoMapAds();
         fetchMappings();
       }
     } catch (error) {
