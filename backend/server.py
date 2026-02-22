@@ -2802,7 +2802,8 @@ async def twilio_whatsapp_webhook(
     ReferralNumMedia: str = Form(default=""),
     ButtonText: str = Form(default=""),
     CtwaClid: str = Form(default=""),  # CTWA Click ID (old field name)
-    ReferralCtwaClid: str = Form(default=""),  # CTWA Click ID (new field name - Twilio uses this!)
+    ReferralCtwaClid: str = Form(default=""),  # CTWA Click tracking ID
+    ReferralSourceId: str = Form(default=""),  # THIS IS THE ACTUAL META AD ID!
 ):
     """
     Webhook endpoint for incoming WhatsApp messages via Twilio.
