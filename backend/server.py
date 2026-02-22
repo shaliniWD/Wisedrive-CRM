@@ -2803,14 +2803,42 @@ async def twilio_whatsapp_webhook(
     """
     # ==================== LOG ALL INCOMING DATA FOR DEBUGGING ====================
     # Get raw form data to see ALL parameters Twilio sends
+    raw_twilio_data = {}
     try:
         form_data = await request.form()
-        all_params = dict(form_data)
+        raw_twilio_data = dict(form_data)
         logger.info(f"=== WHATSAPP WEBHOOK RAW DATA ===")
-        logger.info(f"ALL PARAMS RECEIVED: {all_params}")
+        logger.info(f"ALL PARAMS RECEIVED: {raw_twilio_data}")
         logger.info(f"=================================")
     except Exception as e:
         logger.warning(f"Could not read raw form data: {e}")
+        raw_twilio_data = {"error": str(e)}
+    
+    # Build comprehensive audit data
+    audit_data = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "raw_twilio_params": raw_twilio_data,
+        "parsed_standard_fields": {
+            "From": From,
+            "To": To,
+            "Body": Body,
+            "MessageSid": MessageSid,
+            "AccountSid": AccountSid,
+            "ProfileName": ProfileName,
+            "WaId": WaId,
+            "NumMedia": NumMedia
+        },
+        "parsed_ctwa_fields": {
+            "ReferralSourceUrl": ReferralSourceUrl,
+            "ReferralBody": ReferralBody,
+            "ReferralHeadline": ReferralHeadline,
+            "ReferralSourceType": ReferralSourceType,
+            "ReferralNumMedia": ReferralNumMedia,
+            "ButtonText": ButtonText,
+            "CtwaClid": CtwaClid
+        },
+        "extraction_log": []
+    }
     
     # Log parsed parameters
     logger.info(f"WhatsApp webhook received: From={From}, Body={Body[:100] if Body else 'empty'}")
@@ -2832,13 +2860,14 @@ async def twilio_whatsapp_webhook(
     platform = "whatsapp"
     ad_name = None
     
-    import re
-    
     # ==================== EXTRACT AD INFO FROM CTWA REFERRAL DATA ====================
     # Priority 1: Extract from CTWA Click ID (most reliable)
     if CtwaClid:
         ad_id = CtwaClid
+        audit_data["extraction_log"].append({"step": 1, "source": "CtwaClid", "found": True, "value": CtwaClid})
         logger.info(f"Found ad_id from CtwaClid: {ad_id}")
+    else:
+        audit_data["extraction_log"].append({"step": 1, "source": "CtwaClid", "found": False, "reason": "CtwaClid is empty/null"})
     
     # Priority 2: Extract ad_id from ReferralSourceUrl (contains fbclid or ad parameters)
     if not ad_id and ReferralSourceUrl:
@@ -2847,6 +2876,7 @@ async def twilio_whatsapp_webhook(
         url_ad_match = re.search(r'ad_id[=:]([a-zA-Z0-9_-]+)', ReferralSourceUrl, re.IGNORECASE)
         if url_ad_match:
             ad_id = url_ad_match.group(1)
+            audit_data["extraction_log"].append({"step": 2, "source": "ReferralSourceUrl (ad_id param)", "found": True, "value": ad_id})
             logger.info(f"Found ad_id from ReferralSourceUrl param: {ad_id}")
         else:
             # Try extracting fbclid or other identifiers
