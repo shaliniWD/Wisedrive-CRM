@@ -107,6 +107,15 @@ export default function AdAnalyticsPage() {
   const [unmappedWithTargeting, setUnmappedWithTargeting] = useState(0);
   const [unmappedNoTargeting, setUnmappedNoTargeting] = useState(0);
   
+  // Debug logs state
+  const [debugLogs, setDebugLogs] = useState([]);
+  const [showDebugPanel, setShowDebugPanel] = useState(false);
+  
+  const addDebugLog = (action, status, details) => {
+    const timestamp = new Date().toLocaleTimeString();
+    setDebugLogs(prev => [...prev, { timestamp, action, status, details }].slice(-20)); // Keep last 20 logs
+  };
+  
   const cities = ['Bangalore', 'Chennai', 'Mumbai', 'Delhi', 'Hyderabad', 'Pune', 'Kolkata', 'Ahmedabad', 'Vizag'];
   const languages = ['Hindi', 'English', 'Kannada', 'Tamil', 'Telugu', 'Malayalam', 'Marathi', 'Bengali'];
   const sources = ['Instagram', 'Facebook', 'Google', 'YouTube', 'Website', 'Referral'];
