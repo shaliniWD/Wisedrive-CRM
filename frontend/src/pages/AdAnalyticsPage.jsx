@@ -401,9 +401,19 @@ export default function AdAnalyticsPage() {
     try {
       const result = await metaAdsApi.updateToken(newToken.trim());
       if (result.data.success) {
-        toast.success('Token updated successfully!');
+        toast.success('✅ Token updated successfully!');
         setShowTokenModal(false);
         setNewToken('');
+        
+        // IMPORTANT: Refresh token info to update the status badge
+        try {
+          const tokenResult = await metaAdsApi.getTokenInfo();
+          setTokenInfo(tokenResult.data);
+        } catch (e) {
+          console.error('Failed to refresh token info:', e);
+        }
+        
+        // Refresh performance data
         fetchPerformanceData(true);
       } else {
         toast.error(result.data.error || 'Invalid token');
