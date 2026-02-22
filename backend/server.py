@@ -10394,6 +10394,77 @@ async def get_unmapped_ads_from_leads(current_user: dict = Depends(get_current_u
     }
 
 
+@api_router.post("/meta-ads/auto-map-from-current-cities")
+async def auto_map_from_current_cities(current_user: dict = Depends(get_current_user)):
+    """
+    Automatically create mappings for unmapped ads using their current_cities data.
+    If an ad's leads all went to the same city, that's likely the correct mapping.
+    """
+    role_code = current_user.get("role_code", "")
+    if role_code not in ["CEO", "HR_MANAGER", "CTO", "COUNTRY_HEAD", "ADMIN"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Get all unmapped ads with current_cities
+    unmapped_ads = await db.unmapped_ads.find(
+        {"is_mapped": False, "current_cities": {"$exists": True, "$ne": []}},
+        {"_id": 0}
+    ).to_list(500)
+    
+    auto_mapped = []
+    skipped = []
+    
+    for ad in unmapped_ads:
+        current_cities = ad.get("current_cities", [])
+        
+        # Only auto-map if all leads went to the SAME city
+        if len(current_cities) == 1:
+            city = current_cities[0]
+            
+            # Create the mapping
+            mapping = {
+                "id": str(uuid.uuid4()),
+                "ad_id": ad.get("ad_id"),
+                "ad_name": ad.get("ad_name"),
+                "city": city,
+                "source": "auto_from_lead_city",
+                "is_active": True,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "created_by": current_user["id"],
+                "auto_mapped": True
+            }
+            
+            await db.ad_city_mappings.insert_one(mapping)
+            
+            # Mark as mapped
+            await db.unmapped_ads.update_one(
+                {"id": ad["id"]},
+                {"$set": {"is_mapped": True, "mapped_at": datetime.now(timezone.utc).isoformat()}}
+            )
+            
+            auto_mapped.append({
+                "ad_id": ad.get("ad_id"),
+                "ad_name": ad.get("ad_name"),
+                "city": city,
+                "lead_count": ad.get("lead_count")
+            })
+        else:
+            skipped.append({
+                "ad_id": ad.get("ad_id"),
+                "reason": f"Multiple cities: {current_cities}"
+            })
+    
+    logger.info(f"Auto-mapped {len(auto_mapped)} ads from current_cities")
+    
+    return {
+        "success": True,
+        "message": f"Auto-mapped {len(auto_mapped)} ads based on lead cities",
+        "auto_mapped_count": len(auto_mapped),
+        "skipped_count": len(skipped),
+        "auto_mapped": auto_mapped,
+        "skipped": skipped[:10]
+    }
+
+
 @api_router.post("/meta-ads/map-ad-from-leads/{unmapped_id}")
 async def map_ad_from_leads(
     unmapped_id: str,
