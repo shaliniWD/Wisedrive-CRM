@@ -437,6 +437,37 @@ const PartnersPage = () => {
               </div>
               
               <div className="col-span-2">
+                <Label>Default Report Template</Label>
+                <Select 
+                  value={formData.default_report_template_id} 
+                  onValueChange={(value) => setFormData({...formData, default_report_template_id: value})}
+                >
+                  <SelectTrigger data-testid="default-report-template-select">
+                    <SelectValue placeholder="Select a report template (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">No default template</SelectItem>
+                    {reportTemplates
+                      .filter(t => t.is_active)
+                      .map(template => (
+                        <SelectItem key={template.id} value={template.id}>
+                          <div className="flex items-center gap-2">
+                            <FileText className="h-4 w-4 text-violet-500" />
+                            {template.name}
+                            {template.inspection_template_name && (
+                              <span className="text-xs text-gray-400">({template.inspection_template_name})</span>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-gray-500 mt-1">
+                  This template will be used for all inspections from this partner
+                </p>
+              </div>
+              
+              <div className="col-span-2">
                 <Label>Notes</Label>
                 <Textarea
                   value={formData.notes}
