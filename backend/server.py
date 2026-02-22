@@ -2102,6 +2102,77 @@ async def investigate_lead_by_name(name: str, current_user: dict = Depends(get_c
     return investigation
 
 
+@api_router.get("/leads/diagnose/source-issues")
+async def diagnose_lead_source_issues(current_user: dict = Depends(get_current_user)):
+    """
+    Diagnostic endpoint to find leads that may have source/ad_id issues.
+    Identifies leads that were likely created from WhatsApp but are missing META_WHATSAPP source.
+    """
+    # Get all leads
+    all_leads = await db.leads.find({}, {"_id": 0}).to_list(10000)
+    
+    diagnostics = {
+        "total_leads": len(all_leads),
+        "by_source": {},
+        "potential_issues": [],
+        "missing_ad_id_meta_leads": [],
+        "leads_with_ctwa_data": [],
+        "leads_created_by_system": []
+    }
+    
+    # Count by source
+    for lead in all_leads:
+        source = lead.get("source", "UNKNOWN")
+        if source not in diagnostics["by_source"]:
+            diagnostics["by_source"][source] = 0
+        diagnostics["by_source"][source] += 1
+        
+        # Check for issues
+        lead_summary = {
+            "id": lead.get("id"),
+            "name": lead.get("name"),
+            "mobile": lead.get("mobile"),
+            "city": lead.get("city"),
+            "source": source,
+            "ad_id": lead.get("ad_id"),
+            "ad_name": lead.get("ad_name"),
+            "created_by": lead.get("created_by"),
+            "created_at": lead.get("created_at"),
+            "has_ctwa_data": bool(lead.get("ctwa_data")),
+            "ctwa_data": lead.get("ctwa_data")
+        }
+        
+        # Issue 1: Leads created by "system" but with non-META_WHATSAPP source
+        if lead.get("created_by") == "system" and source != "META_WHATSAPP":
+            diagnostics["potential_issues"].append({
+                **lead_summary,
+                "issue": "Created by system but source is not META_WHATSAPP"
+            })
+        
+        # Issue 2: META_WHATSAPP leads without ad_id
+        if source == "META_WHATSAPP" and not lead.get("ad_id"):
+            diagnostics["missing_ad_id_meta_leads"].append(lead_summary)
+        
+        # Issue 3: Leads with CTWA data
+        if lead.get("ctwa_data"):
+            diagnostics["leads_with_ctwa_data"].append(lead_summary)
+        
+        # Leads created by system
+        if lead.get("created_by") == "system":
+            diagnostics["leads_created_by_system"].append(lead_summary)
+    
+    diagnostics["summary"] = {
+        "total_meta_whatsapp": diagnostics["by_source"].get("META_WHATSAPP", 0),
+        "total_website": diagnostics["by_source"].get("WEBSITE", 0),
+        "total_system_created": len(diagnostics["leads_created_by_system"]),
+        "potential_misassigned_leads": len(diagnostics["potential_issues"]),
+        "meta_leads_missing_ad_id": len(diagnostics["missing_ad_id_meta_leads"]),
+        "leads_with_ctwa": len(diagnostics["leads_with_ctwa_data"])
+    }
+    
+    return diagnostics
+
+
 # Lead Notes
 class LeadNoteCreate(BaseModel):
     note: str
