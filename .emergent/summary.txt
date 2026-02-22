@@ -1,169 +1,192 @@
 <analysis>**original_problem_statement:**
-The user's initial request was to build a React Native (Expo) mobile application for mechanics. This app needs to integrate with an existing B2B inspection CRM backend and incorporate advanced OBD-II scanning functionality.
+The user's initial request was to build a React Native (Expo) mobile application for mechanics, integrated with a B2B inspection CRM and featuring OBD-II scanning. The project's focus has since shifted to fixing critical bugs and adding features to the CRM web application.
 
-Over several iterations, the user has requested significant UI/UX overhauls, bug fixes, and feature additions. The core requirements have evolved to include:
-1.  A modern, fresh UI for the mechanic app, with specific user flows ( ->  ->  ->  ->  -> ).
-2.  Correct functioning of the OBD-II scanner within the new UI, ensuring scan results are properly passed between screens.
-3.  Specific UI features on the home screen, such as a date range filter for inspections and map navigation to the inspection site.
-4.  Updates to the separate CRM web application to allow for more complex question types (e.g., multiple choice combined with a photo).
-5.  Multiple redesigns to achieve a professional and sharp look, including specific color themes and app logos.
+Recent user requests focused on:
+1.  **Fixing a critical bug** where all leads from Meta (Facebook) WhatsApp campaigns were being incorrectly assigned to the city Vizag.
+2.  **Developing a mechanism to correct historical data** for the leads that were wrongly assigned.
+3.  **Improving the ad-to-city mapping process**, especially when the Meta API token is expired, by sourcing data from existing leads.
+4.  **Enhancing UI/UX** on the CRM's Leads and Ad Analytics pages to improve traceability and provide tools for data correction.
+5.  Investigating the source of a specific lead in the user's production environment.
 
 **PRODUCT REQUIREMENTS:**
-1.  **B2B Inspection & Reporting Flow (Partially Completed):** The core CRM exists. Recent work enhanced the Q&A module to support combination answer types.
-2.  **Mechanic Mobile App (In Progress):**
-    *   Build a React Native (Expo) app with a specific blue-themed, sharp UI.
-    *   Implement the user flow:  ->  ->  ->  ->  ->  ->  -> .
-    *   Ensure the OBD scanning functionality is stable and its state is managed correctly across the app.
-    *   Implement a Reject Inspection modal on the home screen.
-    *   Integrate the full questionnaire flow into the mobile app.
-    *   Generate and deliver an installable APK file for user testing.
+1.  **B2B Inspection & Reporting Flow (In Progress):** The CRM is the primary focus. The core task is to ensure data integrity for leads generated from Meta ads.
+2.  **Mechanic Mobile App (On Hold):** Development is paused. The last state included a new blue-themed UI and test data integration, but it's pending user feedback and has an unreliable build process.
+3.  **Meta Ads Integration (Partially Blocked):**
+    *   The WhatsApp webhook must correctly parse Click-to-WhatsApp (CTWA) referral data to assign the correct city to new leads.
+    *   The system must provide tools to correct historical lead data.
+    *   The system must be able to identify and map unmapped ads even if the Meta API connection is down (e.g., due to an expired token).
 
 **User's preferred language**: English
 
 **what currently exists?**
-A React Native (Expo) project exists at . The application has undergone several major UI redesigns. The current version features a blue theme, an updated app logo, and a new home screen with a calendar icon for date filtering and a Navigate button for maps integration. The backend  has been modified to support a new test phone number in dev mode. The OBD scanning state management bug has been fixed by properly using an . In the separate CRM frontend, the  has been updated to support combined answer types (e.g., 'multiple_choice_and_photo'). The last action was building a new APK with the latest UI changes.
+The project consists of a FastAPI backend, a React CRM frontend, and a React Native (Expo) mechanic app.
+
+*   **CRM Web App:**
+    *   A critical bug in the WhatsApp webhook () has been fixed. It now correctly parses CTWA data (, ) to assign the right city to incoming leads based on .
+    *   The Ad Analytics page () has been significantly enhanced. It can now scan existing leads to discover unmapped ads, bypassing the expired Meta token issue. It also features an auto-map function that uses historical lead data to suggest and create city mappings. A debug log panel has been added for easier troubleshooting.
+    *   The Leads page () features a Remap City modal that allows for bulk correction of lead cities, with both manual and automatic (based on AD ID) modes. It also now displays the  and  for each lead, improving traceability.
+
+*   **Mechanic Mobile App:**
+    *   The app has a blue-themed UI. The backend is ready to serve test data via the  endpoint. The map navigation feature is functional. APK generation has been unreliable.
 
 **Last working item**:
-*   **Last item agent was working:** Implementing a set of UI/UX changes requested by the user to achieve a sharper and more professional blue-themed design. This included updating the app logo, changing the theme color, and adding a map navigation button on the home screen after an inspection is accepted.
+*   **Last item agent was working:** The agent was investigating a specific lead ( / ) requested by the user. The agent concluded that the lead does not exist in the preview environment's database and provided the user with commands ( API call, MongoDB query) to investigate it on their own  environment.
 *   **Status:** USER VERIFICATION PENDING
-*   **Agent Testing Done:** N
-*   **Which testing method agent to use?** Frontend testing agent. This was a significant UI overhaul. The agent should verify the new design, theme, and the presence of new elements (map button, calendar) across the , , and  screens without any regressions.
+*   **Agent Testing Done:** Y (Agent confirmed the lead was not in the local database).
+*   **Which testing method agent to use?** Manual testing by the user on their own environment. The agent has already provided the necessary commands.
 *   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
-*   **Issue 1: Subjective UI Sharpness and Professionalism (P0)**
-    *   **Description:** The user has repeatedly expressed that the design lacks sharpness and professionalism. The latest blue-themed redesign was an attempt to address this, but the user may still be unsatisfied. This is the highest priority as it relates to user acceptance of the UI.
+*   **Issue 1: User cannot find lead  in . (P0)**
+    *   **Description:** The user wants to find the source and AD ID for a lead in their production environment, which the agent cannot access.
+    *   **Attempted fixes:** The agent provided API and database queries for the user to run themselves.
     *   **Next debug checklist:**
-        1.  Present the latest build to the user.
-        2.  Ask for specific feedback on what elements are not sharp or professional enough.
-        3.  Consider using the  again with more precise prompts based on user feedback if further changes are needed.
-    *   **Why fix this issue and what will be achieved with the fix?** To meet user's aesthetic requirements and get approval on the app's base design.
+        1.  Await user confirmation on whether the provided commands helped them find the lead.
+        2.  If the user is still stuck, prepare to guide them on using browser developer tools to make the API call or create a simple UI-based investigation tool.
+    *   **Why fix this issue and what will be achieved with the fix?** To resolve the user's immediate query and validate that the new AD ID tracking features are working correctly in their environment.
     *   **Status:** USER VERIFICATION PENDING
+    *   **Is recurring issue?** N
+    *   **Should Test frontend/backend/both after fix?** Backend (if a new investigation endpoint is required).
+    *   **Blocked on other issue:** None.
+
+*   **Issue 2: Unreliable APK Build Process for Mechanic App (P2)**
+    *   **Description:** The  command has been failing with timeouts and  errors. This blocks testing of the mechanic app.
+    *   **Next debug checklist:**
+        1.  Run 
+added 447 packages in 14s
+
+55 packages are looking for funding
+  run `npm fund` for details to ensure the CLI is installed correctly in the environment.
+        2.  Review  for any misconfigurations.
+        3.  Initiate a new build (Run this command inside a project directory.) and carefully monitor the output for specific errors.
+    *   **Why fix this issue and what will be achieved with the fix?** To unblock any future development and testing on the mechanic mobile app.
+    *   **Status:** NOT STARTED
     *   **Is recurring issue?** Y
-    *   **Should Test frontend/backend/both after fix?** Frontend.
-    *   **Blocked on other issue:** No.
+    *   **Should Test frontend/backend/both after fix?** N/A (Build process).
+    *   **Blocked on other issue:** None.
 
 **In progress Task List**:
-*   **Task 1: Implement Map Navigation (P1)**
-    *   **Description:** The user requested map navigation after accepting an inspection. A Navigate button was added to the UI on , but it currently has no function.
-    *   **Where to resume:** In , add an  handler to the Navigate button. This handler should use React Native's  API to open the device's default map application with the inspection address.
-    *   **What will be achieved with this?** A core piece of functionality requested by the user will be implemented, allowing mechanics to easily navigate to job sites.
-    *   **Status:** IN PROGRESS
-    *   **Should Test frontend/backend/both after fix?** Frontend.
-    *   **Blocked on something:** No.
+*   None.
 
 **Upcoming and Future Tasks**
 **Upcoming Tasks:**
-*   **P1: Implement Full Questionnaire Flow:** Integrate the existing questionnaire logic into the new mobile app navigation flow, making it accessible from the  screen.
-*   **P2: Implement Reject Reason Modal:** On the  screen, the Reject button should trigger a modal allowing the mechanic to select a reason for rejecting the inspection.
+*   **P0: Guide User to Refresh Expired Meta Token:** The root cause of all issues on the Ad Analytics page is the expired Meta token. The next step is to guide the user on how to re-authenticate with Meta through the CRM's settings page.
+*   **P1: Implement Full Questionnaire Flow (Mechanic App):** Integrate the questionnaire module into the mobile app's navigation, accessible after the inspection categories screen.
+*   **P2: Implement Reject Reason Modal (Mechanic App):** Add a modal to the  screen that appears when a mechanic rejects an inspection, allowing them to provide a reason.
 
 **Future Tasks:**
-*   Add PDF export functionality for inspection reports.
-*   Add a Share via WhatsApp button on the report page.
-*   Refactor  into smaller  modules.
-*   Add a reminders feature for Customers in the CRM.
+*   Add PDF export for inspection reports.
+*   Add a Share via WhatsApp feature for reports.
+*   Refactor  into smaller, more manageable  modules.
+*   Add a reminders feature for customers in the CRM.
 
 **Completed work in this session**
-- **Fixed OBD Scanning State Bug:** Correctly implemented state management using  in  and  to ensure the UI updates after an OBD scan is complete.
-- **Enhanced CRM Q&A Module:** Modified  in the frontend CRM to allow for combination answer types (e.g., ).
-- **Implemented Multiple UI/UX Iterations:**
-    - Changed mechanic login credentials to  /  by modifying .
-    - Hid Raw Data, History, and Log files buttons on the  screen.
-    - Added a date-range filter modal and calendar icon to the  screen.
-    - Updated the app icon and theme multiple times based on user feedback, culminating in the current blue-themed design.
-    - Added a placeholder Navigate button to the home screen.
-- **Generated New APKs:** Successfully built and provided APKs for user testing at various stages.
+- **CRM - Meta Lead City Bug Fix:** Fixed the WhatsApp webhook in  to correctly parse CTWA data and assign the right city to new leads.
+- **CRM - Historical Data Correction Tools:**
+    - Implemented a Remap City feature on  with a modal for both manual bulk updates and automatic remapping based on AD ID.
+    - Added corresponding backend endpoints:  and .
+- **CRM - Ad Mapping from Existing Leads:**
+    - Created a feature to scan existing leads () to populate the Unmapped Ads list, working around the expired Meta token.
+    - Implemented an auto-mapping feature based on the historical city of leads ().
+- **CRM - UI/UX Enhancements:**
+    - Added a debug log panel to the  for better troubleshooting.
+    - Combined Refresh and Auto-Map functions into a single button click.
+    - Added the lead's  and  to the main leads list for improved traceability.
+- **Mechanic App - Test Data:**
+    - Created a backend endpoint () to populate the app with test inspections.
+    - Fixed a development-only authentication issue for the test mechanic user.
+    - Corrected data field mappings in .
 
 **Earlier issues found/mentioned but not fixed**
-*   **Issue 1: Brittle  in **
-    *   This is a known issue in the separate CRM web application and is not part of the current mobile app development. It remains deferred.
+*   **Issue 1: Subjective UI Sharpness and Professionalism (Mechanic App):** The user has not yet provided feedback on the latest blue-themed redesign of the mobile app, as the focus shifted to the CRM bugs. This is pending user review.
 
 **Known issue recurrence from previous fork**
-*   None. The OBD functionality issue was a primary recurring theme and has been addressed in this session.
+*   None.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
+*   **FastAPI:** Backend framework.
+*   **React:** Frontend framework for the CRM.
 *   **React Native (Expo):** Mobile app framework.
-*   **Expo Router:** File-based stack navigation.
-*   **EAS (Expo Application Services):** Used for building the APK.
-*   **React Context API:** Used for global state management ().
-*   **react-native-ble-plx:** For Bluetooth communication with OBD devices.
-*   **React Native  API:** To be used for implementing map navigation.
+*   **MongoDB:** NoSQL database.
+*   **Twilio API:** Used for the WhatsApp webhook integration.
+*   **Meta Marketing API:** Used for ad data integration (currently blocked by an expired token).
 
 **key DB schema**
-*   No schema changes. The agent noted the database was empty and all authentication was happening in a development/fallback mode within .
+*   ****: Now includes , , and  to track the origin of leads from Meta ads.
+*   ****: Stores the relationship between an  or  and a .
+*   ****: A collection populated by scanning existing leads, holding ads that need a city mapping. It includes , , , and .
 
 **changes in tech stack**
 *   None.
 
 **All files of reference**
-*    (Major redesign, feature addition)
-*    (Major redesign)
-*    (Major redesign)
-*    (UI tweak and context integration)
-*    (Context integration)
-*    (Icon and theme updates)
-*    (Theme update)
-*    (Dev login credential update)
-*    (Feature enhancement)
-*    (UI update for new feature)
-*    (Used for the last redesign)
+*   
+*   
+*   
+*   
+*   
 
 **Areas that need refactoring**:
-*    has grown significantly with state for search, filtering, and multiple modals. This logic could be extracted into custom hooks for better readability.
-*    remains a very large monolithic file (over 1200 lines) and should be broken into smaller components.
+*    has grown excessively large and complex. The logic for leads, ad mappings, and webhooks should be extracted into separate  files and services.
+*    and  contain a large amount of state and logic that could be refactored into custom hooks and smaller, reusable components to improve maintainability.
 
 **key api endpoints**
-*   : Modified to allow test phone number  in dev mode.
-*   : Modified to handle dev mode for the test user.
+*   : The main entry point for new WhatsApp leads, now with enhanced CTWA parsing.
+*   : Automatically fixes historical lead cities based on mappings.
+*   : Scans the  collection to find ads that need city mappings.
+*   : Creates new city mappings based on data from the lead scan.
+*   : Retrieves the list of unmapped ads found by the scan.
 
 **Critical Info for New Agent**
-*   **Your top priority is user feedback.** The user is very particular about UI/UX. You must present the latest APK and confirm if the blue theme redesign meets their standards for sharpness and professionalism before proceeding.
-*   **The new mechanic login is Phone: , OTP: .** This is hardcoded in  for development.
-*   **Map navigation is not implemented.** The Navigate button on the home screen is a UI placeholder. You will need to implement the  functionality using the  API.
-*   The previous major blocker, the OBD scanning state bug, is resolved. Do not focus on it unless new issues are reported.
+*   **The user's Meta Token is EXPIRED.** This is the number one blocker for the Ad Analytics page. You cannot fetch live data from Meta until the user re-authenticates. Your priority should be to guide the user to do this. The features you see (like scanning leads) were built as workarounds.
+*   **You are in a PREVIEW environment.** Any database changes you make (like remapping leads) will NOT affect the user's  environment. The user must use the UI tools you've built to apply these changes on their side. Make this clear in your communication.
+*   The project focus is currently on the **CRM web application**. Do not start work on the mechanic mobile app unless the user explicitly asks for it.
+*   The last request was to investigate a lead that only exists in the user's  environment. You are waiting for the user to report their findings using the commands you provided.
 
 **documents and test reports created in this job**
 *   
 *   
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** Asks for combination answer types in inspection questions (e.g., photo + multiple choice). (COMPLETED)
-2.  **User:** Is not convinced by the app design and asks for a redesign without losing functionality. (IN PROGRESS, first redesign done)
-3.  **Agent:** Calls  to generate new design guidelines.
-4.  **Agent:** Implements the redesign for Login, Home, and Verify Vehicle screens.
-5.  **Agent:** Builds a new APK with the redesign.
-6.  **User:** Provides feedback on the redesign, listing missing items: new app logo, map navigation, a blue theme matching the logo, and better sharpness/professionalism. (PENDING)
-7.  **Agent:** Downloads the new blue logo.
-8.  **Agent:** Implements a second redesign incorporating the blue theme, new logo, and a map navigation button.
-9.  **Agent:** Builds the final APK with all the latest changes.
-10. **Agent:** Summarizes the work and awaits user feedback on the latest build.
+1.  **User:** Asks for an auto-remap feature for leads instead of manual selection. (COMPLETED)
+2.  **User:** Reports that no ads are visible in the mapping tab, providing a screenshot showing an expired Meta token. (WORKAROUND IMPLEMENTED)
+3.  **User:** Requests that the system should check for a target city from Meta ads and auto-map it. (IMPLEMENTED, BUT BLOCKED BY EXPIRED TOKEN)
+4.  **User:** Suggests combining the Refresh and Auto-Map buttons into a single click. (COMPLETED)
+5.  **User:** Reports that the refresh didn't work and asks for a debug log feature. (COMPLETED)
+6.  **User:** After seeing the logs, correctly identifies the expired token as the issue and suggests getting ad data from existing leads first. (COMPLETED - LEAD SCAN FEATURE BUILT)
+7.  **User:** Asks to display any city reference from the Meta API in the unmapped ads table. (COMPLETED -  field added)
+8.  **User:** Requests that the AD ID be displayed on the main leads list. (COMPLETED)
+9.  **User:** Asks to investigate the source of a specific lead in their  environment. (COMPLETED - AGENT PROVIDED INSTRUCTIONS)
+10. **User:** Reports that the agent's database changes didn't affect their environment and the frontend still shows Vizag. (COMPLETED - AGENT EXPLAINED PREVIEW vs. PROD)
 
 **Project Health Check:**
 *   **Broken:**
-    *   Map Navigation: A Navigate button exists in the UI but has no functionality.
+    *   **Meta API Integration:** All features relying on fetching live data from Meta are non-functional due to an expired access token.
+    *   **Mechanic App APK Build:** The process is unreliable, blocking mobile app testing.
 *   **Mocked:**
-    *   The full questionnaire flow is not yet integrated into the mobile app's navigation stack.
-    *   The Reject Inspection modal on the home screen is not implemented.
+    *   The full questionnaire flow in the mobile app.
+    *   The Reject Inspection feature in the mobile app.
 
 **3rd Party Integrations**
+*   **Twilio:** Handles incoming WhatsApp messages.
+*   **Meta (Facebook) Marketing API:** For fetching ad data. **(Currently Inactive - Expired Token)**.
 *   **Expo Application Services (EAS):** For building the React Native app.
 *   **Firebase Cloud Messaging (FCM):** For push notifications.
-*   **react-native-ble-plx:** For Bluetooth Low Energy communication.
-*   **expo-linear-gradient:** For UI styling.
+*   **react-native-ble-plx:** For Bluetooth communication.
 
 **Testing status**
-*   **Testing agent used after significant changes:** NO
+*   **Testing agent used after significant changes:** YES (for an earlier feature).
 *   **Troubleshoot agent used after agent stuck in loop:** NO
-*   **Test files created:** None.
-*   **Known regressions:** Unknown. A major UI overhaul was just completed without subsequent testing.
+*   **Test files created:** None in this session.
+*   **Known regressions:** The mechanic mobile app has undergone a major UI overhaul without subsequent testing.
 
 **Credentials to test flow:**
-*   **CRM Admin Login:**  / 
-*   **Mechanic App Login:** Phone  / OTP 
+*   **CRM Admin Login:**  /  (Note: Must select India from the country dropdown on the login page first).
+*   **Mechanic App Login:** Phone  / OTP .
 
 **What agent forgot to execute**
-*   The agent added a Navigate button to the UI as requested but did not implement the underlying functionality to open a map application. This leaves the feature incomplete.
-*   The agent did not perform any post-implementation testing (screenshot or testing agent) after the final, significant UI redesign.</analysis>
+*   The agent did not address the recurring, unreliable EAS build process for the mechanic app, which is a significant technical debt and blocker for mobile app development.
+*   The agent did not perform regression testing on the mechanic app after its last major UI overhaul.</analysis>
