@@ -78,9 +78,15 @@ export default function AdAnalyticsPage() {
   const [metaStatus, setMetaStatus] = useState({ configured: false });
   const [tokenInfo, setTokenInfo] = useState(null);
   const [dateRange, setDateRange] = useState('30');
+  const [dateRangeType, setDateRangeType] = useState('month'); // Unified date filter
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('total_leads');
   const [sortOrder, setSortOrder] = useState('desc');
+  // New filters for Ad Performance
+  const [filterCity, setFilterCity] = useState('all');
+  const [filterAdStatus, setFilterAdStatus] = useState('all'); // 'all', 'active', 'inactive'
   
   // Token management state
   const [showTokenModal, setShowTokenModal] = useState(false);
