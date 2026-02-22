@@ -16,6 +16,7 @@ import HRModulePage from "@/pages/HRModulePage";
 import NotificationConfigPage from "@/pages/NotificationConfigPage";
 import AdAnalyticsPage from "@/pages/AdAnalyticsPage";
 import InspectionReportPage from "@/pages/InspectionReportPage";
+import MetaOAuthCallback from "@/pages/MetaOAuthCallback";
 
 // Smart redirect based on visible tabs
 const SmartRedirect = () => {
