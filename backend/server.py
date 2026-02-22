@@ -2025,6 +2025,71 @@ async def investigate_lead_by_phone(phone: str, current_user: dict = Depends(get
     return investigation
 
 
+@api_router.get("/leads/investigate/by-name/{name}")
+async def investigate_lead_by_name(name: str, current_user: dict = Depends(get_current_user)):
+    """
+    Investigate a lead by name - returns full details including source, ad_id, ctwa_data
+    Supports partial name match (case-insensitive)
+    """
+    logger.info(f"Investigating lead with name: {name}")
+    
+    # Search by exact match first, then partial match
+    lead = await db.leads.find_one(
+        {"name": {"$regex": f"^{name}$", "$options": "i"}},
+        {"_id": 0}
+    )
+    
+    if not lead:
+        # Try partial match
+        lead = await db.leads.find_one(
+            {"name": {"$regex": name, "$options": "i"}},
+            {"_id": 0}
+        )
+    
+    if not lead:
+        raise HTTPException(
+            status_code=404, 
+            detail={
+                "message": f"Lead not found with name: {name}",
+                "suggestion": "Try searching by phone number instead using /api/leads/investigate/by-phone/{phone}"
+            }
+        )
+    
+    # Prepare investigation response (same structure as phone search)
+    investigation = {
+        "lead_found": True,
+        "lead_id": lead.get("id"),
+        "name": lead.get("name"),
+        "mobile": lead.get("mobile"),
+        "city": lead.get("city"),
+        "source": lead.get("source", "Unknown"),
+        "ad_id": lead.get("ad_id"),
+        "ad_name": lead.get("ad_name"),
+        "campaign_id": lead.get("campaign_id"),
+        "platform": lead.get("platform"),
+        "status": lead.get("status"),
+        "created_at": lead.get("created_at"),
+        "ctwa_data": lead.get("ctwa_data"),
+        "assigned_to": lead.get("assigned_to"),
+        "assigned_to_name": lead.get("assigned_to_name"),
+        "full_lead_data": lead
+    }
+    
+    if lead.get("source") == "META_WHATSAPP":
+        investigation["is_meta_lead"] = True
+        investigation["meta_details"] = {
+            "ad_id": lead.get("ad_id") or "Not captured",
+            "ad_name": lead.get("ad_name") or "Not captured",
+            "campaign_id": lead.get("campaign_id") or "Not captured",
+            "referral_headline": lead.get("ctwa_data", {}).get("referral_headline") if lead.get("ctwa_data") else "Not captured",
+            "referral_source_url": lead.get("ctwa_data", {}).get("referral_source_url") if lead.get("ctwa_data") else "Not captured"
+        }
+    else:
+        investigation["is_meta_lead"] = False
+    
+    return investigation
+
+
 # Lead Notes
 class LeadNoteCreate(BaseModel):
     note: str
