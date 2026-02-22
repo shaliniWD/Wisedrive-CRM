@@ -903,24 +903,39 @@ export default function AdAnalyticsPage() {
         {/* Performance Tab */}
         {activeTab === 'performance' && (
           <div className="p-4">
-            {/* Filters */}
-            <div className="flex flex-wrap items-center gap-4 mb-6">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-gray-500" />
-                <Select value={dateRange} onValueChange={setDateRange}>
-                  <SelectTrigger className="w-40" data-testid="date-range-select">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="7">Last 7 Days</SelectItem>
-                    <SelectItem value="14">Last 14 Days</SelectItem>
-                    <SelectItem value="30">Last 30 Days</SelectItem>
-                    <SelectItem value="60">Last 60 Days</SelectItem>
-                    <SelectItem value="90">Last 90 Days</SelectItem>
-                  </SelectContent>
-                </Select>
+            {/* Date Range Filter - Unified Pill Button Style */}
+            <div className="bg-white rounded-xl border p-4 mb-4">
+              <div className="flex flex-wrap items-center gap-3">
+                <Calendar className="h-4 w-4 text-gray-400" />
+                <span className="text-sm font-medium text-gray-600">Date Range:</span>
+                <div className="flex flex-wrap items-center gap-2">
+                  {[
+                    { key: 'today', label: 'Today', days: '0' },
+                    { key: 'week', label: 'This Week', days: '7' },
+                    { key: 'month', label: 'This Month', days: '30' },
+                    { key: '60days', label: 'Last 60 Days', days: '60' },
+                    { key: '90days', label: 'Last 90 Days', days: '90' },
+                  ].map((preset) => (
+                    <button 
+                      key={preset.key} 
+                      onClick={() => { setDateRangeType(preset.key); setDateRange(preset.days); }}
+                      className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-colors ${
+                        dateRangeType === preset.key 
+                          ? 'bg-blue-600 text-white' 
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                      data-testid={`date-preset-${preset.key}`}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
               </div>
+            </div>
 
+            {/* Filters Row */}
+            <div className="flex flex-wrap items-center gap-4 mb-6">
+              {/* Search */}
               <div className="flex-1 max-w-md">
                 <Input
                   placeholder="Search by Ad ID, name, city..."
@@ -931,6 +946,32 @@ export default function AdAnalyticsPage() {
                 />
               </div>
 
+              {/* City Filter */}
+              <Select value={filterCity} onValueChange={setFilterCity}>
+                <SelectTrigger className="w-40" data-testid="city-filter-select">
+                  <SelectValue placeholder="All Cities" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Cities</SelectItem>
+                  {[...new Set(performanceData?.ads?.map(ad => ad.city).filter(Boolean) || [])].sort().map(city => (
+                    <SelectItem key={city} value={city}>{city}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Ad Status Filter */}
+              <Select value={filterAdStatus} onValueChange={setFilterAdStatus}>
+                <SelectTrigger className="w-36" data-testid="ad-status-filter-select">
+                  <SelectValue placeholder="All Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Sort By */}
               <div className="flex items-center gap-2">
                 <Filter className="h-4 w-4 text-gray-500" />
                 <Select value={sortBy} onValueChange={setSortBy}>
