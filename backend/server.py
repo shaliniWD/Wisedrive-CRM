@@ -3298,7 +3298,9 @@ Or type your question and we'll help you!"""
             "referral_source_type": ReferralSourceType,
             "button_text": ButtonText,
             "ctwa_clid": CtwaClid
-        } if has_ctwa_data else None
+        } if has_ctwa_data else None,
+        # Store complete webhook audit trail for debugging
+        "webhook_audit": audit_data
     }
     
     await db.leads.insert_one(lead)
