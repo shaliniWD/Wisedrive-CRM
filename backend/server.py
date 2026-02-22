@@ -2801,7 +2801,8 @@ async def twilio_whatsapp_webhook(
     ReferralSourceType: str = Form(default=""),
     ReferralNumMedia: str = Form(default=""),
     ButtonText: str = Form(default=""),
-    CtwaClid: str = Form(default=""),  # CTWA Click ID
+    CtwaClid: str = Form(default=""),  # CTWA Click ID (old field name)
+    ReferralCtwaClid: str = Form(default=""),  # CTWA Click ID (new field name - Twilio uses this!)
 ):
     """
     Webhook endpoint for incoming WhatsApp messages via Twilio.
