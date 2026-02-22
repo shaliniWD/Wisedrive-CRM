@@ -103,6 +103,9 @@ export default function AdAnalyticsPage() {
   const [unmappedAds, setUnmappedAds] = useState([]);
   const [unmappedAdsFromLeads, setUnmappedAdsFromLeads] = useState([]);
   const [loadingUnmapped, setLoadingUnmapped] = useState(false);
+  const [autoMapping, setAutoMapping] = useState(false);
+  const [unmappedWithTargeting, setUnmappedWithTargeting] = useState(0);
+  const [unmappedNoTargeting, setUnmappedNoTargeting] = useState(0);
   
   const cities = ['Bangalore', 'Chennai', 'Mumbai', 'Delhi', 'Hyderabad', 'Pune', 'Kolkata', 'Ahmedabad', 'Vizag'];
   const languages = ['Hindi', 'English', 'Kannada', 'Tamil', 'Telugu', 'Malayalam', 'Marathi', 'Bengali'];
