@@ -2527,6 +2527,44 @@ async def twilio_whatsapp_webhook(
         else:
             city = "Vizag"  # Ultimate fallback
             logger.warning(f"No ad mapping found for ad_id={ad_id}, ad_name={ad_name}. Using fallback city: Vizag")
+        
+        # AUTO-CREATE UNMAPPED AD ENTRY for later mapping
+        # This helps track ads that need city mapping
+        if ad_id or ad_name:
+            unmapped_ad_id = ad_id or f"auto_{ad_name[:20] if ad_name else 'unknown'}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+            existing_unmapped = await db.unmapped_ads.find_one({
+                "$or": [
+                    {"ad_id": unmapped_ad_id},
+                    {"ad_name": ad_name} if ad_name else {"ad_id": "never_match"}
+                ]
+            })
+            if not existing_unmapped:
+                unmapped_entry = {
+                    "id": str(uuid.uuid4()),
+                    "ad_id": unmapped_ad_id,
+                    "ad_name": ad_name,
+                    "source": "whatsapp_webhook",
+                    "referral_headline": ReferralHeadline,
+                    "referral_source_url": ReferralSourceUrl,
+                    "referral_source_type": ReferralSourceType,
+                    "ctwa_clid": CtwaClid,
+                    "suggested_city": None,  # To be filled manually
+                    "lead_count": 1,
+                    "first_seen_at": datetime.now(timezone.utc).isoformat(),
+                    "last_seen_at": datetime.now(timezone.utc).isoformat(),
+                    "is_mapped": False
+                }
+                await db.unmapped_ads.insert_one(unmapped_entry)
+                logger.info(f"Auto-created unmapped ad entry: {unmapped_ad_id} / {ad_name}")
+            else:
+                # Increment lead count
+                await db.unmapped_ads.update_one(
+                    {"id": existing_unmapped["id"]},
+                    {
+                        "$inc": {"lead_count": 1},
+                        "$set": {"last_seen_at": datetime.now(timezone.utc).isoformat()}
+                    }
+                )
     
     logger.info(f"Final city assignment: {city} (ad_id={ad_id}, ad_name={ad_name})")
     
