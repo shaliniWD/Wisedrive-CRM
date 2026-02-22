@@ -729,30 +729,17 @@ export default function AdAnalyticsPage() {
             )}
           </div>
           
-          {/* Sync Now Button (CEO/CTO only) */}
-          {canManageToken && metaStatus.configured && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleSyncNow}
-              disabled={syncing}
-              className="border-blue-200 text-blue-700 hover:bg-blue-50"
-              data-testid="sync-now-btn"
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
-              {syncing ? 'Syncing...' : 'Sync Now'}
-            </Button>
-          )}
-          
+          {/* SINGLE UNIFIED REFRESH BUTTON */}
           <Button
-            variant="outline"
+            variant="default"
             size="sm"
-            onClick={() => activeTab === 'performance' ? fetchPerformanceData(true) : fetchAdMappings()}
-            disabled={refreshing || mappingLoading}
-            data-testid="refresh-btn"
+            onClick={handleUnifiedRefresh}
+            disabled={refreshing || syncing || mappingLoading}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+            data-testid="unified-refresh-btn"
           >
-            <RefreshCw className={`h-4 w-4 mr-2 ${(refreshing || mappingLoading) ? 'animate-spin' : ''}`} />
-            Refresh
+            <RefreshCw className={`h-4 w-4 mr-2 ${(refreshing || syncing || mappingLoading) ? 'animate-spin' : ''}`} />
+            {refreshing || syncing ? 'Refreshing...' : 'Refresh'}
           </Button>
         </div>
       </div>
