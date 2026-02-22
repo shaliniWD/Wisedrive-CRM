@@ -13,8 +13,24 @@ import { toast } from 'sonner';
 import { 
   Plus, Loader2, Pencil, Trash2, FileText, Star,
   ChevronDown, ChevronRight, ToggleLeft, ToggleRight, 
-  Search, ClipboardList
+  Search, ClipboardList, GripVertical
 } from 'lucide-react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 // Template Card Component
 const TemplateCard = ({ template, onEdit, onToggle, onDelete, onSetDefault }) => {
