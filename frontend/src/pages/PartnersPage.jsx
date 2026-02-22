@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { partnersApi } from '@/services/api';
+import { partnersApi, reportTemplatesApi } from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,7 +14,7 @@ import {
 import { toast } from 'sonner';
 import { 
   Plus, Loader2, Pencil, Trash2, Building2, Users, Landmark, ShieldCheck,
-  Phone, Mail, MapPin, ToggleLeft, ToggleRight, Search
+  Phone, Mail, MapPin, ToggleLeft, ToggleRight, Search, FileText
 } from 'lucide-react';
 
 const PARTNER_TYPES = [
