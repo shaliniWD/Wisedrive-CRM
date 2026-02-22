@@ -125,6 +125,7 @@ const PartnerCard = ({ partner, onEdit, onToggle, onDelete, reportTemplates }) =
 
 const PartnersPage = () => {
   const [partners, setPartners] = useState([]);
+  const [reportTemplates, setReportTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('all');
@@ -144,28 +145,33 @@ const PartnersPage = () => {
     address: '',
     notes: '',
     is_active: true,
+    default_report_template_id: '',
   });
 
-  const fetchPartners = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       const params = {};
       if (filterType !== 'all') {
         params.type = filterType;
       }
-      const response = await partnersApi.getPartners(params);
-      setPartners(response.data);
+      const [partnersRes, templatesRes] = await Promise.all([
+        partnersApi.getPartners(params),
+        reportTemplatesApi.getTemplates(),
+      ]);
+      setPartners(partnersRes.data);
+      setReportTemplates(templatesRes.data);
     } catch (error) {
-      console.error('Error fetching partners:', error);
-      toast.error('Failed to load partners');
+      console.error('Error fetching data:', error);
+      toast.error('Failed to load data');
     } finally {
       setLoading(false);
     }
   }, [filterType]);
 
   useEffect(() => {
-    fetchPartners();
-  }, [fetchPartners]);
+    fetchData();
+  }, [fetchData]);
 
   const openModal = (partner = null) => {
     if (partner) {
