@@ -228,6 +228,7 @@ const InspectionTemplatesPage = () => {
   const [templates, setTemplates] = useState([]);
   const [questions, setQuestions] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [orderedCategories, setOrderedCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -241,9 +242,44 @@ const InspectionTemplatesPage = () => {
     name: '',
     description: '',
     question_ids: [],
+    category_order: [],
     is_default: false,
     is_active: true,
   });
+
+  // DnD sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Handle drag end for category reordering
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+    
+    if (active.id !== over?.id) {
+      setOrderedCategories((items) => {
+        const oldIndex = items.findIndex(item => item.category_id === active.id);
+        const newIndex = items.findIndex(item => item.category_id === over.id);
+        
+        const newOrder = arrayMove(items, oldIndex, newIndex);
+        
+        // Update formData with new category order
+        setFormData(prev => ({
+          ...prev,
+          category_order: newOrder.map(c => c.category_id)
+        }));
+        
+        return newOrder;
+      });
+    }
+  };
 
   const fetchData = useCallback(async () => {
     try {
