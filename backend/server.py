@@ -5868,7 +5868,7 @@ async def get_cities():
 @api_router.get("/lead-sources")
 async def get_lead_sources():
     """Get list of lead sources"""
-    return ["FACEBOOK", "INSTAGRAM", "GOOGLE", "WEBSITE", "REFERRAL", "WALK_IN", "OTHERS"]
+    return ["META_WHATSAPP", "DIRECT_WHATSAPP", "FACEBOOK", "INSTAGRAM", "GOOGLE", "WEBSITE", "REFERRAL", "WALK_IN", "OTHERS"]
 
 
 @api_router.get("/lead-statuses")
