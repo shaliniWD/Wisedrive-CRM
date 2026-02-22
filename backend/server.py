@@ -11228,7 +11228,198 @@ async def auto_map_ads_from_targeting(current_user: dict = Depends(get_current_u
     }
 
 
-@api_router.post("/meta-ads/scan-leads-for-unmapped-ads")
+@api_router.post("/meta-ads/sync-all-ad-mappings")
+async def sync_all_ad_mappings(current_user: dict = Depends(get_current_user)):
+    """
+    One-click sync: Fetches ALL Meta ads and creates comprehensive city mappings.
+    Creates mappings by BOTH ad_id AND ad_name so either can be used for lookup.
+    Uses geo-targeting from Meta to determine cities.
+    """
+    role_code = current_user.get("role_code", "")
+    if role_code not in ["CEO", "HR_MANAGER", "CTO", "COUNTRY_HEAD", "ADMIN"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    logger.info("Starting comprehensive ad mapping sync from Meta...")
+    
+    # Region to city mapping (for Indian states)
+    region_to_city = {
+        "Karnataka": "Bangalore",
+        "Tamil Nadu": "Chennai", 
+        "Maharashtra": "Mumbai",
+        "Telangana": "Hyderabad",
+        "Andhra Pradesh": "Vizag",
+        "Delhi": "Delhi",
+        "West Bengal": "Kolkata",
+        "Gujarat": "Ahmedabad",
+        "Kerala": "Kochi",
+        "Rajasthan": "Jaipur",
+        "Uttar Pradesh": "Lucknow",
+        "Punjab": "Chandigarh",
+        "Haryana": "Delhi",
+        "Madhya Pradesh": "Indore",
+    }
+    
+    # Fetch all ads with targeting from Meta
+    meta_ads = await meta_ads_service.get_ads_with_targeting()
+    
+    if not meta_ads.get("success"):
+        return {
+            "success": False,
+            "error": meta_ads.get("error", "Failed to fetch Meta ads"),
+            "created_count": 0,
+            "updated_count": 0
+        }
+    
+    ads_data = meta_ads.get("data", [])
+    logger.info(f"Fetched {len(ads_data)} ads from Meta")
+    
+    created_count = 0
+    updated_count = 0
+    skipped = []
+    mappings_created = []
+    
+    for ad in ads_data:
+        ad_id = ad.get("id", "").strip()
+        ad_name = ad.get("name", "").strip()
+        targeting_cities = ad.get("targeting_cities", [])
+        targeting_regions = ad.get("targeting_regions", [])
+        
+        if not ad_name:
+            skipped.append({"ad_id": ad_id, "reason": "No ad name"})
+            continue
+        
+        # Determine city from targeting
+        city = None
+        city_source = None
+        
+        # Priority 1: Single city targeting
+        if targeting_cities and len(targeting_cities) == 1:
+            city = targeting_cities[0]
+            city_source = "meta_city_targeting"
+        # Priority 2: Multiple cities - take first one (common pattern)
+        elif targeting_cities and len(targeting_cities) > 1:
+            city = targeting_cities[0]
+            city_source = "meta_city_targeting_first"
+        # Priority 3: Region targeting
+        elif targeting_regions:
+            for region in targeting_regions:
+                if region in region_to_city:
+                    city = region_to_city[region]
+                    city_source = f"meta_region_targeting_{region}"
+                    break
+        
+        if not city:
+            # Try extracting from ad name as fallback
+            ad_name_lower = ad_name.lower()
+            city_keywords = {
+                "bangalore": "Bangalore", "bengaluru": "Bangalore",
+                "chennai": "Chennai", "hyderabad": "Hyderabad",
+                "vizag": "Vizag", "visakhapatnam": "Vizag",
+                "mumbai": "Mumbai", "pune": "Pune",
+                "delhi": "Delhi", "ncr": "Delhi", "gurgaon": "Delhi",
+                "kolkata": "Kolkata", "ahmedabad": "Ahmedabad",
+                "kochi": "Kochi", "jaipur": "Jaipur",
+            }
+            for keyword, city_name in city_keywords.items():
+                if keyword in ad_name_lower:
+                    city = city_name
+                    city_source = f"ad_name_keyword_{keyword}"
+                    break
+        
+        if not city:
+            skipped.append({"ad_id": ad_id, "ad_name": ad_name, "reason": "Could not determine city"})
+            continue
+        
+        # Check if mapping exists by ad_name (primary key for lookup)
+        existing_by_name = await db.ad_city_mappings.find_one({
+            "ad_name": {"$regex": f"^{re.escape(ad_name)}$", "$options": "i"}
+        })
+        
+        existing_by_id = await db.ad_city_mappings.find_one({"ad_id": ad_id}) if ad_id else None
+        
+        if existing_by_name:
+            # Update existing mapping with latest info
+            await db.ad_city_mappings.update_one(
+                {"id": existing_by_name["id"]},
+                {"$set": {
+                    "ad_id": ad_id,  # Ensure ad_id is always set
+                    "city": city,
+                    "targeting_cities": targeting_cities,
+                    "targeting_regions": targeting_regions,
+                    "meta_synced_at": datetime.now(timezone.utc).isoformat(),
+                    "source": city_source,
+                    "is_active": True
+                }}
+            )
+            updated_count += 1
+        elif existing_by_id:
+            # Update by ad_id
+            await db.ad_city_mappings.update_one(
+                {"id": existing_by_id["id"]},
+                {"$set": {
+                    "ad_name": ad_name,  # Ensure ad_name is always set
+                    "city": city,
+                    "targeting_cities": targeting_cities,
+                    "targeting_regions": targeting_regions,
+                    "meta_synced_at": datetime.now(timezone.utc).isoformat(),
+                    "source": city_source,
+                    "is_active": True
+                }}
+            )
+            updated_count += 1
+        else:
+            # Create new mapping
+            new_mapping = {
+                "id": str(uuid.uuid4()),
+                "ad_id": ad_id,
+                "ad_name": ad_name,  # PRIMARY LOOKUP KEY
+                "city": city,
+                "city_id": None,
+                "source": city_source,
+                "targeting_cities": targeting_cities,
+                "targeting_regions": targeting_regions,
+                "is_active": True,
+                "auto_synced": True,
+                "meta_synced_at": datetime.now(timezone.utc).isoformat(),
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "created_by": current_user["id"]
+            }
+            await db.ad_city_mappings.insert_one(new_mapping)
+            created_count += 1
+            mappings_created.append({
+                "ad_name": ad_name,
+                "city": city,
+                "source": city_source
+            })
+    
+    # Update sync timestamp
+    await db.system_config.update_one(
+        {"key": "ad_mappings_last_sync"},
+        {"$set": {
+            "key": "ad_mappings_last_sync",
+            "value": datetime.now(timezone.utc).isoformat(),
+            "ads_synced": len(ads_data),
+            "created": created_count,
+            "updated": updated_count
+        }},
+        upsert=True
+    )
+    
+    logger.info(f"Ad mapping sync complete: {created_count} created, {updated_count} updated, {len(skipped)} skipped")
+    
+    return {
+        "success": True,
+        "message": f"Synced {len(ads_data)} ads from Meta",
+        "total_ads": len(ads_data),
+        "created_count": created_count,
+        "updated_count": updated_count,
+        "skipped_count": len(skipped),
+        "mappings_created": mappings_created[:20],  # Show first 20
+        "skipped": skipped[:10],  # Show first 10 skipped
+        "synced_at": datetime.now(timezone.utc).isoformat()
+    }
+
+
 async def scan_leads_for_unmapped_ads(current_user: dict = Depends(get_current_user)):
     """
     Scan existing leads to find ads that don't have city mappings.
