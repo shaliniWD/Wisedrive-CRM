@@ -1199,12 +1199,7 @@ export default function AdAnalyticsPage() {
                                 )}
                               </td>
                               <td className="px-4 py-3">
-                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">
-                                  WhatsApp
-                                </span>
-                              </td>
-                              <td className="px-4 py-3">
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-100 text-blue-700 text-xs font-medium">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-purple-100 text-purple-700 text-xs font-medium">
                                   {ad.lead_count} leads
                                 </span>
                               </td>
@@ -1217,7 +1212,7 @@ export default function AdAnalyticsPage() {
                                 <div className="flex items-center gap-2">
                                   <select 
                                     className="text-xs border rounded px-2 py-1 w-32"
-                                    defaultValue=""
+                                    defaultValue={ad.current_cities?.[0] || ''}
                                     onChange={(e) => {
                                       if (e.target.value) {
                                         handleMapFromLeads(ad, e.target.value);
