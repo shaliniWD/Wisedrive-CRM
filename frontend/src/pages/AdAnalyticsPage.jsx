@@ -253,7 +253,7 @@ export default function AdAnalyticsPage() {
         fetchPerformanceData(true);
         if (activeTab === 'mapping') {
           fetchAdMappings();
-          fetchUnmappedAds();
+          fetchAndAutoMapAds();
         }
       } else {
         toast.error(result.data.error || 'Sync failed');
