@@ -11970,6 +11970,7 @@ async def create_partner(data: PartnerCreate, current_user: dict = Depends(get_c
         "address": data.address,
         "notes": data.notes,
         "is_active": data.is_active if data.is_active is not None else True,
+        "default_report_template_id": data.default_report_template_id,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "created_by": current_user["id"],
         "created_by_name": current_user.get("name", "")
@@ -11996,6 +11997,7 @@ async def update_partner(partner_id: str, data: PartnerCreate, current_user: dic
         "address": data.address,
         "notes": data.notes,
         "is_active": data.is_active if data.is_active is not None else True,
+        "default_report_template_id": data.default_report_template_id,
         "updated_at": datetime.now(timezone.utc).isoformat(),
         "updated_by": current_user["id"],
         "updated_by_name": current_user.get("name", "")
