@@ -901,6 +901,7 @@ export default function LeadsPage() {
   };
 
   // Calculate stats for sales agent dashboard (matching actual statuses from LEAD_STATUSES)
+  const totalNewLeads = leads.filter(l => l.status === 'NEW LEAD').length;
   const todayNewLeads = leads.filter(l => l.status === 'NEW LEAD' && l.created_at?.startsWith(today)).length;
   const hotLeads = leads.filter(l => l.status === 'HOT LEADS').length;
   const rcbWhatsappLeads = leads.filter(l => l.status === 'RCB WHATSAPP' || l.reminder_reason === 'RCB_WHATSAPP').length;
@@ -911,6 +912,55 @@ export default function LeadsPage() {
     l.reminder_date
   ).length;
   const paymentLinkSentLeads = leads.filter(l => l.status === 'PAYMENT LINK SENT' || l.payment_link).length;
+
+  // Date filter presets
+  const applyDatePreset = (preset) => {
+    const now = new Date();
+    let from = '', to = '';
+    
+    switch (preset) {
+      case 'today':
+        from = to = now.toISOString().split('T')[0];
+        break;
+      case 'yesterday':
+        const yesterday = new Date(now);
+        yesterday.setDate(yesterday.getDate() - 1);
+        from = to = yesterday.toISOString().split('T')[0];
+        break;
+      case 'this_week':
+        const startOfWeek = new Date(now);
+        startOfWeek.setDate(now.getDate() - now.getDay());
+        from = startOfWeek.toISOString().split('T')[0];
+        to = now.toISOString().split('T')[0];
+        break;
+      case 'last_week':
+        const lastWeekEnd = new Date(now);
+        lastWeekEnd.setDate(now.getDate() - now.getDay() - 1);
+        const lastWeekStart = new Date(lastWeekEnd);
+        lastWeekStart.setDate(lastWeekEnd.getDate() - 6);
+        from = lastWeekStart.toISOString().split('T')[0];
+        to = lastWeekEnd.toISOString().split('T')[0];
+        break;
+      case 'this_month':
+        from = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+        to = now.toISOString().split('T')[0];
+        break;
+      case 'last_month':
+        const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+        from = lastMonth.toISOString().split('T')[0];
+        to = lastMonthEnd.toISOString().split('T')[0];
+        break;
+      case 'all':
+      default:
+        from = to = '';
+    }
+    
+    setFilterDateFrom(from);
+    setFilterDateTo(to);
+    setDateFilterPreset(preset);
+    setCurrentPage(1);
+  };
 
   // Filter leads based on active filter card
   const getFilteredLeads = () => {
