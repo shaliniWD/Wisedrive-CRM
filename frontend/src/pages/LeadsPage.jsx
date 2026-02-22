@@ -1177,9 +1177,18 @@ export default function LeadsPage() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="text-sm font-medium text-gray-700">{lead.source}</div>
-                    {lead.ad_id && (
-                      <div className="font-mono text-xs text-blue-600 mt-0.5 bg-blue-50 px-1.5 py-0.5 rounded inline-block">
-                        Ad: {lead.ad_id}
+                    {(lead.ad_id || lead.ad_name) && (
+                      <div className="mt-1 space-y-0.5">
+                        {lead.ad_id && (
+                          <div className="font-mono text-xs text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded inline-block">
+                            ID: {lead.ad_id.length > 15 ? lead.ad_id.substring(0, 15) + '...' : lead.ad_id}
+                          </div>
+                        )}
+                        {lead.ad_name && (
+                          <div className="text-xs text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded inline-block truncate max-w-[150px]" title={lead.ad_name}>
+                            {lead.ad_name}
+                          </div>
+                        )}
                       </div>
                     )}
                   </td>
