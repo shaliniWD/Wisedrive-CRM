@@ -68,36 +68,28 @@ export const StatusDropdown = ({ lead, statuses, onUpdate }) => {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
-          className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${cfg.color} hover:opacity-80 transition-opacity cursor-pointer`}
+          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border cursor-pointer hover:shadow-md transition-all ${cfg.color}`}
           disabled={updating}
           data-testid={`status-dropdown-${lead.id}`}
         >
-          {updating ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
-          ) : (
-            <>
-              {cfg.label}
-              <ChevronDown className="h-3 w-3" />
-            </>
-          )}
+          {updating ? <Loader2 className="h-3 w-3 animate-spin" /> : cfg.label}
+          <ChevronDown className="h-3 w-3" />
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-56 p-1 max-h-[300px] overflow-y-auto" align="start">
-        <div className="space-y-0.5">
+        <div className="space-y-1">
           {statuses.map((status) => {
-            const statusCfg = getStatusConfig(status.name);
-            const isSelected = lead.status === status.name;
+            // Handle both { value, label } format and string format
+            const statusValue = status.value || status.name || status;
+            const statusCfg = getStatusConfig(statusValue);
+            const isSelected = lead.status === statusValue;
             return (
               <button
-                key={status.name}
-                onClick={() => handleStatusChange(status.name)}
-                className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                  isSelected 
-                    ? 'bg-blue-50 text-blue-700 font-medium' 
-                    : 'hover:bg-gray-100'
-                }`}
+                key={statusValue}
+                onClick={() => handleStatusChange(statusValue)}
+                className={`w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-slate-100 flex items-center gap-2 ${isSelected ? 'bg-slate-100 font-semibold' : ''}`}
               >
-                <span className={`inline-block w-2 h-2 rounded-full mr-2 ${statusCfg.color.split(' ')[0]}`} />
+                <span className={`w-2 h-2 rounded-full ${statusCfg.color.split(' ')[0]}`} />
                 {statusCfg.label}
               </button>
             );
