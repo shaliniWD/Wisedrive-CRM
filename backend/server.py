@@ -3112,6 +3112,16 @@ async def twilio_whatsapp_webhook(
                     }
                 )
     
+    # Add city lookup log to audit data
+    audit_data["city_lookup_log"] = city_lookup_log
+    audit_data["final_assignment"] = {
+        "city": city,
+        "city_id": city_id,
+        "ad_id": ad_id,
+        "ad_name": ad_name,
+        "platform": platform
+    }
+    
     logger.info(f"Final city assignment: {city} (ad_id={ad_id}, ad_name={ad_name})")
     
     # Check if lead already exists with this phone
@@ -3124,7 +3134,9 @@ async def twilio_whatsapp_webhook(
             {"$set": {
                 "message": Body,
                 "status": "RCB WHATSAPP",  # Request Call Back via WhatsApp
-                "updated_at": datetime.now(timezone.utc).isoformat()
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+                # Update audit data for existing lead
+                "last_webhook_audit": audit_data
             }}
         )
         
