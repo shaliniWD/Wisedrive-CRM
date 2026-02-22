@@ -74,6 +74,8 @@ export const metaAdsApi = {
   getAdsWithTargeting: () => axios.get(`${API_URL}/meta-ads/ads-with-targeting`),
   // Auto-map from targeting
   autoMapFromTargeting: () => axios.post(`${API_URL}/meta-ads/auto-map-from-targeting`),
+  // Auto-map from current cities (based on lead data)
+  autoMapFromCurrentCities: () => axios.post(`${API_URL}/meta-ads/auto-map-from-current-cities`),
   // Scan leads for unmapped ads (works without Meta token)
   scanLeadsForUnmappedAds: () => axios.post(`${API_URL}/meta-ads/scan-leads-for-unmapped-ads`),
   // Unmapped ads from WhatsApp leads (works without Meta token)
