@@ -303,18 +303,36 @@ export default function AdAnalyticsPage() {
         const autoMapResult = await metaAdsApi.autoMapFromTargeting();
         addDebugLog('Auto-Map from Targeting', autoMapResult.data.success ? 'SUCCESS' : 'FAILED', JSON.stringify(autoMapResult.data));
         if (autoMapResult.data.success && autoMapResult.data.auto_mapped_count > 0) {
-          autoMappedCount = autoMapResult.data.auto_mapped_count;
-          toast.success(`✅ Auto-mapped ${autoMappedCount} ads based on geo-targeting!`);
-          fetchMappings(); // Refresh mappings table
+          autoMappedCount += autoMapResult.data.auto_mapped_count;
+          toast.success(`✅ Auto-mapped ${autoMapResult.data.auto_mapped_count} ads based on geo-targeting!`);
         }
       } catch (autoMapError) {
-        // Auto-map failed (maybe token expired), continue to fetch unmapped
+        // Auto-map failed (maybe token expired), continue
         const errorMsg = autoMapError.response?.data?.error || autoMapError.response?.data?.detail || autoMapError.message;
         addDebugLog('Auto-Map from Targeting', 'ERROR', errorMsg);
-        console.log('Auto-map skipped:', errorMsg);
       }
       
-      // Step 3: Fetch remaining unmapped ads from Meta (requires token)
+      // Step 3: Auto-map ads based on current_cities (works without Meta token)
+      addDebugLog('Auto-Map from Current Cities', 'CALLING', 'POST /api/meta-ads/auto-map-from-current-cities');
+      try {
+        const currentCityResult = await metaAdsApi.autoMapFromCurrentCities();
+        addDebugLog('Auto-Map from Current Cities', currentCityResult.data.success ? 'SUCCESS' : 'FAILED', 
+          `mapped=${currentCityResult.data.auto_mapped_count || 0}, skipped=${currentCityResult.data.skipped_count || 0}`);
+        if (currentCityResult.data.success && currentCityResult.data.auto_mapped_count > 0) {
+          autoMappedCount += currentCityResult.data.auto_mapped_count;
+          toast.success(`🗺️ Auto-mapped ${currentCityResult.data.auto_mapped_count} ads based on lead cities!`);
+        }
+      } catch (cityMapError) {
+        const errorMsg = cityMapError.response?.data?.error || cityMapError.response?.data?.detail || cityMapError.message;
+        addDebugLog('Auto-Map from Current Cities', 'ERROR', errorMsg);
+      }
+      
+      // Refresh mappings if any were created
+      if (autoMappedCount > 0) {
+        fetchMappings();
+      }
+      
+      // Step 4: Fetch remaining unmapped ads from Meta (requires token)
       addDebugLog('Fetch Unmapped from Meta', 'CALLING', 'GET /api/meta-ads/unmapped-ads');
       let metaResult;
       try {
@@ -326,7 +344,7 @@ export default function AdAnalyticsPage() {
         addDebugLog('Fetch Unmapped from Meta', 'ERROR', metaResult.data.error);
       }
       
-      // Step 3: Fetch unmapped ads from WhatsApp leads
+      // Step 5: Fetch unmapped ads from WhatsApp leads
       addDebugLog('Fetch Unmapped from WhatsApp', 'CALLING', 'GET /api/meta-ads/unmapped-ads-from-leads');
       let leadsResult;
       try {
