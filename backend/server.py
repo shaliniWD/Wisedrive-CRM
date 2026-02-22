@@ -10121,6 +10121,155 @@ class MetaTokenUpdateRequest(BaseModel):
     access_token: str
 
 
+@api_router.get("/meta-ads/oauth/init")
+async def init_meta_oauth(current_user: dict = Depends(get_current_user)):
+    """
+    Initialize Meta OAuth flow - returns the OAuth URL for user to authorize.
+    This is Step 1 of the OAuth flow.
+    """
+    role_code = current_user.get("role_code", "")
+    if role_code not in ["CEO", "CTO", "ADMIN"]:
+        raise HTTPException(status_code=403, detail="Not authorized - CEO/CTO/Admin only")
+    
+    app_id = os.environ.get('META_APP_ID')
+    if not app_id:
+        raise HTTPException(status_code=400, detail="Meta App ID not configured")
+    
+    # Get the frontend URL for redirect
+    frontend_url = os.environ.get('FRONTEND_URL', 'https://crmdev.wisedrive.com')
+    redirect_uri = f"{frontend_url}/meta-oauth-callback"
+    
+    # Required permissions for ads management
+    scopes = [
+        "ads_read",
+        "ads_management", 
+        "business_management",
+        "pages_read_engagement"
+    ]
+    
+    # Build OAuth URL
+    oauth_url = (
+        f"https://www.facebook.com/{meta_ads_service.api_version}/dialog/oauth?"
+        f"client_id={app_id}"
+        f"&redirect_uri={redirect_uri}"
+        f"&scope={','.join(scopes)}"
+        f"&response_type=code"
+        f"&state={current_user.get('id', 'unknown')}"
+    )
+    
+    return {
+        "oauth_url": oauth_url,
+        "redirect_uri": redirect_uri,
+        "app_id": app_id
+    }
+
+
+@api_router.post("/meta-ads/oauth/callback")
+async def handle_meta_oauth_callback(
+    code: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Handle Meta OAuth callback - exchange code for access token.
+    This is Step 2 of the OAuth flow.
+    """
+    role_code = current_user.get("role_code", "")
+    if role_code not in ["CEO", "CTO", "ADMIN"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    app_id = os.environ.get('META_APP_ID')
+    app_secret = os.environ.get('META_APP_SECRET')
+    frontend_url = os.environ.get('FRONTEND_URL', 'https://crmdev.wisedrive.com')
+    redirect_uri = f"{frontend_url}/meta-oauth-callback"
+    
+    if not app_id or not app_secret:
+        raise HTTPException(status_code=400, detail="Meta App ID/Secret not configured")
+    
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            # Exchange code for short-lived token
+            token_url = f"https://graph.facebook.com/{meta_ads_service.api_version}/oauth/access_token"
+            params = {
+                "client_id": app_id,
+                "client_secret": app_secret,
+                "redirect_uri": redirect_uri,
+                "code": code
+            }
+            
+            response = await client.get(token_url, params=params)
+            data = response.json()
+            
+            if "error" in data:
+                logger.error(f"OAuth token exchange failed: {data}")
+                raise HTTPException(
+                    status_code=400, 
+                    detail=data.get("error", {}).get("message", "OAuth failed")
+                )
+            
+            short_lived_token = data.get("access_token")
+            if not short_lived_token:
+                raise HTTPException(status_code=400, detail="No token received from Meta")
+            
+            # Exchange for long-lived token
+            exchange_result = await meta_ads_service.exchange_for_long_lived_token(short_lived_token)
+            
+            if exchange_result.get("success"):
+                new_token = exchange_result["access_token"]
+                expires_in_days = exchange_result.get("expires_in_days", 60)
+                
+                # Update in memory
+                meta_ads_service.update_token(new_token)
+                
+                # Store in database
+                await db.system_config.update_one(
+                    {"key": "meta_access_token"},
+                    {"$set": {
+                        "key": "meta_access_token",
+                        "value": new_token,
+                        "updated_at": datetime.now(timezone.utc).isoformat(),
+                        "updated_by": current_user.get("id"),
+                        "expires_in_days": expires_in_days,
+                        "oauth_refresh": True
+                    }},
+                    upsert=True
+                )
+                
+                logger.info(f"Meta OAuth successful - token valid for {expires_in_days} days")
+                
+                return {
+                    "success": True,
+                    "message": f"Meta connected successfully! Token valid for {expires_in_days} days",
+                    "expires_in_days": expires_in_days
+                }
+            else:
+                # Use short-lived token if exchange fails
+                meta_ads_service.update_token(short_lived_token)
+                
+                await db.system_config.update_one(
+                    {"key": "meta_access_token"},
+                    {"$set": {
+                        "key": "meta_access_token",
+                        "value": short_lived_token,
+                        "updated_at": datetime.now(timezone.utc).isoformat(),
+                        "updated_by": current_user.get("id"),
+                        "token_type": "short_lived"
+                    }},
+                    upsert=True
+                )
+                
+                return {
+                    "success": True,
+                    "message": "Meta connected with short-lived token (1-2 hours)",
+                    "warning": "Could not exchange for long-lived token"
+                }
+                
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"OAuth callback error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @api_router.post("/meta-ads/update-token")
 async def update_meta_token(
     request: MetaTokenUpdateRequest,
