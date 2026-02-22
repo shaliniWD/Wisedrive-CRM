@@ -1207,8 +1207,8 @@ export default function AdAnalyticsPage() {
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Ad ID</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Ad Name</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">City</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Partner</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Language</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Campaign</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Source</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Active</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Action</th>
@@ -1250,10 +1250,17 @@ export default function AdAnalyticsPage() {
                           <span className="text-sm text-gray-700">{ad.city}</span>
                         </td>
                         <td className="px-4 py-4">
-                          <span className="text-sm text-gray-700">{ad.language || '-'}</span>
+                          {ad.partner_name ? (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-violet-100 text-violet-800 border border-violet-200">
+                              <Building2 className="h-3 w-3 mr-1" />
+                              {ad.partner_name}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-gray-400">B2C Default</span>
+                          )}
                         </td>
                         <td className="px-4 py-4">
-                          <span className="text-sm text-gray-700">{ad.campaign || '-'}</span>
+                          <span className="text-sm text-gray-700">{ad.language || '-'}</span>
                         </td>
                         <td className="px-4 py-4">
                           {ad.source && (
