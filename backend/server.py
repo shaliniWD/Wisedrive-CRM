@@ -3030,6 +3030,7 @@ async def twilio_whatsapp_webhook(
         for keyword, city_name in city_keywords.items():
             if keyword in ad_name_lower:
                 city = city_name
+                city_lookup_log.append({"strategy": 4, "method": "ad_name keyword extraction", "found": True, "city": city, "keyword": keyword})
                 logger.info(f"Extracted city '{city}' from ad_name keyword '{keyword}' in '{ad_name}'")
                 
                 # Auto-create mapping for this ad_name -> city
@@ -3053,17 +3054,24 @@ async def twilio_whatsapp_webhook(
                         "created_at": datetime.now(timezone.utc).isoformat()
                     }
                     await db.ad_city_mappings.insert_one(new_mapping)
+                    city_lookup_log.append({"auto_mapping_created": True, "ad_name": ad_name, "city": city})
                     logger.info(f"Auto-created city mapping: '{ad_name}' -> '{city}'")
                 break
+        else:
+            city_lookup_log.append({"strategy": 4, "method": "ad_name keyword extraction", "found": False, "ad_name": ad_name, "reason": "No city keyword found in ad_name"})
+    elif not city:
+        city_lookup_log.append({"strategy": 4, "method": "ad_name keyword extraction", "skipped": True, "reason": "No ad_name available"})
     
     # Strategy 5: Fallback to default mapping (if exists)
     if not city:
         default_mapping = await db.ad_city_mappings.find_one({"ad_id": "default"}, {"_id": 0})
         if default_mapping:
             city = default_mapping.get("city", "Vizag")
+            city_lookup_log.append({"strategy": 5, "method": "default mapping", "found": True, "city": city})
             logger.info(f"Using default city mapping: {city}")
         else:
             city = "Vizag"  # Ultimate fallback
+            city_lookup_log.append({"strategy": 5, "method": "hardcoded fallback", "city": "Vizag", "reason": "No default mapping configured"})
             logger.warning(f"No ad mapping found for ad_id={ad_id}, ad_name={ad_name}. Using fallback city: Vizag")
         
         # AUTO-CREATE UNMAPPED AD ENTRY for later mapping
