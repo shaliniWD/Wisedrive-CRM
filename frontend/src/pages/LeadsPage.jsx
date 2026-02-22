@@ -513,6 +513,10 @@ export default function LeadsPage() {
   const [investigatorResult, setInvestigatorResult] = useState(null);
   const [isInvestigating, setIsInvestigating] = useState(false);
   const [investigatorError, setInvestigatorError] = useState(null);
+  const [investigatorTab, setInvestigatorTab] = useState('search'); // 'search' or 'diagnose'
+  const [diagnosticData, setDiagnosticData] = useState(null);
+  const [isDiagnosing, setIsDiagnosing] = useState(false);
+  const [isFixing, setIsFixing] = useState(false);
 
   // Fetch city summary when modal opens
   const fetchCitySummary = async () => {
@@ -564,11 +568,64 @@ export default function LeadsPage() {
     }
   };
 
+  // Diagnose source issues
+  const handleDiagnoseSourceIssues = async () => {
+    setIsDiagnosing(true);
+    setDiagnosticData(null);
+    
+    try {
+      const response = await fetch('/api/leads/diagnose/source-issues', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token') || sessionStorage.getItem('token')}`
+        }
+      });
+      
+      const data = await response.json();
+      setDiagnosticData(data);
+    } catch (error) {
+      toast.error('Failed to diagnose source issues');
+    } finally {
+      setIsDiagnosing(false);
+    }
+  };
+
+  // Fix source issues
+  const handleFixSourceIssues = async (fixType, dryRun = true) => {
+    setIsFixing(true);
+    
+    try {
+      const response = await fetch(`/api/leads/fix-source-issues?fix_type=${fixType}&dry_run=${dryRun}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token') || sessionStorage.getItem('token')}`
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (dryRun) {
+        toast.info(`Preview: ${data.total_leads_affected} leads would be fixed`);
+      } else {
+        toast.success(`Fixed ${data.total_leads_affected} leads`);
+        await handleDiagnoseSourceIssues(); // Refresh diagnostic data
+        await fetchData(); // Refresh leads
+      }
+      
+      return data;
+    } catch (error) {
+      toast.error('Failed to fix source issues');
+    } finally {
+      setIsFixing(false);
+    }
+  };
+
   // Reset investigator modal
   const resetInvestigator = () => {
     setInvestigatorSearch('');
     setInvestigatorResult(null);
     setInvestigatorError(null);
+    setDiagnosticData(null);
+    setInvestigatorTab('search');
   };
 
   // Auto-remap based on AD ID mappings
