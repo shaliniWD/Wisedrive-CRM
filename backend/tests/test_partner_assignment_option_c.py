@@ -48,13 +48,16 @@ class TestPartnerAssignmentOptionC:
                         self.session.delete(f"{BASE_URL}/api/settings/ad-city-mappings/{mapping['id']}")
             
             # Delete test leads by phone
-            test_phones = ["+919876543210", "+919876543211", "+919876543212"]
+            test_phones = ["+919876543210", "+919876543211", "+919876543212", "+919999888877"]
             for phone in test_phones:
-                leads_res = self.session.get(f"{BASE_URL}/api/leads", params={"search": phone})
+                leads_res = self.session.get(f"{BASE_URL}/api/leads", params={"search": phone.replace("+", "")})
                 if leads_res.status_code == 200:
                     for lead in leads_res.json():
-                        if lead.get("mobile") in test_phones:
-                            self.session.delete(f"{BASE_URL}/api/leads/{lead['id']}")
+                        if lead.get("mobile") in test_phones or lead.get("mobile", "").replace("+", "") in [p.replace("+", "") for p in test_phones]:
+                            try:
+                                self.session.delete(f"{BASE_URL}/api/leads/{lead['id']}")
+                            except:
+                                pass
         except Exception as e:
             print(f"Cleanup warning: {e}")
     
@@ -109,8 +112,23 @@ class TestPartnerAssignmentOptionC:
         response = self.session.post(f"{BASE_URL}/api/settings/ad-city-mappings", json=mapping_data)
         assert response.status_code in [200, 201], f"Failed to create ad mapping: {response.text}"
         
-        created_mapping = response.json()
-        assert created_mapping.get("ad_id") == "TEST_HDFC_CAMPAIGN_001"
+        result = response.json()
+        # API returns {message, id} - verify creation was successful
+        assert "id" in result, "Response should contain mapping id"
+        assert result.get("message") in ["Mapping created", "Mapping updated"], f"Unexpected message: {result.get('message')}"
+        
+        # Verify by fetching the mapping
+        mappings_res = self.session.get(f"{BASE_URL}/api/settings/ad-city-mappings")
+        assert mappings_res.status_code == 200
+        mappings = mappings_res.json()
+        
+        created_mapping = None
+        for m in mappings:
+            if m.get("ad_id") == "TEST_HDFC_CAMPAIGN_001":
+                created_mapping = m
+                break
+        
+        assert created_mapping is not None, "Created mapping should be found"
         assert created_mapping.get("city") == "Bangalore"
         
         if test_partner:
@@ -133,8 +151,20 @@ class TestPartnerAssignmentOptionC:
         response = self.session.post(f"{BASE_URL}/api/settings/ad-city-mappings", json=mapping_data)
         assert response.status_code in [200, 201], f"Failed to create ad mapping: {response.text}"
         
-        created_mapping = response.json()
-        assert created_mapping.get("ad_id") == "TEST_GENERIC_AD_001"
+        result = response.json()
+        assert "id" in result, "Response should contain mapping id"
+        
+        # Verify by fetching
+        mappings_res = self.session.get(f"{BASE_URL}/api/settings/ad-city-mappings")
+        mappings = mappings_res.json()
+        
+        created_mapping = None
+        for m in mappings:
+            if m.get("ad_id") == "TEST_GENERIC_AD_001":
+                created_mapping = m
+                break
+        
+        assert created_mapping is not None, "Created mapping should be found"
         assert created_mapping.get("partner_id") is None or created_mapping.get("partner_id") == ""
         
         print("Created ad mapping without partner (will default to B2C)")
@@ -151,8 +181,7 @@ class TestPartnerAssignmentOptionC:
         
         create_res = self.session.post(f"{BASE_URL}/api/settings/ad-city-mappings", json=mapping_data)
         assert create_res.status_code in [200, 201]
-        created_mapping = create_res.json()
-        mapping_id = created_mapping["id"]
+        mapping_id = create_res.json()["id"]
         
         # Get a partner to assign
         partners_res = self.session.get(f"{BASE_URL}/api/partners")
@@ -227,6 +256,7 @@ class TestPartnerAssignmentOptionC:
         assert mapping_res.status_code in [200, 201]
         
         # Simulate webhook call with this ad_id
+        # Note: Using correct webhook endpoint /api/webhooks/twilio/whatsapp
         webhook_data = {
             "From": "whatsapp:+919876543210",
             "Body": "Hi, I want car inspection",
@@ -240,18 +270,18 @@ class TestPartnerAssignmentOptionC:
         
         # Call webhook (no auth needed for webhook)
         webhook_session = requests.Session()
-        webhook_res = webhook_session.post(f"{BASE_URL}/api/twilio/webhook", data=webhook_data)
+        webhook_res = webhook_session.post(f"{BASE_URL}/api/webhooks/twilio/whatsapp", data=webhook_data)
         assert webhook_res.status_code == 200, f"Webhook failed: {webhook_res.text}"
         
         # Verify lead was created with correct partner
-        leads_res = self.session.get(f"{BASE_URL}/api/leads", params={"search": "+919876543210"})
+        leads_res = self.session.get(f"{BASE_URL}/api/leads", params={"search": "9876543210"})
         assert leads_res.status_code == 200
         leads = leads_res.json()
         
         # Find our test lead
         test_lead = None
         for lead in leads:
-            if lead.get("mobile") == "+919876543210":
+            if "9876543210" in lead.get("mobile", ""):
                 test_lead = lead
                 break
         
@@ -289,17 +319,17 @@ class TestPartnerAssignmentOptionC:
         }
         
         webhook_session = requests.Session()
-        webhook_res = webhook_session.post(f"{BASE_URL}/api/twilio/webhook", data=webhook_data)
+        webhook_res = webhook_session.post(f"{BASE_URL}/api/webhooks/twilio/whatsapp", data=webhook_data)
         assert webhook_res.status_code == 200
         
         # Verify lead was created with B2C partner
-        leads_res = self.session.get(f"{BASE_URL}/api/leads", params={"search": "+919876543211"})
+        leads_res = self.session.get(f"{BASE_URL}/api/leads", params={"search": "9876543211"})
         assert leads_res.status_code == 200
         leads = leads_res.json()
         
         test_lead = None
         for lead in leads:
-            if lead.get("mobile") == "+919876543211":
+            if "9876543211" in lead.get("mobile", ""):
                 test_lead = lead
                 break
         
@@ -328,17 +358,17 @@ class TestPartnerAssignmentOptionC:
         }
         
         webhook_session = requests.Session()
-        webhook_res = webhook_session.post(f"{BASE_URL}/api/twilio/webhook", data=webhook_data)
+        webhook_res = webhook_session.post(f"{BASE_URL}/api/webhooks/twilio/whatsapp", data=webhook_data)
         assert webhook_res.status_code == 200
         
         # Verify lead was created with B2C partner
-        leads_res = self.session.get(f"{BASE_URL}/api/leads", params={"search": "+919876543212"})
+        leads_res = self.session.get(f"{BASE_URL}/api/leads", params={"search": "9876543212"})
         assert leads_res.status_code == 200
         leads = leads_res.json()
         
         test_lead = None
         for lead in leads:
-            if lead.get("mobile") == "+919876543212":
+            if "9876543212" in lead.get("mobile", ""):
                 test_lead = lead
                 break
         
