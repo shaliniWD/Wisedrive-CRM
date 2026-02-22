@@ -2308,6 +2308,190 @@ export default function LeadsPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Lead Investigator Modal */}
+      <Dialog open={isInvestigatorModalOpen} onOpenChange={setIsInvestigatorModalOpen}>
+        <DialogContent className="sm:max-w-[600px]" data-testid="investigator-modal">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <Search className="h-5 w-5 text-purple-600" />
+              Lead Investigator
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {/* Search Type Toggle */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => { setInvestigatorSearchType('phone'); setInvestigatorSearch(''); setInvestigatorResult(null); setInvestigatorError(null); }}
+                className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${
+                  investigatorSearchType === 'phone' 
+                    ? 'bg-purple-600 text-white' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+                data-testid="search-by-phone-btn"
+              >
+                <Phone className="h-4 w-4 inline mr-2" />
+                Search by Phone
+              </button>
+              <button
+                onClick={() => { setInvestigatorSearchType('name'); setInvestigatorSearch(''); setInvestigatorResult(null); setInvestigatorError(null); }}
+                className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${
+                  investigatorSearchType === 'name' 
+                    ? 'bg-purple-600 text-white' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+                data-testid="search-by-name-btn"
+              >
+                <Users className="h-4 w-4 inline mr-2" />
+                Search by Name
+              </button>
+            </div>
+
+            {/* Search Input */}
+            <div className="flex gap-2">
+              <Input
+                placeholder={investigatorSearchType === 'phone' ? 'Enter phone number (e.g., +917795684573)' : 'Enter lead name'}
+                value={investigatorSearch}
+                onChange={(e) => setInvestigatorSearch(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleInvestigateLead()}
+                className="flex-1"
+                data-testid="investigator-search-input"
+              />
+              <Button
+                onClick={handleInvestigateLead}
+                disabled={isInvestigating || !investigatorSearch.trim()}
+                className="bg-purple-600 hover:bg-purple-700"
+                data-testid="investigate-btn"
+              >
+                {isInvestigating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Search className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+
+            {/* Error Display */}
+            {investigatorError && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700" data-testid="investigator-error">
+                <p className="font-medium">❌ {investigatorError}</p>
+              </div>
+            )}
+
+            {/* Results Display */}
+            {investigatorResult && (
+              <div className="space-y-4" data-testid="investigator-results">
+                {/* Quick Summary */}
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <p className="font-medium text-green-800 mb-2">✅ Lead Found</p>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div><span className="text-gray-600">Name:</span> <strong>{investigatorResult.name}</strong></div>
+                    <div><span className="text-gray-600">Phone:</span> <strong>{investigatorResult.mobile}</strong></div>
+                    <div><span className="text-gray-600">City:</span> <strong>{investigatorResult.city || 'N/A'}</strong></div>
+                    <div><span className="text-gray-600">Status:</span> <strong>{investigatorResult.status}</strong></div>
+                  </div>
+                </div>
+
+                {/* Source & AD Information */}
+                <div className={`border rounded-lg p-4 ${investigatorResult.is_meta_lead ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200'}`}>
+                  <p className="font-medium mb-3 flex items-center gap-2">
+                    {investigatorResult.is_meta_lead ? (
+                      <>
+                        <span className="bg-blue-600 text-white px-2 py-0.5 rounded text-xs">META</span>
+                        Meta WhatsApp Lead
+                      </>
+                    ) : (
+                      <>
+                        <span className="bg-gray-600 text-white px-2 py-0.5 rounded text-xs">SOURCE</span>
+                        {investigatorResult.source || 'Unknown'}
+                      </>
+                    )}
+                  </p>
+                  
+                  <div className="space-y-2 text-sm">
+                    <div className="grid grid-cols-1 gap-2">
+                      <div className="flex justify-between py-1 border-b border-dashed">
+                        <span className="text-gray-600">Source:</span>
+                        <span className="font-mono font-medium">{investigatorResult.source || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between py-1 border-b border-dashed">
+                        <span className="text-gray-600">AD ID:</span>
+                        <span className="font-mono font-medium text-purple-700">{investigatorResult.ad_id || 'Not captured'}</span>
+                      </div>
+                      <div className="flex justify-between py-1 border-b border-dashed">
+                        <span className="text-gray-600">AD Name:</span>
+                        <span className="font-mono font-medium">{investigatorResult.ad_name || 'Not captured'}</span>
+                      </div>
+                      <div className="flex justify-between py-1 border-b border-dashed">
+                        <span className="text-gray-600">Campaign ID:</span>
+                        <span className="font-mono font-medium">{investigatorResult.campaign_id || 'Not captured'}</span>
+                      </div>
+                      <div className="flex justify-between py-1 border-b border-dashed">
+                        <span className="text-gray-600">Platform:</span>
+                        <span className="font-mono font-medium">{investigatorResult.platform || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between py-1">
+                        <span className="text-gray-600">Created At:</span>
+                        <span className="font-mono font-medium">{investigatorResult.created_at ? new Date(investigatorResult.created_at).toLocaleString() : 'N/A'}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* CTWA Data (if available) */}
+                {investigatorResult.ctwa_data && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <p className="font-medium mb-2 text-amber-800">📢 Click-to-WhatsApp Ad Data</p>
+                    <div className="space-y-1 text-sm">
+                      {investigatorResult.ctwa_data.referral_headline && (
+                        <div><span className="text-gray-600">Headline:</span> <span className="font-medium">{investigatorResult.ctwa_data.referral_headline}</span></div>
+                      )}
+                      {investigatorResult.ctwa_data.referral_body && (
+                        <div><span className="text-gray-600">Body:</span> <span className="font-medium">{investigatorResult.ctwa_data.referral_body}</span></div>
+                      )}
+                      {investigatorResult.ctwa_data.referral_source_url && (
+                        <div><span className="text-gray-600">Source URL:</span> <a href={investigatorResult.ctwa_data.referral_source_url} target="_blank" rel="noopener noreferrer" className="font-medium text-blue-600 hover:underline break-all">{investigatorResult.ctwa_data.referral_source_url}</a></div>
+                      )}
+                      {investigatorResult.ctwa_data.referral_source_type && (
+                        <div><span className="text-gray-600">Source Type:</span> <span className="font-medium">{investigatorResult.ctwa_data.referral_source_type}</span></div>
+                      )}
+                      {investigatorResult.ctwa_data.button_text && (
+                        <div><span className="text-gray-600">Button Text:</span> <span className="font-medium">{investigatorResult.ctwa_data.button_text}</span></div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Copy Raw Data Button */}
+                <div className="flex justify-end">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      navigator.clipboard.writeText(JSON.stringify(investigatorResult.full_lead_data, null, 2));
+                      toast.success('Lead data copied to clipboard');
+                    }}
+                    data-testid="copy-lead-data-btn"
+                  >
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copy Full Data
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <Button 
+              variant="outline" 
+              onClick={() => setIsInvestigatorModalOpen(false)}
+            >
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Notes & Activities Drawer */}
       <Sheet open={isNotesDrawerOpen} onOpenChange={setIsNotesDrawerOpen}>
         <SheetContent className="sm:max-w-[500px] p-0 flex flex-col" data-testid="notes-drawer">
