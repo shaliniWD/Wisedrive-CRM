@@ -527,6 +527,50 @@ export default function LeadsPage() {
     }
   };
 
+  // Investigate lead by phone or name
+  const handleInvestigateLead = async () => {
+    if (!investigatorSearch.trim()) {
+      toast.error('Please enter a phone number or name to search');
+      return;
+    }
+    
+    setIsInvestigating(true);
+    setInvestigatorResult(null);
+    setInvestigatorError(null);
+    
+    try {
+      const endpoint = investigatorSearchType === 'phone' 
+        ? `/api/leads/investigate/by-phone/${encodeURIComponent(investigatorSearch.trim())}`
+        : `/api/leads/investigate/by-name/${encodeURIComponent(investigatorSearch.trim())}`;
+      
+      const response = await fetch(endpoint, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token') || sessionStorage.getItem('token')}`
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        setInvestigatorError(data.detail?.message || data.detail || 'Lead not found');
+        return;
+      }
+      
+      setInvestigatorResult(data);
+    } catch (error) {
+      setInvestigatorError('Failed to investigate lead. Please try again.');
+    } finally {
+      setIsInvestigating(false);
+    }
+  };
+
+  // Reset investigator modal
+  const resetInvestigator = () => {
+    setInvestigatorSearch('');
+    setInvestigatorResult(null);
+    setInvestigatorError(null);
+  };
+
   // Auto-remap based on AD ID mappings
   const handleAutoRemapByAdId = async () => {
     setIsAutoRemapping(true);
