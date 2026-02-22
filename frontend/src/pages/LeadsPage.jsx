@@ -871,20 +871,30 @@ export default function LeadsPage() {
         </div>
         <div className="flex items-center gap-3">
           {/* Auto-Assign Button - Only for HR/Admin */}
-          {user && ['HR_MANAGER', 'CEO', 'COUNTRY_HEAD', 'ADMIN', 'HR_ADMIN'].includes(user.role_code) && (
-            <button
-              onClick={() => assignUnassignedLeads(true)}
-              disabled={isAssigning}
-              className="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:from-emerald-600 hover:to-emerald-700 flex items-center gap-2 font-medium shadow-lg shadow-emerald-500/25 transition-all disabled:opacity-50"
-              data-testid="assign-all-button"
-            >
-              {isAssigning ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Users className="h-4 w-4" />
-              )}
-              {isAssigning ? 'Assigning...' : 'Assign Unassigned'}
-            </button>
+          {user && ['HR_MANAGER', 'CEO', 'COUNTRY_HEAD', 'ADMIN', 'HR_ADMIN', 'CTO'].includes(user.role_code) && (
+            <>
+              <button
+                onClick={() => assignUnassignedLeads(true)}
+                disabled={isAssigning}
+                className="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:from-emerald-600 hover:to-emerald-700 flex items-center gap-2 font-medium shadow-lg shadow-emerald-500/25 transition-all disabled:opacity-50"
+                data-testid="assign-all-button"
+              >
+                {isAssigning ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Users className="h-4 w-4" />
+                )}
+                {isAssigning ? 'Assigning...' : 'Assign Unassigned'}
+              </button>
+              <button
+                onClick={() => { fetchCitySummary(); setIsCityRemapModalOpen(true); }}
+                className="px-4 py-2.5 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl hover:from-orange-600 hover:to-orange-700 flex items-center gap-2 font-medium shadow-lg shadow-orange-500/25 transition-all"
+                data-testid="remap-city-button"
+              >
+                <MapPin className="h-4 w-4" />
+                Remap City
+              </button>
+            </>
           )}
           <button
             onClick={() => { resetForm(); setIsModalOpen(true); }}
