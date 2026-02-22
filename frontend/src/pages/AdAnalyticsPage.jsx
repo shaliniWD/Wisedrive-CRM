@@ -279,12 +279,15 @@ export default function AdAnalyticsPage() {
   const fetchAndAutoMapAds = async () => {
     setLoadingUnmapped(true);
     setAutoMapping(true);
+    addDebugLog('Refresh Started', 'INFO', 'Starting refresh and auto-map process...');
     
     try {
       // Step 1: Auto-map ads with geo-targeting first
       let autoMappedCount = 0;
+      addDebugLog('Auto-Map from Targeting', 'CALLING', 'POST /api/meta-ads/auto-map-from-targeting');
       try {
         const autoMapResult = await metaAdsApi.autoMapFromTargeting();
+        addDebugLog('Auto-Map from Targeting', autoMapResult.data.success ? 'SUCCESS' : 'FAILED', JSON.stringify(autoMapResult.data));
         if (autoMapResult.data.success && autoMapResult.data.auto_mapped_count > 0) {
           autoMappedCount = autoMapResult.data.auto_mapped_count;
           toast.success(`✅ Auto-mapped ${autoMappedCount} ads based on geo-targeting!`);
@@ -292,14 +295,34 @@ export default function AdAnalyticsPage() {
         }
       } catch (autoMapError) {
         // Auto-map failed (maybe token expired), continue to fetch unmapped
-        console.log('Auto-map skipped:', autoMapError.response?.data?.error || autoMapError.message);
+        const errorMsg = autoMapError.response?.data?.error || autoMapError.response?.data?.detail || autoMapError.message;
+        addDebugLog('Auto-Map from Targeting', 'ERROR', errorMsg);
+        console.log('Auto-map skipped:', errorMsg);
       }
       
-      // Step 2: Fetch remaining unmapped ads
-      const [metaResult, leadsResult] = await Promise.all([
-        metaAdsApi.getUnmappedAds().catch(e => ({ data: { success: false, data: [] } })),
-        metaAdsApi.getUnmappedAdsFromLeads().catch(e => ({ data: { success: false, data: [] } }))
-      ]);
+      // Step 2: Fetch remaining unmapped ads from Meta
+      addDebugLog('Fetch Unmapped from Meta', 'CALLING', 'GET /api/meta-ads/unmapped-ads');
+      let metaResult;
+      try {
+        metaResult = await metaAdsApi.getUnmappedAds();
+        addDebugLog('Fetch Unmapped from Meta', metaResult.data.success ? 'SUCCESS' : 'FAILED', 
+          `count=${metaResult.data.count || 0}, with_targeting=${metaResult.data.with_targeting_count || 0}, no_targeting=${metaResult.data.no_targeting_count || 0}, error=${metaResult.data.error || 'none'}`);
+      } catch (e) {
+        metaResult = { data: { success: false, data: [], error: e.response?.data?.detail || e.message } };
+        addDebugLog('Fetch Unmapped from Meta', 'ERROR', metaResult.data.error);
+      }
+      
+      // Step 3: Fetch unmapped ads from WhatsApp leads
+      addDebugLog('Fetch Unmapped from WhatsApp', 'CALLING', 'GET /api/meta-ads/unmapped-ads-from-leads');
+      let leadsResult;
+      try {
+        leadsResult = await metaAdsApi.getUnmappedAdsFromLeads();
+        addDebugLog('Fetch Unmapped from WhatsApp', leadsResult.data.success ? 'SUCCESS' : 'FAILED', 
+          `count=${leadsResult.data.count || 0}, error=${leadsResult.data.error || 'none'}`);
+      } catch (e) {
+        leadsResult = { data: { success: false, data: [], error: e.response?.data?.detail || e.message } };
+        addDebugLog('Fetch Unmapped from WhatsApp', 'ERROR', leadsResult.data.error);
+      }
       
       if (metaResult.data.success) {
         setUnmappedAds(metaResult.data.data || []);
@@ -325,7 +348,10 @@ export default function AdAnalyticsPage() {
       } else {
         setUnmappedAdsFromLeads([]);
       }
+      
+      addDebugLog('Refresh Complete', 'DONE', `Meta: ${metaResult.data.count || 0} unmapped, WhatsApp: ${leadsResult.data.count || 0} unmapped`);
     } catch (error) {
+      addDebugLog('Refresh', 'FATAL ERROR', error.message);
       console.error('Error in fetch and auto-map:', error);
     } finally {
       setLoadingUnmapped(false);
@@ -335,9 +361,11 @@ export default function AdAnalyticsPage() {
 
   // Map an unmapped ad from WhatsApp leads
   const handleMapFromLeads = async (unmapped, selectedCity) => {
+    addDebugLog('Map from Leads', 'CALLING', `Mapping ${unmapped.ad_name || unmapped.ad_id} to ${selectedCity}`);
     try {
       const result = await metaAdsApi.mapAdFromLeads(unmapped.id, selectedCity);
       if (result.data.success) {
+        addDebugLog('Map from Leads', 'SUCCESS', `Leads updated: ${result.data.leads_updated}`);
         toast.success(`Mapped! ${result.data.leads_updated} leads updated to ${selectedCity}`);
         fetchAndAutoMapAds();
         fetchMappings();
