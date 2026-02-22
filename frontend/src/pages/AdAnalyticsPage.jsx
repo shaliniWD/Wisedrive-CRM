@@ -169,8 +169,12 @@ export default function AdAnalyticsPage() {
   const fetchAdMappings = async () => {
     setMappingLoading(true);
     try {
-      const response = await adCityMappingsApi.getAll();
-      setAdMappings(response.data || []);
+      const [mappingsRes, partnersRes] = await Promise.all([
+        adCityMappingsApi.getAll(),
+        partnersApi.getPartners()
+      ]);
+      setAdMappings(mappingsRes.data || []);
+      setPartners(partnersRes.data || []);
     } catch (error) {
       console.error('Failed to load ad mappings:', error);
       toast.error('Failed to load ad mappings');
