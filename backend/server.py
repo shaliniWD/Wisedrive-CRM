@@ -1942,18 +1942,30 @@ async def investigate_lead_by_phone(phone: str, current_user: dict = Depends(get
     Phone can be in any format: +917795684573, 917795684573, 7795684573
     """
     # Normalize phone - remove spaces, dashes
-    clean_phone = phone.replace(" ", "").replace("-", "")
+    clean_phone = phone.replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
     
-    # Build search variants
-    phone_variants = [
-        clean_phone,
-        f"+{clean_phone}" if not clean_phone.startswith("+") else clean_phone,
-        clean_phone[1:] if clean_phone.startswith("+") else clean_phone,  # Remove +
-        clean_phone[2:] if clean_phone.startswith("91") and len(clean_phone) > 10 else clean_phone,  # Remove 91
-        clean_phone[3:] if clean_phone.startswith("+91") and len(clean_phone) > 11 else clean_phone,  # Remove +91
-    ]
-    # Remove duplicates while preserving order
-    phone_variants = list(dict.fromkeys(phone_variants))
+    # Build search variants - comprehensive list
+    phone_variants = set()
+    phone_variants.add(clean_phone)
+    
+    # With and without + prefix
+    if clean_phone.startswith("+"):
+        phone_variants.add(clean_phone[1:])  # Remove +
+    else:
+        phone_variants.add(f"+{clean_phone}")  # Add +
+    
+    # Handle country code variations (91 for India)
+    if clean_phone.startswith("+91"):
+        phone_variants.add(clean_phone[3:])  # Just the 10 digits
+        phone_variants.add(clean_phone[1:])  # 91 + 10 digits (no +)
+    elif clean_phone.startswith("91") and len(clean_phone) == 12:
+        phone_variants.add(clean_phone[2:])  # Just the 10 digits
+        phone_variants.add(f"+{clean_phone}")  # +91 + 10 digits
+    elif len(clean_phone) == 10:
+        phone_variants.add(f"91{clean_phone}")  # 91 + 10 digits
+        phone_variants.add(f"+91{clean_phone}")  # +91 + 10 digits
+    
+    phone_variants = list(phone_variants)
     
     logger.info(f"Investigating lead with phone variants: {phone_variants}")
     
