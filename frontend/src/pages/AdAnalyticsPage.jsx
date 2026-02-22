@@ -1124,7 +1124,37 @@ export default function AdAnalyticsPage() {
                         <p className="text-sm text-gray-500 mt-1">
                           These ads are running on Meta but don't have city mappings in the CRM
                         </p>
+                        {unmappedAds.length > 0 && (
+                          <div className="flex gap-3 mt-2">
+                            <span className="inline-flex items-center text-xs px-2 py-1 rounded bg-green-100 text-green-700">
+                              {unmappedWithTargeting} with targeting
+                            </span>
+                            <span className="inline-flex items-center text-xs px-2 py-1 rounded bg-red-100 text-red-700">
+                              {unmappedNoTargeting} need manual mapping
+                            </span>
+                          </div>
+                        )}
                       </div>
+                      {unmappedWithTargeting > 0 && (
+                        <Button
+                          onClick={handleAutoMapFromTargeting}
+                          disabled={autoMapping}
+                          className="bg-green-600 hover:bg-green-700 text-xs"
+                          size="sm"
+                        >
+                          {autoMapping ? (
+                            <>
+                              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                              Auto-Mapping...
+                            </>
+                          ) : (
+                            <>
+                              <Target className="h-3 w-3 mr-1" />
+                              Auto-Map {unmappedWithTargeting} Ads
+                            </>
+                          )}
+                        </Button>
+                      )}
                     </div>
                     
                     {tokenInfo && !tokenInfo.is_valid ? (
@@ -1152,9 +1182,17 @@ export default function AdAnalyticsPage() {
                               <th className="px-4 py-3 text-left text-xs font-semibold text-amber-700 uppercase tracking-wider">Action</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-amber-100 bg-white">
+                          <tbody className="divide-y divide-amber-100">
                             {unmappedAds.slice(0, 10).map((ad) => (
-                              <tr key={ad.ad_id} className="hover:bg-amber-50/50 transition-colors" data-testid={`unmapped-ad-${ad.ad_id}`}>
+                              <tr 
+                                key={ad.ad_id} 
+                                className={`transition-colors ${
+                                  ad.has_targeting 
+                                    ? 'bg-green-50 hover:bg-green-100'  // Green for auto-mappable
+                                    : 'bg-red-50 hover:bg-red-100'      // Red for needs manual
+                                }`}
+                                data-testid={`unmapped-ad-${ad.ad_id}`}
+                              >
                                 <td className="px-4 py-3">
                                   <span className="font-mono text-xs text-gray-700">{ad.ad_id}</span>
                                 </td>
