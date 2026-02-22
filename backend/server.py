@@ -1506,6 +1506,198 @@ async def bulk_remap_lead_city(
     }
 
 
+@api_router.post("/leads/auto-remap-by-ad-id")
+async def auto_remap_leads_by_ad_id(
+    reassign_to_sales_rep: bool = True,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Automatically remap lead cities based on their AD ID to City mapping.
+    
+    This endpoint:
+    1. Fetches all ad_city_mappings
+    2. Finds leads where ad_id matches a mapping but city is different
+    3. Updates the lead city to match the AD ID mapping
+    4. Optionally reassigns leads to sales reps in the new city
+    
+    This is the "smart" auto-fix for leads that got wrong city assignments.
+    """
+    role_code = current_user.get("role_code", "")
+    if role_code not in ["HR_MANAGER", "CEO", "COUNTRY_HEAD", "ADMIN", "CTO"]:
+        raise HTTPException(status_code=403, detail="Not authorized for auto city remap")
+    
+    # Get all active ad-city mappings
+    ad_mappings = await db.ad_city_mappings.find(
+        {"is_active": {"$ne": False}},  # Include mappings without is_active field
+        {"_id": 0}
+    ).to_list(500)
+    
+    if not ad_mappings:
+        return {
+            "message": "No ad-city mappings found. Please configure mappings in Settings first.",
+            "remapped_count": 0,
+            "checked_count": 0
+        }
+    
+    # Build lookup dictionaries for ad_id and ad_name
+    ad_id_to_city = {}
+    ad_name_to_city = {}
+    
+    for mapping in ad_mappings:
+        ad_id = mapping.get("ad_id")
+        ad_name = mapping.get("ad_name")
+        city = mapping.get("city")
+        
+        if ad_id and ad_id != "default" and city:
+            ad_id_to_city[ad_id.lower()] = {"city": city, "city_id": mapping.get("city_id")}
+        if ad_name and city:
+            ad_name_to_city[ad_name.lower()] = {"city": city, "city_id": mapping.get("city_id")}
+    
+    logger.info(f"Auto-remap: Loaded {len(ad_id_to_city)} ad_id mappings and {len(ad_name_to_city)} ad_name mappings")
+    
+    # Find all leads with ad_id or ad_name
+    leads_with_ads = await db.leads.find(
+        {"$or": [
+            {"ad_id": {"$exists": True, "$ne": None, "$ne": ""}},
+            {"ad_name": {"$exists": True, "$ne": None, "$ne": ""}}
+        ]},
+        {"_id": 0}
+    ).to_list(5000)
+    
+    logger.info(f"Auto-remap: Found {len(leads_with_ads)} leads with ad_id or ad_name")
+    
+    remapped_count = 0
+    reassigned_count = 0
+    skipped_count = 0
+    results = []
+    
+    # Cache for sales reps by city
+    sales_reps_cache = {}
+    
+    for lead in leads_with_ads:
+        lead_id = lead["id"]
+        lead_ad_id = (lead.get("ad_id") or "").lower()
+        lead_ad_name = (lead.get("ad_name") or "").lower()
+        current_city = lead.get("city", "")
+        
+        # Find the correct city from mappings
+        correct_city_info = None
+        matched_by = None
+        
+        # Priority 1: Match by ad_id
+        if lead_ad_id and lead_ad_id in ad_id_to_city:
+            correct_city_info = ad_id_to_city[lead_ad_id]
+            matched_by = "ad_id"
+        # Priority 2: Match by ad_name
+        elif lead_ad_name and lead_ad_name in ad_name_to_city:
+            correct_city_info = ad_name_to_city[lead_ad_name]
+            matched_by = "ad_name"
+        
+        if not correct_city_info:
+            skipped_count += 1
+            continue
+        
+        correct_city = correct_city_info["city"]
+        
+        # Check if city needs to be changed
+        if current_city.lower() == correct_city.lower():
+            skipped_count += 1
+            continue
+        
+        # Update lead city
+        update_data = {
+            "city": correct_city,
+            "city_id": correct_city_info.get("city_id"),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "updated_by": current_user["id"],
+            "city_auto_remapped_from": current_city,
+            "city_auto_remapped_at": datetime.now(timezone.utc).isoformat(),
+            "city_auto_remapped_by": current_user["id"],
+            "city_matched_by": matched_by
+        }
+        
+        old_assigned_to = lead.get("assigned_to")
+        old_assigned_to_name = lead.get("assigned_to_name", "Unassigned")
+        new_assigned_to = None
+        new_assigned_to_name = None
+        
+        # Reassign to sales rep in new city if enabled
+        if reassign_to_sales_rep:
+            # Use cache to avoid repeated DB queries
+            if correct_city not in sales_reps_cache:
+                sales_reps_cache[correct_city] = await find_sales_reps_for_city(correct_city)
+            
+            sales_reps = sales_reps_cache[correct_city]
+            
+            if sales_reps:
+                # Get round-robin counter for new city
+                counter = await db.round_robin_counters.find_one({"city": correct_city})
+                if not counter:
+                    counter = {"city": correct_city, "index": 0}
+                    await db.round_robin_counters.insert_one(counter)
+                
+                # Get next sales rep
+                index = counter.get("index", 0) % len(sales_reps)
+                assigned_rep = sales_reps[index]
+                
+                new_assigned_to = assigned_rep["id"]
+                new_assigned_to_name = assigned_rep.get("name")
+                
+                update_data["assigned_to"] = new_assigned_to
+                update_data["assigned_to_name"] = new_assigned_to_name
+                
+                # Update counter
+                await db.round_robin_counters.update_one(
+                    {"city": correct_city},
+                    {"$set": {"index": index + 1}},
+                    upsert=True
+                )
+                reassigned_count += 1
+        
+        # Apply update
+        await db.leads.update_one({"id": lead_id}, {"$set": update_data})
+        remapped_count += 1
+        
+        # Log activity
+        activity = {
+            "id": str(uuid.uuid4()),
+            "lead_id": lead_id,
+            "user_id": current_user["id"],
+            "user_name": current_user.get("name", "System"),
+            "action": "city_auto_remapped",
+            "old_value": current_city,
+            "new_value": correct_city,
+            "details": f"Auto-remapped based on {matched_by}: {lead.get('ad_id') or lead.get('ad_name')}",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.lead_activities.insert_one(activity)
+        
+        results.append({
+            "lead_id": lead_id,
+            "lead_name": lead.get("name", "Unknown"),
+            "ad_id": lead.get("ad_id"),
+            "ad_name": lead.get("ad_name"),
+            "matched_by": matched_by,
+            "old_city": current_city,
+            "new_city": correct_city,
+            "old_assigned_to": old_assigned_to_name,
+            "new_assigned_to": new_assigned_to_name or old_assigned_to_name,
+            "status": "remapped"
+        })
+    
+    logger.info(f"Auto-remap complete: {remapped_count} remapped, {reassigned_count} reassigned, {skipped_count} skipped")
+    
+    return {
+        "message": f"Auto-remapped {remapped_count} leads based on AD ID mappings",
+        "remapped_count": remapped_count,
+        "reassigned_count": reassigned_count,
+        "skipped_count": skipped_count,
+        "total_leads_checked": len(leads_with_ads),
+        "total_mappings": len(ad_mappings),
+        "results": results
+    }
+
+
 @api_router.get("/leads/city-summary")
 async def get_leads_city_summary(current_user: dict = Depends(get_current_user)):
     """
