@@ -11889,6 +11889,7 @@ async def create_inspection_template(data: InspectionTemplateCreate, current_use
         "partner_id": data.partner_id,
         "description": data.description,
         "question_ids": data.question_ids,
+        "category_order": data.category_order or [],  # Save category order
         "report_template_id": data.report_template_id,
         "is_default": data.is_default if data.is_default is not None else False,
         "is_active": data.is_active if data.is_active is not None else True,
