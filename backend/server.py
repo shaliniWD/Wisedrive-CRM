@@ -11928,6 +11928,7 @@ class PartnerCreate(BaseModel):
     address: Optional[str] = None
     notes: Optional[str] = None
     is_active: Optional[bool] = True
+    default_report_template_id: Optional[str] = None
 
 
 @api_router.get("/partners")
