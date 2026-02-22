@@ -2597,6 +2597,153 @@ export default function LeadsPage() {
                       </div>
                     )}
 
+                    {/* Webhook Audit Trail Toggle */}
+                    {investigatorResult.webhook_audit && (
+                      <div className="border-t pt-4">
+                        <button
+                          onClick={() => setShowAuditTrail(!showAuditTrail)}
+                          className="w-full flex items-center justify-between py-2 px-3 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium"
+                        >
+                          <span className="flex items-center gap-2">
+                            <Activity className="h-4 w-4" />
+                            🔍 Webhook Audit Trail (Debug Data)
+                          </span>
+                          <span>{showAuditTrail ? '▲' : '▼'}</span>
+                        </button>
+                        
+                        {showAuditTrail && (
+                          <div className="mt-3 space-y-4 text-xs">
+                            {/* Raw Twilio Parameters */}
+                            <div className="bg-slate-800 text-slate-100 rounded-lg p-3 overflow-x-auto">
+                              <h5 className="font-bold text-amber-400 mb-2">📥 RAW TWILIO PARAMS (What Twilio Sent)</h5>
+                              <pre className="whitespace-pre-wrap">
+                                {JSON.stringify(investigatorResult.webhook_audit.raw_twilio_params || {}, null, 2)}
+                              </pre>
+                            </div>
+
+                            {/* Parsed Standard Fields */}
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                              <h5 className="font-bold text-blue-800 mb-2">📋 PARSED STANDARD FIELDS</h5>
+                              <div className="grid grid-cols-2 gap-1">
+                                {Object.entries(investigatorResult.webhook_audit.parsed_standard_fields || {}).map(([key, value]) => (
+                                  <div key={key} className="flex justify-between border-b border-dashed border-blue-200 py-1">
+                                    <span className="text-blue-600">{key}:</span>
+                                    <span className={`font-mono ${value ? 'text-green-700' : 'text-red-500'}`}>
+                                      {value || '(empty)'}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Parsed CTWA Fields - THIS IS WHERE AD ID SHOULD COME FROM */}
+                            <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                              <h5 className="font-bold text-purple-800 mb-2">🎯 CTWA FIELDS (Meta Ad Data from Twilio)</h5>
+                              <p className="text-purple-600 mb-2 text-[10px]">AD ID should come from <strong>CtwaClid</strong> field. If empty, Meta/Twilio didn't send it.</p>
+                              <div className="space-y-1">
+                                {Object.entries(investigatorResult.webhook_audit.parsed_ctwa_fields || {}).map(([key, value]) => (
+                                  <div key={key} className={`flex justify-between py-1 px-2 rounded ${
+                                    key === 'CtwaClid' 
+                                      ? (value ? 'bg-green-100 border border-green-400' : 'bg-red-100 border border-red-400')
+                                      : 'border-b border-dashed'
+                                  }`}>
+                                    <span className={`font-medium ${key === 'CtwaClid' ? 'text-purple-800' : 'text-purple-600'}`}>
+                                      {key === 'CtwaClid' && '⚠️ '}{key}:
+                                    </span>
+                                    <span className={`font-mono ${value ? 'text-green-700 font-bold' : 'text-red-500'}`}>
+                                      {value || '(NOT SENT BY TWILIO)'}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Extraction Log */}
+                            {investigatorResult.webhook_audit.extraction_log && (
+                              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                                <h5 className="font-bold text-amber-800 mb-2">🔄 EXTRACTION LOG (How We Tried to Get AD ID)</h5>
+                                <div className="space-y-2">
+                                  {investigatorResult.webhook_audit.extraction_log.map((log, idx) => (
+                                    <div key={idx} className={`p-2 rounded text-xs ${log.found ? 'bg-green-100' : 'bg-gray-100'}`}>
+                                      <span className="font-bold">Step {log.step}:</span> {log.source}
+                                      {log.found ? (
+                                        <span className="ml-2 text-green-700">✅ Found: <code className="bg-white px-1">{log.value}</code></span>
+                                      ) : (
+                                        <span className="ml-2 text-red-600">❌ {log.reason || 'Not found'}</span>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* City Lookup Log */}
+                            {investigatorResult.webhook_audit.city_lookup_log && (
+                              <div className="bg-teal-50 border border-teal-200 rounded-lg p-3">
+                                <h5 className="font-bold text-teal-800 mb-2">🏙️ CITY LOOKUP LOG</h5>
+                                <div className="space-y-2">
+                                  {investigatorResult.webhook_audit.city_lookup_log.map((log, idx) => (
+                                    <div key={idx} className={`p-2 rounded text-xs ${log.found ? 'bg-green-100' : log.skipped ? 'bg-gray-100' : 'bg-red-50'}`}>
+                                      <span className="font-bold">Strategy {log.strategy}:</span> {log.method}
+                                      {log.found ? (
+                                        <span className="ml-2 text-green-700">✅ City: <strong>{log.city}</strong></span>
+                                      ) : log.skipped ? (
+                                        <span className="ml-2 text-gray-500">⏭️ Skipped: {log.reason}</span>
+                                      ) : (
+                                        <span className="ml-2 text-red-600">❌ Not found</span>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Final Assignment */}
+                            {investigatorResult.webhook_audit.final_assignment && (
+                              <div className="bg-green-50 border border-green-300 rounded-lg p-3">
+                                <h5 className="font-bold text-green-800 mb-2">✅ FINAL ASSIGNMENT (What We Stored)</h5>
+                                <div className="grid grid-cols-2 gap-2">
+                                  {Object.entries(investigatorResult.webhook_audit.final_assignment).map(([key, value]) => (
+                                    <div key={key} className="flex justify-between py-1 border-b border-dashed">
+                                      <span className="text-green-700 font-medium">{key}:</span>
+                                      <span className={`font-mono ${value ? 'text-green-800 font-bold' : 'text-red-500'}`}>
+                                        {value || '(not captured)'}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Conclusion */}
+                            <div className="bg-gray-800 text-white rounded-lg p-3">
+                              <h5 className="font-bold text-yellow-400 mb-2">📊 CONCLUSION</h5>
+                              {investigatorResult.webhook_audit.parsed_ctwa_fields?.CtwaClid ? (
+                                <p className="text-green-400">✅ AD ID was correctly captured from Twilio's CtwaClid field.</p>
+                              ) : investigatorResult.webhook_audit.parsed_ctwa_fields?.ReferralHeadline ? (
+                                <div className="text-amber-400">
+                                  <p>⚠️ <strong>AD Name (ReferralHeadline) was sent but AD ID (CtwaClid) was NOT.</strong></p>
+                                  <p className="mt-1 text-sm text-gray-300">This is a Twilio/Meta configuration issue. Twilio may not be forwarding the CtwaClid parameter.</p>
+                                </div>
+                              ) : (
+                                <p className="text-red-400">❌ No CTWA data was sent. This might be a direct WhatsApp message, not from a Meta Ad.</p>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* No Audit Trail Available */}
+                    {!investigatorResult.webhook_audit && investigatorResult.source === 'META_WHATSAPP' && (
+                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mt-4">
+                        <p className="text-amber-800 text-sm">
+                          <strong>⚠️ No audit trail available.</strong> This lead was created before audit logging was enabled.
+                          New leads will have full audit data to help debug AD ID capture issues.
+                        </p>
+                      </div>
+                    )}
+
                     {/* Action Buttons */}
                     <div className="flex justify-between items-center">
                       {/* Delete Button - CEO only */}
