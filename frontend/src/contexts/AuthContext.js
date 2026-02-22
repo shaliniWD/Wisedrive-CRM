@@ -39,6 +39,17 @@ export const AuthProvider = ({ children }) => {
       setUser(userData);
       setPermissions(userData.permissions || []);
       setVisibleTabs(userData.visible_tabs || []);
+      
+      // Store user data in localStorage for timezone and other utilities
+      localStorage.setItem('user', JSON.stringify({
+        id: userData.id,
+        name: userData.name,
+        email: userData.email,
+        country_id: userData.country_id,
+        country_code: userData.country_code,
+        country_name: userData.country_name,
+        role_code: userData.role_code
+      }));
     } catch (error) {
       console.error('Failed to fetch user:', error);
       logout();
