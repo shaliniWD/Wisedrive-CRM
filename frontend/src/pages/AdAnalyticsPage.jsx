@@ -8,7 +8,7 @@ import {
   ArrowUpRight, ArrowDownRight, Eye, MousePointer,
   AlertCircle, CheckCircle, Key, Clock, Shield,
   Plus, Pencil, Trash2, Search, Settings, X, MapPin,
-  MessageSquare, XCircle
+  MessageSquare, XCircle, ExternalLink, Info
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
