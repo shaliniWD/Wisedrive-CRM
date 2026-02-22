@@ -371,7 +371,9 @@ export default function AdAnalyticsPage() {
         fetchMappings();
       }
     } catch (error) {
+      addDebugLog('Map from Leads', 'ERROR', error.response?.data?.detail || error.message);
       toast.error(error.response?.data?.detail || 'Failed to map ad');
+    }
     }
   };
   
