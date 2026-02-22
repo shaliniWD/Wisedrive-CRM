@@ -1,15 +1,37 @@
 import { format, parseISO, isValid } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 
-// Indian Standard Time timezone
-const IST_TIMEZONE = 'Asia/Kolkata';
+// Country code to timezone mapping
+const COUNTRY_TIMEZONES = {
+  'IN': 'Asia/Kolkata',      // India - IST (UTC+5:30)
+  'MY': 'Asia/Kuala_Lumpur', // Malaysia - MYT (UTC+8)
+  'TH': 'Asia/Bangkok',      // Thailand - ICT (UTC+7)
+  'PH': 'Asia/Manila',       // Philippines - PHT (UTC+8)
+  // Default fallback
+  'default': 'Asia/Kolkata'
+};
+
+// Get timezone from localStorage (set during login)
+const getUserTimezone = () => {
+  try {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      const countryCode = user.country_code || 'IN';
+      return COUNTRY_TIMEZONES[countryCode] || COUNTRY_TIMEZONES['default'];
+    }
+  } catch (e) {
+    console.error('Error getting user timezone:', e);
+  }
+  return COUNTRY_TIMEZONES['default'];
+};
 
 /**
- * Convert a date to IST timezone
+ * Convert a date to user's timezone
  * @param {string|Date} dateString 
  * @returns {Date}
  */
-const toIST = (dateString) => {
+const toUserTimezone = (dateString) => {
   let date;
   if (typeof dateString === 'string') {
     // Handle ISO strings - parse as UTC
@@ -20,12 +42,13 @@ const toIST = (dateString) => {
   
   if (!isValid(date)) return null;
   
-  // Convert to IST timezone
-  return toZonedTime(date, IST_TIMEZONE);
+  // Convert to user's timezone
+  const timezone = getUserTimezone();
+  return toZonedTime(date, timezone);
 };
 
 /**
- * Format date to "22 Feb '26" style in IST
+ * Format date to "22 Feb '26" style in user's timezone
  * @param {string|Date} dateString 
  * @returns {string}
  */
@@ -33,18 +56,18 @@ export const formatDate = (dateString) => {
   if (!dateString) return '-';
   
   try {
-    const istDate = toIST(dateString);
-    if (!istDate) return '-';
+    const zonedDate = toUserTimezone(dateString);
+    if (!zonedDate) return '-';
     
     // Format: "22 Feb '26"
-    return format(istDate, "d MMM ''yy");
+    return format(zonedDate, "d MMM ''yy");
   } catch {
     return '-';
   }
 };
 
 /**
- * Format date with time to "22 Feb '26, 2:30 PM" style in IST
+ * Format date with time to "22 Feb '26, 2:30 PM" style in user's timezone
  * @param {string|Date} dateString 
  * @returns {string}
  */
@@ -52,18 +75,18 @@ export const formatDateTime = (dateString) => {
   if (!dateString) return '-';
   
   try {
-    const istDate = toIST(dateString);
-    if (!istDate) return '-';
+    const zonedDate = toUserTimezone(dateString);
+    if (!zonedDate) return '-';
     
     // Format: "22 Feb '26, 2:30 PM"
-    return format(istDate, "d MMM ''yy, h:mm a");
+    return format(zonedDate, "d MMM ''yy, h:mm a");
   } catch {
     return '-';
   }
 };
 
 /**
- * Format time only "10:30 AM" in IST
+ * Format time only "10:30 AM" in user's timezone
  * @param {string|Date} dateString - Can be full ISO date string or just time "14:30"
  * @returns {string}
  */
@@ -73,9 +96,9 @@ export const formatTime = (dateString) => {
   try {
     // Check if it's a full ISO date string
     if (dateString.includes('T') || dateString.includes('-')) {
-      const istDate = toIST(dateString);
-      if (!istDate) return '-';
-      return format(istDate, 'h:mm a');
+      const zonedDate = toUserTimezone(dateString);
+      if (!zonedDate) return '-';
+      return format(zonedDate, 'h:mm a');
     }
     
     // If it's just a time string like "14:30" or "14:30:00"
@@ -86,4 +109,19 @@ export const formatTime = (dateString) => {
   } catch {
     return dateString;
   }
+};
+
+/**
+ * Get the current user's timezone name for display
+ * @returns {string}
+ */
+export const getUserTimezoneName = () => {
+  const timezone = getUserTimezone();
+  const timezoneNames = {
+    'Asia/Kolkata': 'IST',
+    'Asia/Kuala_Lumpur': 'MYT',
+    'Asia/Bangkok': 'ICT',
+    'Asia/Manila': 'PHT'
+  };
+  return timezoneNames[timezone] || timezone;
 };
