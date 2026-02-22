@@ -2173,6 +2173,83 @@ async def diagnose_lead_source_issues(current_user: dict = Depends(get_current_u
     return diagnostics
 
 
+@api_router.post("/leads/fix-source-issues")
+async def fix_lead_source_issues(
+    fix_type: str = "system_created",  # "system_created" or "all_website"
+    dry_run: bool = True,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Fix leads that were incorrectly tagged with wrong source.
+    
+    fix_type options:
+    - "system_created": Fix only leads created by system that have non-META_WHATSAPP source
+    - "all_website": Fix ALL leads with WEBSITE source to META_WHATSAPP (use with caution!)
+    
+    dry_run: If True, only reports what would be fixed without making changes
+    """
+    fixed_leads = []
+    
+    if fix_type == "system_created":
+        # Find leads created by system but with wrong source
+        query = {
+            "created_by": "system",
+            "source": {"$ne": "META_WHATSAPP"}
+        }
+    elif fix_type == "all_website":
+        # Fix all WEBSITE source leads
+        query = {"source": "WEBSITE"}
+    else:
+        raise HTTPException(status_code=400, detail="Invalid fix_type. Use 'system_created' or 'all_website'")
+    
+    leads_to_fix = await db.leads.find(query, {"_id": 0}).to_list(10000)
+    
+    for lead in leads_to_fix:
+        lead_info = {
+            "id": lead.get("id"),
+            "name": lead.get("name"),
+            "mobile": lead.get("mobile"),
+            "old_source": lead.get("source"),
+            "new_source": "META_WHATSAPP",
+            "created_by": lead.get("created_by"),
+            "created_at": lead.get("created_at")
+        }
+        
+        if not dry_run:
+            # Actually fix the lead
+            await db.leads.update_one(
+                {"id": lead["id"]},
+                {"$set": {
+                    "source": "META_WHATSAPP",
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+            
+            # Log the fix
+            activity = {
+                "id": str(uuid.uuid4()),
+                "lead_id": lead["id"],
+                "user_id": current_user["id"],
+                "user_name": current_user.get("name", "System"),
+                "action": "source_fixed",
+                "old_value": lead.get("source"),
+                "new_value": "META_WHATSAPP",
+                "details": f"Source corrected from '{lead.get('source')}' to 'META_WHATSAPP' via fix-source-issues",
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.lead_activities.insert_one(activity)
+        
+        fixed_leads.append(lead_info)
+    
+    return {
+        "dry_run": dry_run,
+        "fix_type": fix_type,
+        "total_leads_affected": len(fixed_leads),
+        "leads": fixed_leads[:100],  # Return first 100 for preview
+        "message": f"{'Would fix' if dry_run else 'Fixed'} {len(fixed_leads)} leads" + (". Run with dry_run=false to apply changes." if dry_run else "")
+    }
+
+
 # Lead Notes
 class LeadNoteCreate(BaseModel):
     note: str
