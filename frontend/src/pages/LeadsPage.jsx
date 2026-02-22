@@ -1996,6 +1996,135 @@ export default function LeadsPage() {
         </DialogContent>
       </Dialog>
 
+      {/* City Remap Modal */}
+      <Dialog open={isCityRemapModalOpen} onOpenChange={setIsCityRemapModalOpen}>
+        <DialogContent className="max-w-lg" data-testid="city-remap-modal">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MapPin className="h-5 w-5 text-orange-500" />
+              Bulk City Remap
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {/* City Summary */}
+            <div className="bg-gray-50 rounded-lg p-4">
+              <h4 className="text-sm font-medium text-gray-700 mb-3">Current Lead Distribution</h4>
+              {isLoadingCitySummary ? (
+                <div className="flex items-center gap-2 text-gray-500">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading...
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto">
+                  {citySummary.map((city) => (
+                    <div key={city.city} className="flex justify-between items-center text-sm bg-white px-3 py-2 rounded-md border">
+                      <span className="text-gray-700">{city.city}</span>
+                      <span className="font-medium text-gray-900">{city.total_leads}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* From City */}
+            <div className="space-y-2">
+              <Label>From City (Source)</Label>
+              <Select 
+                value={cityRemapData.fromCity} 
+                onValueChange={(value) => setCityRemapData({...cityRemapData, fromCity: value})}
+              >
+                <SelectTrigger data-testid="from-city-select">
+                  <SelectValue placeholder="Select source city to remap FROM" />
+                </SelectTrigger>
+                <SelectContent>
+                  {citySummary.filter(c => c.total_leads > 0).map((city) => (
+                    <SelectItem key={city.city} value={city.city}>
+                      {city.city} ({city.total_leads} leads)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* To City */}
+            <div className="space-y-2">
+              <Label>To City (Target)</Label>
+              <Select 
+                value={cityRemapData.toCity} 
+                onValueChange={(value) => setCityRemapData({...cityRemapData, toCity: value})}
+              >
+                <SelectTrigger data-testid="to-city-select">
+                  <SelectValue placeholder="Select target city to remap TO" />
+                </SelectTrigger>
+                <SelectContent>
+                  {cities.map((city) => (
+                    <SelectItem key={city.id || city.name} value={city.name}>
+                      {city.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Reassign Option */}
+            <div className="flex items-center gap-3 bg-blue-50 p-3 rounded-lg">
+              <Checkbox
+                id="reassign-checkbox"
+                checked={cityRemapData.reassignToSalesRep}
+                onCheckedChange={(checked) => setCityRemapData({...cityRemapData, reassignToSalesRep: checked})}
+              />
+              <div>
+                <Label htmlFor="reassign-checkbox" className="text-sm font-medium cursor-pointer">
+                  Reassign to Sales Reps
+                </Label>
+                <p className="text-xs text-gray-500">
+                  Automatically reassign leads to sales reps in the new city via round-robin
+                </p>
+              </div>
+            </div>
+
+            {/* Warning */}
+            {cityRemapData.fromCity && cityRemapData.toCity && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm">
+                <p className="text-amber-800">
+                  <strong>⚠️ Warning:</strong> This will move ALL leads from <strong>{cityRemapData.fromCity}</strong> to <strong>{cityRemapData.toCity}</strong>.
+                  {cityRemapData.reassignToSalesRep && ' Leads will also be reassigned to sales reps in the new city.'}
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <Button 
+              variant="outline" 
+              onClick={() => setIsCityRemapModalOpen(false)}
+              disabled={isRemapping}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleCityRemap}
+              disabled={isRemapping || !cityRemapData.fromCity || !cityRemapData.toCity}
+              className="bg-orange-500 hover:bg-orange-600"
+              data-testid="confirm-remap-button"
+            >
+              {isRemapping ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Remapping...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Remap Leads
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Notes & Activities Drawer */}
       <Sheet open={isNotesDrawerOpen} onOpenChange={setIsNotesDrawerOpen}>
         <SheetContent className="sm:max-w-[500px] p-0 flex flex-col" data-testid="notes-drawer">
