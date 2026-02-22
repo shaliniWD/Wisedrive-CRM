@@ -96,6 +96,17 @@ export const AuthProvider = ({ children }) => {
     setPermissions(fullUserData.permissions || []);
     setVisibleTabs(fullUserData.visible_tabs || []);
     
+    // Store user data in localStorage for timezone and other utilities
+    localStorage.setItem('user', JSON.stringify({
+      id: fullUserData.id,
+      name: fullUserData.name,
+      email: fullUserData.email,
+      country_id: fullUserData.country_id,
+      country_code: fullUserData.country_code,
+      country_name: fullUserData.country_name,
+      role_code: fullUserData.role_code
+    }));
+    
     // Start session tracking for attendance
     startSessionTracking();
     
