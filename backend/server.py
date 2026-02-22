@@ -10110,6 +10110,90 @@ async def get_unmapped_ads(current_user: dict = Depends(get_current_user)):
     }
 
 
+@api_router.get("/meta-ads/unmapped-ads-from-leads")
+async def get_unmapped_ads_from_leads(current_user: dict = Depends(get_current_user)):
+    """
+    Get unmapped ads detected from WhatsApp webhook leads.
+    These are ads that came through WhatsApp but don't have city mappings.
+    This works even when Meta token is expired.
+    """
+    role_code = current_user.get("role_code", "")
+    if role_code not in ["CEO", "HR_MANAGER", "CTO", "COUNTRY_HEAD", "ADMIN"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Get unmapped ads from our collection (auto-created from WhatsApp webhook)
+    unmapped_ads = await db.unmapped_ads.find(
+        {"is_mapped": False},
+        {"_id": 0}
+    ).sort("lead_count", -1).to_list(100)
+    
+    return {
+        "success": True,
+        "data": unmapped_ads,
+        "count": len(unmapped_ads),
+        "source": "whatsapp_webhook"
+    }
+
+
+@api_router.post("/meta-ads/map-ad-from-leads/{unmapped_id}")
+async def map_ad_from_leads(
+    unmapped_id: str,
+    city: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Create a city mapping from an unmapped ad detected via WhatsApp.
+    """
+    role_code = current_user.get("role_code", "")
+    if role_code not in ["CEO", "HR_MANAGER", "CTO", "COUNTRY_HEAD", "ADMIN"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Find the unmapped ad
+    unmapped = await db.unmapped_ads.find_one({"id": unmapped_id}, {"_id": 0})
+    if not unmapped:
+        raise HTTPException(status_code=404, detail="Unmapped ad not found")
+    
+    # Create the mapping
+    mapping = {
+        "id": str(uuid.uuid4()),
+        "ad_id": unmapped.get("ad_id"),
+        "ad_name": unmapped.get("ad_name"),
+        "city": city,
+        "source": "whatsapp_auto_detected",
+        "is_active": True,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": current_user["id"]
+    }
+    
+    await db.ad_city_mappings.insert_one(mapping)
+    
+    # Mark as mapped
+    await db.unmapped_ads.update_one(
+        {"id": unmapped_id},
+        {"$set": {"is_mapped": True, "mapped_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    # Update existing leads with this ad_id/ad_name to the correct city
+    update_result = await db.leads.update_many(
+        {"$or": [
+            {"ad_id": unmapped.get("ad_id")},
+            {"ad_name": unmapped.get("ad_name")}
+        ]},
+        {"$set": {
+            "city": city,
+            "city_auto_fixed": True,
+            "city_fixed_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    return {
+        "success": True,
+        "message": f"Mapping created and {update_result.modified_count} existing leads updated",
+        "mapping": mapping,
+        "leads_updated": update_result.modified_count
+    }
+
+
 # ==================== INSPECTION Q&A ROUTES ====================
 
 class InspectionQuestionCreate(BaseModel):
