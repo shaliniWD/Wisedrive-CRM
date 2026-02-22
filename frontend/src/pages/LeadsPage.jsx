@@ -2179,6 +2179,7 @@ export default function LeadsPage() {
                     </p>
                   </div>
                 )}
+              </>
             )}
           </div>
 
@@ -2186,28 +2187,54 @@ export default function LeadsPage() {
             <Button 
               variant="outline" 
               onClick={() => setIsCityRemapModalOpen(false)}
-              disabled={isRemapping}
+              disabled={isRemapping || isAutoRemapping}
             >
               Cancel
             </Button>
-            <Button 
-              onClick={handleCityRemap}
-              disabled={isRemapping || !cityRemapData.fromCity || !cityRemapData.toCity}
-              className="bg-orange-500 hover:bg-orange-600"
-              data-testid="confirm-remap-button"
-            >
-              {isRemapping ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Remapping...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Remap Leads
-                </>
-              )}
-            </Button>
+            
+            {/* Auto Mode Button */}
+            {remapMode === 'auto' && (
+              <Button 
+                onClick={handleAutoRemapByAdId}
+                disabled={isAutoRemapping}
+                className="bg-green-600 hover:bg-green-700"
+                data-testid="auto-remap-button"
+              >
+                {isAutoRemapping ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Auto-Remapping...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Auto-Remap by AD ID
+                  </>
+                )}
+              </Button>
+            )}
+            
+            {/* Manual Mode Button */}
+            {remapMode === 'manual' && (
+              <Button 
+                onClick={handleCityRemap}
+                disabled={isRemapping || !cityRemapData.fromCity || !cityRemapData.toCity}
+                className="bg-orange-500 hover:bg-orange-600"
+                data-testid="confirm-remap-button"
+              >
+                {isRemapping ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Remapping...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Remap Leads
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>
