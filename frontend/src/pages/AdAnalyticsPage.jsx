@@ -675,7 +675,7 @@ export default function AdAnalyticsPage() {
   };
 
   const resetForm = () => {
-    setFormData({ ad_id: '', ad_name: '', ad_amount: '', city: '', language: '', campaign: '', source: '' });
+    setFormData({ ad_id: '', ad_name: '', ad_amount: '', city: '', language: '', campaign: '', source: '', partner_id: '' });
     setEditingAd(null);
   };
 
@@ -689,6 +689,7 @@ export default function AdAnalyticsPage() {
       language: ad.language || '',
       campaign: ad.campaign || '',
       source: ad.source || '',
+      partner_id: ad.partner_id || '',
     });
     setIsModalOpen(true);
   };
