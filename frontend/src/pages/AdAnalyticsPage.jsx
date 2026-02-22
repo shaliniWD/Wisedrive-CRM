@@ -982,115 +982,208 @@ export default function AdAnalyticsPage() {
             </div>
             
             {/* Unmapped Ads Section (CEO/CTO only) */}
-            {canManageToken && metaStatus.configured && (
-              <div className="mt-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                      <AlertCircle className="h-4 w-4 text-amber-500" />
-                      Unmapped Ads from Meta
-                    </h3>
-                    <p className="text-sm text-gray-500 mt-1">
-                      These ads are running on Meta but don't have city mappings in the CRM
-                    </p>
+            {canManageToken && (
+              <div className="mt-6 space-y-6">
+                {/* Unmapped Ads from WhatsApp Leads - Always available */}
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                        <MessageSquare className="h-4 w-4 text-green-500" />
+                        Unmapped Ads from WhatsApp Leads
+                      </h3>
+                      <p className="text-sm text-gray-500 mt-1">
+                        Ads detected from WhatsApp messages that need city mapping (works even if Meta token expired)
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={fetchUnmappedAds}
+                      disabled={loadingUnmapped}
+                      className="text-xs"
+                    >
+                      <RefreshCw className={`h-3 w-3 mr-1 ${loadingUnmapped ? 'animate-spin' : ''}`} />
+                      Refresh
+                    </Button>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={fetchUnmappedAds}
-                    disabled={loadingUnmapped}
-                    className="text-xs"
-                  >
-                    <RefreshCw className={`h-3 w-3 mr-1 ${loadingUnmapped ? 'animate-spin' : ''}`} />
-                    Refresh
-                  </Button>
-                </div>
-                
-                {loadingUnmapped ? (
-                  <div className="text-center py-8 border rounded-xl bg-slate-50">
-                    <Loader2 className="h-5 w-5 animate-spin text-blue-600 mx-auto" />
-                    <p className="text-sm text-gray-500 mt-2">Loading unmapped ads...</p>
-                  </div>
-                ) : unmappedAds.length === 0 ? (
-                  <div className="text-center py-8 border rounded-xl bg-emerald-50 border-emerald-200">
-                    <CheckCircle className="h-8 w-8 text-emerald-500 mx-auto mb-2" />
-                    <p className="text-sm text-emerald-700 font-medium">All Meta ads are mapped!</p>
-                    <p className="text-xs text-emerald-600 mt-1">No unmapped ads found</p>
-                  </div>
-                ) : (
-                  <div className="border rounded-xl overflow-hidden">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="bg-amber-50 border-b border-amber-200">
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-amber-700 uppercase tracking-wider">Ad ID</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-amber-700 uppercase tracking-wider">Ad Name</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-amber-700 uppercase tracking-wider">Status</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-amber-700 uppercase tracking-wider">Suggested City</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-amber-700 uppercase tracking-wider">Targeting</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-amber-700 uppercase tracking-wider">Action</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-amber-100 bg-white">
-                        {unmappedAds.slice(0, 10).map((ad) => (
-                          <tr key={ad.ad_id} className="hover:bg-amber-50/50 transition-colors" data-testid={`unmapped-ad-${ad.ad_id}`}>
-                            <td className="px-4 py-3">
-                              <span className="font-mono text-xs text-gray-700">{ad.ad_id}</span>
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className="text-sm font-medium text-gray-900">{ad.ad_name || 'Unnamed'}</span>
-                              {ad.adset_name && (
-                                <p className="text-xs text-gray-500 mt-0.5">{ad.adset_name}</p>
-                              )}
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                                ad.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'
-                              }`}>
-                                {ad.status || 'Unknown'}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3">
-                              {ad.suggested_city ? (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-100 text-blue-700 text-xs font-medium">
-                                  <MapPin className="h-3 w-3" />
-                                  {ad.suggested_city}
-                                </span>
-                              ) : (
-                                <span className="text-xs text-gray-400">No suggestion</span>
-                              )}
-                            </td>
-                            <td className="px-4 py-3">
-                              <div className="text-xs text-gray-500">
-                                {ad.targeting_cities?.length > 0 && (
-                                  <span className="block">Cities: {ad.targeting_cities.join(', ')}</span>
-                                )}
-                                {ad.targeting_regions?.length > 0 && (
-                                  <span className="block">Regions: {ad.targeting_regions.join(', ')}</span>
-                                )}
-                                {!ad.targeting_cities?.length && !ad.targeting_regions?.length && (
-                                  <span className="text-gray-400">No geo targeting</span>
-                                )}
-                              </div>
-                            </td>
-                            <td className="px-4 py-3">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleQuickMap(ad)}
-                                className="text-xs h-7 px-2 border-amber-300 text-amber-700 hover:bg-amber-100"
-                                data-testid={`quick-map-${ad.ad_id}`}
-                              >
-                                <Plus className="h-3 w-3 mr-1" />
-                                Quick Map
-                              </Button>
-                            </td>
+                  
+                  {loadingUnmapped ? (
+                    <div className="text-center py-8 border rounded-xl bg-slate-50">
+                      <Loader2 className="h-5 w-5 animate-spin text-green-600 mx-auto" />
+                      <p className="text-sm text-gray-500 mt-2">Loading unmapped ads...</p>
+                    </div>
+                  ) : unmappedAdsFromLeads.length === 0 ? (
+                    <div className="text-center py-8 border rounded-xl bg-emerald-50 border-emerald-200">
+                      <CheckCircle className="h-8 w-8 text-emerald-500 mx-auto mb-2" />
+                      <p className="text-sm text-emerald-700 font-medium">All WhatsApp ads are mapped!</p>
+                      <p className="text-xs text-emerald-600 mt-1">No unmapped ads from WhatsApp leads</p>
+                    </div>
+                  ) : (
+                    <div className="border rounded-xl overflow-hidden">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="bg-green-50 border-b border-green-200">
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-green-700 uppercase tracking-wider">Ad Name / ID</th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-green-700 uppercase tracking-wider">Source</th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-green-700 uppercase tracking-wider">Lead Count</th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-green-700 uppercase tracking-wider">First Seen</th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-green-700 uppercase tracking-wider">Map to City</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                    {unmappedAds.length > 10 && (
-                      <div className="px-4 py-2 bg-amber-50 border-t border-amber-200 text-xs text-amber-700 text-center">
-                        Showing 10 of {unmappedAds.length} unmapped ads
+                        </thead>
+                        <tbody className="divide-y divide-green-100 bg-white">
+                          {unmappedAdsFromLeads.map((ad) => (
+                            <tr key={ad.id} className="hover:bg-green-50/50 transition-colors">
+                              <td className="px-4 py-3">
+                                <span className="text-sm font-medium text-gray-900">{ad.ad_name || ad.ad_id || 'Unknown'}</span>
+                                {ad.referral_headline && ad.referral_headline !== ad.ad_name && (
+                                  <p className="text-xs text-gray-500 mt-0.5">Headline: {ad.referral_headline}</p>
+                                )}
+                              </td>
+                              <td className="px-4 py-3">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">
+                                  WhatsApp
+                                </span>
+                              </td>
+                              <td className="px-4 py-3">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-100 text-blue-700 text-xs font-medium">
+                                  {ad.lead_count} leads
+                                </span>
+                              </td>
+                              <td className="px-4 py-3">
+                                <span className="text-xs text-gray-500">
+                                  {ad.first_seen_at ? new Date(ad.first_seen_at).toLocaleDateString() : 'N/A'}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="flex items-center gap-2">
+                                  <select 
+                                    className="text-xs border rounded px-2 py-1 w-32"
+                                    defaultValue=""
+                                    onChange={(e) => {
+                                      if (e.target.value) {
+                                        handleMapFromLeads(ad, e.target.value);
+                                      }
+                                    }}
+                                  >
+                                    <option value="">Select city...</option>
+                                    {cities.map(city => (
+                                      <option key={city} value={city}>{city}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+                {/* Unmapped Ads from Meta - Only when configured */}
+                {metaStatus.configured && (
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                          <AlertCircle className="h-4 w-4 text-amber-500" />
+                          Unmapped Ads from Meta
+                        </h3>
+                        <p className="text-sm text-gray-500 mt-1">
+                          These ads are running on Meta but don't have city mappings in the CRM
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {tokenInfo && !tokenInfo.is_valid ? (
+                      <div className="text-center py-8 border rounded-xl bg-red-50 border-red-200">
+                        <XCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
+                        <p className="text-sm text-red-700 font-medium">Meta Token Expired</p>
+                        <p className="text-xs text-red-600 mt-1">Please refresh the token to fetch ads from Meta</p>
+                      </div>
+                    ) : unmappedAds.length === 0 ? (
+                      <div className="text-center py-8 border rounded-xl bg-emerald-50 border-emerald-200">
+                        <CheckCircle className="h-8 w-8 text-emerald-500 mx-auto mb-2" />
+                        <p className="text-sm text-emerald-700 font-medium">All Meta ads are mapped!</p>
+                        <p className="text-xs text-emerald-600 mt-1">No unmapped ads found</p>
+                      </div>
+                    ) : (
+                      <div className="border rounded-xl overflow-hidden">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="bg-amber-50 border-b border-amber-200">
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-amber-700 uppercase tracking-wider">Ad ID</th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-amber-700 uppercase tracking-wider">Ad Name</th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-amber-700 uppercase tracking-wider">Status</th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-amber-700 uppercase tracking-wider">Suggested City</th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-amber-700 uppercase tracking-wider">Targeting</th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-amber-700 uppercase tracking-wider">Action</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-amber-100 bg-white">
+                            {unmappedAds.slice(0, 10).map((ad) => (
+                              <tr key={ad.ad_id} className="hover:bg-amber-50/50 transition-colors" data-testid={`unmapped-ad-${ad.ad_id}`}>
+                                <td className="px-4 py-3">
+                                  <span className="font-mono text-xs text-gray-700">{ad.ad_id}</span>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className="text-sm font-medium text-gray-900">{ad.ad_name || 'Unnamed'}</span>
+                                  {ad.adset_name && (
+                                    <p className="text-xs text-gray-500 mt-0.5">{ad.adset_name}</p>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                                    ad.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'
+                                  }`}>
+                                    {ad.status || 'Unknown'}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3">
+                                  {ad.suggested_city ? (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-100 text-blue-700 text-xs font-medium">
+                                      <MapPin className="h-3 w-3" />
+                                      {ad.suggested_city}
+                                    </span>
+                                  ) : (
+                                    <span className="text-xs text-gray-400">No suggestion</span>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3">
+                                  <div className="text-xs text-gray-500">
+                                    {ad.targeting_cities?.length > 0 && (
+                                      <span className="block">Cities: {ad.targeting_cities.join(', ')}</span>
+                                    )}
+                                    {ad.targeting_regions?.length > 0 && (
+                                      <span className="block">Regions: {ad.targeting_regions.join(', ')}</span>
+                                    )}
+                                    {!ad.targeting_cities?.length && !ad.targeting_regions?.length && (
+                                      <span className="text-gray-400">No geo targeting</span>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleQuickMap(ad)}
+                                    className="text-xs h-7 px-2 border-amber-300 text-amber-700 hover:bg-amber-100"
+                                    data-testid={`quick-map-${ad.ad_id}`}
+                                  >
+                                    <Plus className="h-3 w-3 mr-1" />
+                                    Quick Map
+                                  </Button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                        {unmappedAds.length > 10 && (
+                          <div className="px-4 py-2 bg-amber-50 border-t border-amber-200 text-xs text-amber-700 text-center">
+                            Showing 10 of {unmappedAds.length} unmapped ads
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
