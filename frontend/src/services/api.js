@@ -17,6 +17,10 @@ export const leadsApi = {
   getSalesRepsByCity: (city) => axios.get(`${API_URL}/leads/sales-reps-by-city`, { params: { city } }),
   // Bulk assign unassigned leads
   assignUnassigned: () => axios.post(`${API_URL}/leads/assign-unassigned`),
+  // Bulk city remap
+  bulkRemapCity: (data) => axios.post(`${API_URL}/leads/bulk-remap-city`, data),
+  // City summary
+  getCitySummary: () => axios.get(`${API_URL}/leads/city-summary`),
   // Notes
   getNotes: (id) => axios.get(`${API_URL}/leads/${id}/notes`),
   addNote: (id, note) => axios.post(`${API_URL}/leads/${id}/notes`, { note }),
