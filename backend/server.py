@@ -3188,6 +3188,30 @@ async def twilio_whatsapp_webhook(
     
     logger.info(f"Final city assignment: {city} (ad_id={ad_id}, ad_name={ad_name})")
     
+    # ==================== PARTNER ASSIGNMENT FROM AD MAPPING (Option C) ====================
+    # Get partner from ad_mapping if available, otherwise default to B2C
+    partner_id = None
+    partner_name = None
+    
+    if ad_mapping and ad_mapping.get("partner_id"):
+        # Use partner from the matched ad mapping
+        partner_id = ad_mapping.get("partner_id")
+        partner_name = ad_mapping.get("partner_name")
+        logger.info(f"Partner from ad_mapping: {partner_name} (id={partner_id})")
+        audit_data["partner_source"] = "ad_mapping"
+    
+    # Fallback to B2C Default if no partner from mapping
+    if not partner_id:
+        b2c_partner = await db.partners.find_one({"type": "b2c"}, {"_id": 0, "id": 1, "name": 1})
+        if b2c_partner:
+            partner_id = b2c_partner["id"]
+            partner_name = b2c_partner.get("name", "B2C Default")
+            logger.info(f"Using B2C default partner: {partner_name}")
+            audit_data["partner_source"] = "b2c_default"
+    
+    audit_data["final_assignment"]["partner_id"] = partner_id
+    audit_data["final_assignment"]["partner_name"] = partner_name
+    
     # Check if lead already exists with this phone
     existing_lead = await db.leads.find_one({"mobile": phone}, {"_id": 0})
     if existing_lead:
