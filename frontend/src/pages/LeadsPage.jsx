@@ -186,6 +186,25 @@ export default function LeadsPage() {
   const [filterStatus, setFilterStatus] = useState('');
   const [filterCity, setFilterCity] = useState('');
   const [filterSource, setFilterSource] = useState('');
+  const [filterDateFrom, setFilterDateFrom] = useState('');
+  const [filterDateTo, setFilterDateTo] = useState('');
+  const [dateFilterPreset, setDateFilterPreset] = useState('');
+
+  // Filtered employees - only sales roles and those with leads assigned
+  const filteredEmployees = employees.filter(emp => {
+    const salesRoles = ['SALES_EXEC', 'SALES_LEAD', 'SALES_HEAD', 'COUNTRY_HEAD'];
+    // Include if has a sales role OR if this employee has leads assigned to them
+    const hasSalesRole = salesRoles.includes(emp.role_code);
+    const hasLeadsAssigned = leads.some(l => l.assigned_to === emp.name || l.assigned_to === emp.id);
+    return hasSalesRole || hasLeadsAssigned;
+  });
+
+  // Filtered cities - only from AD mappings or cities with leads
+  const [adMappedCities, setAdMappedCities] = useState([]);
+  const filteredCities = [...new Set([
+    ...adMappedCities,
+    ...leads.map(l => l.city).filter(Boolean)
+  ])].sort();
 
   // Partners list for selection
   const [partners, setPartners] = useState([]);
