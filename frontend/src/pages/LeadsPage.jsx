@@ -2367,7 +2367,7 @@ export default function LeadsPage() {
 
       {/* Lead Investigator Modal */}
       <Dialog open={isInvestigatorModalOpen} onOpenChange={setIsInvestigatorModalOpen}>
-        <DialogContent className="sm:max-w-[600px]" data-testid="investigator-modal">
+        <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto" data-testid="investigator-modal">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl">
               <Search className="h-5 w-5 text-purple-600" />
@@ -2375,165 +2375,321 @@ export default function LeadsPage() {
             </DialogTitle>
           </DialogHeader>
           
+          {/* Tab Toggle */}
+          <div className="flex gap-2 border-b pb-3">
+            <button
+              onClick={() => setInvestigatorTab('search')}
+              className={`flex-1 py-2 px-4 rounded-t-lg font-medium transition-all ${
+                investigatorTab === 'search' 
+                  ? 'bg-purple-600 text-white' 
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <Search className="h-4 w-4 inline mr-2" />
+              Search Lead
+            </button>
+            <button
+              onClick={() => { setInvestigatorTab('diagnose'); if (!diagnosticData) handleDiagnoseSourceIssues(); }}
+              className={`flex-1 py-2 px-4 rounded-t-lg font-medium transition-all ${
+                investigatorTab === 'diagnose' 
+                  ? 'bg-orange-600 text-white' 
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <Activity className="h-4 w-4 inline mr-2" />
+              Diagnose Issues
+            </button>
+          </div>
+          
           <div className="space-y-4 py-4">
-            {/* Search Type Toggle */}
-            <div className="flex gap-2">
-              <button
-                onClick={() => { setInvestigatorSearchType('phone'); setInvestigatorSearch(''); setInvestigatorResult(null); setInvestigatorError(null); }}
-                className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${
-                  investigatorSearchType === 'phone' 
-                    ? 'bg-purple-600 text-white' 
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-                data-testid="search-by-phone-btn"
-              >
-                <Phone className="h-4 w-4 inline mr-2" />
-                Search by Phone
-              </button>
-              <button
-                onClick={() => { setInvestigatorSearchType('name'); setInvestigatorSearch(''); setInvestigatorResult(null); setInvestigatorError(null); }}
-                className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${
-                  investigatorSearchType === 'name' 
-                    ? 'bg-purple-600 text-white' 
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-                data-testid="search-by-name-btn"
-              >
-                <Users className="h-4 w-4 inline mr-2" />
-                Search by Name
-              </button>
-            </div>
-
-            {/* Search Input */}
-            <div className="flex gap-2">
-              <Input
-                placeholder={investigatorSearchType === 'phone' ? 'Enter phone number (e.g., +917795684573)' : 'Enter lead name'}
-                value={investigatorSearch}
-                onChange={(e) => setInvestigatorSearch(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleInvestigateLead()}
-                className="flex-1"
-                data-testid="investigator-search-input"
-              />
-              <Button
-                onClick={handleInvestigateLead}
-                disabled={isInvestigating || !investigatorSearch.trim()}
-                className="bg-purple-600 hover:bg-purple-700"
-                data-testid="investigate-btn"
-              >
-                {isInvestigating ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Search className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
-
-            {/* Error Display */}
-            {investigatorError && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700" data-testid="investigator-error">
-                <p className="font-medium">❌ {investigatorError}</p>
-              </div>
-            )}
-
-            {/* Results Display */}
-            {investigatorResult && (
-              <div className="space-y-4" data-testid="investigator-results">
-                {/* Quick Summary */}
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <p className="font-medium text-green-800 mb-2">✅ Lead Found</p>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div><span className="text-gray-600">Name:</span> <strong>{investigatorResult.name}</strong></div>
-                    <div><span className="text-gray-600">Phone:</span> <strong>{investigatorResult.mobile}</strong></div>
-                    <div><span className="text-gray-600">City:</span> <strong>{investigatorResult.city || 'N/A'}</strong></div>
-                    <div><span className="text-gray-600">Status:</span> <strong>{investigatorResult.status}</strong></div>
-                  </div>
-                </div>
-
-                {/* Source & AD Information */}
-                <div className={`border rounded-lg p-4 ${investigatorResult.is_meta_lead ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200'}`}>
-                  <p className="font-medium mb-3 flex items-center gap-2">
-                    {investigatorResult.is_meta_lead ? (
-                      <>
-                        <span className="bg-blue-600 text-white px-2 py-0.5 rounded text-xs">META</span>
-                        Meta WhatsApp Lead
-                      </>
-                    ) : (
-                      <>
-                        <span className="bg-gray-600 text-white px-2 py-0.5 rounded text-xs">SOURCE</span>
-                        {investigatorResult.source || 'Unknown'}
-                      </>
-                    )}
-                  </p>
-                  
-                  <div className="space-y-2 text-sm">
-                    <div className="grid grid-cols-1 gap-2">
-                      <div className="flex justify-between py-1 border-b border-dashed">
-                        <span className="text-gray-600">Source:</span>
-                        <span className="font-mono font-medium">{investigatorResult.source || 'N/A'}</span>
-                      </div>
-                      <div className="flex justify-between py-1 border-b border-dashed">
-                        <span className="text-gray-600">AD ID:</span>
-                        <span className="font-mono font-medium text-purple-700">{investigatorResult.ad_id || 'Not captured'}</span>
-                      </div>
-                      <div className="flex justify-between py-1 border-b border-dashed">
-                        <span className="text-gray-600">AD Name:</span>
-                        <span className="font-mono font-medium">{investigatorResult.ad_name || 'Not captured'}</span>
-                      </div>
-                      <div className="flex justify-between py-1 border-b border-dashed">
-                        <span className="text-gray-600">Campaign ID:</span>
-                        <span className="font-mono font-medium">{investigatorResult.campaign_id || 'Not captured'}</span>
-                      </div>
-                      <div className="flex justify-between py-1 border-b border-dashed">
-                        <span className="text-gray-600">Platform:</span>
-                        <span className="font-mono font-medium">{investigatorResult.platform || 'N/A'}</span>
-                      </div>
-                      <div className="flex justify-between py-1">
-                        <span className="text-gray-600">Created At:</span>
-                        <span className="font-mono font-medium">{investigatorResult.created_at ? new Date(investigatorResult.created_at).toLocaleString() : 'N/A'}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* CTWA Data (if available) */}
-                {investigatorResult.ctwa_data && (
-                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                    <p className="font-medium mb-2 text-amber-800">📢 Click-to-WhatsApp Ad Data</p>
-                    <div className="space-y-1 text-sm">
-                      {investigatorResult.ctwa_data.referral_headline && (
-                        <div><span className="text-gray-600">Headline:</span> <span className="font-medium">{investigatorResult.ctwa_data.referral_headline}</span></div>
-                      )}
-                      {investigatorResult.ctwa_data.referral_body && (
-                        <div><span className="text-gray-600">Body:</span> <span className="font-medium">{investigatorResult.ctwa_data.referral_body}</span></div>
-                      )}
-                      {investigatorResult.ctwa_data.referral_source_url && (
-                        <div><span className="text-gray-600">Source URL:</span> <a href={investigatorResult.ctwa_data.referral_source_url} target="_blank" rel="noopener noreferrer" className="font-medium text-blue-600 hover:underline break-all">{investigatorResult.ctwa_data.referral_source_url}</a></div>
-                      )}
-                      {investigatorResult.ctwa_data.referral_source_type && (
-                        <div><span className="text-gray-600">Source Type:</span> <span className="font-medium">{investigatorResult.ctwa_data.referral_source_type}</span></div>
-                      )}
-                      {investigatorResult.ctwa_data.button_text && (
-                        <div><span className="text-gray-600">Button Text:</span> <span className="font-medium">{investigatorResult.ctwa_data.button_text}</span></div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Copy Raw Data Button */}
-                <div className="flex justify-end">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      navigator.clipboard.writeText(JSON.stringify(investigatorResult.full_lead_data, null, 2));
-                      toast.success('Lead data copied to clipboard');
-                    }}
-                    data-testid="copy-lead-data-btn"
+            {/* SEARCH TAB */}
+            {investigatorTab === 'search' && (
+              <>
+                {/* Search Type Toggle */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => { setInvestigatorSearchType('phone'); setInvestigatorSearch(''); setInvestigatorResult(null); setInvestigatorError(null); }}
+                    className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${
+                      investigatorSearchType === 'phone' 
+                        ? 'bg-purple-600 text-white' 
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                    data-testid="search-by-phone-btn"
                   >
-                    <Copy className="h-4 w-4 mr-2" />
-                    Copy Full Data
+                    <Phone className="h-4 w-4 inline mr-2" />
+                    Search by Phone
+                  </button>
+                  <button
+                    onClick={() => { setInvestigatorSearchType('name'); setInvestigatorSearch(''); setInvestigatorResult(null); setInvestigatorError(null); }}
+                    className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all ${
+                      investigatorSearchType === 'name' 
+                        ? 'bg-purple-600 text-white' 
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                    data-testid="search-by-name-btn"
+                  >
+                    <Users className="h-4 w-4 inline mr-2" />
+                    Search by Name
+                  </button>
+                </div>
+
+                {/* Search Input */}
+                <div className="flex gap-2">
+                  <Input
+                    placeholder={investigatorSearchType === 'phone' ? 'Enter phone number (e.g., +917795684573)' : 'Enter lead name'}
+                    value={investigatorSearch}
+                    onChange={(e) => setInvestigatorSearch(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleInvestigateLead()}
+                    className="flex-1"
+                    data-testid="investigator-search-input"
+                  />
+                  <Button
+                    onClick={handleInvestigateLead}
+                    disabled={isInvestigating || !investigatorSearch.trim()}
+                    className="bg-purple-600 hover:bg-purple-700"
+                    data-testid="investigate-btn"
+                  >
+                    {isInvestigating ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Search className="h-4 w-4" />
+                    )}
                   </Button>
                 </div>
+
+                {/* Error Display */}
+                {investigatorError && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700" data-testid="investigator-error">
+                    <p className="font-medium">❌ {investigatorError}</p>
+                  </div>
+                )}
+
+                {/* Results Display */}
+                {investigatorResult && (
+                  <div className="space-y-4" data-testid="investigator-results">
+                    {/* Quick Summary */}
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <p className="font-medium text-green-800 mb-2">✅ Lead Found</p>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div><span className="text-gray-600">Name:</span> <strong>{investigatorResult.name}</strong></div>
+                        <div><span className="text-gray-600">Phone:</span> <strong>{investigatorResult.mobile}</strong></div>
+                        <div><span className="text-gray-600">City:</span> <strong>{investigatorResult.city || 'N/A'}</strong></div>
+                        <div><span className="text-gray-600">Status:</span> <strong>{investigatorResult.status}</strong></div>
+                      </div>
+                    </div>
+
+                    {/* Source & AD Information */}
+                    <div className={`border rounded-lg p-4 ${investigatorResult.is_meta_lead ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200'}`}>
+                      <p className="font-medium mb-3 flex items-center gap-2">
+                        {investigatorResult.is_meta_lead ? (
+                          <>
+                            <span className="bg-blue-600 text-white px-2 py-0.5 rounded text-xs">META</span>
+                            Meta WhatsApp Lead
+                          </>
+                        ) : (
+                          <>
+                            <span className="bg-gray-600 text-white px-2 py-0.5 rounded text-xs">SOURCE</span>
+                            {investigatorResult.source || 'Unknown'}
+                          </>
+                        )}
+                      </p>
+                      
+                      <div className="space-y-2 text-sm">
+                        <div className="grid grid-cols-1 gap-2">
+                          <div className="flex justify-between py-1 border-b border-dashed">
+                            <span className="text-gray-600">Source:</span>
+                            <span className="font-mono font-medium">{investigatorResult.source || 'N/A'}</span>
+                          </div>
+                          <div className="flex justify-between py-1 border-b border-dashed">
+                            <span className="text-gray-600">AD ID:</span>
+                            <span className="font-mono font-medium text-purple-700">{investigatorResult.ad_id || 'Not captured'}</span>
+                          </div>
+                          <div className="flex justify-between py-1 border-b border-dashed">
+                            <span className="text-gray-600">AD Name:</span>
+                            <span className="font-mono font-medium">{investigatorResult.ad_name || 'Not captured'}</span>
+                          </div>
+                          <div className="flex justify-between py-1 border-b border-dashed">
+                            <span className="text-gray-600">Campaign ID:</span>
+                            <span className="font-mono font-medium">{investigatorResult.campaign_id || 'Not captured'}</span>
+                          </div>
+                          <div className="flex justify-between py-1 border-b border-dashed">
+                            <span className="text-gray-600">Platform:</span>
+                            <span className="font-mono font-medium">{investigatorResult.platform || 'N/A'}</span>
+                          </div>
+                          <div className="flex justify-between py-1">
+                            <span className="text-gray-600">Created At:</span>
+                            <span className="font-mono font-medium">{investigatorResult.created_at ? new Date(investigatorResult.created_at).toLocaleString() : 'N/A'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* CTWA Data (if available) */}
+                    {investigatorResult.ctwa_data && (
+                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                        <p className="font-medium mb-2 text-amber-800">📢 Click-to-WhatsApp Ad Data</p>
+                        <div className="space-y-1 text-sm">
+                          {investigatorResult.ctwa_data.referral_headline && (
+                            <div><span className="text-gray-600">Headline:</span> <span className="font-medium">{investigatorResult.ctwa_data.referral_headline}</span></div>
+                          )}
+                          {investigatorResult.ctwa_data.referral_body && (
+                            <div><span className="text-gray-600">Body:</span> <span className="font-medium">{investigatorResult.ctwa_data.referral_body}</span></div>
+                          )}
+                          {investigatorResult.ctwa_data.referral_source_url && (
+                            <div><span className="text-gray-600">Source URL:</span> <a href={investigatorResult.ctwa_data.referral_source_url} target="_blank" rel="noopener noreferrer" className="font-medium text-blue-600 hover:underline break-all">{investigatorResult.ctwa_data.referral_source_url}</a></div>
+                          )}
+                          {investigatorResult.ctwa_data.referral_source_type && (
+                            <div><span className="text-gray-600">Source Type:</span> <span className="font-medium">{investigatorResult.ctwa_data.referral_source_type}</span></div>
+                          )}
+                          {investigatorResult.ctwa_data.button_text && (
+                            <div><span className="text-gray-600">Button Text:</span> <span className="font-medium">{investigatorResult.ctwa_data.button_text}</span></div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Copy Raw Data Button */}
+                    <div className="flex justify-end">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          navigator.clipboard.writeText(JSON.stringify(investigatorResult.full_lead_data, null, 2));
+                          toast.success('Lead data copied to clipboard');
+                        }}
+                        data-testid="copy-lead-data-btn"
+                      >
+                        <Copy className="h-4 w-4 mr-2" />
+                        Copy Full Data
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* DIAGNOSE TAB */}
+            {investigatorTab === 'diagnose' && (
+              <div className="space-y-4">
+                {isDiagnosing ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-orange-600" />
+                    <span className="ml-3">Diagnosing lead source issues...</span>
+                  </div>
+                ) : diagnosticData ? (
+                  <>
+                    {/* Summary Cards */}
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+                        <p className="text-2xl font-bold text-blue-700">{diagnosticData.total_leads}</p>
+                        <p className="text-xs text-blue-600">Total Leads</p>
+                      </div>
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
+                        <p className="text-2xl font-bold text-green-700">{diagnosticData.summary?.total_meta_whatsapp || 0}</p>
+                        <p className="text-xs text-green-600">META_WHATSAPP</p>
+                      </div>
+                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-center">
+                        <p className="text-2xl font-bold text-amber-700">{diagnosticData.summary?.total_website || 0}</p>
+                        <p className="text-xs text-amber-600">WEBSITE</p>
+                      </div>
+                    </div>
+
+                    {/* Source Breakdown */}
+                    <div className="bg-gray-50 border rounded-lg p-4">
+                      <h4 className="font-medium mb-2">Source Breakdown</h4>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        {Object.entries(diagnosticData.by_source || {}).map(([source, count]) => (
+                          <div key={source} className="flex justify-between py-1 border-b border-dashed">
+                            <span className="text-gray-600">{source}:</span>
+                            <span className="font-mono font-bold">{count}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Potential Issues */}
+                    {diagnosticData.potential_issues?.length > 0 && (
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <h4 className="font-medium mb-2 text-red-800">⚠️ Potential Source Issues ({diagnosticData.potential_issues.length})</h4>
+                        <p className="text-sm text-red-700 mb-3">
+                          These leads were created by "system" (likely from WhatsApp) but have incorrect source.
+                        </p>
+                        <div className="max-h-40 overflow-y-auto space-y-2">
+                          {diagnosticData.potential_issues.slice(0, 10).map(lead => (
+                            <div key={lead.id} className="bg-white rounded p-2 text-sm border">
+                              <div className="flex justify-between">
+                                <span className="font-medium">{lead.name}</span>
+                                <span className="text-gray-500">{lead.mobile}</span>
+                              </div>
+                              <div className="text-xs text-red-600">{lead.issue}</div>
+                            </div>
+                          ))}
+                        </div>
+                        
+                        {/* Fix Button */}
+                        <div className="mt-3 flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleFixSourceIssues('system_created', true)}
+                            disabled={isFixing}
+                          >
+                            Preview Fix
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="bg-red-600 hover:bg-red-700"
+                            onClick={() => handleFixSourceIssues('system_created', false)}
+                            disabled={isFixing}
+                          >
+                            {isFixing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                            Fix {diagnosticData.potential_issues.length} Leads
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Missing AD ID */}
+                    {diagnosticData.missing_ad_id_meta_leads?.length > 0 && (
+                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                        <h4 className="font-medium mb-2 text-amber-800">📋 META_WHATSAPP Leads Missing AD ID ({diagnosticData.missing_ad_id_meta_leads.length})</h4>
+                        <p className="text-sm text-amber-700 mb-3">
+                          These leads are correctly tagged as META_WHATSAPP but the AD ID was not captured.
+                        </p>
+                        <div className="max-h-40 overflow-y-auto space-y-2">
+                          {diagnosticData.missing_ad_id_meta_leads.slice(0, 10).map(lead => (
+                            <div key={lead.id} className="bg-white rounded p-2 text-sm border">
+                              <div className="flex justify-between">
+                                <span className="font-medium">{lead.name}</span>
+                                <span className="text-gray-500">{lead.mobile}</span>
+                              </div>
+                              <div className="text-xs text-amber-600">AD ID not captured at webhook</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Refresh Button */}
+                    <div className="flex justify-end">
+                      <Button
+                        variant="outline"
+                        onClick={handleDiagnoseSourceIssues}
+                        disabled={isDiagnosing}
+                      >
+                        <RefreshCw className={`h-4 w-4 mr-2 ${isDiagnosing ? 'animate-spin' : ''}`} />
+                        Refresh Diagnosis
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <p>Click "Diagnose Issues" to scan your leads for source problems</p>
+                    <Button className="mt-4" onClick={handleDiagnoseSourceIssues}>
+                      Start Diagnosis
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
           </div>
