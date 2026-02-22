@@ -2781,6 +2781,9 @@ async def twilio_whatsapp_webhook(
     ProfileName: str = Form(default=""),
     WaId: str = Form(default=""),
     MessageSid: str = Form(default=""),
+    To: str = Form(default=""),  # Twilio destination number
+    AccountSid: str = Form(default=""),  # Twilio account ID
+    NumMedia: str = Form(default="0"),  # Number of media attachments
     # CTWA (Click-to-WhatsApp) referral parameters from Meta ads
     ReferralSourceUrl: str = Form(default=""),
     ReferralBody: str = Form(default=""),
