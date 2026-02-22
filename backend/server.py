@@ -11808,6 +11808,7 @@ class InspectionTemplateCreate(BaseModel):
     partner_id: str
     description: Optional[str] = None
     question_ids: List[str] = []
+    category_order: Optional[List[str]] = []  # Order of category IDs for inspection flow
     report_template_id: Optional[str] = None  # For future use
     is_default: Optional[bool] = False
     is_active: Optional[bool] = True
