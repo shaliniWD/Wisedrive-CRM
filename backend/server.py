@@ -10082,31 +10082,168 @@ async def get_unmapped_ads(current_user: dict = Depends(get_current_user)):
             "data": []
         }
     
-    # Filter to unmapped ads
-    unmapped = []
+    # Filter to unmapped ads and categorize by targeting availability
+    unmapped_with_targeting = []  # Has geo-targeting - can auto-map
+    unmapped_no_targeting = []    # No geo-targeting - needs manual mapping
+    auto_mapped_count = 0
+    
     for ad in meta_ads.get("data", []):
         if ad.get("id") not in mapped_ids:
-            # Auto-suggest city from targeting
-            suggested_city = None
             targeting_cities = ad.get("targeting_cities", [])
+            targeting_regions = ad.get("targeting_regions", [])
+            suggested_city = None
+            has_targeting = False
+            
+            # Determine suggested city from targeting
             if targeting_cities:
                 suggested_city = targeting_cities[0]  # Use first targeted city
+                has_targeting = True
+            elif targeting_regions:
+                # Map common regions to cities
+                region_to_city = {
+                    "Karnataka": "Bangalore",
+                    "Tamil Nadu": "Chennai",
+                    "Maharashtra": "Mumbai",
+                    "Telangana": "Hyderabad",
+                    "Andhra Pradesh": "Vizag",
+                    "Delhi": "Delhi",
+                    "West Bengal": "Kolkata",
+                    "Gujarat": "Ahmedabad",
+                }
+                for region in targeting_regions:
+                    if region in region_to_city:
+                        suggested_city = region_to_city[region]
+                        has_targeting = True
+                        break
             
-            unmapped.append({
+            ad_data = {
                 "ad_id": ad.get("id"),
                 "ad_name": ad.get("name"),
                 "status": ad.get("effective_status"),
                 "adset_name": ad.get("adset_name"),
                 "targeting_cities": targeting_cities,
-                "targeting_regions": ad.get("targeting_regions", []),
-                "suggested_city": suggested_city
-            })
+                "targeting_regions": targeting_regions,
+                "suggested_city": suggested_city,
+                "has_targeting": has_targeting
+            }
+            
+            if has_targeting and suggested_city:
+                unmapped_with_targeting.append(ad_data)
+            else:
+                unmapped_no_targeting.append(ad_data)
+    
+    # Combine lists - targeting first, then no targeting
+    unmapped = unmapped_with_targeting + unmapped_no_targeting
     
     return {
         "success": True,
         "data": unmapped,
         "count": len(unmapped),
+        "with_targeting_count": len(unmapped_with_targeting),
+        "no_targeting_count": len(unmapped_no_targeting),
         "has_city_targeting": meta_ads.get("has_city_targeting", False)
+    }
+
+
+@api_router.post("/meta-ads/auto-map-from-targeting")
+async def auto_map_ads_from_targeting(current_user: dict = Depends(get_current_user)):
+    """
+    Automatically create city mappings for ads that have geo-targeting.
+    Only maps ads where we can confidently determine the city from targeting.
+    """
+    role_code = current_user.get("role_code", "")
+    if role_code not in ["CEO", "HR_MANAGER", "CTO", "COUNTRY_HEAD", "ADMIN"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Get all our existing mappings
+    existing_mappings = await db.ad_city_mappings.find({}, {"ad_id": 1}).to_list(1000)
+    mapped_ids = set(m.get("ad_id") for m in existing_mappings)
+    
+    # Get Meta ads with targeting
+    meta_ads = await meta_ads_service.get_ads_with_targeting()
+    
+    if not meta_ads.get("success"):
+        return {
+            "success": False,
+            "error": meta_ads.get("error"),
+            "auto_mapped_count": 0
+        }
+    
+    # Region to city mapping
+    region_to_city = {
+        "Karnataka": "Bangalore",
+        "Tamil Nadu": "Chennai", 
+        "Maharashtra": "Mumbai",
+        "Telangana": "Hyderabad",
+        "Andhra Pradesh": "Vizag",
+        "Delhi": "Delhi",
+        "West Bengal": "Kolkata",
+        "Gujarat": "Ahmedabad",
+    }
+    
+    auto_mapped = []
+    skipped = []
+    
+    for ad in meta_ads.get("data", []):
+        ad_id = ad.get("id")
+        if ad_id in mapped_ids:
+            continue
+        
+        targeting_cities = ad.get("targeting_cities", [])
+        targeting_regions = ad.get("targeting_regions", [])
+        city = None
+        
+        # Determine city from targeting
+        if targeting_cities and len(targeting_cities) == 1:
+            # Only auto-map if single city targeted (confident mapping)
+            city = targeting_cities[0]
+        elif targeting_regions and len(targeting_regions) == 1:
+            # Map single region to city
+            region = targeting_regions[0]
+            if region in region_to_city:
+                city = region_to_city[region]
+        
+        if city:
+            # Create the mapping
+            mapping = {
+                "id": str(uuid.uuid4()),
+                "ad_id": ad_id,
+                "ad_name": ad.get("name"),
+                "city": city,
+                "source": "meta_targeting_auto",
+                "targeting_cities": targeting_cities,
+                "targeting_regions": targeting_regions,
+                "is_active": True,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "created_by": current_user["id"],
+                "auto_mapped": True
+            }
+            
+            await db.ad_city_mappings.insert_one(mapping)
+            mapped_ids.add(ad_id)
+            
+            auto_mapped.append({
+                "ad_id": ad_id,
+                "ad_name": ad.get("name"),
+                "city": city,
+                "source": "targeting"
+            })
+        else:
+            skipped.append({
+                "ad_id": ad_id,
+                "ad_name": ad.get("name"),
+                "reason": "Multiple or no targeting cities/regions"
+            })
+    
+    logger.info(f"Auto-mapped {len(auto_mapped)} ads from Meta targeting")
+    
+    return {
+        "success": True,
+        "message": f"Auto-mapped {len(auto_mapped)} ads based on geo-targeting",
+        "auto_mapped_count": len(auto_mapped),
+        "skipped_count": len(skipped),
+        "auto_mapped": auto_mapped,
+        "skipped": skipped[:10]  # Return first 10 skipped for reference
     }
 
 
