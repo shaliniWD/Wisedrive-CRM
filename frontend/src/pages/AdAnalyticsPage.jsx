@@ -7,7 +7,8 @@ import {
   BarChart3, Loader2, RefreshCw, Calendar, Filter,
   ArrowUpRight, ArrowDownRight, Eye, MousePointer,
   AlertCircle, CheckCircle, Key, Clock, Shield,
-  Plus, Pencil, Trash2, Search, Settings, X, MapPin
+  Plus, Pencil, Trash2, Search, Settings, X, MapPin,
+  MessageSquare, XCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
