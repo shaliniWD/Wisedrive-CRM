@@ -1054,6 +1054,56 @@ export default function AdAnalyticsPage() {
               </table>
             </div>
             
+            {/* Debug Panel Toggle */}
+            {canManageToken && (
+              <div className="mt-4 flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowDebugPanel(!showDebugPanel)}
+                  className="text-xs"
+                >
+                  {showDebugPanel ? '🔽 Hide Debug Logs' : '🔧 Show Debug Logs'}
+                </Button>
+              </div>
+            )}
+            
+            {/* Debug Logs Panel */}
+            {showDebugPanel && (
+              <div className="mt-4 bg-gray-900 rounded-xl p-4 max-h-64 overflow-y-auto">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-sm font-medium text-green-400">🔧 Debug Logs</h4>
+                  <button 
+                    onClick={() => setDebugLogs([])}
+                    className="text-xs text-gray-400 hover:text-white"
+                  >
+                    Clear Logs
+                  </button>
+                </div>
+                {debugLogs.length === 0 ? (
+                  <p className="text-gray-500 text-xs">No logs yet. Click "Refresh & Auto-Map" to see activity.</p>
+                ) : (
+                  <div className="space-y-1 font-mono text-xs">
+                    {debugLogs.map((log, idx) => (
+                      <div key={idx} className="flex gap-2">
+                        <span className="text-gray-500">[{log.timestamp}]</span>
+                        <span className={`font-medium ${
+                          log.status === 'SUCCESS' || log.status === 'DONE' ? 'text-green-400' :
+                          log.status === 'ERROR' || log.status === 'FAILED' || log.status === 'FATAL ERROR' ? 'text-red-400' :
+                          log.status === 'CALLING' ? 'text-yellow-400' :
+                          'text-blue-400'
+                        }`}>
+                          [{log.status}]
+                        </span>
+                        <span className="text-white">{log.action}:</span>
+                        <span className="text-gray-300 break-all">{log.details}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            
             {/* Unmapped Ads Section (CEO/CTO only) */}
             {canManageToken && (
               <div className="mt-6 space-y-6">
