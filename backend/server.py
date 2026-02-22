@@ -10402,8 +10402,83 @@ async def get_ad_performance_analytics(
         "date_range": {"from": date_from, "to": date_to},
         "meta_configured": meta_ads_service.is_configured(),
         "last_updated": last_updated,
+        "using_cached_data": using_cached_data,
+        "token_expired": token_expired,
         "totals": totals,
         "data": performance_data
+    }
+
+
+@api_router.post("/meta-ads/force-sync")
+async def force_sync_meta_ads(current_user: dict = Depends(get_current_user)):
+    """
+    Force an immediate sync of Meta Ads data (spend, impressions, clicks).
+    This bypasses the 6-hour scheduler and syncs immediately.
+    """
+    role_code = current_user.get("role_code", "")
+    if role_code not in ["CEO", "CTO", "ADMIN"]:
+        raise HTTPException(status_code=403, detail="Not authorized - CEO/CTO/Admin only")
+    
+    global meta_ads_scheduler
+    
+    if not meta_ads_scheduler:
+        raise HTTPException(status_code=500, detail="Meta Ads scheduler not initialized")
+    
+    if not meta_ads_service.is_configured():
+        raise HTTPException(status_code=400, detail="Meta Ads not configured. Please add Meta credentials first.")
+    
+    # Check token validity first
+    token_info = await meta_ads_service.get_token_info()
+    if not token_info.get("is_valid"):
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Meta token is invalid: {token_info.get('error', 'Unknown error')}. Please refresh your Meta token."
+        )
+    
+    # Run the sync
+    try:
+        results = await meta_ads_scheduler.sync_all()
+        return {
+            "success": True,
+            "message": "Meta Ads sync completed successfully",
+            "results": results
+        }
+    except Exception as e:
+        logger.error(f"Force sync failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Sync failed: {str(e)}")
+
+
+@api_router.get("/meta-ads/cached-performance")
+async def get_cached_performance(current_user: dict = Depends(get_current_user)):
+    """
+    Get cached ad performance data (last synced values).
+    Useful when Meta API is unavailable.
+    """
+    role_code = current_user.get("role_code", "")
+    if role_code not in ["CEO", "CTO", "ADMIN", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Get cached performance data
+    cached_perfs = await db.ad_performance.find({}, {"_id": 0}).to_list(1000)
+    
+    # Get last sync time
+    last_sync = await db.system_config.find_one({"key": "meta_ads_last_sync"})
+    
+    # Calculate totals
+    total_spend = sum(float(p.get("spend", 0)) for p in cached_perfs)
+    total_impressions = sum(int(p.get("impressions", 0)) for p in cached_perfs)
+    total_clicks = sum(int(p.get("clicks", 0)) for p in cached_perfs)
+    
+    return {
+        "ads_count": len(cached_perfs),
+        "last_synced": last_sync.get("value") if last_sync else None,
+        "sync_interval_hours": last_sync.get("sync_interval_hours", 6) if last_sync else 6,
+        "totals": {
+            "total_spend": round(total_spend, 2),
+            "total_impressions": total_impressions,
+            "total_clicks": total_clicks
+        },
+        "data": cached_perfs
     }
 
 
