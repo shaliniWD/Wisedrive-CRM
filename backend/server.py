@@ -2026,13 +2026,43 @@ async def twilio_whatsapp_webhook(
     ad_id = None
     campaign_id = None
     platform = "whatsapp"
+    ad_name = None
     
-    # Try to extract ad_id from message
+    import re
+    
+    # ==================== EXTRACT AD INFO FROM CTWA REFERRAL DATA ====================
+    # Priority 1: Extract from CTWA Click ID (most reliable)
+    if CtwaClid:
+        ad_id = CtwaClid
+        logger.info(f"Found ad_id from CtwaClid: {ad_id}")
+    
+    # Priority 2: Extract ad_id from ReferralSourceUrl (contains fbclid or ad parameters)
+    if not ad_id and ReferralSourceUrl:
+        # Try to extract ad_id from URL parameters
+        # Example: https://fb.me/xyz or contains ad_id=xxx
+        url_ad_match = re.search(r'ad_id[=:]([a-zA-Z0-9_-]+)', ReferralSourceUrl, re.IGNORECASE)
+        if url_ad_match:
+            ad_id = url_ad_match.group(1)
+            logger.info(f"Found ad_id from ReferralSourceUrl param: {ad_id}")
+        else:
+            # Try extracting fbclid or other identifiers
+            fbclid_match = re.search(r'fbclid[=:]([a-zA-Z0-9_-]+)', ReferralSourceUrl, re.IGNORECASE)
+            if fbclid_match:
+                ad_id = fbclid_match.group(1)
+                logger.info(f"Found ad_id from fbclid: {ad_id}")
+    
+    # Priority 3: Use ReferralHeadline as ad_name for lookup
+    if ReferralHeadline:
+        ad_name = ReferralHeadline.strip()
+        logger.info(f"Found ad_name from ReferralHeadline: {ad_name}")
+    
+    # Priority 4: Extract from message body (fallback)
     if Body:
-        import re
-        ad_match = re.search(r'ad[_\s]?id[:\s]*([a-zA-Z0-9_-]+)', Body, re.IGNORECASE)
-        if ad_match:
-            ad_id = ad_match.group(1)
+        if not ad_id:
+            ad_match = re.search(r'ad[_\s]?id[:\s]*([a-zA-Z0-9_-]+)', Body, re.IGNORECASE)
+            if ad_match:
+                ad_id = ad_match.group(1)
+                logger.info(f"Found ad_id from message body: {ad_id}")
         
         campaign_match = re.search(r'campaign[_\s]?id[:\s]*([a-zA-Z0-9_-]+)', Body, re.IGNORECASE)
         if campaign_match:
@@ -2044,15 +2074,63 @@ async def twilio_whatsapp_webhook(
         elif 'facebook' in Body.lower() or 'fb' in Body.lower():
             platform = "facebook"
     
-    # Determine city from ad_id mapping (from settings)
-    city = "Vizag"  # Default city
-    city_id = None
+    # Determine platform from ReferralSourceType if available
+    if ReferralSourceType:
+        if 'instagram' in ReferralSourceType.lower():
+            platform = "instagram"
+        elif 'facebook' in ReferralSourceType.lower() or 'fb' in ReferralSourceType.lower():
+            platform = "facebook"
     
+    # ==================== CITY LOOKUP FROM AD MAPPING ====================
+    city = None  # No default city - must match a mapping
+    city_id = None
+    ad_mapping = None
+    
+    # Strategy 1: Lookup by ad_id (exact match)
     if ad_id:
-        ad_mapping = await db.ad_city_mappings.find_one({"ad_id": ad_id}, {"_id": 0})
+        ad_mapping = await db.ad_city_mappings.find_one({"ad_id": ad_id, "is_active": True}, {"_id": 0})
         if ad_mapping:
-            city = ad_mapping.get("city", "Vizag")
+            city = ad_mapping.get("city")
             city_id = ad_mapping.get("city_id")
+            logger.info(f"Found city mapping by ad_id '{ad_id}': {city}")
+    
+    # Strategy 2: Lookup by ad_name (partial match on ad_name field)
+    if not city and ad_name:
+        ad_mapping = await db.ad_city_mappings.find_one({
+            "ad_name": {"$regex": ad_name, "$options": "i"},
+            "is_active": True
+        }, {"_id": 0})
+        if ad_mapping:
+            city = ad_mapping.get("city")
+            city_id = ad_mapping.get("city_id")
+            ad_id = ad_mapping.get("ad_id")  # Use the mapped ad_id
+            logger.info(f"Found city mapping by ad_name '{ad_name}': {city}")
+    
+    # Strategy 3: Lookup by message body content matching ad_name
+    if not city and Body:
+        # Try to find any ad_mapping where ad_name appears in the message
+        all_mappings = await db.ad_city_mappings.find({"is_active": True}, {"_id": 0}).to_list(100)
+        for mapping in all_mappings:
+            mapping_ad_name = mapping.get("ad_name", "")
+            if mapping_ad_name and mapping_ad_name.lower() in Body.lower():
+                city = mapping.get("city")
+                city_id = mapping.get("city_id")
+                ad_id = mapping.get("ad_id")
+                ad_name = mapping_ad_name
+                logger.info(f"Found city mapping by message content match '{mapping_ad_name}': {city}")
+                break
+    
+    # Strategy 4: Fallback to default mapping (if exists)
+    if not city:
+        default_mapping = await db.ad_city_mappings.find_one({"ad_id": "default"}, {"_id": 0})
+        if default_mapping:
+            city = default_mapping.get("city", "Vizag")
+            logger.info(f"Using default city mapping: {city}")
+        else:
+            city = "Vizag"  # Ultimate fallback
+            logger.warning(f"No ad mapping found for ad_id={ad_id}, ad_name={ad_name}. Using fallback city: Vizag")
+    
+    logger.info(f"Final city assignment: {city} (ad_id={ad_id}, ad_name={ad_name})")
     
     # Check if lead already exists with this phone
     existing_lead = await db.leads.find_one({"mobile": phone}, {"_id": 0})
