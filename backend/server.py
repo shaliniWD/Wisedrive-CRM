@@ -1935,6 +1935,96 @@ async def get_lead(lead_id: str, current_user: dict = Depends(get_current_user))
     return lead
 
 
+@api_router.get("/leads/investigate/by-phone/{phone}")
+async def investigate_lead_by_phone(phone: str, current_user: dict = Depends(get_current_user)):
+    """
+    Investigate a lead by phone number - returns full details including source, ad_id, ctwa_data
+    Phone can be in any format: +917795684573, 917795684573, 7795684573
+    """
+    # Normalize phone - remove spaces, dashes
+    clean_phone = phone.replace(" ", "").replace("-", "")
+    
+    # Build search variants
+    phone_variants = [
+        clean_phone,
+        f"+{clean_phone}" if not clean_phone.startswith("+") else clean_phone,
+        clean_phone[1:] if clean_phone.startswith("+") else clean_phone,  # Remove +
+        clean_phone[2:] if clean_phone.startswith("91") and len(clean_phone) > 10 else clean_phone,  # Remove 91
+        clean_phone[3:] if clean_phone.startswith("+91") and len(clean_phone) > 11 else clean_phone,  # Remove +91
+    ]
+    # Remove duplicates while preserving order
+    phone_variants = list(dict.fromkeys(phone_variants))
+    
+    logger.info(f"Investigating lead with phone variants: {phone_variants}")
+    
+    # Search in both 'mobile' and 'phone' fields
+    lead = await db.leads.find_one(
+        {"$or": [
+            {"mobile": {"$in": phone_variants}},
+            {"phone": {"$in": phone_variants}},
+            {"customer_phone": {"$in": phone_variants}}
+        ]},
+        {"_id": 0}
+    )
+    
+    if not lead:
+        # Also search by partial match (last 10 digits)
+        last_10 = clean_phone[-10:] if len(clean_phone) >= 10 else clean_phone
+        lead = await db.leads.find_one(
+            {"$or": [
+                {"mobile": {"$regex": f"{last_10}$"}},
+                {"phone": {"$regex": f"{last_10}$"}}
+            ]},
+            {"_id": 0}
+        )
+    
+    if not lead:
+        raise HTTPException(
+            status_code=404, 
+            detail={
+                "message": f"Lead not found with phone: {phone}",
+                "searched_variants": phone_variants,
+                "suggestion": "The lead may not exist in this database or the phone format may be different"
+            }
+        )
+    
+    # Prepare investigation response
+    investigation = {
+        "lead_found": True,
+        "lead_id": lead.get("id"),
+        "name": lead.get("name"),
+        "mobile": lead.get("mobile"),
+        "city": lead.get("city"),
+        "source": lead.get("source", "Unknown"),
+        "ad_id": lead.get("ad_id"),
+        "ad_name": lead.get("ad_name"),
+        "campaign_id": lead.get("campaign_id"),
+        "platform": lead.get("platform"),
+        "status": lead.get("status"),
+        "created_at": lead.get("created_at"),
+        "ctwa_data": lead.get("ctwa_data"),
+        "assigned_to": lead.get("assigned_to"),
+        "assigned_to_name": lead.get("assigned_to_name"),
+        # Full lead data for debugging
+        "full_lead_data": lead
+    }
+    
+    # If it's from META_WHATSAPP, provide extra details
+    if lead.get("source") == "META_WHATSAPP":
+        investigation["is_meta_lead"] = True
+        investigation["meta_details"] = {
+            "ad_id": lead.get("ad_id") or "Not captured",
+            "ad_name": lead.get("ad_name") or "Not captured",
+            "campaign_id": lead.get("campaign_id") or "Not captured",
+            "referral_headline": lead.get("ctwa_data", {}).get("referral_headline") if lead.get("ctwa_data") else "Not captured",
+            "referral_source_url": lead.get("ctwa_data", {}).get("referral_source_url") if lead.get("ctwa_data") else "Not captured"
+        }
+    else:
+        investigation["is_meta_lead"] = False
+    
+    return investigation
+
+
 # Lead Notes
 class LeadNoteCreate(BaseModel):
     note: str
