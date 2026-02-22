@@ -626,23 +626,44 @@ const InspectionTemplatesPage = () => {
                 </div>
               </div>
               
+              {/* Drag instruction */}
+              <div className="pl-8 flex items-center gap-2 text-xs text-gray-500 bg-indigo-50 p-2 rounded-lg">
+                <GripVertical className="h-3 w-3" />
+                <span>Drag categories to reorder them in the inspection flow</span>
+              </div>
+              
               <div className="pl-8 space-y-2 max-h-[300px] overflow-y-auto">
-                {categories.length === 0 ? (
+                {orderedCategories.length === 0 ? (
                   <div className="text-center py-8 text-gray-400">
                     <ClipboardList className="h-8 w-8 mx-auto mb-2" />
                     <p>No questions available</p>
                     <p className="text-sm">Add questions in the "Inspection Q&A" tab first</p>
                   </div>
                 ) : (
-                  categories.map(category => (
-                    <CategoryQuestionSelector
-                      key={category.category_id}
-                      category={category}
-                      questions={questions}
-                      selectedIds={formData.question_ids}
-                      onToggle={handleQuestionToggle}
-                    />
-                  ))
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <SortableContext
+                      items={orderedCategories.map(c => c.category_id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      {orderedCategories.map((category, index) => (
+                        <div key={category.category_id} className="relative">
+                          <div className="absolute -left-6 top-3 text-xs text-gray-400 font-medium">
+                            {index + 1}
+                          </div>
+                          <SortableCategoryQuestionSelector
+                            category={category}
+                            questions={questions}
+                            selectedIds={formData.question_ids}
+                            onToggle={handleQuestionToggle}
+                          />
+                        </div>
+                      ))}
+                    </SortableContext>
+                  </DndContext>
                 )}
               </div>
             </div>
