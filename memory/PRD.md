@@ -12,6 +12,46 @@ Build a scalable automotive platform "Wisedrive" that evolved into a monolithic 
 
 ## Completed Features
 
+### ✅ Lead Investigator Audit Trail (February 22, 2026)
+
+**Problem Solved:**
+- Real WhatsApp leads from Meta Ads were showing AD Name but missing AD ID, causing incorrect city mapping
+- Needed comprehensive debugging tool to understand exactly what data Twilio sends vs what CRM captures
+
+**Backend Changes:**
+1. **Enhanced WhatsApp Webhook** (`/api/webhooks/twilio/whatsapp`)
+   - Fixed bug: Added missing `To`, `AccountSid`, `NumMedia` Form parameters that caused NameError
+   - Stores comprehensive audit trail with 6 sections: `raw_twilio_params`, `parsed_standard_fields`, `parsed_ctwa_fields`, `extraction_log`, `city_lookup_log`, `final_assignment`
+   - Correctly differentiates `META_WHATSAPP` (from ads) vs `DIRECT_WHATSAPP` (direct messages)
+
+2. **Lead Investigate API** (`/api/leads/investigate/by-phone/{phone}`)
+   - Returns full `webhook_audit` data for debugging
+   - Shows CTWA fields (CtwaClid, ReferralHeadline, ReferralSourceUrl, etc.)
+   - Shows extraction log (how AD ID was attempted to be captured)
+   - Shows city lookup log (which strategy found the city)
+
+**Frontend Changes:**
+1. **Lead Investigator Modal** - "Investigate Lead" button on Leads page (HR/Admin/CEO)
+2. **Search by Phone or Name** - Find any lead and see full debugging data
+3. **Webhook Audit Trail Section** (Expandable) with:
+   - 📥 RAW TWILIO PARAMS - Complete raw data received from Twilio
+   - 📋 PARSED STANDARD FIELDS - Standard Twilio fields with green/red indicators
+   - 🎯 CTWA FIELDS - Meta Ad data (CtwaClid highlighted - this is AD ID source)
+   - 🔄 EXTRACTION LOG - Step-by-step how AD ID extraction was attempted
+   - 🏙️ CITY LOOKUP LOG - 4-strategy city matching log
+   - ✅ FINAL ASSIGNMENT - What was actually stored
+   - 📊 CONCLUSION - Green/amber/red status explaining if AD ID was captured correctly
+
+**Files Modified:**
+- `/app/backend/server.py` - Webhook lines 2776-3350, Investigate API lines 2017-2120
+- `/app/frontend/src/pages/LeadsPage.jsx` - Lead Investigator modal lines 2440-2800
+
+**Test Coverage:**
+- `/app/backend/tests/test_twilio_webhook_audit_trail.py` - 9 tests (100% pass)
+- `/app/test_reports/iteration_65.json` - Full test report
+
+---
+
 ### ✅ Meta WhatsApp Lead City Fix & Bulk Remap (February 22, 2026)
 
 **Problem Fixed:**
