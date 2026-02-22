@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { metaAdsApi, adCityMappingsApi } from '@/services/api';
+import { metaAdsApi, adCityMappingsApi, partnersApi } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { 
@@ -8,7 +8,7 @@ import {
   ArrowUpRight, ArrowDownRight, Eye, MousePointer,
   AlertCircle, CheckCircle, Key, Clock, Shield,
   Plus, Pencil, Trash2, Search, Settings, X, MapPin,
-  MessageSquare, XCircle, ExternalLink, Info
+  MessageSquare, XCircle, ExternalLink, Info, Building2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
