@@ -2722,9 +2722,21 @@ async def twilio_whatsapp_webhook(
     - ButtonText: The CTA button text clicked
     - CtwaClid: Click ID for tracking
     """
-    # Log all incoming parameters for debugging
+    # ==================== LOG ALL INCOMING DATA FOR DEBUGGING ====================
+    # Get raw form data to see ALL parameters Twilio sends
+    try:
+        form_data = await request.form()
+        all_params = dict(form_data)
+        logger.info(f"=== WHATSAPP WEBHOOK RAW DATA ===")
+        logger.info(f"ALL PARAMS RECEIVED: {all_params}")
+        logger.info(f"=================================")
+    except Exception as e:
+        logger.warning(f"Could not read raw form data: {e}")
+    
+    # Log parsed parameters
     logger.info(f"WhatsApp webhook received: From={From}, Body={Body[:100] if Body else 'empty'}")
     logger.info(f"CTWA Referral Data: SourceUrl={ReferralSourceUrl}, Headline={ReferralHeadline}, SourceType={ReferralSourceType}, CtwaClid={CtwaClid}")
+    logger.info(f"Additional CTWA: ButtonText={ButtonText}, ReferralBody={ReferralBody}, ReferralNumMedia={ReferralNumMedia}")
     
     # Default response message
     response_message = ""
