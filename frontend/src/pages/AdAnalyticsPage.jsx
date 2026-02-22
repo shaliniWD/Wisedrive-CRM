@@ -1186,13 +1186,30 @@ export default function AdAnalyticsPage() {
                   data-testid="search-ad-mapping"
                 />
               </div>
-              <button 
-                className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 flex items-center gap-2 font-medium shadow-lg shadow-blue-500/25 transition-all"
-                onClick={openCreateModal}
-                data-testid="create-ad-btn"
-              >
-                <Plus className="h-4 w-4" /> Create Ad
-              </button>
+              <div className="flex items-center gap-2">
+                {/* Sync All Ad Mappings - fetches from Meta and creates ad_name mappings */}
+                <button 
+                  className="px-4 py-2.5 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 flex items-center gap-2 font-medium shadow-lg shadow-green-500/25 transition-all disabled:opacity-50"
+                  onClick={handleSyncAllAdMappings}
+                  disabled={syncingAllMappings}
+                  data-testid="sync-all-mappings-btn"
+                  title="Fetch all ads from Meta and create city mappings based on geo-targeting"
+                >
+                  {syncingAllMappings ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4" />
+                  )}
+                  {syncingAllMappings ? 'Syncing...' : 'Sync from Meta'}
+                </button>
+                <button 
+                  className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 flex items-center gap-2 font-medium shadow-lg shadow-blue-500/25 transition-all"
+                  onClick={openCreateModal}
+                  data-testid="create-ad-btn"
+                >
+                  <Plus className="h-4 w-4" /> Create Ad
+                </button>
+              </div>
             </div>
 
             {/* AD Mappings Table */}
