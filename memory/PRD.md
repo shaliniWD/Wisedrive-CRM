@@ -18,9 +18,16 @@ Build a scalable automotive platform "Wisedrive" that evolved into a monolithic 
 - Real WhatsApp leads from Meta Ads were showing AD Name but missing AD ID, causing incorrect city mapping
 - Needed comprehensive debugging tool to understand exactly what data Twilio sends vs what CRM captures
 
+**Root Cause & Fix:**
+- **Root Cause:** Twilio often doesn't send `CtwaClid` (the Click ID) even for Meta Ad clicks. It only sends `ReferralHeadline` (AD Name).
+- **Fix Applied:** Auto-generate AD ID from ad_name when `CtwaClid` is missing:
+  - **Strategy 4 (City Keyword):** When city is extracted from ad_name (e.g., "Bangalore"), auto-generate `ad_id` = `auto_{ad_name}_{date}`
+  - **Strategy 5 (Fallback):** When using fallback city, auto-generate `ad_id` from unmapped_ads entry
+
 **Backend Changes:**
 1. **Enhanced WhatsApp Webhook** (`/api/webhooks/twilio/whatsapp`)
    - Fixed bug: Added missing `To`, `AccountSid`, `NumMedia` Form parameters that caused NameError
+   - **NEW:** Auto-generates AD ID when `CtwaClid` is missing but `ReferralHeadline` is present
    - Stores comprehensive audit trail with 6 sections: `raw_twilio_params`, `parsed_standard_fields`, `parsed_ctwa_fields`, `extraction_log`, `city_lookup_log`, `final_assignment`
    - Correctly differentiates `META_WHATSAPP` (from ads) vs `DIRECT_WHATSAPP` (direct messages)
 
@@ -38,7 +45,7 @@ Build a scalable automotive platform "Wisedrive" that evolved into a monolithic 
    - 📋 PARSED STANDARD FIELDS - Standard Twilio fields with green/red indicators
    - 🎯 CTWA FIELDS - Meta Ad data (CtwaClid highlighted - this is AD ID source)
    - 🔄 EXTRACTION LOG - Step-by-step how AD ID extraction was attempted
-   - 🏙️ CITY LOOKUP LOG - 4-strategy city matching log
+   - 🏙️ CITY LOOKUP LOG - 4-strategy city matching log + auto-generation steps
    - ✅ FINAL ASSIGNMENT - What was actually stored
    - 📊 CONCLUSION - Green/amber/red status explaining if AD ID was captured correctly
 
@@ -48,7 +55,8 @@ Build a scalable automotive platform "Wisedrive" that evolved into a monolithic 
 
 **Test Coverage:**
 - `/app/backend/tests/test_twilio_webhook_audit_trail.py` - 9 tests (100% pass)
-- `/app/test_reports/iteration_65.json` - Full test report
+- `/app/backend/tests/test_ad_id_auto_generation.py` - 6 tests (100% pass)
+- `/app/test_reports/iteration_65.json`, `/app/test_reports/iteration_66.json` - Full test reports
 
 ---
 
