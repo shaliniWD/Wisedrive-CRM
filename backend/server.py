@@ -10247,6 +10247,128 @@ async def auto_map_ads_from_targeting(current_user: dict = Depends(get_current_u
     }
 
 
+@api_router.post("/meta-ads/scan-leads-for-unmapped-ads")
+async def scan_leads_for_unmapped_ads(current_user: dict = Depends(get_current_user)):
+    """
+    Scan existing leads to find ads that don't have city mappings.
+    This populates the unmapped_ads collection from existing lead data.
+    Works without Meta token - uses lead data only.
+    """
+    role_code = current_user.get("role_code", "")
+    if role_code not in ["CEO", "HR_MANAGER", "CTO", "COUNTRY_HEAD", "ADMIN"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    logger.info("Starting scan of existing leads for unmapped ads...")
+    
+    # Get all existing ad-city mappings
+    existing_mappings = await db.ad_city_mappings.find({}, {"ad_id": 1, "ad_name": 1}).to_list(1000)
+    mapped_ad_ids = set(m.get("ad_id", "").lower() for m in existing_mappings if m.get("ad_id"))
+    mapped_ad_names = set(m.get("ad_name", "").lower() for m in existing_mappings if m.get("ad_name"))
+    
+    # Get existing unmapped ads to avoid duplicates
+    existing_unmapped = await db.unmapped_ads.find({}, {"ad_id": 1, "ad_name": 1}).to_list(1000)
+    unmapped_ad_ids = set(u.get("ad_id", "").lower() for u in existing_unmapped if u.get("ad_id"))
+    unmapped_ad_names = set(u.get("ad_name", "").lower() for u in existing_unmapped if u.get("ad_name"))
+    
+    # Find all leads with ad_id or ad_name
+    leads_with_ads = await db.leads.find(
+        {"$or": [
+            {"ad_id": {"$exists": True, "$ne": None, "$ne": ""}},
+            {"ad_name": {"$exists": True, "$ne": None, "$ne": ""}}
+        ]},
+        {"_id": 0, "ad_id": 1, "ad_name": 1, "city": 1, "source": 1, "created_at": 1, "ctwa_data": 1}
+    ).to_list(10000)
+    
+    logger.info(f"Found {len(leads_with_ads)} leads with ad_id or ad_name")
+    
+    # Group leads by ad_id/ad_name
+    ad_lead_counts = {}
+    for lead in leads_with_ads:
+        ad_id = (lead.get("ad_id") or "").strip()
+        ad_name = (lead.get("ad_name") or "").strip()
+        key = ad_id.lower() if ad_id else ad_name.lower()
+        
+        if not key:
+            continue
+        
+        if key not in ad_lead_counts:
+            ad_lead_counts[key] = {
+                "ad_id": ad_id,
+                "ad_name": ad_name,
+                "lead_count": 0,
+                "cities": set(),
+                "first_seen": lead.get("created_at"),
+                "ctwa_data": lead.get("ctwa_data")
+            }
+        
+        ad_lead_counts[key]["lead_count"] += 1
+        if lead.get("city"):
+            ad_lead_counts[key]["cities"].add(lead.get("city"))
+    
+    # Find unmapped ads
+    new_unmapped = []
+    already_mapped = []
+    already_tracked = []
+    
+    for key, data in ad_lead_counts.items():
+        ad_id = data["ad_id"]
+        ad_name = data["ad_name"]
+        
+        # Check if already mapped
+        if ad_id.lower() in mapped_ad_ids or ad_name.lower() in mapped_ad_names:
+            already_mapped.append({
+                "ad_id": ad_id,
+                "ad_name": ad_name,
+                "lead_count": data["lead_count"]
+            })
+            continue
+        
+        # Check if already in unmapped collection
+        if ad_id.lower() in unmapped_ad_ids or ad_name.lower() in unmapped_ad_names:
+            already_tracked.append({
+                "ad_id": ad_id,
+                "ad_name": ad_name,
+                "lead_count": data["lead_count"]
+            })
+            continue
+        
+        # This is a new unmapped ad - add to collection
+        unmapped_entry = {
+            "id": str(uuid.uuid4()),
+            "ad_id": ad_id or f"lead_scan_{ad_name[:20]}_{datetime.now().strftime('%Y%m%d')}",
+            "ad_name": ad_name,
+            "source": "lead_scan",
+            "lead_count": data["lead_count"],
+            "current_cities": list(data["cities"]),
+            "first_seen_at": data["first_seen"] or datetime.now(timezone.utc).isoformat(),
+            "last_seen_at": datetime.now(timezone.utc).isoformat(),
+            "is_mapped": False,
+            "ctwa_data": data.get("ctwa_data")
+        }
+        
+        await db.unmapped_ads.insert_one(unmapped_entry)
+        new_unmapped.append({
+            "ad_id": ad_id,
+            "ad_name": ad_name,
+            "lead_count": data["lead_count"],
+            "current_cities": list(data["cities"])
+        })
+    
+    logger.info(f"Scan complete: {len(new_unmapped)} new unmapped ads found")
+    
+    return {
+        "success": True,
+        "message": f"Scan complete. Found {len(new_unmapped)} unmapped ads from {len(leads_with_ads)} leads.",
+        "total_leads_scanned": len(leads_with_ads),
+        "unique_ads_found": len(ad_lead_counts),
+        "new_unmapped_count": len(new_unmapped),
+        "already_mapped_count": len(already_mapped),
+        "already_tracked_count": len(already_tracked),
+        "new_unmapped": new_unmapped[:20],  # Return first 20
+        "already_mapped": already_mapped[:10]
+    }
+
+
 @api_router.get("/meta-ads/unmapped-ads-from-leads")
 async def get_unmapped_ads_from_leads(current_user: dict = Depends(get_current_user)):
     """
