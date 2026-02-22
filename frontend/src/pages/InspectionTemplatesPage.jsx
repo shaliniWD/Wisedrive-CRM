@@ -104,12 +104,28 @@ const TemplateCard = ({ template, onEdit, onToggle, onDelete, onSetDefault }) =>
   );
 };
 
-// Category with Questions Selector
-const CategoryQuestionSelector = ({ category, questions, selectedIds, onToggle }) => {
+// Category with Questions Selector (Sortable)
+const SortableCategoryQuestionSelector = ({ category, questions, selectedIds, onToggle }) => {
   const [expanded, setExpanded] = useState(false);
   const categoryQuestions = questions.filter(q => q.category_id === category.category_id);
   const selectedCount = categoryQuestions.filter(q => selectedIds.includes(q.id)).length;
   const allSelected = categoryQuestions.length > 0 && selectedCount === categoryQuestions.length;
+  
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: category.category_id });
+  
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 1000 : 1,
+    opacity: isDragging ? 0.8 : 1,
+  };
   
   const handleCategoryToggle = () => {
     if (allSelected) {
@@ -128,19 +144,38 @@ const CategoryQuestionSelector = ({ category, questions, selectedIds, onToggle }
   };
   
   return (
-    <div className="border rounded-lg overflow-hidden">
+    <div 
+      ref={setNodeRef} 
+      style={style}
+      className={`border rounded-lg overflow-hidden ${isDragging ? 'shadow-lg ring-2 ring-indigo-500' : ''}`}
+    >
       <div 
-        className="flex items-center gap-3 p-3 bg-gray-50 cursor-pointer hover:bg-gray-100"
-        onClick={() => setExpanded(!expanded)}
+        className="flex items-center gap-2 p-3 bg-gray-50 hover:bg-gray-100"
       >
-        {expanded ? <ChevronDown className="h-4 w-4 text-gray-500" /> : <ChevronRight className="h-4 w-4 text-gray-500" />}
-        <Checkbox 
-          checked={allSelected} 
-          onCheckedChange={handleCategoryToggle}
-          onClick={(e) => e.stopPropagation()}
-        />
-        <span className="font-medium text-gray-700 flex-1">{category.category_name}</span>
-        <span className="text-sm text-gray-500">{selectedCount}/{categoryQuestions.length}</span>
+        {/* Drag Handle */}
+        <div
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing p-1 hover:bg-gray-200 rounded touch-none"
+          title="Drag to reorder"
+        >
+          <GripVertical className="h-4 w-4 text-gray-400" />
+        </div>
+        
+        {/* Expand Toggle */}
+        <div 
+          className="flex items-center gap-3 flex-1 cursor-pointer"
+          onClick={() => setExpanded(!expanded)}
+        >
+          {expanded ? <ChevronDown className="h-4 w-4 text-gray-500" /> : <ChevronRight className="h-4 w-4 text-gray-500" />}
+          <Checkbox 
+            checked={allSelected} 
+            onCheckedChange={handleCategoryToggle}
+            onClick={(e) => e.stopPropagation()}
+          />
+          <span className="font-medium text-gray-700 flex-1">{category.category_name}</span>
+          <span className="text-sm text-gray-500">{selectedCount}/{categoryQuestions.length}</span>
+        </div>
       </div>
       
       {expanded && categoryQuestions.length > 0 && (
