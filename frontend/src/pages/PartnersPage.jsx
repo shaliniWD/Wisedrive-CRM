@@ -439,14 +439,14 @@ const PartnersPage = () => {
               <div className="col-span-2">
                 <Label>Default Report Template</Label>
                 <Select 
-                  value={formData.default_report_template_id} 
-                  onValueChange={(value) => setFormData({...formData, default_report_template_id: value})}
+                  value={formData.default_report_template_id || "none"} 
+                  onValueChange={(value) => setFormData({...formData, default_report_template_id: value === "none" ? "" : value})}
                 >
                   <SelectTrigger data-testid="default-report-template-select">
                     <SelectValue placeholder="Select a report template (optional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No default template</SelectItem>
+                    <SelectItem value="none">No default template</SelectItem>
                     {reportTemplates
                       .filter(t => t.is_active)
                       .map(template => (
