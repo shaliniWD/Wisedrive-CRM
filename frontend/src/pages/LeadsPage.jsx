@@ -513,10 +513,11 @@ export default function LeadsPage() {
   const [investigatorResult, setInvestigatorResult] = useState(null);
   const [isInvestigating, setIsInvestigating] = useState(false);
   const [investigatorError, setInvestigatorError] = useState(null);
-  const [investigatorTab, setInvestigatorTab] = useState('search'); // 'search' or 'diagnose'
+  const [investigatorTab, setInvestigatorTab] = useState('search'); // 'search', 'diagnose', or 'audit'
   const [diagnosticData, setDiagnosticData] = useState(null);
   const [isDiagnosing, setIsDiagnosing] = useState(false);
   const [isFixing, setIsFixing] = useState(false);
+  const [showAuditTrail, setShowAuditTrail] = useState(false);
 
   // Fetch city summary when modal opens
   const fetchCitySummary = async () => {
