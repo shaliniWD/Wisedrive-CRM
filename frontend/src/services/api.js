@@ -68,8 +68,13 @@ export const metaAdsApi = {
   getCampaigns: () => axios.get(`${API_URL}/meta-ads/campaigns`),
   getAds: () => axios.get(`${API_URL}/meta-ads/ads`),
   getPerformance: (params) => axios.get(`${API_URL}/meta-ads/performance`, { params }),
+  // OAuth endpoints
+  initOAuth: () => axios.get(`${API_URL}/meta-ads/oauth/init`),
+  handleOAuthCallback: (code) => axios.post(`${API_URL}/meta-ads/oauth/callback`, null, { params: { code } }),
   // Advanced features - sync and unmapped ads
   syncStatus: () => axios.post(`${API_URL}/meta-ads/sync-status`),
+  forceSync: () => axios.post(`${API_URL}/meta-ads/force-sync`),
+  getCachedPerformance: () => axios.get(`${API_URL}/meta-ads/cached-performance`),
   getUnmappedAds: () => axios.get(`${API_URL}/meta-ads/unmapped-ads`),
   getAdsWithTargeting: () => axios.get(`${API_URL}/meta-ads/ads-with-targeting`),
   // Auto-map from targeting
