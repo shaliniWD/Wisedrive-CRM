@@ -3119,6 +3119,12 @@ async def twilio_whatsapp_webhook(
                 }
                 await db.unmapped_ads.insert_one(unmapped_entry)
                 logger.info(f"Auto-created unmapped ad entry: {unmapped_ad_id} / {ad_name}")
+                
+                # Use the unmapped ad_id for this lead if none was extracted
+                if not ad_id:
+                    ad_id = unmapped_ad_id
+                    city_lookup_log.append({"ad_id_from_unmapped": True, "ad_id": ad_id})
+                    logger.info(f"Using auto-generated ad_id from unmapped: {ad_id}")
             else:
                 # Increment lead count
                 await db.unmapped_ads.update_one(
@@ -3128,6 +3134,11 @@ async def twilio_whatsapp_webhook(
                         "$set": {"last_seen_at": datetime.now(timezone.utc).isoformat()}
                     }
                 )
+                # Use existing unmapped ad_id if none was extracted
+                if not ad_id:
+                    ad_id = existing_unmapped.get("ad_id")
+                    city_lookup_log.append({"ad_id_from_existing_unmapped": True, "ad_id": ad_id})
+                    logger.info(f"Using existing unmapped ad_id: {ad_id}")
     
     # Add city lookup log to audit data
     audit_data["city_lookup_log"] = city_lookup_log
