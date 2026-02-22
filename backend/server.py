@@ -2992,8 +2992,10 @@ async def twilio_whatsapp_webhook(
         if ad_mapping:
             city = ad_mapping.get("city")
             city_id = ad_mapping.get("city_id")
-            ad_id = ad_mapping.get("ad_id")  # Use the mapped ad_id
-            city_lookup_log.append({"strategy": 2, "method": "ad_name match", "found": True, "city": city, "ad_name": ad_name})
+            # Only use mapped ad_id if we don't already have a real one
+            if not ad_id:
+                ad_id = ad_mapping.get("ad_id")
+            city_lookup_log.append({"strategy": 2, "method": "ad_name match", "found": True, "city": city, "ad_name": ad_name, "kept_original_ad_id": bool(ad_id)})
             logger.info(f"Found city mapping by ad_name '{ad_name}': {city}")
         else:
             city_lookup_log.append({"strategy": 2, "method": "ad_name match", "found": False, "ad_name": ad_name})
@@ -3009,7 +3011,9 @@ async def twilio_whatsapp_webhook(
             if mapping_ad_name and mapping_ad_name.lower() in Body.lower():
                 city = mapping.get("city")
                 city_id = mapping.get("city_id")
-                ad_id = mapping.get("ad_id")
+                # Only use mapped ad_id if we don't already have a real one
+                if not ad_id:
+                    ad_id = mapping.get("ad_id")
                 ad_name = mapping_ad_name
                 city_lookup_log.append({"strategy": 3, "method": "body content match", "found": True, "city": city, "matched_ad_name": mapping_ad_name})
                 logger.info(f"Found city mapping by message content match '{mapping_ad_name}': {city}")
