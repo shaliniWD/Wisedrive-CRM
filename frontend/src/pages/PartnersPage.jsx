@@ -350,6 +350,7 @@ const PartnersPage = () => {
               onEdit={openModal} 
               onToggle={handleToggle}
               onDelete={handleDelete}
+              reportTemplates={reportTemplates}
             />
           ))}
         </div>
