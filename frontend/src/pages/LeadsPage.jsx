@@ -1205,7 +1205,7 @@ export default function LeadsPage() {
       {/* Filters Section */}
       <div className="bg-white rounded-xl border p-4 mb-5">
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex-1 min-w-[280px] relative">
+          <div className="flex-1 min-w-[250px] relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
               type="text"
@@ -1217,25 +1217,25 @@ export default function LeadsPage() {
             />
           </div>
 
-          {/* Employee filter - for Sales Execs, only show their name; for others show all */}
+          {/* Employee filter - Sales roles only + employees with leads */}
           {isSalesExec ? (
             <div className="flex items-center px-3 h-10 bg-slate-100 rounded-md text-sm font-medium text-slate-700 border">
               {user?.name || 'My Leads'}
             </div>
           ) : (
             <Select value={filterEmployee || 'all'} onValueChange={(v) => { setFilterEmployee(v === 'all' ? '' : v); setCurrentPage(1); }}>
-              <SelectTrigger className="w-[150px] h-10 bg-white text-sm" data-testid="filter-employee">
+              <SelectTrigger className="w-[140px] h-10 bg-white text-sm" data-testid="filter-employee">
                 <SelectValue placeholder="Employee" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Employees</SelectItem>
-                {employees.map((emp) => (<SelectItem key={emp.id} value={emp.name}>{emp.name}</SelectItem>))}
+                {filteredEmployees.map((emp) => (<SelectItem key={emp.id} value={emp.name}>{emp.name}</SelectItem>))}
               </SelectContent>
             </Select>
           )}
 
           <Select value={filterStatus || 'all'} onValueChange={(v) => { setFilterStatus(v === 'all' ? '' : v); setCurrentPage(1); }}>
-            <SelectTrigger className="w-[160px] h-10 bg-white text-sm" data-testid="filter-status">
+            <SelectTrigger className="w-[140px] h-10 bg-white text-sm" data-testid="filter-status">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent className="max-h-[300px]">
@@ -1246,30 +1246,77 @@ export default function LeadsPage() {
             </SelectContent>
           </Select>
 
+          {/* City filter - AD mapped cities + cities with leads */}
           <Select value={filterCity || 'all'} onValueChange={(v) => { setFilterCity(v === 'all' ? '' : v); setCurrentPage(1); }}>
-            <SelectTrigger className="w-[130px] h-10 bg-white text-sm" data-testid="filter-city">
+            <SelectTrigger className="w-[120px] h-10 bg-white text-sm" data-testid="filter-city">
               <SelectValue placeholder="City" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Cities</SelectItem>
-              {cities.map((c) => (<SelectItem key={c} value={c}>{c}</SelectItem>))}
+              {filteredCities.map((c) => (<SelectItem key={c} value={c}>{c}</SelectItem>))}
             </SelectContent>
           </Select>
 
+          {/* Date Range Filter */}
+          <div className="flex items-center gap-1 bg-slate-50 rounded-lg p-1">
+            <input
+              type="date"
+              value={filterDateFrom}
+              onChange={(e) => { setFilterDateFrom(e.target.value); setDateFilterPreset(''); setCurrentPage(1); }}
+              className="px-2 py-1.5 text-sm border-0 bg-transparent focus:ring-0 outline-none w-[120px]"
+              placeholder="From"
+            />
+            <span className="text-gray-400">–</span>
+            <input
+              type="date"
+              value={filterDateTo}
+              onChange={(e) => { setFilterDateTo(e.target.value); setDateFilterPreset(''); setCurrentPage(1); }}
+              className="px-2 py-1.5 text-sm border-0 bg-transparent focus:ring-0 outline-none w-[120px]"
+              placeholder="To"
+            />
+          </div>
+
           <button 
-            onClick={() => { setActiveFilter('all'); fetchData(); }}
-            className="px-4 py-2.5 border rounded-lg hover:bg-gray-50 font-medium text-sm flex items-center gap-1"
+            onClick={() => { 
+              setActiveFilter('all'); 
+              setSearch('');
+              setFilterEmployee('');
+              setFilterStatus('');
+              setFilterCity('');
+              setFilterDateFrom('');
+              setFilterDateTo('');
+              setDateFilterPreset('');
+              setCurrentPage(1);
+              fetchData(); 
+            }}
+            className="px-3 py-2.5 border rounded-lg hover:bg-gray-50 font-medium text-sm flex items-center gap-1"
           >
-            <Filter className="h-4 w-4" /> Reset
+            <X className="h-4 w-4" /> Reset
           </button>
         </div>
 
-        {/* Quick Filters */}
-        <div className="flex items-center gap-3 mt-3 pt-3 border-t">
-          <span className="text-xs text-gray-500">Quick:</span>
-          {['Today', 'This Week', 'This Month'].map((period) => (
-            <button key={period} className="text-xs text-blue-600 hover:text-blue-700 hover:underline">
-              {period}
+        {/* Quick Date Filters */}
+        <div className="flex items-center gap-2 mt-3 pt-3 border-t">
+          <span className="text-xs text-gray-500 mr-1">Quick:</span>
+          {[
+            { key: 'today', label: 'Today' },
+            { key: 'yesterday', label: 'Yesterday' },
+            { key: 'this_week', label: 'This Week' },
+            { key: 'last_week', label: 'Last Week' },
+            { key: 'this_month', label: 'This Month' },
+            { key: 'last_month', label: 'Last Month' },
+            { key: 'all', label: 'All Time' },
+          ].map((preset) => (
+            <button 
+              key={preset.key} 
+              onClick={() => applyDatePreset(preset.key)}
+              className={`px-2.5 py-1 text-xs rounded-full transition-colors ${
+                dateFilterPreset === preset.key 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              {preset.label}
             </button>
           ))}
           {activeFilter !== 'all' && (
@@ -1282,18 +1329,18 @@ export default function LeadsPage() {
 
       {/* Data Table */}
       <div className="bg-white rounded-xl border overflow-hidden">
-        <table className="w-full">
+        <table className="w-full table-fixed">
           <thead>
             <tr className="bg-slate-50 border-b">
-              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Date</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Lead Details</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">City</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Assigned</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Reminder</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Notes</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Source</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Payment Link</th>
+              <th className="w-[90px] px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Date</th>
+              <th className="w-[180px] px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Lead Details</th>
+              <th className="w-[80px] px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">City</th>
+              <th className="w-[100px] px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Assigned</th>
+              <th className="w-[90px] px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Reminder</th>
+              <th className="w-[120px] px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
+              <th className="w-[60px] px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Notes</th>
+              <th className="w-[130px] px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Source</th>
+              <th className="w-[100px] px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Payment</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
