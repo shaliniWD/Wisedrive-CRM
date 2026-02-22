@@ -30,6 +30,10 @@ import {
 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 
+// Import extracted lead components
+import { StatusDropdown, getStatusConfig } from '@/components/leads/StatusDropdown';
+import { ActivityLog } from '@/components/leads/ActivityLog';
+
 // Inline Status Dropdown Component - Click to update status
 const StatusDropdown = ({ lead, statuses, onUpdate }) => {
   const [open, setOpen] = useState(false);
