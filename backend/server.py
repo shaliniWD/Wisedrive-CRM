@@ -2923,7 +2923,73 @@ async def twilio_whatsapp_webhook(
                 logger.info(f"Found city mapping by message content match '{mapping_ad_name}': {city}")
                 break
     
-    # Strategy 4: Fallback to default mapping (if exists)
+    # Strategy 4: Try to extract city from ad_name itself (intelligent parsing)
+    if not city and ad_name:
+        # Common city keywords in Indian ad names
+        city_keywords = {
+            "bangalore": "Bangalore",
+            "bengaluru": "Bangalore", 
+            "chennai": "Chennai",
+            "madras": "Chennai",
+            "hyderabad": "Hyderabad",
+            "vizag": "Vizag",
+            "visakhapatnam": "Vizag",
+            "mumbai": "Mumbai",
+            "bombay": "Mumbai",
+            "pune": "Pune",
+            "delhi": "Delhi",
+            "ncr": "Delhi",
+            "gurgaon": "Delhi",
+            "noida": "Delhi",
+            "kolkata": "Kolkata",
+            "calcutta": "Kolkata",
+            "ahmedabad": "Ahmedabad",
+            "kochi": "Kochi",
+            "cochin": "Kochi",
+            "jaipur": "Jaipur",
+            "lucknow": "Lucknow",
+            "chandigarh": "Chandigarh",
+            "indore": "Indore",
+            "coimbatore": "Coimbatore",
+            "mysore": "Mysore",
+            "mysuru": "Mysore",
+            "trivandrum": "Trivandrum",
+            "thiruvananthapuram": "Trivandrum",
+            "mangalore": "Mangalore",
+            "mangaluru": "Mangalore",
+        }
+        
+        ad_name_lower = ad_name.lower()
+        for keyword, city_name in city_keywords.items():
+            if keyword in ad_name_lower:
+                city = city_name
+                logger.info(f"Extracted city '{city}' from ad_name keyword '{keyword}' in '{ad_name}'")
+                
+                # Auto-create mapping for this ad_name -> city
+                auto_ad_id = f"auto_{ad_name[:30].replace(' ', '_')}_{datetime.now().strftime('%Y%m%d')}"
+                existing_mapping = await db.ad_city_mappings.find_one({
+                    "$or": [
+                        {"ad_name": {"$regex": f"^{re.escape(ad_name)}$", "$options": "i"}},
+                        {"ad_id": auto_ad_id}
+                    ]
+                })
+                
+                if not existing_mapping:
+                    new_mapping = {
+                        "id": str(uuid.uuid4()),
+                        "ad_id": auto_ad_id,
+                        "ad_name": ad_name,
+                        "city": city,
+                        "city_id": None,
+                        "source": "auto_extracted_from_ad_name",
+                        "is_active": True,
+                        "created_at": datetime.now(timezone.utc).isoformat()
+                    }
+                    await db.ad_city_mappings.insert_one(new_mapping)
+                    logger.info(f"Auto-created city mapping: '{ad_name}' -> '{city}'")
+                break
+    
+    # Strategy 5: Fallback to default mapping (if exists)
     if not city:
         default_mapping = await db.ad_city_mappings.find_one({"ad_id": "default"}, {"_id": 0})
         if default_mapping:
