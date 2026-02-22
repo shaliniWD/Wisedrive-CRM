@@ -965,7 +965,9 @@ export default function LeadsPage() {
   // Filter leads based on active filter card
   const getFilteredLeads = () => {
     let filtered = leads;
-    if (activeFilter === 'new_today') {
+    if (activeFilter === 'new_leads') {
+      filtered = leads.filter(l => l.status === 'NEW LEAD');
+    } else if (activeFilter === 'new_today') {
       filtered = leads.filter(l => l.status === 'NEW LEAD' && l.created_at?.startsWith(today));
     } else if (activeFilter === 'hot') {
       filtered = leads.filter(l => l.status === 'HOT LEADS');
