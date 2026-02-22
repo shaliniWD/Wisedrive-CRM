@@ -374,7 +374,6 @@ export default function AdAnalyticsPage() {
       addDebugLog('Map from Leads', 'ERROR', error.response?.data?.detail || error.message);
       toast.error(error.response?.data?.detail || 'Failed to map ad');
     }
-    }
   };
   
   // Quick map an unmapped ad
