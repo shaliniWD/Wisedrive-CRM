@@ -3100,8 +3100,8 @@ export default function LeadsPage() {
 
       {/* Notes & Activities Drawer */}
       <Sheet open={isNotesDrawerOpen} onOpenChange={setIsNotesDrawerOpen}>
-        <SheetContent className="sm:max-w-[500px] p-0 flex flex-col" data-testid="notes-drawer">
-          <SheetHeader className="px-6 py-4 border-b bg-gradient-to-r from-slate-50 to-slate-100">
+        <SheetContent className="sm:max-w-[500px] p-0 flex flex-col h-full" data-testid="notes-drawer">
+          <SheetHeader className="px-6 py-4 border-b bg-gradient-to-r from-slate-50 to-slate-100 flex-shrink-0">
             <SheetTitle className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white font-medium">
                 {selectedLeadForNotes?.name?.charAt(0)?.toUpperCase()}
