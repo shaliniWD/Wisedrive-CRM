@@ -140,6 +140,16 @@ async def startup():
     # Set db in app.state for ESS routes compatibility
     app.state.db = db
     
+    # ==================== LOAD META ACCESS TOKEN FROM DATABASE ====================
+    # This ensures OAuth tokens saved to DB are used instead of .env file token
+    try:
+        saved_token = await db.system_config.find_one({"key": "meta_access_token"})
+        if saved_token and saved_token.get("value"):
+            meta_ads_service.update_token(saved_token["value"])
+            logger.info("Loaded Meta access token from database")
+    except Exception as e:
+        logger.warning(f"Could not load Meta token from database: {e}")
+    
     # Create TTL index for token blacklist (auto-expire entries)
     try:
         await db.token_blacklist.create_index("expires_at", expireAfterSeconds=0)
