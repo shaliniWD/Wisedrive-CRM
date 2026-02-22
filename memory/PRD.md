@@ -42,15 +42,12 @@ Build a custom CRM for WiseDrive to manage leads from Meta (Facebook/Instagram) 
 - Drag-and-drop with @dnd-kit library
 - `category_order` array in inspection_templates
 
-### Leads Page Enhancements (Feb 22, 2026) ✅
-- "New Leads" card shows all-time total (not just today)
-- Date range filter with Reset button
-- Employee dropdown filtered to sales roles
-- City dropdown filtered to cities with leads
-- Quick filter buttons (Today, Yesterday, This Week, etc.)
-- Activity Log tab in Notes drawer
-- **Table Column Symmetry** - Fixed alignment with consistent px-4 padding and better widths
-- **Activity Log Scroll Height** - Fixed to use full vertical space in drawer
+### Partner Assignment from Ad Mapping - Option C (Feb 22, 2026) ✅
+- Extended Ad City Mappings with `partner_id` and `partner_name` fields
+- Webhook assigns partner from ad_mapping if set, otherwise B2C Default
+- Frontend: Partner dropdown in Create Ad form
+- Frontend: Partner column in Ad Mappings table
+- Complete flow: Ad Campaign → Ad Mapping → Lead gets Partner automatically
 
 ---
 
