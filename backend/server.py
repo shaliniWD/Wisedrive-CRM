@@ -2274,13 +2274,23 @@ Or type your question and we'll help you!"""
         "city_id": city_id,
         "source": "META_WHATSAPP",
         "ad_id": ad_id,
+        "ad_name": ad_name,
         "campaign_id": campaign_id,
         "platform": platform,
         "message": Body,
         "status": "NEW LEAD",
         "created_at": datetime.now(timezone.utc).isoformat(),
         "updated_at": datetime.now(timezone.utc).isoformat(),
-        "created_by": "system"
+        "created_by": "system",
+        # Store CTWA referral data for debugging
+        "ctwa_data": {
+            "referral_source_url": ReferralSourceUrl,
+            "referral_headline": ReferralHeadline,
+            "referral_body": ReferralBody,
+            "referral_source_type": ReferralSourceType,
+            "button_text": ButtonText,
+            "ctwa_clid": CtwaClid
+        } if any([ReferralSourceUrl, ReferralHeadline, ReferralBody]) else None
     }
     
     await db.leads.insert_one(lead)
