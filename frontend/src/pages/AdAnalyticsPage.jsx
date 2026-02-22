@@ -1033,19 +1033,21 @@ export default function AdAnalyticsPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={fetchUnmappedAds}
-                      disabled={loadingUnmapped}
-                      className="text-xs"
+                      onClick={fetchAndAutoMapAds}
+                      disabled={loadingUnmapped || autoMapping}
+                      className="text-xs bg-green-50 border-green-300 text-green-700 hover:bg-green-100"
                     >
-                      <RefreshCw className={`h-3 w-3 mr-1 ${loadingUnmapped ? 'animate-spin' : ''}`} />
-                      Refresh
+                      <RefreshCw className={`h-3 w-3 mr-1 ${(loadingUnmapped || autoMapping) ? 'animate-spin' : ''}`} />
+                      {autoMapping ? 'Auto-Mapping...' : 'Refresh & Auto-Map'}
                     </Button>
                   </div>
                   
-                  {loadingUnmapped ? (
+                  {(loadingUnmapped || autoMapping) ? (
                     <div className="text-center py-8 border rounded-xl bg-slate-50">
                       <Loader2 className="h-5 w-5 animate-spin text-green-600 mx-auto" />
-                      <p className="text-sm text-gray-500 mt-2">Loading unmapped ads...</p>
+                      <p className="text-sm text-gray-500 mt-2">
+                        {autoMapping ? 'Auto-mapping ads with targeting...' : 'Loading unmapped ads...'}
+                      </p>
                     </div>
                   ) : unmappedAdsFromLeads.length === 0 ? (
                     <div className="text-center py-8 border rounded-xl bg-emerald-50 border-emerald-200">
