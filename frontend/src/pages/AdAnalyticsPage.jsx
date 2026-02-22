@@ -621,6 +621,39 @@ export default function AdAnalyticsPage() {
     setIsModalOpen(true);
   };
 
+  // ONE-CLICK SYNC: Sync all Meta ads and create comprehensive mappings
+  const handleSyncAllAdMappings = async () => {
+    setSyncingAllMappings(true);
+    addDebugLog('Sync All Mappings', 'CALLING', 'POST /api/meta-ads/sync-all-ad-mappings');
+    
+    try {
+      const result = await metaAdsApi.syncAllAdMappings();
+      
+      if (result.data.success) {
+        addDebugLog('Sync All Mappings', 'SUCCESS', 
+          `Total: ${result.data.total_ads}, Created: ${result.data.created_count}, Updated: ${result.data.updated_count}, Skipped: ${result.data.skipped_count}`);
+        
+        toast.success(
+          `✅ Synced ${result.data.total_ads} ads from Meta!\n` +
+          `Created: ${result.data.created_count} | Updated: ${result.data.updated_count}`,
+          { duration: 5000 }
+        );
+        
+        // Refresh mappings list
+        fetchAdMappings();
+        fetchAndAutoMapAds();
+      } else {
+        addDebugLog('Sync All Mappings', 'FAILED', result.data.error || 'Unknown error');
+        toast.error(result.data.error || 'Failed to sync ad mappings');
+      }
+    } catch (error) {
+      addDebugLog('Sync All Mappings', 'ERROR', error.response?.data?.detail || error.message);
+      toast.error(error.response?.data?.detail || 'Failed to sync ad mappings');
+    } finally {
+      setSyncingAllMappings(false);
+    }
+  };
+
 
   // Ad Mapping functions
   const handleSubmit = async (e) => {
