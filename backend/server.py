@@ -10286,11 +10286,13 @@ async def get_ad_performance_analytics(
     revenue_stats = await db.inspections.aggregate(revenue_pipeline).to_list(1000)
     revenue_stats_by_ad = {stat["_id"]: stat for stat in revenue_stats}
     
-    # Get Meta ad spend data
+    # Get Meta ad spend data - try live API first, fallback to cached data
     meta_insights = await meta_ads_service.get_ad_insights(date_from=date_from, date_to=date_to)
     meta_spend_by_ad = {}
     meta_impressions_by_ad = {}
     meta_clicks_by_ad = {}
+    using_cached_data = False
+    token_expired = False
     
     if meta_insights.get("success") and meta_insights.get("data"):
         for insight in meta_insights["data"]:
@@ -10299,10 +10301,26 @@ async def get_ad_performance_analytics(
                 meta_spend_by_ad[ad_id] = float(insight.get("spend", 0))
                 meta_impressions_by_ad[ad_id] = int(insight.get("impressions", 0))
                 meta_clicks_by_ad[ad_id] = int(insight.get("clicks", 0))
+    else:
+        # Meta API failed - try to use cached data
+        token_expired = meta_insights.get("token_expired", False)
+        logger.info(f"Meta API failed (token_expired={token_expired}), trying cached data...")
+        
+        # Get cached performance data
+        cached_perfs = await db.ad_performance.find({}, {"_id": 0}).to_list(1000)
+        if cached_perfs:
+            using_cached_data = True
+            for perf in cached_perfs:
+                ad_id = perf.get("ad_id")
+                if ad_id:
+                    meta_spend_by_ad[ad_id] = float(perf.get("spend", 0))
+                    meta_impressions_by_ad[ad_id] = int(perf.get("impressions", 0))
+                    meta_clicks_by_ad[ad_id] = int(perf.get("clicks", 0))
+            logger.info(f"Using cached performance data for {len(cached_perfs)} ads")
     
     # Combine all data
     performance_data = []
-    all_ad_ids = set(ad_ids) | set(lead_stats_by_ad.keys()) | set(revenue_stats_by_ad.keys())
+    all_ad_ids = set(ad_ids) | set(lead_stats_by_ad.keys()) | set(revenue_stats_by_ad.keys()) | set(meta_spend_by_ad.keys())
     
     for ad_id in all_ad_ids:
         if not ad_id:
