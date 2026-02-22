@@ -3375,6 +3375,9 @@ Or type your question and we'll help you!"""
         "platform": platform,
         "message": Body,
         "status": "NEW LEAD",
+        # Partner assignment from ad mapping (Option C)
+        "partner_id": partner_id,
+        "partner_name": partner_name,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "updated_at": datetime.now(timezone.utc).isoformat(),
         "created_by": "system",
