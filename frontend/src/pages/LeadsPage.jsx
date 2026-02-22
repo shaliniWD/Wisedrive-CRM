@@ -2115,69 +2115,70 @@ export default function LeadsPage() {
               <>
                 {/* From City */}
                 <div className="space-y-2">
-              <Label>From City (Source)</Label>
-              <Select 
-                value={cityRemapData.fromCity} 
-                onValueChange={(value) => setCityRemapData({...cityRemapData, fromCity: value})}
-              >
-                <SelectTrigger data-testid="from-city-select">
-                  <SelectValue placeholder="Select source city to remap FROM" />
-                </SelectTrigger>
-                <SelectContent>
-                  {citySummary.filter(c => c.total_leads > 0).map((city) => (
-                    <SelectItem key={city.city} value={city.city}>
-                      {city.city} ({city.total_leads} leads)
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                  <Label>From City (Source)</Label>
+                  <Select 
+                    value={cityRemapData.fromCity} 
+                    onValueChange={(value) => setCityRemapData({...cityRemapData, fromCity: value})}
+                  >
+                    <SelectTrigger data-testid="from-city-select">
+                      <SelectValue placeholder="Select source city to remap FROM" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {citySummary.filter(c => c.total_leads > 0).map((city) => (
+                        <SelectItem key={city.city} value={city.city}>
+                          {city.city} ({city.total_leads} leads)
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            {/* To City */}
-            <div className="space-y-2">
-              <Label>To City (Target)</Label>
-              <Select 
-                value={cityRemapData.toCity} 
-                onValueChange={(value) => setCityRemapData({...cityRemapData, toCity: value})}
-              >
-                <SelectTrigger data-testid="to-city-select">
-                  <SelectValue placeholder="Select target city to remap TO" />
-                </SelectTrigger>
-                <SelectContent>
-                  {cities.map((city) => (
-                    <SelectItem key={city.id || city.name} value={city.name}>
-                      {city.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                {/* To City */}
+                <div className="space-y-2">
+                  <Label>To City (Target)</Label>
+                  <Select 
+                    value={cityRemapData.toCity} 
+                    onValueChange={(value) => setCityRemapData({...cityRemapData, toCity: value})}
+                  >
+                    <SelectTrigger data-testid="to-city-select">
+                      <SelectValue placeholder="Select target city to remap TO" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {cities.map((city) => (
+                        <SelectItem key={city.id || city.name} value={city.name}>
+                          {city.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            {/* Reassign Option */}
-            <div className="flex items-center gap-3 bg-blue-50 p-3 rounded-lg">
-              <Checkbox
-                id="reassign-checkbox"
-                checked={cityRemapData.reassignToSalesRep}
-                onCheckedChange={(checked) => setCityRemapData({...cityRemapData, reassignToSalesRep: checked})}
-              />
-              <div>
-                <Label htmlFor="reassign-checkbox" className="text-sm font-medium cursor-pointer">
-                  Reassign to Sales Reps
-                </Label>
-                <p className="text-xs text-gray-500">
-                  Automatically reassign leads to sales reps in the new city via round-robin
-                </p>
-              </div>
-            </div>
+                {/* Reassign Option */}
+                <div className="flex items-center gap-3 bg-blue-50 p-3 rounded-lg">
+                  <Checkbox
+                    id="reassign-checkbox-manual"
+                    checked={cityRemapData.reassignToSalesRep}
+                    onCheckedChange={(checked) => setCityRemapData({...cityRemapData, reassignToSalesRep: checked})}
+                  />
+                  <div>
+                    <Label htmlFor="reassign-checkbox-manual" className="text-sm font-medium cursor-pointer">
+                      Reassign to Sales Reps
+                    </Label>
+                    <p className="text-xs text-gray-500">
+                      Automatically reassign leads to sales reps in the new city via round-robin
+                    </p>
+                  </div>
+                </div>
 
-            {/* Warning */}
-            {cityRemapData.fromCity && cityRemapData.toCity && (
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm">
-                <p className="text-amber-800">
-                  <strong>⚠️ Warning:</strong> This will move ALL leads from <strong>{cityRemapData.fromCity}</strong> to <strong>{cityRemapData.toCity}</strong>.
-                  {cityRemapData.reassignToSalesRep && ' Leads will also be reassigned to sales reps in the new city.'}
-                </p>
-              </div>
+                {/* Warning */}
+                {cityRemapData.fromCity && cityRemapData.toCity && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm">
+                    <p className="text-amber-800">
+                      <strong>⚠️ Warning:</strong> This will move ALL leads from <strong>{cityRemapData.fromCity}</strong> to <strong>{cityRemapData.toCity}</strong>.
+                      {cityRemapData.reassignToSalesRep && ' Leads will also be reassigned to sales reps in the new city.'}
+                    </p>
+                  </div>
+                )}
             )}
           </div>
 
