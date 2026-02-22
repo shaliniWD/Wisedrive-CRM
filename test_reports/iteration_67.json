@@ -1,0 +1,83 @@
+{
+  "summary": "Tested Partner Assignment from Ad Mapping (Option C) feature. All 10 backend tests passed. Frontend UI verified - Partner dropdown in Ad Mapping form and Partner column in table are working correctly.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_partner_assignment_option_c.py",
+    "/app/test_reports/pytest/pytest_partner_assignment_option_c.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Partner assignment logic in webhook (lines 3191-3213): Correctly checks ad_mapping.partner_id first, then falls back to B2C default",
+    "Lead creation includes partner_id and partner_name fields (lines 3378-3380)",
+    "AdCityMapping model includes partner_id and partner_name optional fields (lines 3949-3951)",
+    "Frontend AdAnalyticsPage.jsx correctly fetches partners and displays Partner dropdown in form",
+    "Partner column in Ad Mappings table shows partner_name with Building2 icon for assigned partners"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_partner_assignment_option_c.py"
+  ],
+  "success_rate": {
+    "backend": "100% (10 passed, 0 failed)",
+    "frontend": "100% - All UI elements verified"
+  },
+  "test_credentials": {
+    "email": "kalyan@wisedrive.com",
+    "password": "password123",
+    "country": "India"
+  },
+  "seed_data_creation": "Test ad mappings and leads created via webhook tests (cleaned up after tests)",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Partner Assignment Option C feature fully tested. Key scenarios verified: (1) Ad mapping with partner assigned - leads get that partner (2) Ad mapping without partner - leads get B2C default (3) Unmapped ads - leads get B2C default. Frontend shows Partner dropdown in Create Ad form and Partner column in Ad Mappings table.",
+  "features_tested": {
+    "Backend API Tests": {
+      "test_get_partners_list": "PASS - Partners API returns list with id, name, type fields",
+      "test_create_ad_mapping_with_partner": "PASS - Ad mapping created with partner_id and partner_name saved",
+      "test_create_ad_mapping_without_partner": "PASS - Ad mapping created without partner (null values)",
+      "test_update_ad_mapping_partner": "PASS - Existing mapping can be updated to add partner",
+      "test_ad_mappings_table_shows_partner": "PASS - GET /api/settings/ad-city-mappings returns partner fields",
+      "test_webhook_assigns_partner_from_ad_mapping": "PASS - Lead created via webhook gets partner from ad_mapping",
+      "test_webhook_defaults_to_b2c_without_partner_mapping": "PASS - Lead gets B2C default when ad_mapping has no partner",
+      "test_webhook_defaults_to_b2c_for_unmapped_ad": "PASS - Lead gets B2C default for unmapped ad_id",
+      "test_existing_lead_creation_not_broken": "PASS - Manual lead creation still works with B2C default",
+      "test_existing_ad_mapping_flow_not_broken": "PASS - CRUD operations on ad mappings work correctly"
+    },
+    "Frontend UI Tests": {
+      "Partner column in table": "PASS - Table header shows 'PARTNER' column",
+      "Partner dropdown in form": "PASS - Form has 'Assign to Partner (Optional)' dropdown with data-testid='ad-partner-select'",
+      "B2C Default option": "PASS - Dropdown shows 'B2C Default (No specific partner)' as default",
+      "Partner options": "PASS - Dropdown shows available partners like 'HDFC Bank (BANK)', 'MFCWL (B2B)'"
+    }
+  },
+  "api_endpoints_tested": [
+    "GET /api/partners - List all partners",
+    "GET /api/settings/ad-city-mappings - List ad mappings with partner fields",
+    "POST /api/settings/ad-city-mappings - Create ad mapping with partner",
+    "PUT /api/settings/ad-city-mappings/{id} - Update ad mapping partner",
+    "POST /api/webhooks/twilio/whatsapp - Webhook assigns partner from ad_mapping",
+    "POST /api/leads - Manual lead creation with B2C default"
+  ],
+  "implementation_verification": {
+    "backend_server.py": {
+      "lines_3191_3213": "Partner assignment from ad_mapping with B2C fallback",
+      "lines_3378_3380": "Lead creation includes partner_id and partner_name",
+      "lines_3949_3951": "AdCityMapping model has partner_id and partner_name fields"
+    },
+    "frontend_AdAnalyticsPage.jsx": {
+      "line_2": "partnersApi imported from services/api",
+      "line_97": "partners state initialized",
+      "lines_172_177": "Partners fetched alongside ad mappings",
+      "lines_648_660": "Partner selection saved with mapping",
+      "lines_1253_1260": "Partner column displayed in table",
+      "lines_1828_1845": "Partner dropdown in form with B2C Default option"
+    }
+  }
+}
