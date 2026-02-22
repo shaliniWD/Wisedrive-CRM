@@ -185,6 +185,7 @@ const PartnersPage = () => {
         address: partner.address || '',
         notes: partner.notes || '',
         is_active: partner.is_active !== false,
+        default_report_template_id: partner.default_report_template_id || '',
       });
     } else {
       setEditingPartner(null);
@@ -197,6 +198,7 @@ const PartnersPage = () => {
         address: '',
         notes: '',
         is_active: true,
+        default_report_template_id: '',
       });
     }
     setIsModalOpen(true);
