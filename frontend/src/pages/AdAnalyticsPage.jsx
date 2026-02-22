@@ -282,7 +282,21 @@ export default function AdAnalyticsPage() {
     addDebugLog('Refresh Started', 'INFO', 'Starting refresh and auto-map process...');
     
     try {
-      // Step 1: Auto-map ads with geo-targeting first
+      // Step 1: Scan existing leads for unmapped ads (works without Meta token)
+      addDebugLog('Scan Leads', 'CALLING', 'POST /api/meta-ads/scan-leads-for-unmapped-ads');
+      try {
+        const scanResult = await metaAdsApi.scanLeadsForUnmappedAds();
+        addDebugLog('Scan Leads', scanResult.data.success ? 'SUCCESS' : 'FAILED', 
+          `scanned=${scanResult.data.total_leads_scanned || 0}, new_unmapped=${scanResult.data.new_unmapped_count || 0}, already_mapped=${scanResult.data.already_mapped_count || 0}`);
+        if (scanResult.data.success && scanResult.data.new_unmapped_count > 0) {
+          toast.success(`📊 Found ${scanResult.data.new_unmapped_count} unmapped ads from ${scanResult.data.total_leads_scanned} leads!`);
+        }
+      } catch (scanError) {
+        const errorMsg = scanError.response?.data?.error || scanError.response?.data?.detail || scanError.message;
+        addDebugLog('Scan Leads', 'ERROR', errorMsg);
+      }
+      
+      // Step 2: Try auto-map ads with geo-targeting (requires Meta token)
       let autoMappedCount = 0;
       addDebugLog('Auto-Map from Targeting', 'CALLING', 'POST /api/meta-ads/auto-map-from-targeting');
       try {
@@ -300,7 +314,7 @@ export default function AdAnalyticsPage() {
         console.log('Auto-map skipped:', errorMsg);
       }
       
-      // Step 2: Fetch remaining unmapped ads from Meta
+      // Step 3: Fetch remaining unmapped ads from Meta (requires token)
       addDebugLog('Fetch Unmapped from Meta', 'CALLING', 'GET /api/meta-ads/unmapped-ads');
       let metaResult;
       try {
