@@ -2957,14 +2957,19 @@ async def twilio_whatsapp_webhook(
     # Strategy 2: Lookup by ad_name (partial match on ad_name field)
     if not city and ad_name:
         ad_mapping = await db.ad_city_mappings.find_one({
-            "ad_name": {"$regex": ad_name, "$options": "i"},
+            "ad_name": {"$regex": re.escape(ad_name), "$options": "i"},
             "is_active": True
         }, {"_id": 0})
         if ad_mapping:
             city = ad_mapping.get("city")
             city_id = ad_mapping.get("city_id")
             ad_id = ad_mapping.get("ad_id")  # Use the mapped ad_id
+            city_lookup_log.append({"strategy": 2, "method": "ad_name match", "found": True, "city": city, "ad_name": ad_name})
             logger.info(f"Found city mapping by ad_name '{ad_name}': {city}")
+        else:
+            city_lookup_log.append({"strategy": 2, "method": "ad_name match", "found": False, "ad_name": ad_name})
+    elif not city:
+        city_lookup_log.append({"strategy": 2, "method": "ad_name match", "skipped": True, "reason": "No ad_name available"})
     
     # Strategy 3: Lookup by message body content matching ad_name
     if not city and Body:
@@ -2977,8 +2982,13 @@ async def twilio_whatsapp_webhook(
                 city_id = mapping.get("city_id")
                 ad_id = mapping.get("ad_id")
                 ad_name = mapping_ad_name
+                city_lookup_log.append({"strategy": 3, "method": "body content match", "found": True, "city": city, "matched_ad_name": mapping_ad_name})
                 logger.info(f"Found city mapping by message content match '{mapping_ad_name}': {city}")
                 break
+        else:
+            city_lookup_log.append({"strategy": 3, "method": "body content match", "found": False, "body_snippet": Body[:100] if Body else None})
+    elif not city:
+        city_lookup_log.append({"strategy": 3, "method": "body content match", "skipped": True, "reason": "City already found or no body"})
     
     # Strategy 4: Try to extract city from ad_name itself (intelligent parsing)
     if not city and ad_name:
