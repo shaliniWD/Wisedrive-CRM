@@ -968,17 +968,95 @@ async def reassign_lead(
 
 @api_router.delete("/leads/{lead_id}")
 async def delete_lead(lead_id: str, current_user: dict = Depends(get_current_user)):
-    """Delete a lead"""
+    """Delete a lead and ALL related data - CEO only"""
     # Check permission - only CEO can delete
     role_code = current_user.get("role_code", "")
     if role_code != "CEO":
-        raise HTTPException(status_code=403, detail="Not authorized to delete leads")
+        raise HTTPException(status_code=403, detail="Only CEO can delete leads")
     
-    result = await db.leads.delete_one({"id": lead_id})
-    if result.deleted_count == 0:
+    # Check if lead exists
+    lead = await db.leads.find_one({"id": lead_id}, {"_id": 0})
+    if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
     
-    return {"message": "Lead deleted"}
+    # Delete all related data
+    deleted_counts = {
+        "lead": 0,
+        "notes": 0,
+        "activities": 0,
+        "reassignment_logs": 0
+    }
+    
+    # Delete lead notes
+    notes_result = await db.lead_notes.delete_many({"lead_id": lead_id})
+    deleted_counts["notes"] = notes_result.deleted_count
+    
+    # Delete lead activities
+    activities_result = await db.lead_activities.delete_many({"lead_id": lead_id})
+    deleted_counts["activities"] = activities_result.deleted_count
+    
+    # Delete reassignment logs
+    reassign_result = await db.lead_reassignment_logs.delete_many({"lead_id": lead_id})
+    deleted_counts["reassignment_logs"] = reassign_result.deleted_count
+    
+    # Finally delete the lead
+    lead_result = await db.leads.delete_one({"id": lead_id})
+    deleted_counts["lead"] = lead_result.deleted_count
+    
+    logger.info(f"CEO {current_user.get('name')} deleted lead {lead_id} ({lead.get('name')}, {lead.get('mobile')})")
+    
+    return {
+        "message": f"Lead '{lead.get('name')}' and all related data deleted",
+        "deleted_counts": deleted_counts
+    }
+
+
+@api_router.delete("/leads/bulk-delete")
+async def bulk_delete_leads(
+    phone_numbers: List[str],
+    current_user: dict = Depends(get_current_user)
+):
+    """Bulk delete leads by phone numbers - CEO only"""
+    # Check permission - only CEO can delete
+    role_code = current_user.get("role_code", "")
+    if role_code != "CEO":
+        raise HTTPException(status_code=403, detail="Only CEO can delete leads")
+    
+    results = []
+    total_deleted = 0
+    
+    for phone in phone_numbers:
+        # Normalize phone
+        clean_phone = phone.replace(" ", "").replace("-", "")
+        phone_variants = [clean_phone, f"+{clean_phone}" if not clean_phone.startswith("+") else clean_phone]
+        
+        # Find lead by phone
+        lead = await db.leads.find_one(
+            {"$or": [{"mobile": {"$in": phone_variants}}, {"phone": {"$in": phone_variants}}]},
+            {"_id": 0, "id": 1, "name": 1, "mobile": 1}
+        )
+        
+        if lead:
+            lead_id = lead["id"]
+            
+            # Delete all related data
+            await db.lead_notes.delete_many({"lead_id": lead_id})
+            await db.lead_activities.delete_many({"lead_id": lead_id})
+            await db.lead_reassignment_logs.delete_many({"lead_id": lead_id})
+            await db.leads.delete_one({"id": lead_id})
+            
+            results.append({"phone": phone, "name": lead.get("name"), "status": "deleted"})
+            total_deleted += 1
+        else:
+            results.append({"phone": phone, "status": "not_found"})
+    
+    logger.info(f"CEO {current_user.get('name')} bulk deleted {total_deleted} leads")
+    
+    return {
+        "message": f"Deleted {total_deleted} leads",
+        "total_deleted": total_deleted,
+        "results": results
+    }
 
 
 # Pydantic model for status update
