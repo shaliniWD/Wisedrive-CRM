@@ -1164,6 +1164,7 @@ export default function AdAnalyticsPage() {
                           <tr className="bg-green-50 border-b border-green-200">
                             <th className="px-4 py-3 text-left text-xs font-semibold text-green-700 uppercase tracking-wider">Ad Name / ID</th>
                             <th className="px-4 py-3 text-left text-xs font-semibold text-green-700 uppercase tracking-wider">Source</th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-green-700 uppercase tracking-wider">Current City</th>
                             <th className="px-4 py-3 text-left text-xs font-semibold text-green-700 uppercase tracking-wider">Lead Count</th>
                             <th className="px-4 py-3 text-left text-xs font-semibold text-green-700 uppercase tracking-wider">First Seen</th>
                             <th className="px-4 py-3 text-left text-xs font-semibold text-green-700 uppercase tracking-wider">Map to City</th>
@@ -1176,6 +1177,25 @@ export default function AdAnalyticsPage() {
                                 <span className="text-sm font-medium text-gray-900">{ad.ad_name || ad.ad_id || 'Unknown'}</span>
                                 {ad.referral_headline && ad.referral_headline !== ad.ad_name && (
                                   <p className="text-xs text-gray-500 mt-0.5">Headline: {ad.referral_headline}</p>
+                                )}
+                              </td>
+                              <td className="px-4 py-3">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">
+                                  {ad.source === 'lead_scan' ? 'Lead Scan' : 'WhatsApp'}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3">
+                                {ad.current_cities && ad.current_cities.length > 0 ? (
+                                  <div className="flex flex-wrap gap-1">
+                                    {ad.current_cities.map((city, idx) => (
+                                      <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">
+                                        <MapPin className="h-3 w-3 mr-1" />
+                                        {city}
+                                      </span>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <span className="text-xs text-gray-400">No city data</span>
                                 )}
                               </td>
                               <td className="px-4 py-3">
