@@ -506,6 +506,14 @@ export default function LeadsPage() {
   const [isLoadingCitySummary, setIsLoadingCitySummary] = useState(false);
   const [remapMode, setRemapMode] = useState('auto'); // 'auto' or 'manual'
 
+  // Lead Investigator Modal State
+  const [isInvestigatorModalOpen, setIsInvestigatorModalOpen] = useState(false);
+  const [investigatorSearch, setInvestigatorSearch] = useState('');
+  const [investigatorSearchType, setInvestigatorSearchType] = useState('phone'); // 'phone' or 'name'
+  const [investigatorResult, setInvestigatorResult] = useState(null);
+  const [isInvestigating, setIsInvestigating] = useState(false);
+  const [investigatorError, setInvestigatorError] = useState(null);
+
   // Fetch city summary when modal opens
   const fetchCitySummary = async () => {
     setIsLoadingCitySummary(true);
