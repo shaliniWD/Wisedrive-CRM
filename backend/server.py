@@ -12807,30 +12807,47 @@ async def get_inspection_report_config(inspection_id: str, current_user: dict = 
         raise HTTPException(status_code=404, detail="Inspection not found")
     
     report_template_id = inspection.get("report_template_id")
+    report_template = None
     
     if report_template_id:
+        # Use the stored report_template_id from inspection
         report_template = await db.report_templates.find_one(
             {"id": report_template_id},
             {"_id": 0}
         )
-    else:
-        # Fallback to partner-based lookup
+    
+    if not report_template:
+        # Fallback to partner-based lookup using Option B logic
         partner_id = inspection.get("partner_id")
         if partner_id:
-            report_template = await db.report_templates.find_one(
-                {"partner_id": partner_id, "is_default": True, "is_active": True},
-                {"_id": 0}
-            )
-        else:
-            # Get B2C default
-            b2c_partner = await db.partners.find_one({"type": "b2c"}, {"_id": 0})
-            if b2c_partner:
+            # Step 1: Check Partner's explicit default_report_template_id
+            partner = await db.partners.find_one({"id": partner_id}, {"_id": 0})
+            if partner and partner.get("default_report_template_id"):
+                report_template = await db.report_templates.find_one(
+                    {"id": partner["default_report_template_id"], "is_active": True},
+                    {"_id": 0}
+                )
+            # Step 2: Fallback to is_default flag
+            if not report_template:
+                report_template = await db.report_templates.find_one(
+                    {"partner_id": partner_id, "is_default": True, "is_active": True},
+                    {"_id": 0}
+                )
+    
+    if not report_template:
+        # Final fallback to B2C default
+        b2c_partner = await db.partners.find_one({"type": "b2c"}, {"_id": 0, "id": 1, "default_report_template_id": 1})
+        if b2c_partner:
+            if b2c_partner.get("default_report_template_id"):
+                report_template = await db.report_templates.find_one(
+                    {"id": b2c_partner["default_report_template_id"], "is_active": True},
+                    {"_id": 0}
+                )
+            if not report_template:
                 report_template = await db.report_templates.find_one(
                     {"partner_id": b2c_partner["id"], "is_default": True, "is_active": True},
                     {"_id": 0}
                 )
-            else:
-                report_template = None
     
     if not report_template:
         # Return default config
