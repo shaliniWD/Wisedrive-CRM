@@ -2851,14 +2851,16 @@ async def twilio_whatsapp_webhook(
             "ReferralSourceType": ReferralSourceType,
             "ReferralNumMedia": ReferralNumMedia,
             "ButtonText": ButtonText,
-            "CtwaClid": CtwaClid
+            "CtwaClid": CtwaClid,
+            "ReferralCtwaClid": ReferralCtwaClid  # This is what Twilio actually sends!
         },
         "extraction_log": []
     }
     
     # Log parsed parameters
     logger.info(f"WhatsApp webhook received: From={From}, Body={Body[:100] if Body else 'empty'}")
-    logger.info(f"CTWA Referral Data: SourceUrl={ReferralSourceUrl}, Headline={ReferralHeadline}, SourceType={ReferralSourceType}, CtwaClid={CtwaClid}")
+    logger.info(f"CTWA Referral Data: SourceUrl={ReferralSourceUrl}, Headline={ReferralHeadline}, SourceType={ReferralSourceType}")
+    logger.info(f"CTWA Click IDs: CtwaClid={CtwaClid}, ReferralCtwaClid={ReferralCtwaClid}")
     logger.info(f"Additional CTWA: ButtonText={ButtonText}, ReferralBody={ReferralBody}, ReferralNumMedia={ReferralNumMedia}")
     
     # Default response message
@@ -2877,13 +2879,24 @@ async def twilio_whatsapp_webhook(
     ad_name = None
     
     # ==================== EXTRACT AD INFO FROM CTWA REFERRAL DATA ====================
-    # Priority 1: Extract from CTWA Click ID (most reliable)
-    if CtwaClid:
-        ad_id = CtwaClid
-        audit_data["extraction_log"].append({"step": 1, "source": "CtwaClid", "found": True, "value": CtwaClid})
-        logger.info(f"Found ad_id from CtwaClid: {ad_id}")
+    # Priority 1: Extract from CTWA Click ID 
+    # NOTE: Twilio sends this as "ReferralCtwaClid", not "CtwaClid"!
+    effective_ctwa_clid = ReferralCtwaClid or CtwaClid  # Use ReferralCtwaClid if available, else fall back to CtwaClid
+    
+    if effective_ctwa_clid:
+        ad_id = effective_ctwa_clid
+        source_field = "ReferralCtwaClid" if ReferralCtwaClid else "CtwaClid"
+        audit_data["extraction_log"].append({"step": 1, "source": source_field, "found": True, "value": effective_ctwa_clid})
+        logger.info(f"Found ad_id from {source_field}: {ad_id}")
     else:
-        audit_data["extraction_log"].append({"step": 1, "source": "CtwaClid", "found": False, "reason": "CtwaClid is empty/null"})
+        audit_data["extraction_log"].append({
+            "step": 1, 
+            "source": "CtwaClid/ReferralCtwaClid", 
+            "found": False, 
+            "reason": "Both CtwaClid and ReferralCtwaClid are empty/null",
+            "CtwaClid_value": CtwaClid,
+            "ReferralCtwaClid_value": ReferralCtwaClid
+        })
     
     # Priority 2: Extract ad_id from ReferralSourceUrl (contains fbclid or ad parameters)
     if not ad_id and ReferralSourceUrl:
