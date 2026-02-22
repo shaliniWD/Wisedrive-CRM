@@ -166,7 +166,7 @@ async def startup():
     global meta_ads_scheduler
     meta_ads_scheduler = MetaAdsScheduler(db, meta_ads_service)
     await meta_ads_scheduler.start()
-    logger.info("Meta Ads Scheduler started (sync every 15 minutes)")
+    logger.info("Meta Ads Scheduler started (sync every 6 hours)")
     
     logger.info("WiseDrive CRM V2 started with HR Module, ESS Mobile API, and FCM Push Notifications")
 
