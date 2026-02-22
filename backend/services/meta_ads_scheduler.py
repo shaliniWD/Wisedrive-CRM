@@ -129,10 +129,11 @@ class MetaAdsScheduler:
             )
             
             if not insights.get("success"):
-                logger.error(f"Failed to fetch ad insights: {insights.get('error')}")
-                return
+                error_msg = insights.get("error", "Unknown error")
+                logger.error(f"Failed to fetch ad insights: {error_msg}")
+                return {"success": False, "error": error_msg, "token_expired": insights.get("token_expired", False)}
             
-            # Store in cache collection
+            # Store aggregated cache data
             cache_data = {
                 "type": "meta_ads_insights",
                 "date_range": {"from": date_from, "to": date_to},
@@ -146,10 +147,44 @@ class MetaAdsScheduler:
                 upsert=True
             )
             
-            logger.info(f"Cached performance data for {len(insights.get('data', []))} ads")
+            # Also store per-ad performance data for offline access
+            ads_updated = 0
+            for ad_insight in insights.get("data", []):
+                ad_id = ad_insight.get("ad_id")
+                if ad_id:
+                    await self.db.ad_performance.update_one(
+                        {"ad_id": ad_id},
+                        {
+                            "$set": {
+                                "ad_id": ad_id,
+                                "ad_name": ad_insight.get("ad_name"),
+                                "campaign_id": ad_insight.get("campaign_id"),
+                                "campaign_name": ad_insight.get("campaign_name"),
+                                "adset_id": ad_insight.get("adset_id"),
+                                "adset_name": ad_insight.get("adset_name"),
+                                "spend": float(ad_insight.get("spend", 0)),
+                                "impressions": int(ad_insight.get("impressions", 0)),
+                                "clicks": int(ad_insight.get("clicks", 0)),
+                                "reach": int(ad_insight.get("reach", 0)),
+                                "cpc": float(ad_insight.get("cpc", 0)),
+                                "cpm": float(ad_insight.get("cpm", 0)),
+                                "ctr": float(ad_insight.get("ctr", 0)),
+                                "frequency": float(ad_insight.get("frequency", 0)),
+                                "actions": ad_insight.get("actions", []),
+                                "date_range": {"from": date_from, "to": date_to},
+                                "synced_at": datetime.now(timezone.utc).isoformat()
+                            }
+                        },
+                        upsert=True
+                    )
+                    ads_updated += 1
+            
+            logger.info(f"Cached performance data for {len(insights.get('data', []))} ads, updated {ads_updated} ad records")
+            return {"success": True, "ads_count": len(insights.get("data", [])), "updated": ads_updated}
             
         except Exception as e:
             logger.error(f"Error syncing performance data: {e}")
+            return {"success": False, "error": str(e)}
     
     async def update_sync_timestamp(self):
         """Update the last sync timestamp in database"""
@@ -159,7 +194,7 @@ class MetaAdsScheduler:
                 "$set": {
                     "key": "meta_ads_last_sync",
                     "value": datetime.now(timezone.utc).isoformat(),
-                    "sync_interval_minutes": self.sync_interval_minutes
+                    "sync_interval_hours": self.sync_interval_hours
                 }
             },
             upsert=True
@@ -180,6 +215,15 @@ class MetaAdsScheduler:
                 "date_range": cache.get("date_range")
             }
         return {"data": [], "synced_at": None, "date_range": None}
+    
+    async def get_cached_ad_performance(self, ad_id: str = None) -> dict:
+        """Get cached performance data for a specific ad or all ads"""
+        if ad_id:
+            perf = await self.db.ad_performance.find_one({"ad_id": ad_id}, {"_id": 0})
+            return perf or {}
+        else:
+            perfs = await self.db.ad_performance.find({}, {"_id": 0}).to_list(1000)
+            return {"data": perfs, "count": len(perfs)}
 
 
 # Scheduler instance (initialized in server.py)
