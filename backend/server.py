@@ -2883,12 +2883,20 @@ async def twilio_whatsapp_webhook(
             fbclid_match = re.search(r'fbclid[=:]([a-zA-Z0-9_-]+)', ReferralSourceUrl, re.IGNORECASE)
             if fbclid_match:
                 ad_id = fbclid_match.group(1)
+                audit_data["extraction_log"].append({"step": 2, "source": "ReferralSourceUrl (fbclid)", "found": True, "value": ad_id})
                 logger.info(f"Found ad_id from fbclid: {ad_id}")
+            else:
+                audit_data["extraction_log"].append({"step": 2, "source": "ReferralSourceUrl", "found": False, "reason": "No ad_id or fbclid found in URL", "url": ReferralSourceUrl})
+    elif not ad_id:
+        audit_data["extraction_log"].append({"step": 2, "source": "ReferralSourceUrl", "found": False, "reason": "ReferralSourceUrl is empty/null"})
     
     # Priority 3: Use ReferralHeadline as ad_name for lookup
     if ReferralHeadline:
         ad_name = ReferralHeadline.strip()
+        audit_data["extraction_log"].append({"step": 3, "source": "ReferralHeadline", "field": "ad_name", "found": True, "value": ad_name})
         logger.info(f"Found ad_name from ReferralHeadline: {ad_name}")
+    else:
+        audit_data["extraction_log"].append({"step": 3, "source": "ReferralHeadline", "field": "ad_name", "found": False, "reason": "ReferralHeadline is empty/null"})
     
     # Priority 4: Extract from message body (fallback)
     if Body:
@@ -2896,11 +2904,15 @@ async def twilio_whatsapp_webhook(
             ad_match = re.search(r'ad[_\s]?id[:\s]*([a-zA-Z0-9_-]+)', Body, re.IGNORECASE)
             if ad_match:
                 ad_id = ad_match.group(1)
+                audit_data["extraction_log"].append({"step": 4, "source": "Body (regex)", "found": True, "value": ad_id})
                 logger.info(f"Found ad_id from message body: {ad_id}")
+            else:
+                audit_data["extraction_log"].append({"step": 4, "source": "Body (regex)", "found": False, "reason": "No ad_id pattern found in body"})
         
         campaign_match = re.search(r'campaign[_\s]?id[:\s]*([a-zA-Z0-9_-]+)', Body, re.IGNORECASE)
         if campaign_match:
             campaign_id = campaign_match.group(1)
+            audit_data["extraction_log"].append({"step": 4.1, "source": "Body (regex)", "field": "campaign_id", "found": True, "value": campaign_id})
         
         # Check for platform indicators
         if 'instagram' in Body.lower() or 'insta' in Body.lower():
@@ -2915,10 +2927,19 @@ async def twilio_whatsapp_webhook(
         elif 'facebook' in ReferralSourceType.lower() or 'fb' in ReferralSourceType.lower():
             platform = "facebook"
     
+    # Add final extraction summary to audit
+    audit_data["extracted_values"] = {
+        "ad_id": ad_id,
+        "ad_name": ad_name,
+        "campaign_id": campaign_id,
+        "platform": platform
+    }
+    
     # ==================== CITY LOOKUP FROM AD MAPPING ====================
     city = None  # No default city - must match a mapping
     city_id = None
     ad_mapping = None
+    city_lookup_log = []
     
     # Strategy 1: Lookup by ad_id (exact match)
     if ad_id:
@@ -2926,7 +2947,12 @@ async def twilio_whatsapp_webhook(
         if ad_mapping:
             city = ad_mapping.get("city")
             city_id = ad_mapping.get("city_id")
+            city_lookup_log.append({"strategy": 1, "method": "ad_id exact match", "found": True, "city": city})
             logger.info(f"Found city mapping by ad_id '{ad_id}': {city}")
+        else:
+            city_lookup_log.append({"strategy": 1, "method": "ad_id exact match", "found": False, "ad_id": ad_id})
+    else:
+        city_lookup_log.append({"strategy": 1, "method": "ad_id exact match", "skipped": True, "reason": "No ad_id available"})
     
     # Strategy 2: Lookup by ad_name (partial match on ad_name field)
     if not city and ad_name:
