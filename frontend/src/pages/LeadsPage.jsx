@@ -1556,6 +1556,7 @@ export default function LeadsPage() {
             )}
           </tbody>
         </table>
+        </div>
         
         {/* Pagination */}
         {!loading && filteredLeads.length > 0 && (
