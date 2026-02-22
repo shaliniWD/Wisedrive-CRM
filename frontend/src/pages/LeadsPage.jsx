@@ -502,7 +502,9 @@ export default function LeadsPage() {
   const [cityRemapData, setCityRemapData] = useState({ fromCity: '', toCity: '', reassignToSalesRep: true });
   const [citySummary, setCitySummary] = useState([]);
   const [isRemapping, setIsRemapping] = useState(false);
+  const [isAutoRemapping, setIsAutoRemapping] = useState(false);
   const [isLoadingCitySummary, setIsLoadingCitySummary] = useState(false);
+  const [remapMode, setRemapMode] = useState('auto'); // 'auto' or 'manual'
 
   // Fetch city summary when modal opens
   const fetchCitySummary = async () => {
@@ -514,6 +516,28 @@ export default function LeadsPage() {
       toast.error('Failed to load city summary');
     } finally {
       setIsLoadingCitySummary(false);
+    }
+  };
+
+  // Auto-remap based on AD ID mappings
+  const handleAutoRemapByAdId = async () => {
+    setIsAutoRemapping(true);
+    try {
+      const response = await leadsApi.autoRemapByAdId(cityRemapData.reassignToSalesRep);
+      const { remapped_count, reassigned_count, skipped_count } = response.data;
+      
+      if (remapped_count > 0) {
+        toast.success(`✅ Auto-remapped ${remapped_count} leads based on AD ID mappings. ${reassigned_count} reassigned to sales reps.`);
+      } else {
+        toast.info(`No leads needed remapping. ${skipped_count} leads already have correct city.`);
+      }
+      
+      setIsCityRemapModalOpen(false);
+      await fetchData(); // Refresh leads
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to auto-remap cities');
+    } finally {
+      setIsAutoRemapping(false);
     }
   };
 
