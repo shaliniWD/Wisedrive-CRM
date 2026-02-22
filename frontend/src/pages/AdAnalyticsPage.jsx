@@ -1811,6 +1811,32 @@ export default function AdAnalyticsPage() {
                   </SelectContent>
                 </Select>
               </div>
+              
+              {/* Partner Assignment - Option C */}
+              <div className="space-y-2 col-span-2">
+                <Label className="text-sm font-medium flex items-center gap-2">
+                  <Building2 className="h-4 w-4 text-violet-500" />
+                  Assign to Partner (Optional)
+                </Label>
+                <Select value={formData.partner_id || 'none'} onValueChange={(v) => setFormData({ ...formData, partner_id: v === 'none' ? '' : v })}>
+                  <SelectTrigger className="h-10" data-testid="ad-partner-select">
+                    <SelectValue placeholder="B2C Default (No specific partner)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">B2C Default (No specific partner)</SelectItem>
+                    {partners.filter(p => p.is_active).map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        <div className="flex items-center gap-2">
+                          <span className={`w-2 h-2 rounded-full ${p.type === 'b2c' ? 'bg-blue-500' : p.type === 'bank' ? 'bg-emerald-500' : p.type === 'insurance' ? 'bg-amber-500' : 'bg-purple-500'}`} />
+                          {p.name}
+                          <span className="text-xs text-gray-400">({p.type.toUpperCase()})</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-gray-500">Leads from this ad will be assigned to the selected partner</p>
+              </div>
             </div>
 
             <div className="flex justify-end gap-3 pt-4 border-t">
