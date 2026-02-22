@@ -3782,6 +3782,143 @@ async def create_ad_city_mapping(mapping: AdCityMapping, current_user: dict = De
         return {"message": "Mapping created", "id": mapping_dict["id"]}
 
 
+@api_router.post("/settings/ad-city-mappings/by-name")
+async def create_ad_city_mapping_by_name(
+    ad_name: str,
+    city: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Create AD mapping by ad_name (useful when ad_id is not captured).
+    This allows mapping leads based on the ad name/headline from CTWA data.
+    """
+    role_code = current_user.get("role_code", "")
+    if role_code not in ["CEO", "HR_MANAGER", "CTO"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    if not ad_name or not city:
+        raise HTTPException(status_code=400, detail="ad_name and city are required")
+    
+    # Check if mapping already exists for this ad_name
+    existing = await db.ad_city_mappings.find_one({
+        "ad_name": {"$regex": f"^{re.escape(ad_name)}$", "$options": "i"}
+    })
+    
+    if existing:
+        # Update existing
+        await db.ad_city_mappings.update_one(
+            {"id": existing["id"]},
+            {"$set": {
+                "city": city,
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "updated_by": current_user.get("id")
+            }}
+        )
+        return {
+            "message": f"Mapping updated: '{ad_name}' -> '{city}'",
+            "id": existing.get("id"),
+            "action": "updated"
+        }
+    else:
+        # Create new with auto-generated ad_id
+        auto_ad_id = f"name_{ad_name[:30].replace(' ', '_').replace('/', '_')}_{datetime.now().strftime('%Y%m%d')}"
+        mapping_dict = {
+            "id": str(uuid.uuid4()),
+            "ad_id": auto_ad_id,
+            "ad_name": ad_name,
+            "city": city,
+            "source": "manual_by_name",
+            "is_active": True,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_by": current_user.get("id")
+        }
+        await db.ad_city_mappings.insert_one(mapping_dict)
+        return {
+            "message": f"Mapping created: '{ad_name}' -> '{city}'",
+            "id": mapping_dict["id"],
+            "action": "created"
+        }
+
+
+@api_router.post("/leads/{lead_id}/remap-city")
+async def remap_single_lead_city(
+    lead_id: str,
+    city: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Remap a single lead to a different city and optionally create an ad mapping.
+    """
+    role_code = current_user.get("role_code", "")
+    if role_code not in ["CEO", "HR_MANAGER", "CTO", "ADMIN"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Find the lead
+    lead = await db.leads.find_one({"id": lead_id}, {"_id": 0})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    
+    old_city = lead.get("city")
+    ad_name = lead.get("ad_name")
+    
+    # Update the lead's city
+    await db.leads.update_one(
+        {"id": lead_id},
+        {"$set": {
+            "city": city,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "city_remapped_by": current_user.get("id"),
+            "city_remapped_at": datetime.now(timezone.utc).isoformat(),
+            "previous_city": old_city
+        }}
+    )
+    
+    # If lead has ad_name, offer to create mapping
+    mapping_created = False
+    if ad_name:
+        existing_mapping = await db.ad_city_mappings.find_one({
+            "ad_name": {"$regex": f"^{re.escape(ad_name)}$", "$options": "i"}
+        })
+        
+        if not existing_mapping:
+            # Auto-create mapping for future leads
+            auto_ad_id = f"name_{ad_name[:30].replace(' ', '_').replace('/', '_')}_{datetime.now().strftime('%Y%m%d')}"
+            mapping_dict = {
+                "id": str(uuid.uuid4()),
+                "ad_id": auto_ad_id,
+                "ad_name": ad_name,
+                "city": city,
+                "source": "auto_from_lead_remap",
+                "is_active": True,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "created_by": current_user.get("id")
+            }
+            await db.ad_city_mappings.insert_one(mapping_dict)
+            mapping_created = True
+            logger.info(f"Auto-created mapping from lead remap: '{ad_name}' -> '{city}'")
+    
+    # Log the activity
+    activity = {
+        "id": str(uuid.uuid4()),
+        "lead_id": lead_id,
+        "user_id": current_user.get("id"),
+        "user_name": current_user.get("name"),
+        "action": "city_remapped",
+        "old_value": old_city,
+        "new_value": city,
+        "details": f"City changed from '{old_city}' to '{city}'",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.lead_activities.insert_one(activity)
+    
+    return {
+        "success": True,
+        "message": f"Lead city updated from '{old_city}' to '{city}'",
+        "mapping_created": mapping_created,
+        "mapping_note": f"Future leads with ad_name '{ad_name}' will auto-map to '{city}'" if mapping_created else None
+    }
+
+
 @api_router.put("/settings/ad-city-mappings/{mapping_id}")
 async def update_ad_city_mapping(mapping_id: str, mapping: AdCityMappingUpdate, current_user: dict = Depends(get_current_user)):
     """Update AD ID to City mapping"""
