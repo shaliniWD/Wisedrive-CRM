@@ -1,0 +1,83 @@
+{
+  "summary": "Tested Twilio WhatsApp webhook audit trail feature for WiseDrive CRM. All 9 backend tests passed. Frontend UI verified - Leads page shows META_WHATSAPP and DIRECT_WHATSAPP sources correctly, Lead Investigator modal opens and has search functionality.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/leads/sources", "issue": "Returns 404 - endpoint may not exist or has different path", "priority": "LOW"}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_twilio_webhook_audit_trail.py",
+    "/app/test_reports/pytest/pytest_twilio_audit_trail.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Webhook correctly stores comprehensive audit trail with raw_twilio_params, parsed_standard_fields, parsed_ctwa_fields, extraction_log, city_lookup_log, and final_assignment",
+    "META_WHATSAPP vs DIRECT_WHATSAPP source classification works correctly based on presence of CTWA data",
+    "Lead Investigate API (/api/leads/investigate/by-phone/{phone}) returns webhook_audit data correctly",
+    "CtwaClid is correctly extracted and stored as ad_id when present",
+    "City lookup uses 4 strategies: ad_id match, ad_name match, body content match, and keyword extraction from ad_name"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_twilio_webhook_audit_trail.py"
+  ],
+  "success_rate": {
+    "backend": "100% (9 passed, 0 failed)",
+    "frontend": "100% - UI loads correctly, sources displayed properly"
+  },
+  "test_credentials": {
+    "email": "kalyan@wisedrive.com",
+    "password": "password123",
+    "country": "India"
+  },
+  "seed_data_creation": "Test leads created via webhook: +919876543210 (META_WHATSAPP with CTWA data), +919876543211 (DIRECT_WHATSAPP)",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Twilio WhatsApp webhook audit trail feature fully tested. Key endpoints: POST /api/webhooks/twilio/whatsapp (accepts CTWA params, stores audit trail), GET /api/leads/investigate/by-phone/{phone} (returns webhook_audit data). Test file at /app/backend/tests/test_twilio_webhook_audit_trail.py can be reused for regression testing.",
+  "features_tested": {
+    "POST /api/webhooks/twilio/whatsapp": "PASS - Accepts all CTWA parameters (CtwaClid, ReferralHeadline, ReferralSourceUrl, etc.) and stores audit trail",
+    "GET /api/leads/investigate/by-phone/{phone}": "PASS - Returns full lead data including webhook_audit with all sections",
+    "META_WHATSAPP source classification": "PASS - Leads with CTWA data (CtwaClid or ReferralHeadline) are classified as META_WHATSAPP",
+    "DIRECT_WHATSAPP source classification": "PASS - Leads without CTWA data are classified as DIRECT_WHATSAPP",
+    "Audit trail sections": "PASS - All 6 sections present: raw_twilio_params, parsed_standard_fields, parsed_ctwa_fields, extraction_log, city_lookup_log, final_assignment",
+    "Frontend Leads page": "PASS - Shows leads with correct source (META_WHATSAPP/DIRECT_WHATSAPP) and AD IDs",
+    "Lead Investigator modal": "PASS - Opens correctly with Search by Phone and Search by Name tabs"
+  },
+  "api_response_verification": {
+    "investigate_endpoint_response": {
+      "lead_found": true,
+      "source": "META_WHATSAPP",
+      "webhook_audit_present": true,
+      "audit_sections": ["raw_twilio_params", "parsed_standard_fields", "parsed_ctwa_fields", "extraction_log", "city_lookup_log", "final_assignment"]
+    },
+    "webhook_audit_sample": {
+      "parsed_ctwa_fields": {
+        "CtwaClid": "CTW-TEST-AD-12345",
+        "ReferralHeadline": "Bangalore Car Inspection",
+        "ReferralSourceUrl": "https://fb.me/abc123?ad_id=123456789",
+        "ReferralSourceType": "facebook_ad",
+        "ButtonText": "Send Message"
+      },
+      "extraction_log": [
+        {"step": 1, "source": "CtwaClid", "found": true, "value": "CTW-TEST-AD-12345"},
+        {"step": 3, "source": "ReferralHeadline", "field": "ad_name", "found": true, "value": "Bangalore Car Inspection"}
+      ],
+      "final_assignment": {
+        "city": "Bangalore",
+        "ad_id": "CTW-TEST-AD-12345",
+        "ad_name": "Bangalore Car Inspection",
+        "platform": "facebook"
+      }
+    }
+  },
+  "bug_fix_verification": {
+    "original_bug": "NameError in webhook - missing To, AccountSid, NumMedia parameters",
+    "fix_applied": "Added To, AccountSid, NumMedia as Form parameters with defaults",
+    "verification": "PASS - Webhook now accepts all parameters without errors and stores audit trail correctly"
+  }
+}
