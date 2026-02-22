@@ -10361,6 +10361,15 @@ async def get_meta_token_info(current_user: dict = Depends(get_current_user)):
     if role_code not in ["CEO", "CTO"]:
         raise HTTPException(status_code=403, detail="Not authorized - CEO/CTO only")
     
+    # First, check if there's a newer token in the database
+    saved_token = await db.system_config.find_one({"key": "meta_access_token"})
+    if saved_token and saved_token.get("value"):
+        current_in_memory = meta_ads_service.access_token
+        if current_in_memory != saved_token["value"]:
+            # Database has a different token - use that
+            meta_ads_service.update_token(saved_token["value"])
+            logger.info("Loaded newer Meta token from database")
+    
     token_info = await meta_ads_service.get_token_info()
     return {
         "configured": meta_ads_service.is_configured(),
