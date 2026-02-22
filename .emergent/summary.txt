@@ -1,104 +1,98 @@
 <analysis>**original_problem_statement:**
-The user's initial request was to build a React Native (Expo) mobile application for mechanics, integrated with a B2B inspection CRM and featuring OBD-II scanning. The project's focus has since shifted to fixing critical bugs and adding features to the CRM web application.
+The user's core problem is ensuring data integrity for leads generated from Meta (Facebook/Instagram) ads via WhatsApp, managed through a custom CRM.
 
-Recent user requests focused on:
-1.  **Fixing a critical bug** where all leads from Meta (Facebook) WhatsApp campaigns were being incorrectly assigned to the city Vizag.
-2.  **Developing a mechanism to correct historical data** for the leads that were wrongly assigned.
-3.  **Improving the ad-to-city mapping process**, especially when the Meta API token is expired, by sourcing data from existing leads.
-4.  **Enhancing UI/UX** on the CRM's Leads and Ad Analytics pages to improve traceability and provide tools for data correction.
-5.  Investigating the source of a specific lead in the user's production environment.
+Key issues and requests during this session were:
+1.  **Lead Source Investigation:** The user wanted to understand why a specific lead () was not properly attributed in their  environment.
+2.  **Incorrect Source Classification:** Direct WhatsApp messages (not from ads) were being mislabeled as . The user requested a new  source.
+3.  **Missing Ad Performance Data:** The Ad Analytics page showed ₹0 for all metrics because the Meta API token was expired. The user wanted this fixed and for the data to sync periodically.
+4.  **Manual Token Refresh:** The user found the process of manually generating and pasting a Meta token cumbersome and requested a fully automatic, one-click refresh solution.
+5.  **Missing AD ID:** The most critical issue is that for many real WhatsApp leads, the  is captured, but the  is missing. This prevents correct city mapping and performance tracking.
+6.  **Comprehensive Audit Trail:** To solve the missing AD ID issue, the user requested a full audit trail in the UI to see the entire data flow: what Meta sends, what Twilio captures, what Twilio sends to the CRM, and how the CRM processes it.
 
 **PRODUCT REQUIREMENTS:**
-1.  **B2B Inspection & Reporting Flow (In Progress):** The CRM is the primary focus. The core task is to ensure data integrity for leads generated from Meta ads.
-2.  **Mechanic Mobile App (On Hold):** Development is paused. The last state included a new blue-themed UI and test data integration, but it's pending user feedback and has an unreliable build process.
-3.  **Meta Ads Integration (Partially Blocked):**
-    *   The WhatsApp webhook must correctly parse Click-to-WhatsApp (CTWA) referral data to assign the correct city to new leads.
-    *   The system must provide tools to correct historical lead data.
-    *   The system must be able to identify and map unmapped ads even if the Meta API connection is down (e.g., due to an expired token).
+1.  **Lead Attribution:** The CRM must reliably distinguish between leads from Meta Ads () and direct messages ().
+2.  **AD ID & Name Capture:** The WhatsApp webhook must capture both the  (from ) and  (from ) when a user clicks a Meta Ad.
+3.  **City Mapping:** The system must use the  or  to automatically assign the correct city to a new lead based on predefined mappings.
+4.  **Ad Performance Sync:** The CRM must sync ad performance data (spend, clicks, impressions) from the Meta Marketing API every 6 hours and display it, with a fallback to cached data if the API is down.
+5.  **Seamless Authentication:** The Meta API connection must be maintainable via a simple, one-click OAuth flow within the CRM, eliminating manual token management.
+6.  **Debugging & Data Correction Tools:** The CRM must provide UI tools for admins/CEOs to investigate leads, diagnose source issues, remap cities, and delete test data.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The project consists of a FastAPI backend, a React CRM frontend, and a React Native (Expo) mechanic app.
+The project is a full-stack application with a FastAPI backend and a React CRM frontend. The mechanic mobile app development is on hold.
 
 *   **CRM Web App:**
-    *   A critical bug in the WhatsApp webhook () has been fixed. It now correctly parses CTWA data (, ) to assign the right city to incoming leads based on .
-    *   The Ad Analytics page () has been significantly enhanced. It can now scan existing leads to discover unmapped ads, bypassing the expired Meta token issue. It also features an auto-map function that uses historical lead data to suggest and create city mappings. A debug log panel has been added for easier troubleshooting.
-    *   The Leads page () features a Remap City modal that allows for bulk correction of lead cities, with both manual and automatic (based on AD ID) modes. It also now displays the  and  for each lead, improving traceability.
-
-*   **Mechanic Mobile App:**
-    *   The app has a blue-themed UI. The backend is ready to serve test data via the  endpoint. The map navigation feature is functional. APK generation has been unreliable.
+    *   **Lead Investigator Tool:** A new feature on the Leads page allows searching for leads by phone or name. It displays basic lead info, source, AD ID, and AD Name.
+    *   **Automatic Token Refresh:** A full OAuth 2.0 flow has been implemented. A single Refresh button on the Ad Analytics page handles checking the Meta token, initiating the OAuth popup for the user to grant permissions, and automatically saving the new token.
+    *   **Ad Performance Sync:** A background scheduler syncs Meta ad performance data every 6 hours. The Ad Analytics page now falls back to this cached data if the live API call fails (e.g., due to a temporarily invalid token).
+    *   **Lead Source Fix:** The webhook now correctly differentiates between  (from ads with CTWA data) and  (for direct messages).
+    *   **Delete Lead Feature:** A CEO-only feature allows for the permanent deletion of a lead and all its associated data (notes, activities) from the UI.
+    *   **City Mapping Enhancement:** The webhook logic now attempts to find a city mapping using  as a fallback if  is missing. It also includes logic to auto-create mappings if a city name is found as a keyword in the ad name.
+    *   **Audit Trail (In Progress):** The backend was just updated to store the raw Twilio webhook payload and a detailed processing log () for each lead. The frontend was updated to display this trail.
 
 **Last working item**:
-*   **Last item agent was working:** The agent was investigating a specific lead ( / ) requested by the user. The agent concluded that the lead does not exist in the preview environment's database and provided the user with commands ( API call, MongoDB query) to investigate it on their own  environment.
-*   **Status:** USER VERIFICATION PENDING
-*   **Agent Testing Done:** Y (Agent confirmed the lead was not in the local database).
-*   **Which testing method agent to use?** Manual testing by the user on their own environment. The agent has already provided the necessary commands.
+*   **Last item agent was working:** Implementing a comprehensive audit trail within the Lead Investigator modal. This feature is designed to provide a step-by-step log of how lead data is processed, from the raw Twilio request to the final CRM entry, to diagnose why the  is often missing while the  is present.
+*   **Status:** IN PROGRESS
+*   **Agent Testing Done:** N (The agent completed the coding for both backend and frontend and verified that the application compiles, but has not performed any functional testing of the new audit trail feature.)
+*   **Which testing method agent to use?** Both.
+    1.  **Backend:** Use  to send simulated Twilio webhook requests to . Test two scenarios: one with CTWA data (like ) and one without. After the call, query the database to confirm that the  field is populated correctly in the new lead document.
+    2.  **Frontend:** Use the  tool to log into the CRM, navigate to the Leads page, use the Investigate Lead feature on the newly created test leads, and verify that the Audit Trail section appears and displays the logged data correctly.
 *   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
-*   **Issue 1: User cannot find lead  in . (P0)**
-    *   **Description:** The user wants to find the source and AD ID for a lead in their production environment, which the agent cannot access.
-    *   **Attempted fixes:** The agent provided API and database queries for the user to run themselves.
+*   **Issue 1: Missing AD ID on Real WhatsApp Leads (P0)**
+    *   **Description:** The core unresolved problem. Real leads from Meta Ads are being created with  and an , but the crucial  is Not captured. This points to the  parameter not being received from Twilio. The new audit trail feature is intended to prove or disprove this.
+    *   **Attempted fixes:** The agent implemented an extensive audit trail to log the entire data flow for each lead.
     *   **Next debug checklist:**
-        1.  Await user confirmation on whether the provided commands helped them find the lead.
-        2.  If the user is still stuck, prepare to guide them on using browser developer tools to make the API call or create a simple UI-based investigation tool.
-    *   **Why fix this issue and what will be achieved with the fix?** To resolve the user's immediate query and validate that the new AD ID tracking features are working correctly in their environment.
-    *   **Status:** USER VERIFICATION PENDING
-    *   **Is recurring issue?** N
-    *   **Should Test frontend/backend/both after fix?** Backend (if a new investigation endpoint is required).
-    *   **Blocked on other issue:** None.
-
-*   **Issue 2: Unreliable APK Build Process for Mechanic App (P2)**
-    *   **Description:** The  command has been failing with timeouts and  errors. This blocks testing of the mechanic app.
-    *   **Next debug checklist:**
-        1.  Run 
-added 447 packages in 14s
-
-55 packages are looking for funding
-  run `npm fund` for details to ensure the CLI is installed correctly in the environment.
-        2.  Review  for any misconfigurations.
-        3.  Initiate a new build (Run this command inside a project directory.) and carefully monitor the output for specific errors.
-    *   **Why fix this issue and what will be achieved with the fix?** To unblock any future development and testing on the mechanic mobile app.
-    *   **Status:** NOT STARTED
+        1.  Test the newly implemented audit trail feature (as described in Last working item).
+        2.  Guide the user to trigger a new lead by clicking a real Meta Ad.
+        3.  Use the Investigate Lead tool on the new lead and examine the Audit Trail.
+        4.  Confirm if  is present or absent in the Raw Twilio Payload section. If absent, the issue lies with the Meta -> Twilio integration, not the CRM code.
+    *   **Why fix this issue and what will be achieved with the fix?** This is the primary blocker for accurate lead tracking and city mapping. Fixing it will ensure data integrity for all Meta-generated leads.
+    *   **Status:** IN PROGRESS
     *   **Is recurring issue?** Y
-    *   **Should Test frontend/backend/both after fix?** N/A (Build process).
+    *   **Should Test frontend/backend/both after fix?** Both.
     *   **Blocked on other issue:** None.
 
 **In progress Task List**:
-*   None.
+*   **Task 1: Complete and Test the Lead Investigator Audit Trail (P0)**
+    *   **Where to resume:** The code is written. The agent must now perform functional testing of the backend (data storage) and frontend (UI display) for the new audit trail.
+    *   **What will be achieved with this?** It will provide the user with a definitive tool to understand why AD IDs are not being captured, by showing the exact data received from Twilio for every lead.
+    *   **Status:** IN PROGRESS
+    *   **Should Test frontend/backend/both after fix?** Both.
+    *   **Blocked on something:** None.
 
 **Upcoming and Future Tasks**
 **Upcoming Tasks:**
-*   **P0: Guide User to Refresh Expired Meta Token:** The root cause of all issues on the Ad Analytics page is the expired Meta token. The next step is to guide the user on how to re-authenticate with Meta through the CRM's settings page.
-*   **P1: Implement Full Questionnaire Flow (Mechanic App):** Integrate the questionnaire module into the mobile app's navigation, accessible after the inspection categories screen.
-*   **P2: Implement Reject Reason Modal (Mechanic App):** Add a modal to the  screen that appears when a mechanic rejects an inspection, allowing them to provide a reason.
+*   **P1: User Guidance on a Real Ad Test:** After the audit trail is verified, the next step is to guide the user to click a real Meta Ad, generate a lead, and use the new tool to analyze the result.
+*   **P2: Investigate Meta/Twilio Configuration:** If the audit trail confirms that Twilio is not sending the , the next step will be to assist the user in investigating their Meta for Business and Twilio settings to ensure the CTWA integration is configured correctly.
 
 **Future Tasks:**
-*   Add PDF export for inspection reports.
-*   Add a Share via WhatsApp feature for reports.
-*   Refactor  into smaller, more manageable  modules.
-*   Add a reminders feature for customers in the CRM.
+*   **Mechanic Mobile App:**
+    *   Fix the unreliable APK build process.
+    *   Implement the full questionnaire flow.
+    *   Add a Reject Reason modal.
+*   **CRM:**
+    *   Add PDF export and Share via WhatsApp for inspection reports.
+    *   Add a customer reminders feature.
+*   **Technical Debt:**
+    *   Refactor the monolithic  into smaller, feature-specific  modules (e.g., , , ).
+    *   Refactor large frontend pages like  and  into smaller components and custom hooks.
 
 **Completed work in this session**
-- **CRM - Meta Lead City Bug Fix:** Fixed the WhatsApp webhook in  to correctly parse CTWA data and assign the right city to new leads.
-- **CRM - Historical Data Correction Tools:**
-    - Implemented a Remap City feature on  with a modal for both manual bulk updates and automatic remapping based on AD ID.
-    - Added corresponding backend endpoints:  and .
-- **CRM - Ad Mapping from Existing Leads:**
-    - Created a feature to scan existing leads () to populate the Unmapped Ads list, working around the expired Meta token.
-    - Implemented an auto-mapping feature based on the historical city of leads ().
-- **CRM - UI/UX Enhancements:**
-    - Added a debug log panel to the  for better troubleshooting.
-    - Combined Refresh and Auto-Map functions into a single button click.
-    - Added the lead's  and  to the main leads list for improved traceability.
-- **Mechanic App - Test Data:**
-    - Created a backend endpoint () to populate the app with test inspections.
-    - Fixed a development-only authentication issue for the test mechanic user.
-    - Corrected data field mappings in .
+- **Meta OAuth Integration:** Implemented a full, automatic OAuth 2.0 flow. A single Refresh button now handles the entire token refresh process via a popup, eliminating manual token entry.
+- **Lead Source Classification:** Fixed a bug to correctly distinguish between  (from ads) and  (from direct messages).
+- **Lead Investigator Tool:** Created a new UI modal to search for and view detailed information about any lead by phone or name.
+- **CEO-Only Lead Deletion:** Added a secure feature to permanently delete leads and their associated data.
+- **Ad Performance Sync & Caching:** Reworked the ad performance logic to sync every 6 hours, store data in the DB, and fall back to cached data when the Meta API is unavailable.
+- **UI Simplification:** Consolidated three buttons on the Ad Analytics page into a single, intelligent Refresh button.
+- **Enhanced City Mapping:** Improved webhook logic to use  as a fallback for city mapping and added a Remap City function in the investigator tool that also creates a persistent mapping for future leads.
+- **Audit Trail Backend:** Modified the lead schema and webhook logic to store the raw Twilio payload and a detailed processing log for debugging purposes.
 
 **Earlier issues found/mentioned but not fixed**
-*   **Issue 1: Subjective UI Sharpness and Professionalism (Mechanic App):** The user has not yet provided feedback on the latest blue-themed redesign of the mobile app, as the focus shifted to the CRM bugs. This is pending user review.
+*   **Issue 1: Unreliable APK Build Process for Mechanic App:** This recurring issue blocks any development or testing on the mobile app but was not addressed as the focus was on critical CRM bugs.
+*   **Issue 2: Subjective UI Sharpness and Professionalism (Mechanic App):** This is pending user review, blocked by the build issue and lower priority.
 
 **Known issue recurrence from previous fork**
 *   None.
@@ -109,84 +103,90 @@ added 447 packages in 14s
 **Key Technical Concepts**
 *   **FastAPI:** Backend framework.
 *   **React:** Frontend framework for the CRM.
-*   **React Native (Expo):** Mobile app framework.
-*   **MongoDB:** NoSQL database.
-*   **Twilio API:** Used for the WhatsApp webhook integration.
-*   **Meta Marketing API:** Used for ad data integration (currently blocked by an expired token).
+*   **MongoDB:** Database.
+*   **Meta Marketing API:** Integration for ads data.
+*   **Meta OAuth 2.0:** Implemented for automatic token refresh.
+*   **Twilio API:** For WhatsApp webhook integration.
 
 **key DB schema**
-*   ****: Now includes , , and  to track the origin of leads from Meta ads.
-*   ****: Stores the relationship between an  or  and a .
-*   ****: A collection populated by scanning existing leads, holding ads that need a city mapping. It includes , , , and .
+*   ****: Heavily modified. Now includes:
+    *   : Can be  or .
+    *   : Stores the complete, raw form data received from the Twilio webhook for auditing.
+    *   : A list of log strings detailing how the CRM processed the webhook data.
+*   ****: Now supports mappings by  in addition to .
+*   ****: New collection to cache ad performance insights (spend, clicks, etc.) periodically.
 
 **changes in tech stack**
 *   None.
 
 **All files of reference**
-*   
-*   
-*   
-*   
-*   
+*    (Heavily Modified)
+*    (Heavily Modified)
+*    (Heavily Modified)
+*    (Modified)
+*    (Modified)
+*    (Modified)
+*    (Modified)
+*    (New)
 
 **Areas that need refactoring**:
-*    has grown excessively large and complex. The logic for leads, ad mappings, and webhooks should be extracted into separate  files and services.
-*    and  contain a large amount of state and logic that could be refactored into custom hooks and smaller, reusable components to improve maintainability.
+*    is critically oversized and has accumulated significant technical debt. It urgently needs to be broken down into separate  files for leads, webhooks, settings, and meta ads. The new audit logging logic has added further complexity to this single file.
+*    now exceeds 2600 lines and contains multiple modals and complex state logic. It should be broken down into smaller components (e.g., , ) and custom hooks.
 
 **key api endpoints**
-*   : The main entry point for new WhatsApp leads, now with enhanced CTWA parsing.
-*   : Automatically fixes historical lead cities based on mappings.
-*   : Scans the  collection to find ads that need city mappings.
-*   : Creates new city mappings based on data from the lead scan.
-*   : Retrieves the list of unmapped ads found by the scan.
+*   : Enhanced to differentiate lead sources, log audit trails, and store raw Twilio data.
+*   : Enhanced to return the new  data.
+*   : Initiates the new automatic Meta token refresh flow.
+*   : Handles the redirect from the Meta OAuth popup.
+*   : Manually triggers a sync of ad performance data.
+*   : Securely deletes a lead and all its related data (CEO only).
+*   : Creates a city mapping based on an .
+*   : Updates a lead's city and creates a corresponding ad mapping.
 
 **Critical Info for New Agent**
-*   **The user's Meta Token is EXPIRED.** This is the number one blocker for the Ad Analytics page. You cannot fetch live data from Meta until the user re-authenticates. Your priority should be to guide the user to do this. The features you see (like scanning leads) were built as workarounds.
-*   **You are in a PREVIEW environment.** Any database changes you make (like remapping leads) will NOT affect the user's  environment. The user must use the UI tools you've built to apply these changes on their side. Make this clear in your communication.
-*   The project focus is currently on the **CRM web application**. Do not start work on the mechanic mobile app unless the user explicitly asks for it.
-*   The last request was to investigate a lead that only exists in the user's  environment. You are waiting for the user to report their findings using the commands you provided.
+*   **The primary goal is to debug the missing  for real leads.** The main tool for this is the newly-added (but untested) Audit Trail in the Investigate Lead modal. Your first task is to test this feature and then use it on a real lead generated by the user.
+*   **The OAuth flow is implemented but depends on the correct redirect URI.** The production redirect URI () is configured in the user's Meta App. The OAuth flow will only work on that domain, not the preview environment, unless the preview URL is also added to the Meta App's allowlist.
+*   **The  file is extremely large and complex.** Be very careful when making changes. The new audit logging has been interleaved throughout the webhook processing logic.
+*   **Focus on the CRM web app.** Do not work on the mechanic mobile app unless specifically requested by the user.
 
 **documents and test reports created in this job**
-*   
-*   
+*   None.
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** Asks for an auto-remap feature for leads instead of manual selection. (COMPLETED)
-2.  **User:** Reports that no ads are visible in the mapping tab, providing a screenshot showing an expired Meta token. (WORKAROUND IMPLEMENTED)
-3.  **User:** Requests that the system should check for a target city from Meta ads and auto-map it. (IMPLEMENTED, BUT BLOCKED BY EXPIRED TOKEN)
-4.  **User:** Suggests combining the Refresh and Auto-Map buttons into a single click. (COMPLETED)
-5.  **User:** Reports that the refresh didn't work and asks for a debug log feature. (COMPLETED)
-6.  **User:** After seeing the logs, correctly identifies the expired token as the issue and suggests getting ad data from existing leads first. (COMPLETED - LEAD SCAN FEATURE BUILT)
-7.  **User:** Asks to display any city reference from the Meta API in the unmapped ads table. (COMPLETED -  field added)
-8.  **User:** Requests that the AD ID be displayed on the main leads list. (COMPLETED)
-9.  **User:** Asks to investigate the source of a specific lead in their  environment. (COMPLETED - AGENT PROVIDED INSTRUCTIONS)
-10. **User:** Reports that the agent's database changes didn't affect their environment and the frontend still shows Vizag. (COMPLETED - AGENT EXPLAINED PREVIEW vs. PROD)
+1.  **User:** Asks to investigate why some leads have an AD ID while others don't, providing examples. (COMPLETED - Agent identified them as test data).
+2.  **User:** Requests a feature to delete leads to clear out test data, restricted to CEO access. (COMPLETED).
+3.  **User:** Reports that ad performance data is missing entirely from the Ad Analytics page. (COMPLETED - Agent identified expired token and implemented sync/caching).
+4.  **User:** Complains that manually getting and pasting the Meta token is cumbersome and requests a fully automatic, one-click solution. (COMPLETED - Agent implemented a full OAuth 2.0 flow).
+5.  **User:** Confirms they have configured the OAuth redirect URI in their Meta developer settings and asks the agent to test the flow. (COMPLETED - Agent tested and explained it will only work on the  domain).
+6.  **User:** Gets stuck trying to generate a token manually from the Meta Graph API explorer. (COMPLETED - Agent provided step-by-step instructions).
+7.  **User:** Confirms Meta is connected and reports are visible, but points out a new issue: a lead has an AD Name but no AD ID, causing it to default to the wrong city. (IN PROGRESS).
+8.  **User:** Requests a comprehensive audit trail to see all data fields sent by Meta/Twilio and captured by the CRM, to pinpoint where the AD ID is being lost. (IN PROGRESS - This was the last task the agent worked on).
+9.  **User:** [Screenshot] Shows the Twilio message log where an HTTP request was not logged for an incoming message. (INVESTIGATED - Agent identified this was due to webhook misconfiguration, which was later resolved).
+10. **User:** [Screenshot] Shows a lead in the CRM with source  but a default city, confirming the webhook is working but the city mapping is failing. (INVESTIGATED - This led to the discovery of the missing AD ID issue).
 
 **Project Health Check:**
 *   **Broken:**
-    *   **Meta API Integration:** All features relying on fetching live data from Meta are non-functional due to an expired access token.
-    *   **Mechanic App APK Build:** The process is unreliable, blocking mobile app testing.
+    *   **Mechanic App APK Build:** The  process remains unreliable, blocking all mobile app development and testing.
 *   **Mocked:**
-    *   The full questionnaire flow in the mobile app.
-    *   The Reject Inspection feature in the mobile app.
+    *   None.
 
 **3rd Party Integrations**
-*   **Twilio:** Handles incoming WhatsApp messages.
-*   **Meta (Facebook) Marketing API:** For fetching ad data. **(Currently Inactive - Expired Token)**.
-*   **Expo Application Services (EAS):** For building the React Native app.
-*   **Firebase Cloud Messaging (FCM):** For push notifications.
-*   **react-native-ble-plx:** For Bluetooth communication.
+*   **Twilio:** Handles incoming WhatsApp messages. (Active)
+*   **Meta (Facebook) Marketing API:** For fetching ad data and handling authentication. **(Active via OAuth 2.0)**. The integration is live, but the data integrity (missing ) is under investigation.
+*   **Expo Application Services (EAS):** For building the React Native app. (Inactive/Broken)
+*   **Firebase Cloud Messaging (FCM):** For push notifications. (Active but not a focus)
 
 **Testing status**
-*   **Testing agent used after significant changes:** YES (for an earlier feature).
+*   **Testing agent used after significant changes:** NO
 *   **Troubleshoot agent used after agent stuck in loop:** NO
-*   **Test files created:** None in this session.
-*   **Known regressions:** The mechanic mobile app has undergone a major UI overhaul without subsequent testing.
+*   **Test files created:** None.
+*   **Known regressions:** None in the CRM. The mechanic app's status is unknown due to lack of testing.
 
 **Credentials to test flow:**
-*   **CRM Admin Login:**  /  (Note: Must select India from the country dropdown on the login page first).
+*   **CRM Admin Login:**  /  (Select India from the country dropdown on login).
 *   **Mechanic App Login:** Phone  / OTP .
 
 **What agent forgot to execute**
-*   The agent did not address the recurring, unreliable EAS build process for the mechanic app, which is a significant technical debt and blocker for mobile app development.
-*   The agent did not perform regression testing on the mechanic app after its last major UI overhaul.</analysis>
+*   The agent did not address the recurring unreliable EAS build process for the mechanic app.
+*   The agent has not started the planned refactoring of , which has become a significant source of technical debt and risk.
+*   The agent did not perform any functional testing on the last feature implemented (the audit trail).</analysis>
