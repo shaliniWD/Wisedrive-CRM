@@ -619,6 +619,38 @@ export default function LeadsPage() {
     }
   };
 
+  // Delete lead (CEO only)
+  const [deletingLead, setDeletingLead] = useState(null);
+  
+  const handleDeleteLead = async (lead) => {
+    if (!window.confirm(`Are you sure you want to delete "${lead.name}" (${lead.mobile})?\n\nThis will permanently delete:\n- The lead record\n- All notes\n- All activities\n- All reassignment logs\n\nThis action cannot be undone!`)) {
+      return;
+    }
+    
+    setDeletingLead(lead.id);
+    try {
+      const response = await fetch(`/api/leads/${lead.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token') || sessionStorage.getItem('token')}`
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Failed to delete lead');
+      }
+      
+      const data = await response.json();
+      toast.success(data.message);
+      await fetchData(); // Refresh leads list
+    } catch (error) {
+      toast.error(error.message || 'Failed to delete lead');
+    } finally {
+      setDeletingLead(null);
+    }
+  };
+
   // Reset investigator modal
   const resetInvestigator = () => {
     setInvestigatorSearch('');
