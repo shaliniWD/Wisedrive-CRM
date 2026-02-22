@@ -645,6 +645,9 @@ export default function AdAnalyticsPage() {
     }
     setSaving(true);
     try {
+      // Get partner name if partner_id is set
+      const selectedPartner = formData.partner_id ? partners.find(p => p.id === formData.partner_id) : null;
+      
       const submitData = {
         ad_id: formData.ad_id,
         city: formData.city,
@@ -653,6 +656,8 @@ export default function AdAnalyticsPage() {
         language: formData.language || null,
         campaign: formData.campaign || null,
         source: formData.source || null,
+        partner_id: formData.partner_id || null,
+        partner_name: selectedPartner ? selectedPartner.name : null,
         is_active: true
       };
 
