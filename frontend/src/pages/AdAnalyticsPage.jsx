@@ -1625,106 +1625,103 @@ export default function AdAnalyticsPage() {
       
       {/* Token Management Modal */}
       <Dialog open={showTokenModal} onOpenChange={setShowTokenModal}>
-        <DialogContent className="sm:max-w-[500px]" data-testid="token-modal">
+        <DialogContent className="sm:max-w-[550px]" data-testid="token-modal">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Key className="h-5 w-5" />
-              Meta Access Token Management
+              <Key className="h-5 w-5 text-blue-600" />
+              Connect to Facebook Ads
             </DialogTitle>
             <DialogDescription>
-              Manage your Meta Marketing API access token
+              Get a new access token in 3 simple steps
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4 pt-4">
             {/* Current Token Status */}
             {tokenInfo && (
-              <div className={`p-4 rounded-lg border ${
-                tokenInfo.is_valid && tokenInfo.expires_in_days > 7
+              <div className={`p-3 rounded-lg border ${
+                tokenInfo.is_valid 
                   ? 'bg-emerald-50 border-emerald-200'
-                  : tokenInfo.is_valid && tokenInfo.expires_in_days > 0
-                  ? 'bg-amber-50 border-amber-200'
                   : 'bg-red-50 border-red-200'
               }`}>
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2">
                   <Shield className={`h-4 w-4 ${
                     tokenInfo.is_valid ? 'text-emerald-600' : 'text-red-600'
                   }`} />
-                  <span className="font-medium">
-                    {tokenInfo.is_valid ? 'Token Valid' : 'Token Invalid'}
+                  <span className="font-medium text-sm">
+                    {tokenInfo.is_valid 
+                      ? `✅ Connected (${tokenInfo.expires_in_days} days left)` 
+                      : '❌ Token Expired - Follow steps below'}
                   </span>
                 </div>
-                {tokenInfo.is_valid && (
-                  <div className="text-sm space-y-1">
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-3 w-3" />
-                      <span>
-                        {tokenInfo.expires_in_days === -1 
-                          ? 'Never expires' 
-                          : tokenInfo.expires_in_days > 0
-                          ? `Expires in ${tokenInfo.expires_in_days} days`
-                          : 'Expired'}
-                      </span>
-                    </div>
-                    {tokenInfo.expires_at && (
-                      <p className="text-xs text-gray-500 ml-5">
-                        {new Date(tokenInfo.expires_at).toLocaleDateString()}
-                      </p>
-                    )}
-                    <p className="text-xs text-gray-500 capitalize">
-                      Type: {tokenInfo.token_type?.replace('_', ' ')}
-                    </p>
-                  </div>
-                )}
-                {!tokenInfo.is_valid && tokenInfo.error && (
-                  <p className="text-sm text-red-600 mt-1">{tokenInfo.error}</p>
-                )}
               </div>
             )}
             
-            {/* Manual Token Update - Only option now */}
-            <div className="border-t pt-4">
-              <h4 className="font-medium text-sm mb-2">Update Token</h4>
-              <p className="text-xs text-gray-500 mb-3">
-                Your token has expired. Get a new access token from{' '}
-                <a 
-                  href="https://developers.facebook.com/tools/explorer/" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline"
-                >
-                  Meta Graph API Explorer
-                </a>
-                {' '}and paste it below.
-              </p>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Paste new access token..."
-                  value={newToken}
-                  onChange={(e) => setNewToken(e.target.value)}
-                  className="flex-1 text-xs font-mono"
-                  data-testid="new-token-input"
-                />
-                <Button
-                  onClick={handleUpdateToken}
-                  disabled={tokenLoading || !newToken.trim()}
-                  size="sm"
-                >
-                  {tokenLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Update'}
-                </Button>
+            {/* Step-by-Step Instructions with Direct Link */}
+            <div className="space-y-3">
+              {/* Step 1 */}
+              <div className="flex gap-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                <div className="flex-shrink-0 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">1</div>
+                <div className="flex-1">
+                  <p className="font-medium text-sm text-gray-800">Click the button below to open Facebook</p>
+                  <a 
+                    href={`https://developers.facebook.com/tools/explorer/?app_id=759383146339304&method=GET&path=me&version=v21.0`}
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    Open Graph API Explorer
+                  </a>
+                </div>
+              </div>
+
+              {/* Step 2 */}
+              <div className="flex gap-3 p-3 bg-amber-50 rounded-lg border border-amber-100">
+                <div className="flex-shrink-0 w-6 h-6 bg-amber-600 text-white rounded-full flex items-center justify-center text-sm font-bold">2</div>
+                <div className="flex-1">
+                  <p className="font-medium text-sm text-gray-800">Add these permissions & click "Generate Access Token"</p>
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    <span className="px-2 py-0.5 bg-amber-200 text-amber-800 rounded text-xs font-mono">ads_read</span>
+                    <span className="px-2 py-0.5 bg-amber-200 text-amber-800 rounded text-xs font-mono">ads_management</span>
+                    <span className="px-2 py-0.5 bg-amber-200 text-amber-800 rounded text-xs font-mono">business_management</span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Click "Permissions" dropdown → search & add each one → click "Generate"</p>
+                </div>
+              </div>
+
+              {/* Step 3 */}
+              <div className="flex gap-3 p-3 bg-green-50 rounded-lg border border-green-100">
+                <div className="flex-shrink-0 w-6 h-6 bg-green-600 text-white rounded-full flex items-center justify-center text-sm font-bold">3</div>
+                <div className="flex-1">
+                  <p className="font-medium text-sm text-gray-800">Copy the token & paste below</p>
+                  <div className="flex gap-2 mt-2">
+                    <Input
+                      placeholder="Paste your access token here..."
+                      value={newToken}
+                      onChange={(e) => setNewToken(e.target.value)}
+                      className="flex-1 text-xs font-mono h-9"
+                      data-testid="new-token-input"
+                    />
+                    <Button
+                      onClick={handleUpdateToken}
+                      disabled={tokenLoading || !newToken.trim()}
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      {tokenLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Connect'}
+                    </Button>
+                  </div>
+                </div>
               </div>
             </div>
-            
-            {/* Instructions */}
-            <div className="bg-slate-50 p-3 rounded-lg text-xs text-gray-600">
-              <p className="font-medium mb-1">How to get a new token:</p>
-              <ol className="list-decimal ml-4 space-y-1">
-                <li>Go to Meta for Developers portal</li>
-                <li>Navigate to Graph API Explorer</li>
-                <li>Select your app and get a User Access Token</li>
-                <li>Add required permissions (ads_read, ads_management)</li>
-                <li>Generate and copy the token</li>
-              </ol>
+
+            {/* Tip */}
+            <div className="bg-slate-100 p-3 rounded-lg text-xs text-gray-600 flex items-start gap-2">
+              <Info className="h-4 w-4 text-slate-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <span className="font-medium">Pro tip:</span> The token lasts ~60 days. After connecting, you won't need to do this again for 2 months!
+              </div>
             </div>
           </div>
         </DialogContent>
