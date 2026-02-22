@@ -220,7 +220,7 @@ const PartnersPage = () => {
         toast.success('Partner created');
       }
       setIsModalOpen(false);
-      fetchPartners();
+      fetchData();
     } catch (error) {
       console.error('Error saving partner:', error);
       toast.error(error.response?.data?.detail || 'Failed to save partner');
@@ -233,7 +233,7 @@ const PartnersPage = () => {
     try {
       await partnersApi.togglePartner(partner.id);
       toast.success(`Partner ${partner.is_active ? 'deactivated' : 'activated'}`);
-      fetchPartners();
+      fetchData();
     } catch (error) {
       console.error('Error toggling partner:', error);
       toast.error('Failed to toggle partner status');
@@ -248,7 +248,7 @@ const PartnersPage = () => {
     try {
       await partnersApi.deletePartner(partner.id);
       toast.success('Partner deleted');
-      fetchPartners();
+      fetchData();
     } catch (error) {
       console.error('Error deleting partner:', error);
       toast.error(error.response?.data?.detail || 'Failed to delete partner');
