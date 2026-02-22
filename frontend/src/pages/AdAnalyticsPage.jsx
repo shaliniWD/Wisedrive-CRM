@@ -739,6 +739,7 @@ export default function AdAnalyticsPage() {
 
     let data = [...performanceData.data];
 
+    // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       data = data.filter(item =>
@@ -749,6 +750,19 @@ export default function AdAnalyticsPage() {
       );
     }
 
+    // City filter
+    if (filterCity && filterCity !== 'all') {
+      data = data.filter(item => item.city === filterCity);
+    }
+
+    // Ad Status filter
+    if (filterAdStatus && filterAdStatus !== 'all') {
+      data = data.filter(item => {
+        const isActive = item.status === 'ACTIVE' || item.is_active === true;
+        return filterAdStatus === 'active' ? isActive : !isActive;
+      });
+    }
+
     data.sort((a, b) => {
       const aVal = a[sortBy] || 0;
       const bVal = b[sortBy] || 0;
@@ -756,7 +770,7 @@ export default function AdAnalyticsPage() {
     });
 
     return data;
-  }, [performanceData, searchQuery, sortBy, sortOrder]);
+  }, [performanceData, searchQuery, filterCity, filterAdStatus, sortBy, sortOrder]);
 
   // Filter ad mappings
   const filteredMappings = useMemo(() => {
