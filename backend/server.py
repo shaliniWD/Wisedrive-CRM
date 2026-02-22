@@ -3047,7 +3047,13 @@ async def twilio_whatsapp_webhook(
                     ]
                 })
                 
-                if not existing_mapping:
+                if existing_mapping:
+                    # Use the existing mapping's ad_id if no ad_id was extracted
+                    if not ad_id:
+                        ad_id = existing_mapping.get("ad_id")
+                        city_lookup_log.append({"ad_id_from_existing_mapping": True, "ad_id": ad_id})
+                        logger.info(f"Using existing mapping ad_id: {ad_id}")
+                else:
                     new_mapping = {
                         "id": str(uuid.uuid4()),
                         "ad_id": auto_ad_id,
@@ -3059,8 +3065,14 @@ async def twilio_whatsapp_webhook(
                         "created_at": datetime.now(timezone.utc).isoformat()
                     }
                     await db.ad_city_mappings.insert_one(new_mapping)
-                    city_lookup_log.append({"auto_mapping_created": True, "ad_name": ad_name, "city": city})
+                    city_lookup_log.append({"auto_mapping_created": True, "ad_name": ad_name, "city": city, "auto_ad_id": auto_ad_id})
                     logger.info(f"Auto-created city mapping: '{ad_name}' -> '{city}'")
+                    
+                    # Use the auto-generated ad_id for this lead if none was extracted
+                    if not ad_id:
+                        ad_id = auto_ad_id
+                        city_lookup_log.append({"ad_id_auto_generated": True, "ad_id": ad_id})
+                        logger.info(f"Using auto-generated ad_id: {ad_id}")
                 break
         else:
             city_lookup_log.append({"strategy": 4, "method": "ad_name keyword extraction", "found": False, "ad_name": ad_name, "reason": "No city keyword found in ad_name"})
