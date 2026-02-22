@@ -94,8 +94,9 @@ export default function AdAnalyticsPage() {
   const [editingAd, setEditingAd] = useState(null);
   const [saving, setSaving] = useState(false);
   const [mappingSearchQuery, setMappingSearchQuery] = useState('');
+  const [partners, setPartners] = useState([]);
   const [formData, setFormData] = useState({
-    ad_id: '', ad_name: '', ad_amount: '', city: '', language: '', campaign: '', source: '',
+    ad_id: '', ad_name: '', ad_amount: '', city: '', language: '', campaign: '', source: '', partner_id: '',
   });
   
   // Sync and unmapped ads state
