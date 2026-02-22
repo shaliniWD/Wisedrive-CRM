@@ -228,7 +228,105 @@ export default function AdAnalyticsPage() {
     }
   };
   
-  // UNIFIED REFRESH FUNCTION - Does everything in one click
+  // OAuth popup handler
+  const handleMetaOAuth = async () => {
+    addDebugLog('OAuth', 'INFO', 'Initiating Meta OAuth...');
+    
+    try {
+      // Get OAuth URL from backend
+      const oauthResult = await metaAdsApi.initOAuth();
+      const oauthUrl = oauthResult.data.oauth_url;
+      
+      // Open popup for Meta login
+      const width = 600;
+      const height = 700;
+      const left = window.screenX + (window.outerWidth - width) / 2;
+      const top = window.screenY + (window.outerHeight - height) / 2;
+      
+      const popup = window.open(
+        oauthUrl,
+        'meta-oauth',
+        `width=${width},height=${height},left=${left},top=${top}`
+      );
+      
+      if (!popup) {
+        throw new Error('Popup blocked. Please allow popups for this site.');
+      }
+      
+      addDebugLog('OAuth', 'INFO', 'Waiting for Meta authorization...');
+      toast.info('Please complete the Meta login in the popup window...');
+      
+      // Listen for OAuth callback
+      return new Promise((resolve, reject) => {
+        const checkInterval = setInterval(() => {
+          try {
+            if (popup.closed) {
+              clearInterval(checkInterval);
+              reject(new Error('OAuth cancelled - popup was closed'));
+            }
+            
+            // Check if popup redirected to callback URL
+            if (popup.location.href.includes('meta-oauth-callback')) {
+              const url = new URL(popup.location.href);
+              const code = url.searchParams.get('code');
+              const error = url.searchParams.get('error');
+              
+              popup.close();
+              clearInterval(checkInterval);
+              
+              if (error) {
+                reject(new Error(`OAuth failed: ${error}`));
+              } else if (code) {
+                resolve(code);
+              } else {
+                reject(new Error('No authorization code received'));
+              }
+            }
+          } catch (e) {
+            // Cross-origin error - popup still on Meta's domain
+          }
+        }, 500);
+        
+        // Timeout after 5 minutes
+        setTimeout(() => {
+          clearInterval(checkInterval);
+          if (!popup.closed) popup.close();
+          reject(new Error('OAuth timeout - please try again'));
+        }, 300000);
+      });
+      
+    } catch (error) {
+      addDebugLog('OAuth', 'ERROR', error.message);
+      throw error;
+    }
+  };
+
+  // Exchange OAuth code for token
+  const exchangeOAuthCode = async (code) => {
+    addDebugLog('OAuth', 'INFO', 'Exchanging authorization code for token...');
+    
+    try {
+      const result = await metaAdsApi.handleOAuthCallback(code);
+      
+      if (result.data.success) {
+        addDebugLog('OAuth', 'SUCCESS', result.data.message);
+        toast.success(result.data.message);
+        
+        // Refresh token info
+        const tokenResult = await metaAdsApi.getTokenInfo();
+        setTokenInfo(tokenResult.data);
+        
+        return true;
+      } else {
+        throw new Error(result.data.error || 'Token exchange failed');
+      }
+    } catch (error) {
+      addDebugLog('OAuth', 'ERROR', error.message);
+      throw error;
+    }
+  };
+
+  // UNIFIED REFRESH FUNCTION - Does everything in one click with auto OAuth
   const handleUnifiedRefresh = async () => {
     setRefreshing(true);
     
@@ -241,40 +339,44 @@ export default function AdAnalyticsPage() {
       const currentTokenInfo = tokenResult.data;
       setTokenInfo(currentTokenInfo);
       
-      // If token is invalid or about to expire, try to refresh
+      // If token is invalid or about to expire, try to refresh automatically
       if (!currentTokenInfo.is_valid) {
-        addDebugLog('Token', 'WARNING', 'Token is invalid, attempting auto-refresh...');
+        addDebugLog('Token', 'WARNING', 'Token is invalid, attempting automatic refresh...');
         
-        // Try auto-refresh first
+        // Try auto-refresh first (works if token is still valid but expiring soon)
         try {
           const autoResult = await metaAdsApi.autoRefresh(7);
           if (autoResult.data.action === 'refreshed') {
             addDebugLog('Token', 'SUCCESS', `Token refreshed! Valid for ${autoResult.data.new_expires_in_days} days`);
             toast.success(`Token refreshed! Valid for ${autoResult.data.new_expires_in_days} days`);
           } else if (autoResult.data.needs_manual_refresh) {
-            addDebugLog('Token', 'ERROR', 'Token needs manual update - please enter new token');
-            toast.error('Token expired. Please enter a new token from Meta.');
-            setShowTokenModal(true);
-            setRefreshing(false);
-            return;
-          }
-        } catch (autoError) {
-          // Auto-refresh failed, try force refresh
-          try {
-            const forceResult = await metaAdsApi.refreshToken();
-            if (forceResult.data.success) {
-              addDebugLog('Token', 'SUCCESS', `Token force-refreshed! Valid for ${forceResult.data.expires_in_days} days`);
-              toast.success(`Token refreshed! Valid for ${forceResult.data.expires_in_days} days`);
-            } else {
-              addDebugLog('Token', 'ERROR', 'Cannot refresh token - manual update required');
-              toast.error('Token expired. Please enter a new token from Meta.');
+            // Token is fully expired - need OAuth
+            addDebugLog('Token', 'WARNING', 'Token expired - starting OAuth flow...');
+            
+            try {
+              const code = await handleMetaOAuth();
+              await exchangeOAuthCode(code);
+              addDebugLog('Token', 'SUCCESS', 'Token refreshed via OAuth!');
+            } catch (oauthError) {
+              addDebugLog('Token', 'ERROR', `OAuth failed: ${oauthError.message}`);
+              // Show manual token modal as fallback
+              toast.error('Automatic login failed. Please enter token manually.');
               setShowTokenModal(true);
               setRefreshing(false);
               return;
             }
-          } catch (forceError) {
-            addDebugLog('Token', 'ERROR', 'Token refresh failed - manual update required');
-            toast.error('Token expired. Please enter a new token from Meta.');
+          }
+        } catch (autoError) {
+          // Auto-refresh failed, try OAuth
+          addDebugLog('Token', 'WARNING', 'Auto-refresh failed, trying OAuth...');
+          
+          try {
+            const code = await handleMetaOAuth();
+            await exchangeOAuthCode(code);
+            addDebugLog('Token', 'SUCCESS', 'Token refreshed via OAuth!');
+          } catch (oauthError) {
+            addDebugLog('Token', 'ERROR', `OAuth failed: ${oauthError.message}`);
+            toast.error('Automatic login failed. Please enter token manually.');
             setShowTokenModal(true);
             setRefreshing(false);
             return;
@@ -287,10 +389,10 @@ export default function AdAnalyticsPage() {
       // Step 2: Sync data from Meta
       addDebugLog('Sync', 'INFO', 'Syncing ad data from Meta...');
       try {
-        const syncResult = await metaAdsApi.syncStatus();
+        const syncResult = await metaAdsApi.forceSync();
         if (syncResult.data.success) {
-          addDebugLog('Sync', 'SUCCESS', `Synced ${syncResult.data.updated_count || 0} ads from Meta`);
-          toast.success(`Synced ${syncResult.data.updated_count || 0} ads from Meta`);
+          addDebugLog('Sync', 'SUCCESS', `Meta data synced successfully`);
+          toast.success('Ad data synced from Meta!');
         } else {
           addDebugLog('Sync', 'WARNING', syncResult.data.error || 'Sync returned no data');
         }
