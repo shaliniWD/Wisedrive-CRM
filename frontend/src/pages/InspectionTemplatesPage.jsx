@@ -305,15 +305,32 @@ const InspectionTemplatesPage = () => {
   }, [fetchData]);
 
   const openModal = async (template = null) => {
+    // Initialize ordered categories with default order
+    setOrderedCategories([...categories]);
+    
     if (template) {
       try {
         const res = await inspectionTemplatesApi.getTemplate(template.id);
         const fullTemplate = res.data;
         setEditingTemplate(fullTemplate);
+        
+        // If template has a saved category order, use it
+        if (fullTemplate.category_order && fullTemplate.category_order.length > 0) {
+          const orderedCats = fullTemplate.category_order
+            .map(catId => categories.find(c => c.category_id === catId))
+            .filter(Boolean);
+          // Add any new categories that aren't in the saved order
+          const remainingCats = categories.filter(
+            c => !fullTemplate.category_order.includes(c.category_id)
+          );
+          setOrderedCategories([...orderedCats, ...remainingCats]);
+        }
+        
         setFormData({
           name: fullTemplate.name || '',
           description: fullTemplate.description || '',
           question_ids: fullTemplate.question_ids || [],
+          category_order: fullTemplate.category_order || categories.map(c => c.category_id),
           is_default: fullTemplate.is_default || false,
           is_active: fullTemplate.is_active !== false,
         });
@@ -328,6 +345,7 @@ const InspectionTemplatesPage = () => {
         name: '',
         description: '',
         question_ids: [],
+        category_order: categories.map(c => c.category_id),
         is_default: false,
         is_active: true,
       });
