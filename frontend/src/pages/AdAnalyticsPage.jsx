@@ -266,16 +266,42 @@ export default function AdAnalyticsPage() {
   const fetchUnmappedAds = async () => {
     setLoadingUnmapped(true);
     try {
-      const result = await metaAdsApi.getUnmappedAds();
-      if (result.data.success) {
-        setUnmappedAds(result.data.data || []);
+      // Fetch from both Meta API and WhatsApp leads
+      const [metaResult, leadsResult] = await Promise.all([
+        metaAdsApi.getUnmappedAds().catch(e => ({ data: { success: false, data: [] } })),
+        metaAdsApi.getUnmappedAdsFromLeads().catch(e => ({ data: { success: false, data: [] } }))
+      ]);
+      
+      if (metaResult.data.success) {
+        setUnmappedAds(metaResult.data.data || []);
       } else {
-        console.error('Failed to fetch unmapped ads:', result.data.error);
+        console.error('Failed to fetch unmapped ads from Meta:', metaResult.data.error);
+        setUnmappedAds([]);
+      }
+      
+      if (leadsResult.data.success) {
+        setUnmappedAdsFromLeads(leadsResult.data.data || []);
+      } else {
+        setUnmappedAdsFromLeads([]);
       }
     } catch (error) {
       console.error('Error fetching unmapped ads:', error);
     } finally {
       setLoadingUnmapped(false);
+    }
+  };
+
+  // Map an unmapped ad from WhatsApp leads
+  const handleMapFromLeads = async (unmapped, selectedCity) => {
+    try {
+      const result = await metaAdsApi.mapAdFromLeads(unmapped.id, selectedCity);
+      if (result.data.success) {
+        toast.success(`Mapped! ${result.data.leads_updated} leads updated to ${selectedCity}`);
+        fetchUnmappedAds();
+        fetchMappings();
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to map ad');
     }
   };
   
