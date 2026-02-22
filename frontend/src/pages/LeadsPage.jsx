@@ -1256,6 +1256,22 @@ export default function LeadsPage() {
                           >
                             <Pencil className="h-3 w-3" />
                           </button>
+                          {/* Delete button - CEO only */}
+                          {user?.role_code === 'CEO' && (
+                            <button 
+                              onClick={() => handleDeleteLead(lead)}
+                              disabled={deletingLead === lead.id}
+                              className="p-0.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
+                              data-testid={`delete-lead-${lead.id}`}
+                              title="Delete lead (CEO only)"
+                            >
+                              {deletingLead === lead.id ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-3 w-3" />
+                              )}
+                            </button>
+                          )}
                         </div>
                         <div className="text-xs text-gray-500 font-mono flex items-center gap-1">
                           <Phone className="h-3 w-3" /> {lead.mobile}
