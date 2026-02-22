@@ -1986,14 +1986,32 @@ async def twilio_whatsapp_webhook(
     Body: str = Form(default=""),
     ProfileName: str = Form(default=""),
     WaId: str = Form(default=""),
-    MessageSid: str = Form(default="")
+    MessageSid: str = Form(default=""),
+    # CTWA (Click-to-WhatsApp) referral parameters from Meta ads
+    ReferralSourceUrl: str = Form(default=""),
+    ReferralBody: str = Form(default=""),
+    ReferralHeadline: str = Form(default=""),
+    ReferralSourceType: str = Form(default=""),
+    ReferralNumMedia: str = Form(default=""),
+    ButtonText: str = Form(default=""),
+    CtwaClid: str = Form(default=""),  # CTWA Click ID
 ):
     """
     Webhook endpoint for incoming WhatsApp messages via Twilio.
     Creates a new lead from Meta ad clicks.
     Returns TwiML response for immediate reply.
+    
+    CTWA Parameters (Click-to-WhatsApp from Meta ads):
+    - ReferralSourceUrl: The URL of the ad that triggered the message
+    - ReferralBody: The body text of the ad
+    - ReferralHeadline: The headline of the ad
+    - ReferralSourceType: Type of referral (e.g., 'ad', 'post')
+    - ButtonText: The CTA button text clicked
+    - CtwaClid: Click ID for tracking
     """
+    # Log all incoming parameters for debugging
     logger.info(f"WhatsApp webhook received: From={From}, Body={Body[:100] if Body else 'empty'}")
+    logger.info(f"CTWA Referral Data: SourceUrl={ReferralSourceUrl}, Headline={ReferralHeadline}, SourceType={ReferralSourceType}, CtwaClid={CtwaClid}")
     
     # Default response message
     response_message = ""
