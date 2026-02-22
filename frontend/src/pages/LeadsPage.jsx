@@ -970,6 +970,14 @@ export default function LeadsPage() {
                 <MapPin className="h-4 w-4" />
                 Remap City
               </button>
+              <button
+                onClick={() => { resetInvestigator(); setIsInvestigatorModalOpen(true); }}
+                className="px-4 py-2.5 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl hover:from-purple-600 hover:to-purple-700 flex items-center gap-2 font-medium shadow-lg shadow-purple-500/25 transition-all"
+                data-testid="investigate-lead-button"
+              >
+                <Search className="h-4 w-4" />
+                Investigate Lead
+              </button>
             </>
           )}
           <button
