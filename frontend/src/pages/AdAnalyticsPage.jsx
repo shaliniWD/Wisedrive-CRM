@@ -342,46 +342,35 @@ export default function AdAnalyticsPage() {
       
       // If token is invalid or about to expire, try to refresh automatically
       if (!currentTokenInfo.is_valid) {
-        addDebugLog('Token', 'WARNING', 'Token is invalid, attempting automatic refresh...');
+        addDebugLog('Token', 'WARNING', `Token invalid: ${currentTokenInfo.error || 'Unknown reason'}`);
         
-        // Try auto-refresh first (works if token is still valid but expiring soon)
+        // Directly start OAuth - don't try auto-refresh for invalid tokens
+        addDebugLog('Token', 'INFO', 'Starting Facebook OAuth login...');
+        toast.info('Opening Facebook login... Please complete authorization.');
+        
         try {
-          const autoResult = await metaAdsApi.autoRefresh(7);
-          if (autoResult.data.action === 'refreshed') {
-            addDebugLog('Token', 'SUCCESS', `Token refreshed! Valid for ${autoResult.data.new_expires_in_days} days`);
-            toast.success(`Token refreshed! Valid for ${autoResult.data.new_expires_in_days} days`);
-          } else if (autoResult.data.needs_manual_refresh) {
-            // Token is fully expired - need OAuth
-            addDebugLog('Token', 'WARNING', 'Token expired - starting OAuth flow...');
-            
-            try {
-              const code = await handleMetaOAuth();
-              await exchangeOAuthCode(code);
-              addDebugLog('Token', 'SUCCESS', 'Token refreshed via OAuth!');
-            } catch (oauthError) {
-              addDebugLog('Token', 'ERROR', `OAuth failed: ${oauthError.message}`);
-              // Show manual token modal as fallback
-              toast.error('Automatic login failed. Please enter token manually.');
-              setShowTokenModal(true);
-              setRefreshing(false);
-              return;
-            }
-          }
-        } catch (autoError) {
-          // Auto-refresh failed, try OAuth
-          addDebugLog('Token', 'WARNING', 'Auto-refresh failed, trying OAuth...');
+          const code = await handleMetaOAuth();
+          await exchangeOAuthCode(code);
+          addDebugLog('Token', 'SUCCESS', 'Token refreshed via OAuth!');
+          toast.success('✅ Facebook connected successfully!');
           
-          try {
-            const code = await handleMetaOAuth();
-            await exchangeOAuthCode(code);
-            addDebugLog('Token', 'SUCCESS', 'Token refreshed via OAuth!');
-          } catch (oauthError) {
-            addDebugLog('Token', 'ERROR', `OAuth failed: ${oauthError.message}`);
-            toast.error('Automatic login failed. Please enter token manually.');
-            setShowTokenModal(true);
-            setRefreshing(false);
-            return;
+          // Re-fetch token info to confirm
+          const newTokenResult = await metaAdsApi.getTokenInfo();
+          setTokenInfo(newTokenResult.data);
+          
+        } catch (oauthError) {
+          addDebugLog('Token', 'ERROR', `OAuth failed: ${oauthError.message}`);
+          
+          if (oauthError.message.includes('cancelled') || oauthError.message.includes('closed')) {
+            toast.error('Facebook login was cancelled. Click Refresh to try again.');
+          } else if (oauthError.message.includes('Popup blocked')) {
+            toast.error('Popup was blocked! Please allow popups for this site and try again.');
+          } else {
+            toast.error(`Facebook login failed: ${oauthError.message}`);
           }
+          
+          setRefreshing(false);
+          return;
         }
       } else {
         addDebugLog('Token', 'SUCCESS', `Token valid (${currentTokenInfo.expires_in_days} days left)`);
