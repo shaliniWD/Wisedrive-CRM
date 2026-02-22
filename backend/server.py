@@ -2906,45 +2906,45 @@ async def twilio_whatsapp_webhook(
                 "reason": "Both CtwaClid and ReferralCtwaClid are empty/null"
             })
     
-    # Priority 2: Extract ad_id from ReferralSourceUrl (contains fbclid or ad parameters)
+    # Priority 3: Extract ad_id from ReferralSourceUrl (contains fbclid or ad parameters)
     if not ad_id and ReferralSourceUrl:
         # Try to extract ad_id from URL parameters
         # Example: https://fb.me/xyz or contains ad_id=xxx
         url_ad_match = re.search(r'ad_id[=:]([a-zA-Z0-9_-]+)', ReferralSourceUrl, re.IGNORECASE)
         if url_ad_match:
             ad_id = url_ad_match.group(1)
-            audit_data["extraction_log"].append({"step": 2, "source": "ReferralSourceUrl (ad_id param)", "found": True, "value": ad_id})
+            audit_data["extraction_log"].append({"step": 3, "source": "ReferralSourceUrl (ad_id param)", "found": True, "value": ad_id})
             logger.info(f"Found ad_id from ReferralSourceUrl param: {ad_id}")
         else:
             # Try extracting fbclid or other identifiers
             fbclid_match = re.search(r'fbclid[=:]([a-zA-Z0-9_-]+)', ReferralSourceUrl, re.IGNORECASE)
             if fbclid_match:
                 ad_id = fbclid_match.group(1)
-                audit_data["extraction_log"].append({"step": 2, "source": "ReferralSourceUrl (fbclid)", "found": True, "value": ad_id})
+                audit_data["extraction_log"].append({"step": 3, "source": "ReferralSourceUrl (fbclid)", "found": True, "value": ad_id})
                 logger.info(f"Found ad_id from fbclid: {ad_id}")
             else:
-                audit_data["extraction_log"].append({"step": 2, "source": "ReferralSourceUrl", "found": False, "reason": "No ad_id or fbclid found in URL", "url": ReferralSourceUrl})
+                audit_data["extraction_log"].append({"step": 3, "source": "ReferralSourceUrl", "found": False, "reason": "No ad_id or fbclid found in URL", "url": ReferralSourceUrl})
     elif not ad_id:
-        audit_data["extraction_log"].append({"step": 2, "source": "ReferralSourceUrl", "found": False, "reason": "ReferralSourceUrl is empty/null"})
+        audit_data["extraction_log"].append({"step": 3, "source": "ReferralSourceUrl", "found": False, "reason": "ReferralSourceUrl is empty/null or ad_id already found"})
     
-    # Priority 3: Use ReferralHeadline as ad_name for lookup
+    # Priority 4: Use ReferralHeadline as ad_name for lookup
     if ReferralHeadline:
         ad_name = ReferralHeadline.strip()
-        audit_data["extraction_log"].append({"step": 3, "source": "ReferralHeadline", "field": "ad_name", "found": True, "value": ad_name})
+        audit_data["extraction_log"].append({"step": 4, "source": "ReferralHeadline", "field": "ad_name", "found": True, "value": ad_name})
         logger.info(f"Found ad_name from ReferralHeadline: {ad_name}")
     else:
-        audit_data["extraction_log"].append({"step": 3, "source": "ReferralHeadline", "field": "ad_name", "found": False, "reason": "ReferralHeadline is empty/null"})
+        audit_data["extraction_log"].append({"step": 4, "source": "ReferralHeadline", "field": "ad_name", "found": False, "reason": "ReferralHeadline is empty/null"})
     
-    # Priority 4: Extract from message body (fallback)
+    # Priority 5: Extract from message body (fallback)
     if Body:
         if not ad_id:
             ad_match = re.search(r'ad[_\s]?id[:\s]*([a-zA-Z0-9_-]+)', Body, re.IGNORECASE)
             if ad_match:
                 ad_id = ad_match.group(1)
-                audit_data["extraction_log"].append({"step": 4, "source": "Body (regex)", "found": True, "value": ad_id})
+                audit_data["extraction_log"].append({"step": 5, "source": "Body (regex)", "found": True, "value": ad_id})
                 logger.info(f"Found ad_id from message body: {ad_id}")
             else:
-                audit_data["extraction_log"].append({"step": 4, "source": "Body (regex)", "found": False, "reason": "No ad_id pattern found in body"})
+                audit_data["extraction_log"].append({"step": 5, "source": "Body (regex)", "found": False, "reason": "No ad_id pattern found in body"})
         
         campaign_match = re.search(r'campaign[_\s]?id[:\s]*([a-zA-Z0-9_-]+)', Body, re.IGNORECASE)
         if campaign_match:
