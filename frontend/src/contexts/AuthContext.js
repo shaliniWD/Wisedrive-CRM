@@ -118,6 +118,7 @@ export const AuthProvider = ({ children }) => {
     await endSessionTracking();
     
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     delete axios.defaults.headers.common['Authorization'];
     setToken(null);
     setUser(null);
