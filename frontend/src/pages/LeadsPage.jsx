@@ -1156,25 +1156,6 @@ export default function LeadsPage() {
             </SelectContent>
           </Select>
 
-          {/* Date Range Filter */}
-          <div className="flex items-center gap-1 bg-slate-50 rounded-lg p-1">
-            <input
-              type="date"
-              value={filterDateFrom}
-              onChange={(e) => { setFilterDateFrom(e.target.value); setDateFilterPreset(''); setCurrentPage(1); }}
-              className="px-2 py-1.5 text-sm border-0 bg-transparent focus:ring-0 outline-none w-[120px]"
-              placeholder="From"
-            />
-            <span className="text-gray-400">–</span>
-            <input
-              type="date"
-              value={filterDateTo}
-              onChange={(e) => { setFilterDateTo(e.target.value); setDateFilterPreset(''); setCurrentPage(1); }}
-              className="px-2 py-1.5 text-sm border-0 bg-transparent focus:ring-0 outline-none w-[120px]"
-              placeholder="To"
-            />
-          </div>
-
           <button 
             onClick={() => { 
               setActiveFilter('all'); 
@@ -1194,30 +1175,62 @@ export default function LeadsPage() {
           </button>
         </div>
 
-        {/* Quick Date Filters */}
-        <div className="flex items-center gap-2 mt-3 pt-3 border-t">
-          <span className="text-xs text-gray-500 mr-1">Quick:</span>
-          {[
-            { key: 'today', label: 'Today' },
-            { key: 'yesterday', label: 'Yesterday' },
-            { key: 'this_week', label: 'This Week' },
-            { key: 'last_week', label: 'Last Week' },
-            { key: 'this_month', label: 'This Month' },
-            { key: 'last_month', label: 'Last Month' },
-            { key: 'all', label: 'All Time' },
-          ].map((preset) => (
+        {/* Date Range Filter - Unified Pill Button Style */}
+        <div className="flex flex-wrap items-center gap-3 mt-3 pt-3 border-t">
+          <Calendar className="h-4 w-4 text-gray-400" />
+          <span className="text-sm font-medium text-gray-600">Date Range:</span>
+          <div className="flex flex-wrap items-center gap-2">
+            {[
+              { key: 'today', label: 'Today' },
+              { key: 'yesterday', label: 'Yesterday' },
+              { key: 'this_week', label: 'This Week' },
+              { key: 'this_month', label: 'This Month' },
+              { key: 'custom', label: 'Custom' },
+            ].map((preset) => (
+              <button 
+                key={preset.key} 
+                onClick={() => applyDatePreset(preset.key)}
+                className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-colors ${
+                  dateFilterPreset === preset.key 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+                data-testid={`date-preset-${preset.key}`}
+              >
+                {preset.label}
+              </button>
+            ))}
             <button 
-              key={preset.key} 
-              onClick={() => applyDatePreset(preset.key)}
-              className={`px-2.5 py-1 text-xs rounded-full transition-colors ${
-                dateFilterPreset === preset.key 
+              onClick={() => applyDatePreset('all')}
+              className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-colors ${
+                dateFilterPreset === 'all' || dateFilterPreset === ''
                   ? 'bg-blue-600 text-white' 
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
+              data-testid="date-preset-all"
             >
-              {preset.label}
+              All Time
             </button>
-          ))}
+          </div>
+          {dateFilterPreset === 'custom' && (
+            <div className="flex items-center gap-2 ml-2">
+              <input
+                type="date"
+                value={filterDateFrom}
+                onChange={(e) => { setFilterDateFrom(e.target.value); setCurrentPage(1); }}
+                className="h-9 px-3 border rounded-lg text-sm"
+                data-testid="date-from-input"
+              />
+              <span className="text-gray-400">to</span>
+              <input
+                type="date"
+                value={filterDateTo}
+                onChange={(e) => { setFilterDateTo(e.target.value); setCurrentPage(1); }}
+                className="h-9 px-3 border rounded-lg text-sm"
+                data-testid="date-to-input"
+              />
+            </div>
+          )}
           {activeFilter !== 'all' && (
             <span className="ml-auto text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
               Filtered: {activeFilter.replace(/_/g, ' ')}
