@@ -278,9 +278,13 @@ export default function AdAnalyticsPage() {
       
       if (metaResult.data.success) {
         setUnmappedAds(metaResult.data.data || []);
+        setUnmappedWithTargeting(metaResult.data.with_targeting_count || 0);
+        setUnmappedNoTargeting(metaResult.data.no_targeting_count || 0);
       } else {
         console.error('Failed to fetch unmapped ads from Meta:', metaResult.data.error);
         setUnmappedAds([]);
+        setUnmappedWithTargeting(0);
+        setUnmappedNoTargeting(0);
       }
       
       if (leadsResult.data.success) {
