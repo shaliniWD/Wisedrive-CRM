@@ -299,6 +299,28 @@ export default function AdAnalyticsPage() {
     }
   };
 
+  // Auto-map all ads that have clear geo-targeting
+  const handleAutoMapFromTargeting = async () => {
+    setAutoMapping(true);
+    try {
+      const result = await metaAdsApi.autoMapFromTargeting();
+      if (result.data.success) {
+        const { auto_mapped_count, skipped_count } = result.data;
+        if (auto_mapped_count > 0) {
+          toast.success(`✅ Auto-mapped ${auto_mapped_count} ads based on geo-targeting!`);
+        } else {
+          toast.info(`No ads could be auto-mapped. ${skipped_count} ads have ambiguous or no targeting.`);
+        }
+        fetchUnmappedAds();
+        fetchMappings();
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to auto-map ads');
+    } finally {
+      setAutoMapping(false);
+    }
+  };
+
   // Map an unmapped ad from WhatsApp leads
   const handleMapFromLeads = async (unmapped, selectedCity) => {
     try {
@@ -327,6 +349,7 @@ export default function AdAnalyticsPage() {
     setEditingAd(null);
     setIsModalOpen(true);
   };
+
 
   // Ad Mapping functions
   const handleSubmit = async (e) => {
