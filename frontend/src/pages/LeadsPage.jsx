@@ -2026,11 +2026,35 @@ export default function LeadsPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <MapPin className="h-5 w-5 text-orange-500" />
-              Bulk City Remap
+              City Remap
             </DialogTitle>
           </DialogHeader>
           
           <div className="space-y-4 py-4">
+            {/* Mode Selection Tabs */}
+            <div className="flex gap-2 p-1 bg-gray-100 rounded-lg">
+              <button
+                onClick={() => setRemapMode('auto')}
+                className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                  remapMode === 'auto' 
+                    ? 'bg-white shadow text-orange-600' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                🤖 Auto (by AD ID)
+              </button>
+              <button
+                onClick={() => setRemapMode('manual')}
+                className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                  remapMode === 'manual' 
+                    ? 'bg-white shadow text-orange-600' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                ✏️ Manual
+              </button>
+            </div>
+
             {/* City Summary */}
             <div className="bg-gray-50 rounded-lg p-4">
               <h4 className="text-sm font-medium text-gray-700 mb-3">Current Lead Distribution</h4>
@@ -2051,8 +2075,46 @@ export default function LeadsPage() {
               )}
             </div>
 
-            {/* From City */}
-            <div className="space-y-2">
+            {/* AUTO MODE */}
+            {remapMode === 'auto' && (
+              <>
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <h4 className="font-medium text-green-800 mb-2">🤖 Auto-Remap by AD ID</h4>
+                  <p className="text-sm text-green-700 mb-3">
+                    Automatically fix lead cities based on AD ID to City mappings configured in Settings.
+                    Leads with an AD ID that maps to a different city will be updated.
+                  </p>
+                  <ul className="text-xs text-green-600 space-y-1">
+                    <li>• Matches leads by ad_id or ad_name from AD City Mappings</li>
+                    <li>• Only updates leads where current city differs from mapped city</li>
+                    <li>• Safe: Won't affect leads without AD ID mappings</li>
+                  </ul>
+                </div>
+
+                {/* Reassign Option */}
+                <div className="flex items-center gap-3 bg-blue-50 p-3 rounded-lg">
+                  <Checkbox
+                    id="reassign-checkbox-auto"
+                    checked={cityRemapData.reassignToSalesRep}
+                    onCheckedChange={(checked) => setCityRemapData({...cityRemapData, reassignToSalesRep: checked})}
+                  />
+                  <div>
+                    <Label htmlFor="reassign-checkbox-auto" className="text-sm font-medium cursor-pointer">
+                      Reassign to Sales Reps
+                    </Label>
+                    <p className="text-xs text-gray-500">
+                      Automatically reassign leads to sales reps in the corrected city via round-robin
+                    </p>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* MANUAL MODE */}
+            {remapMode === 'manual' && (
+              <>
+                {/* From City */}
+                <div className="space-y-2">
               <Label>From City (Source)</Label>
               <Select 
                 value={cityRemapData.fromCity} 
