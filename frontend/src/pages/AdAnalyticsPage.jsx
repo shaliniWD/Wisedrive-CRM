@@ -100,6 +100,7 @@ export default function AdAnalyticsPage() {
   // Sync and unmapped ads state
   const [syncing, setSyncing] = useState(false);
   const [unmappedAds, setUnmappedAds] = useState([]);
+  const [unmappedAdsFromLeads, setUnmappedAdsFromLeads] = useState([]);
   const [loadingUnmapped, setLoadingUnmapped] = useState(false);
   
   const cities = ['Bangalore', 'Chennai', 'Mumbai', 'Delhi', 'Hyderabad', 'Pune', 'Kolkata', 'Ahmedabad', 'Vizag'];
