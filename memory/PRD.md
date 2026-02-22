@@ -49,6 +49,8 @@ Build a custom CRM for WiseDrive to manage leads from Meta (Facebook/Instagram) 
 - City dropdown filtered to cities with leads
 - Quick filter buttons (Today, Yesterday, This Week, etc.)
 - Activity Log tab in Notes drawer
+- **Table Column Symmetry** - Fixed alignment with consistent px-4 padding and better widths
+- **Activity Log Scroll Height** - Fixed to use full vertical space in drawer
 
 ---
 
