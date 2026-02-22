@@ -3017,13 +3017,27 @@ Or type your question and we'll help you!"""
     
     # Create new lead
     lead_id = str(uuid.uuid4())
+    
+    # ==================== DETERMINE SOURCE ====================
+    # Check if this is from Meta Ad (CTWA) or Direct WhatsApp
+    has_ctwa_data = any([ReferralSourceUrl, ReferralHeadline, ReferralBody, CtwaClid, ButtonText])
+    
+    if has_ctwa_data:
+        # This is a Click-to-WhatsApp lead from Meta Ad
+        lead_source = "META_WHATSAPP"
+        logger.info(f"Lead source: META_WHATSAPP (CTWA data detected)")
+    else:
+        # This is a direct WhatsApp message (not from Meta Ad)
+        lead_source = "DIRECT_WHATSAPP"
+        logger.info(f"Lead source: DIRECT_WHATSAPP (no CTWA data)")
+    
     lead = {
         "id": lead_id,
         "name": ProfileName or "WhatsApp Lead",
         "mobile": phone,
         "city": city,
         "city_id": city_id,
-        "source": "META_WHATSAPP",
+        "source": lead_source,
         "ad_id": ad_id,
         "ad_name": ad_name,
         "campaign_id": campaign_id,
@@ -3041,7 +3055,7 @@ Or type your question and we'll help you!"""
             "referral_source_type": ReferralSourceType,
             "button_text": ButtonText,
             "ctwa_clid": CtwaClid
-        } if any([ReferralSourceUrl, ReferralHeadline, ReferralBody]) else None
+        } if has_ctwa_data else None
     }
     
     await db.leads.insert_one(lead)
