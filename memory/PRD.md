@@ -138,14 +138,16 @@ Fixed 3 critical issues reported by user:
 - Stats cards now use extracted component with click-to-filter functionality
 - Filters now use extracted component with role-based visibility
 
+### Activity Log Scroll Height Fix (Feb 23, 2026) ✅
+- **Problem:** Activity Log tab content was cut off and not scrollable
+- **Root Cause:** `TabsContent` elements had `h-0` class collapsing height to zero
+- **Fix:** Removed `h-0` and changed `overflow-hidden` to `overflow-y-auto`
+- **Location:** `/app/frontend/src/pages/LeadsPage.jsx` lines 2991 and 3050
+- **Result:** Both Notes and Activity Log tabs now display and scroll correctly
+
 ---
 
 ## Pending Issues
-
-### P1: Activity Log Scroll Height
-- **Status:** Minor - recurring cosmetic issue
-- **Problem:** Log area not using full vertical space
-- **Location:** `/app/frontend/src/pages/LeadsPage.jsx`
 
 ### P2: City Filter by User Role
 - **Status:** Needs verification
