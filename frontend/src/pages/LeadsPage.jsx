@@ -1118,66 +1118,6 @@ export default function LeadsPage() {
         isSalesExec={isSalesExec}
         userName={user?.name}
       />
-          </div>
-
-          {/* Employee filter - Sales roles only + employees with leads */}
-          {isSalesExec ? (
-            <div className="flex items-center px-3 h-10 bg-slate-100 rounded-md text-sm font-medium text-slate-700 border">
-              {user?.name || 'My Leads'}
-            </div>
-          ) : (
-            <Select value={filterEmployee || 'all'} onValueChange={(v) => { setFilterEmployee(v === 'all' ? '' : v); setCurrentPage(1); }}>
-              <SelectTrigger className="w-[140px] h-10 bg-white text-sm" data-testid="filter-employee">
-                <SelectValue placeholder="Employee" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Employees</SelectItem>
-                {filteredEmployees.map((emp) => (<SelectItem key={emp.id} value={emp.name}>{emp.name}</SelectItem>))}
-              </SelectContent>
-            </Select>
-          )}
-
-          <Select value={filterStatus || 'all'} onValueChange={(v) => { setFilterStatus(v === 'all' ? '' : v); setCurrentPage(1); }}>
-            <SelectTrigger className="w-[140px] h-10 bg-white text-sm" data-testid="filter-status">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent className="max-h-[300px]">
-              <SelectItem value="all">All Status</SelectItem>
-              {statuses.map((s) => (
-                <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* City filter - AD mapped cities + cities with leads */}
-          <Select value={filterCity || 'all'} onValueChange={(v) => { setFilterCity(v === 'all' ? '' : v); setCurrentPage(1); }}>
-            <SelectTrigger className="w-[120px] h-10 bg-white text-sm" data-testid="filter-city">
-              <SelectValue placeholder="City" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Cities</SelectItem>
-              {filteredCities.map((c) => (<SelectItem key={c} value={c}>{c}</SelectItem>))}
-            </SelectContent>
-          </Select>
-
-          <button 
-            onClick={() => { 
-              setActiveFilter('all'); 
-              setSearch('');
-              setFilterEmployee('');
-              setFilterStatus('');
-              setFilterCity('');
-              setFilterDateFrom('');
-              setFilterDateTo('');
-              setDateFilterPreset('');
-              setCurrentPage(1);
-              fetchData(); 
-            }}
-            className="px-3 py-2.5 border rounded-lg hover:bg-gray-50 font-medium text-sm flex items-center gap-1"
-          >
-            <X className="h-4 w-4" /> Reset
-          </button>
-        </div>
       </div>
 
       {/* Data Table */}
