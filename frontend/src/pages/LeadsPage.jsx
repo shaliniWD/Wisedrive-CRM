@@ -3053,19 +3053,20 @@ export default function LeadsPage() {
               </div>
             </TabsContent>
 
-            <TabsContent value="activities" className="flex-1 mt-0 min-h-0 relative">
+            <TabsContent value="activities" className="h-full m-0 data-[state=active]:block hidden" forceMount>
+              <ScrollArea className="h-full">
+                <div className="space-y-3 px-6 py-2 pr-4">
               {loadingNotes ? (
-                <div className="absolute inset-0 flex items-center justify-center">
+                <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
                 </div>
               ) : leadActivities.length === 0 ? (
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
+                <div className="flex flex-col items-center justify-center py-8 text-gray-500">
                   <Activity className="h-10 w-10 mb-2 text-gray-300" />
                   <p className="text-sm">No activities recorded yet.</p>
                 </div>
               ) : (
-                <ScrollArea className="absolute inset-0">
-                  <div className="space-y-3 px-6 py-4 pr-4">
+                <>
                   {leadActivities.map((activity) => {
                     // Determine activity icon and color based on action type
                     const getActivityStyle = (action) => {
