@@ -3053,7 +3053,7 @@ export default function LeadsPage() {
               </div>
             </TabsContent>
 
-            <TabsContent value="activities" className="h-full m-0 data-[state=active]:block hidden" forceMount>
+              <TabsContent value="activities" className="absolute inset-0 m-0 overflow-hidden">
               <ScrollArea className="h-full">
                 <div className="space-y-3 px-6 py-2 pr-4">
               {loadingNotes ? (
