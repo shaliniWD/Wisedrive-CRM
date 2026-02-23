@@ -1237,69 +1237,6 @@ export default function LeadsPage() {
             <X className="h-4 w-4" /> Reset
           </button>
         </div>
-
-        {/* Date Range Filter - Unified Pill Button Style */}
-        <div className="flex flex-wrap items-center gap-3 mt-3 pt-3 border-t">
-          <Calendar className="h-4 w-4 text-gray-400" />
-          <span className="text-sm font-medium text-gray-600">Date Range:</span>
-          <div className="flex flex-wrap items-center gap-2">
-            {[
-              { key: 'today', label: 'Today' },
-              { key: 'yesterday', label: 'Yesterday' },
-              { key: 'this_week', label: 'This Week' },
-              { key: 'this_month', label: 'This Month' },
-              { key: 'custom', label: 'Custom' },
-            ].map((preset) => (
-              <button 
-                key={preset.key} 
-                onClick={() => applyDatePreset(preset.key)}
-                className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-colors ${
-                  dateFilterPreset === preset.key 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-                data-testid={`date-preset-${preset.key}`}
-              >
-                {preset.label}
-              </button>
-            ))}
-            <button 
-              onClick={() => applyDatePreset('all')}
-              className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-colors ${
-                dateFilterPreset === 'all' || dateFilterPreset === ''
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-              data-testid="date-preset-all"
-            >
-              All Time
-            </button>
-          </div>
-          {dateFilterPreset === 'custom' && (
-            <div className="flex items-center gap-2 ml-2">
-              <input
-                type="date"
-                value={filterDateFrom}
-                onChange={(e) => { setFilterDateFrom(e.target.value); setCurrentPage(1); }}
-                className="h-9 px-3 border rounded-lg text-sm"
-                data-testid="date-from-input"
-              />
-              <span className="text-gray-400">to</span>
-              <input
-                type="date"
-                value={filterDateTo}
-                onChange={(e) => { setFilterDateTo(e.target.value); setCurrentPage(1); }}
-                className="h-9 px-3 border rounded-lg text-sm"
-                data-testid="date-to-input"
-              />
-            </div>
-          )}
-          {activeFilter !== 'all' && (
-            <span className="ml-auto text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
-              Filtered: {activeFilter.replace(/_/g, ' ')}
-            </span>
-          )}
-        </div>
       </div>
 
       {/* Data Table */}
