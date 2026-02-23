@@ -267,6 +267,16 @@ export function AttendanceDashboard({ isHR }) {
 
   return (
     <div className="p-6" data-testid="attendance-dashboard">
+      {/* Full Page Loading Overlay */}
+      {loading && (
+        <div className="fixed inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
+            <p className="text-sm font-medium text-gray-600">Loading attendance data...</p>
+          </div>
+        </div>
+      )}
+
       {/* Header with Filters */}
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div>
