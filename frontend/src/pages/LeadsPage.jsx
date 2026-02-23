@@ -3224,10 +3224,12 @@ export default function LeadsPage() {
                       </div>
                     );
                   })}
-                  </div>
-                </ScrollArea>
+                </>
               )}
+                </div>
+              </ScrollArea>
             </TabsContent>
+            </div>
           </Tabs>
         </SheetContent>
       </Sheet>
