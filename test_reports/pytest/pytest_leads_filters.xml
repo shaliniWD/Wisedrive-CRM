@@ -1,31 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="10" skipped="0" tests="11" time="4.508" timestamp="2026-02-23T06:52:46.177509+00:00" hostname="agent-env-d5dc5395-68df-4906-8296-ca52c4ac370c"><testcase classname="backend.tests.test_leads_filters.TestLeadsFilters" name="test_get_all_leads_no_filter" time="0.509"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_leads_filters.py:39: in test_get_all_leads_no_filter
-    assert response.status_code == 200
-E   assert 401 == 200
-E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_leads_filters.TestLeadsFilters" name="test_date_filter_today" time="0.374"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_leads_filters.py:55: in test_date_filter_today
-    assert response.status_code == 200
-E   assert 401 == 200
-E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_leads_filters.TestLeadsFilters" name="test_date_filter_all_time" time="0.386"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_leads_filters.py:68: in test_date_filter_all_time
-    assert response.status_code == 200
-E   assert 401 == 200
-E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_leads_filters.TestLeadsFilters" name="test_date_filter_comparison" time="0.373"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_leads_filters.py:83: in test_date_filter_comparison
-    assert all_response.status_code == 200
-E   assert 401 == 200
-E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_leads_filters.TestLeadsFilters" name="test_employee_filter_by_name" time="0.376"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_leads_filters.py:103: in test_employee_filter_by_name
-    assert all_response.status_code == 200
-E   assert 401 == 200
-E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_leads_filters.TestLeadsFilters" name="test_employee_filter_switching" time="0.379"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_leads_filters.py:136: in test_employee_filter_switching
-    assert all_response.status_code == 200
-E   assert 401 == 200
-E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_leads_filters.TestLeadsFilters" name="test_combined_date_and_employee_filter" time="0.408"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_leads_filters.py:179: in test_combined_date_and_employee_filter
-    assert date_response.status_code == 200
-E   assert 401 == 200
-E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_leads_filters.TestLeadsFilters" name="test_sneha_reddy_filter" time="0.407"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_leads_filters.py:221: in test_sneha_reddy_filter
-    assert response.status_code == 200
-E   assert 401 == 200
-E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_leads_filters.TestLeadsFilters" name="test_get_employees_list" time="0.368"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_leads_filters.py:236: in test_get_employees_list
-    assert response.status_code == 200
-E   assert 401 == 200
-E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_leads_filters.TestLeadStats" name="test_stats_calculation_all_time" time="0.388"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_leads_filters.py:273: in test_stats_calculation_all_time
-    assert response.status_code == 200
-E   assert 401 == 200
-E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_leads_filters.TestLeadStats" name="test_stats_calculation_today" time="0.416" /></testsuite></testsuites>
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="11" time="6.434" timestamp="2026-02-23T06:53:11.020423+00:00" hostname="agent-env-d5dc5395-68df-4906-8296-ca52c4ac370c"><testcase classname="backend.tests.test_leads_filters.TestLeadsFilters" name="test_get_all_leads_no_filter" time="1.954" /><testcase classname="backend.tests.test_leads_filters.TestLeadsFilters" name="test_date_filter_today" time="0.395" /><testcase classname="backend.tests.test_leads_filters.TestLeadsFilters" name="test_date_filter_all_time" time="0.410" /><testcase classname="backend.tests.test_leads_filters.TestLeadsFilters" name="test_date_filter_comparison" time="0.530" /><testcase classname="backend.tests.test_leads_filters.TestLeadsFilters" name="test_employee_filter_by_name" time="0.484" /><testcase classname="backend.tests.test_leads_filters.TestLeadsFilters" name="test_employee_filter_switching" time="0.446"><failure message="AssertionError: Employee Sneha Reddy should have 39 leads, got 37&#10;assert 37 == 39">backend/tests/test_leads_filters.py:164: in test_employee_filter_switching
+    assert actual_count == expected_count, f"Employee {emp} should have {expected_count} leads, got {actual_count}"
+E   AssertionError: Employee Sneha Reddy should have 39 leads, got 37
+E   assert 37 == 39</failure></testcase><testcase classname="backend.tests.test_leads_filters.TestLeadsFilters" name="test_combined_date_and_employee_filter" time="0.453" /><testcase classname="backend.tests.test_leads_filters.TestLeadsFilters" name="test_sneha_reddy_filter" time="0.381" /><testcase classname="backend.tests.test_leads_filters.TestLeadsFilters" name="test_get_employees_list" time="0.426" /><testcase classname="backend.tests.test_leads_filters.TestLeadStats" name="test_stats_calculation_all_time" time="0.437" /><testcase classname="backend.tests.test_leads_filters.TestLeadStats" name="test_stats_calculation_today" time="0.430" /></testsuite></testsuites>
