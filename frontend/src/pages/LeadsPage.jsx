@@ -33,6 +33,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 // Import extracted lead components
 import { StatusDropdown, getStatusConfig } from '@/components/leads/StatusDropdown';
 import { ActivityLog } from '@/components/leads/ActivityLog';
+import { LeadStats } from '@/components/leads/LeadStats';
 import { DateRangeFilter, getDateRange, DATE_PRESETS } from '@/components/ui/DateRangeFilter';
 
 // Summary Card Component - Compact version for sales dashboard
