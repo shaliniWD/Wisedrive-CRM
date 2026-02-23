@@ -125,6 +125,9 @@ export default function LeadsPage() {
   const [carLoading, setCarLoading] = useState(false);
   const [carError, setCarError] = useState('');
   const [reassignReason, setReassignReason] = useState('');
+  
+  // Ad Info Modal state
+  const [adInfoModal, setAdInfoModal] = useState({ open: false, lead: null });
 
   // Get today's date for filtering
   const today = new Date().toISOString().split('T')[0];
