@@ -798,7 +798,22 @@ async def get_leads(
     if source:
         query["source"] = source
     if assigned_to:
-        query["assigned_to"] = assigned_to
+        # Support filtering by either user ID or name
+        query["$or"] = [
+            {"assigned_to": assigned_to},
+            {"assigned_to_name": assigned_to}
+        ]
+        # If we already have $or from search, merge them
+        if "$or" in query and search:
+            search_or = [
+                {"name": {"$regex": search, "$options": "i"}},
+                {"mobile": {"$regex": search, "$options": "i"}}
+            ]
+            query["$and"] = [
+                {"$or": search_or},
+                {"$or": [{"assigned_to": assigned_to}, {"assigned_to_name": assigned_to}]}
+            ]
+            del query["$or"]
     if country_id:
         query["country_id"] = country_id
     if team_id:
