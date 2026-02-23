@@ -49,19 +49,33 @@ Build a custom CRM for WiseDrive to manage leads from Meta (Facebook/Instagram) 
 - Frontend: Partner column in Ad Mappings table
 - Complete flow: Ad Campaign → Ad Mapping → Lead gets Partner automatically
 
+### Leads Page 8-Point UI Fix (Feb 23, 2026) ✅
+1. **Date filter above stat cards** - Date Range filter now positioned above stats
+2. **Stat cards update with date filter** - Stats calculate from filtered leads
+3. **Partner details removed from table** - City column shows only city name
+4. **Source column simplified** - Shows source type + truncated Ad ID only (no ad_name)
+5. **Notes column at end** - Column order: Date|Lead Details|City|Assigned|Reminder|Status|Source|Payment|Notes
+6. **Reduced column gaps** - Lead Details 180px, City 90px
+7. **Assigned column truncation** - Uses truncate class with max-w-[90px]
+8. **City dropdown filtering** - Shows AD mapped cities + cities from leads
+
+### Critical Bug Fix (Feb 23, 2026) ✅
+- Fixed "Cannot access 'filteredLeads' before initialization" error
+- Moved statsLeads calculation after filteredLeads declaration
+
 ---
 
 ## Pending Issues
 
 ### P1: Activity Log Scroll Height
-- **Status:** Recurring issue
+- **Status:** Minor - recurring cosmetic issue
 - **Problem:** Log area not using full vertical space
-- **Location:** `/app/frontend/src/pages/LeadsPage.jsx` lines 3183-3290
-
-### P2: Table Column Symmetry
-- **Status:** Not started
-- **Problem:** Columns not aligned properly
 - **Location:** `/app/frontend/src/pages/LeadsPage.jsx`
+
+### P2: City Filter by User Role
+- **Status:** Needs verification
+- **Problem:** Country Manager should see only their country's cities, CEO sees all
+- **Location:** `/app/frontend/src/pages/LeadsPage.jsx` - filteredCities logic
 
 ---
 
