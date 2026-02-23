@@ -803,10 +803,10 @@ export default function AdAnalyticsPage() {
 
   if (loading && activeTab === 'performance') {
     return (
-      <div className="flex items-center justify-center h-96" data-testid="loading-spinner">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto" />
-          <p className="text-gray-500 mt-2">Loading analytics...</p>
+      <div className="fixed inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
+          <p className="text-sm font-medium text-gray-600">Loading ads analytics...</p>
         </div>
       </div>
     );
@@ -814,6 +814,16 @@ export default function AdAnalyticsPage() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto" data-testid="ad-analytics-page">
+      {/* Loading overlay for tab switching */}
+      {(loading || loadingUnmapped) && (
+        <div className="fixed inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
+            <p className="text-sm font-medium text-gray-600">Loading...</p>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
