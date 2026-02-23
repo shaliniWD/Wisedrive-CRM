@@ -1245,16 +1245,19 @@ export default function LeadsPage() {
                     <StatusDropdown lead={lead} statuses={statuses} onUpdate={fetchData} />
                   </td>
                   <td className="px-4 py-3">
-                    <div className="text-sm font-medium text-gray-700">{lead.source}</div>
-                    {(lead.ad_id || lead.ad_name) && (
-                      <div className="mt-1 space-y-0.5">
-                        {lead.ad_id && (
-                          <div className="font-mono text-xs text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded inline-block">
-                            ID: {lead.ad_id.length > 15 ? lead.ad_id.substring(0, 15) + '...' : lead.ad_id}
-                          </div>
-                        )}
-                      </div>
-                    )}
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-gray-700">{lead.source}</span>
+                      {(lead.ad_id || lead.ad_name) && (
+                        <button
+                          onClick={() => setAdInfoModal({ open: true, lead })}
+                          className="p-1 rounded hover:bg-blue-50 text-blue-600 transition-colors"
+                          title="View Ad Details"
+                          data-testid={`ad-info-btn-${lead.id}`}
+                        >
+                          <Info className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3">
                     <div className="space-y-1">
