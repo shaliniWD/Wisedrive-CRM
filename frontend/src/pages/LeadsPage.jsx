@@ -2989,9 +2989,9 @@ export default function LeadsPage() {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="notes" className="flex-1 flex flex-col px-6 pb-6 mt-0 min-h-0 overflow-y-auto">
+            <TabsContent value="notes" className="flex-1 flex flex-col mt-0 min-h-0">
               {/* Add Note Section */}
-              <div className="bg-slate-50 rounded-xl p-4 border mb-4">
+              <div className="bg-slate-50 rounded-xl p-4 border mb-4 mx-6 flex-shrink-0">
                 <Label className="text-sm font-medium mb-2 block">Add a note</Label>
                 <div className="flex gap-2">
                   <textarea
@@ -3017,7 +3017,8 @@ export default function LeadsPage() {
               </div>
 
               {/* Notes List */}
-              <div className="flex-1 overflow-y-auto space-y-3">
+              <ScrollArea className="flex-1 h-full">
+                <div className="space-y-3 px-6 pb-6 pr-4">
                 {loadingNotes ? (
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
@@ -3045,7 +3046,8 @@ export default function LeadsPage() {
                     </div>
                   ))
                 )}
-              </div>
+                </div>
+              </ScrollArea>
             </TabsContent>
 
             <TabsContent value="activities" className="flex-1 flex flex-col mt-0 min-h-0">
