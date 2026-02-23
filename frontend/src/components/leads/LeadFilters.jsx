@@ -15,11 +15,11 @@ import {
  * @param {Object} props
  * @param {string} props.search - Current search query
  * @param {function} props.setSearch - Search setter
- * @param {string} props.filterEmployee - Current employee filter
+ * @param {string} props.filterEmployee - Current employee filter (empty string = all)
  * @param {function} props.setFilterEmployee - Employee filter setter
- * @param {string} props.filterStatus - Current status filter
+ * @param {string} props.filterStatus - Current status filter (empty string = all)
  * @param {function} props.setFilterStatus - Status filter setter
- * @param {string} props.filterCity - Current city filter
+ * @param {string} props.filterCity - Current city filter (empty string = all)
  * @param {function} props.setFilterCity - City filter setter
  * @param {Array} props.employees - List of employees for dropdown
  * @param {Array} props.statuses - List of statuses for dropdown
@@ -52,6 +52,27 @@ export const LeadFilters = ({
     onReset?.();
   };
 
+  // Handle employee filter change - ensure consistent empty string for "all"
+  const handleEmployeeChange = (value) => {
+    const newValue = value === 'all' ? '' : value;
+    setFilterEmployee?.(newValue);
+  };
+
+  // Handle status filter change
+  const handleStatusChange = (value) => {
+    const newValue = value === 'all' ? '' : value;
+    setFilterStatus?.(newValue);
+  };
+
+  // Handle city filter change
+  const handleCityChange = (value) => {
+    const newValue = value === 'all' ? '' : value;
+    setFilterCity?.(newValue);
+  };
+
+  // Get display value for selects (convert empty string to 'all')
+  const getSelectValue = (value) => value || 'all';
+
   return (
     <div className="bg-white rounded-xl border p-4 mb-5">
       <div className="flex flex-wrap items-center gap-3">
@@ -75,11 +96,11 @@ export const LeadFilters = ({
           </div>
         ) : (
           <Select 
-            value={filterEmployee || 'all'} 
-            onValueChange={(v) => setFilterEmployee?.(v === 'all' ? '' : v)}
+            value={getSelectValue(filterEmployee)} 
+            onValueChange={handleEmployeeChange}
           >
-            <SelectTrigger className="w-[140px] h-10 bg-white text-sm" data-testid="filter-employee">
-              <SelectValue placeholder="Employee" />
+            <SelectTrigger className="w-[160px] h-10 bg-white text-sm" data-testid="filter-employee">
+              <SelectValue placeholder="All Employees" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Employees</SelectItem>
@@ -92,11 +113,11 @@ export const LeadFilters = ({
 
         {/* Status Filter */}
         <Select 
-          value={filterStatus || 'all'} 
-          onValueChange={(v) => setFilterStatus?.(v === 'all' ? '' : v)}
+          value={getSelectValue(filterStatus)} 
+          onValueChange={handleStatusChange}
         >
           <SelectTrigger className="w-[140px] h-10 bg-white text-sm" data-testid="filter-status">
-            <SelectValue placeholder="Status" />
+            <SelectValue placeholder="All Status" />
           </SelectTrigger>
           <SelectContent className="max-h-[300px]">
             <SelectItem value="all">All Status</SelectItem>
@@ -108,11 +129,11 @@ export const LeadFilters = ({
 
         {/* City Filter */}
         <Select 
-          value={filterCity || 'all'} 
-          onValueChange={(v) => setFilterCity?.(v === 'all' ? '' : v)}
+          value={getSelectValue(filterCity)} 
+          onValueChange={handleCityChange}
         >
           <SelectTrigger className="w-[120px] h-10 bg-white text-sm" data-testid="filter-city">
-            <SelectValue placeholder="City" />
+            <SelectValue placeholder="All Cities" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Cities</SelectItem>
