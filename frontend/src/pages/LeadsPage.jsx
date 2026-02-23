@@ -1283,15 +1283,15 @@ export default function LeadsPage() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
-                      <div className="h-9 w-9 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white font-medium text-sm">
+                      <div className="h-9 w-9 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white font-medium text-sm flex-shrink-0">
                         {lead.name?.charAt(0)?.toUpperCase()}
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <div className="flex items-center gap-1">
-                          <span className="font-medium text-gray-900 text-sm">{lead.name}</span>
+                          <span className="font-medium text-gray-900 text-sm truncate">{lead.name}</span>
                           <button 
                             onClick={() => openEditModal(lead)} 
-                            className="p-0.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                            className="p-0.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors flex-shrink-0"
                             data-testid={`edit-lead-${lead.id}`}
                           >
                             <Pencil className="h-3 w-3" />
@@ -1301,7 +1301,7 @@ export default function LeadsPage() {
                             <button 
                               onClick={() => handleDeleteLead(lead)}
                               disabled={deletingLead === lead.id}
-                              className="p-0.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
+                              className="p-0.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50 flex-shrink-0"
                               data-testid={`delete-lead-${lead.id}`}
                               title="Delete lead (CEO only)"
                             >
@@ -1322,22 +1322,19 @@ export default function LeadsPage() {
                   <td className="px-4 py-3">
                     <span className="inline-flex items-center gap-1 text-sm text-gray-700">
                       <MapPin className="h-3 w-3 text-gray-400" />
-                      {lead.city}
+                      {lead.city || '-'}
                     </span>
-                    {lead.partner_name && lead.partner_name !== 'B2C Default' && (
-                      <span className="ml-2 px-2 py-0.5 text-xs bg-amber-100 text-amber-800 rounded-full font-medium">
-                        {lead.partner_name}
-                      </span>
-                    )}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1">
-                      <span className="text-sm text-gray-700">{lead.assigned_to_name || lead.assigned_to || '-'}</span>
+                      <span className="text-sm text-gray-700 truncate max-w-[90px]" title={lead.assigned_to_name || lead.assigned_to}>
+                        {lead.assigned_to_name || lead.assigned_to || '-'}
+                      </span>
                       {/* Hide reassign button for Sales Executives */}
                       {!isSalesExec && (
                         <button 
                           onClick={() => openAssignModal(lead)}
-                          className="p-0.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                          className="p-0.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors flex-shrink-0"
                           data-testid={`assign-employee-${lead.id}`}
                         >
                           <Pencil className="h-3 w-3" />
