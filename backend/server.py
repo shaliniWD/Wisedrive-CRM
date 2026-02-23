@@ -776,6 +776,8 @@ async def get_leads(
     team_id: Optional[str] = None,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
+    date_from: Optional[str] = None,  # Alias for start_date
+    date_to: Optional[str] = None,    # Alias for end_date
     current_user: dict = Depends(get_current_user)
 ):
     """Get leads - filtered by RBAC"""
@@ -801,6 +803,19 @@ async def get_leads(
         query["country_id"] = country_id
     if team_id:
         query["team_id"] = team_id
+    
+    # Handle date filtering (support both parameter naming conventions)
+    actual_start_date = start_date or date_from
+    actual_end_date = end_date or date_to
+    
+    if actual_start_date or actual_end_date:
+        date_query = {}
+        if actual_start_date:
+            date_query["$gte"] = actual_start_date
+        if actual_end_date:
+            # Include the entire end date by adding time component
+            date_query["$lte"] = actual_end_date + "T23:59:59"
+        query["created_at"] = date_query
     
     leads = await db.leads.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     
