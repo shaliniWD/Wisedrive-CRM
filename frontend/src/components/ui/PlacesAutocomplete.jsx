@@ -176,16 +176,27 @@ export function PlacesAutocomplete({
       let address = suggestion.description;
       let lat = null;
       let lng = null;
+      let city = null;
 
-      // Try to get place details for coordinates
+      // Try to get place details for coordinates and city
       if (suggestion.placePrediction?.toPlace) {
         // New API - fetch place details
         const place = suggestion.placePrediction.toPlace();
-        await place.fetchFields({ fields: ['displayName', 'formattedAddress', 'location'] });
+        await place.fetchFields({ fields: ['displayName', 'formattedAddress', 'location', 'addressComponents'] });
         
         address = place.formattedAddress || suggestion.description;
         lat = place.location?.lat();
         lng = place.location?.lng();
+        
+        // Extract city from address components
+        if (place.addressComponents) {
+          for (const component of place.addressComponents) {
+            if (component.types?.includes('locality') || component.types?.includes('administrative_area_level_2')) {
+              city = component.longText || component.shortText;
+              break;
+            }
+          }
+        }
       } else if (suggestion.placeId && window.google?.maps?.places?.PlacesService) {
         // Legacy API - use PlacesService
         const dummyDiv = document.createElement('div');
@@ -193,12 +204,22 @@ export function PlacesAutocomplete({
         
         await new Promise((resolve) => {
           service.getDetails(
-            { placeId: suggestion.placeId, fields: ['formatted_address', 'geometry'] },
+            { placeId: suggestion.placeId, fields: ['formatted_address', 'geometry', 'address_components'] },
             (place, status) => {
               if (status === window.google.maps.places.PlacesServiceStatus.OK && place) {
                 address = place.formatted_address || suggestion.description;
                 lat = place.geometry?.location?.lat();
                 lng = place.geometry?.location?.lng();
+                
+                // Extract city from address components
+                if (place.address_components) {
+                  for (const component of place.address_components) {
+                    if (component.types?.includes('locality') || component.types?.includes('administrative_area_level_2')) {
+                      city = component.long_name || component.short_name;
+                      break;
+                    }
+                  }
+                }
               }
               resolve();
             }
@@ -214,6 +235,7 @@ export function PlacesAutocomplete({
           address,
           latitude: lat,
           longitude: lng,
+          city,
         });
       }
     } catch (error) {
