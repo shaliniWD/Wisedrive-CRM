@@ -315,7 +315,8 @@ export default function LeadsPage() {
     }
   };
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (showLoader = true) => {
+    if (showLoader) setLoading(true);
     try {
       const params = {};
       if (search) params.search = search;
