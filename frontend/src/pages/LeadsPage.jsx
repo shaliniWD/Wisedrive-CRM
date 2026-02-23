@@ -1246,15 +1246,15 @@ export default function LeadsPage() {
         <table className="w-full min-w-[1000px]">
           <thead>
             <tr className="bg-slate-50 border-b">
-              <th className="w-[100px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Date</th>
-              <th className="w-[200px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Lead Details</th>
-              <th className="w-[110px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">City</th>
-              <th className="w-[110px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Assigned</th>
-              <th className="w-[100px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Reminder</th>
-              <th className="w-[130px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
-              <th className="w-[80px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Notes</th>
-              <th className="w-[160px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Source</th>
-              <th className="w-[110px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Payment</th>
+              <th className="w-[90px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Date</th>
+              <th className="w-[180px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Lead Details</th>
+              <th className="w-[90px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">City</th>
+              <th className="w-[120px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Assigned</th>
+              <th className="w-[90px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Reminder</th>
+              <th className="w-[110px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
+              <th className="w-[100px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Source</th>
+              <th className="w-[130px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Payment</th>
+              <th className="w-[70px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Notes</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
