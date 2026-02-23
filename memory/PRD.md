@@ -97,25 +97,25 @@ Tested and verified all 10 role-based permissions:
 ### Backend
 - **Framework:** FastAPI
 - **Database:** MongoDB
-- **Main file:** `/app/backend/server.py` (~13,800 lines - refactoring in progress)
-- **New Route Structure:** `/app/backend/routes/` (templates created)
-  - `auth.py` - Authentication routes
-  - `leads.py` - Lead management (26+ endpoints)
-  - `partners.py` - Partner CRUD
-  - `webhooks.py` - Twilio webhooks
-  - `meta_ads.py` - Meta API integration
-  - `inspections.py` - Inspection management
+- **Main file:** `/app/backend/server.py` (~13,890 lines - refactoring in progress)
+- **Modular Routes:** `/app/backend/routes/`
+  - `auth.py` - Authentication routes (UPDATED - factory pattern with `create_auth_router`)
+  - `leads.py` - Lead management (template ready)
+  - `partners.py` - Partner CRUD (template ready)
+  - `webhooks.py` - Twilio webhooks (template ready)
+  - `meta_ads.py` - Meta API integration (template ready)
+  - `inspections.py` - Inspection management (template ready)
 
 ### Frontend
 - **Framework:** React with Shadcn/UI
-- **Main file:** `/app/frontend/src/pages/LeadsPage.jsx` (~3,278 lines - refactored)
+- **Main file:** `/app/frontend/src/pages/LeadsPage.jsx` (~3,197 lines - reduced from 3,272)
 - **Extracted Components:** `/app/frontend/src/components/leads/`
-  - `StatusDropdown.jsx` - Lead status dropdown (imported)
-  - `ActivityLog.jsx` - Activity history (imported)
-  - `LeadStats.jsx` - Stats cards (ready)
-  - `LeadFilters.jsx` - Filter UI (ready)
+  - `StatusDropdown.jsx` - Lead status dropdown (INTEGRATED)
+  - `ActivityLog.jsx` - Activity history (INTEGRATED)
+  - `LeadStats.jsx` - Stats cards with filtering (INTEGRATED - Feb 23)
+  - `LeadFilters.jsx` - Filter UI (ready for integration)
 - **Custom Hooks:** `/app/frontend/src/hooks/`
-  - `useLeads.js` - Lead data management (ready)
+  - `useLeads.js` - Lead data management (ready for integration)
 - **Dependencies:** @dnd-kit/core for drag-and-drop, date-fns-tz for timezone
 
 ### Key Collections
