@@ -2979,7 +2979,7 @@ export default function LeadsPage() {
             </SheetTitle>
           </SheetHeader>
 
-          <Tabs value={notesTab} onValueChange={setNotesTab} className="flex-1 flex flex-col min-h-0">
+          <Tabs value={notesTab} onValueChange={setNotesTab} className="flex-1 flex flex-col min-h-0 overflow-hidden">
             <TabsList className="grid w-full grid-cols-2 mx-6 my-3 flex-shrink-0" style={{ width: 'calc(100% - 48px)' }}>
               <TabsTrigger value="notes" className="flex items-center gap-2" data-testid="notes-tab">
                 <StickyNote className="h-4 w-4" /> Notes
@@ -2989,7 +2989,8 @@ export default function LeadsPage() {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="notes" className="flex-1 flex flex-col mt-0 min-h-0">
+            <div className="flex-1 min-h-0 overflow-hidden">
+            <TabsContent value="notes" className="h-full flex flex-col m-0 data-[state=active]:flex"  forceMount>
               {/* Add Note Section */}
               <div className="bg-slate-50 rounded-xl p-4 border mx-6 mt-2 mb-2 flex-shrink-0">
                 <Label className="text-sm font-medium mb-2 block">Add a note</Label>
