@@ -1118,7 +1118,6 @@ export default function LeadsPage() {
         isSalesExec={isSalesExec}
         userName={user?.name}
       />
-      </div>
 
       {/* Data Table */}
       <div className="bg-white rounded-xl border overflow-hidden">
