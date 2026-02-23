@@ -139,11 +139,17 @@ Fixed 3 critical issues reported by user:
 - Filters now use extracted component with role-based visibility
 
 ### Activity Log Scroll Height Fix (Feb 23, 2026) ✅
-- **Problem:** Activity Log tab content was cut off and not scrollable
-- **Root Cause:** `TabsContent` elements had `h-0` class collapsing height to zero
-- **Fix:** Removed `h-0` and changed `overflow-hidden` to `overflow-y-auto`
-- **Location:** `/app/frontend/src/pages/LeadsPage.jsx` lines 2991 and 3050
-- **Result:** Both Notes and Activity Log tabs now display and scroll correctly
+- **Problem:** Activity Log and Notes tabs content was cut off and not scrollable
+- **Root Cause:** 
+  1. `h-0` class on `TabsContent` collapsed height to zero
+  2. `overflow-hidden` on parent `Tabs` prevented scrolling
+  3. Nested `overflow-y-auto` divs didn't work properly in flex layout
+- **Fix:** 
+  1. Removed `h-0` and `overflow-hidden` from containers
+  2. Replaced nested scrollable divs with Shadcn `ScrollArea` component
+  3. Restructured flex layout with `min-h-0` for proper flex shrinking
+- **Location:** `/app/frontend/src/pages/LeadsPage.jsx` - Notes & Activities tabs
+- **Result:** Both Notes and Activity Log tabs now display fully and scroll correctly with proper scrollbar
 
 ---
 
