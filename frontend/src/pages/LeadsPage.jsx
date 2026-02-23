@@ -128,6 +128,9 @@ export default function LeadsPage() {
   
   // Ad Info Modal state
   const [adInfoModal, setAdInfoModal] = useState({ open: false, lead: null });
+  
+  // Sales exec cities quick view
+  const [showSalesExecCities, setShowSalesExecCities] = useState(false);
 
   // Get today's date for filtering
   const today = new Date().toISOString().split('T')[0];
