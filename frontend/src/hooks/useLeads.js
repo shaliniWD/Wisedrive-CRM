@@ -1,236 +1,343 @@
 /**
  * useLeads Hook
- * Manages lead data fetching, filtering, and pagination
+ * Custom hook for managing lead data, filtering, and pagination
+ * 
+ * This hook can be used to gradually migrate lead management logic
+ * out of LeadsPage.jsx. It supports both client-side and server-side filtering.
+ * 
+ * Usage:
+ * const { leads, filteredLeads, loading, filters, pagination, actions } = useLeads({
+ *   countryId: user?.country_id,
+ *   isSalesExec: user?.role_code === 'SALES_EXEC',
+ *   serverSideFiltering: true, // Use API-level filtering
+ * });
  */
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { leadsApi, employeesApi } from '@/services/api';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { leadsApi, employeesApi, utilityApi, inspectionPackagesApi, partnersApi } from '@/services/api';
 import { toast } from 'sonner';
 
-// Date filter helpers
-const getDateRange = (filter) => {
+// Date filter helpers - Get date range for presets
+export const getDateRange = (preset) => {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   
-  switch (filter) {
+  switch (preset) {
     case 'today':
-      return { start: today, end: now };
-    case 'yesterday':
+      return { 
+        start: today.toISOString().split('T')[0], 
+        end: today.toISOString().split('T')[0] 
+      };
+    case 'yesterday': {
       const yesterday = new Date(today);
       yesterday.setDate(yesterday.getDate() - 1);
-      return { start: yesterday, end: today };
-    case 'thisWeek':
+      return { 
+        start: yesterday.toISOString().split('T')[0], 
+        end: yesterday.toISOString().split('T')[0] 
+      };
+    }
+    case 'this_week': {
       const weekStart = new Date(today);
       weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-      return { start: weekStart, end: now };
-    case 'lastWeek':
-      const lastWeekEnd = new Date(today);
-      lastWeekEnd.setDate(lastWeekEnd.getDate() - lastWeekEnd.getDay());
-      const lastWeekStart = new Date(lastWeekEnd);
-      lastWeekStart.setDate(lastWeekStart.getDate() - 7);
-      return { start: lastWeekStart, end: lastWeekEnd };
-    case 'thisMonth':
+      return { 
+        start: weekStart.toISOString().split('T')[0], 
+        end: today.toISOString().split('T')[0] 
+      };
+    }
+    case 'this_month': {
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-      return { start: monthStart, end: now };
-    case 'lastMonth':
-      const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
-      return { start: lastMonthStart, end: lastMonthEnd };
+      return { 
+        start: monthStart.toISOString().split('T')[0], 
+        end: today.toISOString().split('T')[0] 
+      };
+    }
     default:
-      return null;
+      return null; // 'all' or unknown preset
   }
 };
 
-export const useLeads = (countryId) => {
-  // Data states
+// Date preset options
+export const DATE_PRESETS = [
+  { key: 'today', label: 'Today' },
+  { key: 'yesterday', label: 'Yesterday' },
+  { key: 'this_week', label: 'This Week' },
+  { key: 'this_month', label: 'This Month' },
+  { key: 'custom', label: 'Custom' },
+];
+
+export const useLeads = (options = {}) => {
+  const {
+    countryId = null,
+    isSalesExec = false,
+    serverSideFiltering = true,
+    pageSize = 10,
+  } = options;
+
+  // ==================== DATA STATES ====================
   const [leads, setLeads] = useState([]);
   const [employees, setEmployees] = useState([]);
+  const [cities, setCities] = useState([]);
+  const [sources, setSources] = useState([]);
   const [statuses, setStatuses] = useState([]);
+  const [inspectionPackages, setInspectionPackages] = useState([]);
+  const [partners, setPartners] = useState([]);
+  const [adMappedCities, setAdMappedCities] = useState([]);
+  
+  // ==================== UI STATES ====================
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-
-  // Filter states
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [employeeFilter, setEmployeeFilter] = useState('all');
-  const [cityFilter, setCityFilter] = useState('all');
-  const [dateFilter, setDateFilter] = useState('all');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-
-  // Pagination states
+  
+  // ==================== FILTER STATES ====================
+  const [search, setSearch] = useState('');
+  const [filterEmployee, setFilterEmployee] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
+  const [filterCity, setFilterCity] = useState('');
+  const [filterSource, setFilterSource] = useState('');
+  const [filterDateFrom, setFilterDateFrom] = useState('');
+  const [filterDateTo, setFilterDateTo] = useState('');
+  const [dateFilterPreset, setDateFilterPreset] = useState('');
+  const [activeFilter, setActiveFilter] = useState('all'); // For stat card filtering
+  
+  // ==================== PAGINATION STATES ====================
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize] = useState(20);
-
-  // Fetch leads
-  const fetchLeads = useCallback(async (showLoader = true) => {
+  
+  // ==================== COMPUTED VALUES ====================
+  
+  // Filtered employees - only sales roles and those with leads assigned
+  const filteredEmployees = useMemo(() => {
+    return employees.filter(emp => {
+      const salesRoles = ['SALES_EXEC', 'SALES_LEAD', 'SALES_HEAD', 'COUNTRY_HEAD'];
+      const hasSalesRole = salesRoles.includes(emp.role_code);
+      const hasLeadsAssigned = leads.some(l => l.assigned_to === emp.name || l.assigned_to === emp.id);
+      return hasSalesRole || hasLeadsAssigned;
+    });
+  }, [employees, leads]);
+  
+  // Filtered cities - AD mapped + cities with leads
+  const filteredCities = useMemo(() => {
+    return [...new Set([
+      ...adMappedCities,
+      ...leads.map(l => l.city).filter(Boolean)
+    ])].sort();
+  }, [adMappedCities, leads]);
+  
+  // ==================== DATA FETCHING ====================
+  
+  const fetchData = useCallback(async (showLoader = true) => {
     if (showLoader) setLoading(true);
     else setRefreshing(true);
     
     try {
-      const response = await leadsApi.getLeads();
-      setLeads(response.data || []);
+      // Build API params for server-side filtering
+      const params = {};
+      if (serverSideFiltering) {
+        if (search) params.search = search;
+        if (filterEmployee && filterEmployee !== 'all') params.assigned_to = filterEmployee;
+        if (filterStatus && filterStatus !== 'all') params.lead_status = filterStatus;
+        if (filterCity && filterCity !== 'all') params.city = filterCity;
+        if (filterSource && filterSource !== 'all') params.source = filterSource;
+        if (filterDateFrom) params.date_from = filterDateFrom;
+        if (filterDateTo) params.date_to = filterDateTo;
+      }
+      
+      const [
+        leadsRes, 
+        employeesRes, 
+        citiesRes, 
+        sourcesRes, 
+        statusesRes, 
+        packagesRes, 
+        partnersRes,
+        adMappingsRes
+      ] = await Promise.all([
+        leadsApi.getAll(params),
+        employeesApi.getAll(),
+        utilityApi.getCities(),
+        utilityApi.getLeadSources(),
+        utilityApi.getLeadStatuses(),
+        countryId ? inspectionPackagesApi.getPackages(countryId) : Promise.resolve({ data: [] }),
+        partnersApi.getPartners({ is_active: true }),
+        fetch(`${process.env.REACT_APP_BACKEND_URL}/api/settings/ad-city-mappings`)
+          .then(r => r.json())
+          .catch(() => []),
+      ]);
+      
+      setLeads(leadsRes.data || []);
+      setEmployees(employeesRes.data || []);
+      setCities(citiesRes.data || []);
+      setSources(sourcesRes.data || []);
+      setStatuses(statusesRes.data || []);
+      
+      // Filter only active packages and sort by order
+      const activePackages = (packagesRes.data || [])
+        .filter(p => p.is_active)
+        .sort((a, b) => (a.order || 0) - (b.order || 0));
+      setInspectionPackages(activePackages);
+      
+      setPartners(partnersRes.data || []);
+      
+      // Extract unique cities from AD mappings
+      const mappedCities = [...new Set((adMappingsRes || []).map(m => m.city).filter(Boolean))];
+      setAdMappedCities(mappedCities);
+      
     } catch (error) {
-      console.error('Error fetching leads:', error);
+      console.error('Error fetching leads data:', error);
       toast.error('Failed to load leads');
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
-
-  // Fetch employees
-  const fetchEmployees = useCallback(async () => {
-    try {
-      const response = await employeesApi.getUsers({ country_id: countryId });
-      // Filter to sales roles only
-      const salesRoles = ['SALES_EXECUTIVE', 'SALES_MANAGER', 'SALES_HEAD', 'TEAM_LEAD'];
-      const salesEmployees = (response.data || []).filter(emp => 
-        salesRoles.includes(emp.role_code) || emp.is_sales_rep
-      );
-      setEmployees(salesEmployees);
-    } catch (error) {
-      console.error('Error fetching employees:', error);
-    }
-  }, [countryId]);
-
-  // Fetch statuses
-  const fetchStatuses = useCallback(async () => {
-    try {
-      const response = await leadsApi.getStatuses();
-      setStatuses(response.data || []);
-    } catch (error) {
-      console.error('Error fetching statuses:', error);
-    }
-  }, []);
-
-  // Initial data fetch
+  }, [search, filterEmployee, filterStatus, filterCity, filterSource, filterDateFrom, filterDateTo, countryId, serverSideFiltering]);
+  
+  // Initial fetch
   useEffect(() => {
-    fetchLeads();
-    fetchEmployees();
-    fetchStatuses();
-  }, [fetchLeads, fetchEmployees, fetchStatuses]);
-
-  // Get unique cities from leads
-  const cities = useMemo(() => {
-    const uniqueCities = [...new Set(leads.map(l => l.city).filter(Boolean))];
-    return uniqueCities.sort();
-  }, [leads]);
-
-  // Filter leads
-  const filteredLeads = useMemo(() => {
+    fetchData();
+  }, [fetchData]);
+  
+  // ==================== CLIENT-SIDE FILTERING ====================
+  
+  const getFilteredLeads = useCallback(() => {
     let filtered = [...leads];
-
-    // Search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
+    
+    // Apply stat card active filter
+    switch (activeFilter) {
+      case 'new_leads':
+        filtered = filtered.filter(l => l.status === 'NEW LEAD');
+        break;
+      case 'hot':
+        filtered = filtered.filter(l => l.status === 'HOT LEADS');
+        break;
+      case 'rcb_whatsapp':
+        filtered = filtered.filter(l => l.status === 'RCB WHATSAPP' || l.reminder_reason === 'RCB_WHATSAPP');
+        break;
+      case 'followup':
+        filtered = filtered.filter(l => 
+          l.status === 'FOLLOW UP' || 
+          l.status === 'WHATSAPP FOLLOW UP' || 
+          l.status === 'Repeat follow up' ||
+          l.reminder_date
+        );
+        break;
+      case 'payment_sent':
+        filtered = filtered.filter(l => l.status === 'PAYMENT LINK SENT' || l.payment_link);
+        break;
+      default:
+        break;
+    }
+    
+    // Client-side search (if not using server-side)
+    if (!serverSideFiltering && search) {
+      const query = search.toLowerCase();
       filtered = filtered.filter(lead =>
         (lead.name?.toLowerCase().includes(query)) ||
         (lead.mobile?.includes(query)) ||
-        (lead.city?.toLowerCase().includes(query)) ||
-        (lead.ad_name?.toLowerCase().includes(query))
+        (lead.city?.toLowerCase().includes(query))
       );
     }
-
-    // Status filter
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(lead => lead.status === statusFilter);
-    }
-
-    // Employee filter
-    if (employeeFilter !== 'all') {
-      filtered = filtered.filter(lead => lead.assigned_to === employeeFilter);
-    }
-
-    // City filter
-    if (cityFilter !== 'all') {
-      filtered = filtered.filter(lead => lead.city === cityFilter);
-    }
-
-    // Date filter (quick filters)
-    if (dateFilter !== 'all') {
-      const range = getDateRange(dateFilter);
+    
+    return filtered;
+  }, [leads, activeFilter, search, serverSideFiltering]);
+  
+  const filteredLeads = useMemo(() => getFilteredLeads(), [getFilteredLeads]);
+  
+  // ==================== PAGINATION ====================
+  
+  const totalPages = Math.ceil(filteredLeads.length / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedLeads = filteredLeads.slice(startIndex, endIndex);
+  
+  // ==================== DATE PRESET HANDLER ====================
+  
+  const applyDatePreset = useCallback((preset) => {
+    setDateFilterPreset(preset);
+    setCurrentPage(1);
+    
+    if (preset === 'all' || preset === '') {
+      setFilterDateFrom('');
+      setFilterDateTo('');
+    } else if (preset === 'custom') {
+      // Keep existing custom dates
+    } else {
+      const range = getDateRange(preset);
       if (range) {
-        filtered = filtered.filter(lead => {
-          const leadDate = new Date(lead.created_at);
-          return leadDate >= range.start && leadDate <= range.end;
-        });
+        setFilterDateFrom(range.start);
+        setFilterDateTo(range.end);
       }
     }
-
-    // Custom date range
-    if (startDate) {
-      const start = new Date(startDate);
-      filtered = filtered.filter(lead => new Date(lead.created_at) >= start);
-    }
-    if (endDate) {
-      const end = new Date(endDate);
-      end.setHours(23, 59, 59, 999);
-      filtered = filtered.filter(lead => new Date(lead.created_at) <= end);
-    }
-
-    // Sort by created_at desc
-    filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-    return filtered;
-  }, [leads, searchQuery, statusFilter, employeeFilter, cityFilter, dateFilter, startDate, endDate]);
-
-  // Paginated leads
-  const paginatedLeads = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return filteredLeads.slice(start, start + pageSize);
-  }, [filteredLeads, currentPage, pageSize]);
-
-  // Total pages
-  const totalPages = Math.ceil(filteredLeads.length / pageSize);
-
-  // Reset filters
+  }, []);
+  
+  // ==================== RESET FILTERS ====================
+  
   const resetFilters = useCallback(() => {
-    setSearchQuery('');
-    setStatusFilter('all');
-    setEmployeeFilter('all');
-    setCityFilter('all');
-    setDateFilter('all');
-    setStartDate('');
-    setEndDate('');
+    setSearch('');
+    setFilterEmployee('');
+    setFilterStatus('');
+    setFilterCity('');
+    setFilterSource('');
+    setFilterDateFrom('');
+    setFilterDateTo('');
+    setDateFilterPreset('');
+    setActiveFilter('all');
     setCurrentPage(1);
   }, []);
-
-  // Refresh data
+  
+  // ==================== REFRESH ====================
+  
   const refresh = useCallback(() => {
-    fetchLeads(false);
-  }, [fetchLeads]);
-
+    fetchData(false);
+  }, [fetchData]);
+  
+  // ==================== RETURN VALUES ====================
+  
   return {
     // Data
     leads: paginatedLeads,
-    allLeads: filteredLeads,
+    allLeads: leads,
+    filteredLeads,
     employees,
-    statuses,
+    filteredEmployees,
     cities,
+    filteredCities,
+    sources,
+    statuses,
+    inspectionPackages,
+    partners,
     
     // Loading states
     loading,
     refreshing,
     
-    // Filter states and setters
-    searchQuery, setSearchQuery,
-    statusFilter, setStatusFilter,
-    employeeFilter, setEmployeeFilter,
-    cityFilter, setCityFilter,
-    dateFilter, setDateFilter,
-    startDate, setStartDate,
-    endDate, setEndDate,
+    // Filter states
+    filters: {
+      search, setSearch,
+      filterEmployee, setFilterEmployee,
+      filterStatus, setFilterStatus,
+      filterCity, setFilterCity,
+      filterSource, setFilterSource,
+      filterDateFrom, setFilterDateFrom,
+      filterDateTo, setFilterDateTo,
+      dateFilterPreset, setDateFilterPreset,
+      activeFilter, setActiveFilter,
+    },
     
     // Pagination
-    currentPage, setCurrentPage,
-    totalPages,
-    pageSize,
-    totalCount: filteredLeads.length,
+    pagination: {
+      currentPage, setCurrentPage,
+      totalPages,
+      pageSize,
+      totalCount: filteredLeads.length,
+      startIndex,
+      endIndex,
+    },
     
     // Actions
-    refresh,
-    resetFilters,
-    fetchLeads,
+    actions: {
+      fetchData,
+      refresh,
+      resetFilters,
+      applyDatePreset,
+      getFilteredLeads,
+    },
   };
 };
 
