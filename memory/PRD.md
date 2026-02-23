@@ -76,6 +76,14 @@ Tested and verified all 10 role-based permissions:
 - Fixed "Cannot access 'filteredLeads' before initialization" error
 - Moved statsLeads calculation after filteredLeads declaration
 
+### UI Enhancements (Feb 23, 2026) ✅
+1. **Source Column Simplified** - Shows icon that opens Ad Info modal instead of inline AD ID
+2. **Ad Info Modal** - Shows Source, AD ID, Ad Name, Campaign, Ad Set in a clean modal
+3. **Cities View Quick Panel** - Popover showing cities assigned per sales executive
+4. **Loading Overlay** - Full-page loader when initial data is loading
+5. **Status Badge Fix** - Added `whitespace-nowrap` to prevent "RCB WhatsApp" from wrapping
+6. **Employees API Fix** - Now returns actual `assigned_cities` array instead of just country
+
 ### Round-Robin Assignment Fix (Feb 23, 2026) ✅
 **Root Cause:** Sales executives had no cities in their `assigned_cities` array
 - Only Sneha Reddy had `assigned_cities: ['Vizag']`
