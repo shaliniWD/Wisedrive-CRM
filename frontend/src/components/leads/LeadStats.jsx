@@ -2,10 +2,10 @@
  * Lead Statistics Cards Component
  * Displays key metrics with click-to-filter functionality
  * 
- * Stats shown: New Leads, Hot Leads, RCB WhatsApp, Follow Up, Payment Link Sent
+ * Stats shown: All Leads, New Leads, Hot Leads, RCB WhatsApp, Follow Up, Payment Link Sent
  */
 import React from 'react';
-import { TrendingUp, Flame, MessageCircle, Bell, Link2 } from 'lucide-react';
+import { Users, TrendingUp, Flame, MessageCircle, Bell, Link2 } from 'lucide-react';
 
 // Summary Card Component - Compact version for sales dashboard
 const SummaryCard = ({ title, value, icon: Icon, color, onClick, active }) => (
@@ -22,6 +22,7 @@ const SummaryCard = ({ title, value, icon: Icon, color, onClick, active }) => (
         color?.includes('green') ? 'from-green-500 to-green-600' :
         color?.includes('orange') ? 'from-orange-500 to-orange-600' :
         color?.includes('red') ? 'from-red-500 to-red-600' :
+        color?.includes('purple') ? 'from-purple-500 to-purple-600' :
         'from-gray-500 to-gray-600'
       }`}>
         <Icon className="h-4 w-4 text-white" />
@@ -40,7 +41,7 @@ const SummaryCard = ({ title, value, icon: Icon, color, onClick, active }) => (
  * LeadStats Component
  * 
  * @param {Object} props
- * @param {Array} props.leads - Array of lead objects (should be date-filtered)
+ * @param {Array} props.leads - Array of lead objects (BASE leads, already date/employee filtered from API)
  * @param {string} props.activeFilter - Current active filter key
  * @param {function} props.onFilterChange - Callback when a stat card is clicked
  */
@@ -50,23 +51,22 @@ export const LeadStats = ({
   onFilterChange,
   today = new Date().toISOString().split('T')[0]
 }) => {
-  // Calculate stats based on filtered leads
+  // Calculate stats based on the BASE leads (not stat-filtered)
   const stats = React.useMemo(() => {
-    const statsLeads = leads;
-    
     return {
-      totalNewLeads: statsLeads.filter(l => l.status === 'NEW LEAD').length,
-      hotLeads: statsLeads.filter(l => l.status === 'HOT LEADS').length,
-      rcbWhatsappLeads: statsLeads.filter(l => 
+      totalLeads: leads.length,
+      totalNewLeads: leads.filter(l => l.status === 'NEW LEAD').length,
+      hotLeads: leads.filter(l => l.status === 'HOT LEADS').length,
+      rcbWhatsappLeads: leads.filter(l => 
         l.status === 'RCB WHATSAPP' || l.reminder_reason === 'RCB_WHATSAPP'
       ).length,
-      followupLeads: statsLeads.filter(l => 
+      followupLeads: leads.filter(l => 
         l.status === 'FOLLOW UP' || 
         l.status === 'WHATSAPP FOLLOW UP' || 
         l.status === 'Repeat follow up' ||
         l.reminder_date
       ).length,
-      paymentLinkSentLeads: statsLeads.filter(l => 
+      paymentLinkSentLeads: leads.filter(l => 
         l.status === 'PAYMENT LINK SENT' || l.payment_link
       ).length,
     };
@@ -80,7 +80,15 @@ export const LeadStats = ({
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-5">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-5">
+      <SummaryCard 
+        title="All Leads" 
+        value={stats.totalLeads} 
+        icon={Users} 
+        color="text-purple-700" 
+        onClick={() => handleFilterClick('all')}
+        active={activeFilter === 'all'}
+      />
       <SummaryCard 
         title="New Leads" 
         value={stats.totalNewLeads} 
