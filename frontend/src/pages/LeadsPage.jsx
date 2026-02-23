@@ -1540,10 +1540,16 @@ export default function LeadsPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-sm font-medium">City *</Label>
-                <Select value={formData.city} onValueChange={(v) => setFormData({ ...formData, city: v })}>
-                  <SelectTrigger className="h-10" data-testid="lead-city-select"><SelectValue placeholder="Select city" /></SelectTrigger>
-                  <SelectContent>{cities.map((c) => (<SelectItem key={c} value={c}>{c}</SelectItem>))}</SelectContent>
-                </Select>
+                {isSalesExec ? (
+                  <div className="h-10 px-3 border rounded-md bg-gray-50 flex items-center text-sm text-gray-700">
+                    {formData.city || 'No city assigned'}
+                  </div>
+                ) : (
+                  <Select value={formData.city} onValueChange={(v) => setFormData({ ...formData, city: v })}>
+                    <SelectTrigger className="h-10" data-testid="lead-city-select"><SelectValue placeholder="Select city" /></SelectTrigger>
+                    <SelectContent>{cities.map((c) => (<SelectItem key={c} value={c}>{c}</SelectItem>))}</SelectContent>
+                  </Select>
+                )}
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Lead Status</Label>
