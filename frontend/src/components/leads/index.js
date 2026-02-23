@@ -1,9 +1,16 @@
 /**
- * Leads Components Index
- * Export all lead-related components for easy importing
+ * Lead Components Index
+ * Central export for all lead-related components
  */
 
+// Status Dropdown - For changing lead status inline
 export { StatusDropdown, getStatusConfig } from './StatusDropdown';
-export { LeadStats } from './LeadStats';
+
+// Lead Statistics Cards - Clickable stat cards with filtering
+export { LeadStats, SummaryCard } from './LeadStats';
+
+// Lead Filters - Search, status, employee, city, date filters
 export { LeadFilters } from './LeadFilters';
-export { ActivityLog, ActivityItem } from './ActivityLog';
+
+// Activity Log - Notes and activity history drawer
+export { ActivityLog } from './ActivityLog';
