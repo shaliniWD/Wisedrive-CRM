@@ -49,6 +49,19 @@ Build a custom CRM for WiseDrive to manage leads from Meta (Facebook/Instagram) 
 - Frontend: Partner column in Ad Mappings table
 - Complete flow: Ad Campaign → Ad Mapping → Lead gets Partner automatically
 
+### Sales Executive Role Permissions (Feb 23, 2026) ✅
+Tested and verified all 10 role-based permissions:
+1. ✅ View only assigned leads
+2. ✅ View only Leads Tab (sidebar restricted)
+3. ✅ Edit lead details (name, mobile, notes)
+4. ✅ Cannot reassign leads (button hidden)
+5. ✅ Cannot change city (read-only field)
+6. ✅ Admin buttons hidden (Assign Unassigned, Remap City, Investigate Lead)
+7. ✅ Reminder functionality works
+8. ✅ Status change works (any to any)
+9. ✅ Notes and activity log works
+10. ✅ Payment modal full functionality
+
 ### Leads Page 8-Point UI Fix (Feb 23, 2026) ✅
 1. **Date filter above stat cards** - Date Range filter now positioned above stats
 2. **Stat cards update with date filter** - Stats calculate from filtered leads
