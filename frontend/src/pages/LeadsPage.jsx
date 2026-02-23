@@ -1084,7 +1084,7 @@ export default function LeadsPage() {
 
       {/* Sales Agent Dashboard - Action-oriented Summary Cards */}
       <LeadStats 
-        leads={filteredLeads}
+        leads={leads}
         activeFilter={activeFilter}
         onFilterChange={(filter) => { setActiveFilter(filter); setCurrentPage(1); }}
         today={today}
