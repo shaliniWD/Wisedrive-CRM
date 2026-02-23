@@ -36,34 +36,6 @@ import { ActivityLog } from '@/components/leads/ActivityLog';
 import { LeadStats } from '@/components/leads/LeadStats';
 import { DateRangeFilter, getDateRange, DATE_PRESETS } from '@/components/ui/DateRangeFilter';
 
-// Summary Card Component - Compact version for sales dashboard
-const SummaryCard = ({ title, value, icon: Icon, color, onClick, active }) => (
-  <div 
-    className={`rounded-xl border bg-white p-4 hover:shadow-lg transition-all duration-300 cursor-pointer ${active ? 'ring-2 ring-blue-500 border-blue-500' : ''}`}
-    onClick={onClick}
-  >
-    <div className="flex items-center gap-3">
-      <div className={`p-2.5 rounded-xl bg-gradient-to-r ${
-        color?.includes('blue') ? 'from-blue-500 to-blue-600' : 
-        color?.includes('emerald') ? 'from-emerald-500 to-emerald-600' : 
-        color?.includes('amber') ? 'from-amber-500 to-amber-600' :
-        color?.includes('green') ? 'from-green-500 to-green-600' :
-        color?.includes('orange') ? 'from-orange-500 to-orange-600' :
-        color?.includes('red') ? 'from-red-500 to-red-600' :
-        'from-gray-500 to-gray-600'
-      }`}>
-        <Icon className="h-4 w-4 text-white" />
-      </div>
-      <div>
-        <p className={`text-2xl font-bold ${color || 'text-gray-900'}`}>
-          {typeof value === 'number' ? value.toLocaleString() : value}
-        </p>
-        <p className="text-xs font-medium text-gray-500">{title}</p>
-      </div>
-    </div>
-  </div>
-);
-
 export default function LeadsPage() {
   const { user } = useAuth();
   
