@@ -4496,6 +4496,8 @@ async def create_customer(customer_data: CustomerCreate, current_user: dict = De
     customer_dict["created_by"] = current_user["id"]
     
     await db.customers.insert_one(customer_dict)
+    # Exclude MongoDB _id from response
+    customer_dict.pop("_id", None)
     return customer_dict
 
 
