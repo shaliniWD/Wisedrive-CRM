@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { inspectionsApi, utilityApi, vehicleApi, mechanicsApi } from '@/services/api';
 import { formatDate, formatTime, formatDateTime } from '@/utils/dateFormat';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import { PlacesAutocomplete } from '@/components/ui/PlacesAutocomplete';
 import { 
   Search, Loader2, ClipboardCheck, Filter, Calendar, MapPin, 
   Car, User, Download, Eye, Edit2, Clock, CheckCircle, XCircle, 
