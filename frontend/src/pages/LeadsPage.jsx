@@ -34,6 +34,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { StatusDropdown, getStatusConfig } from '@/components/leads/StatusDropdown';
 import { ActivityLog } from '@/components/leads/ActivityLog';
 import { LeadStats } from '@/components/leads/LeadStats';
+import { LeadFilters } from '@/components/leads/LeadFilters';
 import { DateRangeFilter, getDateRange, DATE_PRESETS } from '@/components/ui/DateRangeFilter';
 
 export default function LeadsPage() {
