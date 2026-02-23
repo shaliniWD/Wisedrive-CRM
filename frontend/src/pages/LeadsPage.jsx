@@ -3152,6 +3152,71 @@ export default function LeadsPage() {
           </Tabs>
         </SheetContent>
       </Sheet>
+
+      {/* Ad Info Modal - Shows ad details when clicking the info icon */}
+      <Dialog open={adInfoModal.open} onOpenChange={(open) => setAdInfoModal({ ...adInfoModal, open })}>
+        <DialogContent className="sm:max-w-[450px]" data-testid="ad-info-modal">
+          <DialogHeader className="border-b pb-4">
+            <DialogTitle className="flex items-center gap-2">
+              <Info className="h-5 w-5 text-blue-600" />
+              Ad Information
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            {adInfoModal.lead && (
+              <>
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                    <div className="flex-shrink-0 w-24 text-xs font-medium text-gray-500 uppercase">Source</div>
+                    <div className="text-sm font-medium text-gray-900">{adInfoModal.lead.source || 'Unknown'}</div>
+                  </div>
+                  
+                  {adInfoModal.lead.ad_id && (
+                    <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
+                      <div className="flex-shrink-0 w-24 text-xs font-medium text-blue-600 uppercase">Ad ID</div>
+                      <div className="text-sm font-mono text-blue-800 break-all">{adInfoModal.lead.ad_id}</div>
+                    </div>
+                  )}
+                  
+                  {adInfoModal.lead.ad_name && (
+                    <div className="flex items-start gap-3 p-3 bg-purple-50 rounded-lg">
+                      <div className="flex-shrink-0 w-24 text-xs font-medium text-purple-600 uppercase">Ad Name</div>
+                      <div className="text-sm text-purple-800">{adInfoModal.lead.ad_name}</div>
+                    </div>
+                  )}
+                  
+                  {adInfoModal.lead.campaign_name && (
+                    <div className="flex items-start gap-3 p-3 bg-green-50 rounded-lg">
+                      <div className="flex-shrink-0 w-24 text-xs font-medium text-green-600 uppercase">Campaign</div>
+                      <div className="text-sm text-green-800">{adInfoModal.lead.campaign_name}</div>
+                    </div>
+                  )}
+                  
+                  {adInfoModal.lead.ad_set_name && (
+                    <div className="flex items-start gap-3 p-3 bg-orange-50 rounded-lg">
+                      <div className="flex-shrink-0 w-24 text-xs font-medium text-orange-600 uppercase">Ad Set</div>
+                      <div className="text-sm text-orange-800">{adInfoModal.lead.ad_set_name}</div>
+                    </div>
+                  )}
+
+                  {!adInfoModal.lead.ad_id && !adInfoModal.lead.ad_name && (
+                    <div className="text-center py-4 text-gray-500">
+                      <Info className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                      <p className="text-sm">No ad information available for this lead</p>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex justify-end pt-2 border-t">
+                  <Button variant="outline" onClick={() => setAdInfoModal({ open: false, lead: null })}>
+                    Close
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
