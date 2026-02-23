@@ -260,7 +260,7 @@ export function PlacesAutocomplete({
     setSuggestions([]);
     setShowSuggestions(false);
     if (onSelect) {
-      onSelect({ address: '', latitude: null, longitude: null });
+      onSelect({ address: '', latitude: null, longitude: null, city: null });
     }
   };
 
