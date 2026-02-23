@@ -1113,7 +1113,6 @@ export default function LeadsPage() {
           setFilterDateTo('');
           setDateFilterPreset('');
           setCurrentPage(1);
-          fetchData();
         }}
         isSalesExec={isSalesExec}
         userName={user?.name}
