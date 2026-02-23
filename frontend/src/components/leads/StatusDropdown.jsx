@@ -68,7 +68,7 @@ export const StatusDropdown = ({ lead, statuses, onUpdate }) => {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
-          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border cursor-pointer hover:shadow-md transition-all ${cfg.color}`}
+          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border cursor-pointer hover:shadow-md transition-all whitespace-nowrap ${cfg.color}`}
           disabled={updating}
           data-testid={`status-dropdown-${lead.id}`}
         >
