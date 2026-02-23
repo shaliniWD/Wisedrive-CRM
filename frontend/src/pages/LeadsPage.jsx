@@ -876,6 +876,20 @@ export default function LeadsPage() {
 
   const filteredLeads = getFilteredLeads();
 
+  // Calculate stats for sales agent dashboard - based on FILTERED leads (date-filtered)
+  const statsLeads = filteredLeads; // Use filtered leads for stats
+  const totalNewLeads = statsLeads.filter(l => l.status === 'NEW LEAD').length;
+  const todayNewLeads = statsLeads.filter(l => l.status === 'NEW LEAD' && l.created_at?.startsWith(today)).length;
+  const hotLeads = statsLeads.filter(l => l.status === 'HOT LEADS').length;
+  const rcbWhatsappLeads = statsLeads.filter(l => l.status === 'RCB WHATSAPP' || l.reminder_reason === 'RCB_WHATSAPP').length;
+  const followupLeads = statsLeads.filter(l => 
+    l.status === 'FOLLOW UP' || 
+    l.status === 'WHATSAPP FOLLOW UP' || 
+    l.status === 'Repeat follow up' ||
+    l.reminder_date
+  ).length;
+  const paymentLinkSentLeads = statsLeads.filter(l => l.status === 'PAYMENT LINK SENT' || l.payment_link).length;
+
   // Pagination calculations
   const totalPages = Math.ceil(filteredLeads.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
