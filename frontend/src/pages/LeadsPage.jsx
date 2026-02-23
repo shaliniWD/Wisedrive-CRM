@@ -2988,7 +2988,7 @@ export default function LeadsPage() {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="notes" className="flex-1 flex flex-col px-6 pb-6 mt-0 min-h-0 h-0 overflow-hidden">
+            <TabsContent value="notes" className="flex-1 flex flex-col px-6 pb-6 mt-0 min-h-0 overflow-y-auto">
               {/* Add Note Section */}
               <div className="bg-slate-50 rounded-xl p-4 border mb-4">
                 <Label className="text-sm font-medium mb-2 block">Add a note</Label>
@@ -3047,7 +3047,7 @@ export default function LeadsPage() {
               </div>
             </TabsContent>
 
-            <TabsContent value="activities" className="flex-1 flex flex-col px-6 pb-6 mt-0 min-h-0 h-0 overflow-hidden">
+            <TabsContent value="activities" className="flex-1 flex flex-col px-6 pb-6 mt-0 min-h-0 overflow-y-auto">
               {loadingNotes ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
