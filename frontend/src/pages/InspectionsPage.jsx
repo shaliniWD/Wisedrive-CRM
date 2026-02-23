@@ -1771,6 +1771,13 @@ export default function InspectionsPage() {
             
             <div className="space-y-2">
               <Label className="text-sm font-medium">Select Mechanic</Label>
+              {/* Show inspection city info */}
+              {mechanicEditInspection?.city && (
+                <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-md inline-flex items-center gap-1 mb-2">
+                  <MapPin className="h-3 w-3" />
+                  Showing mechanics for: <span className="font-medium">{mechanicEditInspection.city}</span>
+                </div>
+              )}
               <Select value={selectedMechanicId} onValueChange={setSelectedMechanicId}>
                 <SelectTrigger className="h-10">
                   <SelectValue placeholder="Select mechanic..." />
@@ -1779,18 +1786,40 @@ export default function InspectionsPage() {
                   <SelectItem value="unassign">
                     <span className="text-gray-500 italic">-- Unassign --</span>
                   </SelectItem>
-                  {mechanics.map((mechanic) => (
+                  {mechanics
+                    .filter(mechanic => {
+                      // Filter by inspection city
+                      const inspectionCity = mechanicEditInspection?.city;
+                      if (!inspectionCity) return true; // Show all if no city
+                      // Check if mechanic has this city in their inspection_cities
+                      const mechanicCities = mechanic.inspection_cities || [];
+                      return mechanicCities.length === 0 || mechanicCities.includes(inspectionCity);
+                    })
+                    .map((mechanic) => (
                     <SelectItem key={mechanic.id} value={mechanic.id}>
                       <div className="flex items-center gap-2">
                         <UserCheck className="h-4 w-4 text-emerald-500" />
-                        {mechanic.name}
+                        <span>{mechanic.name}</span>
+                        {mechanic.inspection_cities?.length > 0 && (
+                          <span className="text-xs text-gray-400">
+                            ({mechanic.inspection_cities.join(', ')})
+                          </span>
+                        )}
                       </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              {mechanics.length === 0 && (
-                <p className="text-xs text-gray-500">No mechanics available. Add mechanics in HR Module.</p>
+              {mechanics.filter(m => {
+                const inspectionCity = mechanicEditInspection?.city;
+                if (!inspectionCity) return true;
+                const mechanicCities = m.inspection_cities || [];
+                return mechanicCities.length === 0 || mechanicCities.includes(inspectionCity);
+              }).length === 0 && (
+                <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded-md">
+                  No mechanics available for {mechanicEditInspection?.city || 'this city'}. 
+                  Add mechanics for this city in HR Module.
+                </p>
               )}
             </div>
           </div>
