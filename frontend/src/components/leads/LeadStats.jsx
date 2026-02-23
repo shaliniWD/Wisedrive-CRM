@@ -1,103 +1,130 @@
 /**
  * Lead Statistics Cards Component
- * Displays key metrics: New Leads, Hot Leads, Follow Ups, Conversions
+ * Displays key metrics with click-to-filter functionality
+ * 
+ * Stats shown: New Leads, Hot Leads, RCB WhatsApp, Follow Up, Payment Link Sent
  */
 import React from 'react';
-import { Users, Flame, Calendar, TrendingUp } from 'lucide-react';
+import { TrendingUp, Flame, MessageCircle, Bell, Link2 } from 'lucide-react';
 
-const StatCard = ({ title, value, subtext, icon: Icon, color = 'blue' }) => {
-  const colorClasses = {
-    blue: 'bg-blue-50 text-blue-600 border-blue-200',
-    red: 'bg-red-50 text-red-600 border-red-200',
-    yellow: 'bg-yellow-50 text-yellow-600 border-yellow-200',
-    green: 'bg-emerald-50 text-emerald-600 border-emerald-200',
-  };
-
-  return (
-    <div 
-      className={`bg-white rounded-xl border p-4 hover:shadow-md transition-shadow`}
-      data-testid={`stat-${title.toLowerCase().replace(/\s+/g, '-')}`}
-    >
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-gray-500 font-medium">{title}</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
-          {subtext && <p className="text-xs text-gray-400 mt-1">{subtext}</p>}
-        </div>
-        <div className={`h-12 w-12 rounded-xl flex items-center justify-center ${colorClasses[color]}`}>
-          <Icon className="h-6 w-6" />
-        </div>
+// Summary Card Component - Compact version for sales dashboard
+const SummaryCard = ({ title, value, icon: Icon, color, onClick, active }) => (
+  <div 
+    className={`rounded-xl border bg-white p-4 hover:shadow-lg transition-all duration-300 cursor-pointer ${active ? 'ring-2 ring-blue-500 border-blue-500' : ''}`}
+    onClick={onClick}
+    data-testid={`stat-card-${title.toLowerCase().replace(/\s+/g, '-')}`}
+  >
+    <div className="flex items-center gap-3">
+      <div className={`p-2.5 rounded-xl bg-gradient-to-r ${
+        color?.includes('blue') ? 'from-blue-500 to-blue-600' : 
+        color?.includes('emerald') ? 'from-emerald-500 to-emerald-600' : 
+        color?.includes('amber') ? 'from-amber-500 to-amber-600' :
+        color?.includes('green') ? 'from-green-500 to-green-600' :
+        color?.includes('orange') ? 'from-orange-500 to-orange-600' :
+        color?.includes('red') ? 'from-red-500 to-red-600' :
+        'from-gray-500 to-gray-600'
+      }`}>
+        <Icon className="h-4 w-4 text-white" />
+      </div>
+      <div>
+        <p className={`text-2xl font-bold ${color || 'text-gray-900'}`}>
+          {typeof value === 'number' ? value.toLocaleString() : value}
+        </p>
+        <p className="text-xs font-medium text-gray-500">{title}</p>
       </div>
     </div>
-  );
-};
+  </div>
+);
 
-export const LeadStats = ({ leads = [], dateFilter = 'all' }) => {
+/**
+ * LeadStats Component
+ * 
+ * @param {Object} props
+ * @param {Array} props.leads - Array of lead objects (should be date-filtered)
+ * @param {string} props.activeFilter - Current active filter key
+ * @param {function} props.onFilterChange - Callback when a stat card is clicked
+ */
+export const LeadStats = ({ 
+  leads = [], 
+  activeFilter = 'all', 
+  onFilterChange,
+  today = new Date().toISOString().split('T')[0]
+}) => {
   // Calculate stats based on filtered leads
   const stats = React.useMemo(() => {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const statsLeads = leads;
     
-    // Total leads count (all time)
-    const totalLeads = leads.length;
-    
-    // Hot leads
-    const hotLeads = leads.filter(l => l.status === 'HOT LEADS').length;
-    
-    // Follow ups (all follow up statuses)
-    const followUps = leads.filter(l => 
-      ['FOLLOW UP', 'WHATSAPP FOLLOW UP', 'Repeat follow up'].includes(l.status)
-    ).length;
-    
-    // Conversions (paid or finalized)
-    const conversions = leads.filter(l => 
-      ['PAID', 'CAR FINALIZED', 'Car purchased', 'CC GENERATED'].includes(l.status)
-    ).length;
-    
-    // Calculate conversion rate
-    const conversionRate = totalLeads > 0 ? ((conversions / totalLeads) * 100).toFixed(1) : 0;
-
     return {
-      totalLeads,
-      hotLeads,
-      followUps,
-      conversions,
-      conversionRate
+      totalNewLeads: statsLeads.filter(l => l.status === 'NEW LEAD').length,
+      hotLeads: statsLeads.filter(l => l.status === 'HOT LEADS').length,
+      rcbWhatsappLeads: statsLeads.filter(l => 
+        l.status === 'RCB WHATSAPP' || l.reminder_reason === 'RCB_WHATSAPP'
+      ).length,
+      followupLeads: statsLeads.filter(l => 
+        l.status === 'FOLLOW UP' || 
+        l.status === 'WHATSAPP FOLLOW UP' || 
+        l.status === 'Repeat follow up' ||
+        l.reminder_date
+      ).length,
+      paymentLinkSentLeads: statsLeads.filter(l => 
+        l.status === 'PAYMENT LINK SENT' || l.payment_link
+      ).length,
     };
   }, [leads]);
 
+  const handleFilterClick = (filterKey) => {
+    if (onFilterChange) {
+      // Toggle filter: if already active, set to 'all', otherwise set to filterKey
+      onFilterChange(activeFilter === filterKey ? 'all' : filterKey);
+    }
+  };
+
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      <StatCard
-        title="New Leads"
-        value={stats.totalLeads}
-        subtext="All time total"
-        icon={Users}
-        color="blue"
+    <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-5">
+      <SummaryCard 
+        title="New Leads" 
+        value={stats.totalNewLeads} 
+        icon={TrendingUp} 
+        color="text-blue-700" 
+        onClick={() => handleFilterClick('new_leads')}
+        active={activeFilter === 'new_leads'}
       />
-      <StatCard
-        title="Hot Leads"
-        value={stats.hotLeads}
-        subtext="Ready to convert"
-        icon={Flame}
-        color="red"
+      <SummaryCard 
+        title="Hot Leads" 
+        value={stats.hotLeads} 
+        icon={Flame} 
+        color="text-red-600" 
+        onClick={() => handleFilterClick('hot')}
+        active={activeFilter === 'hot'}
       />
-      <StatCard
-        title="Follow Ups"
-        value={stats.followUps}
-        subtext="Pending action"
-        icon={Calendar}
-        color="yellow"
+      <SummaryCard 
+        title="RCB WhatsApp" 
+        value={stats.rcbWhatsappLeads} 
+        icon={MessageCircle} 
+        color="text-green-600" 
+        onClick={() => handleFilterClick('rcb_whatsapp')}
+        active={activeFilter === 'rcb_whatsapp'}
       />
-      <StatCard
-        title="Conversions"
-        value={stats.conversions}
-        subtext={`${stats.conversionRate}% rate`}
-        icon={TrendingUp}
-        color="green"
+      <SummaryCard 
+        title="Follow Up" 
+        value={stats.followupLeads} 
+        icon={Bell} 
+        color="text-orange-600" 
+        onClick={() => handleFilterClick('followup')}
+        active={activeFilter === 'followup'}
+      />
+      <SummaryCard 
+        title="Payment Link Sent" 
+        value={stats.paymentLinkSentLeads} 
+        icon={Link2} 
+        color="text-emerald-600" 
+        onClick={() => handleFilterClick('payment_sent')}
+        active={activeFilter === 'payment_sent'}
       />
     </div>
   );
 };
 
+// Also export SummaryCard for reuse
+export { SummaryCard };
 export default LeadStats;
