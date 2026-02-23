@@ -76,6 +76,17 @@ Tested and verified all 10 role-based permissions:
 - Fixed "Cannot access 'filteredLeads' before initialization" error
 - Moved statsLeads calculation after filteredLeads declaration
 
+### Global Loading Overlays (Feb 23, 2026) ✅
+Added full-page loading overlays to all major pages for better UX during data fetching:
+1. **Leads Page** - Shows "Loading leads..." during filter changes and initial load
+2. **Customers Page** - Shows "Loading customers..." with blur backdrop
+3. **Inspections Page** - Shows "Loading inspections..." during tab switches
+4. **HR Module** - Shows "Loading attendance data..." for attendance dashboard
+5. **Ads Management** - Shows "Loading..." for both performance and unmapped tabs
+6. **Inspection Packages** - Shows "Loading packages..." during data fetch
+
+All loaders use consistent design: white/80 backdrop with blur, centered spinner, descriptive text.
+
 ### Inspections Page Enhancements (Feb 23, 2026) ✅
 1. **Mechanic Filtering by Inspection City** - Mechanics dropdown now filters by the inspection address city
    - Shows only mechanics who have that city in their `inspection_cities` array
