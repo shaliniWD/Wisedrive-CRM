@@ -76,6 +76,16 @@ Tested and verified all 10 role-based permissions:
 - Fixed "Cannot access 'filteredLeads' before initialization" error
 - Moved statsLeads calculation after filteredLeads declaration
 
+### Inspections Page Enhancements (Feb 23, 2026) ✅
+1. **Mechanic Filtering by Inspection City** - Mechanics dropdown now filters by the inspection address city
+   - Shows only mechanics who have that city in their `inspection_cities` array
+   - Shows "Showing mechanics for: [City]" info badge
+   - Shows warning if no mechanics available for the city
+2. **Google Maps Address Integration** - Schedule Unscheduled modal now uses PlacesAutocomplete
+   - Address field has Google Maps autocomplete
+   - Extracts city from address components automatically
+   - Updates both address and city fields on selection
+
 ### UI Enhancements (Feb 23, 2026) ✅
 1. **Source Column Simplified** - Shows icon that opens Ad Info modal instead of inline AD ID
 2. **Ad Info Modal** - Shows Source, AD ID, Ad Name, Campaign, Ad Set in a clean modal
