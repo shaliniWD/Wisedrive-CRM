@@ -5745,11 +5745,12 @@ async def get_employees(current_user: dict = Depends(get_current_user)):
             if country:
                 user["country_name"] = country.get("name")
         
-        # V1 compatibility
+        # V1 compatibility - Keep actual assigned_cities if present
         user["role"] = user.get("role_name", "employee")
-        user["assigned_cities"] = []
-        if user.get("country_name"):
-            user["assigned_cities"] = [user["country_name"]]
+        if not user.get("assigned_cities"):
+            user["assigned_cities"] = []
+            if user.get("country_name"):
+                user["assigned_cities"] = [user["country_name"]]
     
     return users
 
