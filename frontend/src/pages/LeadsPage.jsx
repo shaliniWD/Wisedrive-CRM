@@ -1369,28 +1369,12 @@ export default function LeadsPage() {
                     <StatusDropdown lead={lead} statuses={statuses} onUpdate={fetchData} />
                   </td>
                   <td className="px-4 py-3">
-                    {/* Notes Button */}
-                    <button 
-                      className="px-2.5 py-1 text-xs bg-gradient-to-r from-slate-500 to-slate-600 text-white rounded-lg hover:from-slate-600 hover:to-slate-700 font-medium flex items-center gap-1 shadow-sm"
-                      onClick={() => openNotesDrawer(lead)}
-                      data-testid={`view-notes-${lead.id}`}
-                    >
-                      <StickyNote className="h-3 w-3" />
-                      Notes
-                    </button>
-                  </td>
-                  <td className="px-4 py-3">
                     <div className="text-sm font-medium text-gray-700">{lead.source}</div>
                     {(lead.ad_id || lead.ad_name) && (
                       <div className="mt-1 space-y-0.5">
                         {lead.ad_id && (
                           <div className="font-mono text-xs text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded inline-block">
                             ID: {lead.ad_id.length > 15 ? lead.ad_id.substring(0, 15) + '...' : lead.ad_id}
-                          </div>
-                        )}
-                        {lead.ad_name && (
-                          <div className="text-xs text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded inline-block truncate max-w-[150px]" title={lead.ad_name}>
-                            {lead.ad_name}
                           </div>
                         )}
                       </div>
