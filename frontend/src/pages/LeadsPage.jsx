@@ -3050,7 +3050,7 @@ export default function LeadsPage() {
               </ScrollArea>
             </TabsContent>
 
-            <TabsContent value="activities" className="flex-1 flex flex-col mt-0 min-h-0">
+            <TabsContent value="activities" className="flex-1 flex flex-col mt-0 min-h-0 overflow-hidden">
               {loadingNotes ? (
                 <div className="flex items-center justify-center py-8 px-6">
                   <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
@@ -3061,7 +3061,7 @@ export default function LeadsPage() {
                   <p className="text-sm">No activities recorded yet.</p>
                 </div>
               ) : (
-                <ScrollArea className="flex-1 h-full">
+                <ScrollArea className="h-full w-full">
                   <div className="space-y-3 px-6 pb-6 pr-4">
                   {leadActivities.map((activity) => {
                     // Determine activity icon and color based on action type
