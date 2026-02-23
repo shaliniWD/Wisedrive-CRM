@@ -3218,7 +3218,8 @@ export default function LeadsPage() {
                       </div>
                     );
                   })}
-                </div>
+                  </div>
+                </ScrollArea>
               )}
             </TabsContent>
           </Tabs>
