@@ -243,6 +243,16 @@ export default function CustomersPage() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto" data-testid="customers-page">
+      {/* Full Page Loading Overlay */}
+      {loading && (
+        <div className="fixed inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
+            <p className="text-sm font-medium text-gray-600">Loading customers...</p>
+          </div>
+        </div>
+      )}
+
       {/* Page Header */}
       <div className="flex justify-between items-start mb-6">
         <div>
