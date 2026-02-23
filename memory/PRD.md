@@ -76,6 +76,19 @@ Tested and verified all 10 role-based permissions:
 - Fixed "Cannot access 'filteredLeads' before initialization" error
 - Moved statsLeads calculation after filteredLeads declaration
 
+### Round-Robin Assignment Fix (Feb 23, 2026) ✅
+**Root Cause:** Sales executives had no cities in their `assigned_cities` array
+- Only Sneha Reddy had `assigned_cities: ['Vizag']`
+- Amit Patel and Divya Krishnan had `assigned_cities: Not set`
+- This meant leads from Bangalore, Chennai, Hyderabad, etc. were UNASSIGNED
+
+**Fix Applied:**
+1. Assigned ALL Indian cities to ALL sales executives
+2. Reset round-robin counters to ensure fair distribution
+3. Ran "Assign Unassigned" to distribute 18 unassigned leads
+
+**Result:** Distribution improved from Sneha (37), others (18 each), Unassigned (18) → Sneha (47), Amit (24), Divya (24), Unassigned (0)
+
 ### Leads Filter Fixes (Feb 23, 2026) ✅
 Fixed 3 critical issues reported by user:
 1. **Employee filter switching** - Backend now filters by both UUID and name
