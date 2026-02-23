@@ -127,6 +127,7 @@ export default function CustomersPage() {
   });
 
   const fetchData = useCallback(async () => {
+    setLoading(true);
     try {
       const params = {};
       if (search) params.search = search;
