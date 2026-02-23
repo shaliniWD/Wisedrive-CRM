@@ -1094,48 +1094,12 @@ export default function LeadsPage() {
       </div>
 
       {/* Sales Agent Dashboard - Action-oriented Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-5">
-        <SummaryCard 
-          title="New Leads" 
-          value={totalNewLeads} 
-          icon={TrendingUp} 
-          color="text-blue-700" 
-          onClick={() => { setActiveFilter(activeFilter === 'new_leads' ? 'all' : 'new_leads'); setCurrentPage(1); }}
-          active={activeFilter === 'new_leads'}
-        />
-        <SummaryCard 
-          title="Hot Leads" 
-          value={hotLeads} 
-          icon={Flame} 
-          color="text-red-600" 
-          onClick={() => { setActiveFilter(activeFilter === 'hot' ? 'all' : 'hot'); setCurrentPage(1); }}
-          active={activeFilter === 'hot'}
-        />
-        <SummaryCard 
-          title="RCB WhatsApp" 
-          value={rcbWhatsappLeads} 
-          icon={MessageCircle} 
-          color="text-green-600" 
-          onClick={() => { setActiveFilter(activeFilter === 'rcb_whatsapp' ? 'all' : 'rcb_whatsapp'); setCurrentPage(1); }}
-          active={activeFilter === 'rcb_whatsapp'}
-        />
-        <SummaryCard 
-          title="Follow Up" 
-          value={followupLeads} 
-          icon={Bell} 
-          color="text-orange-600" 
-          onClick={() => { setActiveFilter(activeFilter === 'followup' ? 'all' : 'followup'); setCurrentPage(1); }}
-          active={activeFilter === 'followup'}
-        />
-        <SummaryCard 
-          title="Payment Link Sent" 
-          value={paymentLinkSentLeads} 
-          icon={Link2} 
-          color="text-emerald-600" 
-          onClick={() => { setActiveFilter(activeFilter === 'payment_sent' ? 'all' : 'payment_sent'); setCurrentPage(1); }}
-          active={activeFilter === 'payment_sent'}
-        />
-      </div>
+      <LeadStats 
+        leads={filteredLeads}
+        activeFilter={activeFilter}
+        onFilterChange={(filter) => { setActiveFilter(filter); setCurrentPage(1); }}
+        today={today}
+      />
 
       {/* Filters Section */}
       <div className="bg-white rounded-xl border p-4 mb-5">
