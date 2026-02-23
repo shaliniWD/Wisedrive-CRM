@@ -14,3 +14,6 @@ export { LeadFilters } from './LeadFilters';
 
 // Activity Log - Notes and activity history drawer
 export { ActivityLog } from './ActivityLog';
+
+// Re-export hook for convenience
+export { useLeads, getDateRange, DATE_PRESETS } from '@/hooks/useLeads';
