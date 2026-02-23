@@ -1090,19 +1090,34 @@ export default function LeadsPage() {
         today={today}
       />
 
-      {/* Filters Section */}
-      <div className="bg-white rounded-xl border p-4 mb-5">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex-1 min-w-[250px] relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search by name or mobile..."
-              value={search}
-              onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
-              className="w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-              data-testid="search-input"
-            />
+      {/* Filters Section - Using LeadFilters component */}
+      <LeadFilters
+        search={search}
+        setSearch={(v) => { setSearch(v); setCurrentPage(1); }}
+        filterEmployee={filterEmployee}
+        setFilterEmployee={(v) => { setFilterEmployee(v); setCurrentPage(1); }}
+        filterStatus={filterStatus}
+        setFilterStatus={(v) => { setFilterStatus(v); setCurrentPage(1); }}
+        filterCity={filterCity}
+        setFilterCity={(v) => { setFilterCity(v); setCurrentPage(1); }}
+        employees={filteredEmployees}
+        statuses={statuses}
+        cities={filteredCities}
+        onReset={() => {
+          setActiveFilter('all');
+          setSearch('');
+          setFilterEmployee('');
+          setFilterStatus('');
+          setFilterCity('');
+          setFilterDateFrom('');
+          setFilterDateTo('');
+          setDateFilterPreset('');
+          setCurrentPage(1);
+          fetchData();
+        }}
+        isSalesExec={isSalesExec}
+        userName={user?.name}
+      />
           </div>
 
           {/* Employee filter - Sales roles only + employees with leads */}
