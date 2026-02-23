@@ -139,18 +139,17 @@ Fixed 3 critical issues reported by user:
 - Filters now use extracted component with role-based visibility
 
 ### Activity Log Scroll Height Fix (Feb 23, 2026) ✅
-- **Problem:** Activity Log and Notes tabs had gray empty space at the top, not using full available height
+- **Problem:** Massive gray empty space between tabs and activity log content - content not starting at top
 - **Root Cause:** 
-  1. `h-0` class collapsed height to zero
-  2. `overflow-hidden` on parent prevented scrolling
-  3. Flexbox layout wasn't properly constraining ScrollArea height
-  4. ScrollArea needs absolute positioning within a relative container to fill available space
+  1. Radix UI TabsContent doesn't properly fill flex containers
+  2. `flex-1` on TabsContent doesn't work because the component doesn't grow
+  3. ScrollArea needs explicit height constraints to work properly
 - **Fix:** 
-  1. Used `relative` positioning on TabsContent with `flex-1 min-h-0`
-  2. Used `absolute inset-0` on ScrollArea to fill entire container
-  3. Content now starts immediately below tabs with minimal padding
-- **Location:** `/app/frontend/src/pages/LeadsPage.jsx` - Notes & Activities tabs (lines ~2992-3055)
-- **Result:** Both tabs now fill entire available height and scroll internally within that space
+  1. Wrapped both TabsContent elements in a `relative` container with `flex-1 min-h-0 overflow-hidden`
+  2. Used `absolute inset-0` on each TabsContent to fill the entire container
+  3. Content now starts IMMEDIATELY below tabs with no wasted space
+- **Location:** `/app/frontend/src/pages/LeadsPage.jsx` - Notes & Activities tabs (lines ~2992-3056)
+- **Result:** Both tabs now fill entire available height from tabs to bottom with internal scrolling
 
 ---
 
