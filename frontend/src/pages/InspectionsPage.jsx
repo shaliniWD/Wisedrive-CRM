@@ -1960,15 +1960,21 @@ export default function InspectionsPage() {
             {/* 4. Address with Google Places */}
             <div className="space-y-2">
               <Label className="text-sm font-medium">Inspection Address</Label>
-              <textarea
+              <PlacesAutocomplete
                 value={scheduleFormData.address}
-                onChange={(e) => setScheduleFormData({...scheduleFormData, address: e.target.value})}
-                placeholder="Enter complete address for inspection..."
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
-                rows={3}
-                data-testid="schedule-address-input"
+                onChange={(value) => setScheduleFormData({...scheduleFormData, address: value})}
+                onSelect={(place) => {
+                  setScheduleFormData({
+                    ...scheduleFormData, 
+                    address: place.address,
+                    // Extract city from place if available
+                    city: place.city || scheduleFormData.city
+                  });
+                }}
+                placeholder="Start typing address..."
+                country="in"
               />
-              <p className="text-xs text-gray-400">Enter the location where the inspection will be conducted</p>
+              <p className="text-xs text-gray-400">Start typing to search for addresses using Google Maps</p>
             </div>
           </div>
           
