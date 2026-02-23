@@ -76,6 +76,12 @@ Tested and verified all 10 role-based permissions:
 - Fixed "Cannot access 'filteredLeads' before initialization" error
 - Moved statsLeads calculation after filteredLeads declaration
 
+### Leads Filter Fixes (Feb 23, 2026) ✅
+Fixed 3 critical issues reported by user:
+1. **Employee filter switching** - Backend now filters by both UUID and name
+2. **Date filter updates stats** - Backend accepts date_from/date_to params, stats reflect API-filtered data
+3. **All Leads card added** - Purple card showing total leads count
+
 ### Refactoring Progress (Feb 23, 2026) ✅
 **Backend:**
 - Updated `/app/backend/routes/auth.py` with factory pattern (`create_auth_router`)
