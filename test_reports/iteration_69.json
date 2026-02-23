@@ -1,0 +1,109 @@
+{
+  "summary": "Tested Sales Executive role permissions in WiseDrive CRM. 9 out of 10 features passed. One critical issue found: City field is NOT disabled in Edit Lead modal for Sales Exec users.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "LeadsPage - Edit Lead Modal",
+        "issue": "City field is NOT disabled for Sales Executive users. Sales Exec should NOT be able to change the city of a lead.",
+        "selector": "[data-testid='lead-city-select']",
+        "priority": "HIGH",
+        "file": "/app/frontend/src/pages/LeadsPage.jsx",
+        "line": "1543-1546",
+        "fix_suggestion": "Add disabled={isSalesExec} to the City Select component or conditionally render a read-only display for Sales Exec"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "LeadsPage",
+        "issues": ["Console shows hydration warnings about <tr> inside <span> and <span> inside <tbody> - React rendering issue but doesn't affect functionality"]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/frontend/src/pages/LeadsPage.jsx",
+    "/app/frontend/src/components/layout/TopNavbar.jsx",
+    "/app/frontend/src/contexts/AuthContext.js"
+  ],
+  "action_items": [
+    "CRITICAL: Disable City field in Edit Lead modal for Sales Executive users (isSalesExec check needed at line 1543)"
+  ],
+  "critical_code_review_comments": [
+    "Line 70: isSalesExec variable correctly defined as user?.role_code === 'SALES_EXEC'",
+    "Line 1020: Admin buttons (Assign Unassigned, Remap City, Investigate Lead) correctly hidden for non-admin roles",
+    "Line 1183: Employee filter correctly shows static 'My Leads' for Sales Exec instead of dropdown",
+    "Line 1333: Reassign button correctly hidden for Sales Exec with !isSalesExec check",
+    "Line 1543-1546: ISSUE - City Select field is NOT disabled for Sales Exec - needs isSalesExec check",
+    "TopNavbar correctly uses visibleTabs from AuthContext to filter navigation",
+    "Backend correctly returns visible_tabs based on user role"
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "N/A - Frontend permissions testing",
+    "frontend": "90% - 9/10 features passed"
+  },
+  "test_credentials": {
+    "sales_exec": {
+      "email": "salesexec1.in@wisedrive.com",
+      "password": "password123",
+      "country": "India",
+      "name": "Sneha Reddy",
+      "role": "SALES_EXEC"
+    }
+  },
+  "seed_data_creation": "None - used existing test data",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Sales Exec role permissions tested. All features work except City field in Edit modal is not disabled. The isSalesExec variable is already defined at line 70 and used for other restrictions. Just need to add disabled={isSalesExec} to the City Select at line 1543.",
+  "features_tested": {
+    "1. View assigned leads only": {
+      "status": "PASS",
+      "evidence": "All leads in table are assigned to 'Sneha Reddy' (the logged-in Sales Exec)"
+    },
+    "2. View only Leads Tab": {
+      "status": "PASS",
+      "evidence": "TopNavbar shows only 'Leads' tab. visibleTabs from backend controls this."
+    },
+    "3. Edit Lead details": {
+      "status": "PASS",
+      "evidence": "Edit modal opens with editable fields for name, mobile, notes, etc."
+    },
+    "4. Cannot reassign leads": {
+      "status": "PASS",
+      "evidence": "No pencil/reassign button visible in Assigned column. Line 1333 has !isSalesExec check."
+    },
+    "5. Cannot change city": {
+      "status": "FAIL",
+      "evidence": "City dropdown is ENABLED in Edit modal. No isSalesExec check at line 1543.",
+      "fix_needed": "Add disabled={isSalesExec} to City Select component"
+    },
+    "6. Admin buttons hidden": {
+      "status": "PASS",
+      "evidence": "Assign Unassigned, Remap City, Investigate Lead buttons not visible. Line 1020 has role check."
+    },
+    "7. Reminder functionality": {
+      "status": "PASS",
+      "evidence": "Add Reminder button works, modal opens with Date, Time, Reason, Notes fields"
+    },
+    "8. Status change": {
+      "status": "PASS",
+      "evidence": "Status dropdown in table row is clickable and shows all status options"
+    },
+    "9. Notes functionality": {
+      "status": "PASS",
+      "evidence": "Notes button opens drawer with Notes tab and Activity Log tab. Can add notes."
+    },
+    "10. Payment modal": {
+      "status": "PASS",
+      "evidence": "Send Payment button opens modal with car details, package selection, etc."
+    }
+  },
+  "console_warnings": [
+    "Hydration warning: <tr> cannot be child of <span> - React rendering issue",
+    "403 errors on auto-assignment API - expected for Sales Exec role"
+  ]
+}
