@@ -2989,8 +2989,8 @@ export default function LeadsPage() {
               </TabsTrigger>
             </TabsList>
 
-            <div className="flex-1 min-h-0 overflow-hidden">
-            <TabsContent value="notes" className="h-full flex flex-col m-0 data-[state=active]:flex"  forceMount>
+            <div className="flex-1 min-h-0 overflow-hidden relative">
+              <TabsContent value="notes" className="absolute inset-0 flex flex-col m-0 overflow-hidden">
               {/* Add Note Section */}
               <div className="bg-slate-50 rounded-xl p-4 border mx-6 mt-2 mb-2 flex-shrink-0">
                 <Label className="text-sm font-medium mb-2 block">Add a note</Label>
