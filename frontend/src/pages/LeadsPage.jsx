@@ -2978,7 +2978,7 @@ export default function LeadsPage() {
             </SheetTitle>
           </SheetHeader>
 
-          <Tabs value={notesTab} onValueChange={setNotesTab} className="flex-1 flex flex-col overflow-hidden">
+          <Tabs value={notesTab} onValueChange={setNotesTab} className="flex-1 flex flex-col min-h-0">
             <TabsList className="grid w-full grid-cols-2 mx-6 my-3 flex-shrink-0" style={{ width: 'calc(100% - 48px)' }}>
               <TabsTrigger value="notes" className="flex items-center gap-2" data-testid="notes-tab">
                 <StickyNote className="h-4 w-4" /> Notes
