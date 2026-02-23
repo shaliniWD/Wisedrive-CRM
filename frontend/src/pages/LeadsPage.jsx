@@ -2991,7 +2991,7 @@ export default function LeadsPage() {
 
             <TabsContent value="notes" className="flex-1 flex flex-col mt-0 min-h-0">
               {/* Add Note Section */}
-              <div className="bg-slate-50 rounded-xl p-4 border mb-4 mx-6 flex-shrink-0">
+              <div className="bg-slate-50 rounded-xl p-4 border mx-6 mt-2 mb-2 flex-shrink-0">
                 <Label className="text-sm font-medium mb-2 block">Add a note</Label>
                 <div className="flex gap-2">
                   <textarea
@@ -3017,37 +3017,39 @@ export default function LeadsPage() {
               </div>
 
               {/* Notes List */}
-              <ScrollArea className="flex-1 h-full">
-                <div className="space-y-3 px-6 pb-6 pr-4">
+              <div className="flex-1 min-h-0 relative">
                 {loadingNotes ? (
-                  <div className="flex items-center justify-center py-8">
+                  <div className="absolute inset-0 flex items-center justify-center">
                     <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
                   </div>
                 ) : leadNotes.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <StickyNote className="h-10 w-10 mx-auto mb-2 text-gray-300" />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
+                    <StickyNote className="h-10 w-10 mb-2 text-gray-300" />
                     <p className="text-sm">No notes yet. Add the first note!</p>
                   </div>
                 ) : (
-                  leadNotes.map((note) => (
-                    <div key={note.id} className="bg-white border rounded-xl p-4 shadow-sm">
-                      <div className="flex items-start gap-3">
-                        <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium text-xs flex-shrink-0">
-                          {note.user_name?.charAt(0)?.toUpperCase() || 'U'}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-2 mb-1">
-                            <span className="font-medium text-sm text-gray-900">{note.user_name || 'Unknown'}</span>
-                            <span className="text-xs text-gray-400">{formatDateTime(note.created_at)}</span>
+                  <ScrollArea className="absolute inset-0">
+                    <div className="space-y-3 px-6 py-2 pr-4">
+                    {leadNotes.map((note) => (
+                      <div key={note.id} className="bg-white border rounded-xl p-4 shadow-sm">
+                        <div className="flex items-start gap-3">
+                          <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium text-xs flex-shrink-0">
+                            {note.user_name?.charAt(0)?.toUpperCase() || 'U'}
                           </div>
-                          <p className="text-sm text-gray-700 whitespace-pre-wrap">{note.note}</p>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2 mb-1">
+                              <span className="font-medium text-sm text-gray-900">{note.user_name || 'Unknown'}</span>
+                              <span className="text-xs text-gray-400">{formatDateTime(note.created_at)}</span>
+                            </div>
+                            <p className="text-sm text-gray-700 whitespace-pre-wrap">{note.note}</p>
+                          </div>
                         </div>
                       </div>
+                    ))}
                     </div>
-                  ))
+                  </ScrollArea>
                 )}
-                </div>
-              </ScrollArea>
+              </div>
             </TabsContent>
 
             <TabsContent value="activities" className="flex-1 mt-0 min-h-0 relative">
