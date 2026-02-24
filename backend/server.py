@@ -4981,7 +4981,75 @@ async def update_inspection_status(
         }}
     )
     
+    # Log activity for status change
+    activity = {
+        "id": str(uuid.uuid4()),
+        "inspection_id": inspection_id,
+        "user_id": current_user["id"],
+        "user_name": current_user.get("name", "Unknown"),
+        "action": "status_changed",
+        "details": f"Status changed to {inspection_status}",
+        "old_value": inspection.get("inspection_status"),
+        "new_value": inspection_status,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.inspection_activities.insert_one(activity)
+    
     return {"success": True, "inspection_status": inspection_status}
+
+
+# Inspection Notes
+class InspectionNoteCreate(BaseModel):
+    note: str
+
+
+@api_router.post("/inspections/{inspection_id}/notes")
+async def add_inspection_note(inspection_id: str, note_data: InspectionNoteCreate, current_user: dict = Depends(get_current_user)):
+    """Add a note to an inspection"""
+    inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
+    if not inspection:
+        raise HTTPException(status_code=404, detail="Inspection not found")
+    
+    note = {
+        "id": str(uuid.uuid4()),
+        "inspection_id": inspection_id,
+        "user_id": current_user["id"],
+        "user_name": current_user.get("name", "Unknown"),
+        "note": note_data.note,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.inspection_notes.insert_one(note)
+    
+    # Log activity
+    activity = {
+        "id": str(uuid.uuid4()),
+        "inspection_id": inspection_id,
+        "user_id": current_user["id"],
+        "user_name": current_user.get("name", "Unknown"),
+        "action": "note_added",
+        "details": f"Added a note ({len(note_data.note)} chars)",
+        "new_value": note_data.note[:500],
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.inspection_activities.insert_one(activity)
+    
+    note.pop("_id", None)
+    return note
+
+
+@api_router.get("/inspections/{inspection_id}/notes")
+async def get_inspection_notes(inspection_id: str, current_user: dict = Depends(get_current_user)):
+    """Get all notes for an inspection"""
+    notes = await db.inspection_notes.find({"inspection_id": inspection_id}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return notes
+
+
+@api_router.get("/inspections/{inspection_id}/activities")
+async def get_inspection_activities(inspection_id: str, current_user: dict = Depends(get_current_user)):
+    """Get all activities for an inspection"""
+    activities = await db.inspection_activities.find({"inspection_id": inspection_id}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return activities
 
 
 class UpdateVehicleRequest(BaseModel):
