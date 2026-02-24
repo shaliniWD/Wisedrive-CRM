@@ -773,6 +773,10 @@ export default function SettingsPage() {
               <Key className="h-4 w-4" />
               API Tokens
             </TabsTrigger>
+            <TabsTrigger value="cities" className="flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              City Master
+            </TabsTrigger>
             <TabsTrigger value="packages" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
               Inspection Packages
