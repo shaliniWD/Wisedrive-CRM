@@ -13271,7 +13271,7 @@ async def mechanic_verify_otp(data: MechanicOtpVerify):
     # Handle dev mode mock mechanic
     if stored.get("is_dev_mode"):
         # Clear OTP
-        del mechanic_otp_store[phone]
+        del mechanic_otp_store[normalized_phone]
         
         # Create mock mechanic profile for dev mode
         mock_mechanic_id = "dev-mechanic-001"
