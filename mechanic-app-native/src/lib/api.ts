@@ -16,14 +16,31 @@ const api = axios.create({
 api.interceptors.request.use(async (config) => {
   try {
     const token = await AsyncStorage.getItem('authToken');
+    console.log(`[API] Request to ${config.url}, token present: ${!!token}`);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    } else {
+      console.warn('[API] No auth token found in AsyncStorage');
     }
   } catch (e) {
-    console.log('Error getting token:', e);
+    console.error('[API] Error getting token:', e);
   }
   return config;
 });
+
+// Add response interceptor for better error handling
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response?.status === 401) {
+      console.error('[API] 401 Unauthorized - Token may be invalid or expired');
+      // Check if token exists
+      const token = await AsyncStorage.getItem('authToken');
+      console.log('[API] Token in storage:', token ? `${token.substring(0, 20)}...` : 'NONE');
+    }
+    return Promise.reject(error);
+  }
+);
 
 // Auth API
 export const authApi = {
