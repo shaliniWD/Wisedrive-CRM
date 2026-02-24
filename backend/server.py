@@ -13166,7 +13166,7 @@ async def mechanic_request_otp(data: MechanicOtpRequest):
         mechanic_otp_store[normalized_phone] = {
             "otp": "123456",
             "mechanic_id": "dev-mechanic-001",
-            "expires_at": datetime.now(timezone.utc) + timedelta(minutes=5),
+            "expires_at": datetime.now(timezone.utc) + timedelta(minutes=30),
             "is_dev_mode": True
         }
         logger.info(f"Dev mode OTP for {normalized_phone}: 123456")
