@@ -310,6 +310,413 @@ const TokenCard = ({ token, onUpdate, onTest }) => {
   );
 };
 
+// City Management Component
+const CityManagement = () => {
+  const [cities, setCities] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedCity, setSelectedCity] = useState(null);
+  const [formData, setFormData] = useState({ name: '', state: '', aliases: [] });
+  const [aliasInput, setAliasInput] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showInactive, setShowInactive] = useState(false);
+
+  useEffect(() => {
+    fetchCities();
+  }, [showInactive]);
+
+  const fetchCities = async () => {
+    setLoading(true);
+    try {
+      const response = await citiesApi.getAll(showInactive);
+      setCities(response.data || []);
+    } catch (error) {
+      console.error('Failed to fetch cities:', error);
+      toast.error('Failed to load cities');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddCity = async () => {
+    if (!formData.name.trim()) {
+      toast.error('City name is required');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await citiesApi.create({
+        name: formData.name,
+        state: formData.state || null,
+        aliases: formData.aliases.length > 0 ? formData.aliases : null
+      });
+      toast.success('City added successfully!');
+      setShowAddModal(false);
+      setFormData({ name: '', state: '', aliases: [] });
+      fetchCities();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to add city');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleUpdateCity = async () => {
+    if (!selectedCity) return;
+
+    setIsSubmitting(true);
+    try {
+      await citiesApi.update(selectedCity.id, {
+        name: formData.name || null,
+        state: formData.state || null,
+        aliases: formData.aliases
+      });
+      toast.success('City updated successfully!');
+      setShowEditModal(false);
+      setSelectedCity(null);
+      fetchCities();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to update city');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleToggleActive = async (city) => {
+    try {
+      await citiesApi.update(city.id, { is_active: !city.is_active });
+      toast.success(`City ${city.is_active ? 'deactivated' : 'activated'}!`);
+      fetchCities();
+    } catch (error) {
+      toast.error('Failed to update city status');
+    }
+  };
+
+  const openEditModal = (city) => {
+    setSelectedCity(city);
+    setFormData({
+      name: city.name,
+      state: city.state || '',
+      aliases: city.aliases || []
+    });
+    setShowEditModal(true);
+  };
+
+  const addAlias = () => {
+    if (aliasInput.trim() && !formData.aliases.includes(aliasInput.trim())) {
+      setFormData({ ...formData, aliases: [...formData.aliases, aliasInput.trim()] });
+      setAliasInput('');
+    }
+  };
+
+  const removeAlias = (alias) => {
+    setFormData({ ...formData, aliases: formData.aliases.filter(a => a !== alias) });
+  };
+
+  const filteredCities = cities.filter(city => 
+    city.name.toLowerCase().includes(search.toLowerCase()) ||
+    city.state?.toLowerCase().includes(search.toLowerCase()) ||
+    city.aliases?.some(a => a.toLowerCase().includes(search.toLowerCase()))
+  );
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900">City Master Management</h2>
+          <p className="text-sm text-gray-500">Manage cities and their aliases for consistent data across the platform</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Switch
+              id="show-inactive"
+              checked={showInactive}
+              onCheckedChange={setShowInactive}
+            />
+            <Label htmlFor="show-inactive" className="text-sm">Show Inactive</Label>
+          </div>
+          <Button onClick={() => { setFormData({ name: '', state: '', aliases: [] }); setShowAddModal(true); }}>
+            <Plus className="h-4 w-4 mr-1.5" />
+            Add City
+          </Button>
+        </div>
+      </div>
+
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <Input
+          placeholder="Search cities, states, or aliases..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-10"
+        />
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-4">
+        <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
+          <div className="flex items-center gap-2 text-blue-700">
+            <MapPin className="h-5 w-5" />
+            <span className="text-2xl font-bold">{cities.filter(c => c.is_active).length}</span>
+          </div>
+          <p className="text-sm text-blue-600 mt-1">Active Cities</p>
+        </div>
+        <div className="bg-purple-50 rounded-lg p-4 border border-purple-100">
+          <div className="flex items-center gap-2 text-purple-700">
+            <Tag className="h-5 w-5" />
+            <span className="text-2xl font-bold">{cities.reduce((acc, c) => acc + (c.aliases?.length || 0), 0)}</span>
+          </div>
+          <p className="text-sm text-purple-600 mt-1">Total Aliases</p>
+        </div>
+        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+          <div className="flex items-center gap-2 text-gray-700">
+            <Globe className="h-5 w-5" />
+            <span className="text-2xl font-bold">{new Set(cities.map(c => c.state).filter(Boolean)).size}</span>
+          </div>
+          <p className="text-sm text-gray-600 mt-1">States/Regions</p>
+        </div>
+      </div>
+
+      {/* City List */}
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">City</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">State</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aliases</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {filteredCities.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
+                    {search ? 'No cities match your search' : 'No cities found. Add your first city!'}
+                  </td>
+                </tr>
+              ) : (
+                filteredCities.map((city) => (
+                  <tr key={city.id} className={`hover:bg-gray-50 ${!city.is_active ? 'opacity-60' : ''}`}>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-blue-500" />
+                        <span className="font-medium text-gray-900">{city.name}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-gray-600">{city.state || '-'}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-wrap gap-1">
+                        {city.aliases?.length > 0 ? (
+                          city.aliases.map((alias, idx) => (
+                            <Badge key={idx} variant="secondary" className="text-xs">
+                              {alias}
+                            </Badge>
+                          ))
+                        ) : (
+                          <span className="text-gray-400 text-sm">No aliases</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <Badge variant={city.is_active ? 'default' : 'outline'} className={city.is_active ? 'bg-green-100 text-green-700 hover:bg-green-100' : ''}>
+                        {city.is_active ? 'Active' : 'Inactive'}
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openEditModal(city)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleToggleActive(city)}
+                          className={`h-8 w-8 p-0 ${city.is_active ? 'text-red-500 hover:text-red-600' : 'text-green-500 hover:text-green-600'}`}
+                        >
+                          {city.is_active ? <XCircle className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Info Card */}
+      <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-xl p-6">
+        <h3 className="font-semibold text-purple-900 mb-2">💡 City Management Tips</h3>
+        <ul className="text-sm text-purple-700 space-y-1">
+          <li>• <strong>Aliases</strong> help match different spellings (e.g., "Bengaluru" → "Bangalore")</li>
+          <li>• <strong>Deactivating</strong> a city hides it from dropdowns but preserves existing data</li>
+          <li>• Changes here affect lead assignment, mechanic assignments, and inspection filtering</li>
+        </ul>
+      </div>
+
+      {/* Add City Modal */}
+      <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MapPin className="h-5 w-5 text-blue-600" />
+              Add New City
+            </DialogTitle>
+            <DialogDescription>
+              Add a new city to the master list. Aliases help match different name variations.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="city-name">City Name *</Label>
+              <Input
+                id="city-name"
+                placeholder="e.g., Bangalore"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="state">State / Region</Label>
+              <Input
+                id="state"
+                placeholder="e.g., Karnataka"
+                value={formData.state}
+                onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Aliases (Alternative Names)</Label>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="e.g., Bengaluru"
+                  value={aliasInput}
+                  onChange={(e) => setAliasInput(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addAlias())}
+                />
+                <Button type="button" variant="outline" onClick={addAlias}>
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              {formData.aliases.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {formData.aliases.map((alias, idx) => (
+                    <Badge key={idx} variant="secondary" className="flex items-center gap-1">
+                      {alias}
+                      <button onClick={() => removeAlias(alias)} className="hover:text-red-500">
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddModal(false)}>Cancel</Button>
+            <Button onClick={handleAddCity} disabled={isSubmitting || !formData.name.trim()}>
+              {isSubmitting ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Plus className="h-4 w-4 mr-1.5" />}
+              Add City
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit City Modal */}
+      <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit2 className="h-5 w-5 text-blue-600" />
+              Edit City
+            </DialogTitle>
+            <DialogDescription>
+              Update city details and manage aliases.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-city-name">City Name</Label>
+              <Input
+                id="edit-city-name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-state">State / Region</Label>
+              <Input
+                id="edit-state"
+                value={formData.state}
+                onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Aliases</Label>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Add new alias..."
+                  value={aliasInput}
+                  onChange={(e) => setAliasInput(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addAlias())}
+                />
+                <Button type="button" variant="outline" onClick={addAlias}>
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              {formData.aliases.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {formData.aliases.map((alias, idx) => (
+                    <Badge key={idx} variant="secondary" className="flex items-center gap-1">
+                      {alias}
+                      <button onClick={() => removeAlias(alias)} className="hover:text-red-500">
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditModal(false)}>Cancel</Button>
+            <Button onClick={handleUpdateCity} disabled={isSubmitting}>
+              {isSubmitting ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-1.5" />}
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('tokens');
   const [tokens, setTokens] = useState([]);
