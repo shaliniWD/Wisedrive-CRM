@@ -328,6 +328,11 @@ export default function InspectionsPage() {
   const [newNote, setNewNote] = useState('');
   const [savingNote, setSavingNote] = useState(false);
   
+  // SMS Logs
+  const [smsLogs, setSmsLogs] = useState([]);
+  const [smsStats, setSmsStats] = useState(null);
+  const [loadingSmsLogs, setLoadingSmsLogs] = useState(false);
+  
   // Vehicle Edit Modal
   const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
   const [vehicleEditInspection, setVehicleEditInspection] = useState(null);
