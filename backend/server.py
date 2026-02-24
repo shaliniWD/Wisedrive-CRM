@@ -179,6 +179,12 @@ async def startup():
     await meta_ads_scheduler.start()
     logger.info("Meta Ads Scheduler started (sync every 6 hours)")
     
+    # Initialize Fast2SMS service with database reference for logging
+    from services.fast2sms_service import get_fast2sms_service
+    fast2sms = get_fast2sms_service()
+    fast2sms.set_db(db)
+    logger.info("Fast2SMS service initialized with SMS logging")
+    
     logger.info("WiseDrive CRM V2 started with HR Module, ESS Mobile API, and FCM Push Notifications")
 
 
