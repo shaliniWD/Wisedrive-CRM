@@ -72,7 +72,7 @@ class Fast2SMSService:
         user_id: Optional[str] = None
     ):
         """Log SMS request to database"""
-        if not self.db:
+        if self.db is None:
             logger.warning("Database not set for SMS logging")
             return
         
