@@ -1328,8 +1328,8 @@ export default function InspectionsPage() {
                 <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '13%'}}>Status</th>
                 <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '12%'}}>Mechanic</th>
                 <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '8%'}}>Location</th>
-                <th className="px-3 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '5%'}}>Notes</th>
                 <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '12%'}}>Report</th>
+                <th className="px-3 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '5%'}}>Notes</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
