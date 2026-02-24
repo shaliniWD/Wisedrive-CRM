@@ -510,7 +510,7 @@ export default function HomeScreen() {
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
-              onRefresh={() => { setRefreshing(true); fetchInspections(); }}
+              onRefresh={() => { setRefreshing(true); fetchInspections(dateFilter, customDateFrom, customDateTo); }}
               colors={[Colors.primary]}
               tintColor={Colors.primary}
             />
