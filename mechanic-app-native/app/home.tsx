@@ -706,6 +706,48 @@ export default function HomeScreen() {
           maximumDate={new Date()}
         />
       )}
+
+      {/* Debug Modal - Long press on "Hi, Name" to open */}
+      <Modal visible={debugModalVisible} transparent animationType="slide" onRequestClose={() => setDebugModalVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { maxHeight: '80%' }]}>
+            <View style={styles.modalHandle} />
+            <Text style={styles.modalTitle}>🔧 Debug Info</Text>
+            <Text style={{ color: Colors.textSecondary, fontSize: 12, marginBottom: 12 }}>
+              Share this with support to debug issues
+            </Text>
+            
+            <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={true}>
+              {debugLoading ? (
+                <ActivityIndicator size="large" color={Colors.primary} style={{ marginVertical: 20 }} />
+              ) : debugInfo ? (
+                <View style={{ backgroundColor: '#F5F5F5', borderRadius: 8, padding: 12 }}>
+                  <Text style={{ fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', fontSize: 11, color: '#333' }}>
+                    {JSON.stringify(debugInfo, null, 2)}
+                  </Text>
+                </View>
+              ) : (
+                <Text style={{ color: Colors.textSecondary }}>Loading...</Text>
+              )}
+            </ScrollView>
+            
+            <View style={{ flexDirection: 'row', gap: 12, marginTop: 16 }}>
+              <TouchableOpacity 
+                style={[styles.closeFilterBtn, { flex: 1, backgroundColor: Colors.primary }]}
+                onPress={fetchDebugInfo}
+              >
+                <Text style={styles.closeFilterBtnText}>Refresh</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.closeFilterBtn, { flex: 1, backgroundColor: Colors.textSecondary }]}
+                onPress={() => setDebugModalVisible(false)}
+              >
+                <Text style={styles.closeFilterBtnText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
