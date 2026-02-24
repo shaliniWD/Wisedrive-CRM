@@ -388,9 +388,14 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         
         return user
     except jwt.ExpiredSignatureError:
+        logger.warning("Token expired")
         raise HTTPException(status_code=401, detail="Token expired")
-    except jwt.InvalidTokenError:
+    except jwt.InvalidTokenError as e:
+        logger.warning(f"Invalid token error: {str(e)}")
         raise HTTPException(status_code=401, detail="Invalid token")
+    except Exception as e:
+        logger.error(f"Unexpected error in get_current_user: {str(e)}")
+        raise HTTPException(status_code=401, detail="Authentication failed")
 
 
 # ==================== AUTH ROUTES ====================
