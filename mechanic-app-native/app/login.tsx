@@ -156,7 +156,7 @@ export default function LoginScreen() {
   const handleVerifyOtp = async () => {
     const otpString = otp.join('');
     if (otpString.length !== 6) {
-      Alert.alert('Error', 'Please enter complete OTP');
+      showError('Incomplete OTP', 'Please enter the complete 6-digit OTP');
       return;
     }
 
@@ -184,7 +184,7 @@ export default function LoginScreen() {
         await login(response.data.token, response.data.mechanicProfile);
         router.replace('/home');
       } else {
-        Alert.alert('Error', response.data.message || 'Verification failed');
+        showError('Verification Failed', response.data.message || 'Unable to verify OTP');
       }
     } catch (error: any) {
       addLog(`VERIFY ERROR occurred!`);
@@ -194,10 +194,10 @@ export default function LoginScreen() {
         addLog(`Verify Error Data: ${JSON.stringify(error.response.data)}`);
         
         const errorMessage = error.response.data?.detail || error.response.data?.message || 'Invalid OTP';
-        Alert.alert('Error', errorMessage);
+        showError('Verification Failed', errorMessage);
       } else if (error.request) {
         addLog(`No response received for verify`);
-        Alert.alert('Error', 'No response from server. Please check your internet connection.');
+        showError('Connection Error', 'No response from server. Please check your internet connection.');
       } else {
         addLog(`Verify setup error: ${error.message}`);
         Alert.alert('Error', `Verification failed: ${error.message}`);
