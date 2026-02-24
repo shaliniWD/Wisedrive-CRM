@@ -677,7 +677,35 @@ export default function InspectionsPage() {
     setNotesInspection(null);
     setInspectionNotes([]);
     setInspectionActivities([]);
+    setSmsLogs([]);
+    setSmsStats(null);
     setNewNote('');
+  };
+
+  // Fetch SMS Logs
+  const fetchSmsLogs = async () => {
+    setLoadingSmsLogs(true);
+    try {
+      const [logsRes, statsRes] = await Promise.all([
+        smsLogsApi.getLogs({ limit: 100 }),
+        smsLogsApi.getStats()
+      ]);
+      setSmsLogs(logsRes.data?.logs || []);
+      setSmsStats(statsRes.data || null);
+    } catch (error) {
+      console.error('Failed to fetch SMS logs:', error);
+      toast.error('Failed to load SMS logs');
+    } finally {
+      setLoadingSmsLogs(false);
+    }
+  };
+
+  // Handle tab change - fetch SMS logs when switching to SMS tab
+  const handleNotesTabChange = (value) => {
+    setNotesTab(value);
+    if (value === 'sms' && smsLogs.length === 0) {
+      fetchSmsLogs();
+    }
   };
 
   // Handle View Report - opens in new tab
