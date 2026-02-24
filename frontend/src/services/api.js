@@ -557,4 +557,6 @@ export const settingsApi = {
   getTokenStatus: () => axios.get(`${API_URL}/settings/tokens`),
   updateToken: (tokenType, token) => axios.post(`${API_URL}/settings/tokens/update`, { token_type: tokenType, token }),
   testToken: (tokenType) => axios.post(`${API_URL}/settings/tokens/test/${tokenType}`),
+  getTwilioBalance: () => axios.get(`${API_URL}/twilio/balance`),
+  getFast2SmsBalance: () => axios.get(`${API_URL}/sms/wallet`),
 };
