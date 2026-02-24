@@ -7109,7 +7109,29 @@ async def create_hr_employee(emp_data: EmployeeCreate, current_user: dict = Depe
     if existing:
         raise HTTPException(status_code=400, detail="Email already exists")
     
+    # Check if phone number exists (must be unique)
     emp_dict = emp_data.model_dump()
+    if emp_dict.get("phone"):
+        # Normalize phone number for comparison
+        phone = emp_dict["phone"].strip().replace(" ", "").replace("-", "")
+        if not phone.startswith("+"):
+            phone = "+91" + phone[-10:]
+        phone_last10 = phone[-10:]
+        
+        existing_phone = await db.users.find_one({
+            "$or": [
+                {"phone": phone},
+                {"phone": {"$regex": phone_last10 + "$"}},
+                {"mobile": phone},
+                {"mobile": {"$regex": phone_last10 + "$"}}
+            ]
+        })
+        if existing_phone:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Phone number already assigned to {existing_phone.get('name', 'another employee')}. Each employee must have a unique phone number."
+            )
+    
     emp_id = str(uuid.uuid4())
     
     # Hash password
