@@ -40,7 +40,7 @@ export const authApi = {
 
 // Inspections API
 export const inspectionsApi = {
-  getInspections: async (params: { status?: string; city?: string; date_filter?: string } = {}) => {
+  getInspections: async (params: { status?: string; city?: string; date_filter?: string; date_from?: string; date_to?: string } = {}) => {
     const response = await api.get('/mechanic/inspections', { params });
     return response.data;
   },
