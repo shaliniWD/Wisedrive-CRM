@@ -306,6 +306,12 @@ export default function InspectionsPage() {
   const [checkingPaymentStatus, setCheckingPaymentStatus] = useState(false);
   const [paymentLinkStatus, setPaymentLinkStatus] = useState(null);
   
+  // Payment Details Modal (NEW - simplified payment view)
+  const [isPaymentDetailsModalOpen, setIsPaymentDetailsModalOpen] = useState(false);
+  const [paymentDetailsInspection, setPaymentDetailsInspection] = useState(null);
+  const [creatingPaymentLink, setCreatingPaymentLink] = useState(false);
+  const [paymentLink, setPaymentLink] = useState(null);
+  
   // Vehicle Edit Modal
   const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
   const [vehicleEditInspection, setVehicleEditInspection] = useState(null);
