@@ -1323,18 +1323,19 @@ export default function InspectionsPage() {
               <tr className="bg-slate-50 border-b">
                 <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '11%'}}>Date/Time</th>
                 <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '15%'}}>Customer</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '13%'}}>Vehicle</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '12%'}}>Payment</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '14%'}}>Status</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '13%'}}>Mechanic</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '9%'}}>Location</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '13%'}}>Report</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '12%'}}>Vehicle</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '10%'}}>Payment</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '13%'}}>Status</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '12%'}}>Mechanic</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '8%'}}>Location</th>
+                <th className="px-3 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '5%'}}>Notes</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '12%'}}>Report</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-12">
+                  <td colSpan={9} className="text-center py-12">
                     <div className="flex items-center justify-center gap-2">
                       <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
                         <span className="text-gray-500">Loading inspections...</span>
