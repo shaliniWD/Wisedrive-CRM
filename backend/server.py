@@ -13385,13 +13385,13 @@ async def mechanic_request_otp(data: MechanicOtpRequest):
     dev_test_phones = ["+919611188788", "9611188788", "+919689760236", "9689760236"]
     
     if dev_mode and any(phone.endswith(p[-10:]) for p in dev_test_phones):
-        # For dev mode test phones, create a mock mechanic entry
-        mechanic_otp_store[normalized_phone] = {
+        # For dev mode test phones, create a mock mechanic entry in MongoDB
+        await store_mechanic_otp(normalized_phone, {
             "otp": "123456",
             "mechanic_id": "dev-mechanic-001",
             "expires_at": datetime.now(timezone.utc) + timedelta(minutes=30),
             "is_dev_mode": True
-        }
+        })
         logger.info(f"Dev mode OTP for {normalized_phone}: 123456")
         return {"success": True, "message": "OTP sent successfully"}
     
@@ -13434,13 +13434,13 @@ async def mechanic_request_otp(data: MechanicOtpRequest):
     # Generate 6-digit OTP
     otp = ''.join(random.choices(string.digits, k=6))
     
-    # Store OTP with expiration (30 minutes)
-    mechanic_otp_store[normalized_phone] = {
+    # Store OTP in MongoDB with expiration (30 minutes)
+    await store_mechanic_otp(normalized_phone, {
         "otp": otp,
         "mechanic_id": user["id"],
         "user_role": user.get("role_id"),
         "expires_at": datetime.now(timezone.utc) + timedelta(minutes=30)
-    }
+    })
     
     # Send OTP via Fast2SMS in production
     if not dev_mode:
