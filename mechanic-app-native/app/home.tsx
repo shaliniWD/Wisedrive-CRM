@@ -307,28 +307,39 @@ export default function HomeScreen() {
     return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
   };
 
-  const fetchInspections = useCallback(async () => {
+  const fetchInspections = useCallback(async (filterType?: string, fromDate?: Date, toDate?: Date) => {
     try {
+      setIsLoading(true);
       const params: any = {};
-      if (dateFilter === 'custom') {
-        params.date_from = formatDateForApi(customDateFrom);
-        params.date_to = formatDateForApi(customDateTo);
-      } else if (dateFilter !== 'all') {
-        params.date_filter = dateFilter;
+      
+      // Use passed parameters or fall back to state
+      const currentFilter = filterType ?? dateFilter;
+      const currentFrom = fromDate ?? customDateFrom;
+      const currentTo = toDate ?? customDateTo;
+      
+      if (currentFilter === 'custom') {
+        params.date_from = formatDateForApi(currentFrom);
+        params.date_to = formatDateForApi(currentTo);
+      } else if (currentFilter !== 'all') {
+        params.date_filter = currentFilter;
       }
+      
+      console.log('Fetching inspections with params:', params);
       const data = await inspectionsApi.getInspections(params);
       setInspections(data || []);
     } catch (error) {
       console.error('Failed to fetch inspections:', error);
+      Alert.alert('Error', 'Failed to load inspections. Please try again.');
     } finally {
       setIsLoading(false);
       setRefreshing(false);
     }
-  }, [dateFilter, customDateFrom, customDateTo]);
+  }, []); // Remove dependencies to prevent infinite loops
 
+  // Initial load
   useEffect(() => {
-    fetchInspections();
-  }, [fetchInspections]);
+    fetchInspections('all');
+  }, []);
 
   const onDateChange = (event: any, selectedDate?: Date) => {
     if (Platform.OS === 'android') {
