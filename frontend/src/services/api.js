@@ -533,3 +533,11 @@ export const inspectionPackagesApi = {
   toggleOfferStatus: (id) => axios.patch(`${API_URL}/offers/${id}/toggle-status`),
   deleteOffer: (id) => axios.delete(`${API_URL}/offers/${id}`),
 };
+
+// SMS Logs API
+export const smsLogsApi = {
+  getLogs: (params = {}) => axios.get(`${API_URL}/sms/logs`, { params }),
+  getWalletBalance: () => axios.get(`${API_URL}/sms/wallet`),
+  getStats: () => axios.get(`${API_URL}/sms/stats`),
+  testSend: (phone) => axios.post(`${API_URL}/sms/test`, null, { params: { phone } }),
+};
