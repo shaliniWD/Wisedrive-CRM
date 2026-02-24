@@ -13328,8 +13328,25 @@ async def get_inspection_report_config(inspection_id: str, current_user: dict = 
 import random
 import string
 
-# Store OTPs in memory (in production, use Redis or similar)
-mechanic_otp_store = {}
+# Store OTPs in MongoDB for persistence across multiple instances
+# Helper functions for OTP storage
+async def store_mechanic_otp(phone: str, otp_data: dict):
+    """Store OTP in MongoDB with TTL"""
+    otp_data["phone"] = phone
+    otp_data["created_at"] = datetime.now(timezone.utc)
+    await db.mechanic_otps.update_one(
+        {"phone": phone},
+        {"$set": otp_data},
+        upsert=True
+    )
+
+async def get_mechanic_otp(phone: str) -> dict:
+    """Get OTP from MongoDB"""
+    return await db.mechanic_otps.find_one({"phone": phone}, {"_id": 0})
+
+async def delete_mechanic_otp(phone: str):
+    """Delete OTP from MongoDB"""
+    await db.mechanic_otps.delete_one({"phone": phone})
 
 class MechanicOtpRequest(BaseModel):
     phone: str
