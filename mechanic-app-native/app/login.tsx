@@ -98,7 +98,7 @@ export default function LoginScreen() {
       addLog(`Response Data: ${JSON.stringify(response.data)}`);
       
       setStep('otp');
-      Alert.alert('Success', 'OTP sent successfully');
+      showError('OTP Sent', 'Please check your phone for the verification code');
     } catch (error: any) {
       addLog(`ERROR occurred!`);
       
@@ -108,17 +108,29 @@ export default function LoginScreen() {
         addLog(`Error Data: ${JSON.stringify(error.response.data)}`);
         addLog(`Headers: ${JSON.stringify(error.response.headers)}`);
         
-        const errorMessage = error.response.data?.detail || error.response.data?.message || 'Unknown server error';
-        Alert.alert('Error', errorMessage);
+        const errorDetail = error.response.data?.detail || error.response.data?.message || 'Unknown server error';
+        
+        // Check if it's an authorization error
+        if (errorDetail.toLowerCase().includes('not authorized') || 
+            errorDetail.toLowerCase().includes('only mechanics') ||
+            error.response.status === 404) {
+          showError(
+            'Access Denied', 
+            'You are not authorized to access this app. Please contact admin or send email to support@wisedrive.com',
+            true
+          );
+        } else {
+          showError('Error', errorDetail);
+        }
       } else if (error.request) {
         // Request made but no response
         addLog(`No response received`);
         addLog(`Request: ${JSON.stringify(error.request._url || error.request)}`);
-        Alert.alert('Error', 'No response from server. Please check your internet connection.');
+        showError('Connection Error', 'No response from server. Please check your internet connection.');
       } else {
         // Error setting up request
         addLog(`Request setup error: ${error.message}`);
-        Alert.alert('Error', `Request failed: ${error.message}`);
+        showError('Error', `Request failed: ${error.message}`);
       }
     } finally {
       setIsLoading(false);
