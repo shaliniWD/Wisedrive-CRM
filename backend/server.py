@@ -13333,20 +13333,29 @@ import string
 async def store_mechanic_otp(phone: str, otp_data: dict):
     """Store OTP in MongoDB with TTL"""
     otp_data["phone"] = phone
-    otp_data["created_at"] = datetime.now(timezone.utc)
-    await db.mechanic_otps.update_one(
+    otp_data["created_at"] = datetime.now(timezone.utc).isoformat()
+    # Convert expires_at to ISO string if it's a datetime
+    if isinstance(otp_data.get("expires_at"), datetime):
+        otp_data["expires_at"] = otp_data["expires_at"].isoformat()
+    
+    logger.info(f"Storing OTP for {phone}: {otp_data.get('otp', '****')}")
+    result = await db.mechanic_otps.update_one(
         {"phone": phone},
         {"$set": otp_data},
         upsert=True
     )
+    logger.info(f"OTP stored: matched={result.matched_count}, modified={result.modified_count}, upserted_id={result.upserted_id}")
 
 async def get_mechanic_otp(phone: str) -> dict:
     """Get OTP from MongoDB"""
-    return await db.mechanic_otps.find_one({"phone": phone}, {"_id": 0})
+    otp = await db.mechanic_otps.find_one({"phone": phone}, {"_id": 0})
+    logger.info(f"Retrieved OTP for {phone}: {'found' if otp else 'not found'}")
+    return otp
 
 async def delete_mechanic_otp(phone: str):
     """Delete OTP from MongoDB"""
     await db.mechanic_otps.delete_one({"phone": phone})
+    logger.info(f"Deleted OTP for {phone}")
 
 class MechanicOtpRequest(BaseModel):
     phone: str
