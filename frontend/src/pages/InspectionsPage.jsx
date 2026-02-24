@@ -1825,7 +1825,8 @@ export default function InspectionsPage() {
                 const inspectionCity = mechanicEditInspection?.city;
                 if (!inspectionCity) return true;
                 const mechanicCities = m.inspection_cities || [];
-                return mechanicCities.length === 0 || mechanicCities.includes(inspectionCity);
+                // Only show mechanics who have this specific city assigned
+                return mechanicCities.includes(inspectionCity);
               }).length === 0 && (
                 <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded-md">
                   No mechanics available for {mechanicEditInspection?.city || 'this city'}. 
