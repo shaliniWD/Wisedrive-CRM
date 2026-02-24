@@ -781,12 +781,12 @@ const styles = StyleSheet.create({
 
   // Modal
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-  modalContent: { backgroundColor: Colors.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 32 },
+  modalContent: { backgroundColor: Colors.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 32, maxHeight: '70%' },
   modalHandle: { width: 36, height: 4, backgroundColor: Colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 16 },
   modalTitle: { fontSize: 18, fontWeight: '700', color: Colors.textPrimary, textAlign: 'center' },
   modalSubtitle: { fontSize: 14, color: Colors.textSecondary, textAlign: 'center', marginTop: 4, marginBottom: 20 },
-  reasonsList: { gap: 8, marginBottom: 20 },
-  reasonItem: { flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, gap: 10 },
+  reasonsList: { marginBottom: 20 },
+  reasonItem: { flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, gap: 10, marginBottom: 8 },
   reasonItemSelected: { borderColor: Colors.primary, backgroundColor: Colors.primaryLight },
   reasonText: { flex: 1, fontSize: 14, color: Colors.textSecondary },
   reasonTextSelected: { color: Colors.textPrimary, fontWeight: '600' },
@@ -796,6 +796,50 @@ const styles = StyleSheet.create({
   confirmBtn: { flex: 0.6, paddingVertical: 12, borderRadius: 10, backgroundColor: Colors.error, alignItems: 'center' },
   confirmBtnDisabled: { backgroundColor: '#FFAAAA' },
   confirmBtnText: { fontSize: 14, fontWeight: '600', color: '#FFF' },
-  closeFilterBtn: { paddingVertical: 12, borderRadius: 10, backgroundColor: Colors.primary, alignItems: 'center' },
+  closeFilterBtn: { paddingVertical: 14, borderRadius: 10, backgroundColor: Colors.primary, alignItems: 'center' },
   closeFilterBtnText: { fontSize: 14, fontWeight: '600', color: '#FFF' },
+
+  // Custom Date Picker
+  customDateContainer: {
+    backgroundColor: Colors.primaryLight,
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 8,
+  },
+  customDateLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+    marginBottom: 12,
+  },
+  datePickerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  datePickerBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.surface,
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    gap: 8,
+  },
+  datePickerTextContainer: {
+    flex: 1,
+  },
+  datePickerLabel: {
+    fontSize: 11,
+    color: Colors.textMuted,
+    marginBottom: 2,
+  },
+  datePickerValue: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+  },
 });
