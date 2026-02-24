@@ -2766,7 +2766,7 @@ async def check_lead_payment_status(lead_id: str, current_user: dict = Depends(g
                     "total_amount": amount / no_of_inspections,
                     "payment_status": "PAID",
                     "razorpay_payment_id": payment_id,
-                    "inspection_status": "SCHEDULED" if has_schedule else "UNSCHEDULED",
+                    "inspection_status": "NEW_INSPECTION",
                     "scheduled_date": schedule_data.get("inspection_date") or None,
                     "scheduled_time": schedule_data.get("inspection_time") or None,
                     "slot_number": i + 1,
