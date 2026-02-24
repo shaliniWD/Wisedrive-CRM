@@ -736,40 +736,45 @@ export default function HomeScreen() {
 
       {/* Debug Modal - Long press on "Hi, Name" to open */}
       <Modal visible={debugModalVisible} transparent animationType="slide" onRequestClose={() => setDebugModalVisible(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { maxHeight: '80%' }]}>
+        <View style={[styles.modalOverlay, { justifyContent: 'flex-end' }]}>
+          <View style={{ backgroundColor: Colors.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, minHeight: 400, maxHeight: '85%' }}>
             <View style={styles.modalHandle} />
-            <Text style={styles.modalTitle}>🔧 Debug Info</Text>
-            <Text style={{ color: Colors.textSecondary, fontSize: 12, marginBottom: 12 }}>
-              Share this with support to debug issues
+            <Text style={[styles.modalTitle, { marginBottom: 4 }]}>🔧 Debug Info</Text>
+            <Text style={{ color: Colors.textSecondary, fontSize: 12, marginBottom: 16 }}>
+              Long press captured! Share this screenshot with support.
             </Text>
             
-            <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={true}>
+            <ScrollView style={{ flex: 1, marginBottom: 16 }} showsVerticalScrollIndicator={true}>
               {debugLoading ? (
-                <ActivityIndicator size="large" color={Colors.primary} style={{ marginVertical: 20 }} />
+                <View style={{ alignItems: 'center', paddingVertical: 40 }}>
+                  <ActivityIndicator size="large" color={Colors.primary} />
+                  <Text style={{ color: Colors.textSecondary, marginTop: 12 }}>Loading debug info...</Text>
+                </View>
               ) : debugInfo ? (
-                <View style={{ backgroundColor: '#F5F5F5', borderRadius: 8, padding: 12 }}>
-                  <Text style={{ fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', fontSize: 11, color: '#333' }}>
+                <View style={{ backgroundColor: '#1a1a2e', borderRadius: 8, padding: 12 }}>
+                  <Text style={{ fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', fontSize: 10, color: '#00ff00', lineHeight: 16 }}>
                     {JSON.stringify(debugInfo, null, 2)}
                   </Text>
                 </View>
               ) : (
-                <Text style={{ color: Colors.textSecondary }}>Loading...</Text>
+                <View style={{ alignItems: 'center', paddingVertical: 40 }}>
+                  <Text style={{ color: Colors.textSecondary }}>Tap Refresh to load debug info</Text>
+                </View>
               )}
             </ScrollView>
             
-            <View style={{ flexDirection: 'row', gap: 12, marginTop: 16 }}>
+            <View style={{ flexDirection: 'row', gap: 12 }}>
               <TouchableOpacity 
-                style={[styles.closeFilterBtn, { flex: 1, backgroundColor: Colors.primary }]}
+                style={{ flex: 1, backgroundColor: Colors.primary, paddingVertical: 14, borderRadius: 10, alignItems: 'center' }}
                 onPress={fetchDebugInfo}
               >
-                <Text style={styles.closeFilterBtnText}>Refresh</Text>
+                <Text style={{ color: '#fff', fontWeight: '600' }}>Refresh</Text>
               </TouchableOpacity>
               <TouchableOpacity 
-                style={[styles.closeFilterBtn, { flex: 1, backgroundColor: Colors.textSecondary }]}
+                style={{ flex: 1, backgroundColor: '#ddd', paddingVertical: 14, borderRadius: 10, alignItems: 'center' }}
                 onPress={() => setDebugModalVisible(false)}
               >
-                <Text style={styles.closeFilterBtnText}>Close</Text>
+                <Text style={{ color: '#333', fontWeight: '600' }}>Close</Text>
               </TouchableOpacity>
             </View>
           </View>
