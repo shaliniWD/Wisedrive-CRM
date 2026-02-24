@@ -112,8 +112,8 @@ class Fast2SMSService:
         """
         Send OTP via Fast2SMS DLT API.
         
-        Uses template: "Your OTP is {#VAR#}. OTP is confidential for security reasons.
-        Please don't share this OTP with anyone. Team Wisedrive"
+        Template: "Your Wisedrive OTP to access Mechanic App is {#var#}. Valid for {#var#} minutes. 
+        Do not share it with anyone."
         
         Args:
             to_number: Phone number (with or without country code)
@@ -142,18 +142,21 @@ class Fast2SMSService:
             # Ensure we have a 10-digit number
             clean_number = clean_number[-10:]
             
+            # Build variables: OTP|validity_minutes (pipe-separated for template with 2 variables)
+            variables = f"{otp}|{self.otp_validity_minutes}"
+            
             # Build request parameters
             params = {
                 "authorization": self.api_key,
                 "route": "dlt",
                 "sender_id": self.sender_id,
                 "message": self.otp_template_id,
-                "variables_values": otp,
+                "variables_values": variables,
                 "flash": "0",
                 "numbers": clean_number
             }
             
-            logger.info(f"Sending OTP SMS to {clean_number[-4:].rjust(10, '*')}")
+            logger.info(f"Sending OTP SMS to {clean_number[-4:].rjust(10, '*')} (valid for {self.otp_validity_minutes} mins)")
             
             async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.get(self.base_url, params=params)
@@ -168,7 +171,7 @@ class Fast2SMSService:
                     await self.log_sms_request(
                         phone=to_number,
                         template_id=self.otp_template_id,
-                        variables=otp,
+                        variables=variables,
                         request_type="OTP",
                         response_status=response_status,
                         response_data=result,
