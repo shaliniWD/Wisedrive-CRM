@@ -329,6 +329,23 @@ export default function HomeScreen() {
         }
       }
 
+      // Test debug/mechanic-query endpoint
+      let mechanicQueryDebug = null;
+      if (storedToken) {
+        try {
+          const debugRes = await fetch(`${API_URL}/debug/mechanic-query`, {
+            headers: { 'Authorization': `Bearer ${storedToken}` }
+          });
+          if (debugRes.ok) {
+            mechanicQueryDebug = await debugRes.json();
+          } else {
+            mechanicQueryDebug = { http_status: debugRes.status, error: 'Endpoint may not exist yet - redeploy needed' };
+          }
+        } catch (e: any) {
+          mechanicQueryDebug = { error: e.message };
+        }
+      }
+
       // Test inspections endpoint
       let inspectionsTest = null;
       if (storedToken) {
@@ -357,6 +374,7 @@ export default function HomeScreen() {
         profile_name: storedProfile ? JSON.parse(storedProfile)?.name : 'none',
         profile_cities: storedProfile ? JSON.parse(storedProfile)?.inspection_cities : [],
         auth_test: authTest,
+        mechanic_query_debug: mechanicQueryDebug,
         inspections_test: inspectionsTest,
         timestamp: new Date().toISOString()
       });
