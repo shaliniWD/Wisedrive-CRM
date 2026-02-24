@@ -13458,7 +13458,12 @@ async def mechanic_request_otp(data: MechanicOtpRequest):
             logger.warning(f"Fast2SMS not configured. OTP for {normalized_phone}: {otp}")
     else:
         # In dev mode, use fixed OTP for testing
-        mechanic_otp_store[normalized_phone]["otp"] = "123456"
+        await store_mechanic_otp(normalized_phone, {
+            "otp": "123456",
+            "mechanic_id": user["id"],
+            "user_role": user.get("role_id"),
+            "expires_at": datetime.now(timezone.utc) + timedelta(minutes=30)
+        })
         logger.info(f"Dev mode OTP for {normalized_phone}: 123456")
     
     return {"success": True, "message": "OTP sent successfully"}
@@ -13479,7 +13484,8 @@ async def mechanic_verify_otp(data: MechanicOtpVerify):
     normalized_phone = phone
     otp = data.otp.strip()
     
-    stored = mechanic_otp_store.get(normalized_phone)
+    # Get OTP from MongoDB
+    stored = await get_mechanic_otp(normalized_phone)
     
     if not stored:
         raise HTTPException(status_code=400, detail="OTP expired or not requested")
