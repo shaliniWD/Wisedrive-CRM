@@ -586,9 +586,6 @@ export default function HomeScreen() {
                   style={[styles.reasonItem, dateFilter === option.key && styles.reasonItemSelected]}
                   onPress={() => { 
                     setDateFilter(option.key as any); 
-                    if (option.key !== 'custom') {
-                      setDateFilterModalVisible(false); 
-                    }
                   }}
                 >
                   <Ionicons name={option.icon as any} size={18} color={dateFilter === option.key ? Colors.primary : Colors.textSecondary} />
@@ -635,9 +632,8 @@ export default function HomeScreen() {
               style={styles.closeFilterBtn} 
               onPress={() => {
                 setDateFilterModalVisible(false);
-                if (dateFilter === 'custom') {
-                  fetchInspections();
-                }
+                // Fetch with current filter settings
+                fetchInspections(dateFilter, customDateFrom, customDateTo);
               }}
             >
               <Text style={styles.closeFilterBtnText}>Apply Filter</Text>
