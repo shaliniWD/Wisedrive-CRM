@@ -379,22 +379,36 @@ export default function LoginScreen() {
                 </LinearGradient>
               </TouchableOpacity>
 
-              {/* Resend & Back */}
+              {/* Resend & Change Number */}
               <View style={styles.otpActions}>
-                <TouchableOpacity onPress={handleSendOtp} activeOpacity={0.7}>
-                  <Text style={styles.resendText}>Resend OTP</Text>
+                <TouchableOpacity 
+                  onPress={handleResendOtp} 
+                  activeOpacity={0.7}
+                  disabled={isLoading}
+                >
+                  <Text style={[styles.resendText, isLoading && styles.disabledText]}>
+                    Resend OTP
+                  </Text>
                 </TouchableOpacity>
                 
                 <TouchableOpacity 
-                  onPress={() => {
-                    setStep('phone');
-                    setOtp(['', '', '', '', '', '']);
-                  }}
+                  onPress={handleChangeNumber}
                   activeOpacity={0.7}
+                  disabled={isLoading}
                 >
-                  <Text style={styles.changeNumberText}>Change Number</Text>
+                  <Text style={[styles.changeNumberText, isLoading && styles.disabledText]}>
+                    Change Number
+                  </Text>
                 </TouchableOpacity>
               </View>
+
+              {/* Debug Button on OTP Screen */}
+              <TouchableOpacity 
+                onPress={() => setShowDebugModal(true)}
+                style={styles.debugButton}
+              >
+                <Text style={styles.debugButtonText}>📋 View Debug Logs ({debugLogs.length})</Text>
+              </TouchableOpacity>
             </>
           )}
         </View>
