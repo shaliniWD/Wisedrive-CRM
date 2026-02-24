@@ -302,8 +302,13 @@ export default function HomeScreen() {
       const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://crmdev.wisedrive.com/api';
       
       // Get version info
-      const versionRes = await fetch(`${API_URL}/version`);
-      const versionData = await versionRes.json();
+      let versionData = null;
+      try {
+        const versionRes = await fetch(`${API_URL}/version`);
+        versionData = await versionRes.json();
+      } catch (e: any) {
+        versionData = { error: e.message };
+      }
       
       // Get stored token
       const AsyncStorage = require('@react-native-async-storage/async-storage').default;
@@ -317,24 +322,46 @@ export default function HomeScreen() {
           const authRes = await fetch(`${API_URL}/auth/test-auth`, {
             headers: { 'Authorization': `Bearer ${storedToken}` }
           });
-          authTest = await authRes.json();
-          authTest.status = authRes.status;
+          const authData = await authRes.json();
+          authTest = { ...authData, http_status: authRes.status };
         } catch (e: any) {
           authTest = { error: e.message };
+        }
+      }
+
+      // Test inspections endpoint
+      let inspectionsTest = null;
+      if (storedToken) {
+        try {
+          const inspRes = await fetch(`${API_URL}/mechanic/inspections`, {
+            headers: { 'Authorization': `Bearer ${storedToken}` }
+          });
+          if (inspRes.ok) {
+            const inspData = await inspRes.json();
+            inspectionsTest = { http_status: inspRes.status, count: Array.isArray(inspData) ? inspData.length : 'not array' };
+          } else {
+            const errData = await inspRes.json().catch(() => ({}));
+            inspectionsTest = { http_status: inspRes.status, error: errData.detail || 'Unknown error' };
+          }
+        } catch (e: any) {
+          inspectionsTest = { error: e.message };
         }
       }
       
       setDebugInfo({
         api_url: API_URL,
-        version: versionData,
+        version: versionData?.version || 'unknown',
+        jwt_status: versionData?.jwt_secret_status || 'unknown',
         token_present: !!storedToken,
-        token_preview: storedToken ? `${storedToken.substring(0, 30)}...` : 'NONE',
-        stored_profile: storedProfile ? JSON.parse(storedProfile) : null,
+        token_preview: storedToken ? `${storedToken.substring(0, 20)}...` : 'NONE',
+        profile_name: storedProfile ? JSON.parse(storedProfile)?.name : 'none',
+        profile_cities: storedProfile ? JSON.parse(storedProfile)?.inspection_cities : [],
         auth_test: authTest,
+        inspections_test: inspectionsTest,
         timestamp: new Date().toISOString()
       });
     } catch (e: any) {
-      setDebugInfo({ error: e.message });
+      setDebugInfo({ fatal_error: e.message, stack: e.stack });
     } finally {
       setDebugLoading(false);
     }
