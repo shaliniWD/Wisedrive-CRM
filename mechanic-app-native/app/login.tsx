@@ -56,6 +56,8 @@ export default function LoginScreen() {
   const [inputFocused, setInputFocused] = useState(false);
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
   const [showDebugModal, setShowDebugModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorModalContent, setErrorModalContent] = useState({ title: '', message: '', isAuthError: false });
   
   const otpInputs = useRef<(TextInput | null)[]>([]);
 
@@ -64,9 +66,15 @@ export default function LoginScreen() {
     setDebugLogs(prev => [...prev, `[${timestamp}] ${message}`]);
   };
 
+  // Show custom error modal
+  const showError = (title: string, message: string, isAuthError: boolean = false) => {
+    setErrorModalContent({ title, message, isAuthError });
+    setShowErrorModal(true);
+  };
+
   const handleSendOtp = async () => {
     if (phone.length < 10) {
-      Alert.alert('Error', 'Please enter a valid 10-digit phone number');
+      showError('Invalid Number', 'Please enter a valid 10-digit phone number');
       return;
     }
 
