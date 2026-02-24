@@ -285,10 +285,60 @@ export default function HomeScreen() {
   const [dateFilterModalVisible, setDateFilterModalVisible] = useState(false);
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month' | 'last_month' | 'custom'>('all');
   
+  // Debug modal state
+  const [debugModalVisible, setDebugModalVisible] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
+  const [debugLoading, setDebugLoading] = useState(false);
+  
   // Custom date range
   const [customDateFrom, setCustomDateFrom] = useState<Date>(new Date());
   const [customDateTo, setCustomDateTo] = useState<Date>(new Date());
   const [showDatePicker, setShowDatePicker] = useState<'from' | 'to' | null>(null);
+
+  // Fetch debug info
+  const fetchDebugInfo = async () => {
+    setDebugLoading(true);
+    try {
+      const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://crmdev.wisedrive.com/api';
+      
+      // Get version info
+      const versionRes = await fetch(`${API_URL}/version`);
+      const versionData = await versionRes.json();
+      
+      // Get stored token
+      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+      const storedToken = await AsyncStorage.getItem('authToken');
+      const storedProfile = await AsyncStorage.getItem('mechanicProfile');
+      
+      // Test auth endpoint if token exists
+      let authTest = null;
+      if (storedToken) {
+        try {
+          const authRes = await fetch(`${API_URL}/auth/test-auth`, {
+            headers: { 'Authorization': `Bearer ${storedToken}` }
+          });
+          authTest = await authRes.json();
+          authTest.status = authRes.status;
+        } catch (e: any) {
+          authTest = { error: e.message };
+        }
+      }
+      
+      setDebugInfo({
+        api_url: API_URL,
+        version: versionData,
+        token_present: !!storedToken,
+        token_preview: storedToken ? `${storedToken.substring(0, 30)}...` : 'NONE',
+        stored_profile: storedProfile ? JSON.parse(storedProfile) : null,
+        auth_test: authTest,
+        timestamp: new Date().toISOString()
+      });
+    } catch (e: any) {
+      setDebugInfo({ error: e.message });
+    } finally {
+      setDebugLoading(false);
+    }
+  };
 
   const DATE_FILTERS = [
     { id: 'all', label: 'All Time', icon: 'infinite-outline' },
