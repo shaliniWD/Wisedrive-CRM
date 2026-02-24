@@ -54,6 +54,7 @@ const TokenCard = ({ token, onUpdate, onTest }) => {
       case 'fast2sms': return <MessageSquare className="h-6 w-6 text-green-600" />;
       case 'twilio': return <Phone className="h-6 w-6 text-red-500" />;
       case 'razorpay': return <CreditCard className="h-6 w-6 text-indigo-600" />;
+      case 'emergent': return <Zap className="h-6 w-6 text-purple-600" />;
       default: return <Key className="h-6 w-6 text-gray-600" />;
     }
   };
