@@ -479,6 +479,7 @@ async def get_version():
         "environment": os.environ.get("ENVIRONMENT", "preview"),
         "jwt_secret_status": jwt_status,  # Important for debugging auth issues
         "recent_changes": [
+            "v2.4.1 - Added jwt_secret_status diagnostic and /auth/test-auth endpoint",
             "v2.4.0 - OTP storage moved to MongoDB (fixes intermittent validation)",
             "v2.4.0 - Employee phone number uniqueness validation",
             "v2.4.0 - Twilio balance display in Settings",
