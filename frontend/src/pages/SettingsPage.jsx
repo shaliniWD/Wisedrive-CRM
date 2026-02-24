@@ -824,6 +824,11 @@ export default function SettingsPage() {
             </div>
           </TabsContent>
 
+          {/* Cities Tab */}
+          <TabsContent value="cities">
+            <CityManagement />
+          </TabsContent>
+
           {/* Packages Tab */}
           <TabsContent value="packages">
             <InspectionPackagesPage />
