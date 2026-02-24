@@ -1,187 +1,187 @@
 <analysis>**original_problem_statement:**
-The user's initial goal was to fix a critical lead attribution issue where the Meta Ad ID was not being captured, preventing correct city mapping for leads from WhatsApp. Over the session, this expanded to include numerous feature requests and UI improvements for their custom CRM.
+The user's initial request was to fix a series of UI/UX issues and bugs within a custom CRM application. This included resolving a recurring and frustrating scroll issue in the lead activity log, testing the full Lead-to-Customer-to-Inspection flow, fixing incorrect data in dropdowns, and adding significant new features to the Inspections page.
 
-Key requests addressed include:
-- A simpler manual process for refreshing the Meta API token.
-- Fixing UI bugs in the activity log's scroll area and lead table layout.
-- Implementing drag-and-drop reordering for inspection questionnaires.
-- A series of enhancements for the Leads page, including new filters.
-- Correcting timezone displays to be dynamic based on the user's country.
-- Architecting and implementing a complex, configurable flow from Lead -> Partner -> Inspection -> Report.
-- Implementing a system to assign a Partner to a lead based on the originating Meta Ad ID.
-- Unifying the design of date filters across multiple pages.
-- A major technical debt initiative to refactor the monolithic  and  files.
-- An 8-point list of specific UI and logic fixes for the Leads page.
+The work then expanded to a major new initiative: integrating and operationalizing a separate React Native mechanic mobile app. This involved implementing a secure OTP-based login flow using Twilio for specific user roles (Mechanic, Country Head, CEO) and building the Android APK for distribution.
 
 **PRODUCT REQUIREMENTS:**
-1.  **Lead Attribution:** The CRM must reliably capture the Meta Ad ID () from Twilio webhooks.
-2.  **Ad-to-Partner Mapping:** The system must allow admins to map a specific Partner to a Meta Ad ID. When a lead arrives from that ad, it should be automatically assigned to the designated partner. If no mapping exists, it should default to a B2C partner.
-3.  **Configurable Inspection Flow:** The system must support a flexible workflow where a Partner is linked to a default Report Template, which in turn is linked to an Inspection Template and a visual Report Style. When a lead associated with a partner makes a payment, the system must use this configuration to create the correct type of inspection.
-4.  **Dynamic Timezones:** All dates and times throughout the application must be displayed in the correct timezone corresponding to the logged-in user's country (e.g., IST for India).
-5.  **UI/UX Consistency:** UI elements like filters should have a consistent design and placement across all relevant pages. The data tables should be clean, readable, and logically ordered.
-6.  **Code Scalability:** The backend and frontend codebases must be refactored from their current monolithic state into a modular, maintainable structure to support future development.
+1.  **UI/UX Stability:** All UI components, especially scrollable areas, must be robust and functional without content being cut off. The UI should be intuitive (e.g., clickable elements should be visually distinct without explicit text).
+2.  **Data Integrity:** Filters and data displays must be accurate. For example, a dropdown for a specific city should only show resources (e.g., mechanics) assigned to that city.
+3.  **Default States:** New entities should be created with a sensible default status (e.g., new inspections are New Inspection).
+4.  **Feature Enhancements (Inspections):**
+    *   Implement a payment details modal to manage and collect pending payments via Razorpay.
+    *   The payment modal must persist generated payment links and allow users to check payment status, copy, or resend the link.
+    *   Add a comprehensive Notes and Activity Log feature to track all actions related to an inspection.
+5.  **Mechanic Mobile App:**
+    *   The native app must have a secure login system.
+    *   Access must be restricted to Mechanic, Country Head, and CEO roles.
+    *   Authentication must be done via a one-time password (OTP) sent to the user's registered mobile number using Twilio SMS.
+    *   A downloadable Android APK must be generated.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The application is a full-stack CRM with a FastAPI backend and a React frontend.
-- **Core Business Logic:** The critical lead attribution, ad-to-partner mapping, and configurable inspection flow are all fully implemented and have been tested.
-- **Timezone Management:** A robust solution using  is in place, which correctly converts UTC timestamps from the database to the user's local timezone, determined dynamically upon login.
-- **UI Components:** Several UI elements have been improved. A unified date filter component has been created and applied to the Leads, Customers, and Ads Management pages.
-- **Refactoring (In Progress):**
-    - **Backend:** Skeleton  files have been created in  for features like auth, leads, partners, etc. However, the logic still resides in the monolithic .
-    - **Frontend:**  has been partially refactored. The  component was successfully extracted. Skeleton files for other components (, , ) and a custom hook () have been created but are not yet integrated.
-- **Recent Fixes:** Code to address an 8-point list of UI/logic issues on the Leads page has been written but is untested.
+The web-based CRM application is stable. The critical, long-standing scroll bug on the Leads page activity log has been definitively fixed. The Inspections page has been significantly enhanced with a new payment management modal (integrated with Razorpay), a full Notes & Activity log feature, and several UI/UX improvements (column order, default filters).
+
+The backend has been updated to support these features, including new endpoints for inspection notes/activities and a robust OTP-based authentication flow for the mechanic app using Twilio for SMS. The React Native mechanic app project has been located, and its authentication flow has been connected to the main backend. An Android APK build has been initiated via Expo Application Services (EAS) and is currently in progress.
 
 **Last working item**:
-- **Last item agent was working:** Implementing a list of 8 specific UI and logic fixes for the Leads page as requested by the user in message #459. This involved changing stat calculations, moving filters, reordering table columns, removing redundant information, and adjusting column widths.
+- **Last item agent was working:** Generating a downloadable Android Application Package (APK) for the React Native mechanic app located at . The agent successfully logged into Expo, located the correct project, and initiated the build process using the command .
 - **Status:** IN PROGRESS
 - **Agent Testing Done:** N
-- **Which testing method agent to use?** Frontend testing agent. The agent should log in, navigate to the  page, and use the  tool to verify all 8 changes are working as expected without regressions.
+- **Which testing method agent to use?** Manual testing. Once the build is complete, the agent must provide the download link. The next step would be for the user (or agent) to download and install the APK on an Android device to test the login flow.
 - **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
-- **Issue 1: Test and Verify 8 Leads Page Fixes (P0)**
-    - **Description:** The agent has written code to address 8 specific user requests for the Leads page but has not tested if the fixes work or introduced any new bugs.
-    - **Next debug checklist:**
-        1.  Log into the app and navigate to the  page.
-        2.  Take a screenshot and verify the following 8 points:
-            - The date filter is now positioned above the stat cards.
-            - The stat card counts (e.g., New Leads) update correctly when the date filter is changed.
-            - The Partner details have been removed from the main table (under the City).
-            - The Source column no longer shows the full .
-            - The Notes column has been moved to the end, next to Payment.
-            - The gap between Lead Details and City columns is reduced.
-            - The Assigned to column content no longer wraps to a second line.
-            - The City dropdown filtering logic for different user roles needs to be checked (though implementation for this part wasn't explicitly shown, it was part of the request).
-    - **Why fix this issue and what will be achieved with the fix?** To complete the user's most recent and explicit list of required improvements, enhancing the usability and layout of the most critical page in the application.
-    - **Status:** IN PROGRESS
-    - **Is recurring issue?** N
-    - **Should Test frontend/backend/both after fix?** Frontend.
-    - **Blocked on other issue:** None.
+There are no pending high-priority issues. All user-reported bugs have been addressed.
 
 **In progress Task List**:
-- **Task 1: Continue  Refactoring (P1)**
-    - **Where to resume:** Integrate the existing skeleton components (, , ) and the custom hook () into  to replace the inline logic.
-    - **What will be achieved with this?** This will significantly reduce the size of  (currently >3,200 lines), making it more readable, maintainable, and easier to debug.
+- **Task 1: Provide Mechanic App APK (P0)**
+    - **Where to resume:** The EAS build was initiated and is currently IN_PROGRESS. The agent needs to monitor the build status using  or a similar command. Once the build is finished, retrieve the download URL for the generated APK.
+    - **What will be achieved with this?** Fulfills the user's direct request for a distributable version of the mechanic mobile app.
+    - **Status:** IN PROGRESS
+    - **Should Test frontend/backend/both after fix?** Frontend (Mobile App).
+    - **Blocked on something:** The EAS build process completion.
+
+- **Task 2: Test Mechanic App Login Flow (P1)**
+    - **Where to resume:** After the APK is available, perform a test of the login flow. This involves entering the phone number of a user with a Mechanic, Country Head, or CEO role, receiving the OTP via Twilio, and successfully logging in.
+    - **What will be achieved with this?** Verifies that the new role-based OTP authentication system is working end-to-end.
+    * **Status:** NOT STARTED
+    * **Should Test frontend/backend/both after fix?** Both (Mobile App Frontend and Main Backend).
+    * **Blocked on something:** Task 1: Provide Mechanic App APK.
+
+- **Task 3: Continue  Refactoring (P2)**
+    - **Where to resume:** Integrate the existing  component into the side-sheet in . After that, begin migrating state management logic into the  custom hook.
+    - **What will be achieved with this?** Further modularize and reduce the complexity of the massive  file, improving maintainability.
     - **Status:** IN PROGRESS
     - **Should Test frontend/backend/both after fix?** Frontend.
-    - **Blocked on something:**  should be completed first to ensure a stable baseline.
+    - **Blocked on something:** None.
 
-- **Task 2: Begin  Refactoring (P2)**
-    - **Where to resume:** Start migrating endpoints from the monolithic  file into the new modular route files located in . A good starting point would be the  routes, as they are relatively self-contained.
-    - **What will be achieved with this?** This will break down the massive 13,000+ line  file into manageable, feature-specific modules, which is critical for the long-term health and scalability of the backend.
+- **Task 4: Begin  Refactoring (P2)**
+    - **Where to resume:** The modular  file is complete. The next step is to modify  to remove the existing auth-related endpoints and instead import and include the new auth router using .
+    - **What will be achieved with this?** This will be the first concrete step in breaking down the 13,000+ line  file, setting the pattern for migrating other modules.
     - **Status:** IN PROGRESS
     - **Should Test frontend/backend/both after fix?** Backend.
     - **Blocked on something:** None.
 
 **Upcoming and Future Tasks**
 **Upcoming Tasks:**
--   **P1: User Guidance on a Real Ad Test:** After current fixes are stable, guide the user to test the full attribution flow (Meta Ad -> WhatsApp -> Lead Creation -> Partner Assignment) to build confidence.
+-   **P1: Full Mechanic App Workflow Test:** After login is verified, test the core mechanic workflow (viewing assigned inspections, updating status, etc.).
 
 **Future Tasks:**
 -   **CRM:**
     -   Add PDF export and Share via WhatsApp functionality for inspection reports.
     -   Implement a customer reminders feature.
 -   **Mechanic Mobile App:**
-    -   Fix the unreliable APK build process.
+    -   Address the unreliable APK build process if the current build fails again.
     -   Implement the full questionnaire inspection flow.
     -   Add a Reject Reason modal for mechanics.
 
 **Completed work in this session**
--   **Dynamic Timezone Implementation:** Fixed all date/time displays to use the user's local timezone (e.g., IST) based on their country selected at login.
--   **Ad-to-Partner Mapping (Option C):** Successfully implemented and tested the ability to assign a Partner to a specific Meta Ad, which then automatically assigns that Partner to new leads from that ad.
--   **Partner-to-Report Flow (Option B):** The backend payment logic was updated to use the  set on a Partner, completing the configurable inspection flow.
--   **UI/Filter Unification:** Created a consistent date filter design and applied it across the Leads, Customers, and Ads Management pages. Added new City and Ad Status filters to the Ad Performance tab.
--   **Refactoring Initiated:**
-    -   **Frontend:** Created skeleton files for  componentization and successfully extracted the  component.
-    -   **Backend:** Created the directory structure and empty  files for the  refactoring.
--   **Leads Page Bug Fixes:** Implemented (but not yet tested) a list of 8 specific UI/logic fixes for the Leads Page.
+- **Activity Log Scroll Fix:** Definitively fixed the recurring UI bug on the Leads and Inspections pages where the activity log content was cut off or had a large empty gap. The final fix involved using a proper flexbox and  layout pattern.
+- **Lead -> Customer -> Inspection Flow Test:** Used the testing agent to perform a comprehensive end-to-end test, which uncovered and fixed a MongoDB ObjectId serialization bug in the customer creation endpoint.
+- **Mechanic Filter Bug Fix:** Fixed a bug on the Inspections page where the Assign Mechanic dropdown was incorrectly showing mechanics with no city assignments for all cities.
+- **Inspections Page Payment UI Enhancement:**
+    - Replaced the detailed payment status with a simple, clickable Pending or Fully Paid badge.
+    - Created a new modal to show detailed payment breakdowns (Total, Paid, Pending).
+    - Integrated Razorpay to generate payment links for pending amounts from within the new modal.
+- **Inspections Page UX Follow-up:**
+    - Removed the Click for details text and used hover effects for better UX.
+    - Ensured new inspections default to New Inspection status.
+    - Enhanced the payment modal to show previously generated links with options to check status, copy, or resend.
+- **Inspections Page Notes & Activity Log:** Implemented a full-featured Notes and Activity Log feature within a side-sheet on the Inspections page, mirroring the functionality of the Leads page.
+- **Mechanic App Authentication:**
+    - Implemented backend endpoints for OTP-based login (, ).
+    - Integrated Twilio to send OTPs via SMS.
+    - Restricted login access to Mechanic, Country Head, and CEO roles.
+    - Connected the React Native app's frontend to these new backend endpoints.
+- **Minor UI Fixes:**
+    - Set the default date filter on the Inspections page to This Month.
+    - Moved the Notes column to the far right of the inspections table.
 
 **Earlier issues found/mentioned but not fixed**
--   **Issue 1: Unreliable APK Build Process for Mechanic App:** This is a recurring blocker for any mobile app development and has not been addressed.
--   **Issue 2: City Filter Logic by Role:** The user requested that the City dropdown on the Leads page be filtered based on the user's role (Country Manager sees all cities in their country, CEO sees all). The agent acknowledged this but the implementation was part of the last batch of untested changes and needs explicit verification.
+-   **Issue 1: Unreliable APK Build Process for Mechanic App:** This was a known issue. An attempt to build the APK is currently in progress. If it fails, this issue will become active again.
 
 **Known issue recurrence from previous fork**
--   None in this session.
+  - The Activity Log scroll issue was a major recurring problem from the previous fork, which has now been definitively resolved.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **FastAPI APIRouter:** The strategy for refactoring the backend by modularizing endpoints.
--   **React Component Extraction & Custom Hooks:** The strategy for refactoring the frontend by breaking down large pages into smaller, reusable pieces.
--   **date-fns-tz:** The library used for robust timezone handling on the frontend.
--   **localStorage:** Used to persist user data (specifically ) across sessions for consistent timezone application.
+-   **Complex CSS Layout:** Solved a difficult flexbox/scrolling issue in Radix UI/Tailwind by creating a stable layout pattern ( parent,  child ) that can be reused.
+-   **Stateful Modal Logic:** Implemented a modal that changes its UI based on persistent data (i.e., whether a payment link has been generated for an inspection) and allows for subsequent actions (check status, resend).
+-   **OTP Authentication:** Implemented a secure, role-based login flow using a one-time password sent via Twilio SMS.
+-   **Expo Application Services (EAS):** Used the EAS CLI to trigger a remote build of a React Native application into a downloadable Android APK.
 
 **key DB schema**
--   ****: Now includes optional  and  fields to link an ad directly to a partner.
--   ****: Now includes an optional  to define the default inspection flow for that partner.
+-   ****: Schema implicitly updated to store , , and an  array.
+-   ****: The  field is now used to grant access to the mechanic app.
 
 **changes in tech stack**
--   **Added frontend dependency:**  for timezone conversions.
+-   None. The existing stack (FastAPI, React, MongoDB, Twilio, Expo) was extended.
 
 **All files of reference**
--    (Heavily Modified, target for refactoring)
--    (Heavily Modified, target for refactoring)
+-    (Heavily Modified)
+-    (Heavily Modified)
+-    (Modified for final scroll fix)
 -    (Modified)
+-    (Directory used for APK build)
 -    (Modified)
--    (Modified)
--    (Modified)
--    (New directory with skeleton files)
--    (New directory with refactored component and skeletons)
--    (New file)
 
 **Areas that need refactoring**:
--   ** (P0):** Critically oversized at over 13,000 lines. The plan to break it into  files is in place and must be executed.
--   ** (P0):** Still over 3,200 lines despite initial refactoring. The extraction of remaining components (, , ) and logic into the  hook is the next step.
+-   ** (P1):** Still critically oversized. The plan to migrate auth and other modules into their own files needs to be executed.
+-   ** (P1):** While the scroll bug is fixed, the file is still very large and should be broken down further by migrating logic to the  hook.
 
 **key api endpoints**
--   : Logic updated to use  to assign a  to new leads.
--   : Payment handling logic updated to use the  as the primary method for selecting an inspection template (Option B).
--   , : Backend models and functions updated to support .
--   , : Backend models and functions updated to support .
+-   : Adds a note to an inspection.
+-   : Retrieves the activity log for an inspection.
+-   : Creates a Razorpay payment link.
+-   : Checks the status of a Razorpay payment.
+-   : Sends a login OTP via SMS to users with valid roles.
+-   : Verifies the OTP and returns a JWT for the mechanic app.
 
 **Critical Info for New Agent**
--   **Your immediate task is to test the 8 UI/logic fixes for the Leads page.** The code for these fixes was just written and is completely untested. Verify each of the 8 points from user message #459 carefully before proceeding.
--   **Refactoring is the next major priority.** Once the Leads page fixes are verified, continue the work of breaking down  and . The user has approved this and is expecting progress.
--   **The core business logic is complex but stable.** The flows for lead attribution, partner assignment, and inspection creation have been meticulously built. Be cautious not to introduce regressions while refactoring or making new changes.
+-   **The immediate priority is the APK build.** The user is waiting for the download link. Your first action should be to check the status of the EAS build.
+-   **To check build status:** Use  from the  directory.
+-   If the build is complete, find the artifacts.buildUrl in the JSON output and provide it to the user.
+-   If the build has failed, you will need to investigate the logs and address the Unreliable APK Build Process issue.
+-   Once the APK is delivered, the next logical step is to test the full login flow on a device.
 
 **documents and test reports created in this job**
--   /app/test_reports/iteration_67.json
+-   
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** Requests implementation of Option C to link ads to partners. (COMPLETED)
-2.  **User:** Asks for  and  to be refactored due to their large size. (IN PROGRESS)
-3.  **User:** Asks for  to be imported into  and to continue backend refactoring. (COMPLETED)
-4.  **User:** Reports inconsistent date filter designs and asks for them to be unified. Also requests new City and Ad Status filters on the Ad Performance tab. (COMPLETED)
-5.  **User:** Provides a list of 8 specific UI and logic fixes for the Leads page. (IN PROGRESS - code written, needs testing)
-6.  **User:** (from handoff) Asks to fix table column symmetry and activity log scroll height. (COMPLETED)
-7.  **User:** (from handoff) Reports that time in the CRM is in GMT and should be IST. (COMPLETED)
-8.  **User:** (from handoff) Asks for timezone to be dynamic based on the user's login country and clarification on the lead-to-report flow. (COMPLETED)
-9.  **User:** (from handoff) Approves implementing both a default report template on the Partner model and the ability to link it in the UI. (COMPLETED)
-10. **User:** (from handoff) Asks how a lead gets connected to a partner in the frontend. (COMPLETED - Agent explained and showed the UI).
+1.  **User:** Requests Notes & Activity Log for Inspections page. (COMPLETED)
+2.  **User:** Requests UI fixes (move Notes button, default filter to This Month) and to start on the mechanic app OTP login. (COMPLETED)
+3.  **User:** Asks for the mechanic app APK download link. (IN PROGRESS)
+4.  **User:** Clarifies that a React Native app already exists and should be used to build the APK. (AGENT ACTIONED)
+5.  **User:** Asks for the APK status (Apk ?). (PENDING - Build is in progress).
 
 **Project Health Check:**
--   **Broken:**
-    -   **Mechanic App APK Build:** The  process remains unreliable, blocking all mobile app development.
+-   **Broken:** None.
+-   **In Progress:**
+    -   **Mechanic App APK Build:** An EAS build has been started and is running. Its status is currently unknown.
 -   **Mocked:**
     -   None.
 
 **3rd Party Integrations**
--   **Twilio:** Handles incoming WhatsApp messages. (Active)
--   **Meta (Facebook) Marketing API:** For fetching ad data and authentication. (Active via guided manual token refresh).
--   **date-fns-tz:** New frontend dependency for timezone management.
--   **Expo Application Services (EAS):** For building the React Native app. (Inactive/Broken)
+-   **Twilio:** Used for WhatsApp messages and now for sending login OTPs via SMS. (Active)
+-   **Meta (Facebook) Marketing API:** For ad data. (Active)
+-   **Razorpay:** For creating payment links. (Active)
+-   **Google Maps Places API:** For address autocomplete. (Active)
+-   **Expo Application Services (EAS):** Actively being used to build the React Native APK. The build is in progress.
 
 **Testing status**
--   **Testing agent used after significant changes:** YES (used to test the Ad-to-Partner mapping implementation).
+-   **Testing agent used after significant changes:** YES (for the Lead -> Customer -> Inspection flow).
 -   **Troubleshoot agent used after agent stuck in loop:** NO
--   **Test files created:** None.
--   **Known regressions:** None known, but the last batch of 8 untested UI changes on  is high-risk.
+-   **Test files created:**
+    - 
+-   **Known regressions:** None.
 
 **Credentials to test flow:**
--   **CRM Admin Login:**  /  (Select India from the country dropdown on login).
+-   **CRM Admin Login:**  /  (Select India on login).
+-   **Sales Executive Login:**  /  (Select India on login).
+-   **Mechanic Login:** Use the phone number of a user with the 'mechanic' role from the HR module to test the OTP flow in the mobile app.
 
 **What agent forgot to execute**
--   The agent has written code for all 8 requested fixes, but one point needs special attention during testing: *#7. In leads tab, in city drop down show only cities assigned to the user in leads management tabs. For country Manager show all cities in that country and CEO can show all cities*. The implementation for this role-based filtering was not explicitly detailed, so it must be thoroughly verified.</analysis>
+-   The agent initially forgot about the existence of the  project and assumed the web app at  was the only one. However, the agent corrected its course after the user's clarification.</analysis>
