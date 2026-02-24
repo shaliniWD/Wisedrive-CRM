@@ -154,7 +154,9 @@ const TokenCard = ({ token, onUpdate, onTest }) => {
             {token.extra.wallet_balance && (
               <div className="flex items-center gap-1.5 text-green-600">
                 <Wallet className="h-4 w-4" />
-                <span className="font-medium">{token.extra.wallet_balance}</span>
+                <span className="font-medium">
+                  {token.id === 'fast2sms' ? `₹${token.extra.wallet_balance}` : token.extra.wallet_balance}
+                </span>
               </div>
             )}
             {token.extra.sms_count && (
