@@ -13341,7 +13341,7 @@ async def mechanic_verify_otp(data: MechanicOtpVerify):
 
 @api_router.get("/mechanic/inspections")
 async def get_mechanic_inspections(
-    date: Optional[str] = None,
+    date_filter: Optional[str] = None,  # 'today', 'week', 'month', 'last_month', 'all'
     city: Optional[str] = None,
     status: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
@@ -13350,35 +13350,66 @@ async def get_mechanic_inspections(
     mechanic_id = current_user["id"]
     mechanic_cities = current_user.get("inspection_cities", [])
     
+    logger.info(f"Fetching inspections for mechanic: {mechanic_id}, cities: {mechanic_cities}")
+    
     # Base query: inspections that are either:
-    # 1. Assigned to this mechanic
-    # 2. Unassigned but in mechanic's cities (NEW status only)
+    # 1. Assigned to this mechanic (any status)
+    # 2. Unassigned but in mechanic's cities (NEW_INSPECTION or ASSIGNED_TO_MECHANIC status)
     query = {
         "$or": [
             {"mechanic_id": mechanic_id},
             {
-                "mechanic_id": None,
-                "city": {"$in": [c.lower() for c in mechanic_cities] + mechanic_cities},
-                "inspection_status": "NEW"
+                "mechanic_id": {"$in": [None, ""]},
+                "city": {"$in": [c.lower() for c in mechanic_cities] + mechanic_cities + [c.upper() for c in mechanic_cities]},
+                "inspection_status": {"$in": ["NEW_INSPECTION", "ASSIGNED_TO_MECHANIC"]}
             }
         ]
     }
     
-    # Filter by date
-    if date:
-        query["scheduled_date"] = {"$regex": f"^{date}"}
+    # Date filter
+    if date_filter:
+        today = datetime.now(timezone.utc).date()
+        if date_filter == 'today':
+            query["scheduled_date"] = {"$regex": f"^{today.isoformat()}"}
+        elif date_filter == 'week':
+            week_start = today - timedelta(days=today.weekday())
+            week_end = week_start + timedelta(days=6)
+            query["$and"] = query.get("$and", []) + [
+                {"scheduled_date": {"$gte": week_start.isoformat()}},
+                {"scheduled_date": {"$lte": (week_end + timedelta(days=1)).isoformat()}}
+            ]
+        elif date_filter == 'month':
+            month_start = today.replace(day=1)
+            if today.month == 12:
+                month_end = today.replace(year=today.year + 1, month=1, day=1)
+            else:
+                month_end = today.replace(month=today.month + 1, day=1)
+            query["$and"] = query.get("$and", []) + [
+                {"scheduled_date": {"$gte": month_start.isoformat()}},
+                {"scheduled_date": {"$lt": month_end.isoformat()}}
+            ]
+        elif date_filter == 'last_month':
+            if today.month == 1:
+                last_month_start = today.replace(year=today.year - 1, month=12, day=1)
+            else:
+                last_month_start = today.replace(month=today.month - 1, day=1)
+            month_start = today.replace(day=1)
+            query["$and"] = query.get("$and", []) + [
+                {"scheduled_date": {"$gte": last_month_start.isoformat()}},
+                {"scheduled_date": {"$lt": month_start.isoformat()}}
+            ]
     
     # Filter by city
     if city:
-        city_lower = city.lower()
         query["city"] = {"$regex": f"^{city}$", "$options": "i"}
     
     # Filter by status (map mechanic app status to CRM status)
     status_map = {
-        "NEW": ["NEW", "PENDING"],
-        "ACCEPTED": ["ACCEPTED", "IN_PROGRESS"],
-        "COMPLETED": ["COMPLETED"],
-        "REJECTED": ["REJECTED", "CANCELLED"]
+        "NEW": ["NEW_INSPECTION", "ASSIGNED_TO_MECHANIC"],
+        "ACCEPTED": ["INSPECTION_CONFIRMED", "INSPECTION_STARTED"],
+        "IN_PROGRESS": ["INSPECTION_STARTED"],
+        "COMPLETED": ["INSPECTION_COMPLETED"],
+        "REJECTED": ["INSPECTION_CANCELLED", "INSPECTION_REJECTED"]
     }
     
     if status:
@@ -13386,7 +13417,7 @@ async def get_mechanic_inspections(
         if "$or" in query:
             # Combine with existing $or
             original_or = query["$or"]
-            query["$and"] = [
+            query["$and"] = query.get("$and", []) + [
                 {"$or": original_or},
                 {"inspection_status": {"$in": crm_statuses}}
             ]
@@ -13394,19 +13425,25 @@ async def get_mechanic_inspections(
         else:
             query["inspection_status"] = {"$in": crm_statuses}
     
+    logger.info(f"Mechanic inspections query: {query}")
+    
     inspections = await db.inspections.find(query, {"_id": 0}).sort("scheduled_date", -1).to_list(100)
+    
+    logger.info(f"Found {len(inspections)} inspections for mechanic {mechanic_id}")
     
     # Transform to mechanic app format
     result = []
     for insp in inspections:
         # Map CRM status to mechanic app status
-        crm_status = insp.get("inspection_status", "NEW")
-        if crm_status in ["COMPLETED"]:
+        crm_status = insp.get("inspection_status", "NEW_INSPECTION")
+        if crm_status in ["INSPECTION_COMPLETED"]:
             app_status = "COMPLETED"
-        elif crm_status in ["REJECTED", "CANCELLED"]:
+        elif crm_status in ["INSPECTION_CANCELLED", "INSPECTION_REJECTED"]:
             app_status = "REJECTED"
-        elif crm_status in ["ACCEPTED", "IN_PROGRESS"]:
+        elif crm_status in ["INSPECTION_CONFIRMED", "INSPECTION_STARTED"]:
             app_status = "ACCEPTED"
+        elif crm_status in ["ASSIGNED_TO_MECHANIC"]:
+            app_status = "NEW"  # Show as new until mechanic accepts
         else:
             app_status = "NEW"
         
