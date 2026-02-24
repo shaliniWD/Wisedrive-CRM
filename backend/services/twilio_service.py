@@ -308,6 +308,60 @@ Team WiseDrive"""
         Used by chatbot service.
         """
         return await self.send_whatsapp_message(to_number, message)
+    
+    async def send_sms(self, to_number: str, message: str) -> dict:
+        """
+        Send an SMS message to a phone number.
+        Used for OTP verification.
+        
+        Args:
+            to_number: Phone number in E.164 format (e.g., +919876543210)
+            message: Message text to send
+            
+        Returns:
+            dict with message_sid and status
+        """
+        if not self.client:
+            logger.error("Twilio client not initialized")
+            return {"success": False, "error": "Twilio not configured"}
+        
+        try:
+            # Format number for SMS
+            to_formatted = to_number if to_number.startswith("+") else f"+{to_number}"
+            
+            # Get the SMS-capable number from env or use default
+            from_number = os.environ.get("TWILIO_SMS_NUMBER", os.environ.get("TWILIO_WHATSAPP_NUMBER", "+14155238886"))
+            
+            msg = self.client.messages.create(
+                body=message,
+                from_=from_number,
+                to=to_formatted
+            )
+            
+            logger.info(f"SMS sent to {to_number}, SID: {msg.sid}")
+            return {
+                "success": True,
+                "message_sid": msg.sid,
+                "status": msg.status
+            }
+            
+        except Exception as e:
+            logger.error(f"Failed to send SMS to {to_number}: {e}")
+            return {"success": False, "error": str(e)}
+    
+    async def send_otp_sms(self, to_number: str, otp: str) -> dict:
+        """
+        Send OTP via SMS for mechanic app login.
+        
+        Args:
+            to_number: Phone number in E.164 format
+            otp: The 6-digit OTP code
+            
+        Returns:
+            dict with message_sid and status
+        """
+        message = f"Your WiseDrive verification code is: {otp}\n\nThis code expires in 10 minutes. Do not share this code with anyone."
+        return await self.send_sms(to_number, message)
 
 
 # Singleton instance
