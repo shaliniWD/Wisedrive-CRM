@@ -14644,6 +14644,55 @@ async def get_sms_wallet_balance():
     return result
 
 
+@api_router.get("/twilio/balance")
+async def get_twilio_account_balance():
+    """Get Twilio account balance"""
+    import httpx
+    
+    account_sid = os.environ.get("TWILIO_ACCOUNT_SID")
+    auth_token = os.environ.get("TWILIO_AUTH_TOKEN")
+    
+    if not account_sid or not auth_token:
+        return {
+            "success": False,
+            "error": "Twilio not configured",
+            "balance": None,
+            "currency": None
+        }
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"https://api.twilio.com/2010-04-01/Accounts/{account_sid}/Balance.json",
+                auth=(account_sid, auth_token),
+                timeout=30.0
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                return {
+                    "success": True,
+                    "balance": float(data.get("balance", 0)),
+                    "currency": data.get("currency", "USD"),
+                    "account_sid": account_sid[:10] + "..." if account_sid else None
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": f"Twilio API error: {response.status_code}",
+                    "balance": None,
+                    "currency": None
+                }
+    except Exception as e:
+        logger.error(f"Failed to get Twilio balance: {str(e)}")
+        return {
+            "success": False,
+            "error": str(e),
+            "balance": None,
+            "currency": None
+        }
+
+
 @api_router.get("/sms/stats")
 async def get_sms_stats():
     """Get SMS statistics summary"""
