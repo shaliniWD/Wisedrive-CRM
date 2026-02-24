@@ -13204,20 +13204,20 @@ async def mechanic_request_otp(data: MechanicOtpRequest):
         "expires_at": datetime.now(timezone.utc) + timedelta(minutes=10)
     }
     
-    # Send OTP via Twilio SMS in production
+    # Send OTP via Fast2SMS in production
     if not dev_mode:
-        from services.twilio_service import get_twilio_service
-        twilio = get_twilio_service()
-        if twilio.is_configured():
-            sms_result = await twilio.send_otp_sms(user_mobile, otp)
+        from services.fast2sms_service import get_fast2sms_service
+        fast2sms = get_fast2sms_service()
+        if fast2sms.is_configured():
+            sms_result = await fast2sms.send_otp_sms(user_mobile, otp)
             if not sms_result.get("success"):
-                logger.error(f"Failed to send OTP SMS: {sms_result.get('error')}")
-                # Fall back to storing OTP for testing
+                logger.error(f"Failed to send OTP SMS via Fast2SMS: {sms_result.get('error')}")
+                # Fall back to logging OTP for testing
                 logger.info(f"OTP for {phone}: {otp}")
             else:
-                logger.info(f"OTP SMS sent to {user_mobile}")
+                logger.info(f"OTP SMS sent to {user_mobile} via Fast2SMS")
         else:
-            logger.warning(f"Twilio not configured. OTP for {phone}: {otp}")
+            logger.warning(f"Fast2SMS not configured. OTP for {phone}: {otp}")
     else:
         # In dev mode, use fixed OTP for testing
         mechanic_otp_store[phone]["otp"] = "123456"
