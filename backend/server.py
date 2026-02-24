@@ -13583,8 +13583,9 @@ async def get_mechanic_inspections(
     """Get inspections for mechanic app - shows inspections assigned to or available for the mechanic"""
     mechanic_id = current_user["id"]
     mechanic_cities = current_user.get("inspection_cities", [])
+    mechanic_name = current_user.get("name", "")
     
-    logger.info(f"Fetching inspections for mechanic: {mechanic_id}, cities: {mechanic_cities}")
+    logger.info(f"Fetching inspections for mechanic: {mechanic_id} ({mechanic_name}), cities: {mechanic_cities}")
     
     # Resolve mechanic cities to include aliases
     all_city_variants = []
@@ -13611,14 +13612,17 @@ async def get_mechanic_inspections(
     logger.info(f"Resolved city variants for mechanic: {all_city_variants}")
     
     # Base query: inspections that are either:
-    # 1. Assigned to this mechanic (any status)
-    # 2. Unassigned but in mechanic's cities (NEW_INSPECTION or ASSIGNED_TO_MECHANIC status)
+    # 1. Assigned to this mechanic by ID (any status)
+    # 2. Assigned to this mechanic by name (fallback for older records)
+    # 3. In the ASSIGNED_TO_MECHANIC status with matching mechanic_id
+    # 4. Unassigned but in mechanic's cities (NEW_INSPECTION status)
     query = {
         "$or": [
             {"mechanic_id": mechanic_id},
+            {"mechanic_name": {"$regex": f"^{mechanic_name}$", "$options": "i"}} if mechanic_name else {"mechanic_id": mechanic_id},
             {
                 "mechanic_id": {"$in": [None, ""]},
-                "city": {"$in": all_city_variants},
+                "city": {"$regex": f"^({'|'.join(all_city_variants)})$", "$options": "i"} if all_city_variants else {"$exists": True},
                 "inspection_status": {"$in": ["NEW_INSPECTION", "ASSIGNED_TO_MECHANIC"]}
             }
         ]
