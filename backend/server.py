@@ -13146,7 +13146,16 @@ class InspectionProgressUpdate(BaseModel):
 async def mechanic_request_otp(data: MechanicOtpRequest):
     """Request OTP for mechanic app login via phone number.
     Only mechanics, country heads, and CEOs can access the mechanic app."""
-    phone = data.phone.strip().replace(" ", "")
+    # Normalize phone number - remove spaces, dashes, and ensure consistent format
+    phone = data.phone.strip().replace(" ", "").replace("-", "")
+    if not phone.startswith("+"):
+        phone = "+91" + phone[-10:]
+    else:
+        # Ensure +91 format for Indian numbers
+        phone = "+91" + phone[-10:]
+    
+    # Store the normalized phone for lookup
+    normalized_phone = phone
     
     # Dev mode test phone numbers (bypass mechanic check)
     dev_mode = os.environ.get("MECHANIC_APP_DEV_MODE", "true").lower() == "true"
