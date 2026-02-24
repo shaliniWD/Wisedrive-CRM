@@ -200,7 +200,7 @@ export default function LoginScreen() {
         showError('Connection Error', 'No response from server. Please check your internet connection.');
       } else {
         addLog(`Verify setup error: ${error.message}`);
-        Alert.alert('Error', `Verification failed: ${error.message}`);
+        showError('Error', `Verification failed: ${error.message}`);
       }
     } finally {
       setIsLoading(false);
