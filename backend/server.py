@@ -13228,7 +13228,7 @@ async def mechanic_request_otp(data: MechanicOtpRequest):
 
 @api_router.post("/auth/verify-otp")
 async def mechanic_verify_otp(data: MechanicOtpVerify):
-    """Verify OTP and return auth token for mechanic"""
+    """Verify OTP and return auth token for mechanic app users (mechanics, country heads, CEOs)"""
     phone = data.phone.strip().replace(" ", "")
     otp = data.otp.strip()
     
@@ -13264,6 +13264,7 @@ async def mechanic_verify_otp(data: MechanicOtpVerify):
             "email": "dev.mechanic@wisedrive.com",
             "city": "Bangalore",
             "inspection_cities": ["Bangalore", "Hyderabad", "Chennai"],
+            "role": "mechanic",
             "active": True
         }
         
@@ -13273,35 +13274,42 @@ async def mechanic_verify_otp(data: MechanicOtpVerify):
             "mechanicProfile": mechanic_profile
         }
     
-    # Get mechanic profile from database
-    mechanic = await db.users.find_one({"id": stored["mechanic_id"]}, {"_id": 0, "hashed_password": 0})
-    if not mechanic:
-        raise HTTPException(status_code=404, detail="Mechanic not found")
+    # Get user profile from database
+    user = await db.users.find_one({"id": stored["mechanic_id"]}, {"_id": 0, "hashed_password": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Get role info
+    role = await db.roles.find_one({"id": user.get("role_id")}, {"_id": 0})
+    role_code = role.get("code", "MECHANIC") if role else "MECHANIC"
     
     # Clear OTP
     del mechanic_otp_store[phone]
     
     # Get inspection cities
-    inspection_cities = mechanic.get("inspection_cities", [])
+    inspection_cities = user.get("inspection_cities", [])
     
     # Create token
     access_token = create_access_token({
-        "sub": mechanic["id"],
-        "email": mechanic.get("email", ""),
-        "is_mechanic_app": True
+        "sub": user["id"],
+        "email": user.get("email", ""),
+        "is_mechanic_app": True,
+        "role": role_code
     })
     
     mechanic_profile = {
-        "id": mechanic["id"],
-        "name": mechanic.get("name", ""),
+        "id": user["id"],
+        "name": user.get("name", ""),
         "phone": phone,
-        "email": mechanic.get("email", ""),
+        "email": user.get("email", ""),
         "city": inspection_cities[0] if inspection_cities else "",
         "inspection_cities": inspection_cities,
-        "active": mechanic.get("is_active", True)
+        "role": role_code.lower(),
+        "active": user.get("is_active", True)
     }
     
     return {
+        "success": True,
         "token": access_token,
         "mechanicProfile": mechanic_profile
     }
