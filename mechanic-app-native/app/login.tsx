@@ -560,4 +560,83 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     fontWeight: '500',
   },
+
+  // Debug styles
+  debugButton: {
+    marginTop: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: Colors.surface,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: 'center',
+  },
+  debugButtonText: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    fontWeight: '500',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: Colors.white,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 40,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+  },
+  apiUrlText: {
+    fontSize: 12,
+    color: Colors.primary,
+    marginBottom: 12,
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+  },
+  logsContainer: {
+    backgroundColor: '#1a1a2e',
+    borderRadius: 8,
+    padding: 12,
+    maxHeight: 300,
+  },
+  noLogsText: {
+    color: '#888',
+    fontSize: 13,
+    textAlign: 'center',
+    paddingVertical: 20,
+  },
+  logText: {
+    color: '#00ff00',
+    fontSize: 11,
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    marginBottom: 4,
+    lineHeight: 16,
+  },
+  clearLogsButton: {
+    marginTop: 12,
+    paddingVertical: 10,
+    backgroundColor: Colors.error,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  clearLogsText: {
+    color: Colors.white,
+    fontWeight: '600',
+    fontSize: 14,
+  },
 });
