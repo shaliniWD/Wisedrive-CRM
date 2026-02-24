@@ -8,7 +8,7 @@ import requests
 import json
 import time
 
-BASE_URL = "http://localhost:8000/api"
+BASE_URL = "http://localhost:8001/api"
 
 def test_otp_flow(phone_input, expected_normalized):
     """Test the complete OTP flow with a given phone number format"""
