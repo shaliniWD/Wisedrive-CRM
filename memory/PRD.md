@@ -1,5 +1,20 @@
 # WiseDrive CRM - Product Requirements Document
 
+## Latest Updates (Feb 24, 2026)
+
+### Bug Fixes Applied
+1. **CRM Inspections Page White Screen** - Fixed React error #31 caused by city objects being rendered as strings. Changed API call from `/cities` to `/cities/names`.
+
+2. **Mechanic App Date Filters Crashing** - Fixed infinite re-render loop caused by useCallback dependencies. Date filters now work correctly with explicit parameters.
+
+3. **OTP Validation Intermittent Failure** - Moved OTP storage from in-memory to MongoDB (`mechanic_otps` collection) for persistence across multiple backend instances.
+
+4. **Inspection Not Showing for Mechanic** - Enhanced mechanic inspection query to also match by `mechanic_name` as fallback for older records.
+
+### New APK Build
+- **Download Link:** https://expo.dev/artifacts/eas/u3dg8YvBuCEGXumnsHoGeB.apk
+- Contains all date filter fixes
+
 ## Original Problem Statement
 Build a custom CRM for WiseDrive to manage leads from Meta (Facebook/Instagram) ads via WhatsApp, with flawless lead attribution and data integrity.
 
