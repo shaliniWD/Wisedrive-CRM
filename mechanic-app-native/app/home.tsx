@@ -506,9 +506,11 @@ export default function HomeScreen() {
 
             <View style={styles.reasonsList}>
               {[
-                { key: 'all', label: 'All Inspections', icon: 'list' },
-                { key: 'today', label: 'Today', icon: 'today' },
+                { key: 'all', label: 'All Inspections', icon: 'infinite-outline' },
+                { key: 'today', label: 'Today', icon: 'today-outline' },
                 { key: 'week', label: 'This Week', icon: 'calendar-outline' },
+                { key: 'month', label: 'This Month', icon: 'calendar-number-outline' },
+                { key: 'last_month', label: 'Last Month', icon: 'time-outline' },
               ].map((option) => (
                 <TouchableOpacity
                   key={option.key}
