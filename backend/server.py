@@ -6570,9 +6570,215 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
 # ==================== UTILITY ROUTES ====================
 
 @api_router.get("/cities")
-async def get_cities():
-    """Get list of cities"""
-    return ["Bangalore", "Hyderabad", "Chennai", "Mumbai", "Delhi", "Pune", "Kolkata", "Kuala Lumpur", "Penang", "Johor Bahru", "Others"]
+async def get_cities(country_id: Optional[str] = None, include_inactive: bool = False):
+    """Get list of cities from master table"""
+    query = {}
+    if country_id:
+        query["country_id"] = country_id
+    if not include_inactive:
+        query["is_active"] = True
+    
+    cities = await db.cities.find(query, {"_id": 0}).sort("name", 1).to_list(500)
+    
+    # If no cities in master table, seed with defaults and return
+    if len(cities) == 0:
+        default_cities = [
+            {"name": "Bangalore", "state": "Karnataka", "aliases": ["Bengaluru", "BLR"]},
+            {"name": "Hyderabad", "state": "Telangana", "aliases": ["HYD"]},
+            {"name": "Chennai", "state": "Tamil Nadu", "aliases": ["Madras", "CHE"]},
+            {"name": "Mumbai", "state": "Maharashtra", "aliases": ["Bombay", "BOM"]},
+            {"name": "Delhi", "state": "Delhi", "aliases": ["New Delhi", "DEL"]},
+            {"name": "Pune", "state": "Maharashtra", "aliases": ["Poona", "PNQ"]},
+            {"name": "Kolkata", "state": "West Bengal", "aliases": ["Calcutta", "CCU"]},
+            {"name": "Vizag", "state": "Andhra Pradesh", "aliases": ["Visakhapatnam", "VTZ"]},
+            {"name": "Kuala Lumpur", "state": "Federal Territory", "aliases": ["KL"]},
+            {"name": "Penang", "state": "Penang", "aliases": ["George Town"]},
+            {"name": "Johor Bahru", "state": "Johor", "aliases": ["JB"]},
+        ]
+        
+        for city in default_cities:
+            city["id"] = str(uuid.uuid4())
+            city["is_active"] = True
+            city["created_at"] = datetime.now(timezone.utc).isoformat()
+        
+        await db.cities.insert_many(default_cities)
+        cities = default_cities
+    
+    return cities
+
+
+@api_router.get("/cities/names")
+async def get_city_names(country_id: Optional[str] = None):
+    """Get simple list of city names for dropdowns"""
+    query = {"is_active": True}
+    if country_id:
+        query["country_id"] = country_id
+    
+    cities = await db.cities.find(query, {"_id": 0, "name": 1}).sort("name", 1).to_list(500)
+    
+    # Fallback to defaults if no cities
+    if len(cities) == 0:
+        return ["Bangalore", "Chennai", "Delhi", "Hyderabad", "Kolkata", "Mumbai", "Pune", "Vizag"]
+    
+    return [c["name"] for c in cities]
+
+
+@api_router.post("/cities")
+async def create_city(
+    name: str,
+    state: Optional[str] = None,
+    country_id: Optional[str] = None,
+    aliases: Optional[List[str]] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create a new city in master table"""
+    role_code = current_user.get("role_code", "")
+    if role_code not in ["CEO", "HR_MANAGER", "COUNTRY_HEAD", "ADMIN"]:
+        raise HTTPException(status_code=403, detail="Not authorized to create cities")
+    
+    # Check if city already exists
+    existing = await db.cities.find_one({
+        "$or": [
+            {"name": {"$regex": f"^{name}$", "$options": "i"}},
+            {"aliases": {"$regex": f"^{name}$", "$options": "i"}}
+        ]
+    })
+    
+    if existing:
+        raise HTTPException(status_code=400, detail=f"City '{name}' or its alias already exists")
+    
+    city = {
+        "id": str(uuid.uuid4()),
+        "name": name,
+        "state": state or "",
+        "country_id": country_id or "",
+        "aliases": aliases or [],
+        "is_active": True,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": current_user["id"]
+    }
+    
+    await db.cities.insert_one(city)
+    
+    return {"success": True, "city": {k: v for k, v in city.items() if k != "_id"}}
+
+
+@api_router.put("/cities/{city_id}")
+async def update_city(
+    city_id: str,
+    name: Optional[str] = None,
+    state: Optional[str] = None,
+    aliases: Optional[List[str]] = None,
+    is_active: Optional[bool] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update a city in master table"""
+    role_code = current_user.get("role_code", "")
+    if role_code not in ["CEO", "HR_MANAGER", "COUNTRY_HEAD", "ADMIN"]:
+        raise HTTPException(status_code=403, detail="Not authorized to update cities")
+    
+    update_data = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    if name is not None:
+        update_data["name"] = name
+    if state is not None:
+        update_data["state"] = state
+    if aliases is not None:
+        update_data["aliases"] = aliases
+    if is_active is not None:
+        update_data["is_active"] = is_active
+    
+    result = await db.cities.update_one({"id": city_id}, {"$set": update_data})
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="City not found")
+    
+    return {"success": True, "message": "City updated"}
+
+
+@api_router.get("/cities/resolve/{city_name}")
+async def resolve_city(city_name: str):
+    """Resolve a city name to its canonical form (handles aliases)"""
+    # Try exact match first
+    city = await db.cities.find_one(
+        {"name": {"$regex": f"^{city_name}$", "$options": "i"}, "is_active": True},
+        {"_id": 0}
+    )
+    
+    if city:
+        return {"resolved": True, "canonical_name": city["name"], "city": city}
+    
+    # Try alias match
+    city = await db.cities.find_one(
+        {"aliases": {"$regex": f"^{city_name}$", "$options": "i"}, "is_active": True},
+        {"_id": 0}
+    )
+    
+    if city:
+        return {"resolved": True, "canonical_name": city["name"], "city": city, "matched_alias": city_name}
+    
+    return {"resolved": False, "original": city_name, "suggestion": "City not found in master table"}
+
+
+@api_router.post("/cities/normalize-all")
+async def normalize_all_cities(current_user: dict = Depends(get_current_user)):
+    """Normalize all city names in leads, inspections, and user inspection_cities to canonical form"""
+    role_code = current_user.get("role_code", "")
+    if role_code not in ["CEO", "ADMIN"]:
+        raise HTTPException(status_code=403, detail="Only CEO/Admin can normalize cities")
+    
+    # Get all cities with aliases
+    cities = await db.cities.find({"is_active": True}, {"_id": 0}).to_list(500)
+    
+    # Build alias map
+    alias_map = {}
+    for city in cities:
+        canonical = city["name"]
+        alias_map[canonical.lower()] = canonical
+        for alias in city.get("aliases", []):
+            alias_map[alias.lower()] = canonical
+    
+    stats = {"leads_updated": 0, "inspections_updated": 0, "users_updated": 0}
+    
+    # Normalize leads
+    leads = await db.leads.find({"city": {"$exists": True}}, {"_id": 0, "id": 1, "city": 1}).to_list(10000)
+    for lead in leads:
+        old_city = lead.get("city", "")
+        if old_city and old_city.lower() in alias_map:
+            new_city = alias_map[old_city.lower()]
+            if new_city != old_city:
+                await db.leads.update_one({"id": lead["id"]}, {"$set": {"city": new_city}})
+                stats["leads_updated"] += 1
+    
+    # Normalize inspections
+    inspections = await db.inspections.find({"city": {"$exists": True}}, {"_id": 0, "id": 1, "city": 1}).to_list(10000)
+    for insp in inspections:
+        old_city = insp.get("city", "")
+        if old_city and old_city.lower() in alias_map:
+            new_city = alias_map[old_city.lower()]
+            if new_city != old_city:
+                await db.inspections.update_one({"id": insp["id"]}, {"$set": {"city": new_city}})
+                stats["inspections_updated"] += 1
+    
+    # Normalize user inspection_cities
+    users = await db.users.find({"inspection_cities": {"$exists": True, "$ne": []}}, {"_id": 0, "id": 1, "inspection_cities": 1}).to_list(1000)
+    for user in users:
+        old_cities = user.get("inspection_cities", [])
+        new_cities = []
+        changed = False
+        for city in old_cities:
+            if city.lower() in alias_map:
+                new_city = alias_map[city.lower()]
+                new_cities.append(new_city)
+                if new_city != city:
+                    changed = True
+            else:
+                new_cities.append(city)
+        
+        if changed:
+            await db.users.update_one({"id": user["id"]}, {"$set": {"inspection_cities": new_cities}})
+            stats["users_updated"] += 1
+    
+    return {"success": True, "stats": stats}
 
 
 @api_router.get("/lead-sources")
