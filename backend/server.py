@@ -450,6 +450,40 @@ async def login(credentials: UserLogin):
     )
 
 
+# ==================== VERSION & HEALTH ====================
+APP_VERSION = "2.4.0"
+APP_BUILD_DATE = "2026-02-24T18:45:00Z"
+
+@api_router.get("/version")
+async def get_version():
+    """Get application version and recent changes - use this to verify deployment"""
+    return {
+        "version": APP_VERSION,
+        "build_date": APP_BUILD_DATE,
+        "environment": os.environ.get("ENVIRONMENT", "preview"),
+        "recent_changes": [
+            "v2.4.0 - OTP storage moved to MongoDB (fixes intermittent validation)",
+            "v2.4.0 - Employee phone number uniqueness validation",
+            "v2.4.0 - Twilio balance display in Settings",
+            "v2.4.0 - City Management UI in Settings",
+            "v2.4.0 - Mechanic inspection query enhanced (name + city matching)",
+            "v2.3.0 - Fast2SMS integration for OTP",
+            "v2.2.0 - Token Management UI"
+        ],
+        "otp_storage": "mongodb",  # Key indicator - old version uses "memory"
+        "db_collections": {
+            "mechanic_otps": "Active - stores OTPs for mechanic app login",
+            "cities": "Active - city master for consistent data"
+        }
+    }
+
+
+@api_router.get("/health")
+async def health_check():
+    """Simple health check"""
+    return {"status": "ok", "version": APP_VERSION}
+
+
 @api_router.get("/auth/me")
 async def get_me(current_user: dict = Depends(get_current_user)):
     """Get current user with full permissions"""
