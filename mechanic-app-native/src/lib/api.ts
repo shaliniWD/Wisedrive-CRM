@@ -1,8 +1,8 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// API Base URL - Update this for production
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://mechanic-app-build.preview.emergentagent.com/api';
+// API Base URL - Production CRM backend
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://crmdev.wisedrive.com/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
