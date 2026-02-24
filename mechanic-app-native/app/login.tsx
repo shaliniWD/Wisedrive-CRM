@@ -321,6 +321,41 @@ export default function LoginScreen() {
           )}
         </View>
       </KeyboardAvoidingView>
+
+      {/* Debug Modal */}
+      <Modal
+        visible={showDebugModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowDebugModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Debug Logs</Text>
+              <TouchableOpacity onPress={() => setShowDebugModal(false)}>
+                <Ionicons name="close" size={24} color={Colors.textPrimary} />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.apiUrlText}>API: {API_BASE_URL}</Text>
+            <ScrollView style={styles.logsContainer}>
+              {debugLogs.length === 0 ? (
+                <Text style={styles.noLogsText}>No logs yet. Try sending OTP first.</Text>
+              ) : (
+                debugLogs.map((log, index) => (
+                  <Text key={index} style={styles.logText}>{log}</Text>
+                ))
+              )}
+            </ScrollView>
+            <TouchableOpacity 
+              onPress={() => setDebugLogs([])}
+              style={styles.clearLogsButton}
+            >
+              <Text style={styles.clearLogsText}>Clear Logs</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
