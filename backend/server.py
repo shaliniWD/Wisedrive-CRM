@@ -13212,7 +13212,7 @@ async def mechanic_request_otp(data: MechanicOtpRequest):
     otp = ''.join(random.choices(string.digits, k=6))
     
     # Store OTP with expiration (10 minutes)
-    mechanic_otp_store[phone] = {
+    mechanic_otp_store[normalized_phone] = {
         "otp": otp,
         "mechanic_id": user["id"],
         "user_role": user.get("role_id"),
