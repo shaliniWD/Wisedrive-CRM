@@ -148,13 +148,13 @@ const TokenCard = ({ token, onUpdate, onTest }) => {
           </div>
         </div>
 
-        {/* Extra Info (for Fast2SMS wallet balance) */}
+        {/* Extra Info (for Fast2SMS wallet balance, Twilio, Emergent) */}
         {token.extra && Object.keys(token.extra).length > 0 && (
-          <div className="flex items-center gap-4 mb-4 text-sm">
+          <div className="flex flex-wrap items-center gap-4 mb-4 text-sm">
             {token.extra.wallet_balance && (
               <div className="flex items-center gap-1.5 text-green-600">
                 <Wallet className="h-4 w-4" />
-                <span className="font-medium">₹{token.extra.wallet_balance}</span>
+                <span className="font-medium">{token.extra.wallet_balance}</span>
               </div>
             )}
             {token.extra.sms_count && (
@@ -163,6 +163,30 @@ const TokenCard = ({ token, onUpdate, onTest }) => {
                 <span className="font-medium">{token.extra.sms_count} SMS</span>
               </div>
             )}
+            {token.extra.note && (
+              <div className="flex items-center gap-1.5 text-gray-600">
+                <AlertCircle className="h-4 w-4" />
+                <span>{token.extra.note}</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Emergent Dashboard Links */}
+        {token.id === 'emergent' && token.actions && (
+          <div className="flex flex-wrap gap-2 mb-4">
+            {token.actions.map((action, idx) => (
+              <a
+                key={idx}
+                href={action.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 text-purple-700 rounded-lg text-sm font-medium hover:bg-purple-100 transition-colors"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                {action.label}
+              </a>
+            ))}
           </div>
         )}
 
