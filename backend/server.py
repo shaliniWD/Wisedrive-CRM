@@ -544,7 +544,77 @@ async def test_auth(current_user: dict = Depends(get_current_user)):
         "user_id": current_user.get("id"),
         "user_name": current_user.get("name"),
         "user_email": current_user.get("email"),
-        "inspection_cities": current_user.get("inspection_cities", [])
+        "inspection_cities": current_user.get("inspection_cities", []),
+        "role_code": current_user.get("role_code", "unknown")
+    }
+
+
+@api_router.get("/debug/mechanic-query")
+async def debug_mechanic_query(current_user: dict = Depends(get_current_user)):
+    """Debug endpoint to see what the mechanic inspection query would return"""
+    mechanic_id = current_user["id"]
+    mechanic_cities = current_user.get("inspection_cities", [])
+    mechanic_name = current_user.get("name", "")
+    
+    # Resolve mechanic cities to include aliases
+    all_city_variants = []
+    for mc in mechanic_cities:
+        all_city_variants.append(mc)
+        all_city_variants.append(mc.lower())
+        all_city_variants.append(mc.upper())
+        all_city_variants.append(mc.title())
+        
+        # Check if this city has aliases in the master table
+        city_doc = await db.cities.find_one({
+            "$or": [
+                {"name": {"$regex": f"^{mc}$", "$options": "i"}},
+                {"aliases": {"$regex": f"^{mc}$", "$options": "i"}}
+            ]
+        })
+        if city_doc:
+            all_city_variants.append(city_doc["name"])
+            all_city_variants.extend(city_doc.get("aliases", []))
+    
+    all_city_variants = list(dict.fromkeys(all_city_variants))
+    
+    # Build the same query as the mechanic inspections endpoint
+    query = {
+        "$or": [
+            {"mechanic_id": mechanic_id},
+            {"mechanic_name": {"$regex": f"^{mechanic_name}$", "$options": "i"}} if mechanic_name else {"mechanic_id": mechanic_id},
+            {
+                "mechanic_id": {"$in": [None, ""]},
+                "city": {"$regex": f"^({'|'.join(all_city_variants)})$", "$options": "i"} if all_city_variants else {"$exists": True},
+                "inspection_status": {"$in": ["NEW_INSPECTION", "ASSIGNED_TO_MECHANIC"]}
+            }
+        ]
+    }
+    
+    # Count how many inspections match each condition
+    count_by_mechanic_id = await db.inspections.count_documents({"mechanic_id": mechanic_id})
+    count_by_mechanic_name = await db.inspections.count_documents({"mechanic_name": {"$regex": f"^{mechanic_name}$", "$options": "i"}}) if mechanic_name else 0
+    count_unassigned_in_cities = await db.inspections.count_documents({
+        "mechanic_id": {"$in": [None, ""]},
+        "city": {"$regex": f"^({'|'.join(all_city_variants)})$", "$options": "i"} if all_city_variants else {"$exists": True},
+        "inspection_status": {"$in": ["NEW_INSPECTION", "ASSIGNED_TO_MECHANIC"]}
+    })
+    
+    # Get sample city values in the database
+    sample_cities = await db.inspections.distinct("city")
+    
+    return {
+        "mechanic_id": mechanic_id,
+        "mechanic_name": mechanic_name,
+        "mechanic_cities_from_profile": mechanic_cities,
+        "resolved_city_variants": all_city_variants,
+        "query_summary": {
+            "inspections_assigned_by_id": count_by_mechanic_id,
+            "inspections_assigned_by_name": count_by_mechanic_name,
+            "unassigned_in_mechanic_cities": count_unassigned_in_cities,
+            "total_would_return": count_by_mechanic_id + count_by_mechanic_name + count_unassigned_in_cities
+        },
+        "sample_cities_in_db": sample_cities[:20],
+        "debug_tip": "If 'total_would_return' is 0 but inspections exist, check if city names match between inspections and mechanic's inspection_cities"
     }
 
 
