@@ -11,6 +11,8 @@ import {
   Platform,
   Image,
   Dimensions,
+  ScrollView,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -18,6 +20,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { authApi } from '../src/lib/api';
 import { useAuth } from '../src/context/AuthContext';
+import axios from 'axios';
+
+// API Base URL for debugging
+const API_BASE_URL = 'https://crmdev.wisedrive.com/api';
 
 const { width, height } = Dimensions.get('window');
 
