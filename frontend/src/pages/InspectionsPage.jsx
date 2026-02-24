@@ -10,13 +10,19 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle,
+} from '@/components/ui/sheet';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { PlacesAutocomplete } from '@/components/ui/PlacesAutocomplete';
 import { 
   Search, Loader2, ClipboardCheck, Filter, Calendar, MapPin, 
   Car, User, Download, Eye, Edit2, Clock, CheckCircle, XCircle, 
   AlertCircle, Play, Plus, Send, CreditCard, DollarSign, FileText,
-  UserCheck, CalendarClock, RefreshCw, Ban, Copy, ExternalLink, Link2, X
+  UserCheck, CalendarClock, RefreshCw, Ban, Copy, ExternalLink, Link2, X,
+  StickyNote, Activity, Phone, Mail
 } from 'lucide-react';
 
 // Helper function to extract clean Make name from verbose manufacturer string
