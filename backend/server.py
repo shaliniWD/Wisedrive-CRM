@@ -14483,6 +14483,29 @@ async def get_token_status():
     }
     tokens_status.append(razorpay_status)
     
+    # Emergent Universal Key
+    emergent_key = os.environ.get("EMERGENT_API_KEY", "") or os.environ.get("EMERGENT_LLM_KEY", "")
+    emergent_status = {
+        "id": "emergent",
+        "name": "Emergent Universal Key",
+        "description": "Used for AI/LLM integrations (OpenAI, Claude, Gemini). Manage credits at app.emergent.sh",
+        "token_preview": f"{emergent_key[:15]}...{emergent_key[-5:]}" if len(emergent_key) > 20 else "Not configured",
+        "is_configured": bool(emergent_key),
+        "status": "configured" if emergent_key else "not_configured",
+        "last_checked": datetime.now(timezone.utc).isoformat() if emergent_key else None,
+        "error": None,
+        "extra": {
+            "dashboard_url": "https://app.emergent.sh",
+            "manage_credits_url": "https://app.emergent.sh/profile",
+            "note": "Check credits balance in Emergent Dashboard → Profile → Universal Key"
+        },
+        "actions": [
+            {"label": "Open Dashboard", "url": "https://app.emergent.sh", "type": "link"},
+            {"label": "Add Credits", "url": "https://app.emergent.sh/profile", "type": "link"}
+        ]
+    }
+    tokens_status.append(emergent_status)
+    
     return {"tokens": tokens_status}
 
 
