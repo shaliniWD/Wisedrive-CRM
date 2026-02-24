@@ -470,10 +470,14 @@ APP_BUILD_DATE = "2026-02-24T18:45:00Z"
 @api_router.get("/version")
 async def get_version():
     """Get application version and recent changes - use this to verify deployment"""
+    # Check if JWT_SECRET is custom or default
+    jwt_status = "custom" if os.environ.get("JWT_SECRET") else "default"
+    
     return {
         "version": APP_VERSION,
         "build_date": APP_BUILD_DATE,
         "environment": os.environ.get("ENVIRONMENT", "preview"),
+        "jwt_secret_status": jwt_status,  # Important for debugging auth issues
         "recent_changes": [
             "v2.4.0 - OTP storage moved to MongoDB (fixes intermittent validation)",
             "v2.4.0 - Employee phone number uniqueness validation",
