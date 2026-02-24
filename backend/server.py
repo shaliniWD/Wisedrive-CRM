@@ -299,10 +299,17 @@ def create_access_token(data: dict) -> str:
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
     """Get current user from JWT token with full V2 data"""
     try:
+        # Log the token for debugging (first 20 chars only)
+        token_preview = credentials.credentials[:20] + "..." if credentials.credentials else "EMPTY"
+        logger.debug(f"Authenticating with token: {token_preview}")
+        
         payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
         user_id = payload.get("sub")
         if user_id is None:
+            logger.warning(f"Token has no 'sub' claim: {token_preview}")
             raise HTTPException(status_code=401, detail="Invalid token")
+        
+        logger.debug(f"Token decoded for user_id: {user_id}")
         
         # Handle dev mechanic app user (special case for testing)
         if user_id == "dev-mechanic-001" and payload.get("is_mechanic_app"):
@@ -319,6 +326,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         
         user = await db.users.find_one({"id": user_id}, {"_id": 0, "hashed_password": 0})
         if user is None:
+            logger.warning(f"User not found for user_id: {user_id}")
             raise HTTPException(status_code=401, detail="User not found")
         
         # Support for multiple roles - build roles array
