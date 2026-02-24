@@ -2257,11 +2257,13 @@ export default function InspectionsPage() {
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      <div className="flex items-center gap-2 text-emerald-700 font-medium">
-                        <CheckCircle className="h-4 w-4" />
-                        Payment Link Generated
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-emerald-700 font-medium">
+                          <CheckCircle className="h-4 w-4" />
+                          {paymentLink.isExisting ? 'Payment Link Active' : 'Payment Link Generated'}
+                        </div>
                         {paymentLink.whatsappSent && (
-                          <span className="text-xs bg-emerald-100 px-2 py-0.5 rounded-full">WhatsApp Sent</span>
+                          <span className="text-xs bg-emerald-100 px-2 py-0.5 rounded-full text-emerald-700">WhatsApp Sent</span>
                         )}
                       </div>
                       
@@ -2279,6 +2281,7 @@ export default function InspectionsPage() {
                           variant="ghost"
                           size="sm"
                           className="h-7 px-2"
+                          title="Copy Link"
                         >
                           <Copy className="h-3.5 w-3.5" />
                         </Button>
@@ -2287,28 +2290,48 @@ export default function InspectionsPage() {
                           variant="ghost"
                           size="sm"
                           className="h-7 px-2"
+                          title="Open Link"
                         >
                           <ExternalLink className="h-3.5 w-3.5" />
                         </Button>
                       </div>
 
-                      {/* Share Options */}
+                      {/* Action Buttons */}
                       <div className="flex gap-2">
+                        <Button
+                          onClick={handleCheckPaymentLinkStatus}
+                          disabled={checkingPaymentStatus}
+                          size="sm"
+                          variant="outline"
+                          className="flex-1 border-blue-300 text-blue-700 hover:bg-blue-50"
+                        >
+                          {checkingPaymentStatus ? (
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          ) : (
+                            <RefreshCw className="h-4 w-4 mr-2" />
+                          )}
+                          Check Status
+                        </Button>
                         <Button
                           onClick={handleSharePaymentViaWhatsApp}
                           size="sm"
                           className="flex-1 bg-green-500 hover:bg-green-600"
                         >
                           <Send className="h-4 w-4 mr-2" />
-                          Share via WhatsApp
+                          {paymentLink.isExisting ? 'Resend' : 'Send'} WhatsApp
                         </Button>
+                      </div>
+                      
+                      {/* New Link Option */}
+                      <div className="pt-2 border-t border-dashed">
                         <Button
                           onClick={() => setPaymentLink(null)}
-                          variant="outline"
+                          variant="ghost"
                           size="sm"
+                          className="w-full text-gray-500 hover:text-gray-700"
                         >
-                          <RefreshCw className="h-4 w-4 mr-1" />
-                          New Link
+                          <RefreshCw className="h-3.5 w-3.5 mr-2" />
+                          Generate New Link
                         </Button>
                       </div>
                     </div>
