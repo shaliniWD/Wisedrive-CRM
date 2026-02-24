@@ -204,33 +204,35 @@ const TokenCard = ({ token, onUpdate, onTest }) => {
           </p>
         )}
 
-        {/* Actions */}
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleTest}
-            disabled={isTesting || !token.is_configured}
-            className="flex-1"
-          >
-            {isTesting ? (
-              <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4 mr-1.5" />
-            )}
-            Test Token
-          </Button>
-          {(token.id === 'meta_ads' || token.id === 'fast2sms') && (
+        {/* Actions - Hide for Emergent since it's managed externally */}
+        {token.id !== 'emergent' && (
+          <div className="flex items-center gap-2">
             <Button
+              variant="outline"
               size="sm"
-              onClick={() => setShowUpdateModal(true)}
-              className="flex-1 bg-blue-600 hover:bg-blue-700"
+              onClick={handleTest}
+              disabled={isTesting || !token.is_configured}
+              className="flex-1"
             >
-              <Key className="h-4 w-4 mr-1.5" />
-              Update Token
+              {isTesting ? (
+                <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-1.5" />
+              )}
+              Test Token
             </Button>
-          )}
-        </div>
+            {(token.id === 'meta_ads' || token.id === 'fast2sms') && (
+              <Button
+                size="sm"
+                onClick={() => setShowUpdateModal(true)}
+                className="flex-1 bg-blue-600 hover:bg-blue-700"
+              >
+                <Key className="h-4 w-4 mr-1.5" />
+                Update Token
+              </Button>
+            )}
+          </div>
+        )}
 
         {/* Sync Now for Meta Ads */}
         {token.id === 'meta_ads' && token.status === 'valid' && (
