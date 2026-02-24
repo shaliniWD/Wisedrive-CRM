@@ -483,10 +483,14 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
+        <TouchableOpacity 
+          style={styles.headerLeft}
+          onLongPress={() => { setDebugModalVisible(true); fetchDebugInfo(); }}
+          delayLongPress={1000}
+        >
           <Text style={styles.greeting}>Hi, {mechanic?.name?.split(' ')[0] || 'Partner'}</Text>
           <Text style={styles.dateText}>{todayStr}</Text>
-        </View>
+        </TouchableOpacity>
         <View style={styles.headerRight}>
           <TouchableOpacity 
             style={[styles.iconBtn, dateFilter !== 'all' && styles.iconBtnActive]} 
