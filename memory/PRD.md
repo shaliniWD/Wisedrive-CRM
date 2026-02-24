@@ -20,9 +20,20 @@
    - Search/filter cities
    - Stats dashboard showing active cities, total aliases, states count
 
+2. **Employee Phone Number Validation** - Unique phone number enforcement
+   - Create/Update employee endpoints now validate phone uniqueness
+   - Clear error message showing which employee already has the number
+
+3. **Twilio Balance in Settings** - Added Twilio account balance display
+   - Shows balance alongside Fast2SMS in API Tokens tab
+   - Handles trial accounts gracefully (shows "Balance not accessible")
+
 ### New APK Build
 - **Download Link:** https://expo.dev/artifacts/eas/u3dg8YvBuCEGXumnsHoGeB.apk
 - Contains all date filter fixes
+
+### ⚠️ Mechanic App Issue
+The mechanic app shows "Failed to load inspections" because it points to production server (`crmdev.wisedrive.com`) which hasn't been deployed with the latest backend code. **Deploy preview environment to production** to fix this.
 
 ## Original Problem Statement
 Build a custom CRM for WiseDrive to manage leads from Meta (Facebook/Instagram) ads via WhatsApp, with flawless lead attribution and data integrity.
