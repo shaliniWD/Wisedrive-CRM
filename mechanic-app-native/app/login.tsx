@@ -241,6 +241,14 @@ export default function LoginScreen() {
                 By continuing, you agree to our{' '}
                 <Text style={styles.termsLink}>Terms & Conditions</Text>
               </Text>
+
+              {/* Debug Button */}
+              <TouchableOpacity 
+                onPress={() => setShowDebugModal(true)}
+                style={styles.debugButton}
+              >
+                <Text style={styles.debugButtonText}>📋 View Debug Logs ({debugLogs.length})</Text>
+              </TouchableOpacity>
             </>
           ) : (
             <>
