@@ -14386,18 +14386,46 @@ async def get_token_status():
     
     tokens_status.append(fast2sms_status)
     
-    # Twilio Token
+    # Twilio Token - with balance check
     twilio_sid = os.environ.get("TWILIO_ACCOUNT_SID", "")
+    twilio_auth = os.environ.get("TWILIO_AUTH_TOKEN", "")
     twilio_status = {
         "id": "twilio",
         "name": "Twilio",
         "description": "Used for WhatsApp messaging and notifications",
         "token_preview": f"{twilio_sid[:10]}...{twilio_sid[-5:]}" if len(twilio_sid) > 15 else "Not configured",
-        "is_configured": bool(twilio_sid),
-        "status": "configured" if twilio_sid else "not_configured",
-        "last_checked": datetime.now(timezone.utc).isoformat() if twilio_sid else None,
-        "error": None
+        "is_configured": bool(twilio_sid and twilio_auth),
+        "status": "unknown",
+        "last_checked": None,
+        "error": None,
+        "extra": {}
     }
+    
+    # Test Twilio and get balance
+    if twilio_sid and twilio_auth:
+        try:
+            import httpx
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(
+                    f"https://api.twilio.com/2010-04-01/Accounts/{twilio_sid}/Balance.json",
+                    auth=(twilio_sid, twilio_auth)
+                )
+                if response.status_code == 200:
+                    data = response.json()
+                    twilio_status["status"] = "valid"
+                    twilio_status["last_checked"] = datetime.now(timezone.utc).isoformat()
+                    twilio_status["extra"] = {
+                        "wallet_balance": f"${data.get('balance', 0)} {data.get('currency', 'USD')}"
+                    }
+                else:
+                    twilio_status["status"] = "invalid"
+                    twilio_status["error"] = f"API returned {response.status_code}"
+        except Exception as e:
+            twilio_status["status"] = "error"
+            twilio_status["error"] = str(e)
+    else:
+        twilio_status["status"] = "not_configured"
+    
     tokens_status.append(twilio_status)
     
     # Razorpay Token
