@@ -124,6 +124,23 @@ const openMapsNavigation = (inspection: Inspection) => {
   }
 };
 
+// Get card style based on status
+const getCardStyle = (status: string) => {
+  switch (status) {
+    case 'NEW':
+      return { bg: Colors.infoCard, border: Colors.infoBorder };
+    case 'ACCEPTED':
+    case 'IN_PROGRESS':
+      return { bg: Colors.warningCard, border: Colors.warningBorder };
+    case 'COMPLETED':
+      return { bg: Colors.successCard, border: Colors.successBorder };
+    case 'REJECTED':
+      return { bg: Colors.errorCard, border: Colors.errorBorder };
+    default:
+      return { bg: Colors.surface, border: Colors.border };
+  }
+};
+
 // Inspection Card
 const InspectionCard = ({ 
   inspection, 
@@ -139,9 +156,10 @@ const InspectionCard = ({
   const scheduledDate = new Date(inspection.scheduledAt);
   const timeStr = scheduledDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
   const dateStr = scheduledDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+  const cardStyle = getCardStyle(inspection.status);
   
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, { backgroundColor: cardStyle.bg, borderColor: cardStyle.border, borderWidth: 1 }]}>
       {/* Header */}
       <View style={styles.cardHeader}>
         <View style={styles.vehicleNumberBox}>
