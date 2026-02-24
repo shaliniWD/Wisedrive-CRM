@@ -13262,7 +13262,7 @@ async def mechanic_verify_otp(data: MechanicOtpVerify):
         raise HTTPException(status_code=400, detail="OTP expired or not requested")
     
     if datetime.now(timezone.utc) > stored["expires_at"]:
-        del mechanic_otp_store[phone]
+        del mechanic_otp_store[normalized_phone]
         raise HTTPException(status_code=400, detail="OTP expired")
     
     if stored["otp"] != otp:
