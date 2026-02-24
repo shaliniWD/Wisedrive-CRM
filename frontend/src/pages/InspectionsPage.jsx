@@ -620,6 +620,61 @@ export default function InspectionsPage() {
     window.open(whatsappUrl, '_blank');
   };
 
+  // Open Notes/Activity Drawer
+  const openNotesDrawer = async (inspection) => {
+    setNotesInspection(inspection);
+    setNotesTab('notes');
+    setIsNotesDrawerOpen(true);
+    await fetchNotesAndActivities(inspection.id);
+  };
+
+  // Fetch notes and activities for an inspection
+  const fetchNotesAndActivities = async (inspectionId) => {
+    setLoadingNotes(true);
+    try {
+      const [notesRes, activitiesRes] = await Promise.all([
+        inspectionsApi.getNotes(inspectionId),
+        inspectionsApi.getActivities(inspectionId)
+      ]);
+      setInspectionNotes(notesRes.data || []);
+      setInspectionActivities(activitiesRes.data || []);
+    } catch (error) {
+      console.error('Failed to fetch notes/activities:', error);
+      toast.error('Failed to load notes and activities');
+    } finally {
+      setLoadingNotes(false);
+    }
+  };
+
+  // Add a note
+  const handleAddNote = async () => {
+    if (!notesInspection || !newNote.trim()) return;
+    
+    setSavingNote(true);
+    try {
+      const response = await inspectionsApi.addNote(notesInspection.id, { note: newNote.trim() });
+      setInspectionNotes(prev => [response.data, ...prev]);
+      setNewNote('');
+      toast.success('Note added successfully');
+      // Refresh activities to show the note_added activity
+      const activitiesRes = await inspectionsApi.getActivities(notesInspection.id);
+      setInspectionActivities(activitiesRes.data || []);
+    } catch (error) {
+      toast.error('Failed to add note');
+    } finally {
+      setSavingNote(false);
+    }
+  };
+
+  // Close Notes Drawer
+  const closeNotesDrawer = () => {
+    setIsNotesDrawerOpen(false);
+    setNotesInspection(null);
+    setInspectionNotes([]);
+    setInspectionActivities([]);
+    setNewNote('');
+  };
+
   // Handle View Report - opens in new tab
   const handleViewReport = (inspection) => {
     // Open the inspection report page in a new tab
