@@ -357,7 +357,7 @@ export default function HomeScreen() {
   const handleAccept = async (inspection: Inspection) => {
     try {
       await inspectionsApi.acceptInspection(inspection.id);
-      fetchInspections();
+      fetchInspections(dateFilter, customDateFrom, customDateTo);
       Alert.alert('Success', 'Inspection accepted! Tap Navigate to reach the location.');
     } catch (error) {
       Alert.alert('Error', 'Failed to accept inspection');
@@ -376,7 +376,7 @@ export default function HomeScreen() {
     try {
       await inspectionsApi.rejectInspection(selectedInspection.id, selectedReason);
       setRejectModalVisible(false);
-      fetchInspections();
+      fetchInspections(dateFilter, customDateFrom, customDateTo);
     } catch (error) {
       Alert.alert('Error', 'Failed to reject');
     } finally {
