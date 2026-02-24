@@ -13308,7 +13308,7 @@ async def mechanic_verify_otp(data: MechanicOtpVerify):
     role_code = role.get("code", "MECHANIC") if role else "MECHANIC"
     
     # Clear OTP
-    del mechanic_otp_store[phone]
+    del mechanic_otp_store[normalized_phone]
     
     # Get inspection cities
     inspection_cities = user.get("inspection_cities", [])
