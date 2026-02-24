@@ -478,6 +478,77 @@ export default function LoginScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Custom Error Modal */}
+      <Modal
+        visible={showErrorModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowErrorModal(false)}
+      >
+        <View style={styles.errorModalOverlay}>
+          <View style={[
+            styles.errorModalContent,
+            errorModalContent.isAuthError && styles.errorModalContentAuth
+          ]}>
+            {/* Icon */}
+            <View style={[
+              styles.errorIconContainer,
+              errorModalContent.isAuthError ? styles.errorIconAuth : 
+              errorModalContent.title.includes('Sent') ? styles.errorIconSuccess : styles.errorIconError
+            ]}>
+              {errorModalContent.isAuthError ? (
+                <Ionicons name="shield-outline" size={36} color="#DC2626" />
+              ) : errorModalContent.title.includes('Sent') ? (
+                <Ionicons name="checkmark-circle-outline" size={36} color="#16A34A" />
+              ) : (
+                <Ionicons name="alert-circle-outline" size={36} color="#DC2626" />
+              )}
+            </View>
+
+            {/* Title */}
+            <Text style={[
+              styles.errorModalTitle,
+              errorModalContent.title.includes('Sent') && styles.errorModalTitleSuccess
+            ]}>
+              {errorModalContent.title}
+            </Text>
+
+            {/* Message */}
+            <Text style={styles.errorModalMessage}>
+              {errorModalContent.message}
+            </Text>
+
+            {/* Support Info for Auth Errors */}
+            {errorModalContent.isAuthError && (
+              <View style={styles.supportInfoContainer}>
+                <View style={styles.supportInfoRow}>
+                  <Ionicons name="mail-outline" size={18} color="#6B7280" />
+                  <Text style={styles.supportInfoText}>support@wisedrive.com</Text>
+                </View>
+              </View>
+            )}
+
+            {/* Close Button */}
+            <TouchableOpacity
+              onPress={() => setShowErrorModal(false)}
+              activeOpacity={0.8}
+              style={styles.errorModalButton}
+            >
+              <LinearGradient
+                colors={errorModalContent.title.includes('Sent') ? ['#16A34A', '#15803D'] : [Colors.gradientStart, Colors.gradientEnd]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.errorModalButtonGradient}
+              >
+                <Text style={styles.errorModalButtonText}>
+                  {errorModalContent.title.includes('Sent') ? 'Continue' : 'Got it'}
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
