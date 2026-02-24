@@ -233,7 +233,7 @@ export default function LoginScreen() {
       addLog(`Resend Response Status: ${response.status}`);
       addLog(`Resend Response: ${JSON.stringify(response.data)}`);
       
-      Alert.alert('Success', 'OTP resent successfully');
+      showError('OTP Resent', 'A new OTP has been sent to your phone');
       setOtp(['', '', '', '', '', '']); // Clear OTP inputs
     } catch (error: any) {
       addLog(`RESEND ERROR occurred!`);
@@ -241,10 +241,20 @@ export default function LoginScreen() {
       if (error.response) {
         addLog(`Resend Status: ${error.response.status}`);
         addLog(`Resend Error: ${JSON.stringify(error.response.data)}`);
-        Alert.alert('Error', error.response.data?.detail || 'Failed to resend OTP');
+        
+        const errorDetail = error.response.data?.detail || 'Failed to resend OTP';
+        if (errorDetail.toLowerCase().includes('not authorized') || error.response.status === 404) {
+          showError(
+            'Access Denied', 
+            'You are not authorized to access this app. Please contact admin or send email to support@wisedrive.com',
+            true
+          );
+        } else {
+          showError('Error', errorDetail);
+        }
       } else {
         addLog(`Resend error: ${error.message}`);
-        Alert.alert('Error', 'Failed to resend OTP');
+        showError('Error', 'Failed to resend OTP. Please try again.');
       }
     } finally {
       setIsLoading(false);
