@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { settingsApi } from '@/services/api';
+import { settingsApi, citiesApi } from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
@@ -12,7 +14,8 @@ import { toast } from 'sonner';
 import { 
   Settings, Key, RefreshCw, CheckCircle, XCircle, AlertCircle, 
   Eye, EyeOff, Copy, Loader2, Zap, Wallet, MessageSquare,
-  CreditCard, Phone, ExternalLink, ShieldCheck, Clock
+  CreditCard, Phone, ExternalLink, ShieldCheck, Clock,
+  MapPin, Plus, Edit2, Trash2, Search, Globe, Tag, X
 } from 'lucide-react';
 import InspectionPackagesPage from './InspectionPackagesPage';
 
