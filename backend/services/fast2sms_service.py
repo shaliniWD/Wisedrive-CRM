@@ -14,13 +14,14 @@ class Fast2SMSService:
     def __init__(self):
         self.api_key = os.environ.get("FAST2SMS_API_KEY")
         self.sender_id = os.environ.get("FAST2SMS_SENDER_ID", "WISEDR")
-        self.otp_template_id = os.environ.get("FAST2SMS_OTP_TEMPLATE_ID", "202830")
+        self.otp_template_id = os.environ.get("FAST2SMS_OTP_TEMPLATE_ID", "209919")
+        self.otp_validity_minutes = int(os.environ.get("FAST2SMS_OTP_VALIDITY_MINUTES", "30"))
         self.base_url = "https://www.fast2sms.com/dev/bulkV2"
         self.wallet_url = "https://www.fast2sms.com/dev/wallet"
         self.db = None  # Will be set from server.py
         
         if self.api_key:
-            logger.info("Fast2SMS service initialized successfully")
+            logger.info(f"Fast2SMS service initialized (Template: {self.otp_template_id}, Validity: {self.otp_validity_minutes} mins)")
         else:
             logger.warning("Fast2SMS API key not configured - SMS messaging disabled")
     
