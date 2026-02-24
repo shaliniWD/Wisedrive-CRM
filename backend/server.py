@@ -501,6 +501,40 @@ async def health_check():
     return {"status": "ok", "version": APP_VERSION}
 
 
+@api_router.post("/auth/debug-token")
+async def debug_token(request: Request):
+    """Debug endpoint to check why a token might be failing - for troubleshooting only"""
+    try:
+        body = await request.json()
+        token = body.get("token", "")
+        
+        if not token:
+            return {"valid": False, "error": "No token provided"}
+        
+        try:
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            user_id = payload.get("sub")
+            
+            # Check if user exists
+            user = await db.users.find_one({"id": user_id}, {"_id": 0, "name": 1, "email": 1})
+            
+            return {
+                "valid": True,
+                "user_id": user_id,
+                "user_exists": user is not None,
+                "user_name": user.get("name") if user else None,
+                "payload_keys": list(payload.keys()),
+                "exp": payload.get("exp"),
+                "is_mechanic_app": payload.get("is_mechanic_app", False)
+            }
+        except jwt.ExpiredSignatureError:
+            return {"valid": False, "error": "Token expired"}
+        except jwt.InvalidTokenError as e:
+            return {"valid": False, "error": f"Invalid token: {str(e)}"}
+    except Exception as e:
+        return {"valid": False, "error": str(e)}
+
+
 @api_router.get("/auth/me")
 async def get_me(current_user: dict = Depends(get_current_user)):
     """Get current user with full permissions"""
