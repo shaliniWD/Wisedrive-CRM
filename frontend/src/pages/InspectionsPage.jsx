@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { inspectionsApi, utilityApi, vehicleApi, mechanicsApi } from '@/services/api';
+import { inspectionsApi, utilityApi, vehicleApi, mechanicsApi, smsLogsApi } from '@/services/api';
 import { formatDate, formatTime, formatDateTime } from '@/utils/dateFormat';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,7 +22,7 @@ import {
   Car, User, Download, Eye, Edit2, Clock, CheckCircle, XCircle, 
   AlertCircle, Play, Plus, Send, CreditCard, DollarSign, FileText,
   UserCheck, CalendarClock, RefreshCw, Ban, Copy, ExternalLink, Link2, X,
-  StickyNote, Activity, Phone, Mail
+  StickyNote, Activity, Phone, Mail, MessageSquare, Wallet, TrendingUp
 } from 'lucide-react';
 
 // Helper function to extract clean Make name from verbose manufacturer string
