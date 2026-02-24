@@ -256,11 +256,23 @@ export default function HomeScreen() {
   const [selectedReason, setSelectedReason] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [dateFilterModalVisible, setDateFilterModalVisible] = useState(false);
-  const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week'>('all');
+  const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month' | 'last_month'>('all');
+
+  const DATE_FILTERS = [
+    { id: 'all', label: 'All Time', icon: 'infinite-outline' },
+    { id: 'today', label: 'Today', icon: 'today-outline' },
+    { id: 'week', label: 'This Week', icon: 'calendar-outline' },
+    { id: 'month', label: 'This Month', icon: 'calendar-number-outline' },
+    { id: 'last_month', label: 'Last Month', icon: 'time-outline' },
+  ];
 
   const fetchInspections = useCallback(async () => {
     try {
-      const data = await inspectionsApi.getInspections();
+      const params: any = {};
+      if (dateFilter !== 'all') {
+        params.date_filter = dateFilter;
+      }
+      const data = await inspectionsApi.getInspections(params);
       setInspections(data || []);
     } catch (error) {
       console.error('Failed to fetch inspections:', error);
@@ -268,7 +280,7 @@ export default function HomeScreen() {
       setIsLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [dateFilter]);
 
   useEffect(() => {
     fetchInspections();
