@@ -527,16 +527,16 @@ export default function InspectionsPage() {
     }
   };
 
-  // Copy payment link to clipboard
-  const handleCopyPaymentLink = () => {
+  // Copy payment link from payment details modal
+  const handleCopyPaymentDetailsLink = () => {
     if (paymentLink?.url) {
       navigator.clipboard.writeText(paymentLink.url);
       toast.success('Payment link copied to clipboard!');
     }
   };
 
-  // Share payment link via WhatsApp
-  const handleShareViaWhatsApp = () => {
+  // Share payment link via WhatsApp from payment details modal
+  const handleSharePaymentViaWhatsApp = () => {
     if (!paymentLink?.url || !paymentDetailsInspection) return;
     
     const message = `Hi ${paymentDetailsInspection.customer_name}, please use this link to pay the pending amount of ₹${(paymentDetailsInspection.balance_due || paymentDetailsInspection.pending_amount || 0).toLocaleString()}: ${paymentLink.url}`;
