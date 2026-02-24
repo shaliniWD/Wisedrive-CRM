@@ -13211,12 +13211,12 @@ async def mechanic_request_otp(data: MechanicOtpRequest):
     # Generate 6-digit OTP
     otp = ''.join(random.choices(string.digits, k=6))
     
-    # Store OTP with expiration (10 minutes)
+    # Store OTP with expiration (30 minutes)
     mechanic_otp_store[normalized_phone] = {
         "otp": otp,
         "mechanic_id": user["id"],
         "user_role": user.get("role_id"),
-        "expires_at": datetime.now(timezone.utc) + timedelta(minutes=10)
+        "expires_at": datetime.now(timezone.utc) + timedelta(minutes=30)
     }
     
     # Send OTP via Fast2SMS in production
