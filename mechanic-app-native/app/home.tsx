@@ -21,6 +21,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../src/context/AuthContext';
 import { useInspection } from '../src/context/InspectionContext';
 import { inspectionsApi } from '../src/lib/api';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 const { width } = Dimensions.get('window');
 
@@ -39,12 +40,20 @@ const Colors = {
   border: '#E5E9F0',
   success: '#00C853',
   successBg: '#E8F5E9',
+  successCard: '#F0FDF4',
+  successBorder: '#86EFAC',
   warning: '#FF9500',
   warningBg: '#FFF8E6',
+  warningCard: '#FFFBEB',
+  warningBorder: '#FCD34D',
   error: '#FF3B30',
   errorBg: '#FFEBEE',
+  errorCard: '#FEF2F2',
+  errorBorder: '#FCA5A5',
   info: '#0066FF',
   infoBg: '#E6F0FF',
+  infoCard: '#EFF6FF',
+  infoBorder: '#93C5FD',
 };
 
 interface Inspection {
