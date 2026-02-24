@@ -14417,6 +14417,13 @@ async def get_token_status():
                     twilio_status["extra"] = {
                         "wallet_balance": f"${data.get('balance', 0)} {data.get('currency', 'USD')}"
                     }
+                elif response.status_code == 403:
+                    # Credentials valid but no balance access (trial account or permissions)
+                    twilio_status["status"] = "configured"
+                    twilio_status["last_checked"] = datetime.now(timezone.utc).isoformat()
+                    twilio_status["extra"] = {
+                        "note": "Balance not accessible (trial account)"
+                    }
                 else:
                     twilio_status["status"] = "invalid"
                     twilio_status["error"] = f"API returned {response.status_code}"
