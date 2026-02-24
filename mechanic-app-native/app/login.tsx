@@ -141,13 +141,91 @@ export default function LoginScreen() {
     }
 
     setIsLoading(true);
+    
     try {
       const fullPhone = `${countryCode}${phone}`;
-      const response = await authApi.verifyOtp(fullPhone, otpString);
-      await login(response.token, response.mechanicProfile);
-      router.replace('/home');
+      addLog(`Verifying OTP for: ${fullPhone}`);
+      addLog(`OTP entered: ${otpString}`);
+      addLog(`API URL: ${API_BASE_URL}/auth/verify-otp`);
+      
+      // Make direct API call with detailed logging
+      const response = await axios.post(`${API_BASE_URL}/auth/verify-otp`, {
+        phone: fullPhone,
+        otp: otpString
+      }, {
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 30000
+      });
+      
+      addLog(`Verify Response Status: ${response.status}`);
+      addLog(`Verify Response: ${JSON.stringify(response.data)}`);
+      
+      if (response.data.success && response.data.token) {
+        await login(response.data.token, response.data.mechanicProfile);
+        router.replace('/home');
+      } else {
+        Alert.alert('Error', response.data.message || 'Verification failed');
+      }
     } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.detail || 'Invalid OTP');
+      addLog(`VERIFY ERROR occurred!`);
+      
+      if (error.response) {
+        addLog(`Verify Status Code: ${error.response.status}`);
+        addLog(`Verify Error Data: ${JSON.stringify(error.response.data)}`);
+        
+        const errorMessage = error.response.data?.detail || error.response.data?.message || 'Invalid OTP';
+        Alert.alert('Error', errorMessage);
+      } else if (error.request) {
+        addLog(`No response received for verify`);
+        Alert.alert('Error', 'No response from server. Please check your internet connection.');
+      } else {
+        addLog(`Verify setup error: ${error.message}`);
+        Alert.alert('Error', `Verification failed: ${error.message}`);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle change number - go back to phone entry
+  const handleChangeNumber = () => {
+    setStep('phone');
+    setOtp(['', '', '', '', '', '']);
+    setDebugLogs([]); // Clear logs when changing number
+  };
+
+  // Handle resend OTP
+  const handleResendOtp = async () => {
+    setIsLoading(true);
+    setDebugLogs([]); // Clear previous logs
+    
+    try {
+      const fullPhone = `${countryCode}${phone}`;
+      addLog(`Resending OTP for: ${fullPhone}`);
+      
+      const response = await axios.post(`${API_BASE_URL}/auth/request-otp`, {
+        phone: fullPhone
+      }, {
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 30000
+      });
+      
+      addLog(`Resend Response Status: ${response.status}`);
+      addLog(`Resend Response: ${JSON.stringify(response.data)}`);
+      
+      Alert.alert('Success', 'OTP resent successfully');
+      setOtp(['', '', '', '', '', '']); // Clear OTP inputs
+    } catch (error: any) {
+      addLog(`RESEND ERROR occurred!`);
+      
+      if (error.response) {
+        addLog(`Resend Status: ${error.response.status}`);
+        addLog(`Resend Error: ${JSON.stringify(error.response.data)}`);
+        Alert.alert('Error', error.response.data?.detail || 'Failed to resend OTP');
+      } else {
+        addLog(`Resend error: ${error.message}`);
+        Alert.alert('Error', 'Failed to resend OTP');
+      }
     } finally {
       setIsLoading(false);
     }
