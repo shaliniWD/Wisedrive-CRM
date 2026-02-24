@@ -541,3 +541,10 @@ export const smsLogsApi = {
   getStats: () => axios.get(`${API_URL}/sms/stats`),
   testSend: (phone) => axios.post(`${API_URL}/sms/test`, null, { params: { phone } }),
 };
+
+// Settings & Token Management API
+export const settingsApi = {
+  getTokenStatus: () => axios.get(`${API_URL}/settings/tokens`),
+  updateToken: (tokenType, token) => axios.post(`${API_URL}/settings/tokens/update`, { token_type: tokenType, token }),
+  testToken: (tokenType) => axios.post(`${API_URL}/settings/tokens/test/${tokenType}`),
+};
