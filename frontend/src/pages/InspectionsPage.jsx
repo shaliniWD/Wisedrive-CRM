@@ -1803,7 +1803,8 @@ export default function InspectionsPage() {
                       if (!inspectionCity) return true; // Show all if no city
                       // Check if mechanic has this city in their inspection_cities
                       const mechanicCities = mechanic.inspection_cities || [];
-                      return mechanicCities.length === 0 || mechanicCities.includes(inspectionCity);
+                      // Only show mechanics who have this specific city assigned (not mechanics with no cities)
+                      return mechanicCities.includes(inspectionCity);
                     })
                     .map((mechanic) => (
                     <SelectItem key={mechanic.id} value={mechanic.id}>
