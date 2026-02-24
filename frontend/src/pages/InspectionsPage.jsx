@@ -1305,22 +1305,21 @@ export default function InspectionsPage() {
                           ...inspection,
                           balance_due: actualBalanceDue
                         })}
-                        className="group flex flex-col items-start gap-1 cursor-pointer hover:opacity-80 transition-opacity"
-                        title="Click to view payment details"
+                        className="group cursor-pointer transition-all duration-200"
+                        title="View payment details"
                         data-testid={`payment-status-${inspection.id}`}
                       >
                         {isFullyPaid ? (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200 group-hover:bg-emerald-200 group-hover:shadow-sm group-hover:scale-105 transition-all duration-200">
                             <CheckCircle className="h-3.5 w-3.5" />
                             Fully Paid
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200 group-hover:bg-amber-200 group-hover:shadow-sm group-hover:scale-105 transition-all duration-200">
                             <AlertCircle className="h-3.5 w-3.5" />
                             Pending
                           </span>
                         )}
-                        <span className="text-[10px] text-gray-400 group-hover:text-blue-500">Click for details</span>
                       </button>
                     </td>
                     
