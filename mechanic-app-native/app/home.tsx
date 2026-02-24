@@ -283,7 +283,12 @@ export default function HomeScreen() {
   const [selectedReason, setSelectedReason] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [dateFilterModalVisible, setDateFilterModalVisible] = useState(false);
-  const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month' | 'last_month'>('all');
+  const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month' | 'last_month' | 'custom'>('all');
+  
+  // Custom date range
+  const [customDateFrom, setCustomDateFrom] = useState<Date>(new Date());
+  const [customDateTo, setCustomDateTo] = useState<Date>(new Date());
+  const [showDatePicker, setShowDatePicker] = useState<'from' | 'to' | null>(null);
 
   const DATE_FILTERS = [
     { id: 'all', label: 'All Time', icon: 'infinite-outline' },
@@ -291,12 +296,24 @@ export default function HomeScreen() {
     { id: 'week', label: 'This Week', icon: 'calendar-outline' },
     { id: 'month', label: 'This Month', icon: 'calendar-number-outline' },
     { id: 'last_month', label: 'Last Month', icon: 'time-outline' },
+    { id: 'custom', label: 'Custom Range', icon: 'options-outline' },
   ];
+
+  const formatDateForApi = (date: Date) => {
+    return date.toISOString().split('T')[0];
+  };
+
+  const formatDateDisplay = (date: Date) => {
+    return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+  };
 
   const fetchInspections = useCallback(async () => {
     try {
       const params: any = {};
-      if (dateFilter !== 'all') {
+      if (dateFilter === 'custom') {
+        params.date_from = formatDateForApi(customDateFrom);
+        params.date_to = formatDateForApi(customDateTo);
+      } else if (dateFilter !== 'all') {
         params.date_filter = dateFilter;
       }
       const data = await inspectionsApi.getInspections(params);
@@ -307,11 +324,24 @@ export default function HomeScreen() {
       setIsLoading(false);
       setRefreshing(false);
     }
-  }, [dateFilter]);
+  }, [dateFilter, customDateFrom, customDateTo]);
 
   useEffect(() => {
     fetchInspections();
   }, [fetchInspections]);
+
+  const onDateChange = (event: any, selectedDate?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowDatePicker(null);
+    }
+    if (selectedDate) {
+      if (showDatePicker === 'from') {
+        setCustomDateFrom(selectedDate);
+      } else if (showDatePicker === 'to') {
+        setCustomDateTo(selectedDate);
+      }
+    }
+  };
 
   const handleAccept = async (inspection: Inspection) => {
     try {
