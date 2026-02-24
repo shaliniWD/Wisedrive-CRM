@@ -478,13 +478,6 @@ export default function InspectionsPage() {
     setPaymentLinkStatus(null);
   };
 
-  // Open Payment Details Modal
-  const openPaymentDetailsModal = (inspection) => {
-    setPaymentDetailsInspection(inspection);
-    setPaymentLink(null);
-    setIsPaymentDetailsModalOpen(true);
-  };
-
   // Close Payment Details Modal
   const closePaymentDetailsModal = () => {
     setIsPaymentDetailsModalOpen(false);
