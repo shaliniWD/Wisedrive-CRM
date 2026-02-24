@@ -478,6 +478,72 @@ export default function InspectionsPage() {
     setPaymentLinkStatus(null);
   };
 
+  // Open Payment Details Modal
+  const openPaymentDetailsModal = (inspection) => {
+    setPaymentDetailsInspection(inspection);
+    setPaymentLink(null);
+    setIsPaymentDetailsModalOpen(true);
+  };
+
+  // Close Payment Details Modal
+  const closePaymentDetailsModal = () => {
+    setIsPaymentDetailsModalOpen(false);
+    setPaymentDetailsInspection(null);
+    setPaymentLink(null);
+  };
+
+  // Create Payment Link for pending amount
+  const handleCreatePaymentLink = async (sendViaWhatsApp = false) => {
+    if (!paymentDetailsInspection) return;
+    
+    const pendingAmount = paymentDetailsInspection.balance_due || paymentDetailsInspection.pending_amount || 0;
+    if (pendingAmount <= 0) {
+      toast.error('No pending amount to collect');
+      return;
+    }
+
+    setCreatingPaymentLink(true);
+    try {
+      const response = await inspectionsApi.collectBalance(paymentDetailsInspection.id, {
+        amount: pendingAmount,
+        send_via_whatsapp: sendViaWhatsApp
+      });
+      
+      setPaymentLink({
+        url: response.data?.payment_link,
+        linkId: response.data?.payment_link_id,
+        whatsappSent: sendViaWhatsApp
+      });
+      
+      if (sendViaWhatsApp) {
+        toast.success('Payment link sent via WhatsApp!');
+      } else {
+        toast.success('Payment link generated successfully!');
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to generate payment link');
+    } finally {
+      setCreatingPaymentLink(false);
+    }
+  };
+
+  // Copy payment link to clipboard
+  const handleCopyPaymentLink = () => {
+    if (paymentLink?.url) {
+      navigator.clipboard.writeText(paymentLink.url);
+      toast.success('Payment link copied to clipboard!');
+    }
+  };
+
+  // Share payment link via WhatsApp
+  const handleShareViaWhatsApp = () => {
+    if (!paymentLink?.url || !paymentDetailsInspection) return;
+    
+    const message = `Hi ${paymentDetailsInspection.customer_name}, please use this link to pay the pending amount of ₹${(paymentDetailsInspection.balance_due || paymentDetailsInspection.pending_amount || 0).toLocaleString()}: ${paymentLink.url}`;
+    const whatsappUrl = `https://wa.me/${paymentDetailsInspection.customer_mobile?.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
   // Handle View Report - opens in new tab
   const handleViewReport = (inspection) => {
     // Open the inspection report page in a new tab
