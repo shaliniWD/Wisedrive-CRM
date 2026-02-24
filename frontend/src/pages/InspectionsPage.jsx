@@ -2500,13 +2500,16 @@ export default function InspectionsPage() {
             )}
           </SheetHeader>
 
-          <Tabs value={notesTab} onValueChange={setNotesTab} className="flex-1 flex flex-col min-h-0 overflow-hidden">
-            <TabsList className="grid w-full grid-cols-2 mx-6 my-3 flex-shrink-0" style={{ width: 'calc(100% - 48px)' }}>
+          <Tabs value={notesTab} onValueChange={handleNotesTabChange} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+            <TabsList className="grid w-full grid-cols-3 mx-6 my-3 flex-shrink-0" style={{ width: 'calc(100% - 48px)' }}>
               <TabsTrigger value="notes" className="flex items-center gap-2" data-testid="notes-tab">
                 <StickyNote className="h-4 w-4" /> Notes
               </TabsTrigger>
               <TabsTrigger value="activities" className="flex items-center gap-2" data-testid="activities-tab">
-                <Activity className="h-4 w-4" /> Activity Log
+                <Activity className="h-4 w-4" /> Activity
+              </TabsTrigger>
+              <TabsTrigger value="sms" className="flex items-center gap-2" data-testid="sms-tab">
+                <MessageSquare className="h-4 w-4" /> SMS Logs
               </TabsTrigger>
             </TabsList>
 
