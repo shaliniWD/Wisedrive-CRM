@@ -652,6 +652,9 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     fontWeight: '500',
   },
+  disabledText: {
+    opacity: 0.5,
+  },
 
   // Debug styles
   debugButton: {
