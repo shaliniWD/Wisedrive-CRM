@@ -13163,13 +13163,13 @@ async def mechanic_request_otp(data: MechanicOtpRequest):
     
     if dev_mode and any(phone.endswith(p[-10:]) for p in dev_test_phones):
         # For dev mode test phones, create a mock mechanic entry
-        mechanic_otp_store[phone] = {
+        mechanic_otp_store[normalized_phone] = {
             "otp": "123456",
             "mechanic_id": "dev-mechanic-001",
             "expires_at": datetime.now(timezone.utc) + timedelta(minutes=5),
             "is_dev_mode": True
         }
-        logger.info(f"Dev mode OTP for {phone}: 123456")
+        logger.info(f"Dev mode OTP for {normalized_phone}: 123456")
         return {"success": True, "message": "OTP sent successfully"}
     
     # Get allowed roles for mechanic app access
