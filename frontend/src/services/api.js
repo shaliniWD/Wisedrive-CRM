@@ -216,7 +216,7 @@ export const dashboardApi = {
 
 // Utility API
 export const utilityApi = {
-  getCities: () => axios.get(`${API_URL}/cities`),
+  getCities: () => axios.get(`${API_URL}/cities/names`),
   getLeadSources: () => axios.get(`${API_URL}/lead-sources`),
   getLeadStatuses: () => axios.get(`${API_URL}/leads/statuses`),
 };
