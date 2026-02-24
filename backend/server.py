@@ -535,6 +535,18 @@ async def debug_token(request: Request):
         return {"valid": False, "error": str(e)}
 
 
+@api_router.get("/auth/test-auth")
+async def test_auth(current_user: dict = Depends(get_current_user)):
+    """Simple endpoint to test if authentication is working"""
+    return {
+        "authenticated": True,
+        "user_id": current_user.get("id"),
+        "user_name": current_user.get("name"),
+        "user_email": current_user.get("email"),
+        "inspection_cities": current_user.get("inspection_cities", [])
+    }
+
+
 @api_router.get("/auth/me")
 async def get_me(current_user: dict = Depends(get_current_user)):
     """Get current user with full permissions"""
