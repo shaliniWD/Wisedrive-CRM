@@ -13490,8 +13490,13 @@ async def mechanic_verify_otp(data: MechanicOtpVerify):
     if not stored:
         raise HTTPException(status_code=400, detail="OTP expired or not requested")
     
-    if datetime.now(timezone.utc) > stored["expires_at"]:
-        del mechanic_otp_store[normalized_phone]
+    # Handle expires_at - it might be stored as string or datetime
+    expires_at = stored["expires_at"]
+    if isinstance(expires_at, str):
+        expires_at = datetime.fromisoformat(expires_at.replace('Z', '+00:00'))
+    
+    if datetime.now(timezone.utc) > expires_at:
+        await delete_mechanic_otp(normalized_phone)
         raise HTTPException(status_code=400, detail="OTP expired")
     
     if stored["otp"] != otp:
@@ -13499,8 +13504,8 @@ async def mechanic_verify_otp(data: MechanicOtpVerify):
     
     # Handle dev mode mock mechanic
     if stored.get("is_dev_mode"):
-        # Clear OTP
-        del mechanic_otp_store[normalized_phone]
+        # Clear OTP from MongoDB
+        await delete_mechanic_otp(normalized_phone)
         
         # Create mock mechanic profile for dev mode
         mock_mechanic_id = "dev-mechanic-001"
@@ -13536,8 +13541,8 @@ async def mechanic_verify_otp(data: MechanicOtpVerify):
     role = await db.roles.find_one({"id": user.get("role_id")}, {"_id": 0})
     role_code = role.get("code", "MECHANIC") if role else "MECHANIC"
     
-    # Clear OTP
-    del mechanic_otp_store[normalized_phone]
+    # Clear OTP from MongoDB
+    await delete_mechanic_otp(normalized_phone)
     
     # Get inspection cities
     inspection_cities = user.get("inspection_cities", [])
