@@ -5166,6 +5166,33 @@ async def assign_mechanic_to_inspection(
     
     await db.inspections.update_one({"id": inspection_id}, {"$set": update_dict})
     
+    # Log activity for mechanic assignment
+    if request_data.mechanic_id:
+        activity = {
+            "id": str(uuid.uuid4()),
+            "inspection_id": inspection_id,
+            "user_id": current_user["id"],
+            "user_name": current_user.get("name", "Unknown"),
+            "action": "mechanic_assigned",
+            "details": f"Assigned to {update_dict.get('mechanic_name', 'mechanic')}",
+            "old_value": inspection.get("mechanic_name"),
+            "new_value": update_dict.get("mechanic_name"),
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+    else:
+        activity = {
+            "id": str(uuid.uuid4()),
+            "inspection_id": inspection_id,
+            "user_id": current_user["id"],
+            "user_name": current_user.get("name", "Unknown"),
+            "action": "mechanic_unassigned",
+            "details": f"Unassigned {inspection.get('mechanic_name', 'mechanic')}",
+            "old_value": inspection.get("mechanic_name"),
+            "new_value": None,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+    await db.inspection_activities.insert_one(activity)
+    
     updated = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
     return updated
 
