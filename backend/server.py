@@ -13138,7 +13138,8 @@ class InspectionProgressUpdate(BaseModel):
 
 @api_router.post("/auth/request-otp")
 async def mechanic_request_otp(data: MechanicOtpRequest):
-    """Request OTP for mechanic login via phone number"""
+    """Request OTP for mechanic app login via phone number.
+    Only mechanics, country heads, and CEOs can access the mechanic app."""
     phone = data.phone.strip().replace(" ", "")
     
     # Dev mode test phone numbers (bypass mechanic check)
@@ -13156,46 +13157,71 @@ async def mechanic_request_otp(data: MechanicOtpRequest):
         logger.info(f"Dev mode OTP for {phone}: 123456")
         return {"success": True, "message": "OTP sent successfully"}
     
-    # Check if phone number is registered as a mechanic
-    mechanic_role = await db.roles.find_one({"code": "MECHANIC"}, {"_id": 0, "id": 1})
-    if not mechanic_role:
-        raise HTTPException(status_code=500, detail="Mechanic role not configured")
+    # Get allowed roles for mechanic app access
+    allowed_role_codes = ["MECHANIC", "COUNTRY_HEAD", "CEO"]
+    allowed_roles = await db.roles.find(
+        {"code": {"$in": allowed_role_codes}}, 
+        {"_id": 0, "id": 1, "code": 1}
+    ).to_list(10)
     
-    mechanic = await db.users.find_one({
+    if not allowed_roles:
+        raise HTTPException(status_code=500, detail="Roles not configured")
+    
+    allowed_role_ids = [r["id"] for r in allowed_roles]
+    
+    # Check if phone number is registered with an allowed role
+    user = await db.users.find_one({
         "$or": [
             {"phone": phone},
             {"phone": {"$regex": phone[-10:] + "$"}},  # Match last 10 digits
             {"mobile": phone},
             {"mobile": {"$regex": phone[-10:] + "$"}}
         ],
-        "role_id": mechanic_role["id"],
+        "role_id": {"$in": allowed_role_ids},
         "is_active": True
     }, {"_id": 0})
     
-    if not mechanic:
+    if not user:
         raise HTTPException(
             status_code=404, 
-            detail="You are not onboarded yet. Please contact Wisedrive support."
+            detail="You are not authorized to access this app. Only mechanics, country heads, and CEOs can login."
         )
+    
+    # Get the user's mobile number from the database for OTP
+    user_mobile = user.get("mobile") or user.get("phone") or phone
+    # Ensure it's in E.164 format
+    if not user_mobile.startswith("+"):
+        user_mobile = "+91" + user_mobile[-10:]
     
     # Generate 6-digit OTP
     otp = ''.join(random.choices(string.digits, k=6))
     
-    # Store OTP with expiration (5 minutes)
+    # Store OTP with expiration (10 minutes)
     mechanic_otp_store[phone] = {
         "otp": otp,
-        "mechanic_id": mechanic["id"],
-        "expires_at": datetime.now(timezone.utc) + timedelta(minutes=5)
+        "mechanic_id": user["id"],
+        "user_role": user.get("role_id"),
+        "expires_at": datetime.now(timezone.utc) + timedelta(minutes=10)
     }
     
-    # In production, send OTP via SMS (Twilio)
-    # For now, log it for testing
-    logger.info(f"OTP for mechanic {phone}: {otp}")
-    
-    # TODO: Integrate Twilio SMS for production
-    # For development, we'll use a fixed OTP: 123456
-    if dev_mode:
+    # Send OTP via Twilio SMS in production
+    if not dev_mode:
+        from services.twilio_service import get_twilio_service
+        twilio = get_twilio_service()
+        if twilio.is_configured():
+            sms_result = await twilio.send_otp_sms(user_mobile, otp)
+            if not sms_result.get("success"):
+                logger.error(f"Failed to send OTP SMS: {sms_result.get('error')}")
+                # Fall back to storing OTP for testing
+                logger.info(f"OTP for {phone}: {otp}")
+            else:
+                logger.info(f"OTP SMS sent to {user_mobile}")
+        else:
+            logger.warning(f"Twilio not configured. OTP for {phone}: {otp}")
+    else:
+        # In dev mode, use fixed OTP for testing
         mechanic_otp_store[phone]["otp"] = "123456"
+        logger.info(f"Dev mode OTP for {phone}: 123456")
     
     return {"success": True, "message": "OTP sent successfully"}
 
