@@ -2644,6 +2644,146 @@ export default function InspectionsPage() {
                 </div>
               </ScrollArea>
             </TabsContent>
+
+            {/* SMS Logs Tab */}
+            <TabsContent value="sms" className="absolute inset-0 flex flex-col m-0 overflow-hidden">
+              {/* SMS Stats Header */}
+              {smsStats && (
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border mx-6 mt-2 mb-2 flex-shrink-0">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Wallet className="h-5 w-5 text-blue-600" />
+                      <span className="font-semibold text-gray-900">Fast2SMS Wallet</span>
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={fetchSmsLogs}
+                      className="h-8"
+                    >
+                      <RefreshCw className={`h-4 w-4 ${loadingSmsLogs ? 'animate-spin' : ''}`} />
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-4 gap-3">
+                    <div className="bg-white rounded-lg p-3 border">
+                      <div className="text-2xl font-bold text-green-600">₹{smsStats.wallet_balance?.toFixed(2) || '0.00'}</div>
+                      <div className="text-xs text-gray-500">Balance</div>
+                    </div>
+                    <div className="bg-white rounded-lg p-3 border">
+                      <div className="text-2xl font-bold text-blue-600">{smsStats.wallet_sms_count || 0}</div>
+                      <div className="text-xs text-gray-500">SMS Count</div>
+                    </div>
+                    <div className="bg-white rounded-lg p-3 border">
+                      <div className="text-2xl font-bold text-emerald-600">{smsStats.success_count || 0}</div>
+                      <div className="text-xs text-gray-500">Sent</div>
+                    </div>
+                    <div className="bg-white rounded-lg p-3 border">
+                      <div className="text-2xl font-bold text-red-600">{smsStats.failed_count || 0}</div>
+                      <div className="text-xs text-gray-500">Failed</div>
+                    </div>
+                  </div>
+                  {smsStats.success_rate !== undefined && (
+                    <div className="mt-3 flex items-center gap-2">
+                      <TrendingUp className="h-4 w-4 text-gray-500" />
+                      <span className="text-sm text-gray-600">
+                        Success Rate: <span className={`font-semibold ${smsStats.success_rate >= 90 ? 'text-green-600' : smsStats.success_rate >= 70 ? 'text-yellow-600' : 'text-red-600'}`}>
+                          {smsStats.success_rate}%
+                        </span>
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* SMS Logs List */}
+              <div className="flex-1 min-h-0 relative">
+                {loadingSmsLogs ? (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+                  </div>
+                ) : smsLogs.length === 0 ? (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
+                    <MessageSquare className="h-10 w-10 mb-2 text-gray-300" />
+                    <p className="text-sm">No SMS logs found</p>
+                    <Button variant="outline" size="sm" className="mt-2" onClick={fetchSmsLogs}>
+                      <RefreshCw className="h-4 w-4 mr-1" /> Refresh
+                    </Button>
+                  </div>
+                ) : (
+                  <ScrollArea className="absolute inset-0">
+                    <div className="px-6 py-2 space-y-3">
+                      {smsLogs.map((log, index) => (
+                        <div 
+                          key={log.request_id || index} 
+                          className={`bg-white border rounded-xl p-4 shadow-sm ${log.success ? 'border-l-4 border-l-green-500' : 'border-l-4 border-l-red-500'}`}
+                        >
+                          <div className="flex items-start justify-between gap-2 mb-2">
+                            <div className="flex items-center gap-2">
+                              {log.success ? (
+                                <CheckCircle className="h-5 w-5 text-green-500" />
+                              ) : (
+                                <XCircle className="h-5 w-5 text-red-500" />
+                              )}
+                              <span className={`text-sm font-semibold ${log.success ? 'text-green-700' : 'text-red-700'}`}>
+                                {log.success ? 'SENT' : 'FAILED'}
+                              </span>
+                              <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+                                {log.request_type || 'OTP'}
+                              </span>
+                            </div>
+                            <span className="text-xs text-gray-400">{formatDateTime(log.timestamp || log.created_at)}</span>
+                          </div>
+                          
+                          <div className="space-y-1 text-sm">
+                            <div className="flex items-center gap-2">
+                              <Phone className="h-4 w-4 text-gray-400" />
+                              <span className="text-gray-600">To:</span>
+                              <span className="font-mono text-gray-900">{log.phone_masked || log.phone}</span>
+                            </div>
+                            
+                            <div className="flex items-center gap-2">
+                              <FileText className="h-4 w-4 text-gray-400" />
+                              <span className="text-gray-600">Template ID:</span>
+                              <span className="font-mono text-gray-900">{log.template_id}</span>
+                            </div>
+                            
+                            <div className="flex items-center gap-2">
+                              <span className="text-gray-600 ml-6">Response:</span>
+                              <span className={`px-2 py-0.5 rounded text-xs font-medium ${log.response_status === 200 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                HTTP {log.response_status || 'N/A'}
+                              </span>
+                            </div>
+                            
+                            {log.request_id && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-gray-600 ml-6">Request ID:</span>
+                                <span className="font-mono text-xs text-gray-500">{log.request_id}</span>
+                              </div>
+                            )}
+                            
+                            {log.error_message && (
+                              <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-lg">
+                                <span className="text-red-700 text-xs font-medium">Error: </span>
+                                <span className="text-red-600 text-xs">{log.error_message}</span>
+                              </div>
+                            )}
+                            
+                            {log.response_data && !log.success && (
+                              <div className="mt-2 p-2 bg-gray-50 border rounded-lg">
+                                <span className="text-gray-600 text-xs font-medium">Response: </span>
+                                <pre className="text-xs text-gray-500 overflow-auto max-h-20 mt-1">
+                                  {JSON.stringify(log.response_data, null, 2)}
+                                </pre>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                )}
+              </div>
+            </TabsContent>
             </div>
           </Tabs>
         </SheetContent>
