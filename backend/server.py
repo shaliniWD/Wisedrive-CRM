@@ -13924,6 +13924,140 @@ def format_mechanic_notification(template_key: str, **kwargs) -> dict:
     }
 
 
+# ==================== SMS LOGS & FAST2SMS INTEGRATION ====================
+
+@api_router.get("/sms/logs")
+async def get_sms_logs(
+    limit: int = 50,
+    offset: int = 0,
+    phone: Optional[str] = None,
+    request_type: Optional[str] = None,
+    success: Optional[bool] = None,
+    inspection_id: Optional[str] = None
+):
+    """Get SMS logs with optional filtering"""
+    query = {}
+    
+    if phone:
+        query["$or"] = [
+            {"phone": {"$regex": phone[-10:]}},
+            {"phone_masked": {"$regex": phone[-4:]}}
+        ]
+    
+    if request_type:
+        query["request_type"] = request_type
+    
+    if success is not None:
+        query["success"] = success
+    
+    if inspection_id:
+        query["inspection_id"] = inspection_id
+    
+    # Get total count
+    total = await db.sms_logs.count_documents(query)
+    
+    # Get logs
+    logs = await db.sms_logs.find(
+        query,
+        {"_id": 0}
+    ).sort("created_at", -1).skip(offset).limit(limit).to_list(limit)
+    
+    return {
+        "logs": logs,
+        "total": total,
+        "limit": limit,
+        "offset": offset
+    }
+
+
+@api_router.get("/sms/wallet")
+async def get_sms_wallet_balance():
+    """Get Fast2SMS wallet balance and SMS count"""
+    from services.fast2sms_service import get_fast2sms_service
+    fast2sms = get_fast2sms_service()
+    
+    if not fast2sms.is_configured():
+        return {
+            "success": False,
+            "error": "Fast2SMS not configured",
+            "balance": 0,
+            "sms_count": 0
+        }
+    
+    result = await fast2sms.get_wallet_balance()
+    return result
+
+
+@api_router.get("/sms/stats")
+async def get_sms_stats():
+    """Get SMS statistics summary"""
+    # Get counts by status
+    pipeline = [
+        {
+            "$group": {
+                "_id": "$success",
+                "count": {"$sum": 1}
+            }
+        }
+    ]
+    status_counts = await db.sms_logs.aggregate(pipeline).to_list(10)
+    
+    success_count = 0
+    failed_count = 0
+    for item in status_counts:
+        if item["_id"] == True:
+            success_count = item["count"]
+        else:
+            failed_count = item["count"]
+    
+    # Get counts by request type
+    type_pipeline = [
+        {
+            "$group": {
+                "_id": "$request_type",
+                "count": {"$sum": 1}
+            }
+        }
+    ]
+    type_counts = await db.sms_logs.aggregate(type_pipeline).to_list(20)
+    
+    # Get recent failures with error messages
+    recent_failures = await db.sms_logs.find(
+        {"success": False},
+        {"_id": 0, "timestamp": 1, "phone_masked": 1, "error_message": 1, "request_type": 1}
+    ).sort("created_at", -1).limit(10).to_list(10)
+    
+    # Get wallet balance
+    from services.fast2sms_service import get_fast2sms_service
+    fast2sms = get_fast2sms_service()
+    wallet_info = await fast2sms.get_wallet_balance() if fast2sms.is_configured() else {"balance": 0, "sms_count": 0}
+    
+    return {
+        "total_sent": success_count + failed_count,
+        "success_count": success_count,
+        "failed_count": failed_count,
+        "success_rate": round((success_count / (success_count + failed_count)) * 100, 1) if (success_count + failed_count) > 0 else 0,
+        "by_type": {item["_id"]: item["count"] for item in type_counts if item["_id"]},
+        "recent_failures": recent_failures,
+        "wallet_balance": wallet_info.get("balance", 0),
+        "wallet_sms_count": wallet_info.get("sms_count", 0)
+    }
+
+
+@api_router.post("/sms/test")
+async def test_sms_send(phone: str, message: str = "Test OTP: 123456"):
+    """Test SMS sending (admin only)"""
+    from services.fast2sms_service import get_fast2sms_service
+    fast2sms = get_fast2sms_service()
+    
+    if not fast2sms.is_configured():
+        return {"success": False, "error": "Fast2SMS not configured"}
+    
+    # Send test OTP
+    result = await fast2sms.send_otp_sms(phone, "123456", user_id="test-admin")
+    return result
+
+
 # ==================== TEST DATA SEED FOR MECHANIC APP ====================
 
 @api_router.post("/mechanic/seed-test-data")
