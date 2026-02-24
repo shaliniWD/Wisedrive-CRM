@@ -221,6 +221,16 @@ export const utilityApi = {
   getLeadStatuses: () => axios.get(`${API_URL}/leads/statuses`),
 };
 
+// Cities Management API
+export const citiesApi = {
+  getAll: (includeInactive = true) => axios.get(`${API_URL}/cities`, { params: { include_inactive: includeInactive } }),
+  getNames: () => axios.get(`${API_URL}/cities/names`),
+  create: (data) => axios.post(`${API_URL}/cities`, null, { params: data }),
+  update: (id, data) => axios.put(`${API_URL}/cities/${id}`, null, { params: data }),
+  resolve: (cityName) => axios.get(`${API_URL}/cities/resolve/${encodeURIComponent(cityName)}`),
+  normalizeAll: () => axios.post(`${API_URL}/cities/normalize-all`),
+};
+
 // Seed API
 export const seedApi = {
   seed: () => axios.post(`${API_URL}/seed`),
