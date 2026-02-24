@@ -126,6 +126,7 @@ export const inspectionsApi = {
   update: (id, data) => axios.put(`${API_URL}/inspections/${id}`, data),
   delete: (id) => axios.delete(`${API_URL}/inspections/${id}`),
   collectBalance: (id, data) => axios.post(`${API_URL}/inspections/${id}/collect-balance`, data),
+  checkPaymentStatus: (id, linkId) => axios.get(`${API_URL}/inspections/${id}/check-payment-status`, { params: { link_id: linkId } }),
   updateStatus: (id, status) => axios.patch(`${API_URL}/inspections/${id}/status`, null, { params: { inspection_status: status } }),
   sendReport: (id, data) => axios.post(`${API_URL}/inspections/${id}/send-report`, data),
   updateVehicle: (id, data) => axios.patch(`${API_URL}/inspections/${id}/vehicle`, data),
