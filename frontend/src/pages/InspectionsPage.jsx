@@ -2070,6 +2070,202 @@ export default function InspectionsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Payment Details Modal */}
+      <Dialog open={isPaymentDetailsModalOpen} onOpenChange={closePaymentDetailsModal}>
+        <DialogContent className="sm:max-w-[500px]" data-testid="payment-details-modal">
+          <DialogHeader className="border-b pb-4">
+            <DialogTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-blue-600" />
+              Payment Details
+            </DialogTitle>
+            <DialogDescription className="text-sm text-gray-500 mt-2">
+              View payment status and manage pending payments
+            </DialogDescription>
+          </DialogHeader>
+          
+          {paymentDetailsInspection && (
+            <div className="space-y-4 pt-4">
+              {/* Customer Info */}
+              <div className="bg-slate-50 rounded-lg p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white font-medium">
+                    {paymentDetailsInspection.customer_name?.charAt(0)?.toUpperCase()}
+                  </div>
+                  <div>
+                    <div className="font-medium text-gray-900">{paymentDetailsInspection.customer_name}</div>
+                    <div className="text-sm text-gray-500 font-mono">{paymentDetailsInspection.customer_mobile}</div>
+                  </div>
+                </div>
+                
+                <div className="text-xs text-gray-500 space-y-1">
+                  <div className="flex justify-between">
+                    <span>Package:</span>
+                    <span className="font-medium text-gray-700">{paymentDetailsInspection.package_type || 'N/A'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Vehicle:</span>
+                    <span className="font-medium text-gray-700 font-mono">{paymentDetailsInspection.car_number || 'N/A'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment Summary */}
+              <div className="bg-white border rounded-lg p-4 space-y-3">
+                <h4 className="font-medium text-gray-900 flex items-center gap-2">
+                  <DollarSign className="h-4 w-4 text-gray-500" />
+                  Payment Summary
+                </h4>
+                
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center py-2 border-b">
+                    <span className="text-gray-600">Total Amount</span>
+                    <span className="font-semibold text-gray-900">₹{(paymentDetailsInspection.total_amount || 0).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-2 border-b">
+                    <span className="text-gray-600">Amount Paid</span>
+                    <span className="font-semibold text-emerald-600">₹{(paymentDetailsInspection.amount_paid || 0).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-gray-700 font-medium">Pending Amount</span>
+                    <span className={`font-bold text-lg ${(paymentDetailsInspection.balance_due || 0) > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                      ₹{(paymentDetailsInspection.balance_due || 0).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Payment Status Badge */}
+                <div className="pt-2 border-t">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-500">Status:</span>
+                    {(paymentDetailsInspection.payment_status === 'FULLY_PAID' || paymentDetailsInspection.payment_status === 'PAID' || (paymentDetailsInspection.balance_due || 0) <= 0) ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200">
+                        <CheckCircle className="h-3.5 w-3.5" />
+                        Fully Paid
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200">
+                        <AlertCircle className="h-3.5 w-3.5" />
+                        Payment Pending
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment Link Section - Only show if there's pending amount */}
+              {(paymentDetailsInspection.balance_due || 0) > 0 && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <h4 className="font-medium text-amber-800 mb-3 flex items-center gap-2">
+                    <Link2 className="h-4 w-4" />
+                    Collect Pending Payment
+                  </h4>
+                  
+                  {!paymentLink ? (
+                    <div className="space-y-3">
+                      <p className="text-sm text-amber-700">
+                        Generate a Razorpay payment link for <strong>₹{(paymentDetailsInspection.balance_due || 0).toLocaleString()}</strong> to share with the customer.
+                      </p>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => handleCreatePaymentLink(true)}
+                          disabled={creatingPaymentLink}
+                          className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
+                          size="sm"
+                        >
+                          {creatingPaymentLink ? (
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          ) : (
+                            <Send className="h-4 w-4 mr-2" />
+                          )}
+                          Send via WhatsApp
+                        </Button>
+                        <Button
+                          onClick={() => handleCreatePaymentLink(false)}
+                          disabled={creatingPaymentLink}
+                          variant="outline"
+                          size="sm"
+                          className="border-amber-300 text-amber-700 hover:bg-amber-100"
+                        >
+                          {creatingPaymentLink ? (
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          ) : (
+                            <Link2 className="h-4 w-4 mr-2" />
+                          )}
+                          Generate Link
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 text-emerald-700 font-medium">
+                        <CheckCircle className="h-4 w-4" />
+                        Payment Link Generated
+                        {paymentLink.whatsappSent && (
+                          <span className="text-xs bg-emerald-100 px-2 py-0.5 rounded-full">WhatsApp Sent</span>
+                        )}
+                      </div>
+                      
+                      {/* Link Display */}
+                      <div className="flex items-center gap-2 bg-white rounded-lg p-2 border border-emerald-200">
+                        <Link2 className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                        <input
+                          type="text"
+                          value={paymentLink.url || ''}
+                          readOnly
+                          className="flex-1 text-xs bg-transparent border-none outline-none text-gray-600 truncate"
+                        />
+                        <Button
+                          onClick={handleCopyPaymentLink}
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2"
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          onClick={() => window.open(paymentLink.url, '_blank')}
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+
+                      {/* Share Options */}
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={handleShareViaWhatsApp}
+                          size="sm"
+                          className="flex-1 bg-green-500 hover:bg-green-600"
+                        >
+                          <Send className="h-4 w-4 mr-2" />
+                          Share via WhatsApp
+                        </Button>
+                        <Button
+                          onClick={() => setPaymentLink(null)}
+                          variant="outline"
+                          size="sm"
+                        >
+                          <RefreshCw className="h-4 w-4 mr-1" />
+                          New Link
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter className="border-t pt-4 mt-4">
+            <Button variant="outline" onClick={closePaymentDetailsModal}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
