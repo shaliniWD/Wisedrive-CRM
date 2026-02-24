@@ -3905,7 +3905,7 @@ Thank you for choosing Wisedrive!"""
                 "payment_type": "Partial" if is_partial_payment else "Full",
                 "payment_date": datetime.now(timezone.utc).isoformat(),
                 "razorpay_payment_id": payment_id,
-                "inspection_status": "SCHEDULED" if has_schedule else "UNSCHEDULED",
+                "inspection_status": "NEW_INSPECTION",
                 "scheduled_date": schedule_data.get("inspection_date") or None,
                 "scheduled_time": schedule_data.get("inspection_time") or None,
                 "slot_number": i + 1,
