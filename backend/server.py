@@ -13558,6 +13558,30 @@ async def get_mechanic_inspections(
     
     logger.info(f"Fetching inspections for mechanic: {mechanic_id}, cities: {mechanic_cities}")
     
+    # Resolve mechanic cities to include aliases
+    all_city_variants = []
+    for mc in mechanic_cities:
+        all_city_variants.append(mc)
+        all_city_variants.append(mc.lower())
+        all_city_variants.append(mc.upper())
+        all_city_variants.append(mc.title())
+        
+        # Check if this city has aliases in the master table
+        city_doc = await db.cities.find_one({
+            "$or": [
+                {"name": {"$regex": f"^{mc}$", "$options": "i"}},
+                {"aliases": {"$regex": f"^{mc}$", "$options": "i"}}
+            ]
+        })
+        if city_doc:
+            all_city_variants.append(city_doc["name"])
+            all_city_variants.extend(city_doc.get("aliases", []))
+    
+    # Remove duplicates while preserving order
+    all_city_variants = list(dict.fromkeys(all_city_variants))
+    
+    logger.info(f"Resolved city variants for mechanic: {all_city_variants}")
+    
     # Base query: inspections that are either:
     # 1. Assigned to this mechanic (any status)
     # 2. Unassigned but in mechanic's cities (NEW_INSPECTION or ASSIGNED_TO_MECHANIC status)
@@ -13566,7 +13590,7 @@ async def get_mechanic_inspections(
             {"mechanic_id": mechanic_id},
             {
                 "mechanic_id": {"$in": [None, ""]},
-                "city": {"$in": [c.lower() for c in mechanic_cities] + mechanic_cities + [c.upper() for c in mechanic_cities]},
+                "city": {"$in": all_city_variants},
                 "inspection_status": {"$in": ["NEW_INSPECTION", "ASSIGNED_TO_MECHANIC"]}
             }
         ]
