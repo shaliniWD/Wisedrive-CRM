@@ -13244,10 +13244,19 @@ async def mechanic_request_otp(data: MechanicOtpRequest):
 @api_router.post("/auth/verify-otp")
 async def mechanic_verify_otp(data: MechanicOtpVerify):
     """Verify OTP and return auth token for mechanic app users (mechanics, country heads, CEOs)"""
-    phone = data.phone.strip().replace(" ", "")
+    # Normalize phone number - same logic as request-otp
+    phone = data.phone.strip().replace(" ", "").replace("-", "")
+    if not phone.startswith("+"):
+        phone = "+91" + phone[-10:]
+    else:
+        # Ensure +91 format for Indian numbers
+        phone = "+91" + phone[-10:]
+    
+    # Use normalized phone for lookup
+    normalized_phone = phone
     otp = data.otp.strip()
     
-    stored = mechanic_otp_store.get(phone)
+    stored = mechanic_otp_store.get(normalized_phone)
     
     if not stored:
         raise HTTPException(status_code=400, detail="OTP expired or not requested")
