@@ -2216,7 +2216,7 @@ export default function InspectionsPage() {
                           className="flex-1 text-xs bg-transparent border-none outline-none text-gray-600 truncate"
                         />
                         <Button
-                          onClick={handleCopyPaymentLink}
+                          onClick={handleCopyPaymentDetailsLink}
                           variant="ghost"
                           size="sm"
                           className="h-7 px-2"
