@@ -1512,18 +1512,6 @@ export default function InspectionsPage() {
                       </span>
                     </td>
                     
-                    {/* Notes & Activity Column */}
-                    <td className="px-3 py-3">
-                      <button
-                        onClick={() => openNotesDrawer(inspection)}
-                        className="group p-2 rounded-lg transition-all duration-200 hover:bg-blue-50 hover:shadow-sm"
-                        title="Notes & Activity Log"
-                        data-testid={`notes-button-${inspection.id}`}
-                      >
-                        <StickyNote className="h-4 w-4 text-gray-400 group-hover:text-blue-600 group-hover:scale-110 transition-all" />
-                      </button>
-                    </td>
-                    
                     {/* Inspection Report Column */}
                     <td className="px-3 py-3">
                       <div className="flex items-center gap-1">
@@ -1550,6 +1538,18 @@ export default function InspectionsPage() {
                           </button>
                         )}
                       </div>
+                    </td>
+                    
+                    {/* Notes & Activity Column */}
+                    <td className="px-3 py-3 text-center">
+                      <button
+                        onClick={() => openNotesDrawer(inspection)}
+                        className="group p-2 rounded-lg transition-all duration-200 hover:bg-blue-50 hover:shadow-sm"
+                        title="Notes & Activity Log"
+                        data-testid={`notes-button-${inspection.id}`}
+                      >
+                        <StickyNote className="h-4 w-4 text-gray-400 group-hover:text-blue-600 group-hover:scale-110 transition-all" />
+                      </button>
                     </td>
                   </tr>
                 )})
