@@ -54,8 +54,15 @@ export default function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [countryCode] = useState('+91');
   const [inputFocused, setInputFocused] = useState(false);
+  const [debugLogs, setDebugLogs] = useState<string[]>([]);
+  const [showDebugModal, setShowDebugModal] = useState(false);
   
   const otpInputs = useRef<(TextInput | null)[]>([]);
+
+  const addLog = (message: string) => {
+    const timestamp = new Date().toLocaleTimeString();
+    setDebugLogs(prev => [...prev, `[${timestamp}] ${message}`]);
+  };
 
   const handleSendOtp = async () => {
     if (phone.length < 10) {
@@ -64,13 +71,47 @@ export default function LoginScreen() {
     }
 
     setIsLoading(true);
+    setDebugLogs([]); // Clear previous logs
+    
     try {
       const fullPhone = `${countryCode}${phone}`;
-      await authApi.requestOtp(fullPhone);
+      addLog(`Requesting OTP for: ${fullPhone}`);
+      addLog(`API URL: ${API_BASE_URL}/auth/request-otp`);
+      
+      // Make direct API call with detailed logging
+      const response = await axios.post(`${API_BASE_URL}/auth/request-otp`, {
+        phone: fullPhone
+      }, {
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 30000
+      });
+      
+      addLog(`Response Status: ${response.status}`);
+      addLog(`Response Data: ${JSON.stringify(response.data)}`);
+      
       setStep('otp');
       Alert.alert('Success', 'OTP sent successfully');
     } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.detail || 'Failed to send OTP');
+      addLog(`ERROR occurred!`);
+      
+      if (error.response) {
+        // Server responded with error
+        addLog(`Status Code: ${error.response.status}`);
+        addLog(`Error Data: ${JSON.stringify(error.response.data)}`);
+        addLog(`Headers: ${JSON.stringify(error.response.headers)}`);
+        
+        const errorMessage = error.response.data?.detail || error.response.data?.message || 'Unknown server error';
+        Alert.alert('Error', errorMessage);
+      } else if (error.request) {
+        // Request made but no response
+        addLog(`No response received`);
+        addLog(`Request: ${JSON.stringify(error.request._url || error.request)}`);
+        Alert.alert('Error', 'No response from server. Please check your internet connection.');
+      } else {
+        // Error setting up request
+        addLog(`Request setup error: ${error.message}`);
+        Alert.alert('Error', `Request failed: ${error.message}`);
+      }
     } finally {
       setIsLoading(false);
     }
