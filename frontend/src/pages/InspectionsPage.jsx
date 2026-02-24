@@ -318,6 +318,16 @@ export default function InspectionsPage() {
   const [creatingPaymentLink, setCreatingPaymentLink] = useState(false);
   const [paymentLink, setPaymentLink] = useState(null);
   
+  // Notes & Activity Drawer
+  const [isNotesDrawerOpen, setIsNotesDrawerOpen] = useState(false);
+  const [notesInspection, setNotesInspection] = useState(null);
+  const [notesTab, setNotesTab] = useState('notes');
+  const [inspectionNotes, setInspectionNotes] = useState([]);
+  const [inspectionActivities, setInspectionActivities] = useState([]);
+  const [loadingNotes, setLoadingNotes] = useState(false);
+  const [newNote, setNewNote] = useState('');
+  const [savingNote, setSavingNote] = useState(false);
+  
   // Vehicle Edit Modal
   const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
   const [vehicleEditInspection, setVehicleEditInspection] = useState(null);
