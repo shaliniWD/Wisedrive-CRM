@@ -13235,8 +13235,8 @@ async def mechanic_request_otp(data: MechanicOtpRequest):
             logger.warning(f"Fast2SMS not configured. OTP for {phone}: {otp}")
     else:
         # In dev mode, use fixed OTP for testing
-        mechanic_otp_store[phone]["otp"] = "123456"
-        logger.info(f"Dev mode OTP for {phone}: 123456")
+        mechanic_otp_store[normalized_phone]["otp"] = "123456"
+        logger.info(f"Dev mode OTP for {normalized_phone}: 123456")
     
     return {"success": True, "message": "OTP sent successfully"}
 
