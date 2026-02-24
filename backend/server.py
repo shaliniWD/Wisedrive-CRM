@@ -4858,6 +4858,84 @@ Thank you for choosing Wisedrive!"""
     }
 
 
+@api_router.get("/inspections/{inspection_id}/check-payment-status")
+async def check_inspection_payment_status(
+    inspection_id: str,
+    link_id: str = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Check payment status for an inspection's balance payment link"""
+    from services.razorpay_service import get_razorpay_service
+    
+    inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
+    if not inspection:
+        raise HTTPException(status_code=404, detail="Inspection not found")
+    
+    # Get the payment link ID from the inspection or from the request
+    payment_link_id = link_id or inspection.get("balance_payment_link_id")
+    if not payment_link_id:
+        raise HTTPException(status_code=400, detail="No payment link found for this inspection")
+    
+    # Check payment status with Razorpay
+    razorpay = get_razorpay_service()
+    if not razorpay.is_configured():
+        raise HTTPException(status_code=500, detail="Razorpay not configured")
+    
+    try:
+        link_status = await razorpay.get_payment_link_status(payment_link_id)
+        
+        if link_status.get("paid"):
+            # Payment was received - update inspection
+            payment_amount = link_status.get("amount_paid", 0) / 100  # Razorpay amounts are in paise
+            
+            current_paid = inspection.get("amount_paid", 0)
+            current_balance = inspection.get("balance_due", 0)
+            
+            new_paid = current_paid + payment_amount
+            new_balance = max(0, current_balance - payment_amount)
+            new_status = "FULLY_PAID" if new_balance <= 0 else "PARTIALLY_PAID"
+            
+            # Update the payment transaction record
+            transactions = inspection.get("payment_transactions", [])
+            for txn in transactions:
+                if txn.get("payment_link_id") == payment_link_id:
+                    txn["status"] = "completed"
+                    txn["completed_at"] = datetime.now(timezone.utc).isoformat()
+                    txn["razorpay_payment_id"] = link_status.get("payment_id")
+                    break
+            
+            await db.inspections.update_one(
+                {"id": inspection_id},
+                {"$set": {
+                    "amount_paid": new_paid,
+                    "balance_due": new_balance,
+                    "payment_status": new_status,
+                    "payment_transactions": transactions,
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+            
+            return {
+                "paid": True,
+                "payment_status": new_status,
+                "amount_paid": new_paid,
+                "balance_due": new_balance,
+                "razorpay_payment_id": link_status.get("payment_id")
+            }
+        else:
+            return {
+                "paid": False,
+                "payment_status": inspection.get("payment_status", "PENDING"),
+                "amount_paid": inspection.get("amount_paid", 0),
+                "balance_due": inspection.get("balance_due", 0),
+                "link_status": link_status.get("status", "created")
+            }
+            
+    except Exception as e:
+        logger.error(f"Error checking payment status: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to check payment status: {str(e)}")
+
+
 @api_router.patch("/inspections/{inspection_id}/status")
 async def update_inspection_status(
     inspection_id: str,
