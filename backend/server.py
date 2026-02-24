@@ -13284,7 +13284,7 @@ async def mechanic_verify_otp(data: MechanicOtpVerify):
         mechanic_profile = {
             "id": mock_mechanic_id,
             "name": "Dev Mechanic",
-            "phone": phone,
+            "phone": normalized_phone,
             "email": "dev.mechanic@wisedrive.com",
             "city": "Bangalore",
             "inspection_cities": ["Bangalore", "Hyderabad", "Chennai"],
