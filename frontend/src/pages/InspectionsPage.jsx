@@ -2432,6 +2432,186 @@ export default function InspectionsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Notes & Activity Drawer */}
+      <Sheet open={isNotesDrawerOpen} onOpenChange={(open) => !open && closeNotesDrawer()}>
+        <SheetContent className="sm:max-w-[480px] flex flex-col h-full p-0" data-testid="notes-drawer">
+          <SheetHeader className="px-6 py-4 border-b bg-gradient-to-r from-slate-50 to-white flex-shrink-0">
+            <SheetTitle className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white font-medium">
+                {notesInspection?.customer_name?.charAt(0)?.toUpperCase() || 'I'}
+              </div>
+              <div>
+                <div className="font-semibold text-gray-900">{notesInspection?.customer_name}</div>
+                <div className="text-sm text-gray-500 font-mono">{notesInspection?.car_number || 'No vehicle'}</div>
+              </div>
+            </SheetTitle>
+            
+            {/* Quick Info */}
+            {notesInspection && (
+              <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded-full">
+                  <MapPin className="h-3 w-3" /> {notesInspection.city || 'N/A'}
+                </span>
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-50 text-purple-700 rounded-full">
+                  <Calendar className="h-3 w-3" /> {notesInspection.scheduled_date ? formatDate(notesInspection.scheduled_date) : 'Not scheduled'}
+                </span>
+                <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full ${
+                  notesInspection.inspection_status === 'INSPECTION_COMPLETED' ? 'bg-emerald-50 text-emerald-700' :
+                  notesInspection.inspection_status === 'NEW_INSPECTION' ? 'bg-blue-50 text-blue-700' :
+                  'bg-amber-50 text-amber-700'
+                }`}>
+                  <Activity className="h-3 w-3" /> {INSPECTION_STATUSES.find(s => s.value === notesInspection.inspection_status)?.label || notesInspection.inspection_status}
+                </span>
+              </div>
+            )}
+          </SheetHeader>
+
+          <Tabs value={notesTab} onValueChange={setNotesTab} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+            <TabsList className="grid w-full grid-cols-2 mx-6 my-3 flex-shrink-0" style={{ width: 'calc(100% - 48px)' }}>
+              <TabsTrigger value="notes" className="flex items-center gap-2" data-testid="notes-tab">
+                <StickyNote className="h-4 w-4" /> Notes
+              </TabsTrigger>
+              <TabsTrigger value="activities" className="flex items-center gap-2" data-testid="activities-tab">
+                <Activity className="h-4 w-4" /> Activity Log
+              </TabsTrigger>
+            </TabsList>
+
+            <div className="flex-1 min-h-0 overflow-hidden relative">
+              <TabsContent value="notes" className="absolute inset-0 flex flex-col m-0 overflow-hidden">
+              {/* Add Note Section */}
+              <div className="bg-slate-50 rounded-xl p-4 border mx-6 mt-2 mb-2 flex-shrink-0">
+                <Label className="text-sm font-medium mb-2 block">Add a note</Label>
+                <div className="flex gap-2">
+                  <textarea
+                    value={newNote}
+                    onChange={(e) => setNewNote(e.target.value)}
+                    placeholder="Write your note here..."
+                    className="flex-1 min-h-[60px] px-3 py-2 border rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    data-testid="new-note-input"
+                  />
+                </div>
+                <div className="flex justify-end mt-2">
+                  <Button 
+                    onClick={handleAddNote} 
+                    disabled={savingNote || !newNote.trim()}
+                    size="sm"
+                    className="bg-gradient-to-r from-blue-600 to-blue-700"
+                    data-testid="add-note-button"
+                  >
+                    {savingNote ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Send className="h-4 w-4 mr-1" />}
+                    Add Note
+                  </Button>
+                </div>
+              </div>
+
+              {/* Notes List */}
+              <div className="flex-1 min-h-0 relative">
+                {loadingNotes ? (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+                  </div>
+                ) : inspectionNotes.length === 0 ? (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
+                    <StickyNote className="h-10 w-10 mb-2 text-gray-300" />
+                    <p className="text-sm">No notes yet. Add the first note!</p>
+                  </div>
+                ) : (
+                  <ScrollArea className="absolute inset-0">
+                    <div className="space-y-3 px-6 py-2 pr-4">
+                    {inspectionNotes.map((note) => (
+                      <div key={note.id} className="bg-white border rounded-xl p-4 shadow-sm">
+                        <div className="flex items-start gap-3">
+                          <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium text-xs flex-shrink-0">
+                            {note.user_name?.charAt(0)?.toUpperCase() || 'U'}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2 mb-1">
+                              <span className="font-medium text-sm text-gray-900">{note.user_name || 'Unknown'}</span>
+                              <span className="text-xs text-gray-400">{formatDateTime(note.created_at)}</span>
+                            </div>
+                            <p className="text-sm text-gray-700 whitespace-pre-wrap">{note.note}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    </div>
+                  </ScrollArea>
+                )}
+              </div>
+            </TabsContent>
+
+              <TabsContent value="activities" className="absolute inset-0 m-0 overflow-hidden">
+              <ScrollArea className="h-full">
+                <div className="space-y-3 px-6 py-2 pr-4">
+              {loadingNotes ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+                </div>
+              ) : inspectionActivities.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8 text-gray-500">
+                  <Activity className="h-10 w-10 mb-2 text-gray-300" />
+                  <p className="text-sm">No activities recorded yet.</p>
+                </div>
+              ) : (
+                <>
+                  {inspectionActivities.map((activity) => {
+                    const getActivityStyle = (action) => {
+                      switch(action) {
+                        case 'status_changed': return { bg: 'bg-blue-500', icon: '🔄' };
+                        case 'mechanic_assigned': return { bg: 'bg-purple-500', icon: '👤' };
+                        case 'mechanic_unassigned': return { bg: 'bg-orange-500', icon: '👤' };
+                        case 'note_added': return { bg: 'bg-amber-500', icon: '📝' };
+                        case 'payment_link_sent': return { bg: 'bg-green-500', icon: '💳' };
+                        case 'payment_received': return { bg: 'bg-emerald-500', icon: '✅' };
+                        case 'schedule_updated': return { bg: 'bg-indigo-500', icon: '📅' };
+                        case 'vehicle_updated': return { bg: 'bg-cyan-500', icon: '🚗' };
+                        default: return { bg: 'bg-gray-500', icon: '📋' };
+                      }
+                    };
+                    const style = getActivityStyle(activity.action);
+                    
+                    return (
+                      <div key={activity.id} className="bg-white border rounded-xl p-4 shadow-sm">
+                        <div className="flex items-start gap-3">
+                          <div className={`h-8 w-8 rounded-full ${style.bg} flex items-center justify-center text-white text-sm flex-shrink-0`}>
+                            {style.icon}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2 mb-1">
+                              <span className="font-medium text-sm text-gray-900 uppercase">
+                                {activity.action?.replace(/_/g, ' ')}
+                              </span>
+                              <span className="text-xs text-gray-400">{formatDateTime(activity.created_at)}</span>
+                            </div>
+                            <p className="text-sm text-gray-600">{activity.details}</p>
+                            {activity.old_value && activity.new_value && (
+                              <div className="mt-1 text-xs text-gray-500">
+                                <span className="text-gray-600">{activity.old_value}</span>
+                                <span className="mx-1">→</span>
+                                <span className="font-medium text-gray-900">{activity.new_value}</span>
+                              </div>
+                            )}
+                            <div className="flex items-center gap-1 mt-2">
+                              <div className="h-5 w-5 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 text-[10px] font-medium">
+                                {activity.user_name?.charAt(0)?.toUpperCase() || 'S'}
+                              </div>
+                              <span className="text-xs text-gray-500">by <span className="font-medium">{activity.user_name || 'System'}</span></span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </>
+              )}
+                </div>
+              </ScrollArea>
+            </TabsContent>
+            </div>
+          </Tabs>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
