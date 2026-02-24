@@ -60,7 +60,8 @@
           "bluetoothAlwaysPermission": "Allow $(PRODUCT_NAME) to connect to OBD-II scanners"
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true
