@@ -105,6 +105,26 @@ All loaders use consistent design: white/80 backdrop with blur, centered spinner
 5. **Status Badge Fix** - Added `whitespace-nowrap` to prevent "RCB WhatsApp" from wrapping
 6. **Employees API Fix** - Now returns actual `assigned_cities` array instead of just country
 
+### Inspections Payment UI Enhancement (Feb 24, 2026) ✅
+**Simplified Payment Column:**
+- Shows only "Fully Paid" (green badge) or "Pending" (amber badge)
+- Clickable badges with "Click for details" hint
+
+**Payment Details Modal:**
+- Customer info section with avatar, name, phone, package, vehicle
+- Payment summary: Total Amount, Amount Paid, Pending Amount
+- Status badge showing payment status
+- **Collect Pending Payment section** (only shown when pending amount > 0):
+  - Razorpay payment link generation
+  - "Send via WhatsApp" button - creates and sends link automatically
+  - "Generate Link" button - generates link to copy/share manually
+  - Share options: Copy link, Open link, Share via WhatsApp
+
+### Mechanic Filtering Fix (Feb 24, 2026) ✅
+**Bug:** Mechanics with no cities assigned appeared in ALL city dropdowns
+**Fix:** Changed filter from `mechanicCities.length === 0 || ...` to only `mechanicCities.includes(inspectionCity)`
+**Location:** `/app/frontend/src/pages/InspectionsPage.jsx` lines 1806-1829
+
 ### Round-Robin Assignment Fix (Feb 23, 2026) ✅
 **Root Cause:** Sales executives had no cities in their `assigned_cities` array
 - Only Sneha Reddy had `assigned_cities: ['Vizag']`
