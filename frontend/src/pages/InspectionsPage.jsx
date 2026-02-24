@@ -492,6 +492,65 @@ export default function InspectionsPage() {
     setPaymentLink(null);
   };
 
+  // Open Payment Details Modal - check for existing payment link
+  const openPaymentDetailsModal = (inspection) => {
+    setPaymentDetailsInspection(inspection);
+    // Check if inspection already has a payment link
+    if (inspection.balance_payment_link_url) {
+      setPaymentLink({
+        url: inspection.balance_payment_link_url,
+        linkId: inspection.balance_payment_link_id,
+        whatsappSent: false,
+        isExisting: true
+      });
+    } else {
+      setPaymentLink(null);
+    }
+    setIsPaymentDetailsModalOpen(true);
+  };
+
+  // Check payment status for existing payment link
+  const handleCheckPaymentLinkStatus = async () => {
+    if (!paymentDetailsInspection || !paymentLink?.linkId) {
+      toast.error('No payment link to check');
+      return;
+    }
+    
+    setCheckingPaymentStatus(true);
+    try {
+      const response = await inspectionsApi.checkPaymentStatus(paymentDetailsInspection.id, paymentLink.linkId);
+      const { payment_status, amount_paid, balance_due } = response.data;
+      
+      if (payment_status === 'FULLY_PAID' || payment_status === 'PAID') {
+        toast.success('Payment received! Balance has been cleared.');
+        // Update the local state
+        setPaymentDetailsInspection(prev => ({
+          ...prev,
+          amount_paid: amount_paid,
+          balance_due: balance_due,
+          payment_status: payment_status
+        }));
+        // Refresh the data
+        fetchData();
+      } else if (payment_status === 'PARTIALLY_PAID') {
+        toast.info(`Partial payment received. New balance: ₹${balance_due?.toLocaleString()}`);
+        setPaymentDetailsInspection(prev => ({
+          ...prev,
+          amount_paid: amount_paid,
+          balance_due: balance_due,
+          payment_status: payment_status
+        }));
+        fetchData();
+      } else {
+        toast.info('Payment is still pending');
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to check payment status');
+    } finally {
+      setCheckingPaymentStatus(false);
+    }
+  };
+
   // Create Payment Link for pending amount
   const handleCreatePaymentLink = async (sendViaWhatsApp = false) => {
     if (!paymentDetailsInspection) return;
@@ -512,8 +571,16 @@ export default function InspectionsPage() {
       setPaymentLink({
         url: response.data?.payment_link,
         linkId: response.data?.payment_link_id,
-        whatsappSent: sendViaWhatsApp
+        whatsappSent: sendViaWhatsApp,
+        isExisting: false
       });
+      
+      // Update the inspection record with the new link
+      setPaymentDetailsInspection(prev => ({
+        ...prev,
+        balance_payment_link_url: response.data?.payment_link,
+        balance_payment_link_id: response.data?.payment_link_id
+      }));
       
       if (sendViaWhatsApp) {
         toast.success('Payment link sent via WhatsApp!');
