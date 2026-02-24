@@ -2236,7 +2236,7 @@ export default function InspectionsPage() {
                       {/* Share Options */}
                       <div className="flex gap-2">
                         <Button
-                          onClick={handleShareViaWhatsApp}
+                          onClick={handleSharePaymentViaWhatsApp}
                           size="sm"
                           className="flex-1 bg-green-500 hover:bg-green-600"
                         >
