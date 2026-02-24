@@ -13948,6 +13948,286 @@ def format_mechanic_notification(template_key: str, **kwargs) -> dict:
     }
 
 
+# ==================== SETTINGS & TOKEN MANAGEMENT ====================
+
+class TokenUpdateRequest(BaseModel):
+    token: str
+    token_type: str  # 'meta_ads', 'fast2sms', etc.
+
+@api_router.get("/settings/tokens")
+async def get_token_status():
+    """Get status of all API tokens"""
+    tokens_status = []
+    
+    # Meta Ads Token
+    meta_token = os.environ.get("META_ACCESS_TOKEN", "")
+    meta_status = {
+        "id": "meta_ads",
+        "name": "Meta (Facebook) Ads",
+        "description": "Used for syncing ad campaign data and analytics",
+        "token_preview": f"{meta_token[:20]}...{meta_token[-10:]}" if len(meta_token) > 30 else "Not configured",
+        "is_configured": bool(meta_token),
+        "status": "unknown",
+        "last_checked": None,
+        "error": None
+    }
+    
+    # Test Meta token
+    if meta_token:
+        try:
+            import httpx
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(
+                    "https://graph.facebook.com/v18.0/me",
+                    params={"access_token": meta_token}
+                )
+                if response.status_code == 200:
+                    meta_status["status"] = "valid"
+                    meta_status["last_checked"] = datetime.now(timezone.utc).isoformat()
+                else:
+                    error_data = response.json()
+                    meta_status["status"] = "invalid"
+                    meta_status["error"] = error_data.get("error", {}).get("message", "Unknown error")
+        except Exception as e:
+            meta_status["status"] = "error"
+            meta_status["error"] = str(e)
+    
+    tokens_status.append(meta_status)
+    
+    # Fast2SMS Token
+    fast2sms_key = os.environ.get("FAST2SMS_API_KEY", "")
+    fast2sms_status = {
+        "id": "fast2sms",
+        "name": "Fast2SMS",
+        "description": "Used for sending OTP and notification SMS",
+        "token_preview": f"{fast2sms_key[:15]}...{fast2sms_key[-5:]}" if len(fast2sms_key) > 20 else "Not configured",
+        "is_configured": bool(fast2sms_key),
+        "status": "unknown",
+        "last_checked": None,
+        "error": None,
+        "extra": {}
+    }
+    
+    # Test Fast2SMS token (get wallet balance)
+    if fast2sms_key:
+        try:
+            import httpx
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(
+                    "https://www.fast2sms.com/dev/wallet",
+                    params={"authorization": fast2sms_key}
+                )
+                result = response.json()
+                if result.get("return") == True:
+                    fast2sms_status["status"] = "valid"
+                    fast2sms_status["last_checked"] = datetime.now(timezone.utc).isoformat()
+                    fast2sms_status["extra"] = {
+                        "wallet_balance": result.get("wallet"),
+                        "sms_count": result.get("sms_count")
+                    }
+                else:
+                    fast2sms_status["status"] = "invalid"
+                    fast2sms_status["error"] = result.get("message", "Invalid API key")
+        except Exception as e:
+            fast2sms_status["status"] = "error"
+            fast2sms_status["error"] = str(e)
+    
+    tokens_status.append(fast2sms_status)
+    
+    # Twilio Token
+    twilio_sid = os.environ.get("TWILIO_ACCOUNT_SID", "")
+    twilio_status = {
+        "id": "twilio",
+        "name": "Twilio",
+        "description": "Used for WhatsApp messaging and notifications",
+        "token_preview": f"{twilio_sid[:10]}...{twilio_sid[-5:]}" if len(twilio_sid) > 15 else "Not configured",
+        "is_configured": bool(twilio_sid),
+        "status": "configured" if twilio_sid else "not_configured",
+        "last_checked": datetime.now(timezone.utc).isoformat() if twilio_sid else None,
+        "error": None
+    }
+    tokens_status.append(twilio_status)
+    
+    # Razorpay Token
+    razorpay_key = os.environ.get("RAZORPAY_KEY_ID", "")
+    razorpay_status = {
+        "id": "razorpay",
+        "name": "Razorpay",
+        "description": "Used for payment link generation and processing",
+        "token_preview": f"{razorpay_key[:8]}...{razorpay_key[-4:]}" if len(razorpay_key) > 12 else "Not configured",
+        "is_configured": bool(razorpay_key),
+        "status": "configured" if razorpay_key else "not_configured",
+        "last_checked": datetime.now(timezone.utc).isoformat() if razorpay_key else None,
+        "error": None
+    }
+    tokens_status.append(razorpay_status)
+    
+    return {"tokens": tokens_status}
+
+
+@api_router.post("/settings/tokens/update")
+async def update_token(request: TokenUpdateRequest):
+    """Update an API token - stores in database for persistence"""
+    token_type = request.token_type
+    new_token = request.token.strip()
+    
+    if not new_token:
+        raise HTTPException(status_code=400, detail="Token cannot be empty")
+    
+    # Validate token based on type
+    validation_result = {"valid": False, "message": "Unknown token type"}
+    
+    if token_type == "meta_ads":
+        try:
+            import httpx
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(
+                    "https://graph.facebook.com/v18.0/me",
+                    params={"access_token": new_token}
+                )
+                if response.status_code == 200:
+                    validation_result = {"valid": True, "message": "Token validated successfully"}
+                else:
+                    error_data = response.json()
+                    validation_result = {
+                        "valid": False, 
+                        "message": error_data.get("error", {}).get("message", "Invalid token")
+                    }
+        except Exception as e:
+            validation_result = {"valid": False, "message": f"Validation failed: {str(e)}"}
+    
+    elif token_type == "fast2sms":
+        try:
+            import httpx
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(
+                    "https://www.fast2sms.com/dev/wallet",
+                    params={"authorization": new_token}
+                )
+                result = response.json()
+                if result.get("return") == True:
+                    validation_result = {
+                        "valid": True, 
+                        "message": f"Token valid. Balance: ₹{result.get('wallet')}"
+                    }
+                else:
+                    validation_result = {"valid": False, "message": result.get("message", "Invalid API key")}
+        except Exception as e:
+            validation_result = {"valid": False, "message": f"Validation failed: {str(e)}"}
+    
+    if not validation_result["valid"]:
+        raise HTTPException(status_code=400, detail=validation_result["message"])
+    
+    # Store token in database for persistence across deployments
+    await db.settings.update_one(
+        {"key": f"token_{token_type}"},
+        {
+            "$set": {
+                "key": f"token_{token_type}",
+                "value": new_token,
+                "updated_at": datetime.now(timezone.utc),
+                "updated_by": "admin"
+            }
+        },
+        upsert=True
+    )
+    
+    # Also update environment variable for immediate use
+    if token_type == "meta_ads":
+        os.environ["META_ACCESS_TOKEN"] = new_token
+        # Reinitialize Meta Ads service
+        from services.meta_ads_service import MetaAdsService
+        global meta_ads_service
+        meta_ads_service = MetaAdsService()
+        logger.info("Meta Ads token updated and service reinitialized")
+    elif token_type == "fast2sms":
+        os.environ["FAST2SMS_API_KEY"] = new_token
+        # Reinitialize Fast2SMS service
+        from services.fast2sms_service import Fast2SMSService, fast2sms_service
+        import services.fast2sms_service as fast2sms_module
+        fast2sms_module.fast2sms_service = Fast2SMSService()
+        fast2sms_module.fast2sms_service.set_db(db)
+        logger.info("Fast2SMS token updated and service reinitialized")
+    
+    return {
+        "success": True,
+        "message": validation_result["message"],
+        "token_type": token_type
+    }
+
+
+@api_router.post("/settings/tokens/test/{token_type}")
+async def test_token(token_type: str):
+    """Test a specific token"""
+    if token_type == "meta_ads":
+        meta_token = os.environ.get("META_ACCESS_TOKEN", "")
+        if not meta_token:
+            return {"success": False, "message": "Meta Ads token not configured"}
+        
+        try:
+            import httpx
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(
+                    "https://graph.facebook.com/v18.0/me",
+                    params={"access_token": meta_token}
+                )
+                if response.status_code == 200:
+                    data = response.json()
+                    return {
+                        "success": True,
+                        "message": "Token is valid",
+                        "details": {"name": data.get("name"), "id": data.get("id")}
+                    }
+                else:
+                    error_data = response.json()
+                    return {
+                        "success": False,
+                        "message": error_data.get("error", {}).get("message", "Invalid token")
+                    }
+        except Exception as e:
+            return {"success": False, "message": str(e)}
+    
+    elif token_type == "fast2sms":
+        fast2sms_key = os.environ.get("FAST2SMS_API_KEY", "")
+        if not fast2sms_key:
+            return {"success": False, "message": "Fast2SMS API key not configured"}
+        
+        try:
+            import httpx
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(
+                    "https://www.fast2sms.com/dev/wallet",
+                    params={"authorization": fast2sms_key}
+                )
+                result = response.json()
+                if result.get("return") == True:
+                    return {
+                        "success": True,
+                        "message": "API key is valid",
+                        "details": {
+                            "wallet_balance": f"₹{result.get('wallet')}",
+                            "sms_count": result.get("sms_count")
+                        }
+                    }
+                else:
+                    return {"success": False, "message": result.get("message", "Invalid API key")}
+        except Exception as e:
+            return {"success": False, "message": str(e)}
+    
+    elif token_type == "meta_ads_sync":
+        # Trigger a manual Meta Ads sync
+        try:
+            if meta_ads_scheduler:
+                await meta_ads_scheduler.sync_now()
+                return {"success": True, "message": "Meta Ads sync triggered successfully"}
+            else:
+                return {"success": False, "message": "Meta Ads scheduler not initialized"}
+        except Exception as e:
+            return {"success": False, "message": str(e)}
+    
+    return {"success": False, "message": f"Unknown token type: {token_type}"}
+
+
 # ==================== SMS LOGS & FAST2SMS INTEGRATION ====================
 
 @api_router.get("/sms/logs")
