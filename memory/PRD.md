@@ -11,6 +11,15 @@
 
 4. **Inspection Not Showing for Mechanic** - Enhanced mechanic inspection query to also match by `mechanic_name` as fallback for older records.
 
+### New Features
+1. **City Management UI** - Added to CRM Settings page under "City Master" tab
+   - View all cities with states and aliases
+   - Add new cities with optional aliases
+   - Edit existing cities (name, state, aliases)
+   - Activate/Deactivate cities
+   - Search/filter cities
+   - Stats dashboard showing active cities, total aliases, states count
+
 ### New APK Build
 - **Download Link:** https://expo.dev/artifacts/eas/u3dg8YvBuCEGXumnsHoGeB.apk
 - Contains all date filter fixes
