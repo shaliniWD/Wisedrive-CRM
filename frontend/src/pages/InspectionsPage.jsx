@@ -1298,37 +1298,30 @@ export default function InspectionsPage() {
                       </div>
                     </td>
                     
-                    {/* Payment Status Column - With Collect Balance Button */}
+                    {/* Payment Status Column - Simplified Clickable Badge */}
                     <td className="px-3 py-3">
-                      {hasBalanceDue ? (
-                        <div className="space-y-1">
-                          <button 
-                            onClick={() => {
-                              setCollectBalanceInspection({
-                                ...inspection,
-                                balance_due: actualBalanceDue
-                              });
-                              setIsCollectBalanceModalOpen(true);
-                            }}
-                            className="px-2 py-1 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg text-xs font-medium hover:from-amber-600 hover:to-amber-700 transition-all shadow-sm flex items-center gap-1"
-                            title={`Collect Balance: ₹${actualBalanceDue?.toLocaleString()}`}
-                            data-testid={`collect-balance-${inspection.id}`}
-                          >
-                            <CreditCard className="h-3 w-3" />
-                            Collect ₹{actualBalanceDue?.toLocaleString()}
-                          </button>
-                          <div className="text-xs text-gray-500">
-                            Paid: ₹{(inspection.amount_paid || 0).toLocaleString()}
-                          </div>
-                        </div>
-                      ) : (
-                        <div>
-                          <PaymentStatusBadge status={isFullyPaid ? 'FULLY_PAID' : inspection.payment_status} balanceDue={actualBalanceDue} />
-                          <div className="text-xs text-gray-500 mt-1">
-                            ₹{(inspection.amount_paid || 0).toLocaleString()}
-                          </div>
-                        </div>
-                      )}
+                      <button
+                        onClick={() => openPaymentDetailsModal({
+                          ...inspection,
+                          balance_due: actualBalanceDue
+                        })}
+                        className="group flex flex-col items-start gap-1 cursor-pointer hover:opacity-80 transition-opacity"
+                        title="Click to view payment details"
+                        data-testid={`payment-status-${inspection.id}`}
+                      >
+                        {isFullyPaid ? (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200">
+                            <CheckCircle className="h-3.5 w-3.5" />
+                            Fully Paid
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200">
+                            <AlertCircle className="h-3.5 w-3.5" />
+                            Pending
+                          </span>
+                        )}
+                        <span className="text-[10px] text-gray-400 group-hover:text-blue-500">Click for details</span>
+                      </button>
                     </td>
                     
                     {/* Inspection Status Column - Dropdown */}
