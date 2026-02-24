@@ -7195,6 +7195,28 @@ async def update_hr_employee(employee_id: str, emp_data: EmployeeUpdate, current
     
     update_dict = {k: v for k, v in emp_data.model_dump().items() if v is not None}
     
+    # Check if phone number is being updated and ensure uniqueness
+    if "phone" in update_dict:
+        phone = update_dict["phone"].strip().replace(" ", "").replace("-", "")
+        if not phone.startswith("+"):
+            phone = "+91" + phone[-10:]
+        phone_last10 = phone[-10:]
+        
+        existing_phone = await db.users.find_one({
+            "$or": [
+                {"phone": phone},
+                {"phone": {"$regex": phone_last10 + "$"}},
+                {"mobile": phone},
+                {"mobile": {"$regex": phone_last10 + "$"}}
+            ],
+            "id": {"$ne": employee_id}  # Exclude current employee
+        })
+        if existing_phone:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Phone number already assigned to {existing_phone.get('name', 'another employee')}. Each employee must have a unique phone number."
+            )
+    
     # Handle password update
     if "password" in update_dict:
         update_dict["hashed_password"] = hash_password(update_dict.pop("password"))
