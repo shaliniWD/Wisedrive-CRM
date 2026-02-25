@@ -11,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../src/context/AuthContext';
+import Constants from 'expo-constants';
 
 export default function ProfileScreen() {
   const { mechanic, logout } = useAuth();
@@ -116,7 +117,7 @@ export default function ProfileScreen() {
           <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
 
-        <Text style={styles.version}>Version 1.0.0</Text>
+        <Text style={styles.version}>Version {Constants.expoConfig?.version || '1.0.0'}</Text>
       </ScrollView>
     </SafeAreaView>
   );
