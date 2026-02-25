@@ -1538,7 +1538,7 @@ export default function InspectionsPage() {
                 <th className="px-2 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[100px]">Location</th>
                 <th className="px-2 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[70px]">Report</th>
                 <th className="px-2 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[50px]">Edit</th>
-                <th className="px-2 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[50px]">More</th>
+                <th className="px-2 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[50px]">Info</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
