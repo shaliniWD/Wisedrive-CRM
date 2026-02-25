@@ -241,7 +241,7 @@ const InspectionCard = ({
         {inspection.status === 'ACCEPTED' && (
           <View style={styles.acceptedActions}>
             <TouchableOpacity 
-              onPress={() => handleNavigate(inspection)} 
+              onPress={() => openMapsNavigation(inspection)} 
               activeOpacity={0.8} 
               style={styles.mapBtn}
             >
