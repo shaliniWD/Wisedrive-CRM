@@ -2,39 +2,27 @@
 
 ## Latest Updates (Feb 25, 2026)
 
-### CRM Inspections Table - Major UI Simplification ✅
-**Complete table refactor for better usability**
+### CRM Inspections Table - Final UI Layout ✅
+**Clean table with all essential columns and actions**
 
-#### Changes Made:
-1. **Shortened Status Names:**
-   - Assigned to Mechanic → Assigned
-   - Mechanic Accepted → Accepted
-   - Mechanic Rejected → Rejected
-   - Inspection Started → In Progress
-   - Cancelled (Customer) → Cancelled
-   - Cancelled (WiseDrive) → Cancelled (WD)
+#### Table Columns (11 total):
+| DATE/TIME | CUSTOMER | VEHICLE | PAYMENT | STATUS | MECHANIC | LOCATION | REPORT | EDIT | LIVE | NOTES |
 
-2. **Removed Payment Column:** Rows with pending payments now have amber background highlighting
+#### Key Features:
+1. **Payment Column Back**: Shows "Paid" (green) or "Due" (amber) badges - clickable for payment details
 
-3. **Combined Edit Modal:** Merged Date/Time, Location, Vehicle editing into one modal accessible via Edit icon
-   - Vehicle search now uses Vaahan API integration ✅
+2. **Clickable Mechanic Name**: No icon - click on mechanic name or "+ Assign" to reassign
 
-4. **Mechanic Column with Reassign Icon:** Quick reassign button (👤) next to mechanic name
+3. **Separate Live Column**: Play icon opens Live Inspection Progress modal (separate from Notes)
 
-5. **Removed More Dropdown Entirely:** Replaced with Info button that opens Notes/Activity drawer
-
-6. **Enhanced Notes Drawer with 4 Tabs:**
-   - **Notes** - Add and view inspection notes
+4. **Notes Column**: Opens drawer with 3 tabs:
+   - **Notes** - Add/view inspection notes
    - **Activity** - View status changes and activity log
-   - **Live** - Real-time inspection progress with auto-refresh (5s)
-   - **SMS** - View SMS logs sent to customer
+   - **OTP** - View mechanic login OTPs (for offline sharing)
 
-7. **Info Column:** 
-   - Activity icon opens Notes/Activity/Live drawer
-   - Payment icon (amber) appears only for pending payments
+5. **Simplified OTP Tab**: Shows only mechanic OTPs with large OTP code display for easy sharing
 
-#### Table Columns (9 total):
-DATE/TIME | CUSTOMER | VEHICLE | STATUS | MECHANIC | LOCATION | REPORT | EDIT | INFO
+6. **Vehicle Search**: Uses Vaahan API integration to fetch vehicle details
 
 ---
 
