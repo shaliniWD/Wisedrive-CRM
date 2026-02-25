@@ -14135,26 +14135,43 @@ async def mechanic_accept_inspection(
     if not inspection:
         raise HTTPException(status_code=404, detail="Inspection not found")
     
-    # Check if already assigned
+    # Check if already assigned to another mechanic
     if inspection.get("mechanic_id") and inspection.get("mechanic_id") != current_user["id"]:
         raise HTTPException(status_code=400, detail="Inspection already assigned to another mechanic")
+    
+    old_status = inspection.get("inspection_status", "NEW_INSPECTION")
     
     # Update inspection
     update_data = {
         "mechanic_id": current_user["id"],
         "mechanic_name": current_user.get("name", ""),
-        "inspection_status": "ACCEPTED",
+        "inspection_status": "MECHANIC_ACCEPTED",
         "accepted_at": datetime.now(timezone.utc).isoformat(),
         "updated_at": datetime.now(timezone.utc).isoformat()
     }
     
     await db.inspections.update_one({"id": inspection_id}, {"$set": update_data})
     
-    updated = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
+    # Log activity
+    activity = {
+        "id": str(uuid.uuid4()),
+        "inspection_id": inspection_id,
+        "user_id": current_user["id"],
+        "user_name": current_user.get("name", "Unknown"),
+        "user_role": "mechanic",
+        "action": "inspection_accepted",
+        "action_label": "Inspection Accepted",
+        "details": f"Mechanic {current_user.get('name', 'Unknown')} accepted the inspection",
+        "old_value": old_status,
+        "new_value": "MECHANIC_ACCEPTED",
+        "source": "MECHANIC_APP",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.inspection_activities.insert_one(activity)
     
     return {
-        "id": updated.get("id"),
-        "status": "ACCEPTED",
+        "id": inspection.get("id"),
+        "status": "MECHANIC_ACCEPTED",
         "assignedMechanicId": current_user["id"],
         "message": "Inspection accepted successfully"
     }
@@ -14171,24 +14188,94 @@ async def mechanic_reject_inspection(
     if not inspection:
         raise HTTPException(status_code=404, detail="Inspection not found")
     
+    old_status = inspection.get("inspection_status", "NEW_INSPECTION")
+    
     # Update inspection - unassign and set status
     update_data = {
         "mechanic_id": None,
         "mechanic_name": None,
-        "inspection_status": "REJECTED",
+        "inspection_status": "MECHANIC_REJECTED",
         "rejection_reason": data.reason,
         "rejected_by": current_user["id"],
+        "rejected_by_name": current_user.get("name", ""),
         "rejected_at": datetime.now(timezone.utc).isoformat(),
         "updated_at": datetime.now(timezone.utc).isoformat()
     }
     
     await db.inspections.update_one({"id": inspection_id}, {"$set": update_data})
     
+    # Log activity
+    activity = {
+        "id": str(uuid.uuid4()),
+        "inspection_id": inspection_id,
+        "user_id": current_user["id"],
+        "user_name": current_user.get("name", "Unknown"),
+        "user_role": "mechanic",
+        "action": "inspection_rejected",
+        "action_label": "Inspection Rejected",
+        "details": f"Mechanic {current_user.get('name', 'Unknown')} rejected the inspection. Reason: {data.reason or 'Not specified'}",
+        "old_value": old_status,
+        "new_value": "MECHANIC_REJECTED",
+        "reason": data.reason,
+        "source": "MECHANIC_APP",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.inspection_activities.insert_one(activity)
+    
     return {
         "id": inspection_id,
-        "status": "REJECTED",
+        "status": "MECHANIC_REJECTED",
         "rejectionReason": data.reason,
         "message": "Inspection rejected"
+    }
+
+
+@api_router.post("/mechanic/inspections/{inspection_id}/start")
+async def mechanic_start_inspection(
+    inspection_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Mechanic starts an inspection - called after vehicle verification"""
+    inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
+    if not inspection:
+        raise HTTPException(status_code=404, detail="Inspection not found")
+    
+    # Check if mechanic is assigned
+    if inspection.get("mechanic_id") != current_user["id"]:
+        raise HTTPException(status_code=403, detail="You are not assigned to this inspection")
+    
+    old_status = inspection.get("inspection_status", "MECHANIC_ACCEPTED")
+    
+    update_data = {
+        "inspection_status": "INSPECTION_STARTED",
+        "started_at": datetime.now(timezone.utc).isoformat(),
+        "started_by": current_user["id"],
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.inspections.update_one({"id": inspection_id}, {"$set": update_data})
+    
+    # Log activity
+    activity = {
+        "id": str(uuid.uuid4()),
+        "inspection_id": inspection_id,
+        "user_id": current_user["id"],
+        "user_name": current_user.get("name", "Unknown"),
+        "user_role": "mechanic",
+        "action": "inspection_started",
+        "action_label": "Inspection Started",
+        "details": f"Mechanic {current_user.get('name', 'Unknown')} started the inspection",
+        "old_value": old_status,
+        "new_value": "INSPECTION_STARTED",
+        "source": "MECHANIC_APP",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.inspection_activities.insert_one(activity)
+    
+    return {
+        "id": inspection_id,
+        "status": "INSPECTION_STARTED",
+        "message": "Inspection started successfully"
     }
 
 
