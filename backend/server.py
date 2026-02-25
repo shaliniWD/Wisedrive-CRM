@@ -1087,6 +1087,45 @@ async def update_lead(lead_id: str, lead_data: LeadUpdate, current_user: dict = 
     
     await db.leads.update_one({"id": lead_id}, {"$set": update_dict})
     
+    # If partner_id was updated, also update associated inspections
+    if "partner_id" in update_dict:
+        new_partner_id = update_dict["partner_id"]
+        partner = await db.partners.find_one({"id": new_partner_id}, {"_id": 0, "name": 1, "default_report_template_id": 1})
+        
+        if partner:
+            # Get the partner's default report template
+            report_template = None
+            if partner.get("default_report_template_id"):
+                report_template = await db.report_templates.find_one(
+                    {"id": partner["default_report_template_id"], "is_active": True},
+                    {"_id": 0}
+                )
+            if not report_template:
+                report_template = await db.report_templates.find_one(
+                    {"partner_id": new_partner_id, "is_default": True, "is_active": True},
+                    {"_id": 0}
+                )
+            
+            # Update all inspections associated with this lead
+            inspection_update = {
+                "partner_id": new_partner_id,
+                "partner_name": partner.get("name"),
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }
+            
+            if report_template:
+                inspection_update["report_template_id"] = report_template.get("id")
+                inspection_update["report_template_name"] = report_template.get("name")
+                inspection_update["report_style"] = report_template.get("report_style", "standard")
+                inspection_update["inspection_template_id"] = report_template.get("inspection_template_id")
+            
+            # Update inspections linked to this lead
+            result = await db.inspections.update_many(
+                {"lead_id": lead_id},
+                {"$set": inspection_update}
+            )
+            logger.info(f"Updated {result.modified_count} inspections with new partner_id: {new_partner_id}")
+    
     lead = await db.leads.find_one({"id": lead_id}, {"_id": 0})
     return lead
 
