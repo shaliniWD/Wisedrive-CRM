@@ -2,7 +2,28 @@
 
 ## Latest Updates (Feb 25, 2026)
 
-### CRM Inspections Table - Final UI Layout ✅
+### Mechanic App v1.1.0 - Category Questions & Live Data Fix ✅
+**Fixed category click error and data flow to CRM**
+
+#### Bug Fix:
+- Fixed "Failed to load inspection data" error when clicking categories
+- Navigation now correctly passes inspection ID and category ID to checklist screen
+
+#### New Feature - Category Questions Screen:
+- Created `/app/category/[...params].tsx` for answering questions per category
+- Shows progress bar with percentage completion
+- Supports multiple input types: text, number, yes/no, condition rating, select, image
+- Auto-saves answers to backend immediately
+- Visual indicators for answered questions
+
+#### Data Flow to CRM:
+- Mechanic app saves answers with `question_id`, `answer`, and `category_id`
+- CRM Live Progress modal shows:
+  - Overall completion percentage
+  - Category-wise progress (answered/total per category)
+  - Recent answers with timestamps
+
+---
 **Clean table with all essential columns and actions**
 
 #### Table Columns (11 total):
