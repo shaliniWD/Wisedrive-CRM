@@ -2481,7 +2481,7 @@ export default function InspectionsPage() {
                       <CheckCircle className="h-3 w-3" />
                       <span className="font-medium">{editVehicleData.manufacturer} {editVehicleData.model}</span>
                     </div>
-                    <p className="text-green-600 mt-0.5">{editVehicleData.fuel_type} • {editVehicleData.registration_year}</p>
+                    <p className="text-green-600 mt-0.5">{editVehicleData.fuel_type} • {editVehicleData.manufacturing_date || editVehicleData.registration_date}</p>
                   </div>
                 )}
               </div>
