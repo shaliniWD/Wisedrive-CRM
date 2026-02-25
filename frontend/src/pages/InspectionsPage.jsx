@@ -3410,6 +3410,108 @@ export default function InspectionsPage() {
                 )}
               </div>
             </TabsContent>
+            
+            {/* Live Progress Tab Content */}
+            <TabsContent value="live" className="absolute inset-0 flex flex-col m-0 overflow-hidden">
+              <div className="flex-1 min-h-0 relative">
+                {liveProgressLoading ? (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+                  </div>
+                ) : !liveProgressData ? (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
+                    <Play className="h-10 w-10 mb-2 text-gray-300" />
+                    <p className="text-sm">No live progress data available</p>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="mt-2" 
+                      onClick={() => notesInspection && fetchLiveProgress(notesInspection.id)}
+                    >
+                      <RefreshCw className="h-4 w-4 mr-1" /> Load Progress
+                    </Button>
+                  </div>
+                ) : (
+                  <ScrollArea className="absolute inset-0">
+                    <div className="px-6 py-4 space-y-4">
+                      {/* Auto-refresh Toggle */}
+                      <div className="flex items-center justify-between bg-slate-50 rounded-lg p-3">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${liveProgressAutoRefresh ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
+                          <span className="text-sm text-gray-700">Auto-refresh (5s)</span>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setLiveProgressAutoRefresh(!liveProgressAutoRefresh)}
+                          className={liveProgressAutoRefresh ? 'border-green-500 text-green-600' : ''}
+                        >
+                          {liveProgressAutoRefresh ? 'On' : 'Off'}
+                        </Button>
+                      </div>
+                      
+                      {/* Progress Stats */}
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="bg-blue-50 rounded-lg p-3 text-center">
+                          <p className="text-2xl font-bold text-blue-700">{liveProgressData.total_questions || 0}</p>
+                          <p className="text-xs text-blue-600">Total</p>
+                        </div>
+                        <div className="bg-green-50 rounded-lg p-3 text-center">
+                          <p className="text-2xl font-bold text-green-700">{liveProgressData.answered_questions || 0}</p>
+                          <p className="text-xs text-green-600">Answered</p>
+                        </div>
+                        <div className="bg-amber-50 rounded-lg p-3 text-center">
+                          <p className="text-2xl font-bold text-amber-700">{liveProgressData.completion_percentage || 0}%</p>
+                          <p className="text-xs text-amber-600">Complete</p>
+                        </div>
+                      </div>
+                      
+                      {/* Progress Bar */}
+                      <div className="bg-gray-100 rounded-full h-3 overflow-hidden">
+                        <div 
+                          className="bg-gradient-to-r from-blue-500 to-green-500 h-full transition-all duration-500"
+                          style={{ width: `${liveProgressData.completion_percentage || 0}%` }}
+                        />
+                      </div>
+                      
+                      {/* Categories Progress */}
+                      {liveProgressData.categories && liveProgressData.categories.length > 0 && (
+                        <div className="space-y-2">
+                          <h4 className="text-sm font-medium text-gray-700">Categories Progress</h4>
+                          {liveProgressData.categories.map((cat, idx) => (
+                            <div key={idx} className="bg-white border rounded-lg p-3">
+                              <div className="flex justify-between items-center mb-2">
+                                <span className="text-sm font-medium">{cat.name}</span>
+                                <span className="text-xs text-gray-500">{cat.answered}/{cat.total}</span>
+                              </div>
+                              <div className="bg-gray-100 rounded-full h-1.5">
+                                <div 
+                                  className="bg-blue-500 h-full rounded-full transition-all"
+                                  style={{ width: `${cat.total > 0 ? (cat.answered / cat.total * 100) : 0}%` }}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {/* Recent Answers */}
+                      {liveProgressData.recent_answers && liveProgressData.recent_answers.length > 0 && (
+                        <div className="space-y-2">
+                          <h4 className="text-sm font-medium text-gray-700">Recent Answers</h4>
+                          {liveProgressData.recent_answers.slice(0, 5).map((answer, idx) => (
+                            <div key={idx} className="bg-green-50 border border-green-200 rounded-lg p-2 text-xs">
+                              <p className="font-medium text-green-800">{answer.question}</p>
+                              <p className="text-green-600 mt-1">Answer: {answer.answer}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </ScrollArea>
+                )}
+              </div>
+            </TabsContent>
             </div>
           </Tabs>
         </SheetContent>
