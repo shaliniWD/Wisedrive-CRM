@@ -88,6 +88,24 @@ export default function CategoryQuestionsScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [savedCount, setSavedCount] = useState(0);
+  const [showLogs, setShowLogs] = useState(false);
+
+  // Log component mount
+  useEffect(() => {
+    debugLogger.logLifecycle('CategoryScreen MOUNTED', {
+      rawParams: rawParams,
+      inspectionId,
+      categoryId,
+    }, inspectionId || undefined);
+    
+    return () => {
+      debugLogger.logLifecycle('CategoryScreen UNMOUNTED', {
+        inspectionId,
+        categoryId,
+        finalAnswersCount: Object.keys(answers).length,
+      }, inspectionId || undefined);
+    };
+  }, []);
 
   useEffect(() => {
     console.log('[CategoryScreen] useEffect triggered - inspectionId:', inspectionId, 'categoryId:', categoryId);
