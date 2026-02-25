@@ -9,20 +9,25 @@
 | DATE/TIME | CUSTOMER | VEHICLE | PAYMENT | STATUS | MECHANIC | LOCATION | REPORT | EDIT | LIVE | NOTES |
 
 #### Key Features:
-1. **Payment Column Back**: Shows "Paid" (green) or "Due" (amber) badges - clickable for payment details
+1. **Payment Column**: Shows "Paid" (green) or "Due" (amber) badges - clickable for payment details
 
-2. **Clickable Mechanic Name**: No icon - click on mechanic name or "+ Assign" to reassign
+2. **Clickable Mechanic Name**: No icon - click name or "+ Assign" to reassign
 
-3. **Separate Live Column**: Play icon opens Live Inspection Progress modal (separate from Notes)
+3. **Report Column**: Eye icon opens inspection report page with partner-assigned template
 
-4. **Notes Column**: Opens drawer with 3 tabs:
+4. **Separate Live Column**: Play icon opens Live Inspection Progress modal
+
+5. **Notes Column**: Opens drawer with 3 tabs:
    - **Notes** - Add/view inspection notes
    - **Activity** - View status changes and activity log
-   - **OTP** - View mechanic login OTPs (for offline sharing)
+   - **OTP** - View mechanic login OTPs with:
+     - Full phone number (not masked)
+     - Actual 6-digit OTP code in large display
+     - Easy to share with mechanic offline
 
-5. **Simplified OTP Tab**: Shows only mechanic OTPs with large OTP code display for easy sharing
+6. **Improved Padding**: Extra space on left (Date/Time) and right (Notes) edges
 
-6. **Vehicle Search**: Uses Vaahan API integration to fetch vehicle details
+7. **Vehicle Search**: Uses Vaahan API integration to fetch vehicle details
 
 ---
 
