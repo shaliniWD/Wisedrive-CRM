@@ -14533,104 +14533,122 @@ async def mechanic_save_progress(
 ):
     """Save inspection progress from mechanic app"""
     import logging
+    import traceback
     logger = logging.getLogger(__name__)
     
-    # Log request size
-    content_length = request.headers.get('content-length', '0')
-    logger.info(f"[SAVE_PROGRESS] Request received: inspection={inspection_id}, content_length={content_length} bytes")
-    
-    # Calculate answer size if present
-    answer_size = 0
-    answer_type = "none"
-    if data.answer is not None:
-        if isinstance(data.answer, str):
-            answer_size = len(data.answer)
-            if data.answer.startswith('data:image'):
-                answer_type = "base64_image"
-            elif data.answer.startswith('file://'):
-                answer_type = "file_uri"
-            else:
-                answer_type = "text"
-        elif isinstance(data.answer, dict):
-            answer_size = len(str(data.answer))
-            answer_type = "dict_with_media" if data.answer.get('media') else "dict"
-    
-    logger.info(f"[SAVE_PROGRESS] question_id={data.question_id}, category_id={data.category_id}")
-    logger.info(f"[SAVE_PROGRESS] answer_type={answer_type}, answer_size={answer_size} bytes ({answer_size // 1024}KB)")
-    
-    inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
-    if not inspection:
-        logger.error(f"[SAVE_PROGRESS] Inspection {inspection_id} not found!")
-        raise HTTPException(status_code=404, detail="Inspection not found")
-    
-    logger.info(f"[SAVE_PROGRESS] Found inspection, mechanic_id={inspection.get('mechanic_id')}, current_user={current_user['id']}")
-    
-    # Check if mechanic is assigned
-    if inspection.get("mechanic_id") != current_user["id"]:
-        logger.error(f"[SAVE_PROGRESS] Mechanic mismatch! inspection.mechanic_id={inspection.get('mechanic_id')}, current_user={current_user['id']}")
-        raise HTTPException(status_code=403, detail="You are not assigned to this inspection")
-    
-    # Update progress
-    current_progress = inspection.get("inspection_progress", {})
-    if data.progress_data:
-        current_progress.update(data.progress_data)
-    
-    # Store individual question answers
-    answers = inspection.get("inspection_answers", {})
-    logger.info(f"[SAVE_PROGRESS] Current answers count before update: {len(answers)}")
-    
-    if data.question_id:
-        logger.info(f"[SAVE_PROGRESS] Processing question_id={data.question_id}")
-        existing_answer = answers.get(data.question_id, {})
-        
-        # Update main answer if provided
-        if data.answer is not None:
-            logger.info(f"[SAVE_PROGRESS] Saving main answer for question {data.question_id}")
-            existing_answer["answer"] = data.answer
-            existing_answer["answered_at"] = datetime.now(timezone.utc).isoformat()
-            existing_answer["answered_by"] = current_user["id"]
-        else:
-            logger.warning(f"[SAVE_PROGRESS] data.answer is None, skipping main answer update")
-        
-        # Update sub_answer_1 if provided
-        if data.sub_answer_1 is not None:
-            logger.info(f"[SAVE_PROGRESS] Saving sub_answer_1 for question {data.question_id}")
-            existing_answer["sub_answer_1"] = data.sub_answer_1
-            existing_answer["sub_answer_1_at"] = datetime.now(timezone.utc).isoformat()
-        
-        # Update sub_answer_2 if provided
-        if data.sub_answer_2 is not None:
-            logger.info(f"[SAVE_PROGRESS] Saving sub_answer_2 for question {data.question_id}")
-            existing_answer["sub_answer_2"] = data.sub_answer_2
-            existing_answer["sub_answer_2_at"] = datetime.now(timezone.utc).isoformat()
-        
-        answers[data.question_id] = existing_answer
-        logger.info(f"[SAVE_PROGRESS] Answer stored: {list(existing_answer.keys())}")
-    else:
-        logger.warning(f"[SAVE_PROGRESS] No question_id provided, skipping answer storage")
-    
-    logger.info(f"[SAVE_PROGRESS] Total answers after update: {len(answers)}")
-    
-    update_data = {
-        "inspection_progress": current_progress,
-        "inspection_answers": answers,
-        "inspection_status": "INSPECTION_STARTED",  # CRM status, will map to IN_PROGRESS for app
-        "updated_at": datetime.now(timezone.utc).isoformat()
-    }
-    
     try:
-        result = await db.inspections.update_one({"id": inspection_id}, {"$set": update_data})
-        logger.info(f"[SAVE_PROGRESS] MongoDB update result: matched={result.matched_count}, modified={result.modified_count}")
-    except Exception as e:
-        logger.error(f"[SAVE_PROGRESS] MongoDB error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+        # Log request size
+        content_length = request.headers.get('content-length', '0')
+        logger.info(f"[SAVE_PROGRESS] Request received: inspection={inspection_id}, content_length={content_length} bytes")
+        
+        # Calculate answer size if present
+        answer_size = 0
+        answer_type = "none"
+        if data.answer is not None:
+            if isinstance(data.answer, str):
+                answer_size = len(data.answer)
+                if data.answer.startswith('data:image'):
+                    answer_type = "base64_image"
+                elif data.answer.startswith('file://'):
+                    answer_type = "file_uri"
+                else:
+                    answer_type = "text"
+            elif isinstance(data.answer, dict):
+                answer_size = len(str(data.answer))
+                answer_type = "dict_with_media" if data.answer.get('media') else "dict"
+        
+        logger.info(f"[SAVE_PROGRESS] question_id={data.question_id}, category_id={data.category_id}")
+        logger.info(f"[SAVE_PROGRESS] answer_type={answer_type}, answer_size={answer_size} bytes ({answer_size // 1024}KB)")
+        
+        inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
+        if not inspection:
+            logger.error(f"[SAVE_PROGRESS] Inspection {inspection_id} not found!")
+            raise HTTPException(status_code=404, detail="Inspection not found")
+        
+        logger.info(f"[SAVE_PROGRESS] Found inspection, mechanic_id={inspection.get('mechanic_id')}, current_user={current_user['id']}")
+        
+        # Check if mechanic is assigned
+        if inspection.get("mechanic_id") != current_user["id"]:
+            logger.error(f"[SAVE_PROGRESS] Mechanic mismatch! inspection.mechanic_id={inspection.get('mechanic_id')}, current_user={current_user['id']}")
+            raise HTTPException(status_code=403, detail="You are not assigned to this inspection")
+        
+        # Update progress
+        current_progress = inspection.get("inspection_progress", {})
+        if data.progress_data:
+            current_progress.update(data.progress_data)
+        
+        # Store individual question answers
+        answers = inspection.get("inspection_answers", {})
+        logger.info(f"[SAVE_PROGRESS] Current answers count before update: {len(answers)}")
+        
+        if data.question_id:
+            logger.info(f"[SAVE_PROGRESS] Processing question_id={data.question_id}")
+            existing_answer = answers.get(data.question_id, {})
+            
+            # Update main answer if provided
+            if data.answer is not None:
+                logger.info(f"[SAVE_PROGRESS] Saving main answer for question {data.question_id}")
+                existing_answer["answer"] = data.answer
+                existing_answer["answered_at"] = datetime.now(timezone.utc).isoformat()
+                existing_answer["answered_by"] = current_user["id"]
+            else:
+                logger.warning(f"[SAVE_PROGRESS] data.answer is None, skipping main answer update")
+            
+            # Update sub_answer_1 if provided
+            if data.sub_answer_1 is not None:
+                logger.info(f"[SAVE_PROGRESS] Saving sub_answer_1 for question {data.question_id}")
+                existing_answer["sub_answer_1"] = data.sub_answer_1
+                existing_answer["sub_answer_1_at"] = datetime.now(timezone.utc).isoformat()
+            
+            # Update sub_answer_2 if provided
+            if data.sub_answer_2 is not None:
+                logger.info(f"[SAVE_PROGRESS] Saving sub_answer_2 for question {data.question_id}")
+                existing_answer["sub_answer_2"] = data.sub_answer_2
+                existing_answer["sub_answer_2_at"] = datetime.now(timezone.utc).isoformat()
+            
+            answers[data.question_id] = existing_answer
+            logger.info(f"[SAVE_PROGRESS] Answer stored: {list(existing_answer.keys())}")
+        else:
+            logger.warning(f"[SAVE_PROGRESS] No question_id provided, skipping answer storage")
+        
+        logger.info(f"[SAVE_PROGRESS] Total answers after update: {len(answers)}")
+        
+        # Check estimated document size to avoid MongoDB 16MB limit
+        import json as json_module
+        estimated_size = len(json_module.dumps(answers))
+        logger.info(f"[SAVE_PROGRESS] Estimated answers JSON size: {estimated_size // 1024}KB")
+        
+        if estimated_size > 14 * 1024 * 1024:  # 14MB warning threshold
+            logger.warning(f"[SAVE_PROGRESS] Document approaching MongoDB 16MB limit!")
+        
+        update_data = {
+            "inspection_progress": current_progress,
+            "inspection_answers": answers,
+            "inspection_status": "INSPECTION_STARTED",  # CRM status, will map to IN_PROGRESS for app
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        try:
+            result = await db.inspections.update_one({"id": inspection_id}, {"$set": update_data})
+            logger.info(f"[SAVE_PROGRESS] MongoDB update result: matched={result.matched_count}, modified={result.modified_count}")
+        except Exception as e:
+            logger.error(f"[SAVE_PROGRESS] MongoDB error: {str(e)}")
+            logger.error(f"[SAVE_PROGRESS] MongoDB traceback: {traceback.format_exc()}")
+            raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+        
+        return {
+            "id": inspection_id,
+            "progress": current_progress,
+            "answers": answers,
+            "message": "Progress saved"
+        }
     
-    return {
-        "id": inspection_id,
-        "progress": current_progress,
-        "answers": answers,
-        "message": "Progress saved"
-    }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[SAVE_PROGRESS] Unexpected error: {str(e)}")
+        logger.error(f"[SAVE_PROGRESS] Traceback: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
 
 
 @api_router.post("/mechanic/inspections/{inspection_id}/complete")
