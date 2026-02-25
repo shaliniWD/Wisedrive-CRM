@@ -4872,10 +4872,29 @@ async def get_inspection(inspection_id: str, current_user: dict = Depends(get_cu
     if not inspection:
         raise HTTPException(status_code=404, detail="Inspection not found")
     
-    # Default/normalize inspection_status to NEW_INSPECTION if not set or legacy value
+    # Status normalization mapping (legacy -> new)
+    status_mapping = {
+        "NEW": "NEW_INSPECTION",
+        "SCHEDULED": "NEW_INSPECTION",
+        "UNSCHEDULED": "NEW_INSPECTION",
+        "ACCEPTED": "MECHANIC_ACCEPTED",
+        "IN_PROGRESS": "INSPECTION_STARTED",
+        "COMPLETED": "INSPECTION_COMPLETED",
+        "REJECTED": "MECHANIC_REJECTED",
+        "CANCELLED": "INSPECTION_CANCELLED_WD",
+        "INSPECTION_CONFIRMED": "MECHANIC_ACCEPTED",
+        "INSPECTION_IN_PROGRESS": "INSPECTION_STARTED",
+        "INSPECTION_RESCHEDULED": "RESCHEDULED",
+        "INSPECTION_CANCELLED_CUSTOMER": "INSPECTION_CANCELLED_CUS",
+        "INSPECTION_CANCELLED_WISEDRIVE": "INSPECTION_CANCELLED_WD",
+    }
+    
+    # Normalize inspection_status
     status = inspection.get("inspection_status")
-    if not status or status in ["NEW", "SCHEDULED", "UNSCHEDULED"]:
+    if not status:
         inspection["inspection_status"] = "NEW_INSPECTION"
+    elif status in status_mapping:
+        inspection["inspection_status"] = status_mapping[status]
     
     return inspection
 
