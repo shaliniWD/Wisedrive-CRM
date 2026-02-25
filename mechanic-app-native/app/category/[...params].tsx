@@ -372,7 +372,19 @@ export default function CategoryQuestionsScreen() {
           let processedSubAnswer1 = answer.sub_answer_1;
           let processedSubAnswer2 = answer.sub_answer_2;
           
-          // Process main answer if it has media
+          // Process main answer if it's a direct video URI
+          if (typeof processedAnswer === 'string' && processedAnswer.startsWith('file://')) {
+            diagLogger.info('PROCESSING_DIRECT_VIDEO', { questionId });
+            try {
+              processedAnswer = await processVideo(processedAnswer);
+            } catch (mediaErr: any) {
+              diagLogger.error('DIRECT_VIDEO_PROCESS_FAILED', { questionId, error: mediaErr.message });
+              results.push({ questionId, success: false, error: mediaErr.message });
+              continue;
+            }
+          }
+          
+          // Process main answer if it has media (combo type)
           if (processedAnswer && typeof processedAnswer === 'object' && processedAnswer.media) {
             const mediaUri = processedAnswer.media;
             if (typeof mediaUri === 'string' && mediaUri.startsWith('file://')) {
