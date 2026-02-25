@@ -13974,14 +13974,21 @@ async def get_mechanic_inspections(
             "scheduledAt": insp.get("scheduled_date") or insp.get("created_at"),
             "status": app_status,
             "vehicleNumber": insp.get("car_number", ""),
-            "makeModelVariant": f"{insp.get('make', '')} {insp.get('model', '')} {insp.get('variant', '')}".strip(),
+            "makeModelVariant": f"{insp.get('car_make', insp.get('make', ''))} {insp.get('car_model', insp.get('model', ''))} {insp.get('variant', '')}".strip() or "Not Available",
+            "carMake": insp.get("car_make", insp.get("make", "")),
+            "carModel": insp.get("car_model", insp.get("model", "")),
+            "fuelType": insp.get("fuel_type", ""),
+            "manufacturingYear": insp.get("car_year", insp.get("manufacturing_year", "")),
+            "odometerReading": insp.get("odometer_reading", ""),
             "city": insp.get("city", ""),
             "customerName": insp.get("customer_name", ""),
             "customerPhone": insp.get("customer_mobile", ""),
             "customerAddress": insp.get("address", ""),
-            "latitude": insp.get("latitude"),
-            "longitude": insp.get("longitude"),
+            "latitude": insp.get("latitude") or insp.get("location_lat"),
+            "longitude": insp.get("longitude") or insp.get("location_lng"),
             "assignedMechanicId": insp.get("mechanic_id"),
+            "partner_id": insp.get("partner_id"),
+            "partner_name": insp.get("partner_name"),
             "requiredModules": {
                 "photos": True,
                 "sound": False,
@@ -13994,7 +14001,7 @@ async def get_mechanic_inspections(
                 "notesDone": False
             }),
             "orderId": insp.get("order_id"),
-            "packageName": insp.get("inspection_package_name", "Standard Inspection")
+            "packageName": insp.get("package_type") or insp.get("inspection_package_name", "Standard Inspection")
         })
     
     return result
