@@ -11,10 +11,10 @@ import {
   Modal,
   ScrollView,
   TouchableOpacity,
-  Clipboard,
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import * as ExpoClipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
 import { debugLogger, LogEntry } from '../lib/logger';
 
