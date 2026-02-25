@@ -1,5 +1,6 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { diagLogger } from './diagLogger';
 
 // API Base URL - Production CRM backend
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://crmdev.wisedrive.com/api';
@@ -23,7 +24,7 @@ api.interceptors.request.use(async (config) => {
       config.headers.Authorization = `Bearer ${token}`;
     }
   } catch (e) {
-    console.warn('[API] Error getting token:', e);
+    diagLogger.warn('Error getting auth token', { error: String(e) });
   }
   return config;
 });
@@ -31,12 +32,22 @@ api.interceptors.request.use(async (config) => {
 // Add response interceptor for better error handling
 api.interceptors.response.use(
   (response) => response,
-  async (error) => {
-    console.error('[API] Request failed:', error.config?.url, error.message);
-    if (error.response?.status === 401) {
-      // Token expired - could trigger re-login here
-      console.warn('[API] 401 Unauthorized');
+  async (error: AxiosError) => {
+    const url = error.config?.url || 'unknown';
+    const status = error.response?.status;
+    const responseData = error.response?.data;
+    
+    diagLogger.error(`API Error: ${url}`, {
+      status,
+      message: error.message,
+      code: error.code,
+      responseData: responseData,
+    });
+    
+    if (status === 401) {
+      diagLogger.warn('401 Unauthorized - token may be expired');
     }
+    
     return Promise.reject(error);
   }
 );
@@ -57,6 +68,15 @@ export const authApi = {
 // Cache for questionnaire data
 const questionnaireCache: Record<string, { data: any; timestamp: number }> = {};
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+// Helper to calculate payload size
+const getPayloadSize = (payload: any): number => {
+  try {
+    return JSON.stringify(payload).length;
+  } catch {
+    return 0;
+  }
+};
 
 // Inspections API
 export const inspectionsApi = {
@@ -96,7 +116,6 @@ export const inspectionsApi = {
     const cached = questionnaireCache[cacheKey];
     
     if (!forceRefresh && cached && Date.now() - cached.timestamp < CACHE_TTL) {
-      console.log('[API] Using cached questionnaire');
       return cached.data;
     }
     
@@ -114,7 +133,9 @@ export const inspectionsApi = {
   },
 
   saveProgress: async (id: string, progressData: any, retryCount = 0): Promise<any> => {
-    // Send all fields to backend for proper storage
+    const startTime = Date.now();
+    
+    // Build payload
     const payload: any = {
       question_id: progressData.question_id,
       category_id: progressData.category_id,
@@ -131,16 +152,79 @@ export const inspectionsApi = {
       payload.sub_answer_2 = progressData.sub_answer_2;
     }
     
+    // Calculate and log payload size
+    const payloadSize = getPayloadSize(payload);
+    const payloadSizeKB = Math.round(payloadSize / 1024);
+    
+    // Determine answer type for logging
+    let answerType = 'unknown';
+    if (typeof payload.answer === 'string') {
+      if (payload.answer.startsWith('data:image')) {
+        answerType = 'image_base64';
+      } else if (payload.answer.startsWith('file://')) {
+        answerType = 'file_uri';
+      } else {
+        answerType = 'text';
+      }
+    } else if (typeof payload.answer === 'object') {
+      answerType = 'object';
+      if (payload.answer?.media) {
+        answerType = 'combo_with_media';
+      }
+    }
+    
+    diagLogger.info(`SAVE_START: ${progressData.question_id}`, {
+      inspectionId: id,
+      questionId: progressData.question_id,
+      categoryId: progressData.category_id,
+      answerType,
+      payloadSizeKB,
+      retryCount,
+    });
+    
+    // Check if payload is too large (>5MB is definitely problematic)
+    if (payloadSize > 5 * 1024 * 1024) {
+      diagLogger.error(`PAYLOAD_TOO_LARGE: ${payloadSizeKB}KB`, {
+        questionId: progressData.question_id,
+        limit: '5MB',
+      });
+    }
+    
     try {
       const response = await api.post(`/mechanic/inspections/${id}/progress`, payload);
+      const duration = Date.now() - startTime;
+      
+      diagLogger.info(`SAVE_SUCCESS: ${progressData.question_id}`, {
+        durationMs: duration,
+        responseStatus: response.status,
+        savedAnswersCount: response.data?.answers ? Object.keys(response.data.answers).length : 'unknown',
+      });
+      
       return response.data;
     } catch (error: any) {
-      console.error(`[API] saveProgress failed (attempt ${retryCount + 1}):`, error.message);
+      const duration = Date.now() - startTime;
       
-      // Retry once on timeout or network errors
-      if (retryCount < 1 && (error.code === 'ECONNABORTED' || error.message?.includes('timeout') || error.message?.includes('Network'))) {
-        console.log('[API] Retrying save...');
-        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+      // Extract detailed error info
+      const errorInfo = {
+        questionId: progressData.question_id,
+        durationMs: duration,
+        payloadSizeKB,
+        answerType,
+        errorMessage: error.message,
+        errorCode: error.code,
+        httpStatus: error.response?.status,
+        httpStatusText: error.response?.statusText,
+        serverError: error.response?.data?.detail || error.response?.data,
+        isTimeout: error.code === 'ECONNABORTED',
+        isNetworkError: error.message?.includes('Network') || error.code === 'ERR_NETWORK',
+      };
+      
+      diagLogger.error(`SAVE_FAILED: ${progressData.question_id}`, errorInfo);
+      
+      // Retry logic for timeout or network errors
+      if (retryCount < 2 && (errorInfo.isTimeout || errorInfo.isNetworkError)) {
+        diagLogger.info(`RETRY_ATTEMPT: ${retryCount + 1}`, { questionId: progressData.question_id });
+        await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3 seconds
         return inspectionsApi.saveProgress(id, progressData, retryCount + 1);
       }
       
@@ -150,16 +234,39 @@ export const inspectionsApi = {
 
   // Batch save for better performance - save multiple answers at once
   saveProgressBatch: async (id: string, answers: Array<{ question_id: string; category_id: string; answer?: any; sub_answer_1?: any; sub_answer_2?: any }>) => {
-    // Save answers sequentially to avoid overwhelming the server
+    diagLogger.info(`BATCH_SAVE_START`, {
+      inspectionId: id,
+      totalAnswers: answers.length,
+      questionIds: answers.map(a => a.question_id),
+    });
+    
     const results = [];
-    for (const answer of answers) {
+    for (let i = 0; i < answers.length; i++) {
+      const answer = answers[i];
       try {
         const result = await inspectionsApi.saveProgress(id, answer);
         results.push({ success: true, question_id: answer.question_id, result });
       } catch (error: any) {
-        results.push({ success: false, question_id: answer.question_id, error: error.message });
+        results.push({ 
+          success: false, 
+          question_id: answer.question_id, 
+          error: error.message,
+          httpStatus: error.response?.status,
+          serverError: error.response?.data?.detail,
+        });
       }
     }
+    
+    const successCount = results.filter(r => r.success).length;
+    const failCount = results.filter(r => !r.success).length;
+    
+    diagLogger.info(`BATCH_SAVE_COMPLETE`, {
+      inspectionId: id,
+      successCount,
+      failCount,
+      failures: results.filter(r => !r.success),
+    });
+    
     return results;
   },
 
