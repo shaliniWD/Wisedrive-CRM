@@ -1735,11 +1735,11 @@ export default function InspectionsPage() {
                           setEditInspectionData(inspection);
                           setIsEditInspectionModalOpen(true);
                         }}
-                        className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                        className="px-2.5 py-1 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded transition-colors"
                         title="Edit Inspection"
                         data-testid={`edit-inspection-${inspection.id}`}
                       >
-                        <Edit2 className="h-4 w-4" />
+                        Edit
                       </button>
                     </td>
                     
@@ -1747,15 +1747,15 @@ export default function InspectionsPage() {
                     <td className="px-2 py-2.5 text-center">
                       <button
                         onClick={() => openLiveProgressModal(inspection)}
-                        className={`p-1.5 rounded transition-colors ${
+                        className={`px-2.5 py-1 text-xs font-medium rounded transition-colors ${
                           ['INSPECTION_STARTED', 'IN_PROGRESS'].includes(inspection.inspection_status)
-                            ? 'text-green-600 bg-green-50 hover:bg-green-100'
-                            : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'
+                            ? 'text-green-700 bg-green-100 hover:bg-green-200 animate-pulse'
+                            : 'text-gray-500 bg-gray-100 hover:bg-gray-200'
                         }`}
                         title="Live Progress"
                         data-testid={`live-progress-${inspection.id}`}
                       >
-                        <Play className={`h-4 w-4 ${['INSPECTION_STARTED', 'IN_PROGRESS'].includes(inspection.inspection_status) ? 'animate-pulse' : ''}`} />
+                        Live
                       </button>
                     </td>
                     
