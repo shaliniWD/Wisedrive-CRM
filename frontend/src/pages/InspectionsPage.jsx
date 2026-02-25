@@ -1503,8 +1503,8 @@ export default function InspectionsPage() {
                         <div className="h-7 w-7 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white font-medium text-xs flex-shrink-0">
                           {inspection.customer_name?.charAt(0)?.toUpperCase()}
                         </div>
-                        <div className="min-w-0">
-                          <div className="font-medium text-gray-900 text-sm truncate">{inspection.customer_name}</div>
+                        <div>
+                          <div className="font-medium text-gray-900 text-sm">{inspection.customer_name}</div>
                           <div className="text-xs text-gray-500 font-mono">{inspection.customer_mobile}</div>
                         </div>
                       </div>
@@ -1514,10 +1514,10 @@ export default function InspectionsPage() {
                     <td className="px-3 py-3">
                       <div className="flex items-center gap-1">
                         <Car className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                        <div className="min-w-0">
+                        <div>
                           <div className="text-sm font-mono text-blue-600">{inspection.car_number || '-'}</div>
                           {(inspection.car_make || inspection.car_model) && (
-                            <div className="text-xs text-gray-400 truncate">{extractMake(inspection.car_make)} {extractModel(inspection.car_model)}</div>
+                            <div className="text-xs text-gray-400">{extractMake(inspection.car_make)} {extractModel(inspection.car_model)}</div>
                           )}
                         </div>
                         <button 
