@@ -14544,12 +14544,26 @@ async def mechanic_save_progress(
     
     # Store individual question answers
     answers = inspection.get("inspection_answers", {})
-    if data.question_id and data.answer:
-        answers[data.question_id] = {
-            "answer": data.answer,
-            "answered_at": datetime.now(timezone.utc).isoformat(),
-            "answered_by": current_user["id"]
-        }
+    if data.question_id:
+        existing_answer = answers.get(data.question_id, {})
+        
+        # Update main answer if provided
+        if data.answer is not None:
+            existing_answer["answer"] = data.answer
+            existing_answer["answered_at"] = datetime.now(timezone.utc).isoformat()
+            existing_answer["answered_by"] = current_user["id"]
+        
+        # Update sub_answer_1 if provided
+        if data.sub_answer_1 is not None:
+            existing_answer["sub_answer_1"] = data.sub_answer_1
+            existing_answer["sub_answer_1_at"] = datetime.now(timezone.utc).isoformat()
+        
+        # Update sub_answer_2 if provided
+        if data.sub_answer_2 is not None:
+            existing_answer["sub_answer_2"] = data.sub_answer_2
+            existing_answer["sub_answer_2_at"] = datetime.now(timezone.utc).isoformat()
+        
+        answers[data.question_id] = existing_answer
     
     update_data = {
         "inspection_progress": current_progress,
@@ -14563,6 +14577,7 @@ async def mechanic_save_progress(
     return {
         "id": inspection_id,
         "progress": current_progress,
+        "answers": answers,
         "message": "Progress saved"
     }
 
