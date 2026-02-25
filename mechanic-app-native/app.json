@@ -2,7 +2,7 @@
   "expo": {
     "name": "WiseDrive Mechanic",
     "slug": "wisedrive-mechanic",
-    "version": "1.0.8",
+    "version": "1.0.9",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -10,7 +10,7 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#1E3A5F"
+      "backgroundColor": "#3D7B3D"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -32,7 +32,7 @@
       "allowBackup": false,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#1E3A5F",
+        "backgroundColor": "#3D7B3D",
         "monochromeImage": "./assets/adaptive-icon.png"
       },
       "package": "com.cleansecar.wisedrive.mechanic",
