@@ -404,6 +404,7 @@ export default function InspectionsPage() {
   const [search, setSearch] = useState('');
   const [filterCity, setFilterCity] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
+  const [filterPayment, setFilterPayment] = useState('');
 
   const [formData, setFormData] = useState({
     customer_name: '', customer_mobile: '', address: '', city: '',
