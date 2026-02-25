@@ -170,8 +170,8 @@ const processVideo = async (uri: string): Promise<string> => {
     
     // Read video as base64
     diagLogger.info('VIDEO_READING_BASE64', { sizeMB: fileSizeMB.toFixed(2) });
-    const base64 = await FileSystem.readAsStringAsync(uri, {
-      encoding: FileSystem.EncodingType.Base64,
+    const base64 = await fsReadAsStringAsync(uri, {
+      encoding: EncodingType.Base64,
     });
     
     diagLogger.info('VIDEO_PROCESS_DONE', { 
