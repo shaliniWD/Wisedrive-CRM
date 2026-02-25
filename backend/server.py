@@ -5536,6 +5536,67 @@ async def update_inspection_schedule(
     return updated
 
 
+class UpdateLocationRequest(BaseModel):
+    address: str
+    city: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+
+
+@api_router.patch("/inspections/{inspection_id}/location")
+async def update_inspection_location(
+    inspection_id: str,
+    request_data: UpdateLocationRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update inspection location (address, city, lat/lng for navigation)"""
+    inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
+    if not inspection:
+        raise HTTPException(status_code=404, detail="Inspection not found")
+    
+    old_address = inspection.get("address", "")
+    old_city = inspection.get("city", "")
+    
+    update_dict = {
+        "address": request_data.address,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "updated_by": current_user["id"]
+    }
+    
+    if request_data.city:
+        update_dict["city"] = request_data.city
+    
+    if request_data.latitude is not None:
+        update_dict["latitude"] = request_data.latitude
+        update_dict["location_lat"] = request_data.latitude  # Also update legacy field
+    
+    if request_data.longitude is not None:
+        update_dict["longitude"] = request_data.longitude
+        update_dict["location_lng"] = request_data.longitude  # Also update legacy field
+    
+    await db.inspections.update_one({"id": inspection_id}, {"$set": update_dict})
+    
+    # Log activity
+    activity = {
+        "id": str(uuid.uuid4()),
+        "inspection_id": inspection_id,
+        "user_id": current_user["id"],
+        "user_name": current_user.get("name", "Unknown"),
+        "user_role": current_user.get("role", "user"),
+        "action": "location_updated",
+        "action_label": "Location Updated",
+        "details": f"Location changed from '{old_address}' to '{request_data.address}'",
+        "old_value": f"{old_city} - {old_address}",
+        "new_value": f"{request_data.city or old_city} - {request_data.address}",
+        "source": "CRM",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.inspection_activities.insert_one(activity)
+    
+    updated = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
+    return updated
+
+
 class SendReportRequest(BaseModel):
     send_whatsapp: bool = True
     send_email: bool = False
