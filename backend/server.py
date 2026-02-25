@@ -479,14 +479,14 @@ async def get_version():
         "environment": os.environ.get("ENVIRONMENT", "preview"),
         "jwt_secret_status": jwt_status,  # Important for debugging auth issues
         "recent_changes": [
+            "v2.4.6 - Fixed inspection_status bug: progress save now sets INSPECTION_STARTED correctly",
+            "v2.4.5 - Mobile app v1.4.0: Fixed profile version display, improved image compression",
             "v2.4.4 - Mobile app bug fixes: Navigate button, cache clearing, inspection detail API enhanced",
             "v2.4.3 - Questionnaire endpoint enhanced to lookup partner template",
             "v2.4.1 - Added jwt_secret_status diagnostic and /auth/test-auth endpoint",
             "v2.4.0 - OTP storage moved to MongoDB (fixes intermittent validation)",
             "v2.4.0 - Employee phone number uniqueness validation",
             "v2.4.0 - Twilio balance display in Settings",
-            "v2.4.0 - City Management UI in Settings",
-            "v2.4.0 - Mechanic inspection query enhanced (name + city matching)",
             "v2.3.0 - Fast2SMS integration for OTP",
             "v2.2.0 - Token Management UI"
         ],
