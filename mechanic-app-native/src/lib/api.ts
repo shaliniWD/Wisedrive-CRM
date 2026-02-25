@@ -1,58 +1,41 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { debugLogger } from './logger';
 
 // API Base URL - Production CRM backend
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://crmdev.wisedrive.com/api';
 
+// Increased timeout for large payloads (images)
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 30000,
+  timeout: 60000, // 60 seconds for large uploads
   headers: {
     'Content-Type': 'application/json',
   },
+  maxContentLength: Infinity,
+  maxBodyLength: Infinity,
 });
 
 // Add auth token to requests
 api.interceptors.request.use(async (config) => {
   try {
     const token = await AsyncStorage.getItem('authToken');
-    await debugLogger.log('DEBUG', 'API_REQUEST', `Interceptor: ${config.method?.toUpperCase()} ${config.url}`, {
-      tokenPresent: !!token,
-      baseURL: API_BASE_URL,
-    });
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-    } else {
-      await debugLogger.log('WARN', 'API_REQUEST', 'No auth token found in AsyncStorage');
     }
-  } catch (e: any) {
-    await debugLogger.log('ERROR', 'API_REQUEST', 'Error getting token from storage', { error: e.message });
+  } catch (e) {
+    console.warn('[API] Error getting token:', e);
   }
   return config;
 });
 
 // Add response interceptor for better error handling
 api.interceptors.response.use(
-  async (response) => {
-    await debugLogger.log('DEBUG', 'API_RESPONSE', `Success: ${response.config.method?.toUpperCase()} ${response.config.url}`, {
-      status: response.status,
-      dataKeys: response.data ? Object.keys(response.data) : [],
-    });
-    return response;
-  },
+  (response) => response,
   async (error) => {
-    await debugLogger.log('ERROR', 'API_RESPONSE', `Failed: ${error.config?.method?.toUpperCase()} ${error.config?.url}`, {
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      errorData: error.response?.data,
-      message: error.message,
-    });
+    console.error('[API] Request failed:', error.config?.url, error.message);
     if (error.response?.status === 401) {
-      const token = await AsyncStorage.getItem('authToken');
-      await debugLogger.log('WARN', 'API_RESPONSE', '401 Unauthorized - Token may be invalid', {
-        tokenInStorage: token ? `${token.substring(0, 20)}...` : 'NONE',
-      });
+      // Token expired - could trigger re-login here
+      console.warn('[API] 401 Unauthorized');
     }
     return Promise.reject(error);
   }
@@ -71,6 +54,10 @@ export const authApi = {
   },
 };
 
+// Cache for questionnaire data
+const questionnaireCache: Record<string, { data: any; timestamp: number }> = {};
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 // Inspections API
 export const inspectionsApi = {
   getInspections: async (params: { status?: string; city?: string; date_filter?: string; date_from?: string; date_to?: string } = {}) => {
@@ -79,20 +66,8 @@ export const inspectionsApi = {
   },
 
   getInspection: async (id: string) => {
-    await debugLogger.logApiRequest(`/mechanic/inspections/${id}`, { inspectionId: id }, id);
-    try {
-      const response = await api.get(`/mechanic/inspections/${id}`);
-      await debugLogger.logApiResponse('getInspection', {
-        inspectionId: id,
-        hasAnswers: !!response.data.inspection_answers,
-        answersCount: response.data.inspection_answers ? Object.keys(response.data.inspection_answers).length : 0,
-        status: response.data.inspection_status,
-      }, true, id);
-      return response.data;
-    } catch (error: any) {
-      await debugLogger.logApiError('getInspection', error, id);
-      throw error;
-    }
+    const response = await api.get(`/mechanic/inspections/${id}`);
+    return response.data;
   },
 
   acceptInspection: async (id: string) => {
@@ -100,9 +75,42 @@ export const inspectionsApi = {
     return response.data;
   },
 
-  rejectInspection: async (id: string, reason?: string) => {
-    const response = await api.post(`/mechanic/inspections/${id}/reject`, { reason });
+  rejectInspection: async (id: string, reason: string, notes?: string) => {
+    const response = await api.post(`/mechanic/inspections/${id}/reject`, { reason, notes });
     return response.data;
+  },
+
+  startInspection: async (id: string) => {
+    const response = await api.post(`/mechanic/inspections/${id}/start`);
+    return response.data;
+  },
+
+  completeInspection: async (id: string) => {
+    const response = await api.post(`/mechanic/inspections/${id}/complete`);
+    return response.data;
+  },
+
+  // Optimized: Use cache for questionnaire
+  getQuestionnaire: async (id: string, forceRefresh = false) => {
+    const cacheKey = `questionnaire_${id}`;
+    const cached = questionnaireCache[cacheKey];
+    
+    if (!forceRefresh && cached && Date.now() - cached.timestamp < CACHE_TTL) {
+      console.log('[API] Using cached questionnaire');
+      return cached.data;
+    }
+    
+    const response = await api.get(`/inspections/${id}/questionnaire`);
+    questionnaireCache[cacheKey] = {
+      data: response.data,
+      timestamp: Date.now(),
+    };
+    return response.data;
+  },
+
+  // Clear cache for an inspection
+  clearQuestionnaireCache: (id: string) => {
+    delete questionnaireCache[`questionnaire_${id}`];
   },
 
   saveProgress: async (id: string, progressData: any) => {
@@ -123,112 +131,32 @@ export const inspectionsApi = {
       payload.sub_answer_2 = progressData.sub_answer_2;
     }
     
-    await debugLogger.logApiRequest(`/mechanic/inspections/${id}/progress`, {
-      question_id: payload.question_id,
-      category_id: payload.category_id,
-      hasAnswer: payload.answer !== undefined,
-      hasSubAnswer1: payload.sub_answer_1 !== undefined,
-      hasSubAnswer2: payload.sub_answer_2 !== undefined,
-      answerType: typeof payload.answer,
-    }, id, payload.question_id);
-    
-    try {
-      const response = await api.post(`/mechanic/inspections/${id}/progress`, payload);
-      
-      // Log the FULL raw response for debugging
-      await debugLogger.logApiResponse(`saveProgress RAW`, {
-        fullResponseKeys: Object.keys(response.data),
-        id: response.data.id,
-        message: response.data.message,
-        progressKeys: response.data.progress ? Object.keys(response.data.progress) : 'no progress field',
-        answersKeys: response.data.answers ? Object.keys(response.data.answers) : 'no answers field',
-        answersIsObject: typeof response.data.answers,
-        rawAnswersPreview: response.data.answers ? JSON.stringify(response.data.answers).substring(0, 500) : 'EMPTY',
-      }, true, id);
-      
-      await debugLogger.logApiResponse(`saveProgress`, {
-        status: 'success',
-        message: response.data.message,
-        savedAnswersCount: response.data.answers ? Object.keys(response.data.answers).length : 0,
-        savedQuestionAnswer: response.data.answers?.[payload.question_id],
-      }, true, id);
-      
-      return response.data;
-    } catch (error: any) {
-      await debugLogger.logApiError(`saveProgress`, error, id, payload.question_id);
-      throw error;
+    const response = await api.post(`/mechanic/inspections/${id}/progress`, payload);
+    return response.data;
+  },
+
+  // Batch save for better performance - save multiple answers at once
+  saveProgressBatch: async (id: string, answers: Array<{ question_id: string; category_id: string; answer?: any; sub_answer_1?: any; sub_answer_2?: any }>) => {
+    // Save answers sequentially to avoid overwhelming the server
+    const results = [];
+    for (const answer of answers) {
+      try {
+        const result = await inspectionsApi.saveProgress(id, answer);
+        results.push({ success: true, question_id: answer.question_id, result });
+      } catch (error: any) {
+        results.push({ success: false, question_id: answer.question_id, error: error.message });
+      }
     }
+    return results;
   },
 
-  completeInspection: async (id: string) => {
-    const response = await api.post(`/mechanic/inspections/${id}/complete`);
+  submitOBDResults: async (id: string, obdData: any) => {
+    const response = await api.post(`/mechanic/inspections/${id}/obd-results`, obdData);
     return response.data;
   },
 
-  startInspection: async (id: string) => {
-    const response = await api.post(`/mechanic/inspections/${id}/start`);
-    return response.data;
-  },
-
-  getQuestionnaire: async (id: string) => {
-    const response = await api.get(`/inspections/${id}/questionnaire`);
-    return response.data;
-  },
-
-  // Save OBD scan results
-  saveObdResults: async (inspectionId: string, obdData: any) => {
-    const response = await api.post(`/mechanic/inspections/${inspectionId}/obd-results`, obdData);
-    return response.data;
-  },
-};
-
-// Push Notifications API
-export const pushNotificationApi = {
-  registerToken: async (deviceToken: string, platform: string = 'ios', deviceInfo?: any) => {
-    const response = await api.post('/mechanic/push-token', {
-      device_token: deviceToken,
-      platform,
-      device_info: deviceInfo,
-    });
-    return response.data;
-  },
-
-  unregisterToken: async () => {
-    const response = await api.delete('/mechanic/push-token');
-    return response.data;
-  },
-
-  getNotifications: async (limit: number = 50) => {
-    const response = await api.get('/mechanic/notifications', { params: { limit } });
-    return response.data;
-  },
-
-  markAsRead: async (notificationId: string) => {
-    const response = await api.patch(`/mechanic/notifications/${notificationId}/read`);
-    return response.data;
-  },
-};
-
-// Upload API
-export const uploadApi = {
-  uploadFile: async (uri: string, type: string = 'photo') => {
-    const formData = new FormData();
-    const filename = uri.split('/').pop() || 'file';
-    const match = /\.(\w+)$/.exec(filename);
-    const fileType = match ? `image/${match[1]}` : 'image/jpeg';
-
-    formData.append('file', {
-      uri,
-      name: filename,
-      type: fileType,
-    } as any);
-    formData.append('type', type);
-
-    const response = await api.post('/uploads', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+  rescheduleInspection: async (id: string, data: { new_scheduled_date: string; reschedule_reason?: string }) => {
+    const response = await api.post(`/mechanic/inspections/${id}/reschedule`, data);
     return response.data;
   },
 };
