@@ -168,17 +168,38 @@ export default function CategoryQuestionsScreen() {
           answerKeys: Object.keys(serverAnswers),
         }, true, inspectionId || undefined);
         
+        // Log the actual server answer structure for debugging
+        categoryQuestions.forEach((q: Question) => {
+          if (serverAnswers[q.id]) {
+            debugLogger.log('DEBUG', 'STATE', `Server answer for ${q.id}`, {
+              hasAnswer: !!serverAnswers[q.id].answer,
+              answerType: typeof serverAnswers[q.id].answer,
+              answerKeys: serverAnswers[q.id].answer ? Object.keys(serverAnswers[q.id].answer) : [],
+              hasSub1: !!serverAnswers[q.id].sub_answer_1,
+              hasSub2: !!serverAnswers[q.id].sub_answer_2,
+            }, { questionId: q.id });
+          }
+        });
+        
         // Load drafts from local storage
         const localDrafts = await loadDraftsFromStorage();
         
         // Merge: prefer local drafts over server answers for this category
         const mergedAnswers: Record<string, Answer> = {};
         categoryQuestions.forEach((q: Question) => {
-          if (localDrafts[q.id]) {
+          if (localDrafts[q.id] && localDrafts[q.id].isDraft) {
+            // Local draft exists and is marked as draft - use it
             mergedAnswers[q.id] = { ...localDrafts[q.id], isDraft: true };
           } else if (serverAnswers[q.id]) {
-            mergedAnswers[q.id] = serverAnswers[q.id];
+            // Use server answer - NOT marked as draft (already saved)
+            mergedAnswers[q.id] = { ...serverAnswers[q.id], isDraft: false };
           }
+        });
+        
+        await debugLogger.log('DEBUG', 'STATE', 'Merged answers', {
+          mergedCount: Object.keys(mergedAnswers).length,
+          fromDrafts: Object.values(mergedAnswers).filter(a => a.isDraft).length,
+          fromServer: Object.values(mergedAnswers).filter(a => !a.isDraft).length,
         });
         
         setDraftAnswers(mergedAnswers);
