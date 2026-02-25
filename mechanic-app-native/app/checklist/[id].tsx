@@ -147,7 +147,7 @@ export default function ChecklistScreen() {
   const handleCompleteInspection = async () => {
     setIsCompleting(true);
     try {
-      await inspectionsApi.completeInspection(inspectionId!);
+      await inspectionsApi.completeInspection(inspectionId);
       Alert.alert('Success', 'Inspection completed successfully!', [
         { text: 'OK', onPress: () => router.replace('/home') },
       ]);
