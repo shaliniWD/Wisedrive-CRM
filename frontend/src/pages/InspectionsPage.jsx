@@ -1221,21 +1221,35 @@ export default function InspectionsPage() {
   const completedCount = inspections.filter(i => i.inspection_status === 'INSPECTION_COMPLETED').length;
   const newInspectionsCount = inspections.filter(i => !i.inspection_status || i.inspection_status === 'NEW_INSPECTION').length;
   
-  // Filter inspections based on cardFilter
+  // Filter inspections based on cardFilter and payment filter
   const filteredInspections = inspections.filter(inspection => {
-    if (!cardFilter) return true;
-    switch (cardFilter) {
-      case 'total':
-        return true;
-      case 'scheduled':
-        return !!inspection.scheduled_date;
-      case 'completed':
-        return inspection.inspection_status === 'INSPECTION_COMPLETED';
-      case 'new':
-        return !inspection.inspection_status || inspection.inspection_status === 'NEW_INSPECTION';
-      default:
-        return true;
+    // Card filter
+    if (cardFilter) {
+      switch (cardFilter) {
+        case 'total':
+          break;
+        case 'scheduled':
+          if (!inspection.scheduled_date) return false;
+          break;
+        case 'completed':
+          if (inspection.inspection_status !== 'INSPECTION_COMPLETED') return false;
+          break;
+        case 'new':
+          if (inspection.inspection_status && inspection.inspection_status !== 'NEW_INSPECTION') return false;
+          break;
+        default:
+          break;
+      }
     }
+    
+    // Payment filter
+    if (filterPayment && filterPayment !== 'all') {
+      const isPaid = inspection.payment_status === 'FULLY_PAID' || inspection.payment_status === 'PAID';
+      if (filterPayment === 'paid' && !isPaid) return false;
+      if (filterPayment === 'pending' && isPaid) return false;
+    }
+    
+    return true;
   });
 
   return (
