@@ -860,6 +860,30 @@ export default function InspectionsPage() {
     }
   };
 
+  // Handle Location Update
+  const handleLocationUpdate = async () => {
+    if (!locationEditInspection) return;
+    
+    setLocationSaving(true);
+    try {
+      await inspectionsApi.updateLocation(locationEditInspection.id, {
+        address: locationFormData.address,
+        city: locationFormData.city,
+        latitude: locationFormData.latitude,
+        longitude: locationFormData.longitude
+      });
+      toast.success('Inspection location updated successfully!');
+      setIsLocationModalOpen(false);
+      setLocationEditInspection(null);
+      setLocationFormData({ address: '', city: '', latitude: null, longitude: null });
+      fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to update location');
+    } finally {
+      setLocationSaving(false);
+    }
+  };
+
   // Handle Send Report action
   const handleSendReport = async (inspection) => {
     const isFullyPaid = inspection.payment_status === 'FULLY_PAID' || inspection.payment_status === 'PAID';
