@@ -1492,7 +1492,7 @@ export default function InspectionsPage() {
                           {inspection.customer_name?.charAt(0)?.toUpperCase()}
                         </div>
                         <div className="min-w-0">
-                          <div className="font-medium text-gray-900 text-xs truncate max-w-[120px]">{inspection.customer_name}</div>
+                          <div className="font-medium text-gray-900 text-xs truncate max-w-[140px]">{inspection.customer_name}</div>
                           <div className="text-xs text-gray-500 font-mono">{inspection.customer_mobile}</div>
                         </div>
                       </div>
@@ -1511,41 +1511,16 @@ export default function InspectionsPage() {
                       </div>
                     </td>
                     
-                    {/* Payment Status Column */}
-                    <td className="px-2 py-2">
-                      <button
-                        onClick={() => openPaymentDetailsModal({
-                          ...inspection,
-                          balance_due: actualBalanceDue
-                        })}
-                        className="group cursor-pointer transition-all duration-200"
-                        title="View payment details"
-                        data-testid={`payment-status-${inspection.id}`}
-                      >
-                        {isFullyPaid ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200 whitespace-nowrap">
-                            <CheckCircle className="h-3 w-3" />
-                            Paid
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200 whitespace-nowrap">
-                            <AlertCircle className="h-3 w-3" />
-                            Due
-                          </span>
-                        )}
-                      </button>
-                    </td>
-                    
-                    {/* Inspection Status Column */}
+                    {/* Status Column */}
                     <td className="px-2 py-2">
                       <Select 
                         value={inspection.inspection_status || 'NEW_INSPECTION'} 
                         onValueChange={(value) => handleStatusChange(inspection.id, value)}
                       >
                         <SelectTrigger className="h-7 text-xs w-full border-gray-200" data-testid={`status-select-${inspection.id}`}>
-                          <SelectValue placeholder="New Inspection" />
+                          <SelectValue placeholder="New" />
                         </SelectTrigger>
-                        <SelectContent className="min-w-[190px]">
+                        <SelectContent className="min-w-[150px]">
                           {INSPECTION_STATUSES.map((status) => (
                             <SelectItem key={status.value} value={status.value}>
                               <span className={`px-2 py-0.5 rounded text-xs whitespace-nowrap ${status.color}`}>
@@ -1557,16 +1532,30 @@ export default function InspectionsPage() {
                       </Select>
                     </td>
                     
-                    {/* Mechanic Column */}
+                    {/* Mechanic Column with Reassign Icon */}
                     <td className="px-2 py-2">
-                      {inspection.mechanic_name ? (
-                        <div className="flex items-center gap-1">
-                          <UserCheck className="h-3 w-3 text-emerald-500 flex-shrink-0" />
-                          <span className="text-xs text-gray-700 truncate max-w-[90px]">{inspection.mechanic_name}</span>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-gray-400 italic">Not assigned</span>
-                      )}
+                      <div className="flex items-center gap-1">
+                        {inspection.mechanic_name ? (
+                          <>
+                            <UserCheck className="h-3 w-3 text-emerald-500 flex-shrink-0" />
+                            <span className="text-xs text-gray-700 truncate max-w-[100px]">{inspection.mechanic_name}</span>
+                          </>
+                        ) : (
+                          <span className="text-xs text-gray-400 italic">Not assigned</span>
+                        )}
+                        <button
+                          onClick={() => {
+                            setMechanicEditInspection(inspection);
+                            setSelectedMechanicId(inspection.mechanic_id || '');
+                            setIsMechanicModalOpen(true);
+                          }}
+                          className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors ml-auto"
+                          title={inspection.mechanic_name ? "Reassign Mechanic" : "Assign Mechanic"}
+                          data-testid={`reassign-mechanic-${inspection.id}`}
+                        >
+                          <User className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </td>
                     
                     {/* Location Column */}
@@ -1588,6 +1577,23 @@ export default function InspectionsPage() {
                         <Eye className="h-3 w-3" />
                         View
                       </button>
+                    </td>
+                    
+                    {/* Edit Column - Opens Combined Edit Modal */}
+                    <td className="px-2 py-2">
+                      <div className="flex items-center justify-center">
+                        <button
+                          onClick={() => {
+                            setEditInspectionData(inspection);
+                            setIsEditInspectionModalOpen(true);
+                          }}
+                          className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Edit Inspection"
+                          data-testid={`edit-inspection-${inspection.id}`}
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     </td>
                     
                     {/* Actions Column - Dropdown Menu */}
