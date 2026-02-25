@@ -5155,20 +5155,25 @@ async def check_inspection_payment_status(
 async def update_inspection_status(
     inspection_id: str,
     inspection_status: str,
+    reason: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
-    """Update inspection status"""
+    """Update inspection status - CRM manual override"""
     valid_statuses = [
-        "NEW_INSPECTION", "ASSIGNED_TO_MECHANIC", "INSPECTION_CONFIRMED",
-        "INSPECTION_STARTED", "INSPECTION_IN_PROGRESS", "INSPECTION_COMPLETED",
-        "INSPECTION_CANCELLED_CUSTOMER", "INSPECTION_CANCELLED_WISEDRIVE",
-        "INSPECTION_RESCHEDULED", "SCHEDULED", "UNSCHEDULED"
+        "NEW_INSPECTION", 
+        "ASSIGNED_TO_MECHANIC", 
+        "MECHANIC_ACCEPTED",
+        "MECHANIC_REJECTED",
+        "INSPECTION_STARTED", 
+        "INSPECTION_COMPLETED",
+        "INSPECTION_CANCELLED_WD",  # Cancelled by WiseDrive
+        "INSPECTION_CANCELLED_CUS", # Cancelled by Customer
+        "RESCHEDULED"
     ]
     
     # Statuses that require a mechanic to be assigned
     mechanic_required_statuses = [
-        "ASSIGNED_TO_MECHANIC", "INSPECTION_CONFIRMED", "INSPECTION_STARTED",
-        "INSPECTION_IN_PROGRESS", "INSPECTION_COMPLETED"
+        "ASSIGNED_TO_MECHANIC", "MECHANIC_ACCEPTED", "INSPECTION_STARTED", "INSPECTION_COMPLETED"
     ]
     
     if inspection_status not in valid_statuses:
@@ -5177,6 +5182,8 @@ async def update_inspection_status(
     inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
     if not inspection:
         raise HTTPException(status_code=404, detail="Inspection not found")
+    
+    old_status = inspection.get("inspection_status", "NEW_INSPECTION")
     
     # Check if mechanic is required for the new status
     if inspection_status in mechanic_required_statuses:
@@ -5187,14 +5194,45 @@ async def update_inspection_status(
                 detail=f"Cannot change status to '{inspection_status}'. Please assign a mechanic first."
             )
     
-    await db.inspections.update_one(
-        {"id": inspection_id},
-        {"$set": {
-            "inspection_status": inspection_status,
-            "updated_at": datetime.now(timezone.utc).isoformat(),
-            "updated_by": current_user["id"]
-        }}
-    )
+    update_data = {
+        "inspection_status": inspection_status,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "updated_by": current_user["id"]
+    }
+    
+    # Handle specific status updates
+    if inspection_status == "MECHANIC_REJECTED":
+        update_data["mechanic_id"] = None
+        update_data["mechanic_name"] = None
+        update_data["rejection_reason"] = reason
+        update_data["rejected_at"] = datetime.now(timezone.utc).isoformat()
+    elif inspection_status in ["INSPECTION_CANCELLED_WD", "INSPECTION_CANCELLED_CUS"]:
+        update_data["cancellation_reason"] = reason
+        update_data["cancelled_at"] = datetime.now(timezone.utc).isoformat()
+        update_data["cancelled_by"] = current_user["id"]
+    elif inspection_status == "RESCHEDULED":
+        update_data["rescheduled_reason"] = reason
+        update_data["rescheduled_at"] = datetime.now(timezone.utc).isoformat()
+        update_data["rescheduled_by"] = current_user["id"]
+    
+    await db.inspections.update_one({"id": inspection_id}, {"$set": update_data})
+    
+    # Build detailed activity message
+    status_labels = {
+        "NEW_INSPECTION": "New Inspection",
+        "ASSIGNED_TO_MECHANIC": "Assigned to Mechanic",
+        "MECHANIC_ACCEPTED": "Mechanic Accepted",
+        "MECHANIC_REJECTED": "Mechanic Rejected",
+        "INSPECTION_STARTED": "Inspection Started",
+        "INSPECTION_COMPLETED": "Inspection Completed",
+        "INSPECTION_CANCELLED_WD": "Cancelled by WiseDrive",
+        "INSPECTION_CANCELLED_CUS": "Cancelled by Customer",
+        "RESCHEDULED": "Rescheduled"
+    }
+    
+    details = f"Status changed from '{status_labels.get(old_status, old_status)}' to '{status_labels.get(inspection_status, inspection_status)}'"
+    if reason:
+        details += f". Reason: {reason}"
     
     # Log activity for status change
     activity = {
@@ -5202,10 +5240,14 @@ async def update_inspection_status(
         "inspection_id": inspection_id,
         "user_id": current_user["id"],
         "user_name": current_user.get("name", "Unknown"),
+        "user_role": current_user.get("role", "user"),
         "action": "status_changed",
-        "details": f"Status changed to {inspection_status}",
-        "old_value": inspection.get("inspection_status"),
+        "action_label": "Status Changed",
+        "details": details,
+        "old_value": old_status,
         "new_value": inspection_status,
+        "reason": reason,
+        "source": "CRM",
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.inspection_activities.insert_one(activity)
