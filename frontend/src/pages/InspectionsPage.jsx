@@ -891,6 +891,37 @@ export default function InspectionsPage() {
     }
   };
 
+  // Handle Live Progress View
+  const fetchLiveProgress = async (inspectionId) => {
+    setLiveProgressLoading(true);
+    try {
+      const response = await inspectionsApi.getLiveProgress(inspectionId);
+      setLiveProgressData(response.data);
+    } catch (error) {
+      toast.error('Failed to load inspection progress');
+      console.error('Error fetching live progress:', error);
+    } finally {
+      setLiveProgressLoading(false);
+    }
+  };
+
+  const openLiveProgressModal = (inspection) => {
+    setLiveProgressInspection(inspection);
+    setIsLiveProgressModalOpen(true);
+    fetchLiveProgress(inspection.id);
+  };
+
+  // Auto-refresh effect for live progress
+  useEffect(() => {
+    let interval;
+    if (isLiveProgressModalOpen && liveProgressAutoRefresh && liveProgressInspection) {
+      interval = setInterval(() => {
+        fetchLiveProgress(liveProgressInspection.id);
+      }, 5000); // Refresh every 5 seconds
+    }
+    return () => clearInterval(interval);
+  }, [isLiveProgressModalOpen, liveProgressAutoRefresh, liveProgressInspection]);
+
   // Handle Send Report action
   const handleSendReport = async (inspection) => {
     const isFullyPaid = inspection.payment_status === 'FULLY_PAID' || inspection.payment_status === 'PAID';
