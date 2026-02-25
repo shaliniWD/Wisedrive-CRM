@@ -466,10 +466,13 @@ export default function HomeScreen() {
     }
   }, []); // Remove dependencies to prevent infinite loops
 
-  // Initial load
-  useEffect(() => {
-    fetchInspections('all');
-  }, []);
+  // Refresh when screen comes into focus (after returning from inspection)
+  useFocusEffect(
+    useCallback(() => {
+      console.log('[Home] Screen focused, refreshing inspections...');
+      fetchInspections(dateFilter, customDateFrom, customDateTo);
+    }, [dateFilter, customDateFrom, customDateTo])
+  );
 
   const onDateChange = (event: any, selectedDate?: Date) => {
     if (Platform.OS === 'android') {
