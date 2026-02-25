@@ -922,6 +922,22 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginBottom: 12,
   },
+  // Combo container styles (MCQ + Photo/Video)
+  comboContainer: {
+    gap: 20,
+  },
+  comboMediaSection: {
+    marginTop: 8,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  comboMediaLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 12,
+  },
   optionsContainer: {
     gap: 10,
   },
