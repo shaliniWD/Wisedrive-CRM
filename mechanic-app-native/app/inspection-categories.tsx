@@ -24,27 +24,106 @@ interface Category {
   isCompleted: boolean;
 }
 
-const MOCK_CATEGORIES: Category[] = [
-  { id: 'exterior', name: 'Exterior', icon: 'car-outline', questionsCount: 15, completedCount: 0, isCompleted: false },
-  { id: 'interior', name: 'Interior', icon: 'car-seat', questionsCount: 12, completedCount: 0, isCompleted: false },
-  { id: 'engine', name: 'Engine Bay', icon: 'engine', questionsCount: 10, completedCount: 0, isCompleted: false },
-  { id: 'underbody', name: 'Underbody', icon: 'car-lifted-pickup', questionsCount: 8, completedCount: 0, isCompleted: false },
-  { id: 'electrical', name: 'Electrical', icon: 'lightning-bolt', questionsCount: 10, completedCount: 0, isCompleted: false },
-  { id: 'tyres', name: 'Tyres & Wheels', icon: 'tire', questionsCount: 8, completedCount: 0, isCompleted: false },
-];
+// Icon mapping for category names
+const CATEGORY_ICONS: { [key: string]: string } = {
+  'exterior': 'car-outline',
+  'interior': 'car-seat',
+  'engine': 'engine',
+  'engine bay': 'engine',
+  'underbody': 'car-lifted-pickup',
+  'electrical': 'lightning-bolt',
+  'tyres': 'tire',
+  'tyres & wheels': 'tire',
+  'wheels': 'tire',
+  'default': 'clipboard-check-outline',
+};
+
+const getIconForCategory = (categoryName: string): string => {
+  const normalizedName = categoryName.toLowerCase();
+  for (const [key, icon] of Object.entries(CATEGORY_ICONS)) {
+    if (normalizedName.includes(key)) {
+      return icon;
+    }
+  }
+  return CATEGORY_ICONS.default;
+};
 
 export default function InspectionCategoriesScreen() {
   const { currentInspectionId, currentInspection, clearInspection, obdScanResult } = useInspection();
-  const [categories, setCategories] = useState<Category[]>(MOCK_CATEGORIES);
-  const [isLoading, setIsLoading] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   
   // Derive OBD completion status from global context
   const obdCompleted = obdScanResult?.completed || false;
   const obdResults = obdScanResult;
 
+  useEffect(() => {
+    fetchQuestionnaire();
+  }, [currentInspectionId]);
+
+  const fetchQuestionnaire = async () => {
+    if (!currentInspectionId) {
+      setLoadError('No inspection selected');
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      setLoadError(null);
+      
+      console.log('Fetching questionnaire for inspection:', currentInspectionId);
+      const data = await inspectionsApi.getQuestionnaire(currentInspectionId);
+      console.log('Questionnaire data:', JSON.stringify(data, null, 2));
+      
+      if (data && data.questions && Array.isArray(data.questions)) {
+        // Group questions by category
+        const categoryMap = new Map<string, { questions: any[], categoryId: string }>();
+        
+        data.questions.forEach((question: any) => {
+          const categoryName = question.category_name || question.category || 'General';
+          const categoryId = question.category_id || categoryName.toLowerCase().replace(/\s+/g, '-');
+          
+          if (!categoryMap.has(categoryName)) {
+            categoryMap.set(categoryName, { questions: [], categoryId });
+          }
+          categoryMap.get(categoryName)!.questions.push(question);
+        });
+        
+        // Convert to category array
+        const dynamicCategories: Category[] = [];
+        categoryMap.forEach((value, key) => {
+          dynamicCategories.push({
+            id: value.categoryId,
+            name: key,
+            icon: getIconForCategory(key),
+            questionsCount: value.questions.length,
+            completedCount: 0,
+            isCompleted: false,
+          });
+        });
+        
+        // Sort categories by question count (most questions first) or alphabetically
+        dynamicCategories.sort((a, b) => b.questionsCount - a.questionsCount);
+        
+        setCategories(dynamicCategories);
+        console.log('Loaded', dynamicCategories.length, 'categories from questionnaire');
+      } else {
+        console.warn('No questions in questionnaire response, using fallback');
+        setLoadError('No questionnaire found for this inspection');
+      }
+    } catch (error: any) {
+      console.error('Failed to fetch questionnaire:', error);
+      setLoadError(error.message || 'Failed to load questionnaire');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const totalQuestions = categories.reduce((acc, cat) => acc + cat.questionsCount, 0);
   const completedQuestions = categories.reduce((acc, cat) => acc + cat.completedCount, 0);
-  const allCategoriesCompleted = categories.every(cat => cat.isCompleted);
+  const allCategoriesCompleted = categories.length > 0 && categories.every(cat => cat.isCompleted);
   const progress = totalQuestions > 0 ? (completedQuestions / totalQuestions) * 100 : 0;
 
   const handleOBDScan = () => {
@@ -60,7 +139,7 @@ export default function InspectionCategoriesScreen() {
       );
       return;
     }
-    router.push(`/category/${currentInspectionId}/${category.id}`);
+    router.push(`/checklist/${category.id}`);
   };
 
   const handleSubmitInspection = async () => {
@@ -69,9 +148,9 @@ export default function InspectionCategoriesScreen() {
       return;
     }
 
-    setIsLoading(true);
     try {
       // Submit inspection results
+      await inspectionsApi.completeInspection(currentInspectionId!);
       Alert.alert('Success', 'Inspection submitted successfully!', [
         { text: 'OK', onPress: () => {
           clearInspection();
@@ -80,8 +159,6 @@ export default function InspectionCategoriesScreen() {
       ]);
     } catch (error) {
       Alert.alert('Error', 'Failed to submit inspection. Please try again.');
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -100,10 +177,23 @@ export default function InspectionCategoriesScreen() {
         return <MaterialCommunityIcons name="lightning-bolt" {...iconProps} />;
       case 'tire':
         return <MaterialCommunityIcons name="tire" {...iconProps} />;
+      case 'clipboard-check-outline':
+        return <MaterialCommunityIcons name="clipboard-check-outline" {...iconProps} />;
       default:
         return <Ionicons name="help-circle-outline" {...iconProps} />;
     }
   };
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#3B82F6" />
+          <Text style={styles.loadingText}>Loading inspection questionnaire...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -116,7 +206,9 @@ export default function InspectionCategoriesScreen() {
           <Text style={styles.headerTitle}>Inspection</Text>
           <Text style={styles.headerSubtitle}>{currentInspection?.vehicleNumber || 'N/A'}</Text>
         </View>
-        <View style={{ width: 40 }} />
+        <TouchableOpacity onPress={fetchQuestionnaire} style={styles.refreshBtn}>
+          <Ionicons name="refresh" size={22} color="#64748B" />
+        </TouchableOpacity>
       </View>
 
       {/* Progress Bar */}
@@ -189,8 +281,26 @@ export default function InspectionCategoriesScreen() {
         </View>
 
         {/* Categories Section */}
-        <Text style={styles.sectionTitle}>Inspection Categories</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Inspection Categories</Text>
+          {categories.length > 0 && (
+            <Text style={styles.sectionCount}>{totalQuestions} questions</Text>
+          )}
+        </View>
 
+        {/* Error State */}
+        {loadError && categories.length === 0 && (
+          <View style={styles.errorCard}>
+            <Ionicons name="warning-outline" size={32} color="#F59E0B" />
+            <Text style={styles.errorTitle}>No Questionnaire Found</Text>
+            <Text style={styles.errorText}>{loadError}</Text>
+            <TouchableOpacity style={styles.retryBtn} onPress={fetchQuestionnaire}>
+              <Text style={styles.retryBtnText}>Try Again</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Category Cards */}
         {categories.map((category) => (
           <TouchableOpacity
             key={category.id}
@@ -220,23 +330,19 @@ export default function InspectionCategoriesScreen() {
         ))}
 
         {/* Submit Button */}
-        <TouchableOpacity
-          style={[
-            styles.submitBtn,
-            (!allCategoriesCompleted || !obdCompleted) && styles.submitBtnDisabled
-          ]}
-          onPress={handleSubmitInspection}
-          disabled={!allCategoriesCompleted || !obdCompleted || isLoading}
-        >
-          {isLoading ? (
-            <ActivityIndicator color="#FFF" />
-          ) : (
-            <>
-              <MaterialIcons name="send" size={20} color="#FFF" />
-              <Text style={styles.submitBtnText}>Submit Inspection</Text>
-            </>
-          )}
-        </TouchableOpacity>
+        {categories.length > 0 && (
+          <TouchableOpacity
+            style={[
+              styles.submitBtn,
+              (!allCategoriesCompleted || !obdCompleted) && styles.submitBtnDisabled
+            ]}
+            onPress={handleSubmitInspection}
+            disabled={!allCategoriesCompleted || !obdCompleted}
+          >
+            <MaterialIcons name="send" size={20} color="#FFF" />
+            <Text style={styles.submitBtnText}>Submit Inspection</Text>
+          </TouchableOpacity>
+        )}
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -248,6 +354,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F1F5F9',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 12,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: '#64748B',
   },
 
   // Header
@@ -262,6 +378,13 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E2E8F0',
   },
   backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  refreshBtn: {
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -433,12 +556,57 @@ const styles = StyleSheet.create({
     color: '#3B82F6',
   },
 
-  // Section Title
+  // Section Header
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: '#1E293B',
+  },
+  sectionCount: {
+    fontSize: 13,
+    color: '#64748B',
+    fontWeight: '500',
+  },
+
+  // Error Card
+  errorCard: {
+    backgroundColor: '#FFFBEB',
+    borderRadius: 12,
+    padding: 24,
+    alignItems: 'center',
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#FCD34D',
+  },
+  errorTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#92400E',
+    marginTop: 12,
+  },
+  errorText: {
+    fontSize: 13,
+    color: '#B45309',
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  retryBtn: {
+    marginTop: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: '#F59E0B',
+    borderRadius: 8,
+  },
+  retryBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFF',
   },
 
   // Category Card
