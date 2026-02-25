@@ -910,6 +910,88 @@ export default function InspectionsPage() {
     }
   };
 
+  // Handle Combined Edit Inspection (Date/Time, Location, Vehicle)
+  useEffect(() => {
+    if (editInspectionData) {
+      setEditInspectionFormData({
+        scheduled_date: editInspectionData.scheduled_date || '',
+        scheduled_time: editInspectionData.scheduled_time || '',
+        address: editInspectionData.address || '',
+        city: editInspectionData.city || '',
+        latitude: editInspectionData.latitude || null,
+        longitude: editInspectionData.longitude || null,
+        car_number: editInspectionData.car_number || '',
+      });
+      setEditVehicleData(null);
+    }
+  }, [editInspectionData]);
+
+  const handleEditInspectionSave = async () => {
+    if (!editInspectionData) return;
+    
+    setEditInspectionSaving(true);
+    try {
+      // Update schedule
+      if (editInspectionFormData.scheduled_date || editInspectionFormData.scheduled_time) {
+        await inspectionsApi.updateSchedule(editInspectionData.id, {
+          scheduled_date: editInspectionFormData.scheduled_date,
+          scheduled_time: editInspectionFormData.scheduled_time
+        });
+      }
+      
+      // Update location if changed
+      if (editInspectionFormData.address !== editInspectionData.address || 
+          editInspectionFormData.city !== editInspectionData.city) {
+        await inspectionsApi.updateLocation(editInspectionData.id, {
+          address: editInspectionFormData.address,
+          city: editInspectionFormData.city,
+          latitude: editInspectionFormData.latitude,
+          longitude: editInspectionFormData.longitude
+        });
+      }
+      
+      // Update vehicle if changed
+      if (editInspectionFormData.car_number !== editInspectionData.car_number && editInspectionFormData.car_number) {
+        await inspectionsApi.updateVehicle(editInspectionData.id, {
+          car_number: editInspectionFormData.car_number,
+          car_make: editVehicleData?.manufacturer || '',
+          car_model: editVehicleData?.model || '',
+          car_details: editVehicleData || null
+        });
+      }
+      
+      toast.success('Inspection updated successfully!');
+      setIsEditInspectionModalOpen(false);
+      setEditInspectionData(null);
+      fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to update inspection');
+    } finally {
+      setEditInspectionSaving(false);
+    }
+  };
+
+  const handleEditVehicleSearch = async () => {
+    if (!editInspectionFormData.car_number || editInspectionFormData.car_number.length < 6) {
+      toast.error('Please enter a valid vehicle number');
+      return;
+    }
+    
+    setEditVehicleSearching(true);
+    try {
+      const response = await vehicleApi.searchVehicle(editInspectionFormData.car_number.toUpperCase().replace(/\s/g, ''));
+      if (response.data) {
+        setEditVehicleData(response.data);
+        toast.success('Vehicle details found!');
+      }
+    } catch (error) {
+      toast.error('Vehicle not found in database');
+      setEditVehicleData(null);
+    } finally {
+      setEditVehicleSearching(false);
+    }
+  };
+
   // Handle Live Progress View
   const fetchLiveProgress = async (inspectionId) => {
     setLiveProgressLoading(true);
