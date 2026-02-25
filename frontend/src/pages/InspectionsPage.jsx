@@ -2147,6 +2147,123 @@ export default function InspectionsPage() {
         </DialogContent>
       </Dialog>
       
+      {/* Location Edit Modal - With Google Places */}
+      <Dialog open={isLocationModalOpen} onOpenChange={setIsLocationModalOpen}>
+        <DialogContent className="sm:max-w-[500px]" data-testid="location-edit-modal">
+          <DialogHeader className="border-b pb-4">
+            <DialogTitle className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-gradient-to-r from-green-500 to-green-600 flex items-center justify-center text-white">
+                <MapPin className="h-5 w-5" />
+              </div>
+              <div>
+                <p>Edit Inspection Location</p>
+                <p className="text-sm font-normal text-gray-500">{locationEditInspection?.customer_name}</p>
+              </div>
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 pt-4">
+            {/* Current Location Info */}
+            {locationEditInspection && (
+              <div className="bg-slate-50 rounded-lg p-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Customer:</span>
+                  <span className="font-medium">{locationEditInspection.customer_name}</span>
+                </div>
+                <div className="flex justify-between mt-1">
+                  <span className="text-gray-500">Vehicle:</span>
+                  <span className="font-medium">{locationEditInspection.car_number}</span>
+                </div>
+                {locationEditInspection.city && (
+                  <div className="flex justify-between mt-1">
+                    <span className="text-gray-500">Current City:</span>
+                    <span className="font-medium">{locationEditInspection.city}</span>
+                  </div>
+                )}
+                {locationEditInspection.address && (
+                  <div className="flex justify-between mt-1">
+                    <span className="text-gray-500">Current Address:</span>
+                    <span className="font-medium text-right max-w-[200px] truncate">{locationEditInspection.address}</span>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* Google Places Autocomplete */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Search New Address</Label>
+              <PlacesAutocomplete
+                value={locationFormData.address}
+                onChange={(value) => setLocationFormData(prev => ({ ...prev, address: value }))}
+                onPlaceSelect={(place) => {
+                  // Extract city from address components
+                  let city = '';
+                  if (place.address_components) {
+                    const cityComponent = place.address_components.find(
+                      c => c.types.includes('locality') || c.types.includes('administrative_area_level_2')
+                    );
+                    if (cityComponent) city = cityComponent.long_name;
+                  }
+                  
+                  setLocationFormData({
+                    address: place.formatted_address || place.name,
+                    city: city || locationFormData.city,
+                    latitude: place.geometry?.location?.lat() || null,
+                    longitude: place.geometry?.location?.lng() || null
+                  });
+                }}
+                placeholder="Search for inspection address..."
+                className="w-full"
+              />
+              <p className="text-xs text-gray-500">
+                This address will be used for mechanic navigation
+              </p>
+            </div>
+            
+            {/* Selected Location Preview */}
+            {locationFormData.latitude && locationFormData.longitude && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                <div className="flex items-start gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm">
+                    <p className="font-medium text-green-800">Location Selected</p>
+                    <p className="text-green-700 mt-1">{locationFormData.address}</p>
+                    {locationFormData.city && (
+                      <p className="text-green-600 text-xs mt-1">City: {locationFormData.city}</p>
+                    )}
+                    <p className="text-green-600 text-xs mt-1">
+                      Coordinates: {locationFormData.latitude.toFixed(6)}, {locationFormData.longitude.toFixed(6)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter className="border-t pt-4 mt-4">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => {
+                setIsLocationModalOpen(false);
+                setLocationEditInspection(null);
+                setLocationFormData({ address: '', city: '', latitude: null, longitude: null });
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleLocationUpdate}
+              disabled={locationSaving || !locationFormData.latitude || !locationFormData.longitude}
+              className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800"
+            >
+              {locationSaving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              Update Location
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
       {/* Schedule Unscheduled Inspection Modal - With Vaahan API & Google Places */}
       <Dialog open={isScheduleUnscheduledModalOpen} onOpenChange={setIsScheduleUnscheduledModalOpen}>
         <DialogContent className="sm:max-w-[550px]" data-testid="schedule-unscheduled-modal">
