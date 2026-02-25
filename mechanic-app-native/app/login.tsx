@@ -93,7 +93,7 @@ export default function LoginScreen() {
   const handleVerifyOtp = async () => {
     const otpValue = otp.join('');
     if (otpValue.length !== 6) {
-      setErrorMessage('Please enter complete 6-digit OTP');
+      // Don't show error - button is already disabled
       return;
     }
 
