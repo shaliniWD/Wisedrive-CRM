@@ -14529,12 +14529,24 @@ async def mechanic_save_progress(
     current_user: dict = Depends(get_current_user)
 ):
     """Save inspection progress from mechanic app"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    logger.info(f"[SAVE_PROGRESS] Called for inspection={inspection_id}")
+    logger.info(f"[SAVE_PROGRESS] Received data: question_id={data.question_id}, category_id={data.category_id}")
+    logger.info(f"[SAVE_PROGRESS] answer type={type(data.answer)}, answer is None={data.answer is None}")
+    logger.info(f"[SAVE_PROGRESS] sub_answer_1={data.sub_answer_1}, sub_answer_2={data.sub_answer_2}")
+    
     inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
     if not inspection:
+        logger.error(f"[SAVE_PROGRESS] Inspection {inspection_id} not found!")
         raise HTTPException(status_code=404, detail="Inspection not found")
+    
+    logger.info(f"[SAVE_PROGRESS] Found inspection, mechanic_id={inspection.get('mechanic_id')}, current_user={current_user['id']}")
     
     # Check if mechanic is assigned
     if inspection.get("mechanic_id") != current_user["id"]:
+        logger.error(f"[SAVE_PROGRESS] Mechanic mismatch! inspection.mechanic_id={inspection.get('mechanic_id')}, current_user={current_user['id']}")
         raise HTTPException(status_code=403, detail="You are not assigned to this inspection")
     
     # Update progress
@@ -14544,26 +14556,39 @@ async def mechanic_save_progress(
     
     # Store individual question answers
     answers = inspection.get("inspection_answers", {})
+    logger.info(f"[SAVE_PROGRESS] Current answers count before update: {len(answers)}")
+    
     if data.question_id:
+        logger.info(f"[SAVE_PROGRESS] Processing question_id={data.question_id}")
         existing_answer = answers.get(data.question_id, {})
         
         # Update main answer if provided
         if data.answer is not None:
+            logger.info(f"[SAVE_PROGRESS] Saving main answer for question {data.question_id}")
             existing_answer["answer"] = data.answer
             existing_answer["answered_at"] = datetime.now(timezone.utc).isoformat()
             existing_answer["answered_by"] = current_user["id"]
+        else:
+            logger.warning(f"[SAVE_PROGRESS] data.answer is None, skipping main answer update")
         
         # Update sub_answer_1 if provided
         if data.sub_answer_1 is not None:
+            logger.info(f"[SAVE_PROGRESS] Saving sub_answer_1 for question {data.question_id}")
             existing_answer["sub_answer_1"] = data.sub_answer_1
             existing_answer["sub_answer_1_at"] = datetime.now(timezone.utc).isoformat()
         
         # Update sub_answer_2 if provided
         if data.sub_answer_2 is not None:
+            logger.info(f"[SAVE_PROGRESS] Saving sub_answer_2 for question {data.question_id}")
             existing_answer["sub_answer_2"] = data.sub_answer_2
             existing_answer["sub_answer_2_at"] = datetime.now(timezone.utc).isoformat()
         
         answers[data.question_id] = existing_answer
+        logger.info(f"[SAVE_PROGRESS] Answer stored: {list(existing_answer.keys())}")
+    else:
+        logger.warning(f"[SAVE_PROGRESS] No question_id provided, skipping answer storage")
+    
+    logger.info(f"[SAVE_PROGRESS] Total answers after update: {len(answers)}")
     
     update_data = {
         "inspection_progress": current_progress,
@@ -14572,7 +14597,8 @@ async def mechanic_save_progress(
         "updated_at": datetime.now(timezone.utc).isoformat()
     }
     
-    await db.inspections.update_one({"id": inspection_id}, {"$set": update_data})
+    result = await db.inspections.update_one({"id": inspection_id}, {"$set": update_data})
+    logger.info(f"[SAVE_PROGRESS] MongoDB update result: matched={result.matched_count}, modified={result.modified_count}")
     
     return {
         "id": inspection_id,
