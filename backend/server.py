@@ -14595,7 +14595,7 @@ async def mechanic_save_progress(
     update_data = {
         "inspection_progress": current_progress,
         "inspection_answers": answers,
-        "inspection_status": "IN_PROGRESS",
+        "inspection_status": "INSPECTION_STARTED",  # CRM status, will map to IN_PROGRESS for app
         "updated_at": datetime.now(timezone.utc).isoformat()
     }
     
