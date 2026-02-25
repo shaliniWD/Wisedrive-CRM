@@ -100,18 +100,33 @@ export default function CategoryQuestionsScreen() {
   const fetchCategoryQuestions = async () => {
     try {
       setIsLoading(true);
+      console.log('[CategoryScreen] Fetching questionnaire for inspection:', inspectionId);
       
       // Fetch questionnaire
       const data = await inspectionsApi.getQuestionnaire(inspectionId!);
-      console.log('Questionnaire data:', JSON.stringify(data, null, 2));
+      console.log('[CategoryScreen] API Response:', JSON.stringify(data, null, 2).substring(0, 2000));
       
       // Filter questions for this category
       const allQuestions = data.questions || [];
+      console.log('[CategoryScreen] Total questions:', allQuestions.length);
+      console.log('[CategoryScreen] Looking for categoryId:', categoryId);
+      
+      // Log all unique category IDs to debug filtering
+      const uniqueCategoryIds = [...new Set(allQuestions.map((q: any) => q.category_id))];
+      console.log('[CategoryScreen] Available category IDs:', uniqueCategoryIds);
+      
       const categoryQuestions = allQuestions.filter(
-        (q: Question) => q.category_id === categoryId
+        (q: any) => q.category_id === categoryId
       );
       
-      console.log('Category questions:', categoryQuestions.length, 'for category:', categoryId);
+      console.log('[CategoryScreen] Filtered questions count:', categoryQuestions.length);
+      
+      // Log first question structure for debugging
+      if (categoryQuestions.length > 0) {
+        console.log('[CategoryScreen] First question structure:', JSON.stringify(categoryQuestions[0], null, 2));
+      } else if (allQuestions.length > 0) {
+        console.log('[CategoryScreen] Sample question structure:', JSON.stringify(allQuestions[0], null, 2));
+      }
       
       // Get category name from first question or from categories
       if (categoryQuestions.length > 0 && categoryQuestions[0].category_name) {
@@ -125,17 +140,25 @@ export default function CategoryQuestionsScreen() {
       setQuestions(categoryQuestions);
       
       // Fetch existing answers from inspection
-      const inspection = await inspectionsApi.getInspection(inspectionId!);
-      const existingAnswers = inspection.inspection_answers || {};
-      setAnswers(existingAnswers);
+      try {
+        const inspection = await inspectionsApi.getInspection(inspectionId!);
+        const existingAnswers = inspection.inspection_answers || {};
+        setAnswers(existingAnswers);
+        
+        // Count saved answers for this category
+        const savedInCategory = categoryQuestions.filter((q: Question) => existingAnswers[q.id]).length;
+        setSavedCount(savedInCategory);
+      } catch (answerErr) {
+        console.log('[CategoryScreen] Could not fetch existing answers:', answerErr);
+        // Continue without answers - they'll be empty
+        setAnswers({});
+        setSavedCount(0);
+      }
       
-      // Count saved answers for this category
-      const savedInCategory = categoryQuestions.filter((q: Question) => existingAnswers[q.id]).length;
-      setSavedCount(savedInCategory);
-      
-    } catch (err) {
-      console.error('Error fetching questions:', err);
-      Alert.alert('Error', 'Failed to load questions. Please try again.');
+    } catch (err: any) {
+      console.error('[CategoryScreen] Error fetching questions:', err);
+      console.error('[CategoryScreen] Error details:', err.message, err.response?.data);
+      Alert.alert('Error', `Failed to load questions: ${err.message || 'Unknown error'}`);
     } finally {
       setIsLoading(false);
     }
