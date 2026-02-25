@@ -5358,6 +5358,132 @@ async def get_inspection_activities(inspection_id: str, current_user: dict = Dep
     return activities
 
 
+@api_router.get("/inspections/{inspection_id}/live-progress")
+async def get_inspection_live_progress(inspection_id: str, current_user: dict = Depends(get_current_user)):
+    """Get live inspection progress with answers, category stats, and overall completion"""
+    inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
+    if not inspection:
+        raise HTTPException(status_code=404, detail="Inspection not found")
+    
+    # Get the questionnaire template for this inspection
+    inspection_template_id = inspection.get("inspection_template_id")
+    
+    # If no template assigned, try to get from partner
+    if not inspection_template_id:
+        partner_id = inspection.get("partner_id")
+        if partner_id:
+            partner = await db.partners.find_one({"id": partner_id}, {"_id": 0, "inspection_template_id": 1})
+            if partner:
+                inspection_template_id = partner.get("inspection_template_id")
+    
+    # Get template questions
+    questions = []
+    category_order = []
+    categories_info = {}
+    
+    if inspection_template_id:
+        insp_template = await db.inspection_templates.find_one({"id": inspection_template_id}, {"_id": 0})
+        if insp_template:
+            questions = insp_template.get("questions", [])
+            category_order = insp_template.get("category_order", [])
+            categories_data = insp_template.get("categories", [])
+            for cat in categories_data:
+                categories_info[cat.get("id")] = cat.get("name", cat.get("id"))
+    
+    # Get answers from inspection
+    answers = inspection.get("inspection_answers", {})
+    obd_data = inspection.get("obd_results", {})
+    
+    # Build category-wise stats
+    category_stats = {}
+    answered_questions = []
+    
+    for q in questions:
+        cat_id = q.get("category_id", "general")
+        cat_name = q.get("category_name") or categories_info.get(cat_id, cat_id)
+        q_id = q.get("id")
+        
+        if cat_id not in category_stats:
+            category_stats[cat_id] = {
+                "category_id": cat_id,
+                "category_name": cat_name,
+                "total_questions": 0,
+                "answered_questions": 0,
+                "completion_percentage": 0,
+                "questions": []
+            }
+        
+        category_stats[cat_id]["total_questions"] += 1
+        
+        # Check if this question is answered
+        answer_data = answers.get(q_id)
+        q_detail = {
+            "question_id": q_id,
+            "question_text": q.get("text", q.get("question_text", "")),
+            "question_type": q.get("input_type", q.get("type", "text")),
+            "is_answered": False,
+            "answer": None,
+            "answered_at": None
+        }
+        
+        if answer_data:
+            q_detail["is_answered"] = True
+            q_detail["answer"] = answer_data.get("answer")
+            q_detail["answered_at"] = answer_data.get("answered_at")
+            category_stats[cat_id]["answered_questions"] += 1
+            answered_questions.append({
+                "category": cat_name,
+                "question": q_detail["question_text"],
+                "answer": q_detail["answer"],
+                "answered_at": q_detail["answered_at"]
+            })
+        
+        category_stats[cat_id]["questions"].append(q_detail)
+    
+    # Calculate completion percentages
+    total_questions = 0
+    total_answered = 0
+    
+    for cat_id, stats in category_stats.items():
+        total_questions += stats["total_questions"]
+        total_answered += stats["answered_questions"]
+        if stats["total_questions"] > 0:
+            stats["completion_percentage"] = round((stats["answered_questions"] / stats["total_questions"]) * 100, 1)
+    
+    # Sort categories by order
+    sorted_categories = []
+    for cat_id in category_order:
+        if cat_id in category_stats:
+            sorted_categories.append(category_stats[cat_id])
+    # Add any categories not in order
+    for cat_id, stats in category_stats.items():
+        if cat_id not in category_order:
+            sorted_categories.append(stats)
+    
+    overall_completion = round((total_answered / total_questions) * 100, 1) if total_questions > 0 else 0
+    
+    return {
+        "inspection_id": inspection_id,
+        "inspection_status": inspection.get("inspection_status", "NEW_INSPECTION"),
+        "mechanic_name": inspection.get("mechanic_name"),
+        "started_at": inspection.get("started_at"),
+        "updated_at": inspection.get("updated_at"),
+        "overall_stats": {
+            "total_questions": total_questions,
+            "answered_questions": total_answered,
+            "completion_percentage": overall_completion,
+            "categories_total": len(category_stats),
+            "categories_completed": sum(1 for s in category_stats.values() if s["completion_percentage"] == 100)
+        },
+        "obd_scan": {
+            "completed": bool(obd_data),
+            "data": obd_data if obd_data else None
+        },
+        "categories": sorted_categories,
+        "recent_answers": sorted(answered_questions, key=lambda x: x.get("answered_at") or "", reverse=True)[:10]
+    }
+
+
 class UpdateVehicleRequest(BaseModel):
     car_number: str
     car_make: Optional[str] = None
