@@ -464,8 +464,8 @@ async def login(credentials: UserLogin):
 
 
 # ==================== VERSION & HEALTH ====================
-APP_VERSION = "2.4.5"
-APP_BUILD_DATE = "2026-02-25T04:30:00Z"
+APP_VERSION = "2.4.6"
+APP_BUILD_DATE = "2026-02-26T01:30:00Z"
 
 @api_router.get("/version")
 async def get_version():
