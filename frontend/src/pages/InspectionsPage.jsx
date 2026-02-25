@@ -200,15 +200,15 @@ const extractModel = (modelStr) => {
 
 // Inspection Status options
 const INSPECTION_STATUSES = [
-  { value: 'NEW_INSPECTION', label: 'New Inspection', color: 'bg-slate-100 text-slate-800', requiresMechanic: false },
-  { value: 'ASSIGNED_TO_MECHANIC', label: 'Assigned to Mechanic', color: 'bg-indigo-100 text-indigo-800', requiresMechanic: true },
-  { value: 'MECHANIC_ACCEPTED', label: 'Mechanic Accepted', color: 'bg-cyan-100 text-cyan-800', requiresMechanic: true },
-  { value: 'MECHANIC_REJECTED', label: 'Mechanic Rejected', color: 'bg-rose-100 text-rose-800', requiresMechanic: false },
-  { value: 'INSPECTION_STARTED', label: 'Inspection Started', color: 'bg-amber-100 text-amber-800', requiresMechanic: true },
+  { value: 'NEW_INSPECTION', label: 'New', color: 'bg-slate-100 text-slate-800', requiresMechanic: false },
+  { value: 'ASSIGNED_TO_MECHANIC', label: 'Assigned', color: 'bg-indigo-100 text-indigo-800', requiresMechanic: true },
+  { value: 'MECHANIC_ACCEPTED', label: 'Accepted', color: 'bg-cyan-100 text-cyan-800', requiresMechanic: true },
+  { value: 'MECHANIC_REJECTED', label: 'Rejected', color: 'bg-rose-100 text-rose-800', requiresMechanic: false },
+  { value: 'INSPECTION_STARTED', label: 'In Progress', color: 'bg-amber-100 text-amber-800', requiresMechanic: true },
   { value: 'INSPECTION_COMPLETED', label: 'Completed', color: 'bg-emerald-100 text-emerald-800', requiresMechanic: true },
   { value: 'RESCHEDULED', label: 'Rescheduled', color: 'bg-purple-100 text-purple-800', requiresMechanic: false },
-  { value: 'INSPECTION_CANCELLED_CUS', label: 'Cancelled (Customer)', color: 'bg-red-100 text-red-800', requiresMechanic: false },
-  { value: 'INSPECTION_CANCELLED_WD', label: 'Cancelled (WiseDrive)', color: 'bg-red-100 text-red-800', requiresMechanic: false },
+  { value: 'INSPECTION_CANCELLED_CUS', label: 'Cancelled', color: 'bg-red-100 text-red-800', requiresMechanic: false },
+  { value: 'INSPECTION_CANCELLED_WD', label: 'Cancelled (WD)', color: 'bg-red-100 text-red-800', requiresMechanic: false },
 ];
 
 // Statuses that require a mechanic to be assigned
