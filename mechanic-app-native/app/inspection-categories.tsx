@@ -442,13 +442,13 @@ export default function InspectionCategoriesScreen() {
         {/* Submit Button */}
         {categories.length > 0 && (
           <TouchableOpacity
-            style={[styles.submitBtn, (!allCategoriesCompleted || !obdCompleted) && styles.submitBtnDisabled]}
+            style={[styles.submitBtn, !allCategoriesCompleted && styles.submitBtnDisabled]}
             onPress={handleSubmitInspection}
-            disabled={!allCategoriesCompleted || !obdCompleted}
+            disabled={!allCategoriesCompleted}
             activeOpacity={0.9}
           >
             <LinearGradient
-              colors={allCategoriesCompleted && obdCompleted ? [Colors.success, '#059669'] : ['#CBD5E1', '#94A3B8']}
+              colors={allCategoriesCompleted ? [Colors.success, '#059669'] : ['#CBD5E1', '#94A3B8']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.submitGradient}
