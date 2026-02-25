@@ -1337,7 +1337,7 @@ export default function InspectionsPage() {
       </div>
 
       {/* Data Table */}
-      <div className="bg-white rounded-xl border overflow-hidden">
+      <div className="bg-white rounded-xl border overflow-x-auto">
         {activeTab === 'unscheduled' ? (
           /* Unscheduled Tab Table */
           <table className="w-full">
