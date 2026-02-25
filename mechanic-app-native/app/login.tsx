@@ -11,6 +11,7 @@ import {
   Image,
   Dimensions,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -18,7 +19,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../src/context/AuthContext';
 import axios from 'axios';
-import { Toast } from 'react-native-toast-message/lib/src/Toast';
 
 // API Base URL
 const API_BASE_URL = 'https://crmdev.wisedrive.com/api';
