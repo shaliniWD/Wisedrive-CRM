@@ -62,15 +62,33 @@ const colors = {
 const getDraftKey = (inspectionId: string, categoryId: string) => 
   `@draft_answers_${inspectionId}_${categoryId}`;
 
-// Compress image to reduce size and prevent crashes
+// Compress image aggressively to prevent network/memory issues
 const compressImage = async (uri: string): Promise<string> => {
   try {
+    // First, get the image info
     const manipResult = await ImageManipulator.manipulateAsync(
       uri,
-      [{ resize: { width: 800 } }], // Resize to max 800px width
-      { compress: 0.5, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+      [{ resize: { width: 600 } }], // Resize to max 600px width (smaller)
+      { compress: 0.3, format: ImageManipulator.SaveFormat.JPEG, base64: true } // More compression
     );
-    return `data:image/jpeg;base64,${manipResult.base64}`;
+    
+    // Check if still too large (> 200KB) and compress more if needed
+    const base64 = manipResult.base64 || '';
+    const sizeInBytes = base64.length * 0.75; // Approximate size
+    
+    if (sizeInBytes > 200000) {
+      // Compress even more
+      const moreCompressed = await ImageManipulator.manipulateAsync(
+        uri,
+        [{ resize: { width: 400 } }],
+        { compress: 0.2, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+      );
+      console.log(`Image compressed: ${Math.round((moreCompressed.base64?.length || 0) * 0.75 / 1024)}KB`);
+      return `data:image/jpeg;base64,${moreCompressed.base64}`;
+    }
+    
+    console.log(`Image compressed: ${Math.round(sizeInBytes / 1024)}KB`);
+    return `data:image/jpeg;base64,${base64}`;
   } catch (error) {
     console.error('Image compression failed:', error);
     throw error;
