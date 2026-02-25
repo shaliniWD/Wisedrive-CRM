@@ -98,7 +98,8 @@ export default function LoginScreen() {
       addLog(`Response Data: ${JSON.stringify(response.data)}`);
       
       setStep('otp');
-      showError('OTP Sent', 'Please check your phone for the verification code');
+      // Show simple toast-like feedback instead of modal
+      Alert.alert('OTP Sent', 'Please check your phone for the verification code');
     } catch (error: any) {
       addLog(`ERROR occurred!`);
       
