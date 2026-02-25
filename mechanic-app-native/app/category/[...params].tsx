@@ -352,26 +352,111 @@ export default function CategoryQuestionsScreen() {
     }
     
     setIsSaving(true);
+    diagLogger.info('SAVE_ALL_START', { 
+      totalAnswers: answersToSave.length,
+      questionIds: answersToSave.map(([qid]) => qid)
+    });
+    
+    const results: Array<{ questionId: string; success: boolean; error?: string }> = [];
     
     try {
-      // Prepare batch of answers
-      const batch = answersToSave.map(([questionId, answer]) => ({
-        question_id: questionId,
-        category_id: categoryId,
-        answer: answer.answer,
-        sub_answer_1: answer.sub_answer_1,
-        sub_answer_2: answer.sub_answer_2,
-      }));
-      
-      // Save using batch API
-      const results = await inspectionsApi.saveProgressBatch(inspectionId, batch);
+      // Save answers ONE BY ONE to avoid payload size issues
+      for (let i = 0; i < answersToSave.length; i++) {
+        const [questionId, answer] = answersToSave[i];
+        
+        diagLogger.info(`SAVE_ANSWER_${i + 1}/${answersToSave.length}`, { questionId });
+        
+        try {
+          // Process media in the answer before sending
+          let processedAnswer = answer.answer;
+          let processedSubAnswer1 = answer.sub_answer_1;
+          let processedSubAnswer2 = answer.sub_answer_2;
+          
+          // Process main answer if it has media
+          if (processedAnswer && typeof processedAnswer === 'object' && processedAnswer.media) {
+            const mediaUri = processedAnswer.media;
+            if (typeof mediaUri === 'string' && mediaUri.startsWith('file://')) {
+              // It's a video file URI - need to convert to base64
+              diagLogger.info('PROCESSING_MEDIA_IN_ANSWER', { questionId, mediaType: 'video' });
+              try {
+                const processedMedia = await processVideo(mediaUri);
+                processedAnswer = { ...processedAnswer, media: processedMedia };
+              } catch (mediaErr: any) {
+                diagLogger.error('MEDIA_PROCESS_FAILED', { questionId, error: mediaErr.message });
+                results.push({ questionId, success: false, error: mediaErr.message });
+                continue; // Skip this answer but continue with others
+              }
+            }
+          }
+          
+          // Process sub_answer_1 if it has media
+          if (processedSubAnswer1 && typeof processedSubAnswer1 === 'object' && processedSubAnswer1.media) {
+            const mediaUri = processedSubAnswer1.media;
+            if (typeof mediaUri === 'string' && mediaUri.startsWith('file://')) {
+              diagLogger.info('PROCESSING_MEDIA_IN_SUB1', { questionId, mediaType: 'video' });
+              try {
+                const processedMedia = await processVideo(mediaUri);
+                processedSubAnswer1 = { ...processedSubAnswer1, media: processedMedia };
+              } catch (mediaErr: any) {
+                diagLogger.error('SUB1_MEDIA_PROCESS_FAILED', { questionId, error: mediaErr.message });
+                results.push({ questionId, success: false, error: mediaErr.message });
+                continue;
+              }
+            }
+          }
+          
+          // Process sub_answer_2 if it has media
+          if (processedSubAnswer2 && typeof processedSubAnswer2 === 'object' && processedSubAnswer2.media) {
+            const mediaUri = processedSubAnswer2.media;
+            if (typeof mediaUri === 'string' && mediaUri.startsWith('file://')) {
+              diagLogger.info('PROCESSING_MEDIA_IN_SUB2', { questionId, mediaType: 'video' });
+              try {
+                const processedMedia = await processVideo(mediaUri);
+                processedSubAnswer2 = { ...processedSubAnswer2, media: processedMedia };
+              } catch (mediaErr: any) {
+                diagLogger.error('SUB2_MEDIA_PROCESS_FAILED', { questionId, error: mediaErr.message });
+                results.push({ questionId, success: false, error: mediaErr.message });
+                continue;
+              }
+            }
+          }
+          
+          await inspectionsApi.saveProgress(inspectionId, {
+            question_id: questionId,
+            category_id: categoryId,
+            answer: processedAnswer,
+            sub_answer_1: processedSubAnswer1,
+            sub_answer_2: processedSubAnswer2,
+          });
+          
+          results.push({ questionId, success: true });
+          diagLogger.info(`SAVE_ANSWER_SUCCESS`, { questionId, index: i + 1 });
+          
+        } catch (err: any) {
+          diagLogger.error(`SAVE_ANSWER_FAILED`, { 
+            questionId, 
+            index: i + 1,
+            error: err.message,
+            status: err.response?.status
+          });
+          results.push({ questionId, success: false, error: err.message });
+        }
+      }
       
       const failures = results.filter(r => !r.success);
+      const successes = results.filter(r => r.success);
+      
+      diagLogger.info('SAVE_ALL_COMPLETE', { 
+        total: results.length, 
+        succeeded: successes.length, 
+        failed: failures.length 
+      });
+      
       if (failures.length > 0) {
-        console.error('Some answers failed to save:', failures);
+        const errorMessages = failures.map(f => f.error).filter(Boolean).join('\n');
         Alert.alert(
           'Partial Save',
-          `${results.length - failures.length} of ${results.length} answers saved. Failed: ${failures.map(f => f.question_id).join(', ')}`,
+          `${successes.length} of ${results.length} answers saved.\n\nFailed questions:\n${failures.map(f => `• ${f.questionId.substring(0, 8)}...: ${f.error || 'Unknown error'}`).join('\n')}`,
           [{ text: 'OK', onPress: () => router.back() }]
         );
       } else {
@@ -381,7 +466,7 @@ export default function CategoryQuestionsScreen() {
       }
       
     } catch (err: any) {
-      console.error('Error saving answers:', err);
+      diagLogger.error('SAVE_ALL_ERROR', { error: err.message });
       Alert.alert(
         'Save Failed',
         'Failed to save answers. Your answers are saved locally and will be synced later.',
