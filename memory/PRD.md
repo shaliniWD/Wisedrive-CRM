@@ -2,32 +2,32 @@
 
 ## Latest Updates (Feb 25, 2026)
 
-### CRM Inspections Table - Actions Dropdown Refactor ✅
-**Consolidated all edit actions into a single dropdown menu + Fixed table truncation**
+### CRM Inspections Table - Major UI Simplification ✅
+**Complete table refactor for better usability**
 
-#### Changes:
-- Removed individual scattered edit icon buttons from the Actions column
-- Added a single three-dot (⋯) button that opens a dropdown menu
-- All edit functionalities now accessible from one clean dropdown
-- **Fixed table layout to fit viewport without horizontal scroll**
-- Made table more compact with reduced padding and truncation on long text
+#### Changes Made:
+1. **Shortened Status Names:**
+   - Assigned to Mechanic → Assigned
+   - Mechanic Accepted → Accepted
+   - Mechanic Rejected → Rejected
+   - Inspection Started → In Progress
+   - Cancelled (Customer) → Cancelled
+   - Cancelled (WiseDrive) → Cancelled (WD)
 
-#### Dropdown Menu Items:
-1. **View Details** - Opens inspection report in new tab
-2. **Live Progress** - Opens real-time inspection progress modal
-3. **Edit Date/Time** - Opens schedule change modal
-4. **Edit Location** - Opens location edit modal with Google Places
-5. **Edit Vehicle** - Opens vehicle number change modal
-6. **Assign/Reassign Mechanic** - Opens mechanic assignment modal
-7. **Notes & Activity** - Opens side drawer with notes, activity log, SMS logs
+2. **Removed Payment Column:** Rows with pending payments now have amber background highlighting
 
-#### Technical Details:
-- Uses Shadcn UI DropdownMenu component
-- All menu items have proper data-testid attributes
-- Menu opens from MoreHorizontal (three-dot) icon
-- Table uses `table-fixed` layout with specific column widths
-- Removed `min-w-[1400px]` constraint that caused truncation
-- Testing: 100% pass rate (7/7 menu items verified working)
+3. **Combined Edit Modal:** Merged Date/Time, Location, Vehicle editing into one modal accessible via Edit icon
+
+4. **Mechanic Column with Reassign Icon:** Quick reassign button (👤) next to mechanic name
+
+5. **Simplified More Dropdown:** Now contains only:
+   - View Details
+   - Live Progress
+   - Payment Details (highlighted amber for pending)
+   - Notes & Activity
+
+#### Table Columns (9 total):
+DATE/TIME | CUSTOMER | VEHICLE | STATUS | MECHANIC | LOCATION | REPORT | EDIT | MORE
 
 ---
 
