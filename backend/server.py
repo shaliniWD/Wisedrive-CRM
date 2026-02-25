@@ -14361,6 +14361,8 @@ async def get_mechanic_inspection_detail(
             "obdDone": False,
             "notesDone": False
         }),
+        # Include saved answers for the mechanic app
+        "inspection_answers": inspection.get("inspection_answers", {}),
         "orderId": inspection.get("order_id"),
         "packageName": inspection.get("package_type") or inspection.get("inspection_package_name", "Standard Inspection"),
         "partnerId": inspection.get("partner_id"),
