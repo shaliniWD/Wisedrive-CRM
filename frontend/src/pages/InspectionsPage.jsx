@@ -1533,21 +1533,23 @@ export default function InspectionsPage() {
           <table className="w-full table-fixed">
             <thead>
               <tr className="bg-slate-50 border-b">
-                <th className="px-2 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[90px]">Date/Time</th>
-                <th className="px-2 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[180px]">Customer</th>
-                <th className="px-2 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[110px]">Vehicle</th>
-                <th className="px-2 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[130px]">Status</th>
-                <th className="px-2 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[160px]">Mechanic</th>
-                <th className="px-2 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[100px]">Location</th>
-                <th className="px-2 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[70px]">Report</th>
-                <th className="px-2 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[50px]">Edit</th>
-                <th className="px-2 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[50px]">Info</th>
+                <th className="px-2 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[85px]">Date/Time</th>
+                <th className="px-2 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[160px]">Customer</th>
+                <th className="px-2 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[100px]">Vehicle</th>
+                <th className="px-2 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[70px]">Payment</th>
+                <th className="px-2 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[115px]">Status</th>
+                <th className="px-2 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[130px]">Mechanic</th>
+                <th className="px-2 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[90px]">Location</th>
+                <th className="px-2 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[60px]">Report</th>
+                <th className="px-2 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[40px]">Edit</th>
+                <th className="px-2 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[40px]">Live</th>
+                <th className="px-2 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[40px]">Notes</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {loading ? (
                 <tr>
-                  <td colSpan={9} className="text-center py-12">
+                  <td colSpan={11} className="text-center py-12">
                     <div className="flex items-center justify-center gap-2">
                       <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
                         <span className="text-gray-500">Loading inspections...</span>
@@ -1556,14 +1558,14 @@ export default function InspectionsPage() {
                 </tr>
               ) : inspections.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="text-center py-12">
+                  <td colSpan={11} className="text-center py-12">
                     <ClipboardCheck className="h-12 w-12 text-gray-300 mx-auto mb-3" />
                     <p className="text-gray-500">No scheduled inspections</p>
                   </td>
                 </tr>
               ) : filteredInspections.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="text-center py-12">
+                  <td colSpan={11} className="text-center py-12">
                     <ClipboardCheck className="h-12 w-12 text-gray-300 mx-auto mb-3" />
                     <p className="text-gray-500">No inspections match the filter</p>
                   </td>
