@@ -1,5 +1,6 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { debugLogger } from './logger';
 
 // API Base URL - Production CRM backend
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://crmdev.wisedrive.com/api';
@@ -16,27 +17,42 @@ const api = axios.create({
 api.interceptors.request.use(async (config) => {
   try {
     const token = await AsyncStorage.getItem('authToken');
-    console.log(`[API] Request to ${config.url}, token present: ${!!token}`);
+    await debugLogger.log('DEBUG', 'API_REQUEST', `Interceptor: ${config.method?.toUpperCase()} ${config.url}`, {
+      tokenPresent: !!token,
+      baseURL: API_BASE_URL,
+    });
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     } else {
-      console.warn('[API] No auth token found in AsyncStorage');
+      await debugLogger.log('WARN', 'API_REQUEST', 'No auth token found in AsyncStorage');
     }
-  } catch (e) {
-    console.error('[API] Error getting token:', e);
+  } catch (e: any) {
+    await debugLogger.log('ERROR', 'API_REQUEST', 'Error getting token from storage', { error: e.message });
   }
   return config;
 });
 
 // Add response interceptor for better error handling
 api.interceptors.response.use(
-  (response) => response,
+  async (response) => {
+    await debugLogger.log('DEBUG', 'API_RESPONSE', `Success: ${response.config.method?.toUpperCase()} ${response.config.url}`, {
+      status: response.status,
+      dataKeys: response.data ? Object.keys(response.data) : [],
+    });
+    return response;
+  },
   async (error) => {
+    await debugLogger.log('ERROR', 'API_RESPONSE', `Failed: ${error.config?.method?.toUpperCase()} ${error.config?.url}`, {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      errorData: error.response?.data,
+      message: error.message,
+    });
     if (error.response?.status === 401) {
-      console.error('[API] 401 Unauthorized - Token may be invalid or expired');
-      // Check if token exists
       const token = await AsyncStorage.getItem('authToken');
-      console.log('[API] Token in storage:', token ? `${token.substring(0, 20)}...` : 'NONE');
+      await debugLogger.log('WARN', 'API_RESPONSE', '401 Unauthorized - Token may be invalid', {
+        tokenInStorage: token ? `${token.substring(0, 20)}...` : 'NONE',
+      });
     }
     return Promise.reject(error);
   }
