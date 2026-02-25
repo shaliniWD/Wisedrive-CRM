@@ -310,6 +310,13 @@ export default function CategoryQuestionsScreen() {
 
   const handleComboOptionSelect = (questionId: string, option: string, field: string = 'answer') => {
     const existing = draftAnswers[questionId]?.[field] || {};
+    debugLogger.log('DEBUG', 'STATE', `handleComboOptionSelect`, {
+      questionId,
+      field,
+      existingAnswer: existing,
+      existingHasMedia: !!existing?.media,
+      newOption: option,
+    }, { questionId });
     const newAnswer = { ...existing, selection: option };
     updateDraftAnswer(questionId, newAnswer, field);
   };
@@ -335,6 +342,12 @@ export default function CategoryQuestionsScreen() {
 
       if (!result.canceled && result.assets[0]) {
         const existing = draftAnswers[questionId]?.[field] || {};
+        debugLogger.log('DEBUG', 'STATE', `handleComboMediaCapture`, {
+          questionId,
+          field,
+          existingAnswer: existing ? { selection: existing.selection, hasMedia: !!existing.media } : null,
+          mediaType,
+        }, { questionId });
         const mediaData = mediaType === 'photo' 
           ? `data:image/jpeg;base64,${result.assets[0].base64}`
           : result.assets[0].uri;
