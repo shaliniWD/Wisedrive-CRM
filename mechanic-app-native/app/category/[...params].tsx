@@ -66,6 +66,9 @@ const getDraftKey = (inspectionId: string, categoryId: string) =>
 // Compress image aggressively to prevent network/memory issues
 // Target: <100KB for reliable network transfer
 const compressImage = async (uri: string): Promise<string> => {
+  const startTime = Date.now();
+  diagLogger.info('IMAGE_COMPRESS_START', { uri: uri.substring(0, 50) + '...' });
+  
   try {
     const MAX_SIZE_BYTES = 100000; // 100KB max
     
@@ -78,7 +81,7 @@ const compressImage = async (uri: string): Promise<string> => {
     
     let base64 = manipResult.base64 || '';
     let sizeInBytes = base64.length * 0.75;
-    console.log(`[Image] Initial compression: ${Math.round(sizeInBytes / 1024)}KB`);
+    diagLogger.info('IMAGE_COMPRESS_STEP1', { sizeKB: Math.round(sizeInBytes / 1024) });
     
     // Step 2: If still too large, compress even more
     if (sizeInBytes > MAX_SIZE_BYTES) {
@@ -89,7 +92,7 @@ const compressImage = async (uri: string): Promise<string> => {
       );
       base64 = manipResult.base64 || '';
       sizeInBytes = base64.length * 0.75;
-      console.log(`[Image] Second compression: ${Math.round(sizeInBytes / 1024)}KB`);
+      diagLogger.info('IMAGE_COMPRESS_STEP2', { sizeKB: Math.round(sizeInBytes / 1024) });
     }
     
     // Step 3: Final attempt if still too large
@@ -101,17 +104,28 @@ const compressImage = async (uri: string): Promise<string> => {
       );
       base64 = manipResult.base64 || '';
       sizeInBytes = base64.length * 0.75;
-      console.log(`[Image] Final compression: ${Math.round(sizeInBytes / 1024)}KB`);
+      diagLogger.info('IMAGE_COMPRESS_STEP3', { sizeKB: Math.round(sizeInBytes / 1024) });
     }
     
     if (!base64) {
       throw new Error('Failed to compress image - empty result');
     }
     
-    console.log(`[Image] Final size: ${Math.round(sizeInBytes / 1024)}KB`);
+    const duration = Date.now() - startTime;
+    const finalSizeKB = Math.round(sizeInBytes / 1024);
+    
+    diagLogger.info('IMAGE_COMPRESS_DONE', { 
+      finalSizeKB, 
+      durationMs: duration,
+      base64Length: base64.length,
+    });
+    
     return `data:image/jpeg;base64,${base64}`;
-  } catch (error) {
-    console.error('[Image] Compression failed:', error);
+  } catch (error: any) {
+    diagLogger.error('IMAGE_COMPRESS_FAILED', { 
+      error: error.message,
+      uri: uri.substring(0, 50),
+    });
     throw error;
   }
 };
