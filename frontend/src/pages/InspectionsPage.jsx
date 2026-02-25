@@ -385,6 +385,22 @@ export default function InspectionsPage() {
   const [scheduleVehicleSearching, setScheduleVehicleSearching] = useState(false);
   const [scheduleSaving, setScheduleSaving] = useState(false);
 
+  // Combined Edit Inspection Modal State
+  const [isEditInspectionModalOpen, setIsEditInspectionModalOpen] = useState(false);
+  const [editInspectionData, setEditInspectionData] = useState(null);
+  const [editInspectionFormData, setEditInspectionFormData] = useState({
+    scheduled_date: '',
+    scheduled_time: '',
+    address: '',
+    city: '',
+    latitude: null,
+    longitude: null,
+    car_number: '',
+  });
+  const [editInspectionSaving, setEditInspectionSaving] = useState(false);
+  const [editVehicleSearching, setEditVehicleSearching] = useState(false);
+  const [editVehicleData, setEditVehicleData] = useState(null);
+
   const [search, setSearch] = useState('');
   const [filterCity, setFilterCity] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
