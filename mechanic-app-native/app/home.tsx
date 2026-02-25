@@ -463,9 +463,35 @@ export default function HomeScreen() {
     try {
       await inspectionsApi.acceptInspection(inspection.id);
       fetchInspections(dateFilter, customDateFrom, customDateTo);
-      Alert.alert('Success', 'Inspection accepted! Tap Navigate to reach the location.');
+      // No modal - just refresh the list silently
     } catch (error) {
       Alert.alert('Error', 'Failed to accept inspection');
+    }
+  };
+
+  const handleNavigate = (inspection: Inspection) => {
+    // Get address from inspection data
+    const address = inspection.customerAddress || '';
+    const lat = inspection.latitude;
+    const lng = inspection.longitude;
+    
+    if (lat && lng) {
+      // Open maps with coordinates
+      const url = Platform.select({
+        ios: `maps://app?daddr=${lat},${lng}`,
+        android: `google.navigation:q=${lat},${lng}`,
+      });
+      Linking.openURL(url || `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`);
+    } else if (address) {
+      // Open maps with address
+      const encodedAddress = encodeURIComponent(address);
+      const url = Platform.select({
+        ios: `maps://app?daddr=${encodedAddress}`,
+        android: `google.navigation:q=${encodedAddress}`,
+      });
+      Linking.openURL(url || `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`);
+    } else {
+      Alert.alert('No Address', 'No address or location available for this inspection.');
     }
   };
 
