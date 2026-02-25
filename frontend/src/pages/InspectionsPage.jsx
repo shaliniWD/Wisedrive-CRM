@@ -983,9 +983,12 @@ export default function InspectionsPage() {
     setEditVehicleSearching(true);
     try {
       const response = await vehicleApi.getDetails(editInspectionFormData.car_number.toUpperCase().replace(/\s/g, ''));
-      if (response.data) {
-        setEditVehicleData(response.data);
+      if (response.data?.success && response.data?.data) {
+        setEditVehicleData(response.data.data);
         toast.success('Vehicle details found!');
+      } else {
+        toast.error('Vehicle not found in Vaahan database');
+        setEditVehicleData(null);
       }
     } catch (error) {
       toast.error('Vehicle not found in Vaahan database');
