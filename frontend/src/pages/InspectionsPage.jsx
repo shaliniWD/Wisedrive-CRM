@@ -1530,17 +1530,17 @@ export default function InspectionsPage() {
           <table className="w-full table-fixed">
             <thead>
               <tr className="bg-slate-50 border-b">
-                <th className="px-2 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[85px]">Date/Time</th>
+                <th className="pl-4 pr-2 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[90px]">Date/Time</th>
                 <th className="px-2 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[160px]">Customer</th>
                 <th className="px-2 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[100px]">Vehicle</th>
                 <th className="px-2 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[70px]">Payment</th>
                 <th className="px-2 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[115px]">Status</th>
                 <th className="px-2 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[130px]">Mechanic</th>
                 <th className="px-2 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[90px]">Location</th>
-                <th className="px-2 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[60px]">Report</th>
-                <th className="px-2 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[40px]">Edit</th>
-                <th className="px-2 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[40px]">Live</th>
-                <th className="px-2 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[40px]">Notes</th>
+                <th className="px-2 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[55px]">Report</th>
+                <th className="px-2 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[45px]">Edit</th>
+                <th className="px-2 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[45px]">Live</th>
+                <th className="pl-2 pr-4 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[50px]">Notes</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
