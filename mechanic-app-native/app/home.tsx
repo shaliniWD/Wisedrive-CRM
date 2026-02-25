@@ -541,7 +541,13 @@ export default function HomeScreen() {
 
   const handleStart = (inspection: Inspection) => {
     setCurrentInspection(inspection.id, inspection);
-    router.push(`/verify-vehicle/${inspection.id}`);
+    
+    // If inspection is already in progress, skip verification and go directly to categories
+    if (inspection.status === 'IN_PROGRESS') {
+      router.push('/inspection-categories');
+    } else {
+      router.push(`/verify-vehicle/${inspection.id}`);
+    }
   };
 
   // Filter
