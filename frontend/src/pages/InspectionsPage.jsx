@@ -3198,6 +3198,7 @@ export default function InspectionsPage() {
                 )}
               </div>
             </TabsContent>
+            </div>
           </Tabs>
         </SheetContent>
       </Sheet>
