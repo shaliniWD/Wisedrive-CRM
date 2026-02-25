@@ -1694,7 +1694,6 @@ export default function InspectionsPage() {
             </tbody>
           </table>
         )}
-      </div>
 
       {/* Edit Inspection Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
