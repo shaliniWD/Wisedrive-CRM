@@ -8,6 +8,12 @@
 #### Table Columns (11 total):
 | DATE/TIME | CUSTOMER | VEHICLE | PAYMENT | STATUS | MECHANIC | LOCATION | REPORT | EDIT | LIVE | NOTES |
 
+#### Filter Options:
+- **Search** - By customer name or mobile
+- **City** - Filter by city
+- **Status** - Filter by inspection status
+- **Payment** - Filter by Paid / Pending/Due
+
 #### Key Features:
 1. **Payment Column**: Shows "Paid" (green) or "Due" (amber) badges - clickable for payment details
 
@@ -20,14 +26,14 @@
 5. **Notes Column**: Opens drawer with 3 tabs:
    - **Notes** - Add/view inspection notes
    - **Activity** - View status changes and activity log
-   - **OTP** - View mechanic login OTPs with:
-     - Full phone number (not masked)
-     - Actual 6-digit OTP code in large display
-     - Easy to share with mechanic offline
+   - **OTP** - View mechanic login OTPs with full phone number and actual OTP code
 
-6. **Improved Padding**: Extra space on left (Date/Time) and right (Notes) edges
+6. **Edit Modal Improvements**:
+   - Shows **Current Address** before the update field
+   - Shows **Current Vehicle** details (make, model, year, fuel type, color) before the change field
+   - **New Vehicle Found** section displays details from Vaahan API search
 
-7. **Vehicle Search**: Uses Vaahan API integration to fetch vehicle details
+7. **Improved Padding**: Extra space on left (Date/Time) and right (Notes) edges
 
 ---
 
