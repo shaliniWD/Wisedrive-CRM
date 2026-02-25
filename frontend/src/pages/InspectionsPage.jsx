@@ -1566,10 +1566,10 @@ export default function InspectionsPage() {
                         value={inspection.inspection_status || 'NEW_INSPECTION'} 
                         onValueChange={(value) => handleStatusChange(inspection.id, value)}
                       >
-                        <SelectTrigger className="h-8 text-xs w-[180px] border-gray-200" data-testid={`status-select-${inspection.id}`}>
+                        <SelectTrigger className="h-8 text-xs w-[155px] border-gray-200" data-testid={`status-select-${inspection.id}`}>
                           <SelectValue placeholder="New Inspection" />
                         </SelectTrigger>
-                        <SelectContent className="min-w-[200px]">
+                        <SelectContent className="min-w-[180px]">
                           {INSPECTION_STATUSES.map((status) => (
                             <SelectItem key={status.value} value={status.value}>
                               <span className={`px-2 py-0.5 rounded text-xs whitespace-nowrap ${status.color}`}>
