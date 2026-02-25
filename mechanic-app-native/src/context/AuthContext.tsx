@@ -18,6 +18,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (token: string, profile: MechanicProfile) => Promise<void>;
   logout: () => Promise<void>;
+  clearAllCache: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -67,16 +68,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = async () => {
-    await AsyncStorage.removeItem('authToken');
-    await AsyncStorage.removeItem('mechanicProfile');
-    setToken(null);
-    setMechanic(null);
+    try {
+      // Clear all auth-related keys
+      await AsyncStorage.multiRemove(['authToken', 'mechanicProfile', 'token', 'user']);
+      setToken(null);
+      setMechanic(null);
+    } catch (e) {
+      console.error('Error during logout:', e);
+      // Force clear state even if storage fails
+      setToken(null);
+      setMechanic(null);
+    }
+  };
+
+  const clearAllCache = async () => {
+    try {
+      // Clear ALL app storage
+      await AsyncStorage.clear();
+      setToken(null);
+      setMechanic(null);
+    } catch (e) {
+      console.error('Error clearing cache:', e);
+    }
   };
 
   const isAuthenticated = !!token && !!mechanic;
 
   return (
-    <AuthContext.Provider value={{ token, mechanic, isAuthenticated, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ token, mechanic, isAuthenticated, isLoading, login, logout, clearAllCache }}>
       {children}
     </AuthContext.Provider>
   );
