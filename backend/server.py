@@ -13912,7 +13912,9 @@ class InspectionAcceptReject(BaseModel):
 class InspectionProgressUpdate(BaseModel):
     category_id: Optional[str] = None
     question_id: Optional[str] = None
-    answer: Optional[dict] = None
+    answer: Optional[Any] = None  # Can be string, dict, or any type
+    sub_answer_1: Optional[Any] = None
+    sub_answer_2: Optional[Any] = None
     progress_data: Optional[dict] = None
 
 
