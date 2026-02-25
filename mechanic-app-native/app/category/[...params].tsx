@@ -538,23 +538,8 @@ export default function CategoryQuestionsScreen() {
           // Compress image to prevent memory issues
           mediaData = await compressImage(result.assets[0].uri);
         } else {
-          // For videos, store the URI - it will be processed during save
-          // Check file size first
-          try {
-            const fileInfo = await fsGetInfoAsync(result.assets[0].uri);
-            const sizeMB = fileInfo.exists && fileInfo.size ? fileInfo.size / (1024 * 1024) : 0;
-            diagLogger.info('VIDEO_CAPTURED', { sizeMB: sizeMB.toFixed(2), uri: result.assets[0].uri.substring(0, 50) });
-            
-            if (sizeMB > MAX_VIDEO_SIZE_MB) {
-              Alert.alert(
-                'Video Too Large',
-                `The video is ${sizeMB.toFixed(1)}MB but max allowed is ${MAX_VIDEO_SIZE_MB}MB. Please record a shorter video (under 10 seconds).`
-              );
-              return;
-            }
-          } catch (e) {
-            diagLogger.warn('Could not check video size', { error: String(e) });
-          }
+          // For videos, store the URI - it will be processed and size-checked during save
+          diagLogger.info('VIDEO_CAPTURED', { uri: result.assets[0].uri.substring(0, 50) });
           mediaData = result.assets[0].uri;
         }
         
