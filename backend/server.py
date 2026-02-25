@@ -13921,9 +13921,9 @@ async def get_mechanic_inspections(
         crm_status = insp.get("inspection_status", "NEW_INSPECTION")
         if crm_status in ["INSPECTION_COMPLETED"]:
             app_status = "COMPLETED"
-        elif crm_status in ["INSPECTION_CANCELLED", "INSPECTION_REJECTED"]:
+        elif crm_status in ["INSPECTION_CANCELLED", "INSPECTION_REJECTED", "REJECTED"]:
             app_status = "REJECTED"
-        elif crm_status in ["INSPECTION_CONFIRMED", "INSPECTION_STARTED"]:
+        elif crm_status in ["INSPECTION_CONFIRMED", "INSPECTION_STARTED", "ACCEPTED", "IN_PROGRESS"]:
             app_status = "ACCEPTED"
         elif crm_status in ["ASSIGNED_TO_MECHANIC"]:
             app_status = "NEW"  # Show as new until mechanic accepts
