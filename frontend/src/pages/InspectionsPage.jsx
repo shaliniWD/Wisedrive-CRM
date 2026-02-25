@@ -3328,14 +3328,17 @@ export default function InspectionsPage() {
                             <div className="flex items-center gap-2">
                               <Phone className="h-4 w-4 text-gray-400" />
                               <span className="text-sm text-gray-600">Phone:</span>
-                              <span className="font-mono text-sm text-gray-900">{log.phone_masked || log.phone}</span>
+                              <span className="font-mono text-sm text-gray-900">{log.phone || log.phone_masked}</span>
                             </div>
                             
-                            {log.otp && (
+                            {/* Extract OTP from variables field (format: "otp|validity") */}
+                            {(log.variables || log.otp) && (
                               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-2">
                                 <div className="flex items-center justify-between">
                                   <span className="text-sm text-blue-700 font-medium">OTP Code:</span>
-                                  <span className="font-mono text-2xl font-bold text-blue-800 tracking-widest">{log.otp}</span>
+                                  <span className="font-mono text-2xl font-bold text-blue-800 tracking-widest">
+                                    {log.otp || (log.variables ? log.variables.split('|')[0] : 'N/A')}
+                                  </span>
                                 </div>
                               </div>
                             )}
