@@ -1660,14 +1660,33 @@ export default function InspectionsPage() {
                     
                     {/* Notes & Activity Column */}
                     <td className="px-3 py-3 text-center">
-                      <button
-                        onClick={() => openNotesDrawer(inspection)}
-                        className="group p-2 rounded-lg transition-all duration-200 hover:bg-blue-50 hover:shadow-sm"
-                        title="Notes & Activity Log"
-                        data-testid={`notes-button-${inspection.id}`}
-                      >
-                        <StickyNote className="h-4 w-4 text-gray-400 group-hover:text-blue-600 group-hover:scale-110 transition-all" />
-                      </button>
+                      <div className="flex items-center justify-center gap-1">
+                        {/* Live Progress Button - Shows inspection answers in real-time */}
+                        <button
+                          onClick={() => openLiveProgressModal(inspection)}
+                          className={`group p-2 rounded-lg transition-all duration-200 hover:shadow-sm ${
+                            ['INSPECTION_STARTED', 'IN_PROGRESS'].includes(inspection.inspection_status)
+                              ? 'bg-green-50 hover:bg-green-100'
+                              : 'hover:bg-gray-50'
+                          }`}
+                          title="View Live Progress"
+                          data-testid={`live-progress-${inspection.id}`}
+                        >
+                          <Activity className={`h-4 w-4 transition-all ${
+                            ['INSPECTION_STARTED', 'IN_PROGRESS'].includes(inspection.inspection_status)
+                              ? 'text-green-600 animate-pulse'
+                              : 'text-gray-400 group-hover:text-blue-600'
+                          }`} />
+                        </button>
+                        <button
+                          onClick={() => openNotesDrawer(inspection)}
+                          className="group p-2 rounded-lg transition-all duration-200 hover:bg-blue-50 hover:shadow-sm"
+                          title="Notes & Activity Log"
+                          data-testid={`notes-button-${inspection.id}`}
+                        >
+                          <StickyNote className="h-4 w-4 text-gray-400 group-hover:text-blue-600 group-hover:scale-110 transition-all" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 )})
