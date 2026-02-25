@@ -139,14 +139,11 @@ const processVideo = async (uri: string): Promise<string> => {
   diagLogger.info('VIDEO_PROCESS_START', { uri: uri.substring(0, 50) + '...' });
   
   try {
-    // Get file info to check size
-    const fileInfo = await fsGetInfoAsync(uri);
+    // Use fetch to get the video file as blob
+    const response = await fetch(uri);
+    const blob = await response.blob();
     
-    if (!fileInfo.exists) {
-      throw new Error('Video file not found');
-    }
-    
-    const fileSizeBytes = fileInfo.size || 0;
+    const fileSizeBytes = blob.size;
     const fileSizeMB = fileSizeBytes / (1024 * 1024);
     
     diagLogger.info('VIDEO_SIZE_CHECK', { 
@@ -163,10 +160,19 @@ const processVideo = async (uri: string): Promise<string> => {
       throw new Error(`Video is too large (${fileSizeMB.toFixed(1)}MB). Maximum size is ${MAX_VIDEO_SIZE_MB}MB. Please record a shorter video.`);
     }
     
-    // Read video as base64
+    // Convert blob to base64
     diagLogger.info('VIDEO_READING_BASE64', { sizeMB: fileSizeMB.toFixed(2) });
-    const base64 = await fsReadAsStringAsync(uri, {
-      encoding: EncodingType.Base64,
+    
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        // Remove the data URL prefix to get just the base64
+        const base64Data = result.split(',')[1] || result;
+        resolve(base64Data);
+      };
+      reader.onerror = () => reject(new Error('Failed to read video file'));
+      reader.readAsDataURL(blob);
     });
     
     diagLogger.info('VIDEO_PROCESS_DONE', { 
