@@ -1627,55 +1627,16 @@ export default function InspectionsPage() {
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
-                              onClick={() => {
-                                setScheduleEditInspection(inspection);
-                                setNewScheduleDate(inspection.scheduled_date || '');
-                                setNewScheduleTime(inspection.scheduled_time || '');
-                                setIsScheduleModalOpen(true);
-                              }}
-                              className="cursor-pointer"
-                              data-testid={`action-edit-schedule-${inspection.id}`}
+                              onClick={() => openPaymentDetailsModal({
+                                ...inspection,
+                                balance_due: actualBalanceDue
+                              })}
+                              className={`cursor-pointer ${!isFullyPaid ? 'text-amber-600' : ''}`}
+                              data-testid={`action-payment-${inspection.id}`}
                             >
-                              <CalendarClock className="h-4 w-4 mr-2" />
-                              Edit Date/Time
+                              <CreditCard className="h-4 w-4 mr-2" />
+                              Payment Details
                             </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => {
-                                setLocationEditInspection(inspection);
-                                setIsLocationModalOpen(true);
-                              }}
-                              className="cursor-pointer"
-                              data-testid={`action-edit-location-${inspection.id}`}
-                            >
-                              <MapPin className="h-4 w-4 mr-2" />
-                              Edit Location
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => {
-                                setVehicleEditInspection(inspection);
-                                setNewVehicleNumber(inspection.car_number || '');
-                                setVehicleData(null);
-                                setIsVehicleModalOpen(true);
-                              }}
-                              className="cursor-pointer"
-                              data-testid={`action-edit-vehicle-${inspection.id}`}
-                            >
-                              <Car className="h-4 w-4 mr-2" />
-                              Edit Vehicle
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => {
-                                setMechanicEditInspection(inspection);
-                                setSelectedMechanicId(inspection.mechanic_id || '');
-                                setIsMechanicModalOpen(true);
-                              }}
-                              className="cursor-pointer"
-                              data-testid={`action-assign-mechanic-${inspection.id}`}
-                            >
-                              <User className="h-4 w-4 mr-2" />
-                              {inspection.mechanic_name ? 'Reassign Mechanic' : 'Assign Mechanic'}
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
                             <DropdownMenuItem
                               onClick={() => openNotesDrawer(inspection)}
                               className="cursor-pointer"
