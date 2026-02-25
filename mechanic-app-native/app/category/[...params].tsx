@@ -499,11 +499,18 @@ export default function CategoryQuestionsScreen() {
           quality: 0.5, // Lower quality to reduce memory
         });
       } else {
+        // Show warning about video length
+        Alert.alert(
+          'Video Recording',
+          `Please keep your video under 10 seconds for reliable upload. Recording will auto-stop at ${maxDuration || 10} seconds.`,
+          [{ text: 'OK' }]
+        );
+        
         result = await ImagePicker.launchCameraAsync({
           mediaTypes: ImagePicker.MediaTypeOptions.Videos,
           allowsEditing: true,
-          quality: 0.5,
-          videoMaxDuration: maxDuration || 30, // Shorter videos
+          quality: 0.3, // Lower quality for smaller files
+          videoMaxDuration: Math.min(maxDuration || 10, 10), // Max 10 seconds
         });
       }
 
@@ -515,6 +522,23 @@ export default function CategoryQuestionsScreen() {
           // Compress image to prevent memory issues
           mediaData = await compressImage(result.assets[0].uri);
         } else {
+          // For videos, store the URI - it will be processed during save
+          // Check file size first
+          try {
+            const fileInfo = await FileSystem.getInfoAsync(result.assets[0].uri);
+            const sizeMB = (fileInfo.size || 0) / (1024 * 1024);
+            diagLogger.info('VIDEO_CAPTURED', { sizeMB: sizeMB.toFixed(2), uri: result.assets[0].uri.substring(0, 50) });
+            
+            if (sizeMB > MAX_VIDEO_SIZE_MB) {
+              Alert.alert(
+                'Video Too Large',
+                `The video is ${sizeMB.toFixed(1)}MB but max allowed is ${MAX_VIDEO_SIZE_MB}MB. Please record a shorter video (under 10 seconds).`
+              );
+              return;
+            }
+          } catch (e) {
+            diagLogger.warn('Could not check video size', { error: String(e) });
+          }
           mediaData = result.assets[0].uri;
         }
         
