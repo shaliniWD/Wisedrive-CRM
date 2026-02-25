@@ -1609,38 +1609,38 @@ export default function InspectionsPage() {
                   return (
                   <tr key={inspection.id} className="hover:bg-slate-50 transition-colors" data-testid={`inspection-row-${inspection.id}`}>
                     {/* Date/Time Column */}
-                    <td className="pl-4 pr-2 py-2">
+                    <td className="pl-4 pr-2 py-2.5">
                       <div className="flex flex-col">
-                        <span className="font-medium text-gray-900 text-xs whitespace-nowrap">{formatDate(inspection.scheduled_date) || '-'}</span>
-                        <span className="text-xs text-gray-500 whitespace-nowrap">{formatTime(inspection.scheduled_time)}</span>
+                        <span className="font-medium text-gray-900 text-sm whitespace-nowrap">{formatDate(inspection.scheduled_date) || '-'}</span>
+                        <span className="text-sm text-gray-500 whitespace-nowrap">{formatTime(inspection.scheduled_time)}</span>
                       </div>
                     </td>
                     
                     {/* Customer Column */}
-                    <td className="px-2 py-2">
-                      <div className="flex items-center gap-1.5">
-                        <div className="h-6 w-6 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white font-medium text-xs flex-shrink-0">
+                    <td className="px-2 py-2.5">
+                      <div className="flex items-center gap-2">
+                        <div className="h-7 w-7 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white font-medium text-sm flex-shrink-0">
                           {inspection.customer_name?.charAt(0)?.toUpperCase()}
                         </div>
                         <div className="min-w-0">
-                          <div className="font-medium text-gray-900 text-xs truncate max-w-[120px]">{inspection.customer_name}</div>
-                          <div className="text-xs text-gray-500 font-mono">{inspection.customer_mobile}</div>
+                          <div className="font-medium text-gray-900 text-sm truncate max-w-[140px]">{inspection.customer_name}</div>
+                          <div className="text-sm text-gray-500 font-mono">{inspection.customer_mobile}</div>
                         </div>
                       </div>
                     </td>
                     
                     {/* Vehicle Column */}
-                    <td className="px-2 py-2">
+                    <td className="px-2 py-2.5">
                       <div className="min-w-0">
-                        <div className="text-xs font-mono text-blue-600 truncate">{inspection.car_number || '-'}</div>
+                        <div className="text-sm font-mono text-blue-600 truncate">{inspection.car_number || '-'}</div>
                         {(inspection.car_make || inspection.car_model) && (
-                          <div className="text-xs text-gray-400 truncate">{extractMake(inspection.car_make)}</div>
+                          <div className="text-sm text-gray-400 truncate">{extractMake(inspection.car_make)}</div>
                         )}
                       </div>
                     </td>
                     
                     {/* Payment Column */}
-                    <td className="px-2 py-2">
+                    <td className="px-2 py-2.5">
                       <button
                         onClick={() => openPaymentDetailsModal({
                           ...inspection,
@@ -1651,13 +1651,13 @@ export default function InspectionsPage() {
                         data-testid={`payment-status-${inspection.id}`}
                       >
                         {isFullyPaid ? (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
-                            <CheckCircle className="h-3 w-3" />
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-sm font-medium bg-emerald-100 text-emerald-800">
+                            <CheckCircle className="h-3.5 w-3.5" />
                             Paid
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-                            <AlertCircle className="h-3 w-3" />
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-sm font-medium bg-amber-100 text-amber-800">
+                            <AlertCircle className="h-3.5 w-3.5" />
                             Due
                           </span>
                         )}
@@ -1665,18 +1665,18 @@ export default function InspectionsPage() {
                     </td>
                     
                     {/* Status Column */}
-                    <td className="px-2 py-2">
+                    <td className="px-2 py-2.5">
                       <Select 
                         value={inspection.inspection_status || 'NEW_INSPECTION'} 
                         onValueChange={(value) => handleStatusChange(inspection.id, value)}
                       >
-                        <SelectTrigger className="h-7 text-xs w-full border-gray-200" data-testid={`status-select-${inspection.id}`}>
+                        <SelectTrigger className="h-8 text-sm w-full border-gray-200" data-testid={`status-select-${inspection.id}`}>
                           <SelectValue placeholder="New" />
                         </SelectTrigger>
-                        <SelectContent className="min-w-[150px]">
+                        <SelectContent className="min-w-[160px]">
                           {INSPECTION_STATUSES.map((status) => (
                             <SelectItem key={status.value} value={status.value}>
-                              <span className={`px-2 py-0.5 rounded text-xs whitespace-nowrap ${status.color}`}>
+                              <span className={`px-2 py-0.5 rounded text-sm whitespace-nowrap ${status.color}`}>
                                 {status.label}
                               </span>
                             </SelectItem>
@@ -1686,38 +1686,38 @@ export default function InspectionsPage() {
                     </td>
                     
                     {/* Mechanic Column - Clickable name to reassign */}
-                    <td className="px-2 py-2">
+                    <td className="px-2 py-2.5">
                       <button
                         onClick={() => {
                           setMechanicEditInspection(inspection);
                           setSelectedMechanicId(inspection.mechanic_id || '');
                           setIsMechanicModalOpen(true);
                         }}
-                        className="flex items-center gap-1 hover:bg-blue-50 px-1 py-0.5 rounded transition-colors cursor-pointer w-full"
+                        className="flex items-center gap-1.5 hover:bg-blue-50 px-1.5 py-1 rounded transition-colors cursor-pointer w-full"
                         title={inspection.mechanic_name ? "Click to reassign" : "Click to assign"}
                         data-testid={`mechanic-${inspection.id}`}
                       >
                         {inspection.mechanic_name ? (
                           <>
-                            <UserCheck className="h-3 w-3 text-emerald-500 flex-shrink-0" />
-                            <span className="text-xs text-gray-700 truncate hover:text-blue-600">{inspection.mechanic_name}</span>
+                            <UserCheck className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                            <span className="text-sm text-gray-700 truncate hover:text-blue-600">{inspection.mechanic_name}</span>
                           </>
                         ) : (
-                          <span className="text-xs text-blue-600 hover:underline">+ Assign</span>
+                          <span className="text-sm text-blue-600 hover:underline">+ Assign</span>
                         )}
                       </button>
                     </td>
                     
                     {/* Location Column */}
-                    <td className="px-2 py-2">
-                      <span className="inline-flex items-center gap-1 text-xs text-blue-600">
-                        <MapPin className="h-3 w-3 flex-shrink-0" />
-                        <span className="truncate max-w-[60px]">{inspection.city || '-'}</span>
+                    <td className="px-2 py-2.5">
+                      <span className="inline-flex items-center gap-1 text-sm text-blue-600">
+                        <MapPin className="h-4 w-4 flex-shrink-0" />
+                        <span className="truncate max-w-[70px]">{inspection.city || '-'}</span>
                       </span>
                     </td>
                     
                     {/* Report Column */}
-                    <td className="px-2 py-2 text-center">
+                    <td className="px-2 py-2.5 text-center">
                       <button 
                         onClick={() => handleViewReport(inspection)}
                         className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
