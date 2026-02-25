@@ -1490,11 +1490,11 @@ export default function InspectionsPage() {
                     {/* Inspection Status Column - Dropdown */}
                     <td className="px-3 py-3">
                       <Select 
-                        value={inspection.inspection_status} 
+                        value={inspection.inspection_status || 'NEW_INSPECTION'} 
                         onValueChange={(value) => handleStatusChange(inspection.id, value)}
                       >
                         <SelectTrigger className="h-8 text-xs w-[130px] border-gray-200" data-testid={`status-select-${inspection.id}`}>
-                          <SelectValue />
+                          <SelectValue placeholder="New Inspection" />
                         </SelectTrigger>
                         <SelectContent>
                           {INSPECTION_STATUSES.map((status) => (
