@@ -1732,11 +1732,11 @@ export default function InspectionsPage() {
                     </td>
                     
                     {/* Notes Column */}
-                    <td className="px-2 py-2 text-center">
+                    <td className="pl-2 pr-4 py-2 text-center">
                       <button
                         onClick={() => openNotesDrawer(inspection)}
                         className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                        title="Notes, Activity & SMS"
+                        title="Notes, Activity & OTP"
                         data-testid={`notes-button-${inspection.id}`}
                       >
                         <StickyNote className="h-4 w-4" />
