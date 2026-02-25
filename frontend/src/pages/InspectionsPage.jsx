@@ -3268,64 +3268,37 @@ export default function InspectionsPage() {
 
             {/* SMS Logs Tab */}
             <TabsContent value="sms" className="absolute inset-0 flex flex-col m-0 overflow-hidden">
-              {/* SMS Stats Header */}
-              {smsStats && (
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border mx-6 mt-2 mb-2 flex-shrink-0">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <Wallet className="h-5 w-5 text-blue-600" />
-                      <span className="font-semibold text-gray-900">Fast2SMS Wallet</span>
-                    </div>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={fetchSmsLogs}
-                      className="h-8"
-                    >
-                      <RefreshCw className={`h-4 w-4 ${loadingSmsLogs ? 'animate-spin' : ''}`} />
-                    </Button>
+              {/* Mechanic OTP Header */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border mx-6 mt-2 mb-2 flex-shrink-0">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-5 w-5 text-blue-600" />
+                    <span className="font-semibold text-gray-900">Mechanic Login OTPs</span>
                   </div>
-                  <div className="grid grid-cols-4 gap-3">
-                    <div className="bg-white rounded-lg p-3 border">
-                      <div className="text-2xl font-bold text-green-600">₹{smsStats.wallet_balance?.toFixed(2) || '0.00'}</div>
-                      <div className="text-xs text-gray-500">Balance</div>
-                    </div>
-                    <div className="bg-white rounded-lg p-3 border">
-                      <div className="text-2xl font-bold text-blue-600">{smsStats.wallet_sms_count || 0}</div>
-                      <div className="text-xs text-gray-500">SMS Count</div>
-                    </div>
-                    <div className="bg-white rounded-lg p-3 border">
-                      <div className="text-2xl font-bold text-emerald-600">{smsStats.success_count || 0}</div>
-                      <div className="text-xs text-gray-500">Sent</div>
-                    </div>
-                    <div className="bg-white rounded-lg p-3 border">
-                      <div className="text-2xl font-bold text-red-600">{smsStats.failed_count || 0}</div>
-                      <div className="text-xs text-gray-500">Failed</div>
-                    </div>
-                  </div>
-                  {smsStats.success_rate !== undefined && (
-                    <div className="mt-3 flex items-center gap-2">
-                      <TrendingUp className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm text-gray-600">
-                        Success Rate: <span className={`font-semibold ${smsStats.success_rate >= 90 ? 'text-green-600' : smsStats.success_rate >= 70 ? 'text-yellow-600' : 'text-red-600'}`}>
-                          {smsStats.success_rate}%
-                        </span>
-                      </span>
-                    </div>
-                  )}
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={fetchSmsLogs}
+                    className="h-8"
+                  >
+                    <RefreshCw className={`h-4 w-4 ${loadingSmsLogs ? 'animate-spin' : ''}`} />
+                  </Button>
                 </div>
-              )}
+                <p className="text-xs text-gray-500 mt-2">
+                  View OTPs sent to mechanic for app login. Share with mechanic if they don't receive SMS.
+                </p>
+              </div>
 
-              {/* SMS Logs List */}
+              {/* OTP Logs List - Filtered for mechanic OTPs only */}
               <div className="flex-1 min-h-0 relative">
                 {loadingSmsLogs ? (
                   <div className="absolute inset-0 flex items-center justify-center">
                     <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
                   </div>
-                ) : smsLogs.length === 0 ? (
+                ) : smsLogs.filter(log => log.request_type === 'OTP' || log.request_type === 'MECHANIC_OTP').length === 0 ? (
                   <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
                     <MessageSquare className="h-10 w-10 mb-2 text-gray-300" />
-                    <p className="text-sm">No SMS logs found</p>
+                    <p className="text-sm">No mechanic OTP logs found</p>
                     <Button variant="outline" size="sm" className="mt-2" onClick={fetchSmsLogs}>
                       <RefreshCw className="h-4 w-4 mr-1" /> Refresh
                     </Button>
@@ -3333,12 +3306,14 @@ export default function InspectionsPage() {
                 ) : (
                   <ScrollArea className="absolute inset-0">
                     <div className="px-6 py-2 space-y-3">
-                      {smsLogs.map((log, index) => (
+                      {smsLogs
+                        .filter(log => log.request_type === 'OTP' || log.request_type === 'MECHANIC_OTP' || !log.request_type)
+                        .map((log, index) => (
                         <div 
                           key={log.request_id || index} 
                           className={`bg-white border rounded-xl p-4 shadow-sm ${log.success ? 'border-l-4 border-l-green-500' : 'border-l-4 border-l-red-500'}`}
                         >
-                          <div className="flex items-start justify-between gap-2 mb-2">
+                          <div className="flex items-start justify-between gap-2 mb-3">
                             <div className="flex items-center gap-2">
                               {log.success ? (
                                 <CheckCircle className="h-5 w-5 text-green-500" />
@@ -3348,37 +3323,23 @@ export default function InspectionsPage() {
                               <span className={`text-sm font-semibold ${log.success ? 'text-green-700' : 'text-red-700'}`}>
                                 {log.success ? 'SENT' : 'FAILED'}
                               </span>
-                              <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium">
-                                {log.request_type || 'OTP'}
-                              </span>
                             </div>
                             <span className="text-xs text-gray-400">{formatDateTime(log.timestamp || log.created_at)}</span>
                           </div>
                           
-                          <div className="space-y-1 text-sm">
+                          <div className="space-y-2">
                             <div className="flex items-center gap-2">
                               <Phone className="h-4 w-4 text-gray-400" />
-                              <span className="text-gray-600">To:</span>
-                              <span className="font-mono text-gray-900">{log.phone_masked || log.phone}</span>
+                              <span className="text-sm text-gray-600">Phone:</span>
+                              <span className="font-mono text-sm text-gray-900">{log.phone_masked || log.phone}</span>
                             </div>
                             
-                            <div className="flex items-center gap-2">
-                              <FileText className="h-4 w-4 text-gray-400" />
-                              <span className="text-gray-600">Template ID:</span>
-                              <span className="font-mono text-gray-900">{log.template_id}</span>
-                            </div>
-                            
-                            <div className="flex items-center gap-2">
-                              <span className="text-gray-600 ml-6">Response:</span>
-                              <span className={`px-2 py-0.5 rounded text-xs font-medium ${log.response_status === 200 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                HTTP {log.response_status || 'N/A'}
-                              </span>
-                            </div>
-                            
-                            {log.request_id && (
-                              <div className="flex items-center gap-2">
-                                <span className="text-gray-600 ml-6">Request ID:</span>
-                                <span className="font-mono text-xs text-gray-500">{log.request_id}</span>
+                            {log.otp && (
+                              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm text-blue-700 font-medium">OTP Code:</span>
+                                  <span className="font-mono text-2xl font-bold text-blue-800 tracking-widest">{log.otp}</span>
+                                </div>
                               </div>
                             )}
                             
@@ -3388,120 +3349,9 @@ export default function InspectionsPage() {
                                 <span className="text-red-600 text-xs">{log.error_message}</span>
                               </div>
                             )}
-                            
-                            {log.response_data && !log.success && (
-                              <div className="mt-2 p-2 bg-gray-50 border rounded-lg">
-                                <span className="text-gray-600 text-xs font-medium">Response: </span>
-                                <pre className="text-xs text-gray-500 overflow-auto max-h-20 mt-1">
-                                  {JSON.stringify(log.response_data, null, 2)}
-                                </pre>
-                              </div>
-                            )}
                           </div>
                         </div>
                       ))}
-                    </div>
-                  </ScrollArea>
-                )}
-              </div>
-            </TabsContent>
-            
-            {/* Live Progress Tab Content */}
-            <TabsContent value="live" className="absolute inset-0 flex flex-col m-0 overflow-hidden">
-              <div className="flex-1 min-h-0 relative">
-                {liveProgressLoading ? (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
-                  </div>
-                ) : !liveProgressData ? (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
-                    <Play className="h-10 w-10 mb-2 text-gray-300" />
-                    <p className="text-sm">No live progress data available</p>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="mt-2" 
-                      onClick={() => notesInspection && fetchLiveProgress(notesInspection.id)}
-                    >
-                      <RefreshCw className="h-4 w-4 mr-1" /> Load Progress
-                    </Button>
-                  </div>
-                ) : (
-                  <ScrollArea className="absolute inset-0">
-                    <div className="px-6 py-4 space-y-4">
-                      {/* Auto-refresh Toggle */}
-                      <div className="flex items-center justify-between bg-slate-50 rounded-lg p-3">
-                        <div className="flex items-center gap-2">
-                          <div className={`w-2 h-2 rounded-full ${liveProgressAutoRefresh ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
-                          <span className="text-sm text-gray-700">Auto-refresh (5s)</span>
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setLiveProgressAutoRefresh(!liveProgressAutoRefresh)}
-                          className={liveProgressAutoRefresh ? 'border-green-500 text-green-600' : ''}
-                        >
-                          {liveProgressAutoRefresh ? 'On' : 'Off'}
-                        </Button>
-                      </div>
-                      
-                      {/* Progress Stats */}
-                      <div className="grid grid-cols-3 gap-3">
-                        <div className="bg-blue-50 rounded-lg p-3 text-center">
-                          <p className="text-2xl font-bold text-blue-700">{liveProgressData.total_questions || 0}</p>
-                          <p className="text-xs text-blue-600">Total</p>
-                        </div>
-                        <div className="bg-green-50 rounded-lg p-3 text-center">
-                          <p className="text-2xl font-bold text-green-700">{liveProgressData.answered_questions || 0}</p>
-                          <p className="text-xs text-green-600">Answered</p>
-                        </div>
-                        <div className="bg-amber-50 rounded-lg p-3 text-center">
-                          <p className="text-2xl font-bold text-amber-700">{liveProgressData.completion_percentage || 0}%</p>
-                          <p className="text-xs text-amber-600">Complete</p>
-                        </div>
-                      </div>
-                      
-                      {/* Progress Bar */}
-                      <div className="bg-gray-100 rounded-full h-3 overflow-hidden">
-                        <div 
-                          className="bg-gradient-to-r from-blue-500 to-green-500 h-full transition-all duration-500"
-                          style={{ width: `${liveProgressData.completion_percentage || 0}%` }}
-                        />
-                      </div>
-                      
-                      {/* Categories Progress */}
-                      {liveProgressData.categories && liveProgressData.categories.length > 0 && (
-                        <div className="space-y-2">
-                          <h4 className="text-sm font-medium text-gray-700">Categories Progress</h4>
-                          {liveProgressData.categories.map((cat, idx) => (
-                            <div key={idx} className="bg-white border rounded-lg p-3">
-                              <div className="flex justify-between items-center mb-2">
-                                <span className="text-sm font-medium">{cat.name}</span>
-                                <span className="text-xs text-gray-500">{cat.answered}/{cat.total}</span>
-                              </div>
-                              <div className="bg-gray-100 rounded-full h-1.5">
-                                <div 
-                                  className="bg-blue-500 h-full rounded-full transition-all"
-                                  style={{ width: `${cat.total > 0 ? (cat.answered / cat.total * 100) : 0}%` }}
-                                />
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      
-                      {/* Recent Answers */}
-                      {liveProgressData.recent_answers && liveProgressData.recent_answers.length > 0 && (
-                        <div className="space-y-2">
-                          <h4 className="text-sm font-medium text-gray-700">Recent Answers</h4>
-                          {liveProgressData.recent_answers.slice(0, 5).map((answer, idx) => (
-                            <div key={idx} className="bg-green-50 border border-green-200 rounded-lg p-2 text-xs">
-                              <p className="font-medium text-green-800">{answer.question}</p>
-                              <p className="text-green-600 mt-1">Answer: {answer.answer}</p>
-                            </div>
-                          ))}
-                        </div>
-                      )}
                     </div>
                   </ScrollArea>
                 )}
