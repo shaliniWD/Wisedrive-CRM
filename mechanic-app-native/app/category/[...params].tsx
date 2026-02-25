@@ -205,22 +205,49 @@ export default function CategoryQuestionsScreen() {
   };
 
   const saveAnswer = async (questionId: string, answerData: any, field: string = 'answer') => {
+    const saveStartTime = Date.now();
     setIsSaving(true);
+    
+    await debugLogger.logStateChange('SAVE_ANSWER_START', {
+      questionId,
+      field,
+      answerDataType: typeof answerData,
+      answerDataPreview: typeof answerData === 'string' && answerData.startsWith('data:') 
+        ? `[BASE64 IMAGE length=${answerData.length}]` 
+        : answerData,
+      currentAnswersState: Object.keys(answers),
+    }, questionId);
+    
     try {
       // Get current answers from state synchronously
       const existing = answers[questionId] || {};
       const currentQuestionAnswers: Record<string, any> = { ...existing };
       
+      await debugLogger.logStateChange('EXISTING_ANSWER_FOR_QUESTION', {
+        questionId,
+        existingFields: Object.keys(existing),
+        existingAnswer: existing.answer ? 'present' : 'none',
+        existingSub1: existing.sub_answer_1 ? 'present' : 'none',
+        existingSub2: existing.sub_answer_2 ? 'present' : 'none',
+      }, questionId);
+      
       // Update the specific field
       currentQuestionAnswers[field] = answerData;
       currentQuestionAnswers.answered_at = new Date().toISOString();
       
-      // Update local state
+      // Update local state FIRST
       const newAnswers = {
         ...answers,
         [questionId]: currentQuestionAnswers as Answer
       };
       setAnswers(newAnswers);
+      
+      await debugLogger.logStateChange('LOCAL_STATE_UPDATED', {
+        questionId,
+        field,
+        newAnswerFields: Object.keys(currentQuestionAnswers),
+        totalAnswersInState: Object.keys(newAnswers).length,
+      }, questionId);
       
       // Prepare payload for backend - send all answer fields
       const payload: any = {
@@ -237,19 +264,60 @@ export default function CategoryQuestionsScreen() {
         payload.sub_answer_2 = answerData;
       }
       
-      console.log('[CategoryScreen] Saving answer:', JSON.stringify(payload));
+      await debugLogger.logApiRequest(`/mechanic/inspections/${inspectionId}/progress`, {
+        question_id: payload.question_id,
+        category_id: payload.category_id,
+        field,
+        payloadFields: Object.keys(payload),
+        answerType: typeof payload.answer,
+        answerPreview: payload.answer && typeof payload.answer === 'string' && payload.answer.startsWith('data:')
+          ? `[BASE64 length=${payload.answer.length}]`
+          : payload.answer,
+        sub_answer_1: payload.sub_answer_1,
+        sub_answer_2: payload.sub_answer_2,
+      }, inspectionId || undefined, questionId);
       
       // Save to backend
       const response = await inspectionsApi.saveProgress(inspectionId!, payload);
-      console.log('[CategoryScreen] Save response:', JSON.stringify(response));
+      
+      const saveEndTime = Date.now();
+      await debugLogger.logApiResponse(`saveProgress`, {
+        success: true,
+        responseMessage: response.message,
+        responseAnswersCount: response.answers ? Object.keys(response.answers).length : 0,
+        savedAnswerData: response.answers?.[questionId],
+        timeTakenMs: saveEndTime - saveStartTime,
+      }, true, inspectionId || undefined);
       
       // Update saved count
       const savedInCategory = questions.filter(q => newAnswers[q.id]?.answer).length;
       setSavedCount(savedInCategory);
       
+      await debugLogger.logStateChange('SAVE_COMPLETE_SUCCESS', {
+        questionId,
+        field,
+        savedInCategory,
+        totalQuestions: questions.length,
+        timeTakenMs: saveEndTime - saveStartTime,
+      }, questionId);
+      
     } catch (err: any) {
-      console.error('[CategoryScreen] Error saving answer:', err);
-      console.error('[CategoryScreen] Error details:', err.message, err.response?.data);
+      const saveEndTime = Date.now();
+      await debugLogger.logApiError(`saveProgress`, {
+        message: err.message,
+        status: err.response?.status,
+        statusText: err.response?.statusText,
+        responseData: err.response?.data,
+        timeTakenMs: saveEndTime - saveStartTime,
+      }, inspectionId || undefined, questionId);
+      
+      await debugLogger.log('ERROR', 'STATE', 'SAVE_FAILED', {
+        questionId,
+        field,
+        errorMessage: err.message,
+        errorResponse: err.response?.data,
+      }, { questionId, inspectionId: inspectionId || undefined, error: err.message });
+      
       Alert.alert('Error', `Failed to save answer: ${err.response?.data?.detail || err.message || 'Unknown error'}`);
     } finally {
       setIsSaving(false);
