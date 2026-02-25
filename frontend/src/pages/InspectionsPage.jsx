@@ -2380,6 +2380,155 @@ export default function InspectionsPage() {
         </DialogContent>
       </Dialog>
       
+      {/* Combined Edit Inspection Modal - Date/Time, Location, Vehicle */}
+      <Dialog open={isEditInspectionModalOpen} onOpenChange={(open) => {
+        setIsEditInspectionModalOpen(open);
+        if (!open) {
+          setEditInspectionData(null);
+          setEditVehicleData(null);
+        }
+      }}>
+        <DialogContent className="sm:max-w-[550px]" data-testid="edit-inspection-modal">
+          <DialogHeader className="border-b pb-4">
+            <DialogTitle className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white">
+                <Edit2 className="h-5 w-5" />
+              </div>
+              <div>
+                <p>Edit Inspection</p>
+                <p className="text-sm font-normal text-gray-500">{editInspectionData?.customer_name}</p>
+              </div>
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-5 pt-4 max-h-[60vh] overflow-y-auto">
+            {/* Date & Time Section */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                <CalendarClock className="h-4 w-4 text-blue-600" />
+                Date & Time
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs text-gray-500">Date</Label>
+                  <Input 
+                    type="date" 
+                    value={editInspectionFormData.scheduled_date}
+                    onChange={(e) => setEditInspectionFormData(prev => ({ ...prev, scheduled_date: e.target.value }))}
+                    className="h-9"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-gray-500">Time</Label>
+                  <Input 
+                    type="time" 
+                    value={editInspectionFormData.scheduled_time}
+                    onChange={(e) => setEditInspectionFormData(prev => ({ ...prev, scheduled_time: e.target.value }))}
+                    className="h-9"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            {/* Location Section */}
+            <div className="space-y-3 pt-2 border-t">
+              <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                <MapPin className="h-4 w-4 text-green-600" />
+                Location
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs text-gray-500">Address (Google Places)</Label>
+                <PlacesAutocomplete
+                  value={editInspectionFormData.address}
+                  onChange={(value) => setEditInspectionFormData(prev => ({ ...prev, address: value }))}
+                  onPlaceSelect={(place) => {
+                    let city = '';
+                    if (place.address_components) {
+                      const cityComponent = place.address_components.find(
+                        c => c.types.includes('locality') || c.types.includes('administrative_area_level_2')
+                      );
+                      if (cityComponent) city = cityComponent.long_name;
+                    }
+                    setEditInspectionFormData(prev => ({
+                      ...prev,
+                      address: place.formatted_address || place.name,
+                      city: city || prev.city,
+                      latitude: place.geometry?.location?.lat() || null,
+                      longitude: place.geometry?.location?.lng() || null
+                    }));
+                  }}
+                  placeholder="Search address..."
+                  className="w-full"
+                />
+                {editInspectionFormData.city && (
+                  <p className="text-xs text-gray-500">City: <span className="font-medium">{editInspectionFormData.city}</span></p>
+                )}
+              </div>
+            </div>
+            
+            {/* Vehicle Section */}
+            <div className="space-y-3 pt-2 border-t">
+              <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                <Car className="h-4 w-4 text-amber-600" />
+                Vehicle
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs text-gray-500">Vehicle Number</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={editInspectionFormData.car_number}
+                    onChange={(e) => setEditInspectionFormData(prev => ({ ...prev, car_number: e.target.value.toUpperCase() }))}
+                    placeholder="KA01AB1234"
+                    className="h-9 font-mono"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleEditVehicleSearch}
+                    disabled={editVehicleSearching}
+                    className="h-9 px-3"
+                  >
+                    {editVehicleSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                  </Button>
+                </div>
+                {editVehicleData && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-2 text-xs">
+                    <div className="flex items-center gap-1 text-green-700">
+                      <CheckCircle className="h-3 w-3" />
+                      <span className="font-medium">{editVehicleData.manufacturer} {editVehicleData.model}</span>
+                    </div>
+                    <p className="text-green-600 mt-0.5">{editVehicleData.fuel_type} • {editVehicleData.registration_year}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter className="border-t pt-4 mt-4">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => {
+                setIsEditInspectionModalOpen(false);
+                setEditInspectionData(null);
+                setEditVehicleData(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleEditInspectionSave}
+              disabled={editInspectionSaving}
+              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+            >
+              {editInspectionSaving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
       {/* Live Progress Modal - View real-time inspection answers */}
       <Dialog open={isLiveProgressModalOpen} onOpenChange={(open) => {
         setIsLiveProgressModalOpen(open);
