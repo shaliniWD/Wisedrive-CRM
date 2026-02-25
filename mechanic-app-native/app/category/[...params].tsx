@@ -570,16 +570,40 @@ export default function CategoryQuestionsScreen() {
     }
   };
 
-  const handleVideoCapture = async (questionId: string, maxDuration: number = 30, field: string = 'answer') => {
+  const handleVideoCapture = async (questionId: string, maxDuration: number = 10, field: string = 'answer') => {
     try {
+      // Show warning about video length
+      Alert.alert(
+        'Video Recording',
+        `Please keep your video under 10 seconds for reliable upload. Recording will auto-stop at ${Math.min(maxDuration, 10)} seconds.`,
+        [{ text: 'OK' }]
+      );
+      
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Videos,
         allowsEditing: true,
-        quality: 0.5,
-        videoMaxDuration: maxDuration,
+        quality: 0.3, // Lower quality for smaller files
+        videoMaxDuration: Math.min(maxDuration, 10), // Max 10 seconds
       });
 
       if (!result.canceled && result.assets[0]) {
+        // Check file size
+        try {
+          const fileInfo = await FileSystem.getInfoAsync(result.assets[0].uri);
+          const sizeMB = (fileInfo.size || 0) / (1024 * 1024);
+          diagLogger.info('VIDEO_CAPTURED_DIRECT', { sizeMB: sizeMB.toFixed(2), uri: result.assets[0].uri.substring(0, 50) });
+          
+          if (sizeMB > MAX_VIDEO_SIZE_MB) {
+            Alert.alert(
+              'Video Too Large',
+              `The video is ${sizeMB.toFixed(1)}MB but max allowed is ${MAX_VIDEO_SIZE_MB}MB. Please record a shorter video (under 10 seconds).`
+            );
+            return;
+          }
+        } catch (e) {
+          diagLogger.warn('Could not check video size', { error: String(e) });
+        }
+        
         updateDraftAnswer(questionId, result.assets[0].uri, field);
       }
     } catch (err) {
