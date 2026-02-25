@@ -3,11 +3,14 @@
 ## Original Problem Statement
 Build and maintain a CRM system for WiseDrive with an integrated React Native mechanic mobile app. The mechanic app allows field mechanics to perform vehicle inspections by answering configured questions (text, photo, video, multiple choice) and sub-questions.
 
-## Current Status (v1.4.0) - 2026-02-26
-**All critical bugs from v1.3.1 addressed:**
-- Fixed profile version display (was hardcoded "1.0.0")
-- Improved image compression (target <100KB per image)
-- Fixed backend inspection_status bug (was setting "IN_PROGRESS" instead of "INSPECTION_STARTED")
+## Current Status (v1.4.2) - 2026-02-26
+**Critical fixes for file upload stability:**
+- Fixed profile version display (now shows correct version from app.json)
+- Fixed backend inspection_status bug (was "IN_PROGRESS" → now "INSPECTION_STARTED")
+- **NEW**: Implemented sequential answer saving (one-by-one instead of batch)
+- **NEW**: Added video size limit (5MB max) with clear error messages
+- **NEW**: Video duration limited to 10 seconds max for reliable uploads
+- **NEW**: Removed expo-file-system dependency (was causing build failures)
 
 ## User Personas
 1. **Admins**: Use CRM to manage inspections, configure questionnaires, track mechanics
@@ -29,7 +32,7 @@ Build and maintain a CRM system for WiseDrive with an integrated React Native me
 - Answer questions with multiple input types:
   - Multiple Choice
   - Photo capture
-  - Video capture
+  - Video capture (max 10 seconds, 5MB limit)
   - Combined types (MCQ + Photo, MCQ + Video)
   - Sub-questions with independent answer types
 - Offline capability (future)
@@ -37,20 +40,20 @@ Build and maintain a CRM system for WiseDrive with an integrated React Native me
 
 ## What's Been Implemented
 
-### Recent Fixes (v1.4.0) - 2026-02-26
-- Profile now shows correct app version from app.json via expo-constants
-- Image compression improved: 3-step compression targeting <100KB
-- Backend fix: progress save now correctly sets inspection_status to "INSPECTION_STARTED"
-- This ensures inspections show "Continue" instead of "Accept" after starting
+### Recent Fixes (v1.4.2) - 2026-02-26
+- **Sequential Save**: Answers are now saved one-by-one instead of in a batch
+- **Video Limits**: Max 10 seconds duration, 5MB file size limit
+- **Video Processing**: Uses fetch/blob API instead of expo-file-system (more reliable)
+- **Better Error Messages**: Shows exactly which answer failed and why
+- **Diagnostic Logger**: Profile → Diagnostics → View Debug Logs for troubleshooting
 
 ### Build History
-- v1.4.0: Profile version fix, image compression, status bug fix (current)
+- v1.4.2: Sequential saves, video limits, removed expo-file-system (current)
+- v1.4.1: Added diagnostic logger
+- v1.4.0: Profile version fix, image compression, status bug fix
 - v1.3.1: Aggressive image compression, API retry logic
 - v1.3.0: Removed custom logger, added expo-image-manipulator, questionnaire caching
-- v1.2.2: expo-clipboard fix
-- v1.2.1: Category answer count refresh fix
 - v1.2.0: "Save & Next" with AsyncStorage drafts
-- v1.1.4: Debug logging system (removed in v1.3.0)
 
 ## Architecture
 
@@ -62,17 +65,18 @@ Build and maintain a CRM system for WiseDrive with an integrated React Native me
 │   └── src/pages/          # React CRM pages
 │       └── InspectionsPage.jsx
 └── mechanic-app-native/
-    ├── app.json            # Version: 1.4.0
+    ├── app.json            # Version: 1.4.2
     ├── app/
-    │   ├── profile.tsx     # Shows version from Constants
+    │   ├── profile.tsx     # Shows version + debug logs viewer
     │   ├── home.tsx        # Inspection list with status logic
-    │   └── category/[...params].tsx  # Question answering with image compression
+    │   └── category/[...params].tsx  # Question answering with sequential saves
     └── src/
-        └── lib/api.ts      # API client with caching and retry logic
+        ├── lib/api.ts      # API client with retry logic
+        └── lib/diagLogger.ts # Diagnostic logging system
 ```
 
 ## Key API Endpoints
-- `POST /api/mechanic/inspections/{id}/progress` - Save answer (sets status to INSPECTION_STARTED)
+- `POST /api/mechanic/inspections/{id}/progress` - Save single answer (sets status to INSPECTION_STARTED)
 - `GET /api/mechanic/inspections/{id}` - Get inspection with answers
 - `GET /api/mechanic/inspections` - List inspections (maps status for app)
 - `GET /api/inspections/{id}/questionnaire` - Get questions
@@ -85,10 +89,10 @@ Build and maintain a CRM system for WiseDrive with an integrated React Native me
 - Google Maps Places API: Address editing
 - EAS (Expo Application Services): APK builds
 - expo-image-manipulator: Client-side image compression
-- expo-constants: App version display
 
 ## Known Issues / Limitations
 - **Environment Mismatch**: Mechanic app saves to production (crmdev.wisedrive.com), CRM reads from preview backend. User must change REACT_APP_BACKEND_URL in /app/frontend/.env to production to test live progress.
+- **Video Size Limit**: Videos must be under 5MB (roughly 10 seconds at low quality)
 
 ## Future Tasks (Backlog)
 - PDF export for inspection reports
@@ -103,5 +107,5 @@ Build and maintain a CRM system for WiseDrive with an integrated React Native me
 - Mechanic Test: +919187458748 (Sai Bharath)
 
 ## APK Downloads
-- **v1.4.0**: https://expo.dev/artifacts/eas/5StKNzXaLXrFEtC14xKPsV.apk
-- Build page: https://expo.dev/accounts/kalyandhar/projects/wisedrive-mechanic/builds/2770d910-68fc-4467-aefc-9f20bc81af3d
+- **v1.4.2**: https://expo.dev/artifacts/eas/8tTXCPUSazLu82nih2tAJA.apk
+- Build page: https://expo.dev/accounts/kalyandhar/projects/wisedrive-mechanic/builds/3c9512cb-9312-4f50-a7e4-c8713048af76
