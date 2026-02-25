@@ -1566,7 +1566,7 @@ export default function InspectionsPage() {
                         value={inspection.inspection_status || 'NEW_INSPECTION'} 
                         onValueChange={(value) => handleStatusChange(inspection.id, value)}
                       >
-                        <SelectTrigger className="h-8 text-xs w-[155px] border-gray-200" data-testid={`status-select-${inspection.id}`}>
+                        <SelectTrigger className="h-8 text-xs w-auto min-w-[170px] border-gray-200" data-testid={`status-select-${inspection.id}`}>
                           <SelectValue placeholder="New Inspection" />
                         </SelectTrigger>
                         <SelectContent className="min-w-[180px]">
