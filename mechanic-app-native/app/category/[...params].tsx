@@ -145,7 +145,7 @@ const processVideo = async (uri: string): Promise<string> => {
   
   try {
     // Get file info to check size
-    const fileInfo = await FileSystem.getInfoAsync(uri);
+    const fileInfo = await fsGetInfoAsync(uri);
     
     if (!fileInfo.exists) {
       throw new Error('Video file not found');
