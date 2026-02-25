@@ -78,7 +78,12 @@ export const inspectionsApi = {
   },
 
   saveProgress: async (id: string, progressData: any) => {
-    const response = await api.post(`/mechanic/inspections/${id}/progress`, { progress_data: progressData });
+    // Send question_id and answer directly for backend to save
+    const response = await api.post(`/mechanic/inspections/${id}/progress`, {
+      question_id: progressData.question_id,
+      answer: progressData.answer,
+      progress_data: progressData
+    });
     return response.data;
   },
 
