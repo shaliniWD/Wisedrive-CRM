@@ -1588,10 +1588,10 @@ export default function InspectionsPage() {
                           {inspection.mechanic_name ? (
                             <div className="flex items-center gap-1">
                               <UserCheck className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" />
-                              <span className="text-sm text-gray-700">{inspection.mechanic_name}</span>
+                              <span className="text-sm text-gray-700 whitespace-nowrap">{inspection.mechanic_name}</span>
                             </div>
                           ) : (
-                            <span className="text-sm text-gray-400 italic">Not assigned</span>
+                            <span className="text-sm text-gray-400 italic whitespace-nowrap">Not assigned</span>
                           )}
                         </div>
                         <button 
