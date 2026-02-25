@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -16,17 +16,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { inspectionsApi } from '../../src/lib/api';
-import { debugLogger } from '../../src/lib/logger';
-import LogViewer from '../../src/components/LogViewer';
 
 interface Question {
   id: string;
   question: string;
   answer_type: string;
   options?: string[];
-  correct_answer?: string;
   category_id?: string;
   category_name?: string;
   is_mandatory?: boolean;
@@ -45,7 +43,7 @@ interface Answer {
   sub_answer_2?: any;
   answered_at?: string;
   isDraft?: boolean;
-  [key: string]: any; // Allow dynamic field access
+  [key: string]: any;
 }
 
 const colors = {
@@ -64,9 +62,25 @@ const colors = {
 const getDraftKey = (inspectionId: string, categoryId: string) => 
   `@draft_answers_${inspectionId}_${categoryId}`;
 
+// Compress image to reduce size and prevent crashes
+const compressImage = async (uri: string): Promise<string> => {
+  try {
+    const manipResult = await ImageManipulator.manipulateAsync(
+      uri,
+      [{ resize: { width: 800 } }], // Resize to max 800px width
+      { compress: 0.5, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+    );
+    return `data:image/jpeg;base64,${manipResult.base64}`;
+  } catch (error) {
+    console.error('Image compression failed:', error);
+    throw error;
+  }
+};
+
 export default function CategoryQuestionsScreen() {
   const rawParams = useLocalSearchParams();
   const router = useRouter();
+  const isMounted = useRef(true);
   
   const paramsArray = React.useMemo(() => {
     const p = rawParams.params;
@@ -80,32 +94,33 @@ export default function CategoryQuestionsScreen() {
   
   const [questions, setQuestions] = useState<Question[]>([]);
   const [draftAnswers, setDraftAnswers] = useState<Record<string, Answer>>({});
-  const [savedAnswers, setSavedAnswers] = useState<Record<string, Answer>>({});
   const [categoryName, setCategoryName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [showLogs, setShowLogs] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  // Load saved answers and drafts on mount
   useEffect(() => {
+    isMounted.current = true;
     if (inspectionId && categoryId) {
       loadData();
     }
+    return () => {
+      isMounted.current = false;
+    };
   }, [inspectionId, categoryId]);
 
-  // Save drafts to AsyncStorage whenever they change
+  // Save drafts to AsyncStorage when they change
   useEffect(() => {
-    if (inspectionId && categoryId && Object.keys(draftAnswers).length > 0) {
+    if (inspectionId && categoryId && hasUnsavedChanges) {
       saveDraftsToStorage();
     }
-  }, [draftAnswers]);
+  }, [draftAnswers, hasUnsavedChanges]);
 
   const saveDraftsToStorage = async () => {
     try {
       const key = getDraftKey(inspectionId!, categoryId!);
       await AsyncStorage.setItem(key, JSON.stringify(draftAnswers));
-      await debugLogger.logStorageWrite(`Draft saved: ${key}`, true);
     } catch (e) {
       console.error('Failed to save drafts:', e);
     }
@@ -116,9 +131,7 @@ export default function CategoryQuestionsScreen() {
       const key = getDraftKey(inspectionId!, categoryId!);
       const stored = await AsyncStorage.getItem(key);
       if (stored) {
-        const drafts = JSON.parse(stored);
-        await debugLogger.logStorageRead(`Draft loaded: ${key}`, drafts);
-        return drafts;
+        return JSON.parse(stored);
       }
     } catch (e) {
       console.error('Failed to load drafts:', e);
@@ -130,19 +143,23 @@ export default function CategoryQuestionsScreen() {
     try {
       const key = getDraftKey(inspectionId!, categoryId!);
       await AsyncStorage.removeItem(key);
-      await debugLogger.logStorageWrite(`Draft cleared: ${key}`, true);
     } catch (e) {
       console.error('Failed to clear drafts:', e);
     }
   };
 
   const loadData = async () => {
+    if (!isMounted.current) return;
+    
     try {
       setIsLoading(true);
-      await debugLogger.logLifecycle('FETCH_START', { inspectionId, categoryId }, inspectionId || undefined);
+      setLoadError(null);
       
-      // Fetch questionnaire
+      // Use cached questionnaire
       const data = await inspectionsApi.getQuestionnaire(inspectionId!);
+      
+      if (!isMounted.current) return;
+      
       const allQuestions = data.questions || [];
       const categoryQuestions = allQuestions.filter((q: any) => q.category_id === categoryId);
       
@@ -156,75 +173,51 @@ export default function CategoryQuestionsScreen() {
       
       setQuestions(categoryQuestions);
       
-      // Fetch saved answers from server
+      // Load saved answers and drafts
       try {
-        const inspection = await inspectionsApi.getInspection(inspectionId!);
-        const serverAnswers = inspection.inspection_answers || {};
-        setSavedAnswers(serverAnswers);
+        const [inspection, localDrafts] = await Promise.all([
+          inspectionsApi.getInspection(inspectionId!).catch(() => null),
+          loadDraftsFromStorage(),
+        ]);
         
-        await debugLogger.logApiResponse('getInspection', {
-          hasAnswers: Object.keys(serverAnswers).length > 0,
-          answersCount: Object.keys(serverAnswers).length,
-          answerKeys: Object.keys(serverAnswers),
-        }, true, inspectionId || undefined);
+        if (!isMounted.current) return;
         
-        // Log the actual server answer structure for debugging
-        categoryQuestions.forEach((q: Question) => {
-          if (serverAnswers[q.id]) {
-            debugLogger.log('DEBUG', 'STATE', `Server answer for ${q.id}`, {
-              hasAnswer: !!serverAnswers[q.id].answer,
-              answerType: typeof serverAnswers[q.id].answer,
-              answerKeys: serverAnswers[q.id].answer ? Object.keys(serverAnswers[q.id].answer) : [],
-              hasSub1: !!serverAnswers[q.id].sub_answer_1,
-              hasSub2: !!serverAnswers[q.id].sub_answer_2,
-            }, { questionId: q.id });
-          }
-        });
+        const serverAnswers = inspection?.inspection_answers || {};
         
-        // Load drafts from local storage
-        const localDrafts = await loadDraftsFromStorage();
-        
-        // Merge: prefer local drafts over server answers for this category
+        // Merge: prefer local drafts (if isDraft) over server answers
         const mergedAnswers: Record<string, Answer> = {};
         categoryQuestions.forEach((q: Question) => {
-          if (localDrafts[q.id] && localDrafts[q.id].isDraft) {
-            // Local draft exists and is marked as draft - use it
+          if (localDrafts[q.id]?.isDraft) {
             mergedAnswers[q.id] = { ...localDrafts[q.id], isDraft: true };
           } else if (serverAnswers[q.id]) {
-            // Use server answer - NOT marked as draft (already saved)
             mergedAnswers[q.id] = { ...serverAnswers[q.id], isDraft: false };
           }
         });
         
-        await debugLogger.log('DEBUG', 'STATE', 'Merged answers', {
-          mergedCount: Object.keys(mergedAnswers).length,
-          fromDrafts: Object.values(mergedAnswers).filter(a => a.isDraft).length,
-          fromServer: Object.values(mergedAnswers).filter(a => !a.isDraft).length,
-        });
-        
         setDraftAnswers(mergedAnswers);
+        setHasUnsavedChanges(Object.values(mergedAnswers).some(a => a.isDraft));
         
-        // Check if we have unsaved drafts
-        const hasDrafts = Object.values(mergedAnswers).some(a => a.isDraft);
-        setHasUnsavedChanges(hasDrafts);
-        
-      } catch (answerErr: any) {
-        await debugLogger.logApiError('getInspection', answerErr, inspectionId || undefined);
-        // Try to load drafts even if server fetch failed
+      } catch (answerErr) {
+        console.error('Error loading answers:', answerErr);
         const localDrafts = await loadDraftsFromStorage();
-        setDraftAnswers(localDrafts);
-        setHasUnsavedChanges(Object.keys(localDrafts).length > 0);
+        if (isMounted.current) {
+          setDraftAnswers(localDrafts);
+          setHasUnsavedChanges(Object.keys(localDrafts).length > 0);
+        }
       }
       
     } catch (err: any) {
-      await debugLogger.logApiError('loadData', err, inspectionId || undefined);
-      Alert.alert('Error', `Failed to load questions: ${err.message || 'Unknown error'}`);
+      console.error('Error loading data:', err);
+      if (isMounted.current) {
+        setLoadError(err.message || 'Failed to load questions');
+      }
     } finally {
-      setIsLoading(false);
+      if (isMounted.current) {
+        setIsLoading(false);
+      }
     }
   };
 
-  // Update local draft answer (NO API call)
   const updateDraftAnswer = useCallback((questionId: string, answerData: any, field: string = 'answer') => {
     setDraftAnswers(prev => {
       const existing = prev[questionId] || {};
@@ -239,68 +232,56 @@ export default function CategoryQuestionsScreen() {
     setHasUnsavedChanges(true);
   }, []);
 
-  // Save all draft answers to server
   const saveAllAnswers = async () => {
     if (!inspectionId || !categoryId) return;
     
     const answersToSave = Object.entries(draftAnswers).filter(([_, answer]) => answer.isDraft);
     
     if (answersToSave.length === 0) {
-      // No changes to save, just go back
       router.back();
       return;
     }
     
     setIsSaving(true);
-    await debugLogger.logLifecycle('SAVE_ALL_START', {
-      answersCount: answersToSave.length,
-      questionIds: answersToSave.map(([id]) => id),
-    }, inspectionId);
     
     try {
-      // Save each answer
-      for (const [questionId, answer] of answersToSave) {
-        const payload: any = {
-          question_id: questionId,
-          category_id: categoryId,
-        };
-        
-        if (answer.answer !== undefined) {
-          payload.answer = answer.answer;
-        }
-        if (answer.sub_answer_1 !== undefined) {
-          payload.sub_answer_1 = answer.sub_answer_1;
-        }
-        if (answer.sub_answer_2 !== undefined) {
-          payload.sub_answer_2 = answer.sub_answer_2;
-        }
-        
-        await debugLogger.logApiRequest(`saveProgress for ${questionId}`, {
-          questionId,
-          hasAnswer: !!payload.answer,
-          hasSub1: !!payload.sub_answer_1,
-          hasSub2: !!payload.sub_answer_2,
-        }, inspectionId, questionId);
-        
-        await inspectionsApi.saveProgress(inspectionId, payload);
+      // Prepare batch of answers
+      const batch = answersToSave.map(([questionId, answer]) => ({
+        question_id: questionId,
+        category_id: categoryId,
+        answer: answer.answer,
+        sub_answer_1: answer.sub_answer_1,
+        sub_answer_2: answer.sub_answer_2,
+      }));
+      
+      // Save using batch API
+      const results = await inspectionsApi.saveProgressBatch(inspectionId, batch);
+      
+      const failures = results.filter(r => !r.success);
+      if (failures.length > 0) {
+        console.error('Some answers failed to save:', failures);
+        Alert.alert(
+          'Partial Save',
+          `${results.length - failures.length} of ${results.length} answers saved. Failed: ${failures.map(f => f.question_id).join(', ')}`,
+          [{ text: 'OK', onPress: () => router.back() }]
+        );
+      } else {
+        await clearDraftsFromStorage();
+        setHasUnsavedChanges(false);
+        router.back();
       }
       
-      // Clear drafts after successful save
-      await clearDraftsFromStorage();
-      setHasUnsavedChanges(false);
-      
-      await debugLogger.logLifecycle('SAVE_ALL_SUCCESS', {
-        savedCount: answersToSave.length,
-      }, inspectionId);
-      
-      // Go back to categories
-      router.back();
-      
     } catch (err: any) {
-      await debugLogger.logApiError('saveAllAnswers', err, inspectionId);
-      Alert.alert('Save Failed', `Failed to save answers: ${err.message || 'Unknown error'}. Your answers are saved locally and will be synced later.`);
+      console.error('Error saving answers:', err);
+      Alert.alert(
+        'Save Failed',
+        'Failed to save answers. Your answers are saved locally and will be synced later.',
+        [{ text: 'OK' }]
+      );
     } finally {
-      setIsSaving(false);
+      if (isMounted.current) {
+        setIsSaving(false);
+      }
     }
   };
 
@@ -310,13 +291,6 @@ export default function CategoryQuestionsScreen() {
 
   const handleComboOptionSelect = (questionId: string, option: string, field: string = 'answer') => {
     const existing = draftAnswers[questionId]?.[field] || {};
-    debugLogger.log('DEBUG', 'STATE', `handleComboOptionSelect`, {
-      questionId,
-      field,
-      existingAnswer: existing,
-      existingHasMedia: !!existing?.media,
-      newOption: option,
-    }, { questionId });
     const newAnswer = { ...existing, selection: option };
     updateDraftAnswer(questionId, newAnswer, field);
   };
@@ -328,34 +302,34 @@ export default function CategoryQuestionsScreen() {
         result = await ImagePicker.launchCameraAsync({
           mediaTypes: ImagePicker.MediaTypeOptions.Images,
           allowsEditing: false,
-          quality: 0.7,
-          base64: true,
+          quality: 0.5, // Lower quality to reduce memory
         });
       } else {
         result = await ImagePicker.launchCameraAsync({
           mediaTypes: ImagePicker.MediaTypeOptions.Videos,
           allowsEditing: true,
-          quality: 0.7,
-          videoMaxDuration: maxDuration || 45,
+          quality: 0.5,
+          videoMaxDuration: maxDuration || 30, // Shorter videos
         });
       }
 
       if (!result.canceled && result.assets[0]) {
         const existing = draftAnswers[questionId]?.[field] || {};
-        debugLogger.log('DEBUG', 'STATE', `handleComboMediaCapture`, {
-          questionId,
-          field,
-          existingAnswer: existing ? { selection: existing.selection, hasMedia: !!existing.media } : null,
-          mediaType,
-        }, { questionId });
-        const mediaData = mediaType === 'photo' 
-          ? `data:image/jpeg;base64,${result.assets[0].base64}`
-          : result.assets[0].uri;
+        let mediaData: string;
+        
+        if (mediaType === 'photo') {
+          // Compress image to prevent memory issues
+          mediaData = await compressImage(result.assets[0].uri);
+        } else {
+          mediaData = result.assets[0].uri;
+        }
+        
         const newAnswer = { ...existing, media: mediaData };
         updateDraftAnswer(questionId, newAnswer, field);
       }
     } catch (err) {
-      Alert.alert('Error', `Failed to capture ${mediaType}`);
+      console.error('Media capture error:', err);
+      Alert.alert('Error', `Failed to capture ${mediaType}. Please try again.`);
     }
   };
 
@@ -364,25 +338,26 @@ export default function CategoryQuestionsScreen() {
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: false,
-        quality: 0.7,
-        base64: true,
+        quality: 0.5,
       });
 
       if (!result.canceled && result.assets[0]) {
-        const imageData = `data:image/jpeg;base64,${result.assets[0].base64}`;
+        // Compress image
+        const imageData = await compressImage(result.assets[0].uri);
         updateDraftAnswer(questionId, imageData, field);
       }
     } catch (err) {
-      Alert.alert('Error', 'Failed to capture image');
+      console.error('Image capture error:', err);
+      Alert.alert('Error', 'Failed to capture image. Please try again.');
     }
   };
 
-  const handleVideoCapture = async (questionId: string, maxDuration: number = 45, field: string = 'answer') => {
+  const handleVideoCapture = async (questionId: string, maxDuration: number = 30, field: string = 'answer') => {
     try {
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Videos,
         allowsEditing: true,
-        quality: 0.7,
+        quality: 0.5,
         videoMaxDuration: maxDuration,
       });
 
@@ -390,7 +365,8 @@ export default function CategoryQuestionsScreen() {
         updateDraftAnswer(questionId, result.assets[0].uri, field);
       }
     } catch (err) {
-      Alert.alert('Error', 'Failed to capture video');
+      console.error('Video capture error:', err);
+      Alert.alert('Error', 'Failed to capture video. Please try again.');
     }
   };
 
@@ -399,7 +375,6 @@ export default function CategoryQuestionsScreen() {
     const type = answerType || (isSubQuestion ? 'multiple_choice' : question.answer_type);
     const opts = options || (isSubQuestion ? [] : question.options) || [];
     
-    // For combo types, currentAnswer is { selection, media }
     const isComboType = type === 'multiple_choice_photo' || type === 'multiple_choice_video';
     const comboAnswer = isComboType && typeof currentAnswer === 'object' ? currentAnswer : {};
     const selection = comboAnswer?.selection;
@@ -486,7 +461,7 @@ export default function CategoryQuestionsScreen() {
               ))}
             </View>
             <View style={styles.comboMediaSection}>
-              <Text style={styles.comboMediaLabel}>Video Required (Max {question.video_max_duration || 45}s)</Text>
+              <Text style={styles.comboMediaLabel}>Video Required (Max {question.video_max_duration || 30}s)</Text>
               {mediaData ? (
                 <View style={styles.mediaPreview}>
                   <View style={styles.videoPlaceholder}>
@@ -536,7 +511,7 @@ export default function CategoryQuestionsScreen() {
                 <Image source={{ uri: currentAnswer }} style={styles.previewImage} />
                 <TouchableOpacity style={styles.retakeButton} onPress={() => handleImageCapture(question.id, field)}>
                   <Ionicons name="camera" size={18} color="#fff" />
-                  <Text style={styles.retakeText}>Retake Photo</Text>
+                  <Text style={styles.retakeText}>Retake</Text>
                 </TouchableOpacity>
               </View>
             ) : (
@@ -557,16 +532,15 @@ export default function CategoryQuestionsScreen() {
                   <Ionicons name="videocam" size={40} color={colors.success} />
                   <Text style={styles.videoRecordedText}>Video Recorded</Text>
                 </View>
-                <TouchableOpacity style={styles.retakeButton} onPress={() => handleVideoCapture(question.id, question.video_max_duration || 45, field)}>
+                <TouchableOpacity style={styles.retakeButton} onPress={() => handleVideoCapture(question.id, question.video_max_duration || 30, field)}>
                   <Ionicons name="videocam" size={18} color="#fff" />
-                  <Text style={styles.retakeText}>Retake Video</Text>
+                  <Text style={styles.retakeText}>Retake</Text>
                 </TouchableOpacity>
               </View>
             ) : (
-              <TouchableOpacity style={styles.captureButton} onPress={() => handleVideoCapture(question.id, question.video_max_duration || 45, field)}>
+              <TouchableOpacity style={styles.captureButton} onPress={() => handleVideoCapture(question.id, question.video_max_duration || 30, field)}>
                 <Ionicons name="videocam" size={40} color={colors.primary} />
                 <Text style={styles.captureText}>Record Video</Text>
-                <Text style={styles.captureSubtext}>Max {question.video_max_duration || 45}s</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -605,7 +579,7 @@ export default function CategoryQuestionsScreen() {
           <View style={styles.questionTextContainer}>
             <Text style={styles.questionText}>{question.question}</Text>
             {question.is_mandatory && <Text style={styles.mandatoryBadge}>Required</Text>}
-            {isDraft && <Text style={styles.draftBadge}>Draft</Text>}
+            {isDraft && <Text style={styles.draftBadge}>Unsaved</Text>}
           </View>
         </View>
 
@@ -634,7 +608,6 @@ export default function CategoryQuestionsScreen() {
     );
   };
 
-  // Calculate progress
   const answeredCount = questions.filter(q => draftAnswers[q.id]?.answer).length;
   const progressPercent = questions.length > 0 ? Math.round((answeredCount / questions.length) * 100) : 0;
 
@@ -649,7 +622,7 @@ export default function CategoryQuestionsScreen() {
     );
   }
 
-  if (!inspectionId || !categoryId) {
+  if (loadError) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
@@ -661,7 +634,10 @@ export default function CategoryQuestionsScreen() {
         </View>
         <View style={styles.emptyContainer}>
           <Ionicons name="alert-circle" size={48} color={colors.danger} />
-          <Text style={styles.emptyText}>Invalid navigation parameters</Text>
+          <Text style={styles.emptyText}>{loadError}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={loadData}>
+            <Text style={styles.retryText}>Retry</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -669,13 +645,12 @@ export default function CategoryQuestionsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => {
           if (hasUnsavedChanges) {
             Alert.alert(
               'Unsaved Changes',
-              'You have unsaved answers. Do you want to save before leaving?',
+              'You have unsaved answers. Save before leaving?',
               [
                 { text: 'Discard', style: 'destructive', onPress: () => router.back() },
                 { text: 'Save & Exit', onPress: saveAllAnswers },
@@ -691,27 +666,20 @@ export default function CategoryQuestionsScreen() {
         <View style={styles.headerTitleContainer}>
           <Text style={styles.headerTitle} numberOfLines={1}>{categoryName}</Text>
           <Text style={styles.headerSubtitle}>
-            {answeredCount} of {questions.length} answered
+            {answeredCount}/{questions.length} answered
             {hasUnsavedChanges && ' • Unsaved'}
           </Text>
         </View>
-        <TouchableOpacity style={styles.logsButton} onPress={() => setShowLogs(true)}>
-          <Ionicons name="bug-outline" size={20} color={colors.warning} />
-        </TouchableOpacity>
+        <View style={{ width: 40 }} />
       </View>
 
-      {/* Log Viewer Modal */}
-      <LogViewer visible={showLogs} onClose={() => setShowLogs(false)} inspectionId={inspectionId || undefined} />
-
-      {/* Progress Bar */}
       <View style={styles.progressBarContainer}>
         <View style={styles.progressBarBg}>
           <View style={[styles.progressBarFill, { width: `${progressPercent}%` }]} />
         </View>
-        <Text style={styles.progressText}>{progressPercent}% Complete</Text>
+        <Text style={styles.progressText}>{progressPercent}%</Text>
       </View>
 
-      {/* Questions List */}
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {questions.length === 0 ? (
@@ -725,7 +693,6 @@ export default function CategoryQuestionsScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Save & Next Button */}
       <View style={styles.footer}>
         <TouchableOpacity
           style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
@@ -768,15 +735,16 @@ const styles = StyleSheet.create({
   headerTitleContainer: { flex: 1 },
   headerTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
   headerSubtitle: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
-  logsButton: { padding: 8, marginLeft: 8, backgroundColor: '#FEF3C7', borderRadius: 20 },
-  progressBarContainer: { paddingHorizontal: 16, paddingVertical: 12, backgroundColor: colors.cardBg },
-  progressBarBg: { height: 8, backgroundColor: colors.border, borderRadius: 4, overflow: 'hidden' },
+  progressBarContainer: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: colors.cardBg, gap: 12 },
+  progressBarBg: { flex: 1, height: 8, backgroundColor: colors.border, borderRadius: 4, overflow: 'hidden' },
   progressBarFill: { height: '100%', backgroundColor: colors.success, borderRadius: 4 },
-  progressText: { fontSize: 12, color: colors.textSecondary, marginTop: 6, textAlign: 'right' },
+  progressText: { fontSize: 13, color: colors.textSecondary, fontWeight: '600', minWidth: 40 },
   scrollView: { flex: 1 },
   scrollContent: { padding: 16, paddingBottom: 100 },
   emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 60 },
-  emptyText: { marginTop: 12, fontSize: 16, color: colors.textSecondary },
+  emptyText: { marginTop: 12, fontSize: 16, color: colors.textSecondary, textAlign: 'center' },
+  retryButton: { marginTop: 16, paddingHorizontal: 24, paddingVertical: 12, backgroundColor: colors.primary, borderRadius: 8 },
+  retryText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   questionCard: {
     backgroundColor: colors.cardBg,
     borderRadius: 16,
@@ -784,11 +752,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderWidth: 2,
     borderColor: colors.border,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
   },
   questionAnswered: { borderColor: colors.success },
   questionDraft: { borderColor: colors.warning },
@@ -878,7 +841,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   captureText: { fontSize: 16, fontWeight: '600', color: colors.primary },
-  captureSubtext: { fontSize: 12, color: colors.textSecondary },
   mediaPreview: { width: '100%', alignItems: 'center' },
   previewImage: { width: '100%', height: 200, borderRadius: 12, backgroundColor: colors.background },
   videoPlaceholder: {
