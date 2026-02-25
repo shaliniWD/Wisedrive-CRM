@@ -4851,6 +4851,11 @@ async def get_inspection(inspection_id: str, current_user: dict = Depends(get_cu
     inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
     if not inspection:
         raise HTTPException(status_code=404, detail="Inspection not found")
+    
+    # Default inspection_status to NEW_INSPECTION if not set
+    if not inspection.get("inspection_status"):
+        inspection["inspection_status"] = "NEW_INSPECTION"
+    
     return inspection
 
 
