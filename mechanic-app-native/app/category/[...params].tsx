@@ -56,12 +56,29 @@ const colors = {
 };
 
 export default function CategoryQuestionsScreen() {
-  const { params } = useLocalSearchParams<{ params: string[] }>();
+  const rawParams = useLocalSearchParams();
   const router = useRouter();
   
-  // Extract inspectionId and categoryId from params array
-  const inspectionId = params?.[0];
-  const categoryId = params?.[1];
+  // Extract inspectionId and categoryId from params
+  // Expo Router catch-all routes return params as either string[] or string (comma-separated)
+  const paramsArray = React.useMemo(() => {
+    const p = rawParams.params;
+    console.log('[CategoryScreen] Raw params:', JSON.stringify(rawParams));
+    
+    if (Array.isArray(p)) {
+      return p;
+    }
+    if (typeof p === 'string') {
+      // Could be comma-separated or a single value
+      return p.includes(',') ? p.split(',') : [p];
+    }
+    return [];
+  }, [rawParams]);
+  
+  const inspectionId = paramsArray[0] || null;
+  const categoryId = paramsArray[1] || null;
+  
+  console.log('[CategoryScreen] Parsed - inspectionId:', inspectionId, 'categoryId:', categoryId);
   
   const [questions, setQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<Record<string, Answer>>({});
@@ -71,11 +88,12 @@ export default function CategoryQuestionsScreen() {
   const [savedCount, setSavedCount] = useState(0);
 
   useEffect(() => {
+    console.log('[CategoryScreen] useEffect triggered - inspectionId:', inspectionId, 'categoryId:', categoryId);
     if (inspectionId && categoryId) {
       fetchCategoryQuestions();
-    } else {
-      Alert.alert('Error', 'Invalid navigation parameters');
-      router.back();
+    } else if (!isLoading) {
+      // Only show alert after initial load attempt, not immediately
+      console.log('[CategoryScreen] Missing params, will show error');
     }
   }, [inspectionId, categoryId]);
 
