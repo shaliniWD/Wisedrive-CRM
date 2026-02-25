@@ -1729,13 +1729,13 @@ export default function InspectionsPage() {
                     </td>
                     
                     {/* Edit Column */}
-                    <td className="px-2 py-2 text-center">
+                    <td className="px-2 py-2.5 text-center">
                       <button
                         onClick={() => {
                           setEditInspectionData(inspection);
                           setIsEditInspectionModalOpen(true);
                         }}
-                        className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                        className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
                         title="Edit Inspection"
                         data-testid={`edit-inspection-${inspection.id}`}
                       >
@@ -1744,10 +1744,10 @@ export default function InspectionsPage() {
                     </td>
                     
                     {/* Live Progress Column */}
-                    <td className="px-2 py-2 text-center">
+                    <td className="px-2 py-2.5 text-center">
                       <button
                         onClick={() => openLiveProgressModal(inspection)}
-                        className={`p-1 rounded transition-colors ${
+                        className={`p-1.5 rounded transition-colors ${
                           ['INSPECTION_STARTED', 'IN_PROGRESS'].includes(inspection.inspection_status)
                             ? 'text-green-600 bg-green-50 hover:bg-green-100'
                             : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'
@@ -1760,10 +1760,10 @@ export default function InspectionsPage() {
                     </td>
                     
                     {/* Notes Column */}
-                    <td className="pl-2 pr-4 py-2 text-center">
+                    <td className="pl-2 pr-4 py-2.5 text-center">
                       <button
                         onClick={() => openNotesDrawer(inspection)}
-                        className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                        className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
                         title="Notes, Activity & OTP"
                         data-testid={`notes-button-${inspection.id}`}
                       >
@@ -1775,6 +1775,7 @@ export default function InspectionsPage() {
               )}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 
