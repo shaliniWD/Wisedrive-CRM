@@ -3,12 +3,14 @@
 ## Latest Updates (Feb 25, 2026)
 
 ### CRM Inspections Table - Actions Dropdown Refactor ✅
-**Consolidated all edit actions into a single dropdown menu**
+**Consolidated all edit actions into a single dropdown menu + Fixed table truncation**
 
 #### Changes:
 - Removed individual scattered edit icon buttons from the Actions column
 - Added a single three-dot (⋯) button that opens a dropdown menu
 - All edit functionalities now accessible from one clean dropdown
+- **Fixed table layout to fit viewport without horizontal scroll**
+- Made table more compact with reduced padding and truncation on long text
 
 #### Dropdown Menu Items:
 1. **View Details** - Opens inspection report in new tab
@@ -23,6 +25,8 @@
 - Uses Shadcn UI DropdownMenu component
 - All menu items have proper data-testid attributes
 - Menu opens from MoreHorizontal (three-dot) icon
+- Table uses `table-fixed` layout with specific column widths
+- Removed `min-w-[1400px]` constraint that caused truncation
 - Testing: 100% pass rate (7/7 menu items verified working)
 
 ---
