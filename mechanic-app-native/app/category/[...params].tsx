@@ -252,6 +252,22 @@ export default function CategoryQuestionsScreen() {
     const type = answerType || question.answer_type;
     const opts = options || question.options || [];
     
+    // Handle combined types (MCQ + Photo or MCQ + Video)
+    // For combined types, currentAnswer should be an object: { selection: string, media: string }
+    const isComboType = type === 'multiple_choice_photo' || type === 'multiple_choice_video';
+    const comboAnswer = isComboType && typeof currentAnswer === 'object' ? currentAnswer : {};
+    const selection = comboAnswer?.selection;
+    const mediaData = comboAnswer?.media;
+    
+    // Helper to save combo answers
+    const saveComboAnswer = (selectionValue?: string, mediaValue?: string) => {
+      const newAnswer = {
+        selection: selectionValue !== undefined ? selectionValue : selection,
+        media: mediaValue !== undefined ? mediaValue : mediaData,
+      };
+      saveAnswer(question.id, newAnswer, field);
+    };
+    
     switch (type) {
       case 'multiple_choice':
         return (
@@ -279,6 +295,183 @@ export default function CategoryQuestionsScreen() {
                 ]}>{option}</Text>
               </TouchableOpacity>
             ))}
+          </View>
+        );
+      
+      // Multiple Choice + Photo: Show both MCQ options and photo capture
+      case 'multiple_choice_photo':
+        return (
+          <View style={styles.comboContainer}>
+            {/* Multiple Choice Options */}
+            <View style={styles.optionsContainer}>
+              {opts.map((option: string, idx: number) => (
+                <TouchableOpacity
+                  key={idx}
+                  style={[
+                    styles.optionButton,
+                    selection === option && styles.optionButtonSelected,
+                  ]}
+                  onPress={() => saveComboAnswer(option, undefined)}
+                >
+                  <View style={[
+                    styles.optionRadio,
+                    selection === option && styles.optionRadioSelected
+                  ]}>
+                    {selection === option && (
+                      <View style={styles.optionRadioInner} />
+                    )}
+                  </View>
+                  <Text style={[
+                    styles.optionText,
+                    selection === option && styles.optionTextSelected
+                  ]}>{option}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            
+            {/* Photo Capture Section */}
+            <View style={styles.comboMediaSection}>
+              <Text style={styles.comboMediaLabel}>Photo Required</Text>
+              {mediaData ? (
+                <View style={styles.mediaPreview}>
+                  <Image source={{ uri: mediaData }} style={styles.previewImage} />
+                  <TouchableOpacity
+                    style={styles.retakeButton}
+                    onPress={async () => {
+                      try {
+                        const result = await ImagePicker.launchCameraAsync({
+                          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                          allowsEditing: false,
+                          quality: 0.7,
+                          base64: true,
+                        });
+                        if (!result.canceled && result.assets[0]) {
+                          const imageData = `data:image/jpeg;base64,${result.assets[0].base64}`;
+                          saveComboAnswer(undefined, imageData);
+                        }
+                      } catch (err) {
+                        Alert.alert('Error', 'Failed to capture image');
+                      }
+                    }}
+                  >
+                    <Ionicons name="camera" size={18} color="#fff" />
+                    <Text style={styles.retakeText}>Retake Photo</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={styles.captureButton}
+                  onPress={async () => {
+                    try {
+                      const result = await ImagePicker.launchCameraAsync({
+                        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                        allowsEditing: false,
+                        quality: 0.7,
+                        base64: true,
+                      });
+                      if (!result.canceled && result.assets[0]) {
+                        const imageData = `data:image/jpeg;base64,${result.assets[0].base64}`;
+                        saveComboAnswer(undefined, imageData);
+                      }
+                    } catch (err) {
+                      Alert.alert('Error', 'Failed to capture image');
+                    }
+                  }}
+                >
+                  <Ionicons name="camera" size={40} color={colors.primary} />
+                  <Text style={styles.captureText}>Take Photo</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        );
+      
+      // Multiple Choice + Video: Show both MCQ options and video capture
+      case 'multiple_choice_video':
+        return (
+          <View style={styles.comboContainer}>
+            {/* Multiple Choice Options */}
+            <View style={styles.optionsContainer}>
+              {opts.map((option: string, idx: number) => (
+                <TouchableOpacity
+                  key={idx}
+                  style={[
+                    styles.optionButton,
+                    selection === option && styles.optionButtonSelected,
+                  ]}
+                  onPress={() => saveComboAnswer(option, undefined)}
+                >
+                  <View style={[
+                    styles.optionRadio,
+                    selection === option && styles.optionRadioSelected
+                  ]}>
+                    {selection === option && (
+                      <View style={styles.optionRadioInner} />
+                    )}
+                  </View>
+                  <Text style={[
+                    styles.optionText,
+                    selection === option && styles.optionTextSelected
+                  ]}>{option}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            
+            {/* Video Capture Section */}
+            <View style={styles.comboMediaSection}>
+              <Text style={styles.comboMediaLabel}>Video Required (Max {question.video_max_duration || 45}s)</Text>
+              {mediaData ? (
+                <View style={styles.mediaPreview}>
+                  <View style={styles.videoPlaceholder}>
+                    <Ionicons name="videocam" size={40} color={colors.success} />
+                    <Text style={styles.videoRecordedText}>Video Recorded</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.retakeButton}
+                    onPress={async () => {
+                      try {
+                        const result = await ImagePicker.launchCameraAsync({
+                          mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+                          allowsEditing: true,
+                          quality: 0.7,
+                          videoMaxDuration: question.video_max_duration || 45,
+                        });
+                        if (!result.canceled && result.assets[0]) {
+                          saveComboAnswer(undefined, result.assets[0].uri);
+                        }
+                      } catch (err) {
+                        Alert.alert('Error', 'Failed to capture video');
+                      }
+                    }}
+                  >
+                    <Ionicons name="videocam" size={18} color="#fff" />
+                    <Text style={styles.retakeText}>Retake Video</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={styles.captureButton}
+                  onPress={async () => {
+                    try {
+                      const result = await ImagePicker.launchCameraAsync({
+                        mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+                        allowsEditing: true,
+                        quality: 0.7,
+                        videoMaxDuration: question.video_max_duration || 45,
+                      });
+                      if (!result.canceled && result.assets[0]) {
+                        saveComboAnswer(undefined, result.assets[0].uri);
+                      }
+                    } catch (err) {
+                      Alert.alert('Error', 'Failed to capture video');
+                    }
+                  }}
+                >
+                  <Ionicons name="videocam" size={40} color={colors.primary} />
+                  <Text style={styles.captureText}>Record Video</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         );
         
