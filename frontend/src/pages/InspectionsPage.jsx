@@ -17,12 +17,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { PlacesAutocomplete } from '@/components/ui/PlacesAutocomplete';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { 
   Search, Loader2, ClipboardCheck, Filter, Calendar, MapPin, 
   Car, User, Download, Eye, Edit2, Clock, CheckCircle, XCircle, 
   AlertCircle, Play, Plus, Send, CreditCard, DollarSign, FileText,
   UserCheck, CalendarClock, RefreshCw, Ban, Copy, ExternalLink, Link2, X,
-  StickyNote, Activity, Phone, Mail, MessageSquare, Wallet, TrendingUp
+  StickyNote, Activity, Phone, Mail, MessageSquare, Wallet, TrendingUp, MoreHorizontal
 } from 'lucide-react';
 
 // Helper function to extract clean Make name from verbose manufacturer string
