@@ -959,6 +959,19 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: 12,
   },
+  emptyOptionsContainer: {
+    padding: 16,
+    backgroundColor: colors.background,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+  },
+  emptyOptionsText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    fontStyle: 'italic',
+  },
   optionsContainer: {
     gap: 10,
   },
