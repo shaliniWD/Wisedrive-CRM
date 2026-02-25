@@ -79,8 +79,20 @@ export const inspectionsApi = {
   },
 
   getInspection: async (id: string) => {
-    const response = await api.get(`/mechanic/inspections/${id}`);
-    return response.data;
+    await debugLogger.logApiRequest(`/mechanic/inspections/${id}`, { inspectionId: id }, id);
+    try {
+      const response = await api.get(`/mechanic/inspections/${id}`);
+      await debugLogger.logApiResponse('getInspection', {
+        inspectionId: id,
+        hasAnswers: !!response.data.inspection_answers,
+        answersCount: response.data.inspection_answers ? Object.keys(response.data.inspection_answers).length : 0,
+        status: response.data.inspection_status,
+      }, true, id);
+      return response.data;
+    } catch (error: any) {
+      await debugLogger.logApiError('getInspection', error, id);
+      throw error;
+    }
   },
 
   acceptInspection: async (id: string) => {
