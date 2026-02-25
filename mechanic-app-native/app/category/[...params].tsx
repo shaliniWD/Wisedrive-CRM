@@ -19,6 +19,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { inspectionsApi } from '../../src/lib/api';
+import { diagLogger } from '../../src/lib/diagLogger';
 
 interface Question {
   id: string;
