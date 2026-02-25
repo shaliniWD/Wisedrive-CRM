@@ -1697,57 +1697,34 @@ export default function InspectionsPage() {
                       </div>
                     </td>
                     
-                    {/* Actions Column - Dropdown Menu */}
+                    {/* Info Column - Opens Notes/Activity/Live Progress drawer */}
                     <td className="px-2 py-2">
-                      <div className="flex items-center justify-center">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <button
-                              className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                              data-testid={`actions-menu-${inspection.id}`}
-                            >
-                              <MoreHorizontal className="h-5 w-5" />
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-48">
-                            <DropdownMenuItem
-                              onClick={() => handleViewReport(inspection)}
-                              className="cursor-pointer"
-                              data-testid={`action-view-details-${inspection.id}`}
-                            >
-                              <Eye className="h-4 w-4 mr-2" />
-                              View Details
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => openLiveProgressModal(inspection)}
-                              className={`cursor-pointer ${['INSPECTION_STARTED', 'IN_PROGRESS'].includes(inspection.inspection_status) ? 'text-green-600' : ''}`}
-                              data-testid={`action-live-progress-${inspection.id}`}
-                            >
-                              <Activity className={`h-4 w-4 mr-2 ${['INSPECTION_STARTED', 'IN_PROGRESS'].includes(inspection.inspection_status) ? 'animate-pulse' : ''}`} />
-                              Live Progress
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              onClick={() => openPaymentDetailsModal({
-                                ...inspection,
-                                balance_due: actualBalanceDue
-                              })}
-                              className={`cursor-pointer ${!isFullyPaid ? 'text-amber-600' : ''}`}
-                              data-testid={`action-payment-${inspection.id}`}
-                            >
-                              <CreditCard className="h-4 w-4 mr-2" />
-                              Payment Details
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => openNotesDrawer(inspection)}
-                              className="cursor-pointer"
-                              data-testid={`action-notes-${inspection.id}`}
-                            >
-                              <StickyNote className="h-4 w-4 mr-2" />
-                              Notes & Activity
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                      <div className="flex items-center justify-center gap-1">
+                        <button
+                          onClick={() => openNotesDrawer(inspection)}
+                          className={`p-1.5 rounded-lg transition-colors ${
+                            ['INSPECTION_STARTED', 'IN_PROGRESS'].includes(inspection.inspection_status)
+                              ? 'text-green-600 bg-green-50 hover:bg-green-100'
+                              : 'text-gray-500 hover:text-blue-600 hover:bg-blue-50'
+                          }`}
+                          title="Notes, Activity & Live Progress"
+                          data-testid={`info-button-${inspection.id}`}
+                        >
+                          <Activity className={`h-4 w-4 ${['INSPECTION_STARTED', 'IN_PROGRESS'].includes(inspection.inspection_status) ? 'animate-pulse' : ''}`} />
+                        </button>
+                        {!isFullyPaid && (
+                          <button
+                            onClick={() => openPaymentDetailsModal({
+                              ...inspection,
+                              balance_due: actualBalanceDue
+                            })}
+                            className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                            title="Payment Pending"
+                            data-testid={`payment-button-${inspection.id}`}
+                          >
+                            <CreditCard className="h-4 w-4" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
