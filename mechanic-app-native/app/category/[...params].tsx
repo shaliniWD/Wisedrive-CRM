@@ -63,34 +63,54 @@ const getDraftKey = (inspectionId: string, categoryId: string) =>
   `@draft_answers_${inspectionId}_${categoryId}`;
 
 // Compress image aggressively to prevent network/memory issues
+// Target: <100KB for reliable network transfer
 const compressImage = async (uri: string): Promise<string> => {
   try {
-    // First, get the image info
-    const manipResult = await ImageManipulator.manipulateAsync(
+    const MAX_SIZE_BYTES = 100000; // 100KB max
+    
+    // Step 1: Aggressive initial compression
+    let manipResult = await ImageManipulator.manipulateAsync(
       uri,
-      [{ resize: { width: 600 } }], // Resize to max 600px width (smaller)
-      { compress: 0.3, format: ImageManipulator.SaveFormat.JPEG, base64: true } // More compression
+      [{ resize: { width: 480 } }], // Smaller width
+      { compress: 0.3, format: ImageManipulator.SaveFormat.JPEG, base64: true }
     );
     
-    // Check if still too large (> 200KB) and compress more if needed
-    const base64 = manipResult.base64 || '';
-    const sizeInBytes = base64.length * 0.75; // Approximate size
+    let base64 = manipResult.base64 || '';
+    let sizeInBytes = base64.length * 0.75;
+    console.log(`[Image] Initial compression: ${Math.round(sizeInBytes / 1024)}KB`);
     
-    if (sizeInBytes > 200000) {
-      // Compress even more
-      const moreCompressed = await ImageManipulator.manipulateAsync(
+    // Step 2: If still too large, compress even more
+    if (sizeInBytes > MAX_SIZE_BYTES) {
+      manipResult = await ImageManipulator.manipulateAsync(
         uri,
-        [{ resize: { width: 400 } }],
+        [{ resize: { width: 320 } }], // Even smaller
         { compress: 0.2, format: ImageManipulator.SaveFormat.JPEG, base64: true }
       );
-      console.log(`Image compressed: ${Math.round((moreCompressed.base64?.length || 0) * 0.75 / 1024)}KB`);
-      return `data:image/jpeg;base64,${moreCompressed.base64}`;
+      base64 = manipResult.base64 || '';
+      sizeInBytes = base64.length * 0.75;
+      console.log(`[Image] Second compression: ${Math.round(sizeInBytes / 1024)}KB`);
     }
     
-    console.log(`Image compressed: ${Math.round(sizeInBytes / 1024)}KB`);
+    // Step 3: Final attempt if still too large
+    if (sizeInBytes > MAX_SIZE_BYTES) {
+      manipResult = await ImageManipulator.manipulateAsync(
+        uri,
+        [{ resize: { width: 240 } }], // Minimum usable size
+        { compress: 0.15, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+      );
+      base64 = manipResult.base64 || '';
+      sizeInBytes = base64.length * 0.75;
+      console.log(`[Image] Final compression: ${Math.round(sizeInBytes / 1024)}KB`);
+    }
+    
+    if (!base64) {
+      throw new Error('Failed to compress image - empty result');
+    }
+    
+    console.log(`[Image] Final size: ${Math.round(sizeInBytes / 1024)}KB`);
     return `data:image/jpeg;base64,${base64}`;
   } catch (error) {
-    console.error('Image compression failed:', error);
+    console.error('[Image] Compression failed:', error);
     throw error;
   }
 };
