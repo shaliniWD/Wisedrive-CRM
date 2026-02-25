@@ -45,6 +45,7 @@ interface Answer {
   sub_answer_2?: any;
   answered_at?: string;
   isDraft?: boolean;
+  [key: string]: any; // Allow dynamic field access
 }
 
 const colors = {
