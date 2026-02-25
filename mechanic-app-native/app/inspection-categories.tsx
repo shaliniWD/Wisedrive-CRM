@@ -124,9 +124,17 @@ export default function InspectionCategoriesScreen() {
       setIsLoading(true);
       setLoadError(null);
       
-      console.log('Fetching questionnaire for inspection:', currentInspectionId);
-      const data = await inspectionsApi.getQuestionnaire(currentInspectionId);
-      console.log('Questionnaire data:', JSON.stringify(data, null, 2));
+      console.log('[Categories] Fetching questionnaire for inspection:', currentInspectionId);
+      
+      // Fetch both questionnaire and inspection details (for answers) in parallel
+      const [data, inspectionData] = await Promise.all([
+        inspectionsApi.getQuestionnaire(currentInspectionId),
+        inspectionsApi.getInspection(currentInspectionId).catch(() => null)
+      ]);
+      
+      // Get saved answers
+      const savedAnswers = inspectionData?.inspection_answers || {};
+      console.log('[Categories] Saved answers count:', Object.keys(savedAnswers).length);
       
       setTemplateName(data.inspection_template_name || '');
       
@@ -160,17 +168,26 @@ export default function InspectionCategoriesScreen() {
           categoryMap.get(categoryId)!.questions.push(question);
         });
         
-        // Convert to category array with proper ordering
+        // Convert to category array with proper ordering and completion status
         const dynamicCategories: Category[] = [];
         categoryMap.forEach((value, key) => {
           const order = categoryOrderMap.has(key) ? categoryOrderMap.get(key)! : 999;
+          
+          // Count completed questions (questions that have an answer in savedAnswers)
+          const completedCount = value.questions.filter(q => {
+            const ans = savedAnswers[q.id];
+            return ans && ans.answer !== undefined && ans.answer !== null;
+          }).length;
+          
+          const isCompleted = completedCount === value.questions.length && value.questions.length > 0;
+          
           dynamicCategories.push({
             id: key,
             name: value.categoryName,
             icon: getIconForCategory(value.categoryName).name,
             questionsCount: value.questions.length,
-            completedCount: 0,
-            isCompleted: false,
+            completedCount: completedCount,
+            isCompleted: isCompleted,
             order: order,
           });
         });
@@ -179,7 +196,7 @@ export default function InspectionCategoriesScreen() {
         dynamicCategories.sort((a, b) => a.order - b.order);
         
         setCategories(dynamicCategories);
-        console.log('Loaded', dynamicCategories.length, 'categories in template order');
+        console.log('[Categories] Loaded', dynamicCategories.length, 'categories with completion status');
       } else {
         setLoadError('No questionnaire found for this inspection');
       }
