@@ -74,7 +74,7 @@ export default function ChecklistScreen() {
 
       // Fetch questionnaire
       try {
-        const questionnaireData = await inspectionsApi.getQuestionnaire(inspectionId!);
+        const questionnaireData = await inspectionsApi.getQuestionnaire(inspectionId);
         
         // Group questions by category
         const categoryMap: Record<string, Category> = {};
