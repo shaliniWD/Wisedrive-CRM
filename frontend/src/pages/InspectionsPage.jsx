@@ -742,9 +742,6 @@ export default function InspectionsPage() {
     if (value === 'sms' && smsLogs.length === 0) {
       fetchSmsLogs();
     }
-    if (value === 'live' && notesInspection) {
-      fetchLiveProgress(notesInspection.id);
-    }
   };
 
   // Handle View Report - opens in new tab
