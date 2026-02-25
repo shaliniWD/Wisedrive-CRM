@@ -108,22 +108,26 @@ export default function LogViewer({ visible, onClose, inspectionId }: Props) {
   const copyAllLogs = async () => {
     try {
       const exportData = await debugLogger.exportLogs();
-      Clipboard.setString(exportData);
+      await ExpoClipboard.setStringAsync(exportData);
       Alert.alert('Copied!', 'All logs copied to clipboard. You can paste them to share.');
     } catch (e) {
       Alert.alert('Error', 'Failed to copy logs');
     }
   };
 
-  const copyFilteredLogs = () => {
-    const filteredData = {
-      exportedAt: new Date().toISOString(),
-      filter,
-      totalLogs: getFilteredLogs().length,
-      logs: getFilteredLogs(),
-    };
-    Clipboard.setString(JSON.stringify(filteredData, null, 2));
-    Alert.alert('Copied!', 'Filtered logs copied to clipboard.');
+  const copyFilteredLogs = async () => {
+    try {
+      const filteredData = {
+        exportedAt: new Date().toISOString(),
+        filter,
+        totalLogs: getFilteredLogs().length,
+        logs: getFilteredLogs(),
+      };
+      await ExpoClipboard.setStringAsync(JSON.stringify(filteredData, null, 2));
+      Alert.alert('Copied!', 'Filtered logs copied to clipboard.');
+    } catch (e) {
+      Alert.alert('Error', 'Failed to copy logs');
+    }
   };
 
   const clearLogs = async () => {
