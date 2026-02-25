@@ -196,15 +196,13 @@ export default function InspectionCategoriesScreen() {
   };
 
   const handleCategoryPress = (category: Category) => {
-    // Navigate to category questions screen with inspection ID and category ID
-    router.push({
-      pathname: '/checklist/[id]',
-      params: { 
-        id: currentInspectionId,
-        categoryId: category.id,
-        categoryName: category.name
-      }
-    });
+    if (!currentInspectionId) {
+      Alert.alert('Error', 'No inspection selected');
+      return;
+    }
+    // Navigate directly to category questions screen with inspection ID and category ID
+    // Using the catch-all route /category/[...params] with format: /category/inspectionId/categoryId
+    router.push(`/category/${currentInspectionId}/${category.id}`);
   };
 
   const handleSubmitInspection = async () => {
