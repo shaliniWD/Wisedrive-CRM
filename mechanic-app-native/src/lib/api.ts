@@ -78,12 +78,26 @@ export const inspectionsApi = {
   },
 
   saveProgress: async (id: string, progressData: any) => {
-    // Send question_id and answer directly for backend to save
-    const response = await api.post(`/mechanic/inspections/${id}/progress`, {
+    // Send all fields to backend for proper storage
+    const payload: any = {
       question_id: progressData.question_id,
-      answer: progressData.answer,
-      progress_data: progressData
-    });
+      category_id: progressData.category_id,
+    };
+    
+    // Only include non-undefined fields
+    if (progressData.answer !== undefined) {
+      payload.answer = progressData.answer;
+    }
+    if (progressData.sub_answer_1 !== undefined) {
+      payload.sub_answer_1 = progressData.sub_answer_1;
+    }
+    if (progressData.sub_answer_2 !== undefined) {
+      payload.sub_answer_2 = progressData.sub_answer_2;
+    }
+    
+    console.log('[API] Saving progress:', JSON.stringify(payload));
+    const response = await api.post(`/mechanic/inspections/${id}/progress`, payload);
+    console.log('[API] Progress saved:', JSON.stringify(response.data));
     return response.data;
   },
 
