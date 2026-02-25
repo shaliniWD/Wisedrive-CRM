@@ -4826,12 +4826,31 @@ async def get_inspections(
     
     inspections = await db.inspections.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     
+    # Status normalization mapping (legacy -> new)
+    status_mapping = {
+        "NEW": "NEW_INSPECTION",
+        "SCHEDULED": "NEW_INSPECTION",
+        "UNSCHEDULED": "NEW_INSPECTION",
+        "ACCEPTED": "MECHANIC_ACCEPTED",
+        "IN_PROGRESS": "INSPECTION_STARTED",
+        "COMPLETED": "INSPECTION_COMPLETED",
+        "REJECTED": "MECHANIC_REJECTED",
+        "CANCELLED": "INSPECTION_CANCELLED_WD",
+        "INSPECTION_CONFIRMED": "MECHANIC_ACCEPTED",
+        "INSPECTION_IN_PROGRESS": "INSPECTION_STARTED",
+        "INSPECTION_RESCHEDULED": "RESCHEDULED",
+        "INSPECTION_CANCELLED_CUSTOMER": "INSPECTION_CANCELLED_CUS",
+        "INSPECTION_CANCELLED_WISEDRIVE": "INSPECTION_CANCELLED_WD",
+    }
+    
     # Enrich with mechanic name and normalize status
     for insp in inspections:
-        # Default/normalize inspection_status to NEW_INSPECTION if not set or legacy value
+        # Normalize inspection_status using mapping
         status = insp.get("inspection_status")
-        if not status or status in ["NEW", "SCHEDULED", "UNSCHEDULED"]:
+        if not status:
             insp["inspection_status"] = "NEW_INSPECTION"
+        elif status in status_mapping:
+            insp["inspection_status"] = status_mapping[status]
         
         if insp.get("mechanic_id"):
             mechanic = await db.users.find_one({"id": insp["mechanic_id"]}, {"_id": 0, "name": 1})
