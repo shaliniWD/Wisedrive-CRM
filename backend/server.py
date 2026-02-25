@@ -4826,8 +4826,12 @@ async def get_inspections(
     
     inspections = await db.inspections.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     
-    # Enrich with mechanic name
+    # Enrich with mechanic name and default status
     for insp in inspections:
+        # Default inspection_status to NEW_INSPECTION if not set
+        if not insp.get("inspection_status"):
+            insp["inspection_status"] = "NEW_INSPECTION"
+        
         if insp.get("mechanic_id"):
             mechanic = await db.users.find_one({"id": insp["mechanic_id"]}, {"_id": 0, "name": 1})
             if mechanic:
