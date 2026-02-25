@@ -4853,8 +4853,9 @@ async def get_inspection(inspection_id: str, current_user: dict = Depends(get_cu
     if not inspection:
         raise HTTPException(status_code=404, detail="Inspection not found")
     
-    # Default inspection_status to NEW_INSPECTION if not set
-    if not inspection.get("inspection_status"):
+    # Default/normalize inspection_status to NEW_INSPECTION if not set or legacy value
+    status = inspection.get("inspection_status")
+    if not status or status in ["NEW", "SCHEDULED", "UNSCHEDULED"]:
         inspection["inspection_status"] = "NEW_INSPECTION"
     
     return inspection
