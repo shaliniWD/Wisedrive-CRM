@@ -1253,7 +1253,7 @@ export default function InspectionsPage() {
   });
 
   return (
-    <div className="p-6 max-w-7xl mx-auto" data-testid="inspections-page">
+    <div className="p-4 max-w-full mx-auto" data-testid="inspections-page">
       {/* Full Page Loading Overlay */}
       {loading && (
         <div className="fixed inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center">
