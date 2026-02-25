@@ -87,6 +87,11 @@ export const inspectionsApi = {
     return response.data;
   },
 
+  startInspection: async (id: string) => {
+    const response = await api.post(`/mechanic/inspections/${id}/start`);
+    return response.data;
+  },
+
   getQuestionnaire: async (id: string) => {
     const response = await api.get(`/inspections/${id}/questionnaire`);
     return response.data;
