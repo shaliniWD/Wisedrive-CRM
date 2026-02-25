@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { inspectionsApi } from '../../src/lib/api';
 import { debugLogger } from '../../src/lib/logger';
 import LogViewer from '../../src/components/LogViewer';
@@ -43,6 +44,7 @@ interface Answer {
   sub_answer_1?: any;
   sub_answer_2?: any;
   answered_at?: string;
+  isDraft?: boolean;
 }
 
 const colors = {
@@ -57,91 +59,92 @@ const colors = {
   border: '#E2E8F0',
 };
 
+// Helper to get draft storage key
+const getDraftKey = (inspectionId: string, categoryId: string) => 
+  `@draft_answers_${inspectionId}_${categoryId}`;
+
 export default function CategoryQuestionsScreen() {
   const rawParams = useLocalSearchParams();
   const router = useRouter();
   
-  // Extract inspectionId and categoryId from params
-  // Expo Router catch-all routes return params as either string[] or string (comma-separated)
   const paramsArray = React.useMemo(() => {
     const p = rawParams.params;
-    console.log('[CategoryScreen] Raw params:', JSON.stringify(rawParams));
-    
-    if (Array.isArray(p)) {
-      return p;
-    }
-    if (typeof p === 'string') {
-      // Could be comma-separated or a single value
-      return p.includes(',') ? p.split(',') : [p];
-    }
+    if (Array.isArray(p)) return p;
+    if (typeof p === 'string') return p.includes(',') ? p.split(',') : [p];
     return [];
   }, [rawParams]);
   
   const inspectionId = paramsArray[0] || null;
   const categoryId = paramsArray[1] || null;
   
-  console.log('[CategoryScreen] Parsed - inspectionId:', inspectionId, 'categoryId:', categoryId);
-  
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [answers, setAnswers] = useState<Record<string, Answer>>({});
+  const [draftAnswers, setDraftAnswers] = useState<Record<string, Answer>>({});
+  const [savedAnswers, setSavedAnswers] = useState<Record<string, Answer>>({});
   const [categoryName, setCategoryName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [savedCount, setSavedCount] = useState(0);
   const [showLogs, setShowLogs] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-  // Log component mount
+  // Load saved answers and drafts on mount
   useEffect(() => {
-    debugLogger.logLifecycle('CategoryScreen MOUNTED', {
-      rawParams: rawParams,
-      inspectionId,
-      categoryId,
-    }, inspectionId || undefined);
-    
-    return () => {
-      debugLogger.logLifecycle('CategoryScreen UNMOUNTED', {
-        inspectionId,
-        categoryId,
-        finalAnswersCount: Object.keys(answers).length,
-      }, inspectionId || undefined);
-    };
-  }, []);
-
-  useEffect(() => {
-    console.log('[CategoryScreen] useEffect triggered - inspectionId:', inspectionId, 'categoryId:', categoryId);
     if (inspectionId && categoryId) {
-      fetchCategoryQuestions();
-    } else if (!isLoading) {
-      // Only show alert after initial load attempt, not immediately
-      console.log('[CategoryScreen] Missing params, will show error');
+      loadData();
     }
   }, [inspectionId, categoryId]);
 
-  const fetchCategoryQuestions = async () => {
+  // Save drafts to AsyncStorage whenever they change
+  useEffect(() => {
+    if (inspectionId && categoryId && Object.keys(draftAnswers).length > 0) {
+      saveDraftsToStorage();
+    }
+  }, [draftAnswers]);
+
+  const saveDraftsToStorage = async () => {
+    try {
+      const key = getDraftKey(inspectionId!, categoryId!);
+      await AsyncStorage.setItem(key, JSON.stringify(draftAnswers));
+      await debugLogger.logStorageWrite(`Draft saved: ${key}`, true);
+    } catch (e) {
+      console.error('Failed to save drafts:', e);
+    }
+  };
+
+  const loadDraftsFromStorage = async (): Promise<Record<string, Answer>> => {
+    try {
+      const key = getDraftKey(inspectionId!, categoryId!);
+      const stored = await AsyncStorage.getItem(key);
+      if (stored) {
+        const drafts = JSON.parse(stored);
+        await debugLogger.logStorageRead(`Draft loaded: ${key}`, drafts);
+        return drafts;
+      }
+    } catch (e) {
+      console.error('Failed to load drafts:', e);
+    }
+    return {};
+  };
+
+  const clearDraftsFromStorage = async () => {
+    try {
+      const key = getDraftKey(inspectionId!, categoryId!);
+      await AsyncStorage.removeItem(key);
+      await debugLogger.logStorageWrite(`Draft cleared: ${key}`, true);
+    } catch (e) {
+      console.error('Failed to clear drafts:', e);
+    }
+  };
+
+  const loadData = async () => {
     try {
       setIsLoading(true);
-      await debugLogger.logLifecycle('FETCH_START - Loading questionnaire', { inspectionId, categoryId }, inspectionId || undefined);
+      await debugLogger.logLifecycle('FETCH_START', { inspectionId, categoryId }, inspectionId || undefined);
       
       // Fetch questionnaire
       const data = await inspectionsApi.getQuestionnaire(inspectionId!);
-      await debugLogger.logApiResponse('getQuestionnaire', {
-        totalQuestions: data.questions?.length || 0,
-        totalCategories: data.categories?.length || 0,
-      }, true, inspectionId || undefined);
-      
-      // Filter questions for this category
       const allQuestions = data.questions || [];
-      const categoryQuestions = allQuestions.filter(
-        (q: any) => q.category_id === categoryId
-      );
+      const categoryQuestions = allQuestions.filter((q: any) => q.category_id === categoryId);
       
-      await debugLogger.logStateChange('QUESTIONS_FILTERED', {
-        totalInQuestionnaire: allQuestions.length,
-        filteredForCategory: categoryQuestions.length,
-        categoryId,
-      }, undefined);
-      
-      // Get category name from first question or from categories
       if (categoryQuestions.length > 0 && categoryQuestions[0].category_name) {
         setCategoryName(categoryQuestions[0].category_name);
       } else {
@@ -152,180 +155,173 @@ export default function CategoryQuestionsScreen() {
       
       setQuestions(categoryQuestions);
       
-      // Fetch existing answers from inspection
+      // Fetch saved answers from server
       try {
-        await debugLogger.logLifecycle('FETCH_EXISTING_ANSWERS - Loading saved answers', { inspectionId }, inspectionId || undefined);
-        
         const inspection = await inspectionsApi.getInspection(inspectionId!);
-        const existingAnswers = inspection.inspection_answers || {};
+        const serverAnswers = inspection.inspection_answers || {};
+        setSavedAnswers(serverAnswers);
         
-        await debugLogger.logApiResponse('getInspection (answers)', {
-          totalSavedAnswers: Object.keys(existingAnswers).length,
-          answerKeys: Object.keys(existingAnswers),
-          sampleAnswer: Object.keys(existingAnswers).length > 0 
-            ? { questionId: Object.keys(existingAnswers)[0], hasAnswer: !!existingAnswers[Object.keys(existingAnswers)[0]]?.answer }
-            : null,
+        await debugLogger.logApiResponse('getInspection', {
+          hasAnswers: Object.keys(serverAnswers).length > 0,
+          answersCount: Object.keys(serverAnswers).length,
+          answerKeys: Object.keys(serverAnswers),
         }, true, inspectionId || undefined);
         
-        // Log each existing answer for this category
+        // Load drafts from local storage
+        const localDrafts = await loadDraftsFromStorage();
+        
+        // Merge: prefer local drafts over server answers for this category
+        const mergedAnswers: Record<string, Answer> = {};
         categoryQuestions.forEach((q: Question) => {
-          if (existingAnswers[q.id]) {
-            debugLogger.logStateChange('EXISTING_ANSWER_LOADED', {
-              questionId: q.id,
-              questionText: q.question.substring(0, 50),
-              answerData: existingAnswers[q.id],
-            }, q.id);
+          if (localDrafts[q.id]) {
+            mergedAnswers[q.id] = { ...localDrafts[q.id], isDraft: true };
+          } else if (serverAnswers[q.id]) {
+            mergedAnswers[q.id] = serverAnswers[q.id];
           }
         });
         
-        setAnswers(existingAnswers);
+        setDraftAnswers(mergedAnswers);
         
-        // Count saved answers for this category
-        const savedInCategory = categoryQuestions.filter((q: Question) => existingAnswers[q.id]).length;
-        setSavedCount(savedInCategory);
-        
-        await debugLogger.logStateChange('ANSWERS_STATE_UPDATED', {
-          savedInCategory,
-          totalCategoryQuestions: categoryQuestions.length,
-        }, undefined);
+        // Check if we have unsaved drafts
+        const hasDrafts = Object.values(mergedAnswers).some(a => a.isDraft);
+        setHasUnsavedChanges(hasDrafts);
         
       } catch (answerErr: any) {
-        await debugLogger.logApiError('getInspection (answers)', answerErr, inspectionId || undefined);
-        setAnswers({});
-        setSavedCount(0);
+        await debugLogger.logApiError('getInspection', answerErr, inspectionId || undefined);
+        // Try to load drafts even if server fetch failed
+        const localDrafts = await loadDraftsFromStorage();
+        setDraftAnswers(localDrafts);
+        setHasUnsavedChanges(Object.keys(localDrafts).length > 0);
       }
       
     } catch (err: any) {
-      await debugLogger.logApiError('fetchCategoryQuestions', err, inspectionId || undefined);
+      await debugLogger.logApiError('loadData', err, inspectionId || undefined);
       Alert.alert('Error', `Failed to load questions: ${err.message || 'Unknown error'}`);
     } finally {
       setIsLoading(false);
-      await debugLogger.logLifecycle('FETCH_COMPLETE', { isLoading: false }, inspectionId || undefined);
     }
   };
 
-  const saveAnswer = async (questionId: string, answerData: any, field: string = 'answer') => {
-    const saveStartTime = Date.now();
-    setIsSaving(true);
+  // Update local draft answer (NO API call)
+  const updateDraftAnswer = useCallback((questionId: string, answerData: any, field: string = 'answer') => {
+    setDraftAnswers(prev => {
+      const existing = prev[questionId] || {};
+      const updated = {
+        ...existing,
+        [field]: answerData,
+        answered_at: new Date().toISOString(),
+        isDraft: true,
+      };
+      return { ...prev, [questionId]: updated };
+    });
+    setHasUnsavedChanges(true);
+  }, []);
+
+  // Save all draft answers to server
+  const saveAllAnswers = async () => {
+    if (!inspectionId || !categoryId) return;
     
-    await debugLogger.logStateChange('SAVE_ANSWER_START', {
-      questionId,
-      field,
-      answerDataType: typeof answerData,
-      answerDataPreview: typeof answerData === 'string' && answerData.startsWith('data:') 
-        ? `[BASE64 IMAGE length=${answerData.length}]` 
-        : answerData,
-      currentAnswersState: Object.keys(answers),
-    }, questionId);
+    const answersToSave = Object.entries(draftAnswers).filter(([_, answer]) => answer.isDraft);
+    
+    if (answersToSave.length === 0) {
+      // No changes to save, just go back
+      router.back();
+      return;
+    }
+    
+    setIsSaving(true);
+    await debugLogger.logLifecycle('SAVE_ALL_START', {
+      answersCount: answersToSave.length,
+      questionIds: answersToSave.map(([id]) => id),
+    }, inspectionId);
     
     try {
-      // Get current answers from state synchronously
-      const existing = answers[questionId] || {};
-      const currentQuestionAnswers: Record<string, any> = { ...existing };
-      
-      await debugLogger.logStateChange('EXISTING_ANSWER_FOR_QUESTION', {
-        questionId,
-        existingFields: Object.keys(existing),
-        existingAnswer: existing.answer ? 'present' : 'none',
-        existingSub1: existing.sub_answer_1 ? 'present' : 'none',
-        existingSub2: existing.sub_answer_2 ? 'present' : 'none',
-      }, questionId);
-      
-      // Update the specific field
-      currentQuestionAnswers[field] = answerData;
-      currentQuestionAnswers.answered_at = new Date().toISOString();
-      
-      // Update local state FIRST
-      const newAnswers = {
-        ...answers,
-        [questionId]: currentQuestionAnswers as Answer
-      };
-      setAnswers(newAnswers);
-      
-      await debugLogger.logStateChange('LOCAL_STATE_UPDATED', {
-        questionId,
-        field,
-        newAnswerFields: Object.keys(currentQuestionAnswers),
-        totalAnswersInState: Object.keys(newAnswers).length,
-      }, questionId);
-      
-      // Prepare payload for backend - send all answer fields
-      const payload: any = {
-        question_id: questionId,
-        category_id: categoryId,
-      };
-      
-      // Include the appropriate answer field based on what was updated
-      if (field === 'answer') {
-        payload.answer = answerData;
-      } else if (field === 'sub_answer_1') {
-        payload.sub_answer_1 = answerData;
-      } else if (field === 'sub_answer_2') {
-        payload.sub_answer_2 = answerData;
+      // Save each answer
+      for (const [questionId, answer] of answersToSave) {
+        const payload: any = {
+          question_id: questionId,
+          category_id: categoryId,
+        };
+        
+        if (answer.answer !== undefined) {
+          payload.answer = answer.answer;
+        }
+        if (answer.sub_answer_1 !== undefined) {
+          payload.sub_answer_1 = answer.sub_answer_1;
+        }
+        if (answer.sub_answer_2 !== undefined) {
+          payload.sub_answer_2 = answer.sub_answer_2;
+        }
+        
+        await debugLogger.logApiRequest(`saveProgress for ${questionId}`, {
+          questionId,
+          hasAnswer: !!payload.answer,
+          hasSub1: !!payload.sub_answer_1,
+          hasSub2: !!payload.sub_answer_2,
+        }, inspectionId, questionId);
+        
+        await inspectionsApi.saveProgress(inspectionId, payload);
       }
       
-      await debugLogger.logApiRequest(`/mechanic/inspections/${inspectionId}/progress`, {
-        question_id: payload.question_id,
-        category_id: payload.category_id,
-        field,
-        payloadFields: Object.keys(payload),
-        answerType: typeof payload.answer,
-        answerPreview: payload.answer && typeof payload.answer === 'string' && payload.answer.startsWith('data:')
-          ? `[BASE64 length=${payload.answer.length}]`
-          : payload.answer,
-        sub_answer_1: payload.sub_answer_1,
-        sub_answer_2: payload.sub_answer_2,
-      }, inspectionId || undefined, questionId);
+      // Clear drafts after successful save
+      await clearDraftsFromStorage();
+      setHasUnsavedChanges(false);
       
-      // Save to backend
-      const response = await inspectionsApi.saveProgress(inspectionId!, payload);
+      await debugLogger.logLifecycle('SAVE_ALL_SUCCESS', {
+        savedCount: answersToSave.length,
+      }, inspectionId);
       
-      const saveEndTime = Date.now();
-      await debugLogger.logApiResponse(`saveProgress`, {
-        success: true,
-        responseMessage: response.message,
-        responseAnswersCount: response.answers ? Object.keys(response.answers).length : 0,
-        savedAnswerData: response.answers?.[questionId],
-        timeTakenMs: saveEndTime - saveStartTime,
-      }, true, inspectionId || undefined);
-      
-      // Update saved count
-      const savedInCategory = questions.filter(q => newAnswers[q.id]?.answer).length;
-      setSavedCount(savedInCategory);
-      
-      await debugLogger.logStateChange('SAVE_COMPLETE_SUCCESS', {
-        questionId,
-        field,
-        savedInCategory,
-        totalQuestions: questions.length,
-        timeTakenMs: saveEndTime - saveStartTime,
-      }, questionId);
+      // Go back to categories
+      router.back();
       
     } catch (err: any) {
-      const saveEndTime = Date.now();
-      await debugLogger.logApiError(`saveProgress`, {
-        message: err.message,
-        status: err.response?.status,
-        statusText: err.response?.statusText,
-        responseData: err.response?.data,
-        timeTakenMs: saveEndTime - saveStartTime,
-      }, inspectionId || undefined, questionId);
-      
-      await debugLogger.log('ERROR', 'STATE', 'SAVE_FAILED', {
-        questionId,
-        field,
-        errorMessage: err.message,
-        errorResponse: err.response?.data,
-      }, { questionId, inspectionId: inspectionId || undefined, error: err.message });
-      
-      Alert.alert('Error', `Failed to save answer: ${err.response?.data?.detail || err.message || 'Unknown error'}`);
+      await debugLogger.logApiError('saveAllAnswers', err, inspectionId);
+      Alert.alert('Save Failed', `Failed to save answers: ${err.message || 'Unknown error'}. Your answers are saved locally and will be synced later.`);
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleOptionSelect = (questionId: string, option: string, field: string = 'answer') => {
-    saveAnswer(questionId, option, field);
+    updateDraftAnswer(questionId, option, field);
+  };
+
+  const handleComboOptionSelect = (questionId: string, option: string, field: string = 'answer') => {
+    const existing = draftAnswers[questionId]?.[field] || {};
+    const newAnswer = { ...existing, selection: option };
+    updateDraftAnswer(questionId, newAnswer, field);
+  };
+
+  const handleComboMediaCapture = async (questionId: string, field: string = 'answer', mediaType: 'photo' | 'video' = 'photo', maxDuration?: number) => {
+    try {
+      let result;
+      if (mediaType === 'photo') {
+        result = await ImagePicker.launchCameraAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: false,
+          quality: 0.7,
+          base64: true,
+        });
+      } else {
+        result = await ImagePicker.launchCameraAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+          allowsEditing: true,
+          quality: 0.7,
+          videoMaxDuration: maxDuration || 45,
+        });
+      }
+
+      if (!result.canceled && result.assets[0]) {
+        const existing = draftAnswers[questionId]?.[field] || {};
+        const mediaData = mediaType === 'photo' 
+          ? `data:image/jpeg;base64,${result.assets[0].base64}`
+          : result.assets[0].uri;
+        const newAnswer = { ...existing, media: mediaData };
+        updateDraftAnswer(questionId, newAnswer, field);
+      }
+    } catch (err) {
+      Alert.alert('Error', `Failed to capture ${mediaType}`);
+    }
   };
 
   const handleImageCapture = async (questionId: string, field: string = 'answer') => {
@@ -339,7 +335,7 @@ export default function CategoryQuestionsScreen() {
 
       if (!result.canceled && result.assets[0]) {
         const imageData = `data:image/jpeg;base64,${result.assets[0].base64}`;
-        saveAnswer(questionId, imageData, field);
+        updateDraftAnswer(questionId, imageData, field);
       }
     } catch (err) {
       Alert.alert('Error', 'Failed to capture image');
@@ -356,8 +352,7 @@ export default function CategoryQuestionsScreen() {
       });
 
       if (!result.canceled && result.assets[0]) {
-        // For video, we store the URI - in production, this would be uploaded to cloud storage
-        saveAnswer(questionId, result.assets[0].uri, field);
+        updateDraftAnswer(questionId, result.assets[0].uri, field);
       }
     } catch (err) {
       Alert.alert('Error', 'Failed to capture video');
@@ -365,38 +360,22 @@ export default function CategoryQuestionsScreen() {
   };
 
   const renderAnswerInput = (question: Question, currentAnswer: any, field: string = 'answer', answerType?: string, options?: string[]) => {
-    // IMPORTANT: For sub-questions, if answerType is not explicitly provided, 
-    // use 'multiple_choice' as default (NOT the main question's type)
-    // This prevents photo/video types from main question bleeding into sub-questions
     const isSubQuestion = field === 'sub_answer_1' || field === 'sub_answer_2';
     const type = answerType || (isSubQuestion ? 'multiple_choice' : question.answer_type);
     const opts = options || (isSubQuestion ? [] : question.options) || [];
     
-    console.log(`[renderAnswerInput] field=${field}, answerType=${answerType}, resolvedType=${type}, options count=${opts.length}`);
-    
-    // Handle combined types (MCQ + Photo or MCQ + Video)
-    // For combined types, currentAnswer should be an object: { selection: string, media: string }
+    // For combo types, currentAnswer is { selection, media }
     const isComboType = type === 'multiple_choice_photo' || type === 'multiple_choice_video';
     const comboAnswer = isComboType && typeof currentAnswer === 'object' ? currentAnswer : {};
     const selection = comboAnswer?.selection;
     const mediaData = comboAnswer?.media;
     
-    // Helper to save combo answers
-    const saveComboAnswer = (selectionValue?: string, mediaValue?: string) => {
-      const newAnswer = {
-        selection: selectionValue !== undefined ? selectionValue : selection,
-        media: mediaValue !== undefined ? mediaValue : mediaData,
-      };
-      saveAnswer(question.id, newAnswer, field);
-    };
-    
     switch (type) {
       case 'multiple_choice':
-        // If no options provided, show a message
         if (opts.length === 0) {
           return (
             <View style={styles.emptyOptionsContainer}>
-              <Text style={styles.emptyOptionsText}>No options configured for this question</Text>
+              <Text style={styles.emptyOptionsText}>No options configured</Text>
             </View>
           );
         }
@@ -405,109 +384,47 @@ export default function CategoryQuestionsScreen() {
             {opts.map((option: string, idx: number) => (
               <TouchableOpacity
                 key={idx}
-                style={[
-                  styles.optionButton,
-                  currentAnswer === option && styles.optionButtonSelected,
-                ]}
+                style={[styles.optionButton, currentAnswer === option && styles.optionButtonSelected]}
                 onPress={() => handleOptionSelect(question.id, option, field)}
               >
-                <View style={[
-                  styles.optionRadio,
-                  currentAnswer === option && styles.optionRadioSelected
-                ]}>
-                  {currentAnswer === option && (
-                    <View style={styles.optionRadioInner} />
-                  )}
+                <View style={[styles.optionRadio, currentAnswer === option && styles.optionRadioSelected]}>
+                  {currentAnswer === option && <View style={styles.optionRadioInner} />}
                 </View>
-                <Text style={[
-                  styles.optionText,
-                  currentAnswer === option && styles.optionTextSelected
-                ]}>{option}</Text>
+                <Text style={[styles.optionText, currentAnswer === option && styles.optionTextSelected]}>{option}</Text>
               </TouchableOpacity>
             ))}
           </View>
         );
       
-      // Multiple Choice + Photo: Show both MCQ options and photo capture
       case 'multiple_choice_photo':
         return (
           <View style={styles.comboContainer}>
-            {/* Multiple Choice Options */}
             <View style={styles.optionsContainer}>
               {opts.map((option: string, idx: number) => (
                 <TouchableOpacity
                   key={idx}
-                  style={[
-                    styles.optionButton,
-                    selection === option && styles.optionButtonSelected,
-                  ]}
-                  onPress={() => saveComboAnswer(option, undefined)}
+                  style={[styles.optionButton, selection === option && styles.optionButtonSelected]}
+                  onPress={() => handleComboOptionSelect(question.id, option, field)}
                 >
-                  <View style={[
-                    styles.optionRadio,
-                    selection === option && styles.optionRadioSelected
-                  ]}>
-                    {selection === option && (
-                      <View style={styles.optionRadioInner} />
-                    )}
+                  <View style={[styles.optionRadio, selection === option && styles.optionRadioSelected]}>
+                    {selection === option && <View style={styles.optionRadioInner} />}
                   </View>
-                  <Text style={[
-                    styles.optionText,
-                    selection === option && styles.optionTextSelected
-                  ]}>{option}</Text>
+                  <Text style={[styles.optionText, selection === option && styles.optionTextSelected]}>{option}</Text>
                 </TouchableOpacity>
               ))}
             </View>
-            
-            {/* Photo Capture Section */}
             <View style={styles.comboMediaSection}>
               <Text style={styles.comboMediaLabel}>Photo Required</Text>
               {mediaData ? (
                 <View style={styles.mediaPreview}>
                   <Image source={{ uri: mediaData }} style={styles.previewImage} />
-                  <TouchableOpacity
-                    style={styles.retakeButton}
-                    onPress={async () => {
-                      try {
-                        const result = await ImagePicker.launchCameraAsync({
-                          mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                          allowsEditing: false,
-                          quality: 0.7,
-                          base64: true,
-                        });
-                        if (!result.canceled && result.assets[0]) {
-                          const imageData = `data:image/jpeg;base64,${result.assets[0].base64}`;
-                          saveComboAnswer(undefined, imageData);
-                        }
-                      } catch (err) {
-                        Alert.alert('Error', 'Failed to capture image');
-                      }
-                    }}
-                  >
+                  <TouchableOpacity style={styles.retakeButton} onPress={() => handleComboMediaCapture(question.id, field, 'photo')}>
                     <Ionicons name="camera" size={18} color="#fff" />
-                    <Text style={styles.retakeText}>Retake Photo</Text>
+                    <Text style={styles.retakeText}>Retake</Text>
                   </TouchableOpacity>
                 </View>
               ) : (
-                <TouchableOpacity
-                  style={styles.captureButton}
-                  onPress={async () => {
-                    try {
-                      const result = await ImagePicker.launchCameraAsync({
-                        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                        allowsEditing: false,
-                        quality: 0.7,
-                        base64: true,
-                      });
-                      if (!result.canceled && result.assets[0]) {
-                        const imageData = `data:image/jpeg;base64,${result.assets[0].base64}`;
-                        saveComboAnswer(undefined, imageData);
-                      }
-                    } catch (err) {
-                      Alert.alert('Error', 'Failed to capture image');
-                    }
-                  }}
-                >
+                <TouchableOpacity style={styles.captureButton} onPress={() => handleComboMediaCapture(question.id, field, 'photo')}>
                   <Ionicons name="camera" size={40} color={colors.primary} />
                   <Text style={styles.captureText}>Take Photo</Text>
                 </TouchableOpacity>
@@ -516,38 +433,23 @@ export default function CategoryQuestionsScreen() {
           </View>
         );
       
-      // Multiple Choice + Video: Show both MCQ options and video capture
       case 'multiple_choice_video':
         return (
           <View style={styles.comboContainer}>
-            {/* Multiple Choice Options */}
             <View style={styles.optionsContainer}>
               {opts.map((option: string, idx: number) => (
                 <TouchableOpacity
                   key={idx}
-                  style={[
-                    styles.optionButton,
-                    selection === option && styles.optionButtonSelected,
-                  ]}
-                  onPress={() => saveComboAnswer(option, undefined)}
+                  style={[styles.optionButton, selection === option && styles.optionButtonSelected]}
+                  onPress={() => handleComboOptionSelect(question.id, option, field)}
                 >
-                  <View style={[
-                    styles.optionRadio,
-                    selection === option && styles.optionRadioSelected
-                  ]}>
-                    {selection === option && (
-                      <View style={styles.optionRadioInner} />
-                    )}
+                  <View style={[styles.optionRadio, selection === option && styles.optionRadioSelected]}>
+                    {selection === option && <View style={styles.optionRadioInner} />}
                   </View>
-                  <Text style={[
-                    styles.optionText,
-                    selection === option && styles.optionTextSelected
-                  ]}>{option}</Text>
+                  <Text style={[styles.optionText, selection === option && styles.optionTextSelected]}>{option}</Text>
                 </TouchableOpacity>
               ))}
             </View>
-            
-            {/* Video Capture Section */}
             <View style={styles.comboMediaSection}>
               <Text style={styles.comboMediaLabel}>Video Required (Max {question.video_max_duration || 45}s)</Text>
               {mediaData ? (
@@ -556,47 +458,13 @@ export default function CategoryQuestionsScreen() {
                     <Ionicons name="videocam" size={40} color={colors.success} />
                     <Text style={styles.videoRecordedText}>Video Recorded</Text>
                   </View>
-                  <TouchableOpacity
-                    style={styles.retakeButton}
-                    onPress={async () => {
-                      try {
-                        const result = await ImagePicker.launchCameraAsync({
-                          mediaTypes: ImagePicker.MediaTypeOptions.Videos,
-                          allowsEditing: true,
-                          quality: 0.7,
-                          videoMaxDuration: question.video_max_duration || 45,
-                        });
-                        if (!result.canceled && result.assets[0]) {
-                          saveComboAnswer(undefined, result.assets[0].uri);
-                        }
-                      } catch (err) {
-                        Alert.alert('Error', 'Failed to capture video');
-                      }
-                    }}
-                  >
+                  <TouchableOpacity style={styles.retakeButton} onPress={() => handleComboMediaCapture(question.id, field, 'video', question.video_max_duration)}>
                     <Ionicons name="videocam" size={18} color="#fff" />
-                    <Text style={styles.retakeText}>Retake Video</Text>
+                    <Text style={styles.retakeText}>Retake</Text>
                   </TouchableOpacity>
                 </View>
               ) : (
-                <TouchableOpacity
-                  style={styles.captureButton}
-                  onPress={async () => {
-                    try {
-                      const result = await ImagePicker.launchCameraAsync({
-                        mediaTypes: ImagePicker.MediaTypeOptions.Videos,
-                        allowsEditing: true,
-                        quality: 0.7,
-                        videoMaxDuration: question.video_max_duration || 45,
-                      });
-                      if (!result.canceled && result.assets[0]) {
-                        saveComboAnswer(undefined, result.assets[0].uri);
-                      }
-                    } catch (err) {
-                      Alert.alert('Error', 'Failed to capture video');
-                    }
-                  }}
-                >
+                <TouchableOpacity style={styles.captureButton} onPress={() => handleComboMediaCapture(question.id, field, 'video', question.video_max_duration)}>
                   <Ionicons name="videocam" size={40} color={colors.primary} />
                   <Text style={styles.captureText}>Record Video</Text>
                 </TouchableOpacity>
@@ -609,20 +477,14 @@ export default function CategoryQuestionsScreen() {
         return (
           <View style={styles.yesNoContainer}>
             <TouchableOpacity
-              style={[
-                styles.yesNoButton,
-                currentAnswer === 'Yes' && styles.yesButtonSelected,
-              ]}
+              style={[styles.yesNoButton, currentAnswer === 'Yes' && styles.yesButtonSelected]}
               onPress={() => handleOptionSelect(question.id, 'Yes', field)}
             >
               <Ionicons name="checkmark-circle" size={24} color={currentAnswer === 'Yes' ? '#fff' : colors.success} />
               <Text style={[styles.yesNoText, currentAnswer === 'Yes' && styles.yesNoTextSelected]}>Yes</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[
-                styles.yesNoButton,
-                currentAnswer === 'No' && styles.noButtonSelected,
-              ]}
+              style={[styles.yesNoButton, currentAnswer === 'No' && styles.noButtonSelected]}
               onPress={() => handleOptionSelect(question.id, 'No', field)}
             >
               <Ionicons name="close-circle" size={24} color={currentAnswer === 'No' ? '#fff' : colors.danger} />
@@ -637,19 +499,13 @@ export default function CategoryQuestionsScreen() {
             {currentAnswer ? (
               <View style={styles.mediaPreview}>
                 <Image source={{ uri: currentAnswer }} style={styles.previewImage} />
-                <TouchableOpacity
-                  style={styles.retakeButton}
-                  onPress={() => handleImageCapture(question.id, field)}
-                >
+                <TouchableOpacity style={styles.retakeButton} onPress={() => handleImageCapture(question.id, field)}>
                   <Ionicons name="camera" size={18} color="#fff" />
                   <Text style={styles.retakeText}>Retake Photo</Text>
                 </TouchableOpacity>
               </View>
             ) : (
-              <TouchableOpacity
-                style={styles.captureButton}
-                onPress={() => handleImageCapture(question.id, field)}
-              >
+              <TouchableOpacity style={styles.captureButton} onPress={() => handleImageCapture(question.id, field)}>
                 <Ionicons name="camera" size={40} color={colors.primary} />
                 <Text style={styles.captureText}>Take Photo</Text>
               </TouchableOpacity>
@@ -666,19 +522,13 @@ export default function CategoryQuestionsScreen() {
                   <Ionicons name="videocam" size={40} color={colors.success} />
                   <Text style={styles.videoRecordedText}>Video Recorded</Text>
                 </View>
-                <TouchableOpacity
-                  style={styles.retakeButton}
-                  onPress={() => handleVideoCapture(question.id, question.video_max_duration || 45, field)}
-                >
+                <TouchableOpacity style={styles.retakeButton} onPress={() => handleVideoCapture(question.id, question.video_max_duration || 45, field)}>
                   <Ionicons name="videocam" size={18} color="#fff" />
                   <Text style={styles.retakeText}>Retake Video</Text>
                 </TouchableOpacity>
               </View>
             ) : (
-              <TouchableOpacity
-                style={styles.captureButton}
-                onPress={() => handleVideoCapture(question.id, question.video_max_duration || 45, field)}
-              >
+              <TouchableOpacity style={styles.captureButton} onPress={() => handleVideoCapture(question.id, question.video_max_duration || 45, field)}>
                 <Ionicons name="videocam" size={40} color={colors.primary} />
                 <Text style={styles.captureText}>Record Video</Text>
                 <Text style={styles.captureSubtext}>Max {question.video_max_duration || 45}s</Text>
@@ -693,7 +543,7 @@ export default function CategoryQuestionsScreen() {
           <TextInput
             style={styles.textInput}
             value={currentAnswer || ''}
-            onChangeText={(text) => saveAnswer(question.id, text, field)}
+            onChangeText={(text) => updateDraftAnswer(question.id, text, field)}
             placeholder="Enter your answer..."
             placeholderTextColor={colors.textSecondary}
             multiline
@@ -703,12 +553,12 @@ export default function CategoryQuestionsScreen() {
   };
 
   const renderQuestion = (question: Question, index: number) => {
-    const currentAnswer = answers[question.id];
+    const currentAnswer = draftAnswers[question.id];
     const isAnswered = !!currentAnswer?.answer;
+    const isDraft = currentAnswer?.isDraft;
 
     return (
-      <View key={question.id} style={[styles.questionCard, isAnswered && styles.questionAnswered]}>
-        {/* Main Question */}
+      <View key={question.id} style={[styles.questionCard, isAnswered && styles.questionAnswered, isDraft && styles.questionDraft]}>
         <View style={styles.questionHeader}>
           <View style={[styles.questionNumberBadge, isAnswered && styles.questionNumberBadgeAnswered]}>
             {isAnswered ? (
@@ -719,9 +569,8 @@ export default function CategoryQuestionsScreen() {
           </View>
           <View style={styles.questionTextContainer}>
             <Text style={styles.questionText}>{question.question}</Text>
-            {question.is_mandatory && (
-              <Text style={styles.mandatoryBadge}>Required</Text>
-            )}
+            {question.is_mandatory && <Text style={styles.mandatoryBadge}>Required</Text>}
+            {isDraft && <Text style={styles.draftBadge}>Draft</Text>}
           </View>
         </View>
 
@@ -729,40 +578,30 @@ export default function CategoryQuestionsScreen() {
           {renderAnswerInput(question, currentAnswer?.answer, 'answer')}
         </View>
 
-        {/* Sub Question 1 */}
         {question.sub_question_1 && (
           <View style={styles.subQuestionContainer}>
             <Text style={styles.subQuestionText}>{question.sub_question_1}</Text>
             <View style={styles.answerContainer}>
-              {renderAnswerInput(
-                question, 
-                currentAnswer?.sub_answer_1, 
-                'sub_answer_1',
-                question.sub_answer_type_1,
-                question.sub_options_1
-              )}
+              {renderAnswerInput(question, currentAnswer?.sub_answer_1, 'sub_answer_1', question.sub_answer_type_1, question.sub_options_1)}
             </View>
           </View>
         )}
 
-        {/* Sub Question 2 */}
         {question.sub_question_2 && (
           <View style={styles.subQuestionContainer}>
             <Text style={styles.subQuestionText}>{question.sub_question_2}</Text>
             <View style={styles.answerContainer}>
-              {renderAnswerInput(
-                question, 
-                currentAnswer?.sub_answer_2, 
-                'sub_answer_2',
-                question.sub_answer_type_2,
-                question.sub_options_2
-              )}
+              {renderAnswerInput(question, currentAnswer?.sub_answer_2, 'sub_answer_2', question.sub_answer_type_2, question.sub_options_2)}
             </View>
           </View>
         )}
       </View>
     );
   };
+
+  // Calculate progress
+  const answeredCount = questions.filter(q => draftAnswers[q.id]?.answer).length;
+  const progressPercent = questions.length > 0 ? Math.round((answeredCount / questions.length) * 100) : 0;
 
   if (isLoading) {
     return (
@@ -775,7 +614,6 @@ export default function CategoryQuestionsScreen() {
     );
   }
 
-  // Show error if params are missing after loading completes
   if (!inspectionId || !categoryId) {
     return (
       <SafeAreaView style={styles.container}>
@@ -789,14 +627,6 @@ export default function CategoryQuestionsScreen() {
         <View style={styles.emptyContainer}>
           <Ionicons name="alert-circle" size={48} color={colors.danger} />
           <Text style={styles.emptyText}>Invalid navigation parameters</Text>
-          <Text style={styles.emptySubtext}>Inspection: {inspectionId || 'missing'}</Text>
-          <Text style={styles.emptySubtext}>Category: {categoryId || 'missing'}</Text>
-          <TouchableOpacity 
-            style={{ marginTop: 20, padding: 12, backgroundColor: colors.primary, borderRadius: 8 }}
-            onPress={() => router.back()}
-          >
-            <Text style={{ color: '#fff', fontWeight: '600' }}>Go Back</Text>
-          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -806,67 +636,53 @@ export default function CategoryQuestionsScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => {
+          if (hasUnsavedChanges) {
+            Alert.alert(
+              'Unsaved Changes',
+              'You have unsaved answers. Do you want to save before leaving?',
+              [
+                { text: 'Discard', style: 'destructive', onPress: () => router.back() },
+                { text: 'Save & Exit', onPress: saveAllAnswers },
+                { text: 'Cancel', style: 'cancel' },
+              ]
+            );
+          } else {
+            router.back();
+          }
+        }} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <View style={styles.headerTitleContainer}>
           <Text style={styles.headerTitle} numberOfLines={1}>{categoryName}</Text>
           <Text style={styles.headerSubtitle}>
-            {savedCount} of {questions.length} answered
+            {answeredCount} of {questions.length} answered
+            {hasUnsavedChanges && ' • Unsaved'}
           </Text>
         </View>
-        {isSaving && (
-          <View style={styles.savingBadge}>
-            <ActivityIndicator size="small" color="#fff" />
-            <Text style={styles.savingText}>Saving</Text>
-          </View>
-        )}
-        {/* Debug Logs Button */}
-        <TouchableOpacity 
-          style={styles.logsButton} 
-          onPress={() => setShowLogs(true)}
-        >
+        <TouchableOpacity style={styles.logsButton} onPress={() => setShowLogs(true)}>
           <Ionicons name="bug-outline" size={20} color={colors.warning} />
         </TouchableOpacity>
       </View>
 
       {/* Log Viewer Modal */}
-      <LogViewer 
-        visible={showLogs} 
-        onClose={() => setShowLogs(false)}
-        inspectionId={inspectionId || undefined}
-      />
+      <LogViewer visible={showLogs} onClose={() => setShowLogs(false)} inspectionId={inspectionId || undefined} />
 
       {/* Progress Bar */}
       <View style={styles.progressBarContainer}>
         <View style={styles.progressBarBg}>
-          <View 
-            style={[
-              styles.progressBarFill, 
-              { width: `${questions.length > 0 ? (savedCount / questions.length) * 100 : 0}%` }
-            ]} 
-          />
+          <View style={[styles.progressBarFill, { width: `${progressPercent}%` }]} />
         </View>
-        <Text style={styles.progressText}>
-          {questions.length > 0 ? Math.round((savedCount / questions.length) * 100) : 0}% Complete
-        </Text>
+        <Text style={styles.progressText}>{progressPercent}% Complete</Text>
       </View>
 
       {/* Questions List */}
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
-      >
-        <ScrollView 
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {questions.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Ionicons name="document-text-outline" size={48} color={colors.textSecondary} />
               <Text style={styles.emptyText}>No questions in this category</Text>
-              <Text style={styles.emptySubtext}>Category ID: {categoryId}</Text>
             </View>
           ) : (
             questions.map((question, index) => renderQuestion(question, index))
@@ -874,23 +690,26 @@ export default function CategoryQuestionsScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Done Button */}
+      {/* Save & Next Button */}
       <View style={styles.footer}>
         <TouchableOpacity
-          style={[
-            styles.doneButton,
-            savedCount === questions.length && questions.length > 0 && styles.doneButtonComplete
-          ]}
-          onPress={() => router.back()}
+          style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
+          onPress={saveAllAnswers}
+          disabled={isSaving}
         >
-          <Ionicons 
-            name={savedCount === questions.length && questions.length > 0 ? "checkmark-circle" : "arrow-back"} 
-            size={22} 
-            color="#fff" 
-          />
-          <Text style={styles.doneButtonText}>
-            {savedCount === questions.length && questions.length > 0 ? 'Category Complete!' : 'Back to Categories'}
-          </Text>
+          {isSaving ? (
+            <>
+              <ActivityIndicator size="small" color="#fff" />
+              <Text style={styles.saveButtonText}>Saving...</Text>
+            </>
+          ) : (
+            <>
+              <Ionicons name={hasUnsavedChanges ? "save" : "checkmark-circle"} size={22} color="#fff" />
+              <Text style={styles.saveButtonText}>
+                {hasUnsavedChanges ? 'Save & Next' : 'Done'}
+              </Text>
+            </>
+          )}
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -898,20 +717,9 @@ export default function CategoryQuestionsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: colors.textSecondary,
-  },
+  container: { flex: 1, backgroundColor: colors.background },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingText: { marginTop: 12, fontSize: 16, color: colors.textSecondary },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -921,89 +729,19 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  backButton: {
-    padding: 8,
-    marginRight: 8,
-  },
-  headerTitleContainer: {
-    flex: 1,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  headerSubtitle: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  savingBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.primary,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 16,
-    gap: 6,
-  },
-  savingText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  logsButton: {
-    padding: 8,
-    marginLeft: 8,
-    backgroundColor: '#FEF3C7',
-    borderRadius: 20,
-  },
-  progressBarContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: colors.cardBg,
-  },
-  progressBarBg: {
-    height: 8,
-    backgroundColor: colors.border,
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  progressBarFill: {
-    height: '100%',
-    backgroundColor: colors.success,
-    borderRadius: 4,
-  },
-  progressText: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    marginTop: 6,
-    textAlign: 'right',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 100,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 60,
-  },
-  emptyText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: colors.textSecondary,
-  },
-  emptySubtext: {
-    marginTop: 4,
-    fontSize: 12,
-    color: colors.textSecondary,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-  },
+  backButton: { padding: 8, marginRight: 8 },
+  headerTitleContainer: { flex: 1 },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
+  headerSubtitle: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
+  logsButton: { padding: 8, marginLeft: 8, backgroundColor: '#FEF3C7', borderRadius: 20 },
+  progressBarContainer: { paddingHorizontal: 16, paddingVertical: 12, backgroundColor: colors.cardBg },
+  progressBarBg: { height: 8, backgroundColor: colors.border, borderRadius: 4, overflow: 'hidden' },
+  progressBarFill: { height: '100%', backgroundColor: colors.success, borderRadius: 4 },
+  progressText: { fontSize: 12, color: colors.textSecondary, marginTop: 6, textAlign: 'right' },
+  scrollView: { flex: 1 },
+  scrollContent: { padding: 16, paddingBottom: 100 },
+  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 60 },
+  emptyText: { marginTop: 12, fontSize: 16, color: colors.textSecondary },
   questionCard: {
     backgroundColor: colors.cardBg,
     borderRadius: 16,
@@ -1017,14 +755,9 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
-  questionAnswered: {
-    borderColor: colors.success,
-  },
-  questionHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 16,
-  },
+  questionAnswered: { borderColor: colors.success },
+  questionDraft: { borderColor: colors.warning },
+  questionHeader: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 16 },
   questionNumberBadge: {
     width: 32,
     height: 32,
@@ -1034,60 +767,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
-  questionNumberBadgeAnswered: {
-    backgroundColor: colors.success,
-  },
-  questionNumber: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  questionTextContainer: {
-    flex: 1,
-  },
-  questionText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    lineHeight: 24,
-  },
-  mandatoryBadge: {
-    fontSize: 11,
-    color: colors.danger,
-    fontWeight: '600',
-    marginTop: 4,
-  },
-  answerContainer: {
-    marginTop: 8,
-  },
-  subQuestionContainer: {
-    marginTop: 20,
-    paddingTop: 20,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  subQuestionText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: colors.textSecondary,
-    marginBottom: 12,
-  },
-  // Combo container styles (MCQ + Photo/Video)
-  comboContainer: {
-    gap: 20,
-  },
-  comboMediaSection: {
-    marginTop: 8,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  comboMediaLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 12,
-  },
+  questionNumberBadgeAnswered: { backgroundColor: colors.success },
+  questionNumber: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  questionTextContainer: { flex: 1 },
+  questionText: { fontSize: 16, fontWeight: '600', color: colors.text, lineHeight: 24 },
+  mandatoryBadge: { fontSize: 11, color: colors.danger, fontWeight: '600', marginTop: 4 },
+  draftBadge: { fontSize: 11, color: colors.warning, fontWeight: '600', marginTop: 2 },
+  answerContainer: { marginTop: 8 },
+  subQuestionContainer: { marginTop: 20, paddingTop: 20, borderTopWidth: 1, borderTopColor: colors.border },
+  subQuestionText: { fontSize: 14, fontWeight: '500', color: colors.textSecondary, marginBottom: 12 },
+  comboContainer: { gap: 20 },
+  comboMediaSection: { marginTop: 8, paddingTop: 16, borderTopWidth: 1, borderTopColor: colors.border },
+  comboMediaLabel: { fontSize: 14, fontWeight: '600', color: colors.text, marginBottom: 12 },
   emptyOptionsContainer: {
     padding: 16,
     backgroundColor: colors.background,
@@ -1096,14 +787,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     alignItems: 'center',
   },
-  emptyOptionsText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    fontStyle: 'italic',
-  },
-  optionsContainer: {
-    gap: 10,
-  },
+  emptyOptionsText: { fontSize: 14, color: colors.textSecondary, fontStyle: 'italic' },
+  optionsContainer: { gap: 10 },
   optionButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1113,10 +798,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.border,
   },
-  optionButtonSelected: {
-    borderColor: colors.primary,
-    backgroundColor: '#EFF6FF',
-  },
+  optionButtonSelected: { borderColor: colors.primary, backgroundColor: '#EFF6FF' },
   optionRadio: {
     width: 22,
     height: 22,
@@ -1127,28 +809,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  optionRadioSelected: {
-    borderColor: colors.primary,
-  },
-  optionRadioInner: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: colors.primary,
-  },
-  optionText: {
-    flex: 1,
-    fontSize: 15,
-    color: colors.text,
-  },
-  optionTextSelected: {
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  yesNoContainer: {
-    flexDirection: 'row',
-    gap: 12,
-  },
+  optionRadioSelected: { borderColor: colors.primary },
+  optionRadioInner: { width: 12, height: 12, borderRadius: 6, backgroundColor: colors.primary },
+  optionText: { flex: 1, fontSize: 15, color: colors.text },
+  optionTextSelected: { color: colors.primary, fontWeight: '600' },
+  yesNoContainer: { flexDirection: 'row', gap: 12 },
   yesNoButton: {
     flex: 1,
     flexDirection: 'row',
@@ -1161,25 +826,11 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     gap: 8,
   },
-  yesButtonSelected: {
-    backgroundColor: colors.success,
-    borderColor: colors.success,
-  },
-  noButtonSelected: {
-    backgroundColor: colors.danger,
-    borderColor: colors.danger,
-  },
-  yesNoText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  yesNoTextSelected: {
-    color: '#fff',
-  },
-  mediaContainer: {
-    alignItems: 'center',
-  },
+  yesButtonSelected: { backgroundColor: colors.success, borderColor: colors.success },
+  noButtonSelected: { backgroundColor: colors.danger, borderColor: colors.danger },
+  yesNoText: { fontSize: 16, fontWeight: '600', color: colors.text },
+  yesNoTextSelected: { color: '#fff' },
+  mediaContainer: { alignItems: 'center' },
   captureButton: {
     width: '100%',
     padding: 32,
@@ -1191,25 +842,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  captureText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.primary,
-  },
-  captureSubtext: {
-    fontSize: 12,
-    color: colors.textSecondary,
-  },
-  mediaPreview: {
-    width: '100%',
-    alignItems: 'center',
-  },
-  previewImage: {
-    width: '100%',
-    height: 200,
-    borderRadius: 12,
-    backgroundColor: colors.background,
-  },
+  captureText: { fontSize: 16, fontWeight: '600', color: colors.primary },
+  captureSubtext: { fontSize: 12, color: colors.textSecondary },
+  mediaPreview: { width: '100%', alignItems: 'center' },
+  previewImage: { width: '100%', height: 200, borderRadius: 12, backgroundColor: colors.background },
   videoPlaceholder: {
     width: '100%',
     height: 150,
@@ -1219,11 +855,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  videoRecordedText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.success,
-  },
+  videoRecordedText: { fontSize: 14, fontWeight: '600', color: colors.success },
   retakeButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1234,11 +866,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     gap: 8,
   },
-  retakeText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
+  retakeText: { color: '#fff', fontSize: 14, fontWeight: '600' },
   textInput: {
     backgroundColor: colors.background,
     borderRadius: 12,
@@ -1250,27 +878,16 @@ const styles = StyleSheet.create({
     minHeight: 100,
     textAlignVertical: 'top',
   },
-  footer: {
-    padding: 16,
-    backgroundColor: colors.cardBg,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  doneButton: {
+  footer: { padding: 16, backgroundColor: colors.cardBg, borderTopWidth: 1, borderTopColor: colors.border },
+  saveButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary,
+    backgroundColor: colors.success,
     paddingVertical: 16,
     borderRadius: 12,
     gap: 10,
   },
-  doneButtonComplete: {
-    backgroundColor: colors.success,
-  },
-  doneButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
+  saveButtonDisabled: { backgroundColor: colors.textSecondary },
+  saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 });
