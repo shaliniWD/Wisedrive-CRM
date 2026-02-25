@@ -239,17 +239,27 @@ const InspectionCard = ({
         )}
         
         {inspection.status === 'ACCEPTED' && (
-          <TouchableOpacity onPress={onStart} activeOpacity={0.9} style={styles.startBtnWrapper}>
-            <LinearGradient
-              colors={[Colors.gradientStart, Colors.gradientEnd]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.startBtn}
+          <View style={styles.acceptedActions}>
+            <TouchableOpacity 
+              onPress={() => handleNavigate(inspection)} 
+              activeOpacity={0.8} 
+              style={styles.mapBtn}
             >
-              <Text style={styles.startBtnText}>Start Inspection</Text>
-              <Ionicons name="arrow-forward" size={18} color="#FFF" />
-            </LinearGradient>
-          </TouchableOpacity>
+              <Ionicons name="navigate" size={18} color={Colors.primary} />
+              <Text style={styles.mapBtnText}>Navigate</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={onStart} activeOpacity={0.9} style={styles.startBtnWrapper}>
+              <LinearGradient
+                colors={[Colors.gradientStart, Colors.gradientEnd]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.startBtn}
+              >
+                <Text style={styles.startBtnText}>Start Inspection</Text>
+                <Ionicons name="arrow-forward" size={18} color="#FFF" />
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
         )}
         
         {(inspection.status === 'COMPLETED' || inspection.status === 'REJECTED') && (
