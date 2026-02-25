@@ -1574,7 +1574,7 @@ export default function InspectionsPage() {
                   const isPendingPayment = !isFullyPaid;
                   
                   return (
-                  <tr key={inspection.id} className={`hover:bg-slate-50 transition-colors ${isPendingPayment ? 'bg-amber-50/50' : ''}`} data-testid={`inspection-row-${inspection.id}`}>
+                  <tr key={inspection.id} className={`hover:bg-slate-50 transition-colors ${isPendingPayment ? 'bg-amber-50' : ''}`} data-testid={`inspection-row-${inspection.id}`}>
                     {/* Date/Time Column */}
                     <td className="px-2 py-2">
                       <div className="flex flex-col">
