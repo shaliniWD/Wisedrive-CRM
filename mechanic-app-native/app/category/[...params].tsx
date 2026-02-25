@@ -17,6 +17,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { inspectionsApi } from '../../src/lib/api';
+import { debugLogger } from '../../src/lib/logger';
+import LogViewer from '../../src/components/LogViewer';
 
 interface Question {
   id: string;
