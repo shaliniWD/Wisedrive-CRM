@@ -168,7 +168,8 @@ export default function CategoryQuestionsScreen() {
     setIsSaving(true);
     try {
       // Get current answers from state synchronously
-      let currentQuestionAnswers = { ...answers[questionId] } || {};
+      const existing = answers[questionId] || {};
+      const currentQuestionAnswers: Record<string, any> = { ...existing };
       
       // Update the specific field
       currentQuestionAnswers[field] = answerData;
@@ -177,7 +178,7 @@ export default function CategoryQuestionsScreen() {
       // Update local state
       const newAnswers = {
         ...answers,
-        [questionId]: currentQuestionAnswers
+        [questionId]: currentQuestionAnswers as Answer
       };
       setAnswers(newAnswers);
       
