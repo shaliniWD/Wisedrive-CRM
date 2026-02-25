@@ -429,6 +429,33 @@ export default function CategoryQuestionsScreen() {
     );
   }
 
+  // Show error if params are missing after loading completes
+  if (!inspectionId || !categoryId) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Error</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        <View style={styles.emptyContainer}>
+          <Ionicons name="alert-circle" size={48} color={colors.danger} />
+          <Text style={styles.emptyText}>Invalid navigation parameters</Text>
+          <Text style={styles.emptySubtext}>Inspection: {inspectionId || 'missing'}</Text>
+          <Text style={styles.emptySubtext}>Category: {categoryId || 'missing'}</Text>
+          <TouchableOpacity 
+            style={{ marginTop: 20, padding: 12, backgroundColor: colors.primary, borderRadius: 8 }}
+            onPress={() => router.back()}
+          >
+            <Text style={{ color: '#fff', fontWeight: '600' }}>Go Back</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
