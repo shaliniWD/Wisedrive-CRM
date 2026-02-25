@@ -1430,14 +1430,14 @@ export default function InspectionsPage() {
             <thead>
               <tr className="bg-slate-50 border-b">
                 <th className="px-2 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[90px]">Date/Time</th>
-                <th className="px-2 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[160px]">Customer</th>
+                <th className="px-2 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[180px]">Customer</th>
                 <th className="px-2 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[110px]">Vehicle</th>
-                <th className="px-2 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[80px]">Payment</th>
-                <th className="px-2 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[150px]">Status</th>
-                <th className="px-2 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[120px]">Mechanic</th>
+                <th className="px-2 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[130px]">Status</th>
+                <th className="px-2 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[160px]">Mechanic</th>
                 <th className="px-2 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[100px]">Location</th>
                 <th className="px-2 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[70px]">Report</th>
-                <th className="px-2 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[60px]">Actions</th>
+                <th className="px-2 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[50px]">Edit</th>
+                <th className="px-2 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap w-[50px]">More</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -1452,14 +1452,14 @@ export default function InspectionsPage() {
                 </tr>
               ) : inspections.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-12">
+                  <td colSpan={9} className="text-center py-12">
                     <ClipboardCheck className="h-12 w-12 text-gray-300 mx-auto mb-3" />
                     <p className="text-gray-500">No scheduled inspections</p>
                   </td>
                 </tr>
               ) : filteredInspections.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-12">
+                  <td colSpan={9} className="text-center py-12">
                     <ClipboardCheck className="h-12 w-12 text-gray-300 mx-auto mb-3" />
                     <p className="text-gray-500">No inspections match the filter</p>
                   </td>
@@ -1473,9 +1473,10 @@ export default function InspectionsPage() {
                   const hasBalanceDue = actualBalanceDue > 0 && isPartialPayment;
                   const isCompleted = inspection.inspection_status === 'INSPECTION_COMPLETED';
                   const canSendReport = isFullyPaid && isCompleted;
+                  const isPendingPayment = !isFullyPaid;
                   
                   return (
-                  <tr key={inspection.id} className="hover:bg-slate-50 transition-colors" data-testid={`inspection-row-${inspection.id}`}>
+                  <tr key={inspection.id} className={`hover:bg-slate-50 transition-colors ${isPendingPayment ? 'bg-amber-50/50' : ''}`} data-testid={`inspection-row-${inspection.id}`}>
                     {/* Date/Time Column */}
                     <td className="px-2 py-2">
                       <div className="flex flex-col">
