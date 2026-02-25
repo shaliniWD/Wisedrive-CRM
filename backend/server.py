@@ -14338,18 +14338,38 @@ async def mechanic_complete_inspection(
     if inspection.get("mechanic_id") != current_user["id"]:
         raise HTTPException(status_code=403, detail="You are not assigned to this inspection")
     
+    old_status = inspection.get("inspection_status", "INSPECTION_STARTED")
+    
     update_data = {
-        "inspection_status": "COMPLETED",
+        "inspection_status": "INSPECTION_COMPLETED",
         "completed_at": datetime.now(timezone.utc).isoformat(),
         "completed_by": current_user["id"],
+        "completed_by_name": current_user.get("name", ""),
         "updated_at": datetime.now(timezone.utc).isoformat()
     }
     
     await db.inspections.update_one({"id": inspection_id}, {"$set": update_data})
     
+    # Log activity
+    activity = {
+        "id": str(uuid.uuid4()),
+        "inspection_id": inspection_id,
+        "user_id": current_user["id"],
+        "user_name": current_user.get("name", "Unknown"),
+        "user_role": "mechanic",
+        "action": "inspection_completed",
+        "action_label": "Inspection Completed",
+        "details": f"Mechanic {current_user.get('name', 'Unknown')} completed the inspection",
+        "old_value": old_status,
+        "new_value": "INSPECTION_COMPLETED",
+        "source": "MECHANIC_APP",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.inspection_activities.insert_one(activity)
+    
     return {
         "id": inspection_id,
-        "status": "COMPLETED",
+        "status": "INSPECTION_COMPLETED",
         "message": "Inspection completed successfully"
     }
 
