@@ -262,6 +262,30 @@ const InspectionCard = ({
           </View>
         )}
         
+        {inspection.status === 'IN_PROGRESS' && (
+          <View style={styles.acceptedActions}>
+            <TouchableOpacity 
+              onPress={() => openMapsNavigation(inspection)} 
+              activeOpacity={0.8} 
+              style={styles.mapBtn}
+            >
+              <Ionicons name="navigate" size={18} color={Colors.primary} />
+              <Text style={styles.mapBtnText}>Navigate</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={onStart} activeOpacity={0.9} style={styles.startBtnWrapper}>
+              <LinearGradient
+                colors={['#F59E0B', '#D97706']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.startBtn}
+              >
+                <Text style={styles.startBtnText}>Continue</Text>
+                <Ionicons name="arrow-forward" size={18} color="#FFF" />
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        )}
+        
         {(inspection.status === 'COMPLETED' || inspection.status === 'REJECTED') && (
           <View style={styles.statusRow}>
             <Ionicons 
