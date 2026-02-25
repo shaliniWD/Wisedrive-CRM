@@ -1601,86 +1601,96 @@ export default function InspectionsPage() {
                       </div>
                     </td>
                     
-                    {/* Actions Column - Consolidated Edit Actions */}
+                    {/* Actions Column - Dropdown Menu */}
                     <td className="px-4 py-3">
-                      <div className="flex items-center justify-center gap-1">
-                        {/* Edit Schedule */}
-                        <button 
-                          onClick={() => {
-                            setScheduleEditInspection(inspection);
-                            setNewScheduleDate(inspection.scheduled_date || '');
-                            setNewScheduleTime(inspection.scheduled_time || '');
-                            setIsScheduleModalOpen(true);
-                          }}
-                          className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="Edit Date/Time"
-                          data-testid={`edit-schedule-${inspection.id}`}
-                        >
-                          <CalendarClock className="h-4 w-4" />
-                        </button>
-                        {/* Edit Vehicle */}
-                        <button 
-                          onClick={() => {
-                            setVehicleEditInspection(inspection);
-                            setNewVehicleNumber(inspection.car_number || '');
-                            setVehicleData(null);
-                            setIsVehicleModalOpen(true);
-                          }}
-                          className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="Edit Vehicle"
-                          data-testid={`edit-vehicle-${inspection.id}`}
-                        >
-                          <Car className="h-4 w-4" />
-                        </button>
-                        {/* Edit Location */}
-                        <button 
-                          onClick={() => {
-                            setLocationEditInspection(inspection);
-                            setIsLocationModalOpen(true);
-                          }}
-                          className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="Edit Location"
-                          data-testid={`edit-location-${inspection.id}`}
-                        >
-                          <MapPin className="h-4 w-4" />
-                        </button>
-                        {/* Assign Mechanic */}
-                        <button 
-                          onClick={() => {
-                            setMechanicEditInspection(inspection);
-                            setSelectedMechanicId(inspection.mechanic_id || '');
-                            setIsMechanicModalOpen(true);
-                          }}
-                          className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title={inspection.mechanic_name ? "Reassign Mechanic" : "Assign Mechanic"}
-                          data-testid={`edit-mechanic-${inspection.id}`}
-                        >
-                          <User className="h-4 w-4" />
-                        </button>
-                        {/* Live Progress */}
-                        <button
-                          onClick={() => openLiveProgressModal(inspection)}
-                          className={`p-1.5 rounded-lg transition-colors ${
-                            ['INSPECTION_STARTED', 'IN_PROGRESS'].includes(inspection.inspection_status)
-                              ? 'text-green-600 bg-green-50 hover:bg-green-100'
-                              : 'text-gray-500 hover:text-blue-600 hover:bg-blue-50'
-                          }`}
-                          title="View Live Progress"
-                          data-testid={`live-progress-${inspection.id}`}
-                        >
-                          <Activity className={`h-4 w-4 ${
-                            ['INSPECTION_STARTED', 'IN_PROGRESS'].includes(inspection.inspection_status) ? 'animate-pulse' : ''
-                          }`} />
-                        </button>
-                        {/* Notes */}
-                        <button
-                          onClick={() => openNotesDrawer(inspection)}
-                          className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="Notes & Activity"
-                          data-testid={`notes-button-${inspection.id}`}
-                        >
-                          <StickyNote className="h-4 w-4" />
-                        </button>
+                      <div className="flex items-center justify-center">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              data-testid={`actions-menu-${inspection.id}`}
+                            >
+                              <MoreHorizontal className="h-5 w-5" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuItem
+                              onClick={() => handleViewReport(inspection)}
+                              className="cursor-pointer"
+                              data-testid={`action-view-details-${inspection.id}`}
+                            >
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => openLiveProgressModal(inspection)}
+                              className={`cursor-pointer ${['INSPECTION_STARTED', 'IN_PROGRESS'].includes(inspection.inspection_status) ? 'text-green-600' : ''}`}
+                              data-testid={`action-live-progress-${inspection.id}`}
+                            >
+                              <Activity className={`h-4 w-4 mr-2 ${['INSPECTION_STARTED', 'IN_PROGRESS'].includes(inspection.inspection_status) ? 'animate-pulse' : ''}`} />
+                              Live Progress
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setScheduleEditInspection(inspection);
+                                setNewScheduleDate(inspection.scheduled_date || '');
+                                setNewScheduleTime(inspection.scheduled_time || '');
+                                setIsScheduleModalOpen(true);
+                              }}
+                              className="cursor-pointer"
+                              data-testid={`action-edit-schedule-${inspection.id}`}
+                            >
+                              <CalendarClock className="h-4 w-4 mr-2" />
+                              Edit Date/Time
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setLocationEditInspection(inspection);
+                                setIsLocationModalOpen(true);
+                              }}
+                              className="cursor-pointer"
+                              data-testid={`action-edit-location-${inspection.id}`}
+                            >
+                              <MapPin className="h-4 w-4 mr-2" />
+                              Edit Location
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setVehicleEditInspection(inspection);
+                                setNewVehicleNumber(inspection.car_number || '');
+                                setVehicleData(null);
+                                setIsVehicleModalOpen(true);
+                              }}
+                              className="cursor-pointer"
+                              data-testid={`action-edit-vehicle-${inspection.id}`}
+                            >
+                              <Car className="h-4 w-4 mr-2" />
+                              Edit Vehicle
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setMechanicEditInspection(inspection);
+                                setSelectedMechanicId(inspection.mechanic_id || '');
+                                setIsMechanicModalOpen(true);
+                              }}
+                              className="cursor-pointer"
+                              data-testid={`action-assign-mechanic-${inspection.id}`}
+                            >
+                              <User className="h-4 w-4 mr-2" />
+                              {inspection.mechanic_name ? 'Reassign Mechanic' : 'Assign Mechanic'}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => openNotesDrawer(inspection)}
+                              className="cursor-pointer"
+                              data-testid={`action-notes-${inspection.id}`}
+                            >
+                              <StickyNote className="h-4 w-4 mr-2" />
+                              Notes & Activity
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </td>
                   </tr>
