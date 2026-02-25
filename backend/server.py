@@ -13889,10 +13889,10 @@ async def get_mechanic_inspections(
     # Filter by status (map mechanic app status to CRM status)
     status_map = {
         "NEW": ["NEW_INSPECTION", "ASSIGNED_TO_MECHANIC"],
-        "ACCEPTED": ["INSPECTION_CONFIRMED", "INSPECTION_STARTED"],
-        "IN_PROGRESS": ["INSPECTION_STARTED"],
-        "COMPLETED": ["INSPECTION_COMPLETED"],
-        "REJECTED": ["INSPECTION_CANCELLED", "INSPECTION_REJECTED"]
+        "ACCEPTED": ["INSPECTION_CONFIRMED", "INSPECTION_STARTED", "ACCEPTED", "IN_PROGRESS"],
+        "IN_PROGRESS": ["INSPECTION_STARTED", "IN_PROGRESS"],
+        "COMPLETED": ["INSPECTION_COMPLETED", "COMPLETED"],
+        "REJECTED": ["INSPECTION_CANCELLED", "INSPECTION_REJECTED", "REJECTED"]
     }
     
     if status:
