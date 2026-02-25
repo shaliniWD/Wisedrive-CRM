@@ -167,42 +167,49 @@ export default function CategoryQuestionsScreen() {
   const saveAnswer = async (questionId: string, answerData: any, field: string = 'answer') => {
     setIsSaving(true);
     try {
-      // Update local state first
-      setAnswers(prev => {
-        const existing = prev[questionId] || {};
-        return {
-          ...prev,
-          [questionId]: { 
-            ...existing, 
-            [field]: answerData, 
-            answered_at: new Date().toISOString() 
-          }
-        };
-      });
+      // Get current answers from state synchronously
+      let currentQuestionAnswers = { ...answers[questionId] } || {};
+      
+      // Update the specific field
+      currentQuestionAnswers[field] = answerData;
+      currentQuestionAnswers.answered_at = new Date().toISOString();
+      
+      // Update local state
+      const newAnswers = {
+        ...answers,
+        [questionId]: currentQuestionAnswers
+      };
+      setAnswers(newAnswers);
+      
+      // Prepare payload for backend - send all answer fields
+      const payload: any = {
+        question_id: questionId,
+        category_id: categoryId,
+      };
+      
+      // Include the appropriate answer field based on what was updated
+      if (field === 'answer') {
+        payload.answer = answerData;
+      } else if (field === 'sub_answer_1') {
+        payload.sub_answer_1 = answerData;
+      } else if (field === 'sub_answer_2') {
+        payload.sub_answer_2 = answerData;
+      }
+      
+      console.log('[CategoryScreen] Saving answer:', JSON.stringify(payload));
       
       // Save to backend
-      await inspectionsApi.saveProgress(inspectionId!, {
-        question_id: questionId,
-        answer: field === 'answer' ? answerData : answers[questionId]?.answer,
-        sub_answer_1: field === 'sub_answer_1' ? answerData : answers[questionId]?.sub_answer_1,
-        sub_answer_2: field === 'sub_answer_2' ? answerData : answers[questionId]?.sub_answer_2,
-        category_id: categoryId,
-      });
+      const response = await inspectionsApi.saveProgress(inspectionId!, payload);
+      console.log('[CategoryScreen] Save response:', JSON.stringify(response));
       
       // Update saved count
-      const newAnswers = { 
-        ...answers, 
-        [questionId]: { 
-          ...answers[questionId], 
-          [field]: answerData 
-        } 
-      };
       const savedInCategory = questions.filter(q => newAnswers[q.id]?.answer).length;
       setSavedCount(savedInCategory);
       
-    } catch (err) {
-      console.error('Error saving answer:', err);
-      Alert.alert('Error', 'Failed to save answer');
+    } catch (err: any) {
+      console.error('[CategoryScreen] Error saving answer:', err);
+      console.error('[CategoryScreen] Error details:', err.message, err.response?.data);
+      Alert.alert('Error', `Failed to save answer: ${err.response?.data?.detail || err.message || 'Unknown error'}`);
     } finally {
       setIsSaving(false);
     }
