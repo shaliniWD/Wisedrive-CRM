@@ -7,6 +7,8 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  Dimensions,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -15,6 +17,31 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useInspection } from '../src/context/InspectionContext';
 import { inspectionsApi } from '../src/lib/api';
 
+const { width } = Dimensions.get('window');
+
+// Modern Color Palette
+const Colors = {
+  primary: '#3B82F6',
+  primaryDark: '#2563EB',
+  primaryLight: '#EFF6FF',
+  secondary: '#8B5CF6',
+  accent: '#06B6D4',
+  success: '#10B981',
+  successLight: '#D1FAE5',
+  warning: '#F59E0B',
+  warningLight: '#FEF3C7',
+  error: '#EF4444',
+  background: '#F8FAFC',
+  surface: '#FFFFFF',
+  surfaceHover: '#F1F5F9',
+  textPrimary: '#0F172A',
+  textSecondary: '#475569',
+  textMuted: '#94A3B8',
+  border: '#E2E8F0',
+  gradient1: '#3B82F6',
+  gradient2: '#8B5CF6',
+};
+
 interface Category {
   id: string;
   name: string;
@@ -22,23 +49,30 @@ interface Category {
   questionsCount: number;
   completedCount: number;
   isCompleted: boolean;
+  order: number;
 }
 
 // Icon mapping for category names
-const CATEGORY_ICONS: { [key: string]: string } = {
-  'exterior': 'car-outline',
-  'interior': 'car-seat',
-  'engine': 'engine',
-  'engine bay': 'engine',
-  'underbody': 'car-lifted-pickup',
-  'electrical': 'lightning-bolt',
-  'tyres': 'tire',
-  'tyres & wheels': 'tire',
-  'wheels': 'tire',
-  'default': 'clipboard-check-outline',
+const CATEGORY_ICONS: { [key: string]: { name: string; type: 'ionicons' | 'material-community' } } = {
+  'general': { name: 'information-circle-outline', type: 'ionicons' },
+  'engine': { name: 'engine', type: 'material-community' },
+  'exterior': { name: 'car-outline', type: 'ionicons' },
+  'interior': { name: 'car-seat', type: 'material-community' },
+  'transmission': { name: 'cog-transfer-outline', type: 'material-community' },
+  'suspension': { name: 'car-lifted-pickup', type: 'material-community' },
+  'brakes': { name: 'car-brake-abs', type: 'material-community' },
+  'electrical': { name: 'flash-outline', type: 'ionicons' },
+  'tyres': { name: 'tire', type: 'material-community' },
+  'wheels': { name: 'tire', type: 'material-community' },
+  'steering': { name: 'steering', type: 'material-community' },
+  'ac': { name: 'snowflake', type: 'material-community' },
+  'climate': { name: 'thermometer', type: 'material-community' },
+  'safety': { name: 'shield-checkmark-outline', type: 'ionicons' },
+  'documents': { name: 'document-text-outline', type: 'ionicons' },
+  'default': { name: 'clipboard-list-outline', type: 'material-community' },
 };
 
-const getIconForCategory = (categoryName: string): string => {
+const getIconForCategory = (categoryName: string): { name: string; type: 'ionicons' | 'material-community' } => {
   const normalizedName = categoryName.toLowerCase();
   for (const [key, icon] of Object.entries(CATEGORY_ICONS)) {
     if (normalizedName.includes(key)) {
@@ -48,13 +82,25 @@ const getIconForCategory = (categoryName: string): string => {
   return CATEGORY_ICONS.default;
 };
 
+// Category colors for visual variety
+const CATEGORY_COLORS = [
+  { bg: '#EFF6FF', accent: '#3B82F6' },
+  { bg: '#F0FDF4', accent: '#22C55E' },
+  { bg: '#FEF3C7', accent: '#F59E0B' },
+  { bg: '#FDF4FF', accent: '#A855F7' },
+  { bg: '#ECFEFF', accent: '#06B6D4' },
+  { bg: '#FFF1F2', accent: '#F43F5E' },
+  { bg: '#F0FDFA', accent: '#14B8A6' },
+  { bg: '#FEF9C3', accent: '#EAB308' },
+];
+
 export default function InspectionCategoriesScreen() {
   const { currentInspectionId, currentInspection, clearInspection, obdScanResult } = useInspection();
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [templateName, setTemplateName] = useState<string>('');
   
-  // Derive OBD completion status from global context
   const obdCompleted = obdScanResult?.completed || false;
   const obdResults = obdScanResult;
 
@@ -77,40 +123,59 @@ export default function InspectionCategoriesScreen() {
       const data = await inspectionsApi.getQuestionnaire(currentInspectionId);
       console.log('Questionnaire data:', JSON.stringify(data, null, 2));
       
+      setTemplateName(data.inspection_template_name || '');
+      
       if (data && data.questions && Array.isArray(data.questions)) {
-        // Group questions by category
-        const categoryMap = new Map<string, { questions: any[], categoryId: string }>();
+        // Get category order from template
+        const categoryOrder = data.category_order || [];
+        const categoriesFromApi = data.categories || [];
         
-        data.questions.forEach((question: any) => {
-          const categoryName = question.category_name || question.category || 'General';
-          const categoryId = question.category_id || categoryName.toLowerCase().replace(/\s+/g, '-');
-          
-          if (!categoryMap.has(categoryName)) {
-            categoryMap.set(categoryName, { questions: [], categoryId });
-          }
-          categoryMap.get(categoryName)!.questions.push(question);
+        // Create category map with order
+        const categoryOrderMap = new Map<string, number>();
+        categoryOrder.forEach((catId: string, index: number) => {
+          categoryOrderMap.set(catId, index);
         });
         
-        // Convert to category array
+        // Create category name map
+        const categoryNameMap = new Map<string, string>();
+        categoriesFromApi.forEach((cat: any) => {
+          categoryNameMap.set(cat.id, cat.name);
+        });
+        
+        // Group questions by category
+        const categoryMap = new Map<string, { questions: any[], categoryId: string, categoryName: string }>();
+        
+        data.questions.forEach((question: any) => {
+          const categoryId = question.category_id || 'general';
+          const categoryName = question.category_name || categoryNameMap.get(categoryId) || 'General';
+          
+          if (!categoryMap.has(categoryId)) {
+            categoryMap.set(categoryId, { questions: [], categoryId, categoryName });
+          }
+          categoryMap.get(categoryId)!.questions.push(question);
+        });
+        
+        // Convert to category array with proper ordering
         const dynamicCategories: Category[] = [];
         categoryMap.forEach((value, key) => {
+          const order = categoryOrderMap.has(key) ? categoryOrderMap.get(key)! : 999;
           dynamicCategories.push({
-            id: value.categoryId,
-            name: key,
-            icon: getIconForCategory(key),
+            id: key,
+            name: value.categoryName,
+            icon: getIconForCategory(value.categoryName).name,
             questionsCount: value.questions.length,
             completedCount: 0,
             isCompleted: false,
+            order: order,
           });
         });
         
-        // Sort categories by question count (most questions first) or alphabetically
-        dynamicCategories.sort((a, b) => b.questionsCount - a.questionsCount);
+        // Sort by the category_order from template
+        dynamicCategories.sort((a, b) => a.order - b.order);
         
         setCategories(dynamicCategories);
-        console.log('Loaded', dynamicCategories.length, 'categories from questionnaire');
+        console.log('Loaded', dynamicCategories.length, 'categories in template order');
       } else {
-        console.warn('No questions in questionnaire response, using fallback');
         setLoadError('No questionnaire found for this inspection');
       }
     } catch (error: any) {
@@ -134,8 +199,8 @@ export default function InspectionCategoriesScreen() {
     if (!obdCompleted) {
       Alert.alert(
         'OBD Scan Required',
-        'Please complete the OBD scan first before proceeding with other inspections.',
-        [{ text: 'OK', style: 'default' }]
+        'Please complete the OBD-II diagnostic scan before proceeding with the inspection checklist.',
+        [{ text: 'OK' }]
       );
       return;
     }
@@ -149,7 +214,6 @@ export default function InspectionCategoriesScreen() {
     }
 
     try {
-      // Submit inspection results
       await inspectionsApi.completeInspection(currentInspectionId!);
       Alert.alert('Success', 'Inspection submitted successfully!', [
         { text: 'OK', onPress: () => {
@@ -162,34 +226,25 @@ export default function InspectionCategoriesScreen() {
     }
   };
 
-  const getIconComponent = (iconName: string) => {
-    const iconProps = { size: 24, color: '#3B82F6' };
-    switch (iconName) {
-      case 'car-outline':
-        return <Ionicons name="car-outline" {...iconProps} />;
-      case 'car-seat':
-        return <MaterialCommunityIcons name="car-seat" {...iconProps} />;
-      case 'engine':
-        return <MaterialCommunityIcons name="engine" {...iconProps} />;
-      case 'car-lifted-pickup':
-        return <MaterialCommunityIcons name="car-lifted-pickup" {...iconProps} />;
-      case 'lightning-bolt':
-        return <MaterialCommunityIcons name="lightning-bolt" {...iconProps} />;
-      case 'tire':
-        return <MaterialCommunityIcons name="tire" {...iconProps} />;
-      case 'clipboard-check-outline':
-        return <MaterialCommunityIcons name="clipboard-check-outline" {...iconProps} />;
-      default:
-        return <Ionicons name="help-circle-outline" {...iconProps} />;
+  const renderIcon = (category: Category, color: string) => {
+    const iconInfo = getIconForCategory(category.name);
+    const iconProps = { size: 22, color };
+    
+    if (iconInfo.type === 'ionicons') {
+      return <Ionicons name={iconInfo.name as any} {...iconProps} />;
     }
+    return <MaterialCommunityIcons name={iconInfo.name as any} {...iconProps} />;
   };
 
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#3B82F6" />
-          <Text style={styles.loadingText}>Loading inspection questionnaire...</Text>
+          <View style={styles.loadingSpinner}>
+            <ActivityIndicator size="large" color={Colors.primary} />
+          </View>
+          <Text style={styles.loadingTitle}>Loading Inspection</Text>
+          <Text style={styles.loadingText}>Fetching questionnaire...</Text>
         </View>
       </SafeAreaView>
     );
@@ -197,150 +252,201 @@ export default function InspectionCategoriesScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
+      {/* Modern Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={24} color="#1E293B" />
+          <Ionicons name="chevron-back" size={24} color={Colors.textPrimary} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>Inspection</Text>
           <Text style={styles.headerSubtitle}>{currentInspection?.vehicleNumber || 'N/A'}</Text>
         </View>
         <TouchableOpacity onPress={fetchQuestionnaire} style={styles.refreshBtn}>
-          <Ionicons name="refresh" size={22} color="#64748B" />
+          <Ionicons name="refresh" size={20} color={Colors.textSecondary} />
         </TouchableOpacity>
       </View>
 
-      {/* Progress Bar */}
-      <View style={styles.progressContainer}>
-        <View style={styles.progressHeader}>
-          <Text style={styles.progressLabel}>Overall Progress</Text>
-          <Text style={styles.progressPercent}>{Math.round(progress)}%</Text>
-        </View>
-        <View style={styles.progressBar}>
-          <View style={[styles.progressFill, { width: `${progress}%` }]} />
-        </View>
-      </View>
-
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* OBD Scan Card - Always at top */}
-        <View style={styles.obdCard}>
+      <ScrollView 
+        style={styles.scrollView} 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Progress Card */}
+        <View style={styles.progressCard}>
           <LinearGradient
-            colors={obdCompleted ? ['#10B981', '#059669'] : ['#3B82F6', '#2563EB']}
+            colors={[Colors.gradient1, Colors.gradient2]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.progressGradient}
+          >
+            <View style={styles.progressHeader}>
+              <View>
+                <Text style={styles.progressTitle}>Overall Progress</Text>
+                <Text style={styles.progressSubtitle}>{completedQuestions} of {totalQuestions} questions</Text>
+              </View>
+              <View style={styles.progressBadge}>
+                <Text style={styles.progressPercent}>{Math.round(progress)}%</Text>
+              </View>
+            </View>
+            <View style={styles.progressBarContainer}>
+              <View style={styles.progressBarBg}>
+                <View style={[styles.progressBarFill, { width: `${progress}%` }]} />
+              </View>
+            </View>
+          </LinearGradient>
+        </View>
+
+        {/* OBD Scan Section */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Diagnostics</Text>
+        </View>
+
+        <TouchableOpacity 
+          style={styles.obdCard}
+          onPress={handleOBDScan}
+          activeOpacity={0.9}
+        >
+          <LinearGradient
+            colors={obdCompleted ? ['#059669', '#10B981'] : [Colors.primary, Colors.primaryDark]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.obdGradient}
           >
-            <View style={styles.obdContent}>
-              <View style={styles.obdIconContainer}>
+            <View style={styles.obdLeft}>
+              <View style={styles.obdIconBox}>
                 <MaterialCommunityIcons 
                   name={obdCompleted ? 'check-circle' : 'car-cog'} 
-                  size={32} 
+                  size={28} 
                   color="#FFF" 
                 />
               </View>
               <View style={styles.obdInfo}>
-                <Text style={styles.obdTitle}>OBD-II Diagnostics</Text>
-                <Text style={styles.obdSubtitle}>
-                  {obdCompleted ? 'Scan completed' : 'Scan required before inspection'}
+                <Text style={styles.obdTitle}>OBD-II Scan</Text>
+                <Text style={styles.obdStatus}>
+                  {obdCompleted ? 'Completed' : 'Required before inspection'}
                 </Text>
               </View>
             </View>
-
-            {!obdCompleted ? (
-              <TouchableOpacity style={styles.obdButton} onPress={handleOBDScan}>
-                <MaterialIcons name="bluetooth-searching" size={20} color="#3B82F6" />
-                <Text style={styles.obdButtonText}>Start Scan</Text>
-              </TouchableOpacity>
+            
+            {obdCompleted ? (
+              <View style={styles.obdDoneChip}>
+                <Ionicons name="checkmark" size={14} color="#059669" />
+                <Text style={styles.obdDoneText}>Done</Text>
+              </View>
             ) : (
-              <View style={styles.obdCompleteBadge}>
-                <Ionicons name="checkmark" size={16} color="#FFF" />
-                <Text style={styles.obdCompleteBadgeText}>Done</Text>
+              <View style={styles.obdStartChip}>
+                <MaterialIcons name="bluetooth-searching" size={16} color={Colors.primary} />
+                <Text style={styles.obdStartText}>Start</Text>
               </View>
             )}
           </LinearGradient>
 
           {obdCompleted && obdResults && (
-            <View style={styles.obdResultsPreview}>
+            <View style={styles.obdResults}>
               <View style={styles.obdResultItem}>
                 <Text style={styles.obdResultValue}>{obdResults.dtcCount || 0}</Text>
-                <Text style={styles.obdResultLabel}>DTCs Found</Text>
+                <Text style={styles.obdResultLabel}>DTCs</Text>
               </View>
               <View style={styles.obdResultDivider} />
               <View style={styles.obdResultItem}>
                 <Text style={styles.obdResultValue}>{obdResults.liveDataCount || 0}</Text>
-                <Text style={styles.obdResultLabel}>Live Data</Text>
+                <Text style={styles.obdResultLabel}>Data Points</Text>
               </View>
               <View style={styles.obdResultDivider} />
-              <TouchableOpacity style={styles.viewResultsBtn} onPress={() => router.push('/scanner')}>
-                <Text style={styles.viewResultsBtnText}>View Details</Text>
-                <Ionicons name="chevron-forward" size={16} color="#3B82F6" />
+              <TouchableOpacity style={styles.obdViewBtn} onPress={handleOBDScan}>
+                <Text style={styles.obdViewText}>View</Text>
+                <Ionicons name="chevron-forward" size={14} color={Colors.primary} />
               </TouchableOpacity>
             </View>
           )}
-        </View>
+        </TouchableOpacity>
 
         {/* Categories Section */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Inspection Categories</Text>
-          {categories.length > 0 && (
-            <Text style={styles.sectionCount}>{totalQuestions} questions</Text>
-          )}
+          <Text style={styles.sectionTitle}>Inspection Checklist</Text>
+          <Text style={styles.sectionCount}>{totalQuestions} items</Text>
         </View>
 
         {/* Error State */}
         {loadError && categories.length === 0 && (
           <View style={styles.errorCard}>
-            <Ionicons name="warning-outline" size={32} color="#F59E0B" />
+            <View style={styles.errorIconBox}>
+              <Ionicons name="alert-circle" size={32} color={Colors.warning} />
+            </View>
             <Text style={styles.errorTitle}>No Questionnaire Found</Text>
             <Text style={styles.errorText}>{loadError}</Text>
             <TouchableOpacity style={styles.retryBtn} onPress={fetchQuestionnaire}>
-              <Text style={styles.retryBtnText}>Try Again</Text>
+              <Text style={styles.retryText}>Try Again</Text>
             </TouchableOpacity>
           </View>
         )}
 
-        {/* Category Cards */}
-        {categories.map((category) => (
-          <TouchableOpacity
-            key={category.id}
-            style={[styles.categoryCard, !obdCompleted && styles.categoryCardDisabled]}
-            onPress={() => handleCategoryPress(category)}
-            activeOpacity={0.7}
-          >
-            <View style={styles.categoryIconContainer}>
-              {getIconComponent(category.icon)}
-            </View>
-            <View style={styles.categoryInfo}>
-              <Text style={styles.categoryName}>{category.name}</Text>
-              <Text style={styles.categoryProgress}>
-                {category.completedCount}/{category.questionsCount} questions
-              </Text>
-            </View>
-            <View style={styles.categoryRight}>
-              {category.isCompleted ? (
-                <View style={styles.categoryCompleteBadge}>
-                  <Ionicons name="checkmark-circle" size={24} color="#10B981" />
+        {/* Category Cards - Modern Design */}
+        {categories.map((category, index) => {
+          const colorSet = CATEGORY_COLORS[index % CATEGORY_COLORS.length];
+          const isDisabled = !obdCompleted;
+          
+          return (
+            <TouchableOpacity
+              key={category.id}
+              style={[styles.categoryCard, isDisabled && styles.categoryCardDisabled]}
+              onPress={() => handleCategoryPress(category)}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.categoryIcon, { backgroundColor: colorSet.bg }]}>
+                {renderIcon(category, colorSet.accent)}
+              </View>
+              
+              <View style={styles.categoryContent}>
+                <Text style={styles.categoryName} numberOfLines={1}>{category.name}</Text>
+                <View style={styles.categoryMeta}>
+                  <View style={styles.categoryProgressBar}>
+                    <View 
+                      style={[
+                        styles.categoryProgressFill, 
+                        { 
+                          width: `${category.questionsCount > 0 ? (category.completedCount / category.questionsCount) * 100 : 0}%`,
+                          backgroundColor: colorSet.accent 
+                        }
+                      ]} 
+                    />
+                  </View>
+                  <Text style={styles.categoryCount}>
+                    {category.completedCount}/{category.questionsCount}
+                  </Text>
                 </View>
-              ) : (
-                <Ionicons name="chevron-forward" size={22} color="#94A3B8" />
-              )}
-            </View>
-          </TouchableOpacity>
-        ))}
+              </View>
+
+              <View style={styles.categoryArrow}>
+                {category.isCompleted ? (
+                  <View style={[styles.completeBadge, { backgroundColor: Colors.successLight }]}>
+                    <Ionicons name="checkmark" size={16} color={Colors.success} />
+                  </View>
+                ) : (
+                  <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
+                )}
+              </View>
+            </TouchableOpacity>
+          );
+        })}
 
         {/* Submit Button */}
         {categories.length > 0 && (
           <TouchableOpacity
-            style={[
-              styles.submitBtn,
-              (!allCategoriesCompleted || !obdCompleted) && styles.submitBtnDisabled
-            ]}
+            style={[styles.submitBtn, (!allCategoriesCompleted || !obdCompleted) && styles.submitBtnDisabled]}
             onPress={handleSubmitInspection}
             disabled={!allCategoriesCompleted || !obdCompleted}
+            activeOpacity={0.9}
           >
-            <MaterialIcons name="send" size={20} color="#FFF" />
-            <Text style={styles.submitBtnText}>Submit Inspection</Text>
+            <LinearGradient
+              colors={allCategoriesCompleted && obdCompleted ? [Colors.success, '#059669'] : ['#CBD5E1', '#94A3B8']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.submitGradient}
+            >
+              <MaterialIcons name="check-circle" size={22} color="#FFF" />
+              <Text style={styles.submitText}>Complete Inspection</Text>
+            </LinearGradient>
           </TouchableOpacity>
         )}
 
@@ -353,17 +459,34 @@ export default function InspectionCategoriesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: Colors.background,
   },
+
+  // Loading
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 12,
+    padding: 24,
+  },
+  loadingSpinner: {
+    width: 72,
+    height: 72,
+    borderRadius: 20,
+    backgroundColor: Colors.primaryLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  loadingTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    marginBottom: 4,
   },
   loadingText: {
     fontSize: 14,
-    color: '#64748B',
+    color: Colors.textSecondary,
   },
 
   // Header
@@ -373,21 +496,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#FFF',
+    backgroundColor: Colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: Colors.border,
   },
   backBtn: {
     width: 40,
     height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  refreshBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    borderRadius: 12,
+    backgroundColor: Colors.background,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -395,54 +512,108 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
-    color: '#1E293B',
+    color: Colors.textPrimary,
   },
   headerSubtitle: {
-    fontSize: 13,
-    color: '#64748B',
+    fontSize: 12,
+    color: Colors.textSecondary,
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
     marginTop: 2,
   },
+  refreshBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: Colors.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
 
-  // Progress
-  progressContainer: {
-    backgroundColor: '#FFF',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+  // Scroll
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 16,
+  },
+
+  // Progress Card
+  progressCard: {
+    borderRadius: 20,
+    overflow: 'hidden',
+    marginBottom: 24,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  progressGradient: {
+    padding: 20,
   },
   progressHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 16,
   },
-  progressLabel: {
-    fontSize: 14,
+  progressTitle: {
+    fontSize: 16,
     fontWeight: '600',
-    color: '#64748B',
+    color: 'rgba(255,255,255,0.9)',
+  },
+  progressSubtitle: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.7)',
+    marginTop: 2,
+  },
+  progressBadge: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 12,
   },
   progressPercent: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#3B82F6',
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#FFF',
   },
-  progressBar: {
+  progressBarContainer: {
+    marginTop: 4,
+  },
+  progressBarBg: {
     height: 8,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: 'rgba(255,255,255,0.3)',
     borderRadius: 4,
     overflow: 'hidden',
   },
-  progressFill: {
+  progressBarFill: {
     height: '100%',
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#FFF',
     borderRadius: 4,
   },
 
-  // Content
-  content: {
-    flex: 1,
-    padding: 16,
+  // Section
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+    marginTop: 8,
+  },
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  sectionCount: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    fontWeight: '500',
   },
 
   // OBD Card
@@ -450,145 +621,136 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: 'hidden',
     marginBottom: 24,
+    backgroundColor: Colors.surface,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.08,
     shadowRadius: 12,
-    elevation: 5,
+    elevation: 4,
   },
   obdGradient: {
-    padding: 20,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    padding: 16,
   },
-  obdContent: {
+  obdLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
   },
-  obdIconContainer: {
-    width: 56,
-    height: 56,
+  obdIconBox: {
+    width: 48,
+    height: 48,
     borderRadius: 14,
     backgroundColor: 'rgba(255,255,255,0.2)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 14,
+    marginRight: 12,
   },
   obdInfo: {
     flex: 1,
   },
   obdTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     color: '#FFF',
   },
-  obdSubtitle: {
-    fontSize: 13,
+  obdStatus: {
+    fontSize: 12,
     color: 'rgba(255,255,255,0.8)',
     marginTop: 2,
   },
-  obdButton: {
+  obdStartChip: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFF',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
     borderRadius: 10,
     gap: 6,
   },
-  obdButtonText: {
-    fontSize: 14,
+  obdStartText: {
+    fontSize: 13,
     fontWeight: '700',
-    color: '#3B82F6',
+    color: Colors.primary,
   },
-  obdCompleteBadge: {
+  obdDoneChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: '#FFF',
     paddingVertical: 8,
     paddingHorizontal: 14,
-    borderRadius: 8,
+    borderRadius: 10,
     gap: 4,
   },
-  obdCompleteBadgeText: {
-    fontSize: 14,
+  obdDoneText: {
+    fontSize: 13,
     fontWeight: '700',
-    color: '#FFF',
+    color: '#059669',
   },
-  obdResultsPreview: {
-    backgroundColor: '#FFF',
+  obdResults: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: Colors.surface,
   },
   obdResultItem: {
-    alignItems: 'center',
     flex: 1,
+    alignItems: 'center',
   },
   obdResultValue: {
     fontSize: 20,
-    fontWeight: '700',
-    color: '#1E293B',
+    fontWeight: '800',
+    color: Colors.textPrimary,
   },
   obdResultLabel: {
-    fontSize: 12,
-    color: '#64748B',
+    fontSize: 11,
+    color: Colors.textMuted,
     marginTop: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
   },
   obdResultDivider: {
     width: 1,
-    height: 30,
-    backgroundColor: '#E2E8F0',
+    height: 28,
+    backgroundColor: Colors.border,
   },
-  viewResultsBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  obdViewBtn: {
     flex: 1,
-    justifyContent: 'center',
-    gap: 4,
-  },
-  viewResultsBtnText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#3B82F6',
-  },
-
-  // Section Header
-  sectionHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    justifyContent: 'center',
+    gap: 2,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1E293B',
-  },
-  sectionCount: {
+  obdViewText: {
     fontSize: 13,
-    color: '#64748B',
-    fontWeight: '500',
+    fontWeight: '600',
+    color: Colors.primary,
   },
 
-  // Error Card
+  // Error
   errorCard: {
-    backgroundColor: '#FFFBEB',
-    borderRadius: 12,
+    backgroundColor: Colors.warningLight,
+    borderRadius: 16,
     padding: 24,
     alignItems: 'center',
     marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#FCD34D',
+  },
+  errorIconBox: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: '#FFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   errorTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#92400E',
-    marginTop: 12,
   },
   errorText: {
     fontSize: 13,
@@ -599,11 +761,11 @@ const styles = StyleSheet.create({
   retryBtn: {
     marginTop: 16,
     paddingVertical: 10,
-    paddingHorizontal: 20,
-    backgroundColor: '#F59E0B',
-    borderRadius: 8,
+    paddingHorizontal: 24,
+    backgroundColor: Colors.warning,
+    borderRadius: 10,
   },
-  retryBtnText: {
+  retryText: {
     fontSize: 14,
     fontWeight: '600',
     color: '#FFF',
@@ -613,64 +775,94 @@ const styles = StyleSheet.create({
   categoryCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF',
-    padding: 16,
-    borderRadius: 14,
+    backgroundColor: Colors.surface,
+    padding: 14,
+    borderRadius: 16,
     marginBottom: 10,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
-    shadowRadius: 4,
+    shadowRadius: 8,
     elevation: 2,
   },
   categoryCardDisabled: {
-    opacity: 0.6,
+    opacity: 0.5,
   },
-  categoryIconContainer: {
-    width: 48,
-    height: 48,
+  categoryIcon: {
+    width: 44,
+    height: 44,
     borderRadius: 12,
-    backgroundColor: '#EFF6FF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 14,
+    marginRight: 12,
   },
-  categoryInfo: {
+  categoryContent: {
     flex: 1,
   },
   categoryName: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
-    color: '#1E293B',
+    color: Colors.textPrimary,
+    marginBottom: 6,
   },
-  categoryProgress: {
-    fontSize: 13,
-    color: '#64748B',
-    marginTop: 2,
+  categoryMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
-  categoryRight: {
+  categoryProgressBar: {
+    flex: 1,
+    height: 4,
+    backgroundColor: Colors.border,
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  categoryProgressFill: {
+    height: '100%',
+    borderRadius: 2,
+  },
+  categoryCount: {
+    fontSize: 12,
+    color: Colors.textMuted,
+    fontWeight: '500',
+    minWidth: 32,
+    textAlign: 'right',
+  },
+  categoryArrow: {
     marginLeft: 8,
   },
-  categoryCompleteBadge: {
-    padding: 2,
+  completeBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
-  // Submit Button
+  // Submit
   submitBtn: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginTop: 24,
+    shadowColor: Colors.success,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  submitBtnDisabled: {
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  submitGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#10B981',
     paddingVertical: 18,
-    borderRadius: 14,
-    marginTop: 20,
-    gap: 8,
+    gap: 10,
   },
-  submitBtnDisabled: {
-    backgroundColor: '#94A3B8',
-  },
-  submitBtnText: {
-    fontSize: 17,
+  submitText: {
+    fontSize: 16,
     fontWeight: '700',
     color: '#FFF',
   },
