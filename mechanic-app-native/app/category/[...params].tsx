@@ -256,8 +256,14 @@ export default function CategoryQuestionsScreen() {
   };
 
   const renderAnswerInput = (question: Question, currentAnswer: any, field: string = 'answer', answerType?: string, options?: string[]) => {
-    const type = answerType || question.answer_type;
-    const opts = options || question.options || [];
+    // IMPORTANT: For sub-questions, if answerType is not explicitly provided, 
+    // use 'multiple_choice' as default (NOT the main question's type)
+    // This prevents photo/video types from main question bleeding into sub-questions
+    const isSubQuestion = field === 'sub_answer_1' || field === 'sub_answer_2';
+    const type = answerType || (isSubQuestion ? 'multiple_choice' : question.answer_type);
+    const opts = options || (isSubQuestion ? [] : question.options) || [];
+    
+    console.log(`[renderAnswerInput] field=${field}, answerType=${answerType}, resolvedType=${type}, options count=${opts.length}`);
     
     // Handle combined types (MCQ + Photo or MCQ + Video)
     // For combined types, currentAnswer should be an object: { selection: string, media: string }
@@ -277,6 +283,14 @@ export default function CategoryQuestionsScreen() {
     
     switch (type) {
       case 'multiple_choice':
+        // If no options provided, show a message
+        if (opts.length === 0) {
+          return (
+            <View style={styles.emptyOptionsContainer}>
+              <Text style={styles.emptyOptionsText}>No options configured for this question</Text>
+            </View>
+          );
+        }
         return (
           <View style={styles.optionsContainer}>
             {opts.map((option: string, idx: number) => (
