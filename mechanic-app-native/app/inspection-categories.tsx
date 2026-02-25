@@ -333,7 +333,7 @@ export default function InspectionCategoriesScreen() {
               <View style={styles.obdInfo}>
                 <Text style={styles.obdTitle}>OBD-II Scan</Text>
                 <Text style={styles.obdStatus}>
-                  {obdCompleted ? 'Completed' : 'Required before inspection'}
+                  {obdCompleted ? 'Completed' : 'Optional - can be done anytime'}
                 </Text>
               </View>
             </View>
