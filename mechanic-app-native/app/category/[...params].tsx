@@ -588,23 +588,8 @@ export default function CategoryQuestionsScreen() {
       });
 
       if (!result.canceled && result.assets[0]) {
-        // Check file size
-        try {
-          const fileInfo = await fsGetInfoAsync(result.assets[0].uri);
-          const sizeMB = fileInfo.exists && fileInfo.size ? fileInfo.size / (1024 * 1024) : 0;
-          diagLogger.info('VIDEO_CAPTURED_DIRECT', { sizeMB: sizeMB.toFixed(2), uri: result.assets[0].uri.substring(0, 50) });
-          
-          if (sizeMB > MAX_VIDEO_SIZE_MB) {
-            Alert.alert(
-              'Video Too Large',
-              `The video is ${sizeMB.toFixed(1)}MB but max allowed is ${MAX_VIDEO_SIZE_MB}MB. Please record a shorter video (under 10 seconds).`
-            );
-            return;
-          }
-        } catch (e) {
-          diagLogger.warn('Could not check video size', { error: String(e) });
-        }
-        
+        // Store URI - size will be checked during save
+        diagLogger.info('VIDEO_CAPTURED_DIRECT', { uri: result.assets[0].uri.substring(0, 50) });
         updateDraftAnswer(questionId, result.assets[0].uri, field);
       }
     } catch (err) {
