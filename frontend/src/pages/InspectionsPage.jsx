@@ -2552,12 +2552,23 @@ export default function InspectionsPage() {
                   </Button>
                 </div>
                 {editVehicleData && (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-2 text-xs">
-                    <div className="flex items-center gap-1 text-green-700">
-                      <CheckCircle className="h-3 w-3" />
-                      <span className="font-medium">{editVehicleData.manufacturer} {editVehicleData.model}</span>
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-xs">
+                    <Label className="text-xs text-green-700 font-medium">New Vehicle Found</Label>
+                    <div className="flex items-center gap-1 text-green-800 mt-1">
+                      <CheckCircle className="h-3.5 w-3.5" />
+                      <span className="font-semibold">{editVehicleData.manufacturer} {editVehicleData.model}</span>
                     </div>
-                    <p className="text-green-600 mt-0.5">{editVehicleData.fuel_type} • {editVehicleData.manufacturing_date || editVehicleData.registration_date}</p>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {editVehicleData.fuel_type && (
+                        <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded">{editVehicleData.fuel_type}</span>
+                      )}
+                      {(editVehicleData.manufacturing_date || editVehicleData.registration_date) && (
+                        <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded">{editVehicleData.manufacturing_date || editVehicleData.registration_date}</span>
+                      )}
+                      {editVehicleData.color && (
+                        <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded">{editVehicleData.color}</span>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
