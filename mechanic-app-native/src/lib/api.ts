@@ -111,10 +111,30 @@ export const inspectionsApi = {
       payload.sub_answer_2 = progressData.sub_answer_2;
     }
     
-    console.log('[API] Saving progress:', JSON.stringify(payload));
-    const response = await api.post(`/mechanic/inspections/${id}/progress`, payload);
-    console.log('[API] Progress saved:', JSON.stringify(response.data));
-    return response.data;
+    await debugLogger.logApiRequest(`/mechanic/inspections/${id}/progress`, {
+      question_id: payload.question_id,
+      category_id: payload.category_id,
+      hasAnswer: payload.answer !== undefined,
+      hasSubAnswer1: payload.sub_answer_1 !== undefined,
+      hasSubAnswer2: payload.sub_answer_2 !== undefined,
+      answerType: typeof payload.answer,
+    }, id, payload.question_id);
+    
+    try {
+      const response = await api.post(`/mechanic/inspections/${id}/progress`, payload);
+      
+      await debugLogger.logApiResponse(`saveProgress`, {
+        status: 'success',
+        message: response.data.message,
+        savedAnswersCount: response.data.answers ? Object.keys(response.data.answers).length : 0,
+        savedQuestionAnswer: response.data.answers?.[payload.question_id],
+      }, true, id);
+      
+      return response.data;
+    } catch (error: any) {
+      await debugLogger.logApiError(`saveProgress`, error, id, payload.question_id);
+      throw error;
+    }
   },
 
   completeInspection: async (id: string) => {
