@@ -2,6 +2,30 @@
 
 ## Latest Updates (Feb 25, 2026)
 
+### CRM Inspections Table - Actions Dropdown Refactor ✅
+**Consolidated all edit actions into a single dropdown menu**
+
+#### Changes:
+- Removed individual scattered edit icon buttons from the Actions column
+- Added a single three-dot (⋯) button that opens a dropdown menu
+- All edit functionalities now accessible from one clean dropdown
+
+#### Dropdown Menu Items:
+1. **View Details** - Opens inspection report in new tab
+2. **Live Progress** - Opens real-time inspection progress modal
+3. **Edit Date/Time** - Opens schedule change modal
+4. **Edit Location** - Opens location edit modal with Google Places
+5. **Edit Vehicle** - Opens vehicle number change modal
+6. **Assign/Reassign Mechanic** - Opens mechanic assignment modal
+7. **Notes & Activity** - Opens side drawer with notes, activity log, SMS logs
+
+#### Technical Details:
+- Uses Shadcn UI DropdownMenu component
+- All menu items have proper data-testid attributes
+- Menu opens from MoreHorizontal (three-dot) icon
+
+---
+
 ### Inspection Status Management System (v2.4.5 / App v1.0.6)
 **Comprehensive CRM-Mobile App status synchronization**
 
