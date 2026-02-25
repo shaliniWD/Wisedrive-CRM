@@ -133,6 +133,7 @@ export const inspectionsApi = {
   assignMechanic: (id, mechanicId) => axios.patch(`${API_URL}/inspections/${id}/assign-mechanic`, { mechanic_id: mechanicId }),
   updateSchedule: (id, data) => axios.patch(`${API_URL}/inspections/${id}/schedule`, data),
   updateLocation: (id, data) => axios.patch(`${API_URL}/inspections/${id}/location`, data),
+  getLiveProgress: (id) => axios.get(`${API_URL}/inspections/${id}/live-progress`),
   // Notes & Activities
   getNotes: (id) => axios.get(`${API_URL}/inspections/${id}/notes`),
   addNote: (id, data) => axios.post(`${API_URL}/inspections/${id}/notes`, data),
