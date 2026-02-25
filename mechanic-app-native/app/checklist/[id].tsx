@@ -44,12 +44,13 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 export default function ChecklistScreen() {
-  const { id: inspectionId } = useLocalSearchParams<{ id: string }>();
+  const { id: inspectionId, categoryId, categoryName } = useLocalSearchParams<{ id: string; categoryId?: string; categoryName?: string }>();
   const [inspection, setInspection] = useState<any>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryProgress, setCategoryProgress] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isCompleting, setIsCompleting] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(categoryId || null);
 
   useEffect(() => {
     fetchData();
