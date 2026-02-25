@@ -464,7 +464,7 @@ async def login(credentials: UserLogin):
 
 
 # ==================== VERSION & HEALTH ====================
-APP_VERSION = "2.4.3"
+APP_VERSION = "2.4.4"
 APP_BUILD_DATE = "2026-02-25T04:30:00Z"
 
 @api_router.get("/version")
@@ -479,6 +479,8 @@ async def get_version():
         "environment": os.environ.get("ENVIRONMENT", "preview"),
         "jwt_secret_status": jwt_status,  # Important for debugging auth issues
         "recent_changes": [
+            "v2.4.4 - Mobile app bug fixes: Navigate button, cache clearing, inspection detail API enhanced",
+            "v2.4.3 - Questionnaire endpoint enhanced to lookup partner template",
             "v2.4.1 - Added jwt_secret_status diagnostic and /auth/test-auth endpoint",
             "v2.4.0 - OTP storage moved to MongoDB (fixes intermittent validation)",
             "v2.4.0 - Employee phone number uniqueness validation",
