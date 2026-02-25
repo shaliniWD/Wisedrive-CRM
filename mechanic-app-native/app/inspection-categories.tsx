@@ -394,12 +394,11 @@ export default function InspectionCategoriesScreen() {
         {/* Category Cards - Modern Design */}
         {categories.map((category, index) => {
           const colorSet = CATEGORY_COLORS[index % CATEGORY_COLORS.length];
-          const isDisabled = !obdCompleted;
           
           return (
             <TouchableOpacity
               key={category.id}
-              style={[styles.categoryCard, isDisabled && styles.categoryCardDisabled]}
+              style={styles.categoryCard}
               onPress={() => handleCategoryPress(category)}
               activeOpacity={0.7}
             >
