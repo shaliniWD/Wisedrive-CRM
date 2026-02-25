@@ -1423,18 +1423,19 @@ export default function InspectionsPage() {
           </table>
         ) : (
           /* Scheduled Tab Table - NO horizontal scroll */
-          <table className="w-full table-fixed">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[1200px]">
             <thead>
               <tr className="bg-slate-50 border-b">
-                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '11%'}}>Date/Time</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '15%'}}>Customer</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '12%'}}>Vehicle</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '10%'}}>Payment</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '13%'}}>Status</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '12%'}}>Mechanic</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '8%'}}>Location</th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '12%'}}>Report</th>
-                <th className="px-3 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider" style={{width: '5%'}}>Notes</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap" style={{width: '120px'}}>Date/Time</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap" style={{width: '180px'}}>Customer</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap" style={{width: '140px'}}>Vehicle</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap" style={{width: '100px'}}>Payment</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap" style={{width: '160px'}}>Status</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap" style={{width: '150px'}}>Mechanic</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap" style={{width: '130px'}}>Location</th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap" style={{width: '110px'}}>Report</th>
+                <th className="px-3 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap" style={{width: '80px'}}>Notes</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
