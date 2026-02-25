@@ -14528,16 +14528,35 @@ async def mechanic_start_inspection(
 async def mechanic_save_progress(
     inspection_id: str,
     data: InspectionProgressUpdate,
+    request: Request,
     current_user: dict = Depends(get_current_user)
 ):
     """Save inspection progress from mechanic app"""
     import logging
     logger = logging.getLogger(__name__)
     
-    logger.info(f"[SAVE_PROGRESS] Called for inspection={inspection_id}")
-    logger.info(f"[SAVE_PROGRESS] Received data: question_id={data.question_id}, category_id={data.category_id}")
-    logger.info(f"[SAVE_PROGRESS] answer type={type(data.answer)}, answer is None={data.answer is None}")
-    logger.info(f"[SAVE_PROGRESS] sub_answer_1={data.sub_answer_1}, sub_answer_2={data.sub_answer_2}")
+    # Log request size
+    content_length = request.headers.get('content-length', '0')
+    logger.info(f"[SAVE_PROGRESS] Request received: inspection={inspection_id}, content_length={content_length} bytes")
+    
+    # Calculate answer size if present
+    answer_size = 0
+    answer_type = "none"
+    if data.answer is not None:
+        if isinstance(data.answer, str):
+            answer_size = len(data.answer)
+            if data.answer.startswith('data:image'):
+                answer_type = "base64_image"
+            elif data.answer.startswith('file://'):
+                answer_type = "file_uri"
+            else:
+                answer_type = "text"
+        elif isinstance(data.answer, dict):
+            answer_size = len(str(data.answer))
+            answer_type = "dict_with_media" if data.answer.get('media') else "dict"
+    
+    logger.info(f"[SAVE_PROGRESS] question_id={data.question_id}, category_id={data.category_id}")
+    logger.info(f"[SAVE_PROGRESS] answer_type={answer_type}, answer_size={answer_size} bytes ({answer_size // 1024}KB)")
     
     inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
     if not inspection:
@@ -14599,8 +14618,12 @@ async def mechanic_save_progress(
         "updated_at": datetime.now(timezone.utc).isoformat()
     }
     
-    result = await db.inspections.update_one({"id": inspection_id}, {"$set": update_data})
-    logger.info(f"[SAVE_PROGRESS] MongoDB update result: matched={result.matched_count}, modified={result.modified_count}")
+    try:
+        result = await db.inspections.update_one({"id": inspection_id}, {"$set": update_data})
+        logger.info(f"[SAVE_PROGRESS] MongoDB update result: matched={result.matched_count}, modified={result.modified_count}")
+    except Exception as e:
+        logger.error(f"[SAVE_PROGRESS] MongoDB error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
     
     return {
         "id": inspection_id,
