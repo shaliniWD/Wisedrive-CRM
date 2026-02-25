@@ -361,6 +361,13 @@ export default function InspectionsPage() {
   });
   const [locationSaving, setLocationSaving] = useState(false);
   
+  // Live Progress Modal
+  const [isLiveProgressModalOpen, setIsLiveProgressModalOpen] = useState(false);
+  const [liveProgressInspection, setLiveProgressInspection] = useState(null);
+  const [liveProgressData, setLiveProgressData] = useState(null);
+  const [liveProgressLoading, setLiveProgressLoading] = useState(false);
+  const [liveProgressAutoRefresh, setLiveProgressAutoRefresh] = useState(false);
+  
   // Schedule Unscheduled Inspection Modal (NEW - with Vaahan API & Google Places)
   const [isScheduleUnscheduledModalOpen, setIsScheduleUnscheduledModalOpen] = useState(false);
   const [scheduleUnscheduledInspection, setScheduleUnscheduledInspection] = useState(null);
