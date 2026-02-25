@@ -234,7 +234,8 @@ export default function LoginScreen() {
       addLog(`Resend Response Status: ${response.status}`);
       addLog(`Resend Response: ${JSON.stringify(response.data)}`);
       
-      showError('OTP Resent', 'A new OTP has been sent to your phone');
+      // Show simple toast-like feedback instead of modal
+      Alert.alert('OTP Resent', 'A new OTP has been sent to your phone');
       setOtp(['', '', '', '', '', '']); // Clear OTP inputs
     } catch (error: any) {
       addLog(`RESEND ERROR occurred!`);
