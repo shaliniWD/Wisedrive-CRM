@@ -1585,11 +1585,11 @@ export default function InspectionsPage() {
                     {/* Mechanic Column - Editable */}
                     <td className="px-3 py-3">
                       <div className="flex items-center gap-1">
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1">
                           {inspection.mechanic_name ? (
                             <div className="flex items-center gap-1">
                               <UserCheck className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" />
-                              <span className="text-sm text-gray-700 truncate">{inspection.mechanic_name}</span>
+                              <span className="text-sm text-gray-700">{inspection.mechanic_name}</span>
                             </div>
                           ) : (
                             <span className="text-sm text-gray-400 italic">Not assigned</span>
@@ -1613,9 +1613,9 @@ export default function InspectionsPage() {
                     {/* Location Column - Editable */}
                     <td className="px-3 py-3">
                       <div className="flex items-center gap-1">
-                        <span className="inline-flex items-center gap-1 text-sm text-blue-600 flex-1 min-w-0">
+                        <span className="inline-flex items-center gap-1 text-sm text-blue-600 flex-1">
                           <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
-                          <span className="truncate">{inspection.city || 'No location'}</span>
+                          <span>{inspection.city || 'No location'}</span>
                         </span>
                         <button 
                           onClick={() => {
