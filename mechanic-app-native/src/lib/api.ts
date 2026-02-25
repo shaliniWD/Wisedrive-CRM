@@ -113,7 +113,7 @@ export const inspectionsApi = {
     delete questionnaireCache[`questionnaire_${id}`];
   },
 
-  saveProgress: async (id: string, progressData: any) => {
+  saveProgress: async (id: string, progressData: any, retryCount = 0): Promise<any> => {
     // Send all fields to backend for proper storage
     const payload: any = {
       question_id: progressData.question_id,
@@ -131,8 +131,21 @@ export const inspectionsApi = {
       payload.sub_answer_2 = progressData.sub_answer_2;
     }
     
-    const response = await api.post(`/mechanic/inspections/${id}/progress`, payload);
-    return response.data;
+    try {
+      const response = await api.post(`/mechanic/inspections/${id}/progress`, payload);
+      return response.data;
+    } catch (error: any) {
+      console.error(`[API] saveProgress failed (attempt ${retryCount + 1}):`, error.message);
+      
+      // Retry once on timeout or network errors
+      if (retryCount < 1 && (error.code === 'ECONNABORTED' || error.message?.includes('timeout') || error.message?.includes('Network'))) {
+        console.log('[API] Retrying save...');
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+        return inspectionsApi.saveProgress(id, progressData, retryCount + 1);
+      }
+      
+      throw error;
+    }
   },
 
   // Batch save for better performance - save multiple answers at once
