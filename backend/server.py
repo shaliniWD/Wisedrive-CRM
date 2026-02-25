@@ -14013,14 +14013,18 @@ async def get_mechanic_inspections(
     for insp in inspections:
         # Map CRM status to mechanic app status
         crm_status = insp.get("inspection_status", "NEW_INSPECTION")
-        if crm_status in ["INSPECTION_COMPLETED"]:
+        if crm_status == "INSPECTION_COMPLETED":
             app_status = "COMPLETED"
-        elif crm_status in ["INSPECTION_CANCELLED", "INSPECTION_REJECTED", "REJECTED"]:
+        elif crm_status in ["MECHANIC_REJECTED", "INSPECTION_CANCELLED_WD", "INSPECTION_CANCELLED_CUS"]:
             app_status = "REJECTED"
-        elif crm_status in ["INSPECTION_CONFIRMED", "INSPECTION_STARTED", "ACCEPTED", "IN_PROGRESS"]:
+        elif crm_status == "INSPECTION_STARTED":
+            app_status = "IN_PROGRESS"
+        elif crm_status == "MECHANIC_ACCEPTED":
             app_status = "ACCEPTED"
-        elif crm_status in ["ASSIGNED_TO_MECHANIC"]:
-            app_status = "NEW"  # Show as new until mechanic accepts
+        elif crm_status in ["NEW_INSPECTION", "ASSIGNED_TO_MECHANIC"]:
+            app_status = "NEW"
+        elif crm_status == "RESCHEDULED":
+            app_status = "NEW"  # Show rescheduled as new for mechanic to accept again
         else:
             app_status = "NEW"
         
@@ -14028,6 +14032,7 @@ async def get_mechanic_inspections(
             "id": insp.get("id"),
             "scheduledAt": insp.get("scheduled_date") or insp.get("created_at"),
             "status": app_status,
+            "crmStatus": crm_status,  # Include original CRM status for debugging
             "vehicleNumber": insp.get("car_number", ""),
             "makeModelVariant": f"{insp.get('car_make', insp.get('make', ''))} {insp.get('car_model', insp.get('model', ''))} {insp.get('variant', '')}".strip() or "Not Available",
             "carMake": insp.get("car_make", insp.get("make", "")),
