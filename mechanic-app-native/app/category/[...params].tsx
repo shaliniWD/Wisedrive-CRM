@@ -537,7 +537,7 @@ export default function CategoryQuestionsScreen() {
           // For videos, store the URI - it will be processed during save
           // Check file size first
           try {
-            const fileInfo = await FileSystem.getInfoAsync(result.assets[0].uri, { size: true });
+            const fileInfo = await FileSystem.getInfoAsync(result.assets[0].uri);
             const sizeMB = fileInfo.exists && fileInfo.size ? fileInfo.size / (1024 * 1024) : 0;
             diagLogger.info('VIDEO_CAPTURED', { sizeMB: sizeMB.toFixed(2), uri: result.assets[0].uri.substring(0, 50) });
             
