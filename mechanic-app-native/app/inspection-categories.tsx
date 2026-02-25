@@ -196,8 +196,15 @@ export default function InspectionCategoriesScreen() {
   };
 
   const handleCategoryPress = (category: Category) => {
-    // OBD scan is now optional - can be done anytime
-    router.push(`/checklist/${category.id}`);
+    // Navigate to category questions screen with inspection ID and category ID
+    router.push({
+      pathname: '/checklist/[id]',
+      params: { 
+        id: currentInspectionId,
+        categoryId: category.id,
+        categoryName: category.name
+      }
+    });
   };
 
   const handleSubmitInspection = async () => {
