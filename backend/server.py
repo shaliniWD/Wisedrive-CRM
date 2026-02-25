@@ -14019,11 +14019,11 @@ async def get_mechanic_inspection_detail(
     
     # Map CRM status to mechanic app status
     crm_status = inspection.get("inspection_status", "NEW")
-    if crm_status in ["COMPLETED"]:
+    if crm_status in ["INSPECTION_COMPLETED", "COMPLETED"]:
         app_status = "COMPLETED"
-    elif crm_status in ["REJECTED", "CANCELLED"]:
+    elif crm_status in ["INSPECTION_CANCELLED", "INSPECTION_REJECTED", "REJECTED", "CANCELLED"]:
         app_status = "REJECTED"
-    elif crm_status in ["ACCEPTED", "IN_PROGRESS"]:
+    elif crm_status in ["INSPECTION_CONFIRMED", "INSPECTION_STARTED", "ACCEPTED", "IN_PROGRESS"]:
         app_status = "ACCEPTED"
     else:
         app_status = "NEW"
@@ -14033,13 +14033,24 @@ async def get_mechanic_inspection_detail(
         "scheduledAt": inspection.get("scheduled_date") or inspection.get("created_at"),
         "status": app_status,
         "vehicleNumber": inspection.get("car_number", ""),
-        "makeModelVariant": f"{inspection.get('make', '')} {inspection.get('model', '')} {inspection.get('variant', '')}".strip(),
+        "makeModelVariant": f"{inspection.get('car_make', inspection.get('make', ''))} {inspection.get('car_model', inspection.get('model', ''))} {inspection.get('variant', '')}".strip() or "Not Available",
+        "carMake": inspection.get("car_make", inspection.get("make", "")),
+        "carModel": inspection.get("car_model", inspection.get("model", "")),
+        "make": inspection.get("car_make", inspection.get("make", "")),
+        "model": inspection.get("car_model", inspection.get("model", "")),
+        "fuelType": inspection.get("fuel_type", ""),
+        "fuel_type": inspection.get("fuel_type", ""),
+        "manufacturingYear": inspection.get("car_year", inspection.get("manufacturing_year", "")),
+        "year": inspection.get("car_year", inspection.get("manufacturing_year", "")),
+        "odometerReading": inspection.get("odometer_reading", ""),
+        "odometer": inspection.get("odometer_reading", ""),
         "city": inspection.get("city", ""),
         "customerName": inspection.get("customer_name", ""),
+        "customer_name": inspection.get("customer_name", ""),
         "customerPhone": inspection.get("customer_mobile", ""),
         "customerAddress": inspection.get("address", ""),
-        "latitude": inspection.get("latitude"),
-        "longitude": inspection.get("longitude"),
+        "latitude": inspection.get("latitude") or inspection.get("location_lat"),
+        "longitude": inspection.get("longitude") or inspection.get("location_lng"),
         "assignedMechanicId": inspection.get("mechanic_id"),
         "requiredModules": {
             "photos": True,
@@ -14053,7 +14064,7 @@ async def get_mechanic_inspection_detail(
             "notesDone": False
         }),
         "orderId": inspection.get("order_id"),
-        "packageName": inspection.get("inspection_package_name", "Standard Inspection"),
+        "packageName": inspection.get("package_type") or inspection.get("inspection_package_name", "Standard Inspection"),
         "partnerId": inspection.get("partner_id"),
         "partnerName": inspection.get("partner_name")
     }
