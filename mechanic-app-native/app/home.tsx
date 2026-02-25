@@ -281,7 +281,7 @@ const InspectionCard = ({
 
 // Main Component
 export default function HomeScreen() {
-  const { mechanic, logout } = useAuth();
+  const { mechanic, logout, clearAllCache } = useAuth();
   const { setCurrentInspection } = useInspection();
   const [inspections, setInspections] = useState<Inspection[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -825,12 +825,22 @@ export default function HomeScreen() {
                 <Text style={{ color: '#fff', fontWeight: '600' }}>Refresh</Text>
               </TouchableOpacity>
               <TouchableOpacity 
-                style={{ flex: 1, backgroundColor: '#ddd', paddingVertical: 14, borderRadius: 10, alignItems: 'center' }}
-                onPress={() => setDebugModalVisible(false)}
+                style={{ flex: 1, backgroundColor: Colors.error, paddingVertical: 14, borderRadius: 10, alignItems: 'center' }}
+                onPress={async () => {
+                  await clearAllCache();
+                  setDebugModalVisible(false);
+                  router.replace('/login');
+                }}
               >
-                <Text style={{ color: '#333', fontWeight: '600' }}>Close</Text>
+                <Text style={{ color: '#fff', fontWeight: '600' }}>Clear Cache & Logout</Text>
               </TouchableOpacity>
             </View>
+            <TouchableOpacity 
+              style={{ marginTop: 12, backgroundColor: '#ddd', paddingVertical: 14, borderRadius: 10, alignItems: 'center' }}
+              onPress={() => setDebugModalVisible(false)}
+            >
+              <Text style={{ color: '#333', fontWeight: '600' }}>Close</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
