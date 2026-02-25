@@ -1041,7 +1041,7 @@ export default function InspectionsPage() {
   const unscheduledCount = inspections.filter(i => !i.scheduled_date).length;
   const scheduledCount = inspections.filter(i => i.scheduled_date).length;
   const completedCount = inspections.filter(i => i.inspection_status === 'INSPECTION_COMPLETED').length;
-  const newInspectionsCount = inspections.filter(i => i.inspection_status === 'NEW_INSPECTION').length;
+  const newInspectionsCount = inspections.filter(i => !i.inspection_status || i.inspection_status === 'NEW_INSPECTION').length;
   
   // Filter inspections based on cardFilter
   const filteredInspections = inspections.filter(inspection => {
@@ -1054,7 +1054,7 @@ export default function InspectionsPage() {
       case 'completed':
         return inspection.inspection_status === 'INSPECTION_COMPLETED';
       case 'new':
-        return inspection.inspection_status === 'NEW_INSPECTION';
+        return !inspection.inspection_status || inspection.inspection_status === 'NEW_INSPECTION';
       default:
         return true;
     }
