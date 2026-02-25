@@ -105,9 +105,13 @@ export default function InspectionCategoriesScreen() {
   const obdCompleted = obdScanResult?.completed || false;
   const obdResults = obdScanResult;
 
-  useEffect(() => {
-    fetchQuestionnaire();
-  }, [currentInspectionId]);
+  // Refresh data when screen comes into focus (after returning from Q&A)
+  useFocusEffect(
+    useCallback(() => {
+      console.log('[Categories] Screen focused, refreshing data...');
+      fetchQuestionnaire();
+    }, [currentInspectionId])
+  );
 
   const fetchQuestionnaire = async () => {
     if (!currentInspectionId) {
