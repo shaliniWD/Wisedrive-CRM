@@ -131,6 +131,61 @@ const compressImage = async (uri: string): Promise<string> => {
   }
 };
 
+// Convert video to base64 with size limit check
+// For videos larger than 5MB, we'll reject them
+const MAX_VIDEO_SIZE_MB = 5;
+const MAX_VIDEO_SIZE_BYTES = MAX_VIDEO_SIZE_MB * 1024 * 1024;
+
+const processVideo = async (uri: string): Promise<string> => {
+  diagLogger.info('VIDEO_PROCESS_START', { uri: uri.substring(0, 50) + '...' });
+  
+  try {
+    // Get file info to check size
+    const fileInfo = await FileSystem.getInfoAsync(uri);
+    
+    if (!fileInfo.exists) {
+      throw new Error('Video file not found');
+    }
+    
+    const fileSizeBytes = fileInfo.size || 0;
+    const fileSizeMB = fileSizeBytes / (1024 * 1024);
+    
+    diagLogger.info('VIDEO_SIZE_CHECK', { 
+      sizeMB: fileSizeMB.toFixed(2), 
+      maxMB: MAX_VIDEO_SIZE_MB,
+      sizeBytes: fileSizeBytes 
+    });
+    
+    if (fileSizeBytes > MAX_VIDEO_SIZE_BYTES) {
+      diagLogger.error('VIDEO_TOO_LARGE', { 
+        sizeMB: fileSizeMB.toFixed(2), 
+        maxMB: MAX_VIDEO_SIZE_MB 
+      });
+      throw new Error(`Video is too large (${fileSizeMB.toFixed(1)}MB). Maximum size is ${MAX_VIDEO_SIZE_MB}MB. Please record a shorter video.`);
+    }
+    
+    // Read video as base64
+    diagLogger.info('VIDEO_READING_BASE64', { sizeMB: fileSizeMB.toFixed(2) });
+    const base64 = await FileSystem.readAsStringAsync(uri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    
+    diagLogger.info('VIDEO_PROCESS_DONE', { 
+      base64Length: base64.length,
+      estimatedSizeKB: Math.round(base64.length * 0.75 / 1024)
+    });
+    
+    // Determine video type from uri
+    const extension = uri.split('.').pop()?.toLowerCase() || 'mp4';
+    const mimeType = extension === 'mov' ? 'video/quicktime' : 'video/mp4';
+    
+    return `data:${mimeType};base64,${base64}`;
+  } catch (error: any) {
+    diagLogger.error('VIDEO_PROCESS_FAILED', { error: error.message });
+    throw error;
+  }
+};
+
 export default function CategoryQuestionsScreen() {
   const rawParams = useLocalSearchParams();
   const router = useRouter();
