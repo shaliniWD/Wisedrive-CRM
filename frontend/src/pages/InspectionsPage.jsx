@@ -199,19 +199,18 @@ const extractModel = (modelStr) => {
 const INSPECTION_STATUSES = [
   { value: 'NEW_INSPECTION', label: 'New Inspection', color: 'bg-slate-100 text-slate-800', requiresMechanic: false },
   { value: 'ASSIGNED_TO_MECHANIC', label: 'Assigned to Mechanic', color: 'bg-indigo-100 text-indigo-800', requiresMechanic: true },
-  { value: 'INSPECTION_CONFIRMED', label: 'Confirmed', color: 'bg-cyan-100 text-cyan-800', requiresMechanic: true },
-  { value: 'INSPECTION_STARTED', label: 'Started', color: 'bg-amber-100 text-amber-800', requiresMechanic: true },
-  { value: 'INSPECTION_IN_PROGRESS', label: 'In Progress', color: 'bg-orange-100 text-orange-800', requiresMechanic: true },
+  { value: 'MECHANIC_ACCEPTED', label: 'Mechanic Accepted', color: 'bg-cyan-100 text-cyan-800', requiresMechanic: true },
+  { value: 'MECHANIC_REJECTED', label: 'Mechanic Rejected', color: 'bg-rose-100 text-rose-800', requiresMechanic: false },
+  { value: 'INSPECTION_STARTED', label: 'Inspection Started', color: 'bg-amber-100 text-amber-800', requiresMechanic: true },
   { value: 'INSPECTION_COMPLETED', label: 'Completed', color: 'bg-emerald-100 text-emerald-800', requiresMechanic: true },
-  { value: 'INSPECTION_RESCHEDULED', label: 'Rescheduled', color: 'bg-purple-100 text-purple-800', requiresMechanic: false },
-  { value: 'INSPECTION_CANCELLED_CUSTOMER', label: 'Cancelled (Customer)', color: 'bg-red-100 text-red-800', requiresMechanic: false },
-  { value: 'INSPECTION_CANCELLED_WISEDRIVE', label: 'Cancelled (Wisedrive)', color: 'bg-red-100 text-red-800', requiresMechanic: false },
+  { value: 'RESCHEDULED', label: 'Rescheduled', color: 'bg-purple-100 text-purple-800', requiresMechanic: false },
+  { value: 'INSPECTION_CANCELLED_CUS', label: 'Cancelled (Customer)', color: 'bg-red-100 text-red-800', requiresMechanic: false },
+  { value: 'INSPECTION_CANCELLED_WD', label: 'Cancelled (WiseDrive)', color: 'bg-red-100 text-red-800', requiresMechanic: false },
 ];
 
 // Statuses that require a mechanic to be assigned
 const MECHANIC_REQUIRED_STATUSES = [
-  'ASSIGNED_TO_MECHANIC', 'INSPECTION_CONFIRMED', 'INSPECTION_STARTED',
-  'INSPECTION_IN_PROGRESS', 'INSPECTION_COMPLETED'
+  'ASSIGNED_TO_MECHANIC', 'MECHANIC_ACCEPTED', 'INSPECTION_STARTED', 'INSPECTION_COMPLETED'
 ];
 
 // Inspection Status Badge Component
@@ -219,17 +218,17 @@ const InspectionStatusBadge = ({ status }) => {
   const config = {
     NEW_INSPECTION: { color: 'bg-slate-100 text-slate-800 border-slate-200', icon: Plus, label: 'New' },
     ASSIGNED_TO_MECHANIC: { color: 'bg-indigo-100 text-indigo-800 border-indigo-200', icon: User, label: 'Assigned' },
-    INSPECTION_CONFIRMED: { color: 'bg-cyan-100 text-cyan-800 border-cyan-200', icon: CheckCircle, label: 'Confirmed' },
+    MECHANIC_ACCEPTED: { color: 'bg-cyan-100 text-cyan-800 border-cyan-200', icon: CheckCircle, label: 'Accepted' },
+    MECHANIC_REJECTED: { color: 'bg-rose-100 text-rose-800 border-rose-200', icon: XCircle, label: 'Rejected' },
     INSPECTION_STARTED: { color: 'bg-amber-100 text-amber-800 border-amber-200', icon: Play, label: 'Started' },
-    INSPECTION_IN_PROGRESS: { color: 'bg-orange-100 text-orange-800 border-orange-200', icon: Clock, label: 'In Progress' },
     INSPECTION_COMPLETED: { color: 'bg-emerald-100 text-emerald-800 border-emerald-200', icon: CheckCircle, label: 'Completed' },
-    INSPECTION_RESCHEDULED: { color: 'bg-purple-100 text-purple-800 border-purple-200', icon: RefreshCw, label: 'Rescheduled' },
-    INSPECTION_CANCELLED_CUSTOMER: { color: 'bg-red-100 text-red-800 border-red-200', icon: Ban, label: 'Cancelled (C)' },
-    INSPECTION_CANCELLED_WISEDRIVE: { color: 'bg-red-100 text-red-800 border-red-200', icon: Ban, label: 'Cancelled (W)' },
+    RESCHEDULED: { color: 'bg-purple-100 text-purple-800 border-purple-200', icon: RefreshCw, label: 'Rescheduled' },
+    INSPECTION_CANCELLED_CUS: { color: 'bg-red-100 text-red-800 border-red-200', icon: Ban, label: 'Cancelled (C)' },
+    INSPECTION_CANCELLED_WD: { color: 'bg-red-100 text-red-800 border-red-200', icon: Ban, label: 'Cancelled (WD)' },
     SCHEDULED: { color: 'bg-blue-100 text-blue-800 border-blue-200', icon: Calendar, label: 'Scheduled' },
     UNSCHEDULED: { color: 'bg-purple-100 text-purple-800 border-purple-200', icon: AlertCircle, label: 'Unscheduled' },
   };
-  const cfg = config[status] || config.SCHEDULED;
+  const cfg = config[status] || config.NEW_INSPECTION;
   const Icon = cfg.icon;
   
   return (
