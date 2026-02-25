@@ -17,17 +17,24 @@
 2. **Removed Payment Column:** Rows with pending payments now have amber background highlighting
 
 3. **Combined Edit Modal:** Merged Date/Time, Location, Vehicle editing into one modal accessible via Edit icon
+   - Vehicle search now uses Vaahan API integration ✅
 
 4. **Mechanic Column with Reassign Icon:** Quick reassign button (👤) next to mechanic name
 
-5. **Simplified More Dropdown:** Now contains only:
-   - View Details
-   - Live Progress
-   - Payment Details (highlighted amber for pending)
-   - Notes & Activity
+5. **Removed More Dropdown Entirely:** Replaced with Info button that opens Notes/Activity drawer
+
+6. **Enhanced Notes Drawer with 4 Tabs:**
+   - **Notes** - Add and view inspection notes
+   - **Activity** - View status changes and activity log
+   - **Live** - Real-time inspection progress with auto-refresh (5s)
+   - **SMS** - View SMS logs sent to customer
+
+7. **Info Column:** 
+   - Activity icon opens Notes/Activity/Live drawer
+   - Payment icon (amber) appears only for pending payments
 
 #### Table Columns (9 total):
-DATE/TIME | CUSTOMER | VEHICLE | STATUS | MECHANIC | LOCATION | REPORT | EDIT | MORE
+DATE/TIME | CUSTOMER | VEHICLE | STATUS | MECHANIC | LOCATION | REPORT | EDIT | INFO
 
 ---
 
