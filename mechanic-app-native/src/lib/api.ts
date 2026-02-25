@@ -135,6 +135,17 @@ export const inspectionsApi = {
     try {
       const response = await api.post(`/mechanic/inspections/${id}/progress`, payload);
       
+      // Log the FULL raw response for debugging
+      await debugLogger.logApiResponse(`saveProgress RAW`, {
+        fullResponseKeys: Object.keys(response.data),
+        id: response.data.id,
+        message: response.data.message,
+        progressKeys: response.data.progress ? Object.keys(response.data.progress) : 'no progress field',
+        answersKeys: response.data.answers ? Object.keys(response.data.answers) : 'no answers field',
+        answersIsObject: typeof response.data.answers,
+        rawAnswersPreview: response.data.answers ? JSON.stringify(response.data.answers).substring(0, 500) : 'EMPTY',
+      }, true, id);
+      
       await debugLogger.logApiResponse(`saveProgress`, {
         status: 'success',
         message: response.data.message,
