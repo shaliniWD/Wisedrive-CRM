@@ -1493,13 +1493,13 @@ export default function InspectionsPage() {
                         value={inspection.inspection_status || 'NEW_INSPECTION'} 
                         onValueChange={(value) => handleStatusChange(inspection.id, value)}
                       >
-                        <SelectTrigger className="h-8 text-xs w-[130px] border-gray-200" data-testid={`status-select-${inspection.id}`}>
+                        <SelectTrigger className="h-8 text-xs w-[155px] border-gray-200" data-testid={`status-select-${inspection.id}`}>
                           <SelectValue placeholder="New Inspection" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="min-w-[180px]">
                           {INSPECTION_STATUSES.map((status) => (
                             <SelectItem key={status.value} value={status.value}>
-                              <span className={`px-2 py-0.5 rounded text-xs ${status.color}`}>
+                              <span className={`px-2 py-0.5 rounded text-xs whitespace-nowrap ${status.color}`}>
                                 {status.label}
                               </span>
                             </SelectItem>
@@ -1536,12 +1536,25 @@ export default function InspectionsPage() {
                       </div>
                     </td>
                     
-                    {/* Location Column */}
+                    {/* Location Column - Editable */}
                     <td className="px-3 py-3">
-                      <span className="inline-flex items-center gap-1 text-sm text-blue-600">
-                        <MapPin className="h-3.5 w-3.5" />
-                        {inspection.city}
-                      </span>
+                      <div className="flex items-center gap-1">
+                        <span className="inline-flex items-center gap-1 text-sm text-blue-600 flex-1 min-w-0">
+                          <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
+                          <span className="truncate">{inspection.city || 'No location'}</span>
+                        </span>
+                        <button 
+                          onClick={() => {
+                            setLocationEditInspection(inspection);
+                            setIsLocationModalOpen(true);
+                          }}
+                          className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors flex-shrink-0"
+                          title="Edit Inspection Address"
+                          data-testid={`edit-location-${inspection.id}`}
+                        >
+                          <Edit2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </td>
                     
                     {/* Inspection Report Column */}
