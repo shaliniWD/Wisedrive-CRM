@@ -67,7 +67,7 @@ export default function VerifyVehicleScreen() {
     }
   };
 
-  const handleVerify = () => {
+  const handleVerify = async () => {
     const cleanInput = vehicleNumber.replace(/\s/g, '').toUpperCase();
     const expectedNumber = inspection?.vehicleNumber?.replace(/\s/g, '').toUpperCase();
 
@@ -81,6 +81,16 @@ export default function VerifyVehicleScreen() {
     }
 
     setIsVerifying(true);
+    
+    try {
+      // Call the start inspection API to update status
+      await inspectionsApi.startInspection(id!);
+      console.log('Inspection started successfully');
+    } catch (error) {
+      console.log('Error starting inspection (non-critical):', error);
+      // Continue even if this fails - the inspection can still proceed
+    }
+    
     // Set current inspection and navigate to inspection categories
     setCurrentInspection(id!, inspection);
     setTimeout(() => {
