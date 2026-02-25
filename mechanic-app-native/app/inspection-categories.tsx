@@ -196,23 +196,33 @@ export default function InspectionCategoriesScreen() {
   };
 
   const handleCategoryPress = (category: Category) => {
-    if (!obdCompleted) {
-      Alert.alert(
-        'OBD Scan Required',
-        'Please complete the OBD-II diagnostic scan before proceeding with the inspection checklist.',
-        [{ text: 'OK' }]
-      );
-      return;
-    }
+    // OBD scan is now optional - can be done anytime
     router.push(`/checklist/${category.id}`);
   };
 
   const handleSubmitInspection = async () => {
-    if (!allCategoriesCompleted || !obdCompleted) {
-      Alert.alert('Incomplete', 'Please complete all categories and OBD scan before submitting.');
+    if (!allCategoriesCompleted) {
+      Alert.alert('Incomplete', 'Please complete all inspection categories before submitting.');
+      return;
+    }
+    
+    // OBD is optional - just warn if not done
+    if (!obdCompleted) {
+      Alert.alert(
+        'OBD Scan Not Completed',
+        'You haven\'t completed the OBD-II diagnostic scan. Do you want to submit anyway?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Submit Anyway', onPress: submitInspection }
+        ]
+      );
       return;
     }
 
+    submitInspection();
+  };
+  
+  const submitInspection = async () => {
     try {
       await inspectionsApi.completeInspection(currentInspectionId!);
       Alert.alert('Success', 'Inspection submitted successfully!', [
