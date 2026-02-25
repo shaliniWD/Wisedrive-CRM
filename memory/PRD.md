@@ -1,6 +1,45 @@
 # WiseDrive CRM - Product Requirements Document
 
-## Latest Updates (Feb 24, 2026)
+## Latest Updates (Feb 25, 2026)
+
+### Mechanic App Bug Fixes (v1.0.3)
+**Backend: v2.4.4 | App: v1.0.3**
+
+1. **Navigate Button Crash (P0)** - ✅ FIXED
+   - Problem: App crashed when clicking Navigate on accepted inspections
+   - Root Cause: `handleNavigate` was called from `InspectionCard` but defined inside `HomeScreen` (scope issue)
+   - Fix: Changed to call `openMapsNavigation` which is defined at module level
+
+2. **Persistent Auto-Login / Cache Issue (P0)** - ✅ FIXED
+   - Problem: Android restored old user data after reinstall
+   - Fixes Applied:
+     - Set `android.allowBackup: false` in app.json
+     - Enhanced `logout()` to use `AsyncStorage.multiRemove`
+     - Added `clearAllCache()` function using `AsyncStorage.clear()`
+     - Added "Clear Cache & Logout" button in debug modal (long-press on greeting)
+
+3. **Incorrect Questionnaire Loading (P1)** - ✅ IMPROVED
+   - Enhancement: `/inspections/{id}/questionnaire` now looks up partner's template if no direct template assigned
+
+4. **Car Details Not Loading (P1)** - ✅ FIXED
+   - Enhancement: `/mechanic/inspections/{id}` returns multiple property name variations for compatibility
+
+5. **"Check your phone" Modal (P2)** - ✅ ALREADY FIXED
+   - Status: login.tsx already uses inline "Waiting for SMS..." message, no modal
+
+6. **"Inspection accepted!" Modal (P2)** - ✅ ALREADY FIXED
+   - Status: `handleAccept` already silently refreshes without showing any modal
+
+7. **Old Car Entry Screen Persists (P1)** - 🔍 BUILD NEEDED
+   - Status: Code is correct. Needs new APK build with `--clear-cache`
+
+### Action Required
+1. Deploy backend v2.4.4 to production
+2. Build new APK (v1.0.3) with: `npx eas-cli build --profile preview --platform android --clear-cache`
+
+---
+
+## Previous Updates (Feb 24, 2026)
 
 ### Bug Fixes Applied
 1. **CRM Inspections Page White Screen** - Fixed React error #31 caused by city objects being rendered as strings. Changed API call from `/cities` to `/cities/names`.
