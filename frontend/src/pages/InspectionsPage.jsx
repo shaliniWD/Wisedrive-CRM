@@ -1407,7 +1407,7 @@ export default function InspectionsPage() {
           </Select>
 
           <Select value={filterStatus || 'all'} onValueChange={setFilterStatus}>
-            <SelectTrigger className="w-[200px] h-10 bg-white" data-testid="filter-status">
+            <SelectTrigger className="w-[180px] h-10 bg-white" data-testid="filter-status">
               <SelectValue placeholder="All Status" />
             </SelectTrigger>
             <SelectContent>
@@ -1415,6 +1415,18 @@ export default function InspectionsPage() {
               {INSPECTION_STATUSES.map((s) => (
                 <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={filterPayment || 'all'} onValueChange={setFilterPayment}>
+            <SelectTrigger className="w-[140px] h-10 bg-white" data-testid="filter-payment">
+              <CreditCard className="h-4 w-4 text-gray-400 mr-2" />
+              <SelectValue placeholder="Payment" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Payments</SelectItem>
+              <SelectItem value="paid">Paid</SelectItem>
+              <SelectItem value="pending">Pending/Due</SelectItem>
             </SelectContent>
           </Select>
 
