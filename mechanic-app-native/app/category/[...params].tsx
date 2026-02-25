@@ -601,7 +601,7 @@ export default function CategoryQuestionsScreen() {
       if (!result.canceled && result.assets[0]) {
         // Check file size
         try {
-          const fileInfo = await FileSystem.getInfoAsync(result.assets[0].uri, { size: true });
+          const fileInfo = await FileSystem.getInfoAsync(result.assets[0].uri);
           const sizeMB = fileInfo.exists && fileInfo.size ? fileInfo.size / (1024 * 1024) : 0;
           diagLogger.info('VIDEO_CAPTURED_DIRECT', { sizeMB: sizeMB.toFixed(2), uri: result.assets[0].uri.substring(0, 50) });
           
