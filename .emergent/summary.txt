@@ -2,12 +2,12 @@
 The initial goal was to fix UI bugs and add features to a CRM, including resolving a persistent scroll issue and enhancing the Inspections page with a Razorpay payment modal and an activity log. The scope quickly expanded to a major initiative: integrating a separate React Native mechanic mobile app.
 
 This involved implementing a secure OTP-based login, originally with Twilio, and building a distributable Android APK. During the session, the requirements evolved further to:
--   Replace Twilio with Fast2SMS for more reliable OTP delivery in India.
--   Build a comprehensive SMS logging and wallet balance tracking system within the CRM.
--   Fix a critical OTP validation bug caused by inconsistent phone number formatting.
--   Create a Token Management UI in the CRM settings to allow the user to update API keys (like the Meta Ads token) without needing a new deployment.
--   Resolve a data inconsistency issue where inspections assigned in the CRM were not appearing in the mechanic app, which led to the creation of a centralized City Master data management system.
--   Continuously improve the mechanic app's UI/UX based on user feedback, including adding custom date filters and status-based styling.
+- Replace Twilio with Fast2SMS for more reliable OTP delivery in India.
+- Build a comprehensive SMS logging and wallet balance tracking system within the CRM.
+- Fix a critical OTP validation bug caused by inconsistent phone number formatting.
+- Create a Token Management UI in the CRM settings to allow the user to update API keys (like the Meta Ads token) without needing a new deployment.
+- Resolve a data inconsistency issue where inspections assigned in the CRM were not appearing in the mechanic app, which led to the creation of a centralized City Master data management system.
+- Continuously improve the mechanic app's UI/UX based on user feedback, including adding custom date filters and status-based styling.
 
 **PRODUCT REQUIREMENTS:**
 1.  **Stable Mobile App:** The mechanic app must have a reliable, role-based login (Mechanic, Country Head, CEO) using OTP sent via Fast2SMS.
@@ -19,152 +19,279 @@ This involved implementing a secure OTP-based login, originally with Twilio, and
 **User's preferred language**: English
 
 **what currently exists?**
-The CRM application's backend has been significantly enhanced. It now features a robust OTP authentication system using Fast2SMS, a complete SMS logging interface on the Inspections page, a new Token Management UI in the Settings page for API key administration, and a centralized City Master system to ensure data consistency. All user-reported bugs, including the critical OTP validation failure and inspection sync issue, have been fixed in the preview environment's codebase.
+The CRM backend is at version . It includes a City Management UI, phone number uniqueness validation for employees, Twilio balance checking, an Emergent Universal Key display in settings, and a  endpoint for deployment verification. The critical OTP validation logic was moved from in-memory to a persistent MongoDB collection (), resolving a major issue for multi-instance production environments.
 
-The React Native mechanic app has been updated to include a modern error/success modal system, extensive debug logging, and improved UI features like more date filters (including a custom range) and status-based background colors for inspection cards. The app's icon background has also been corrected.
+The React Native mechanic app has had numerous updates, but the latest build is buggy. The app's API URL was corrected to point to the production server (), which resolved the primary inspections not loading error. However, a new set of UI/UX and functionality bugs have been reported by the user.
 
 **Last working item**:
-- **Last item agent was working:** Implementing a batch of UI/UX improvements for the mechanic mobile app based on user feedback. This included:
-    1.  Fixing the app icon's white background by setting a  in .
-    2.  Adding a custom date range filter to the inspections list.
-    3.  Changing the background color of inspection cards based on their status (e.g., New, Accepted, Completed).
+- **Last item agent was working:** Addressing a comprehensive list of 8 bugs and UI/UX issues reported by the user for the latest mechanic app build. The agent started by overwriting  to remove modals and debug logs.
 - **Status:** IN PROGRESS
 - **Agent Testing Done:** N
-- **Which testing method agent to use?** Manual testing. The next step is to start a new APK build and, once complete, provide the user with the download link for them to test the new UI features on an Android device.
+- **Which testing method agent to use?** Manual testing by building a new APK. The next agent must systematically fix the remaining issues before triggering a build.
 - **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
-  - **Issue 1: Production Environment Out of Sync (P0)**
-     - **Description:** This is a recurring process issue. The user tests new APKs, which point to the production server (), before the corresponding backend changes from the preview environment have been deployed to production. This leads to features appearing broken (e.g., OTP validation failing, inspections not syncing) even though the code fixes are complete in the preview environment.
-     - **Attempted fixes:** The agent has repeatedly reminded the user in summaries and messages that a backend deployment is required for the fixes to take effect in their testing.
-     - **Next debug checklist:** The next agent's first step after providing a new APK must be to remind the user to deploy the latest preview environment to production.
-     - **Why fix this issue and what will be achieved with the fix?** Aligning the testing process with the development-deployment cycle will prevent wasted time debugging already-solved issues and provide accurate test results.
-     - **Status:** BLOCKED (on user action)
-     - **Is recurring issue?** Y
+  - **Issue 1: Navigate Button Crash (P0)**
+  - **Issue 2: Persistent Auto-Login / Cache Issue (P0)**
+  - **Issue 3: Incorrect Questionnaire Loading (P1)**
+  - **Issue 4: Old Car Entry Screen Persists (P1)**
+  - **Issue 5: Car Details Not Loading on Start Inspection Screen (P1)**
+  - **Issue 6: Unwanted check your phone Modal on OTP Screen (P2)**
+  - **Issue 7: Unwanted Inspection accepted! Modal (P2)**
+  
+  **Issues Detail:**
+  - **Issue 1: Navigate Button Crash (P0)**
+     - **Description:** The app crashes when the Navigate button is clicked on an accepted inspection. The user suspects the address is not being fetched correctly. The address should be sourced from the lead's payment modal, the inspection schedule modal, or an upcoming edit feature in the CRM's inspection tab.
+     - **Attempted fixes:** None yet.
+     - **Next debug checklist:**
+        1. Examine the  function in .
+        2. Verify that the inspection data fetched from the  endpoint includes a complete address object (, , , ).
+        3. Ensure the  call is constructing a valid Google Maps URL from the address data. Add defensive code to handle missing address fields gracefully.
+     - **Why fix this issue and what will be achieved with the fix?** This is a critical usability issue blocking mechanics from starting their travel to the inspection location.
+     - **Status:** NOT STARTED
+     - **Should Test frontend/backend/both after fix?** Frontend (Mobile App)
+
+  - **Issue 2: Persistent Auto-Login / Cache Issue (P0)**
+     - **Description:** After uninstalling the old app and installing the new one, it automatically logs into the previous user's account (Sai). This suggests that  data is not being cleared on uninstall or is being backed up by the OS.
+     - **Attempted fixes:** None yet. The agent acknowledged the issue but hasn't investigated the  or logout logic.
+     - **Next debug checklist:**
+        1. Review the  function in . Ensure  is called for both  and .
+        2. Add a Clear Cache button in the debug modal that explicitly clears these  keys to help with testing.
+        3. In , set  to  to prevent Google from automatically backing up and restoring app data.
+     - **Why fix this issue and what will be achieved with the fix?** This is a major security and usability flaw. It prevents users from switching accounts and creates confusion.
+     - **Status:** NOT STARTED
+     - **Is recurring issue?** N
+     - **Should Test frontend/backend/both after fix?** Frontend (Mobile App)
+
+  - **Issue 3: Incorrect Questionnaire Loading (P1)**
+     - **Description:** The app shows static Q&A data instead of the dynamic questionnaire from the template assigned to the inspection's partner. The user changed the partner in the CRM *after* the mechanic started the inspection.
+     - **Attempted fixes:** The agent added backend logic in  to propagate  changes to associated inspections. However, this might not cover cases where the inspection is already in progress.
+     - **Next debug checklist:**
+        1. Verify that the  endpoint in  correctly fetches the  from the inspection document and uses it to find the right .
+        2. Check the  screen to ensure it calls this endpoint and correctly renders the dynamic questionnaire received.
+        3. Add logging on both the backend endpoint and the app screen to trace the , , and the final questionnaire data.
+     - **Why fix this issue and what will be achieved with the fix?** This is a core business logic failure. Mechanics must see the correct questionnaire for the partner to perform the right inspection.
+     - **Status:** IN PROGRESS
      - **Should Test frontend/backend/both after fix?** Both
-     - **Blocked on other issue:** None
+
+  - **Issue 4: Old Car Entry Screen Persists (P1)**
+     - **Description:** The user reports the app still shows the old, yellow car entry screen, despite the agent overwriting  with a new design.
+     - **Attempted fixes:** Agent overwrote the file with new JSX.
+     - **Next debug checklist:**
+        1. Carefully review the code in  to confirm the new UI code is present and there are no conditional renders that would show the old UI.
+        2. Suspect a build or caching issue. The agent should trigger a clean build () after confirming the code is correct.
+     - **Why fix this issue and what will be achieved with the fix?** Improves the app's professionalism and user experience.
+     - **Status:** IN PROGRESS
+     - **Is recurring issue?** Y
+     - **Should Test frontend/backend/both after fix?** Frontend (Mobile App)
+
+  - **Issue 5: Car Details Not Loading on Start Inspection Screen (P1)**
+     - **Description:** The redesigned car entry screen is not picking up car details (make, model) from the backend data.
+     - **Attempted fixes:** The agent updated the backend  endpoint to return more vehicle fields.
+     - **Next debug checklist:**
+        1. Verify the  screen is correctly receiving the inspection details object as a navigation parameter.
+        2. Check the JSX to ensure it's referencing the correct property names (e.g., , ).
+        3. Use the debug modal or add  to inspect the full inspection object available on that screen.
+     - **Why fix this issue and what will be achieved with the fix?** Ensures the mechanic is verifying the correct vehicle, a critical step before starting an inspection.
+     - **Status:** IN PROGRESS
+     - **Should Test frontend/backend/both after fix?** Both
+
+  - **Issue 6: Unwanted check your phone Modal on OTP Screen (P2)**
+     - **Description:** The user wants the modal please check your phone for verification code replaced with a simple toast message on the OTP entry screen.
+     - **Attempted fixes:** The agent overwrote  with changes intended to fix this.
+     - **Next debug checklist:**
+        1. Review the new  code to confirm the modal logic was fully removed and replaced with a toast notification library (like ).
+        2. The agent's last action was a file overwrite; it needs to be verified if the implementation is correct and complete.
+     - **Why fix this issue and what will be achieved with the fix?** A minor UI/UX refinement to make the login flow smoother.
+     - **Status:** IN PROGRESS
+     - **Should Test frontend/backend/both after fix?** Frontend (Mobile App)
+
+  - **Issue 7: Unwanted Inspection accepted! Modal (P2)**
+     - **Description:** The user wants the modal confirming Inspection accepted! to be removed.
+     - **Attempted fixes:** The agent started to look into this but got sidetracked. No code was changed for this specific issue yet.
+     - **Next debug checklist:**
+        1. Find the  function in .
+        2. Locate the  call within the success block of the API call.
+        3. Remove the  call.
+     - **Why fix this issue and what will be achieved with the fix?** A minor UI/UX refinement.
+     - **Status:** NOT STARTED
+     - **Should Test frontend/backend/both after fix?** Frontend (Mobile App)
 
 **In progress Task List**:
-  - **Task 1: Build and Provide Final Mechanic App APK (P0)**
-     - **Where to resume:** The agent has finished editing  and . The next step is to run the  command from the  directory.
-     - **What will be achieved with this?** A new, downloadable APK containing the latest UI fixes (app icon, custom date filters, status-based card colors) will be generated for the user.
+  - **Task 1: Complete the Mechanic App Bug Bash (P0)**
+     - **Where to resume:** The agent has just overwritten . The next step is to systematically address the remaining issues from the Pending Issue List, starting with the Navigate button crash in .
+     - **What will be achieved with this?** A stable, functional, and user-friendly mechanic app that meets all the user's latest requirements.
      - **Status:** IN PROGRESS
-     - **Should Test frontend/backend/both after fix?** Frontend (Mobile App).
+     - **Should Test frontend/backend/both after fix?** Both. A new APK build will be required.
      - **Blocked on something:** None.
 
 **Upcoming and Future Tasks**
 **Upcoming Tasks:**
--   **P0: User Verification of All Recent Fixes:** Once the backend is deployed and the new APK is installed, the user needs to perform a full end-to-end test to confirm all recent fixes are working on production. This includes OTP login, inspection data sync, and the new UI features.
--   **P1: Add City Management UI to CRM Settings:** The backend APIs for managing the City Master are complete. The next step is to build a UI in the CRM Settings page to allow admins to add, edit, and manage cities and their aliases.
+-   **P1: Add City Management to Inspections Tab:** The user noted they cannot see or change an inspection's city in the main Inspections tab. A feature needs to be added to the CRM to allow admins to edit an existing inspection's city, which should then sync with the City Master data.
 
 **Future Tasks:**
 -   **CRM:**
     -   Add PDF export and Share via WhatsApp functionality for inspection reports.
     -   Implement a customer reminders feature.
 -   **Mechanic Mobile App:**
-    -   Implement the full questionnaire-based inspection flow.
-    -   Add a Reject Reason modal for mechanics when they reject an inspection.
+    -   Add a Reject Reason modal for mechanics when they reject an inspection (the backend is ready, the frontend is not).
 
 **Completed work in this session**
--   **SMS Provider Migration:** Replaced Twilio with Fast2SMS for OTP delivery, including debugging DLT template IDs and updating the service to handle multi-variable templates.
--   **SMS Logging System:** Implemented a full-stack feature to log every SMS request to MongoDB and display detailed logs, wallet balance, and delivery stats within a new SMS Logs tab in the CRM's Inspections page.
--   **Token Management UI:** Created a new Settings page in the CRM where the user can view, test, and update API tokens (Meta Ads, Fast2SMS) directly, eliminating the need for redeployments.
--   **Critical Bug Fix (OTP Validation):** Resolved an issue where OTP verification failed due to inconsistent phone number formatting between the request and verify steps by implementing a normalization function.
--   **Critical Bug Fix (Inspection Sync):**
-    -   Addressed a major data inconsistency issue by creating a centralized City Master system with its own database collection and management APIs.
-    -   Seeded the master table with default cities and aliases.
-    -   Updated the mechanic inspection query to perform case-insensitive, alias-aware matching, ensuring assigned inspections are correctly fetched.
--   **Mechanic App UI/UX Enhancements:**
-    -   Replaced standard alerts with a modern, custom-designed error and success modal.
-    -   Updated error messages to be more informative as per user request.
-    -   Added extensive debug logging capabilities to the login and OTP screens to aid troubleshooting.
-    -   Added new date filters (This Month, Last Month) to the inspection list.
--   **Environment Configuration:** Set  in the backend  file to ensure real SMS messages are sent in production.
+-   **APK Build Process:** Installed EAS CLI and successfully built multiple APKs, debugging build failures related to missing dependencies () and local bundler issues.
+-   **Critical Bug Fix (CRM White Screen):** Fixed the CRM's Inspections page from crashing by changing the frontend API call from  (returns objects) to  (returns strings).
+-   **Critical Bug Fix (OTP Stability):** Migrated OTP storage from a volatile in-memory dictionary to a persistent MongoDB collection (), making the login process reliable in a multi-instance production environment.
+-   **Critical Bug Fix (App Authentication):** Diagnosed and fixed the Failed to load inspections 401 error by changing the app's  in  from the preview URL to the user's production URL.
+-   **Critical Bug Fix (Inspection Status):** Fixed logic where ACCEPTED inspections were incorrectly showing as NEW. The backend status mapping in the  endpoint was updated.
+-   **Feature: City Management UI:** Implemented a complete CRUD interface in the CRM's Settings page for managing the City Master data, including creating cities, editing names/states, and adding aliases.
+-   **Feature: Versioning & Diagnostics:** Added a  endpoint to the backend to help the user verify deployments. Also added a debug modal to the mechanic app to inspect environment variables and API responses.
+-   **Feature: Twilio Balance:** Added an endpoint and UI to show the Twilio account balance in the CRM Settings.
+-   **Enhancement: Phone Uniqueness:** Added backend validation to prevent creating or updating employees with a phone number that is already in use.
+-   **Enhancement: Partner Sync:** Implemented backend logic to automatically update an inspection's  if the corresponding lead's partner is changed in the CRM.
+
+**Earlier issues found/mentioned but not fixed**
+- None. All mentioned issues have been captured in the pending list.
+
+**Known issue recurrence from previous fork**
+  - **Issue recurrence in previous fork:** Production Environment Out of Sync. The user tests new APKs, which point to the production server, before the corresponding backend changes from the preview environment have been deployed to production.
+  - **Recurrence count:** High. This was the root cause of the 401 error and continues to cause confusion.
+  - **Status:** RESOLVED (for now). The agent successfully guided the user to deploy the correct version () and fixed the app's environment variable to point to production, resolving the immediate problem.
 
 **Code Architecture**
-smsLogsApisettingsApi
+
 
 **Key Technical Concepts**
--   **Third-Party API Integration:** Successfully integrated Fast2SMS, handling DLT templates, API keys, and variable message formats.
--   **Architectural Improvement:** Transitioned from hardcoded/free-text city data to a centralized, database-driven City Master system to ensure data consistency across the application.
--   **Data Normalization:** Solved a critical authentication bug by implementing a robust phone number normalization function that cleans and standardizes input before processing.
--   **Full-Stack Feature Development:** Built end-to-end features like the SMS Logger and Token Manager, involving backend API creation, database schema changes, and frontend UI implementation in React.
--   **React Native UI/UX:** Developed custom, modern UI components (modals, date pickers) and improved user feedback mechanisms in the native app.
+-   **React Native Debugging:** Using EAS CLI to build and check logs. Creating in-app debug modals to inspect state and API responses in a production environment.
+-   **Environment Management:** Diagnosing and fixing critical bugs caused by the mobile app pointing to the wrong API endpoint (preview vs. production).
+-   **State Persistence:** Migrating authentication state (OTP) from a volatile in-memory dictionary to a persistent MongoDB collection to support a scalable, multi-instance production architecture.
+-   **Data Synchronization:** Implementing backend logic to propagate data changes between related but separate data models (e.g., updating an  when its parent 's partner changes).
+-   **Full-Stack Feature Implementation:** Building the City Management UI from the backend (new DELETE endpoint) to the frontend (new React component integrated into Settings page).
 
 **key DB schema**
--   ** (New):** Stores every outgoing SMS attempt, including .
--   ** (New):** A master collection for cities, storing .
--   ** (Implicit):** A collection used to store application-wide settings, now including API tokens like .
+-   ** (New):** Stores temporary OTPs for mechanic login, preventing issues in multi-instance environments. .
 
 **changes in tech stack**
--   **Fast2SMS:** Added as the primary OTP SMS provider.
--   **:** Added as a backend dependency for making asynchronous HTTP requests.
+-   **:** Used EAS command line tool
+
+VERSION
+  eas-cli/18.0.5 linux-arm64 node-v20.20.0
+
+USAGE
+  $ eas [COMMAND]
+
+TOPICS
+  account      manage account
+  branch       manage update branches
+  build        build app binaries
+  channel      manage update channels
+  credentials  manage credentials
+  deploy       deploy your Expo Router web build and API Routes
+  device       manage Apple devices for Internal Distribution
+  env          manage project and account environment variables
+  fingerprint  compare fingerprints of the current project, builds, and updates
+  metadata     manage store configuration
+  project      manage project
+  update       manage individual updates
+  webhook      manage webhooks
+  workflow     manage workflows
+
+COMMANDS
+  analytics     display or change analytics settings
+  autocomplete  display autocomplete installation instructions
+  build         start a build
+  config        display project configuration (app.json + eas.json)
+  credentials   manage credentials
+  deploy        deploy your Expo Router web build and API Routes
+  diagnostics   display environment info
+  help          Display help for eas.
+  init          create or link an EAS project
+  login         log in with your Expo account
+  logout        log out
+  new           Create a new project configured with Expo Application Services
+                (EAS)
+  onboarding    continue onboarding process started on the https://expo.new
+                website.
+  open          open the project page in a web browser
+  submit        submit app binary to App Store and/or Play Store
+  update        publish an update group
+  upload        upload a local build and generate a sharable link
+  whoami        show the username you are logged in as to build the React Native application.
 
 **All files of reference**
 -    (Heavily Modified)
--    (New)
--    (Modified)
--    (Overwritten)
--    (Modified)
--    (Heavily Modified)
 -    (Heavily Modified)
 -    (Modified)
+-    (Heavily Modified, requires more fixes)
+-    (Overwritten, needs verification)
+-    (Overwritten, needs investigation)
+-    (Modified)
+-    (Needs review)
+-    (Updated)
 
 **Areas that need refactoring**:
--   **:** Remains critically oversized. The new endpoints for cities, SMS logs, and settings should be extracted into their own modular route files (e.g., , ).
--   **:** This file is becoming large. The logic for the new SMS Logs tab could be extracted into a separate component.
+-   **:** Still a monolithic file. The new endpoints for cities, settings, and diagnostics should ideally be in separate route files.
+-   **:** This file has grown very large and complex, containing logic for fetching, filtering, rendering inspections, plus multiple modals (reject, date filter, debug). The modals and list item component could be extracted.
 
 **key api endpoints**
--   : Fetches paginated SMS logs.
--   : Retrieves the current Fast2SMS wallet balance.
--   : Gets the status of all configured API tokens.
--   : Updates a specific API token.
--   : Retrieves all cities from the new master collection.
--   : Updates a city (e.g., to add an alias).
--   : Endpoint to fetch inspections for the logged-in mechanic (logic was heavily modified).
+-   : Modified to include phone number uniqueness validation.
+-   : Modified to include phone number uniqueness validation.
+-   : Modified to propagate  changes to related inspections.
+-   : (New) Fetches Twilio account balance.
+-   : Modified to include Twilio and Emergent key status.
+-   : (New) Creates a new city in the City Master.
+-   : (New) Updates a city.
+-   : (New) Deletes a city.
+-   : (New) Returns a simple list of city names.
+-   : (New) Returns backend version and diagnostic info.
+-   : Logic updated to use MongoDB for OTP storage.
+-   : Logic updated to use MongoDB for OTP verification.
+-   : Heavily modified to fix status mapping and return more vehicle details.
+-   : (New) Diagnostic endpoint to debug the inspection query for a given user.
 
 **Critical Info for New Agent**
--   **The user's testing workflow is a known blocker.** They test the mobile APK on the production server () *before* deploying the corresponding backend changes from the preview environment. You **must** remind the user to deploy the backend first, then test the APK. This is the cause of most fixed but still failing reports.
--   Your immediate task is to build a new APK with the latest UI changes. After locating the files edited by the previous agent, run  in the  directory.
--   After providing the new APK download link, your next message must be a clear instruction to the user to deploy the preview environment to production before testing.
+-   Your primary focus is the list of 8 issues reported by the user for the mechanic app. Do not get sidetracked. Address them systematically, starting with the P0 crash and cache issues.
+-   **Assume the last agent's file overwrites (, ) were incomplete.** You need to verify the code and fix any remaining problems. The user reported that the new UI for the start inspection screen is not showing up, which is a red flag that something is wrong with the last agent's work.
+-   **Cache/Auto-login is a P0 security issue.** Investigate  and consider setting  to  in .
+-   **The Navigate crash is a P0 usability issue.** The app is useless if mechanics can't navigate. Check the address data and the  call in .
+-   After implementing fixes, you **must** build a new APK for the user to test. Remember to increment the version number in the backend for traceability.
 
 **documents and test reports created in this job**
-- None.
+- 
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** Asks to fix an OTP validation error. (COMPLETED)
-2.  **User:** Provides a Meta Ads token to be automated. (COMPLETED)
-3.  **User:** Approves adding a Token Management UI to the CRM. (COMPLETED)
-4.  **User:** Reports OTP verification is still failing on production. (COMPLETED - Phone normalization fix implemented)
-5.  **User:** Provides new Fast2SMS template/sender ID and requests OTP expiry be set to 30 mins. (COMPLETED)
-6.  **User:** Reports an SMS was generated in Fast2SMS logs but not delivered to the mechanic's phone. (COMPLETED - Diagnosed as a carrier issue Unknown Subscriber)
-7.  **User:** Asks to update the Unauthorized error message and modernize the error modal in the mechanic app. (COMPLETED)
-8.  **User:** Reports that assigned inspections are not showing in the app and requests more date filters. (COMPLETED)
-9.  **User:** Raises an architectural concern about inconsistent city data sources and asks for a unified system. (COMPLETED - City Master created)
-10. **User:** Requests minor UI changes for the mechanic app: fix icon background, add a custom date range filter, and add status-based background colors for inspection cards. (IN PROGRESS)
+1.  **User:** Reports 3 issues with the mechanic app: inspection not showing, date filters crashing, and intermittent OTP validation. (COMPLETED)
+2.  **User:** Deployed backend, but now Inspections page in CRM is a white screen. (COMPLETED)
+3.  **User:** Confirms CRM page is fixed. Requests City Management UI in Settings. (COMPLETED)
+4.  **User:** Reports mechanic app still has failed to load inspections error. Requests two CRM validations (unique phone, Twilio balance). (IN PROGRESS - CRM part DONE, app issue ongoing)
+5.  **User:** Asks for a versioning system to track deployments and asks if the 401 issue is resolved. (COMPLETED - Version endpoint added)
+6.  **User:** Requests an Emergent token card in Settings to track credits. (COMPLETED)
+7.  **User:** Confirms v2.4.0 is deployed but the app issue persists. (IN PROGRESS)
+8.  **User:** Cannot run curl commands on production, requests an alternative debug method. (COMPLETED - Debug modal added to app)
+9.  **User:** Shares screenshot of the new debug modal, revealing the app is pointing to the wrong (preview) API URL. (ROOT CAUSE FOUND)
+10. **User:** Confirms the app now works after installing an APK pointing to production. Reports a new set of 8 issues related to post-login workflow, UI, and data loading. (IN PROGRESS - THIS IS THE CURRENT TASK)
 
 **Project Health Check:**
--   **Broken:** The production environment () is running an older version of the backend code. It is out of sync with the feature-complete preview environment. The mobile app will not function correctly until the user deploys the latest preview environment to production.
--   **In Progress:** The final UI improvements for the mechanic app are coded and ready for an APK build.
+-   **Broken:** The mechanic app is highly unstable. Key features like navigation are crashing, UI is not updating as expected, and there's a critical auto-login/cache issue.
+-   **In Progress:** A major bug-fixing effort for the mechanic app is underway.
 -   **Mocked:** None.
 
 **3rd Party Integrations**
--   **Fast2SMS:** (Active) The primary provider for OTP SMS. Configuration (API Key, Template ID) is stored in the backend  file.
--   **Twilio:** (Active, limited use) Deprecated for OTP but may still be used for WhatsApp messages.
--   **Meta (Facebook) Marketing API:** (Active) Token is now manageable via the new Token Management UI in the CRM.
--   **Razorpay:** (Active) For payment links.
--   **Expo Application Services (EAS):** (Active) Used to build and distribute the Android APK.
+-   **Fast2SMS:** Active for OTP SMS.
+-   **Twilio:** Active for WhatsApp and balance checking.
+-   **Meta (Facebook) Marketing API:** Active, token managed in CRM.
+-   **Razorpay:** Active.
+-   **Expo Application Services (EAS):** Active, used for all Android APK builds.
+-   **Emergent LLM Key:** Integrated into the CRM Settings page for visibility.
 
 **Testing status**
 -   **Testing agent used after significant changes:** NO
 -   **Troubleshoot agent used after agent stuck in loop:** NO
--   **Test files created:** None in this session.
--   **Known regressions:** None.
+-   **Test files created:** None.
+-   **Known regressions:** The accept inspection flow was fixed, but now the navigation button crashes. Several UI changes were attempted but are not appearing for the user.
 
 **Credentials to test flow:**
 -   **CRM Admin Login:**  / 
--   **Mechanic Test Number (for preview env):** . The dev OTP  will work, but to test the actual Fast2SMS flow, you must use a real OTP generated by the system.
--   **User's Primary Test Number:** . This number is confirmed to receive SMS from Fast2SMS.
+-   **Mechanic Test Number (for production):**  (Sai Bharath)
+-   **Mechanic Test Number (for preview env):** 
 
 **What agent forgot to execute**
--   The agent successfully addressed all user requests and architectural issues raised during the session. The primary un-executed item is the final APK build for the latest set of UI changes, which is the immediate next step.</analysis>
+The previous agent received a list of 8 specific issues to fix in the mechanic app. While they took some initial steps (overwriting  and , and updating backend logic), they did not fully implement or verify the fixes for most of the items on the list before starting the next APK build. Key items like the Navigate crash, the cache/auto-login issue, and why the new UI wasn't showing were not addressed.</analysis>
