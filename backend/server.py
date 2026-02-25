@@ -5419,8 +5419,8 @@ async def get_inspection_live_progress(inspection_id: str, current_user: dict = 
         answer_data = answers.get(q_id)
         q_detail = {
             "question_id": q_id,
-            "question_text": q.get("text", q.get("question_text", "")),
-            "question_type": q.get("input_type", q.get("type", "text")),
+            "question_text": q.get("question", q.get("text", q.get("question_text", ""))),
+            "question_type": q.get("answer_type", q.get("input_type", q.get("type", "text"))),
             "is_answered": False,
             "answer": None,
             "answered_at": None
