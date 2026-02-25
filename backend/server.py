@@ -13508,7 +13508,9 @@ async def get_inspection_questionnaire(inspection_id: str, current_user: dict = 
         "partner_id": inspection.get("partner_id"),
         "partner_name": inspection.get("partner_name"),
         "questions": questions,
-        "total_questions": len(questions)
+        "total_questions": len(questions),
+        "category_order": insp_template.get("category_order", []),
+        "categories": list(category_map.values())
     }
 
 
