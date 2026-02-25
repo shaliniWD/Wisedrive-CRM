@@ -350,6 +350,17 @@ export default function InspectionsPage() {
   const [mechanicEditInspection, setMechanicEditInspection] = useState(null);
   const [selectedMechanicId, setSelectedMechanicId] = useState('');
   
+  // Location Edit Modal
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+  const [locationEditInspection, setLocationEditInspection] = useState(null);
+  const [locationFormData, setLocationFormData] = useState({
+    address: '',
+    city: '',
+    latitude: null,
+    longitude: null
+  });
+  const [locationSaving, setLocationSaving] = useState(false);
+  
   // Schedule Unscheduled Inspection Modal (NEW - with Vaahan API & Google Places)
   const [isScheduleUnscheduledModalOpen, setIsScheduleUnscheduledModalOpen] = useState(false);
   const [scheduleUnscheduledInspection, setScheduleUnscheduledInspection] = useState(null);
