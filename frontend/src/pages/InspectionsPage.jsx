@@ -2458,8 +2458,20 @@ export default function InspectionsPage() {
                 <MapPin className="h-4 w-4 text-green-600" />
                 Location
               </div>
+              
+              {/* Current Address */}
+              {editInspectionData?.address && (
+                <div className="bg-slate-50 border rounded-lg p-3">
+                  <Label className="text-xs text-gray-500">Current Address</Label>
+                  <p className="text-sm text-gray-800 mt-1">{editInspectionData.address}</p>
+                  {editInspectionData.city && (
+                    <p className="text-xs text-gray-500 mt-1">City: {editInspectionData.city}</p>
+                  )}
+                </div>
+              )}
+              
               <div className="space-y-2">
-                <Label className="text-xs text-gray-500">Address (Google Places)</Label>
+                <Label className="text-xs text-gray-500">Update Address (Google Places)</Label>
                 <PlacesAutocomplete
                   value={editInspectionFormData.address}
                   onChange={(value) => setEditInspectionFormData(prev => ({ ...prev, address: value }))}
@@ -2479,11 +2491,11 @@ export default function InspectionsPage() {
                       longitude: place.geometry?.location?.lng() || null
                     }));
                   }}
-                  placeholder="Search address..."
+                  placeholder="Search new address..."
                   className="w-full"
                 />
-                {editInspectionFormData.city && (
-                  <p className="text-xs text-gray-500">City: <span className="font-medium">{editInspectionFormData.city}</span></p>
+                {editInspectionFormData.city && editInspectionFormData.city !== editInspectionData?.city && (
+                  <p className="text-xs text-green-600">New City: <span className="font-medium">{editInspectionFormData.city}</span></p>
                 )}
               </div>
             </div>
@@ -2494,8 +2506,33 @@ export default function InspectionsPage() {
                 <Car className="h-4 w-4 text-amber-600" />
                 Vehicle
               </div>
+              
+              {/* Current Vehicle Details */}
+              {(editInspectionData?.car_number || editInspectionData?.car_make) && (
+                <div className="bg-slate-50 border rounded-lg p-3">
+                  <Label className="text-xs text-gray-500">Current Vehicle</Label>
+                  <div className="mt-2 space-y-1">
+                    <p className="text-sm font-mono text-blue-600 font-medium">{editInspectionData.car_number || '-'}</p>
+                    {(editInspectionData.car_make || editInspectionData.car_model) && (
+                      <p className="text-sm text-gray-700">{editInspectionData.car_make} {editInspectionData.car_model}</p>
+                    )}
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {editInspectionData.car_year && (
+                        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">Year: {editInspectionData.car_year}</span>
+                      )}
+                      {editInspectionData.fuel_type && (
+                        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{editInspectionData.fuel_type}</span>
+                      )}
+                      {editInspectionData.car_color && (
+                        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{editInspectionData.car_color}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               <div className="space-y-2">
-                <Label className="text-xs text-gray-500">Vehicle Number</Label>
+                <Label className="text-xs text-gray-500">Change Vehicle Number</Label>
                 <div className="flex gap-2">
                   <Input
                     value={editInspectionFormData.car_number}
