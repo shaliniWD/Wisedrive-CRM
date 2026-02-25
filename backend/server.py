@@ -13429,6 +13429,15 @@ async def get_inspection_questionnaire(inspection_id: str, current_user: dict = 
     # Get inspection template from the inspection record
     inspection_template_id = inspection.get("inspection_template_id")
     
+    # If no template assigned, try to get from partner
+    if not inspection_template_id:
+        partner_id = inspection.get("partner_id")
+        if partner_id:
+            partner = await db.partners.find_one({"id": partner_id}, {"_id": 0, "inspection_template_id": 1})
+            if partner:
+                inspection_template_id = partner.get("inspection_template_id")
+                logger.info(f"Got inspection_template_id {inspection_template_id} from partner {partner_id}")
+    
     if not inspection_template_id:
         # Fallback to report_template_id and get inspection_template from there
         report_template_id = inspection.get("report_template_id")
