@@ -53,13 +53,23 @@ export default function ChecklistScreen() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(categoryId || null);
 
   useEffect(() => {
-    fetchData();
+    if (inspectionId) {
+      fetchData();
+    } else {
+      Alert.alert('Error', 'No inspection ID provided');
+      router.back();
+    }
   }, [inspectionId]);
 
   const fetchData = async () => {
+    if (!inspectionId) {
+      setIsLoading(false);
+      return;
+    }
+    
     try {
       // Fetch inspection details
-      const inspData = await inspectionsApi.getInspection(inspectionId!);
+      const inspData = await inspectionsApi.getInspection(inspectionId);
       setInspection(inspData);
 
       // Fetch questionnaire
