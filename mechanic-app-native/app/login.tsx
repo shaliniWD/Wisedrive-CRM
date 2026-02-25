@@ -6,23 +6,21 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Image,
   Dimensions,
   ScrollView,
-  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { authApi } from '../src/lib/api';
 import { useAuth } from '../src/context/AuthContext';
 import axios from 'axios';
+import { Toast } from 'react-native-toast-message/lib/src/Toast';
 
-// API Base URL for debugging
+// API Base URL
 const API_BASE_URL = 'https://crmdev.wisedrive.com/api';
 
 const { width, height } = Dimensions.get('window');
@@ -54,84 +52,73 @@ export default function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [countryCode] = useState('+91');
   const [inputFocused, setInputFocused] = useState(false);
-  const [debugLogs, setDebugLogs] = useState<string[]>([]);
-  const [showDebugModal, setShowDebugModal] = useState(false);
-  const [showErrorModal, setShowErrorModal] = useState(false);
-  const [errorModalContent, setErrorModalContent] = useState({ title: '', message: '', isAuthError: false });
+  const [errorMessage, setErrorMessage] = useState('');
   
   const otpInputs = useRef<(TextInput | null)[]>([]);
 
-  const addLog = (message: string) => {
-    const timestamp = new Date().toLocaleTimeString();
-    setDebugLogs(prev => [...prev, `[${timestamp}] ${message}`]);
-  };
-
-  // Show custom error modal
-  const showError = (title: string, message: string, isAuthError: boolean = false) => {
-    setErrorModalContent({ title, message, isAuthError });
-    setShowErrorModal(true);
-  };
-
   const handleSendOtp = async () => {
     if (phone.length < 10) {
-      showError('Invalid Number', 'Please enter a valid 10-digit phone number');
+      setErrorMessage('Please enter a valid 10-digit phone number');
       return;
     }
 
     setIsLoading(true);
-    setDebugLogs([]); // Clear previous logs
+    setErrorMessage('');
     
     try {
       const fullPhone = `${countryCode}${phone}`;
-      addLog(`Requesting OTP for: ${fullPhone}`);
-      addLog(`API URL: ${API_BASE_URL}/auth/request-otp`);
-      
-      // Make direct API call with detailed logging
       const response = await axios.post(`${API_BASE_URL}/auth/request-otp`, {
         phone: fullPhone
-      }, {
-        headers: { 'Content-Type': 'application/json' },
-        timeout: 30000
       });
       
-      addLog(`Response Status: ${response.status}`);
-      addLog(`Response Data: ${JSON.stringify(response.data)}`);
-      
       setStep('otp');
-      // Show simple toast-like feedback instead of modal
-      Alert.alert('OTP Sent', 'Please check your phone for the verification code');
+      // Focus first OTP input after a short delay
+      setTimeout(() => {
+        otpInputs.current[0]?.focus();
+      }, 100);
     } catch (error: any) {
-      addLog(`ERROR occurred!`);
-      
       if (error.response) {
-        // Server responded with error
-        addLog(`Status Code: ${error.response.status}`);
-        addLog(`Error Data: ${JSON.stringify(error.response.data)}`);
-        addLog(`Headers: ${JSON.stringify(error.response.headers)}`);
-        
-        const errorDetail = error.response.data?.detail || error.response.data?.message || 'Unknown server error';
-        
-        // Check if it's an authorization error
-        if (errorDetail.toLowerCase().includes('not authorized') || 
-            errorDetail.toLowerCase().includes('only mechanics') ||
-            error.response.status === 404) {
-          showError(
-            'Access Denied', 
-            'You are not authorized to access this app. Please contact admin or send email to support@wisedrive.com',
-            true
-          );
-        } else {
-          showError('Error', errorDetail);
-        }
+        const detail = error.response.data?.detail || 'Failed to send OTP';
+        setErrorMessage(detail);
       } else if (error.request) {
-        // Request made but no response
-        addLog(`No response received`);
-        addLog(`Request: ${JSON.stringify(error.request._url || error.request)}`);
-        showError('Connection Error', 'No response from server. Please check your internet connection.');
+        setErrorMessage('No response from server. Please check your internet connection.');
       } else {
-        // Error setting up request
-        addLog(`Request setup error: ${error.message}`);
-        showError('Error', `Request failed: ${error.message}`);
+        setErrorMessage('An unexpected error occurred. Please try again.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    const otpValue = otp.join('');
+    if (otpValue.length !== 6) {
+      setErrorMessage('Please enter complete 6-digit OTP');
+      return;
+    }
+
+    setIsLoading(true);
+    setErrorMessage('');
+
+    try {
+      const fullPhone = `${countryCode}${phone}`;
+      const response = await axios.post(`${API_BASE_URL}/auth/verify-otp`, {
+        phone: fullPhone,
+        otp: otpValue
+      });
+
+      if (response.data.success && response.data.token) {
+        await login(response.data.token, response.data.mechanicProfile);
+        router.replace('/home');
+      } else {
+        setErrorMessage('Verification failed. Please try again.');
+      }
+    } catch (error: any) {
+      if (error.response) {
+        const detail = error.response.data?.detail || 'Invalid OTP';
+        setErrorMessage(detail);
+      } else {
+        setErrorMessage('Verification failed. Please try again.');
       }
     } finally {
       setIsLoading(false);
@@ -142,9 +129,19 @@ export default function LoginScreen() {
     const newOtp = [...otp];
     newOtp[index] = value;
     setOtp(newOtp);
+    setErrorMessage('');
 
+    // Auto-focus next input
     if (value && index < 5) {
       otpInputs.current[index + 1]?.focus();
+    }
+
+    // Auto-submit when complete
+    if (index === 5 && value) {
+      const completeOtp = newOtp.join('');
+      if (completeOtp.length === 6) {
+        handleVerifyOtp();
+      }
     }
   };
 
@@ -154,496 +151,236 @@ export default function LoginScreen() {
     }
   };
 
-  const handleVerifyOtp = async () => {
-    const otpString = otp.join('');
-    if (otpString.length !== 6) {
-      showError('Incomplete OTP', 'Please enter the complete 6-digit OTP');
-      return;
-    }
-
+  const handleResendOtp = async () => {
     setIsLoading(true);
+    setErrorMessage('');
     
     try {
       const fullPhone = `${countryCode}${phone}`;
-      addLog(`Verifying OTP for: ${fullPhone}`);
-      addLog(`OTP entered: ${otpString}`);
-      addLog(`API URL: ${API_BASE_URL}/auth/verify-otp`);
-      
-      // Make direct API call with detailed logging
-      const response = await axios.post(`${API_BASE_URL}/auth/verify-otp`, {
-        phone: fullPhone,
-        otp: otpString
-      }, {
-        headers: { 'Content-Type': 'application/json' },
-        timeout: 30000
-      });
-      
-      addLog(`Verify Response Status: ${response.status}`);
-      addLog(`Verify Response: ${JSON.stringify(response.data)}`);
-      
-      if (response.data.success && response.data.token) {
-        await login(response.data.token, response.data.mechanicProfile);
-        router.replace('/home');
-      } else {
-        showError('Verification Failed', response.data.message || 'Unable to verify OTP');
-      }
+      await axios.post(`${API_BASE_URL}/auth/request-otp`, { phone: fullPhone });
+      // Just clear OTP fields on resend
+      setOtp(['', '', '', '', '', '']);
+      otpInputs.current[0]?.focus();
     } catch (error: any) {
-      addLog(`VERIFY ERROR occurred!`);
-      
-      if (error.response) {
-        addLog(`Verify Status Code: ${error.response.status}`);
-        addLog(`Verify Error Data: ${JSON.stringify(error.response.data)}`);
-        
-        const errorMessage = error.response.data?.detail || error.response.data?.message || 'Invalid OTP';
-        showError('Verification Failed', errorMessage);
-      } else if (error.request) {
-        addLog(`No response received for verify`);
-        showError('Connection Error', 'No response from server. Please check your internet connection.');
-      } else {
-        addLog(`Verify setup error: ${error.message}`);
-        showError('Error', `Verification failed: ${error.message}`);
-      }
+      setErrorMessage('Failed to resend OTP. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Handle change number - go back to phone entry
   const handleChangeNumber = () => {
     setStep('phone');
     setOtp(['', '', '', '', '', '']);
-    setDebugLogs([]); // Clear logs when changing number
-  };
-
-  // Handle resend OTP
-  const handleResendOtp = async () => {
-    setIsLoading(true);
-    setDebugLogs([]); // Clear previous logs
-    
-    try {
-      const fullPhone = `${countryCode}${phone}`;
-      addLog(`Resending OTP for: ${fullPhone}`);
-      
-      const response = await axios.post(`${API_BASE_URL}/auth/request-otp`, {
-        phone: fullPhone
-      }, {
-        headers: { 'Content-Type': 'application/json' },
-        timeout: 30000
-      });
-      
-      addLog(`Resend Response Status: ${response.status}`);
-      addLog(`Resend Response: ${JSON.stringify(response.data)}`);
-      
-      // Show simple toast-like feedback instead of modal
-      Alert.alert('OTP Resent', 'A new OTP has been sent to your phone');
-      setOtp(['', '', '', '', '', '']); // Clear OTP inputs
-    } catch (error: any) {
-      addLog(`RESEND ERROR occurred!`);
-      
-      if (error.response) {
-        addLog(`Resend Status: ${error.response.status}`);
-        addLog(`Resend Error: ${JSON.stringify(error.response.data)}`);
-        
-        const errorDetail = error.response.data?.detail || 'Failed to resend OTP';
-        if (errorDetail.toLowerCase().includes('not authorized') || error.response.status === 404) {
-          showError(
-            'Access Denied', 
-            'You are not authorized to access this app. Please contact admin or send email to support@wisedrive.com',
-            true
-          );
-        } else {
-          showError('Error', errorDetail);
-        }
-      } else {
-        addLog(`Resend error: ${error.message}`);
-        showError('Error', 'Failed to resend OTP. Please try again.');
-      }
-    } finally {
-      setIsLoading(false);
-    }
+    setErrorMessage('');
   };
 
   return (
-    <View style={styles.container}>
-      {/* Top Section with Logo */}
-      <LinearGradient
-        colors={[Colors.gradientStart, Colors.gradientEnd]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.headerSection}
-      >
-        <SafeAreaView edges={['top']} style={styles.headerSafeArea}>
-          <View style={styles.logoContainer}>
-            <View style={styles.logoBox}>
-              <Image 
-                source={require('../assets/icon.png')} 
-                style={styles.logoImage}
-                resizeMode="contain"
-              />
-            </View>
-          </View>
-        </SafeAreaView>
-      </LinearGradient>
-
-      {/* Content Card */}
+    <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView 
+        style={styles.keyboardView} 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.contentWrapper}
       >
-        <View style={styles.contentCard}>
-          {step === 'phone' ? (
-            <>
-              <View style={styles.titleSection}>
-                <Text style={styles.title}>Welcome Back</Text>
-                <Text style={styles.subtitle}>
-                  Sign in with your registered mobile number
-                </Text>
-              </View>
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Logo and Header */}
+          <View style={styles.headerSection}>
+            <View style={styles.logoContainer}>
+              <LinearGradient
+                colors={[Colors.gradientStart, Colors.gradientEnd]}
+                style={styles.logoGradient}
+              >
+                <Ionicons name="car-sport" size={40} color={Colors.white} />
+              </LinearGradient>
+            </View>
+            <Text style={styles.brandName}>WiseDrive</Text>
+            <Text style={styles.brandTagline}>Mechanic Partner App</Text>
+          </View>
 
-              {/* Phone Input */}
-              <View style={styles.inputWrapper}>
-                <Text style={styles.inputLabel}>Mobile Number</Text>
-                <View style={[
-                  styles.phoneInputContainer,
-                  inputFocused && styles.inputFocused
-                ]}>
-                  <View style={styles.countryCodeBox}>
-                    <Text style={styles.countryFlag}>🇮🇳</Text>
-                    <Text style={styles.countryCodeText}>{countryCode}</Text>
+          {/* Form Section */}
+          <View style={styles.formSection}>
+            {step === 'phone' ? (
+              <>
+                <Text style={styles.formTitle}>Welcome Back</Text>
+                <Text style={styles.formSubtitle}>Enter your phone number to continue</Text>
+
+                <View style={[styles.phoneInputContainer, inputFocused && styles.inputFocused]}>
+                  <View style={styles.countryCodeContainer}>
+                    <Text style={styles.countryCode}>{countryCode}</Text>
                   </View>
-                  <View style={styles.inputDivider} />
                   <TextInput
                     style={styles.phoneInput}
-                    placeholder="Enter 10 digit number"
+                    placeholder="Enter phone number"
                     placeholderTextColor={Colors.textMuted}
                     keyboardType="phone-pad"
-                    maxLength={10}
                     value={phone}
-                    onChangeText={setPhone}
+                    onChangeText={(text) => { setPhone(text.replace(/[^0-9]/g, '')); setErrorMessage(''); }}
+                    maxLength={10}
                     onFocus={() => setInputFocused(true)}
                     onBlur={() => setInputFocused(false)}
                   />
                 </View>
-              </View>
 
-              {/* Continue Button */}
-              <TouchableOpacity
-                onPress={handleSendOtp}
-                disabled={isLoading || phone.length < 10}
-                activeOpacity={0.9}
-                style={styles.buttonWrapper}
-              >
-                <LinearGradient
-                  colors={phone.length < 10 ? ['#C4C4C4', '#A0A0A0'] : [Colors.gradientStart, Colors.gradientEnd]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.primaryButton}
+                {errorMessage ? (
+                  <View style={styles.errorContainer}>
+                    <Ionicons name="alert-circle" size={16} color={Colors.error} />
+                    <Text style={styles.errorText}>{errorMessage}</Text>
+                  </View>
+                ) : null}
+
+                <TouchableOpacity
+                  style={[styles.primaryButton, phone.length < 10 && styles.buttonDisabled]}
+                  onPress={handleSendOtp}
+                  disabled={isLoading || phone.length < 10}
                 >
-                  {isLoading ? (
-                    <ActivityIndicator color={Colors.white} />
-                  ) : (
-                    <Text style={styles.primaryButtonText}>Get OTP</Text>
-                  )}
-                </LinearGradient>
-              </TouchableOpacity>
-
-              <Text style={styles.termsText}>
-                By continuing, you agree to our{' '}
-                <Text style={styles.termsLink}>Terms & Conditions</Text>
-              </Text>
-
-              {/* Debug Button */}
-              <TouchableOpacity 
-                onPress={() => setShowDebugModal(true)}
-                style={styles.debugButton}
-              >
-                <Text style={styles.debugButtonText}>📋 View Debug Logs ({debugLogs.length})</Text>
-              </TouchableOpacity>
-            </>
-          ) : (
-            <>
-              <View style={styles.titleSection}>
-                <Text style={styles.title}>Verify OTP</Text>
-                <Text style={styles.subtitle}>
-                  Enter the 6-digit code sent to{'\n'}
-                  <Text style={styles.phoneHighlight}>{countryCode} {phone}</Text>
+                  <LinearGradient
+                    colors={phone.length >= 10 ? [Colors.gradientStart, Colors.gradientEnd] : ['#CCC', '#CCC']}
+                    style={styles.buttonGradient}
+                  >
+                    {isLoading ? (
+                      <ActivityIndicator color={Colors.white} />
+                    ) : (
+                      <Text style={styles.buttonText}>Get OTP</Text>
+                    )}
+                  </LinearGradient>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <Text style={styles.formTitle}>Verify OTP</Text>
+                <Text style={styles.formSubtitle}>
+                  Enter the 6-digit code sent to {countryCode} {phone}
                 </Text>
-              </View>
 
-              {/* OTP Inputs */}
-              <View style={styles.otpContainer}>
-                {otp.map((digit, index) => (
-                  <TextInput
-                    key={index}
-                    ref={(ref) => (otpInputs.current[index] = ref)}
-                    style={[
-                      styles.otpInput,
-                      digit && styles.otpInputFilled
-                    ]}
-                    keyboardType="number-pad"
-                    maxLength={1}
-                    value={digit}
-                    onChangeText={(value) => handleOtpChange(value, index)}
-                    onKeyPress={(e) => handleOtpKeyPress(e, index)}
-                    selectTextOnFocus
-                  />
-                ))}
-              </View>
-
-              {/* Verify Button */}
-              <TouchableOpacity
-                onPress={handleVerifyOtp}
-                disabled={isLoading || otp.join('').length !== 6}
-                activeOpacity={0.9}
-                style={styles.buttonWrapper}
-              >
-                <LinearGradient
-                  colors={otp.join('').length !== 6 ? ['#C4C4C4', '#A0A0A0'] : [Colors.gradientStart, Colors.gradientEnd]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.primaryButton}
-                >
-                  {isLoading ? (
-                    <ActivityIndicator color={Colors.white} />
-                  ) : (
-                    <Text style={styles.primaryButtonText}>Verify & Continue</Text>
-                  )}
-                </LinearGradient>
-              </TouchableOpacity>
-
-              {/* Resend & Change Number */}
-              <View style={styles.otpActions}>
-                <TouchableOpacity 
-                  onPress={handleResendOtp} 
-                  activeOpacity={0.7}
-                  disabled={isLoading}
-                >
-                  <Text style={[styles.resendText, isLoading && styles.disabledText]}>
-                    Resend OTP
-                  </Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  onPress={handleChangeNumber}
-                  activeOpacity={0.7}
-                  disabled={isLoading}
-                >
-                  <Text style={[styles.changeNumberText, isLoading && styles.disabledText]}>
-                    Change Number
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Debug Button on OTP Screen */}
-              <TouchableOpacity 
-                onPress={() => setShowDebugModal(true)}
-                style={styles.debugButton}
-              >
-                <Text style={styles.debugButtonText}>📋 View Debug Logs ({debugLogs.length})</Text>
-              </TouchableOpacity>
-            </>
-          )}
-        </View>
-      </KeyboardAvoidingView>
-
-      {/* Debug Modal */}
-      <Modal
-        visible={showDebugModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowDebugModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Debug Logs</Text>
-              <TouchableOpacity onPress={() => setShowDebugModal(false)}>
-                <Ionicons name="close" size={24} color={Colors.textPrimary} />
-              </TouchableOpacity>
-            </View>
-            <Text style={styles.apiUrlText}>API: {API_BASE_URL}</Text>
-            <ScrollView style={styles.logsContainer}>
-              {debugLogs.length === 0 ? (
-                <Text style={styles.noLogsText}>No logs yet. Try sending OTP first.</Text>
-              ) : (
-                debugLogs.map((log, index) => (
-                  <Text key={index} style={styles.logText}>{log}</Text>
-                ))
-              )}
-            </ScrollView>
-            <TouchableOpacity 
-              onPress={() => setDebugLogs([])}
-              style={styles.clearLogsButton}
-            >
-              <Text style={styles.clearLogsText}>Clear Logs</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Custom Error Modal */}
-      <Modal
-        visible={showErrorModal}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={() => setShowErrorModal(false)}
-      >
-        <View style={styles.errorModalOverlay}>
-          <View style={[
-            styles.errorModalContent,
-            errorModalContent.isAuthError && styles.errorModalContentAuth
-          ]}>
-            {/* Icon */}
-            <View style={[
-              styles.errorIconContainer,
-              errorModalContent.isAuthError ? styles.errorIconAuth : 
-              errorModalContent.title.includes('Sent') ? styles.errorIconSuccess : styles.errorIconError
-            ]}>
-              {errorModalContent.isAuthError ? (
-                <Ionicons name="shield-outline" size={36} color="#DC2626" />
-              ) : errorModalContent.title.includes('Sent') ? (
-                <Ionicons name="checkmark-circle-outline" size={36} color="#16A34A" />
-              ) : (
-                <Ionicons name="alert-circle-outline" size={36} color="#DC2626" />
-              )}
-            </View>
-
-            {/* Title */}
-            <Text style={[
-              styles.errorModalTitle,
-              errorModalContent.title.includes('Sent') && styles.errorModalTitleSuccess
-            ]}>
-              {errorModalContent.title}
-            </Text>
-
-            {/* Message */}
-            <Text style={styles.errorModalMessage}>
-              {errorModalContent.message}
-            </Text>
-
-            {/* Support Info for Auth Errors */}
-            {errorModalContent.isAuthError && (
-              <View style={styles.supportInfoContainer}>
-                <View style={styles.supportInfoRow}>
-                  <Ionicons name="mail-outline" size={18} color="#6B7280" />
-                  <Text style={styles.supportInfoText}>support@wisedrive.com</Text>
+                {/* OTP Awaiting Message */}
+                <View style={styles.awaitingContainer}>
+                  <Ionicons name="time-outline" size={16} color={Colors.primary} />
+                  <Text style={styles.awaitingText}>Waiting for SMS verification code...</Text>
                 </View>
-              </View>
-            )}
 
-            {/* Close Button */}
-            <TouchableOpacity
-              onPress={() => setShowErrorModal(false)}
-              activeOpacity={0.8}
-              style={styles.errorModalButton}
-            >
-              <LinearGradient
-                colors={errorModalContent.title.includes('Sent') ? ['#16A34A', '#15803D'] : [Colors.gradientStart, Colors.gradientEnd]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.errorModalButtonGradient}
-              >
-                <Text style={styles.errorModalButtonText}>
-                  {errorModalContent.title.includes('Sent') ? 'Continue' : 'Got it'}
-                </Text>
-              </LinearGradient>
-            </TouchableOpacity>
+                <View style={styles.otpContainer}>
+                  {otp.map((digit, index) => (
+                    <TextInput
+                      key={index}
+                      ref={(ref) => (otpInputs.current[index] = ref)}
+                      style={[styles.otpInput, digit && styles.otpInputFilled]}
+                      keyboardType="number-pad"
+                      maxLength={1}
+                      value={digit}
+                      onChangeText={(value) => handleOtpChange(value, index)}
+                      onKeyPress={(e) => handleOtpKeyPress(e, index)}
+                      selectTextOnFocus
+                    />
+                  ))}
+                </View>
+
+                {errorMessage ? (
+                  <View style={styles.errorContainer}>
+                    <Ionicons name="alert-circle" size={16} color={Colors.error} />
+                    <Text style={styles.errorText}>{errorMessage}</Text>
+                  </View>
+                ) : null}
+
+                <TouchableOpacity
+                  style={[styles.primaryButton, otp.join('').length < 6 && styles.buttonDisabled]}
+                  onPress={handleVerifyOtp}
+                  disabled={isLoading || otp.join('').length < 6}
+                >
+                  <LinearGradient
+                    colors={otp.join('').length === 6 ? [Colors.gradientStart, Colors.gradientEnd] : ['#CCC', '#CCC']}
+                    style={styles.buttonGradient}
+                  >
+                    {isLoading ? (
+                      <ActivityIndicator color={Colors.white} />
+                    ) : (
+                      <Text style={styles.buttonText}>Verify & Continue</Text>
+                    )}
+                  </LinearGradient>
+                </TouchableOpacity>
+
+                <View style={styles.otpActions}>
+                  <TouchableOpacity onPress={handleResendOtp} disabled={isLoading}>
+                    <Text style={styles.linkText}>Resend OTP</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={handleChangeNumber}>
+                    <Text style={styles.linkText}>Change Number</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
           </View>
-        </View>
-      </Modal>
-    </View>
+
+          {/* Footer */}
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>By continuing, you agree to our</Text>
+            <Text style={styles.footerLink}>Terms of Service & Privacy Policy</Text>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.background,
   },
-  
-  // Header
-  headerSection: {
-    height: height * 0.32,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerSafeArea: {
+  keyboardView: {
     flex: 1,
-    justifyContent: 'center',
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingTop: height * 0.08,
+    paddingBottom: 24,
+  },
+  headerSection: {
     alignItems: 'center',
+    marginBottom: 48,
   },
   logoContainer: {
-    alignItems: 'center',
+    marginBottom: 16,
   },
-  logoBox: {
-    width: 120,
-    height: 120,
-    borderRadius: 24,
-    backgroundColor: Colors.white,
+  logoGradient: {
+    width: 80,
+    height: 80,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 24,
-    elevation: 12,
-  },
-  logoImage: {
-    width: 90,
-    height: 90,
-  },
-  
-  // Content
-  contentWrapper: {
-    flex: 1,
-    marginTop: -40,
-  },
-  contentCard: {
-    flex: 1,
-    backgroundColor: Colors.white,
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    paddingHorizontal: 28,
-    paddingTop: 36,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
     elevation: 8,
   },
-  
-  // Title
-  titleSection: {
-    marginBottom: 32,
-  },
-  title: {
+  brandName: {
     fontSize: 28,
     fontWeight: '700',
     color: Colors.textPrimary,
     letterSpacing: -0.5,
+  },
+  brandTagline: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    marginTop: 4,
+  },
+  formSection: {
+    flex: 1,
+  },
+  formTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: Colors.textPrimary,
     marginBottom: 8,
   },
-  subtitle: {
+  formSubtitle: {
     fontSize: 15,
     color: Colors.textSecondary,
-    lineHeight: 22,
-  },
-  phoneHighlight: {
-    color: Colors.primary,
-    fontWeight: '600',
-  },
-  
-  // Input
-  inputWrapper: {
     marginBottom: 24,
-  },
-  inputLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.textSecondary,
-    marginBottom: 8,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    lineHeight: 22,
   },
   phoneInputContainer: {
     flexDirection: 'row',
@@ -652,281 +389,123 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1.5,
     borderColor: Colors.border,
-    height: 56,
+    marginBottom: 16,
     overflow: 'hidden',
   },
   inputFocused: {
     borderColor: Colors.borderFocus,
-    backgroundColor: Colors.white,
   },
-  countryCodeBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    gap: 8,
+  countryCodeContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderRightWidth: 1,
+    borderRightColor: Colors.border,
+    backgroundColor: Colors.surface,
   },
-  countryFlag: {
-    fontSize: 18,
-  },
-  countryCodeText: {
-    fontSize: 15,
+  countryCode: {
+    fontSize: 16,
     fontWeight: '600',
     color: Colors.textPrimary,
   },
-  inputDivider: {
-    width: 1,
-    height: 24,
-    backgroundColor: Colors.border,
-  },
   phoneInput: {
     flex: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
     fontSize: 16,
     color: Colors.textPrimary,
-    paddingHorizontal: 14,
-    fontWeight: '500',
-    letterSpacing: 0.5,
   },
-  
-  // Button
-  buttonWrapper: {
+  awaitingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: Colors.primaryLight,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
     marginBottom: 20,
   },
-  primaryButton: {
-    height: 54,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  primaryButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: Colors.white,
-    letterSpacing: 0.3,
-  },
-  
-  // Terms
-  termsText: {
+  awaitingText: {
     fontSize: 13,
-    color: Colors.textMuted,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  termsLink: {
     color: Colors.primary,
     fontWeight: '500',
   },
-  
-  // OTP
   otpContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 28,
-    paddingHorizontal: 8,
+    marginBottom: 24,
+    gap: 8,
   },
   otpInput: {
-    width: (width - 56 - 48 - 40) / 6,
-    height: 54,
-    borderRadius: 10,
+    flex: 1,
+    height: 56,
     backgroundColor: Colors.surface,
+    borderRadius: 12,
     borderWidth: 1.5,
     borderColor: Colors.border,
-    fontSize: 22,
+    textAlign: 'center',
+    fontSize: 24,
     fontWeight: '700',
     color: Colors.textPrimary,
-    textAlign: 'center',
   },
   otpInputFilled: {
     borderColor: Colors.primary,
     backgroundColor: Colors.primaryLight,
   },
-  
-  otpActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 8,
-  },
-  resendText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.primary,
-  },
-  changeNumberText: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    fontWeight: '500',
-  },
-  disabledText: {
-    opacity: 0.5,
-  },
-
-  // Debug styles
-  debugButton: {
-    marginTop: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: Colors.surface,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    alignItems: 'center',
-  },
-  debugButtonText: {
-    fontSize: 13,
-    color: Colors.textSecondary,
-    fontWeight: '500',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: Colors.white,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 40,
-    maxHeight: '80%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-  },
-  apiUrlText: {
-    fontSize: 12,
-    color: Colors.primary,
-    marginBottom: 12,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-  },
-  logsContainer: {
-    backgroundColor: '#1a1a2e',
-    borderRadius: 8,
-    padding: 12,
-    maxHeight: 300,
-  },
-  noLogsText: {
-    color: '#888',
-    fontSize: 13,
-    textAlign: 'center',
-    paddingVertical: 20,
-  },
-  logText: {
-    color: '#00ff00',
-    fontSize: 11,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-    marginBottom: 4,
-    lineHeight: 16,
-  },
-  clearLogsButton: {
-    marginTop: 12,
-    paddingVertical: 10,
-    backgroundColor: Colors.error,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  clearLogsText: {
-    color: Colors.white,
-    fontWeight: '600',
-    fontSize: 14,
-  },
-
-  // Custom Error Modal Styles
-  errorModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-  },
-  errorModalContent: {
-    backgroundColor: Colors.white,
-    borderRadius: 24,
-    padding: 32,
-    width: '100%',
-    maxWidth: 340,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 20 },
-    shadowOpacity: 0.25,
-    shadowRadius: 40,
-    elevation: 20,
-  },
-  errorModalContentAuth: {
-    borderTopWidth: 4,
-    borderTopColor: '#DC2626',
-  },
-  errorIconContainer: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  errorIconError: {
-    backgroundColor: '#FEE2E2',
-  },
-  errorIconSuccess: {
-    backgroundColor: '#DCFCE7',
-  },
-  errorIconAuth: {
-    backgroundColor: '#FEE2E2',
-  },
-  errorModalTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  errorModalTitleSuccess: {
-    color: '#16A34A',
-  },
-  errorModalMessage: {
-    fontSize: 15,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 24,
-  },
-  supportInfoContainer: {
-    backgroundColor: '#F3F4F6',
-    borderRadius: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    width: '100%',
-    marginBottom: 24,
-  },
-  supportInfoRow: {
+  errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     gap: 8,
+    backgroundColor: '#FEE2E2',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginBottom: 16,
   },
-  supportInfoText: {
-    fontSize: 14,
-    color: '#4B5563',
-    fontWeight: '500',
+  errorText: {
+    flex: 1,
+    fontSize: 13,
+    color: Colors.error,
   },
-  errorModalButton: {
-    width: '100%',
+  primaryButton: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: 16,
   },
-  errorModalButtonGradient: {
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  buttonGradient: {
     paddingVertical: 16,
-    borderRadius: 14,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  errorModalButtonText: {
+  buttonText: {
     color: Colors.white,
     fontSize: 16,
     fontWeight: '600',
+  },
+  otpActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  linkText: {
+    color: Colors.primary,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  footer: {
+    alignItems: 'center',
+    marginTop: 32,
+  },
+  footerText: {
+    fontSize: 12,
+    color: Colors.textMuted,
+  },
+  footerLink: {
+    fontSize: 12,
+    color: Colors.primary,
+    fontWeight: '500',
+    marginTop: 4,
   },
 });
