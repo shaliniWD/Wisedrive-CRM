@@ -952,6 +952,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
+  logsButton: {
+    padding: 8,
+    marginLeft: 8,
+    backgroundColor: '#FEF3C7',
+    borderRadius: 20,
+  },
   progressBarContainer: {
     paddingHorizontal: 16,
     paddingVertical: 12,
