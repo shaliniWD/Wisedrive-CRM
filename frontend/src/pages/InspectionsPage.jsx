@@ -1612,7 +1612,7 @@ export default function InspectionsPage() {
                     {/* Location Column - Editable */}
                     <td className="px-3 py-3">
                       <div className="flex items-center gap-1">
-                        <span className="inline-flex items-center gap-1 text-sm text-blue-600 flex-1">
+                        <span className="inline-flex items-center gap-1 text-sm text-blue-600 flex-1 whitespace-nowrap">
                           <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
                           <span>{inspection.city || 'No location'}</span>
                         </span>
