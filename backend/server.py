@@ -4826,10 +4826,11 @@ async def get_inspections(
     
     inspections = await db.inspections.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     
-    # Enrich with mechanic name and default status
+    # Enrich with mechanic name and normalize status
     for insp in inspections:
-        # Default inspection_status to NEW_INSPECTION if not set
-        if not insp.get("inspection_status"):
+        # Default/normalize inspection_status to NEW_INSPECTION if not set or legacy value
+        status = insp.get("inspection_status")
+        if not status or status in ["NEW", "SCHEDULED", "UNSCHEDULED"]:
             insp["inspection_status"] = "NEW_INSPECTION"
         
         if insp.get("mechanic_id"):
