@@ -821,7 +821,21 @@ export default function CategoryQuestionsScreen() {
             <Text style={styles.savingText}>Saving</Text>
           </View>
         )}
+        {/* Debug Logs Button */}
+        <TouchableOpacity 
+          style={styles.logsButton} 
+          onPress={() => setShowLogs(true)}
+        >
+          <Ionicons name="bug-outline" size={20} color={colors.warning} />
+        </TouchableOpacity>
       </View>
+
+      {/* Log Viewer Modal */}
+      <LogViewer 
+        visible={showLogs} 
+        onClose={() => setShowLogs(false)}
+        inspectionId={inspectionId || undefined}
+      />
 
       {/* Progress Bar */}
       <View style={styles.progressBarContainer}>
