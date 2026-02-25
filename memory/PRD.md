@@ -2,40 +2,55 @@
 
 ## Latest Updates (Feb 25, 2026)
 
-### Mechanic App Bug Fixes (v1.0.3)
-**Backend: v2.4.4 | App: v1.0.3**
+### Inspection Status Management System (v2.4.5 / App v1.0.6)
+**Comprehensive CRM-Mobile App status synchronization**
 
-1. **Navigate Button Crash (P0)** - ✅ FIXED
-   - Problem: App crashed when clicking Navigate on accepted inspections
-   - Root Cause: `handleNavigate` was called from `InspectionCard` but defined inside `HomeScreen` (scope issue)
-   - Fix: Changed to call `openMapsNavigation` which is defined at module level
+#### Status Flow:
+1. **NEW_INSPECTION** - Created via leads payment modal or scheduled inspection modal
+2. **ASSIGNED_TO_MECHANIC** - When mechanic is assigned (auto-updated)
+3. **MECHANIC_ACCEPTED** - Mechanic accepts in mobile app
+4. **MECHANIC_REJECTED** - Mechanic rejects in mobile app (unassigns mechanic)
+5. **INSPECTION_STARTED** - Mechanic clicks "Start Inspection" after vehicle verification
+6. **INSPECTION_COMPLETED** - All Q&A + OBD done, complete clicked
+7. **INSPECTION_CANCELLED_WD** - Cancelled by WiseDrive
+8. **INSPECTION_CANCELLED_CUS** - Cancelled by Customer
+9. **RESCHEDULED** - Moved to another date/time
 
-2. **Persistent Auto-Login / Cache Issue (P0)** - ✅ FIXED
-   - Problem: Android restored old user data after reinstall
-   - Fixes Applied:
-     - Set `android.allowBackup: false` in app.json
-     - Enhanced `logout()` to use `AsyncStorage.multiRemove`
-     - Added `clearAllCache()` function using `AsyncStorage.clear()`
-     - Added "Clear Cache & Logout" button in debug modal (long-press on greeting)
+#### Activity Logging:
+- All status changes are logged with: who, what, when, old value, new value, source (CRM/MECHANIC_APP), reason
+- Activities viewable in inspection detail modal
 
-3. **Incorrect Questionnaire Loading (P1)** - ✅ IMPROVED
-   - Enhancement: `/inspections/{id}/questionnaire` now looks up partner's template if no direct template assigned
+#### Backend Changes:
+- Updated `/mechanic/inspections/{id}/accept` - Sets MECHANIC_ACCEPTED + activity log
+- Updated `/mechanic/inspections/{id}/reject` - Sets MECHANIC_REJECTED + activity log
+- Added `/mechanic/inspections/{id}/start` - Sets INSPECTION_STARTED + activity log
+- Updated `/mechanic/inspections/{id}/complete` - Sets INSPECTION_COMPLETED + activity log
+- Updated `/inspections/{id}/status` - CRM override with optional reason parameter
 
-4. **Car Details Not Loading (P1)** - ✅ FIXED
-   - Enhancement: `/mechanic/inspections/{id}` returns multiple property name variations for compatibility
+#### Frontend Changes:
+- Updated CRM InspectionsPage with new status options
+- Status dropdown allows CRM users to override any status
 
-5. **"Check your phone" Modal (P2)** - ✅ ALREADY FIXED
-   - Status: login.tsx already uses inline "Waiting for SMS..." message, no modal
+#### Mobile App Changes:
+- Verify-vehicle screen now calls `/start` endpoint after verification
+- API updated with `startInspection()` method
 
-6. **"Inspection accepted!" Modal (P2)** - ✅ ALREADY FIXED
-   - Status: `handleAccept` already silently refreshes without showing any modal
+---
 
-7. **Old Car Entry Screen Persists (P1)** - 🔍 BUILD NEEDED
-   - Status: Code is correct. Needs new APK build with `--clear-cache`
+### Previous Session Bug Fixes (v1.0.5)
 
-### Action Required
-1. Deploy backend v2.4.4 to production
-2. Build new APK (v1.0.3) with: `npx eas-cli build --profile preview --platform android --clear-cache`
+1. **Category Order Fixed** - Categories now follow template order (category_order array)
+2. **Modern UI for Categories** - Gradient progress card, color-coded cards, mini progress bars
+3. **OTP Error Fixed** - Error only shows after verification fails, not while typing
+
+---
+
+### Earlier Bug Fixes (v1.0.3)
+
+1. **Navigate Button Crash (P0)** - Fixed scope issue in InspectionCard
+2. **Auto-Login Cache Issue (P0)** - Set allowBackup=false, added clearAllCache()
+3. **Questionnaire Loading** - Partner template lookup fallback
+4. **Car Details Loading** - Multiple property name variations returned
 
 ---
 
