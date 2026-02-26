@@ -998,6 +998,77 @@ export default function OBDScannerScreen() {
 
   // Main content renderer
   const renderContent = () => {
+    // Show loading while checking backend OBD status
+    if (isCheckingBackend) {
+      return (
+        <View style={styles.statusCard}>
+          <ActivityIndicator size="large" color={Colors.accent} />
+          <Text style={styles.statusTitle}>Checking OBD Status...</Text>
+          <Text style={styles.statusSubtitle}>Please wait</Text>
+        </View>
+      );
+    }
+    
+    // Show "already submitted" state if OBD was previously submitted
+    if (alreadySubmittedToBackend && state === 'idle') {
+      return (
+        <View style={styles.resultsContainer}>
+          {/* Active Inspection Card */}
+          {currentInspection && (
+            <View style={[styles.inspectionCard, { borderColor: Colors.success, borderWidth: 2 }]}>
+              <View style={styles.inspectionHeader}>
+                <MaterialIcons name="assignment" size={20} color={Colors.success} />
+                <Text style={[styles.inspectionLabel, { color: Colors.success }]}>Inspection</Text>
+              </View>
+              <View style={{ marginTop: Spacing.sm }}>
+                <Text style={{ fontSize: FontSize.lg, fontWeight: '700', color: Colors.text }}>
+                  {currentInspection.vehicleNumber || 'N/A'}
+                </Text>
+                <Text style={{ fontSize: FontSize.sm, color: Colors.textSecondary, marginTop: 2 }}>
+                  {currentInspection.makeModelVariant || 'Vehicle'}
+                </Text>
+              </View>
+            </View>
+          )}
+          
+          {/* Already Submitted Card */}
+          <View style={[styles.summaryCard, { backgroundColor: '#D1FAE5', borderWidth: 2, borderColor: '#10B981' }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm, paddingVertical: Spacing.md }}>
+              <MaterialIcons name="check-circle" size={32} color="#059669" />
+              <View>
+                <Text style={{ fontSize: FontSize.lg, fontWeight: '700', color: '#059669' }}>OBD Data Already Submitted</Text>
+                <Text style={{ fontSize: FontSize.sm, color: '#047857', marginTop: 2 }}>Scan data has been saved for this inspection</Text>
+              </View>
+            </View>
+          </View>
+          
+          {/* Continue Button */}
+          <TouchableOpacity 
+            style={styles.continueBtn} 
+            onPress={() => {
+              if (currentInspectionId) {
+                router.push(`/checklist/${currentInspectionId}`);
+              } else {
+                router.push('/home');
+              }
+            }}
+          >
+            <Text style={styles.continueBtnText}>Continue to Checklist</Text>
+            <MaterialIcons name="arrow-forward" size={24} color="#FFF" />
+          </TouchableOpacity>
+          
+          {/* Back to Home Button */}
+          <TouchableOpacity 
+            style={[styles.scanAgainBtn, { marginTop: Spacing.md }]} 
+            onPress={() => router.push('/home')}
+          >
+            <MaterialIcons name="home" size={20} color={Colors.textMuted} />
+            <Text style={styles.scanAgainBtnText}>Back to Home</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+    
     if (state === 'idle') {
       return (
         <>
