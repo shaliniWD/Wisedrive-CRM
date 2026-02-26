@@ -294,4 +294,58 @@ export const inspectionsApi = {
   },
 };
 
+/**
+ * Helper to resolve media URLs for display
+ * Handles: gs:// URLs, media_ref: references, and raw base64
+ */
+export const resolveMediaUrl = async (mediaValue: string): Promise<string | null> => {
+  if (!mediaValue || typeof mediaValue !== 'string') return null;
+  
+  // Already a displayable URL or base64
+  if (mediaValue.startsWith('data:') || mediaValue.startsWith('http://') || mediaValue.startsWith('https://') || mediaValue.startsWith('file://')) {
+    return mediaValue;
+  }
+  
+  // Firebase Storage URL - convert to download URL
+  if (mediaValue.startsWith('gs://')) {
+    try {
+      const token = await getAuthToken();
+      const response = await fetch(`${API_BASE}/api/media/get-download-url`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: `firebase_path=${encodeURIComponent(mediaValue)}`,
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        return data.download_url;
+      }
+      diagLogger.warn('RESOLVE_MEDIA_FIREBASE_FAILED', { status: response.status });
+    } catch (e: any) {
+      diagLogger.error('RESOLVE_MEDIA_FIREBASE_ERROR', { error: e.message });
+    }
+    return null;
+  }
+  
+  // Media reference - fetch from backend
+  if (mediaValue.startsWith('media_ref:')) {
+    try {
+      const mediaId = mediaValue.replace('media_ref:', '');
+      const response = await api.get(`/inspection-media/${mediaId}`);
+      if (response.data?.data) {
+        return response.data.data; // Returns base64 data
+      }
+    } catch (e: any) {
+      diagLogger.error('RESOLVE_MEDIA_REF_ERROR', { error: e.message });
+    }
+    return null;
+  }
+  
+  // Unknown format
+  return mediaValue;
+};
+
 export default api;
