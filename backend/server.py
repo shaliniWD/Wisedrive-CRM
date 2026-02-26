@@ -5606,7 +5606,9 @@ async def get_inspection_live_progress(inspection_id: str, current_user: dict = 
         },
         "obd_scan": {
             "completed": bool(obd_data),
-            "data": obd_data if obd_data else None
+            "data": obd_data if obd_data else None,
+            "rescan_enabled": inspection.get("obd_rescan_enabled", False),
+            "scanned_at": inspection.get("obd_scanned_at")
         },
         "categories": sorted_categories,
         "recent_answers": sorted(answered_questions, key=lambda x: x.get("answered_at") or "", reverse=True)[:10]
