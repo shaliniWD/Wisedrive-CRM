@@ -1,12 +1,12 @@
 // Firebase Storage upload service for media files
-// Uses expo-file-system for reliable file reading in React Native
-import { ref, uploadString, getDownloadURL } from 'firebase/storage';
+// Uses chunked approach for large files to avoid memory issues
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import * as FileSystem from 'expo-file-system';
 import { storage } from './firebase';
 import { diagLogger } from './diagLogger';
 
 export interface UploadProgress {
-  progress: number;  // 0-100
+  progress: number;
   bytesTransferred: number;
   totalBytes: number;
 }
@@ -17,15 +17,14 @@ export interface UploadResult {
   error?: string;
 }
 
+// Threshold for using chunked upload (10MB)
+const CHUNK_THRESHOLD = 10 * 1024 * 1024;
+// Chunk size for reading (5MB)
+const CHUNK_SIZE = 5 * 1024 * 1024;
+
 /**
  * Upload a file to Firebase Storage
- * Uses expo-file-system to read file as base64, then uploads using uploadString
- * 
- * @param uri - Local file URI (file://...)
- * @param inspectionId - Inspection ID for folder organization
- * @param questionId - Question ID for file naming
- * @param mediaType - 'image' or 'video'
- * @param onProgress - Optional progress callback (limited for uploadString)
+ * For large files (>10MB), uses chunked reading to avoid memory issues
  */
 export async function uploadMediaToFirebase(
   uri: string,
@@ -44,7 +43,7 @@ export async function uploadMediaToFirebase(
   });
 
   try {
-    // Create a unique filename
+    // Create unique filename
     const timestamp = Date.now();
     const extension = mediaType === 'image' ? 'jpg' : 'mp4';
     const filename = `${questionId}_${timestamp}.${extension}`;
@@ -52,103 +51,205 @@ export async function uploadMediaToFirebase(
 
     diagLogger.info('FIREBASE_UPLOAD_PATH', { storagePath });
 
-    // Step 1: Get file info first
-    diagLogger.info('FIREBASE_GETTING_FILE_INFO', { uri: uri.substring(0, 40) });
+    // Get file info
     const fileInfo = await FileSystem.getInfoAsync(uri);
-    
     if (!fileInfo.exists) {
-      throw new Error('File does not exist at the specified URI');
+      throw new Error('File does not exist');
     }
+
+    // For Expo SDK 52+, size might not be available, estimate from reading
+    let fileSize = 0;
     
-    // FileInfo doesn't have size in new API, so we estimate later
     diagLogger.info('FIREBASE_FILE_INFO', { 
       exists: fileInfo.exists,
       uri: fileInfo.uri?.substring(0, 40),
     });
 
-    // Notify progress - reading file
+    // Notify progress
     if (onProgress) {
-      onProgress({ progress: 10, bytesTransferred: 0, totalBytes: 0 });
+      onProgress({ progress: 5, bytesTransferred: 0, totalBytes: 0 });
     }
 
-    // Step 2: Read file as base64 using string encoding type
-    diagLogger.info('FIREBASE_READING_BASE64', {});
+    // Read file in chunks to avoid memory issues
+    diagLogger.info('FIREBASE_READING_CHUNKED', {});
     const readStart = Date.now();
     
-    const base64Data = await FileSystem.readAsStringAsync(uri, {
-      encoding: 'base64',
-    });
+    const chunks: Uint8Array[] = [];
+    let position = 0;
+    let totalBytesRead = 0;
+    let chunkIndex = 0;
+    
+    while (true) {
+      chunkIndex++;
+      diagLogger.info('FIREBASE_READING_CHUNK', { 
+        chunk: chunkIndex, 
+        position,
+        chunkSize: CHUNK_SIZE 
+      });
+      
+      try {
+        // Read a chunk as base64
+        const chunkBase64 = await FileSystem.readAsStringAsync(uri, {
+          encoding: 'base64',
+          position: position,
+          length: CHUNK_SIZE,
+        });
+        
+        if (!chunkBase64 || chunkBase64.length === 0) {
+          diagLogger.info('FIREBASE_CHUNK_EMPTY', { chunk: chunkIndex });
+          break;
+        }
+        
+        // Convert base64 to Uint8Array
+        const binaryString = atob(chunkBase64);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        
+        chunks.push(bytes);
+        totalBytesRead += bytes.length;
+        position += CHUNK_SIZE;
+        
+        diagLogger.info('FIREBASE_CHUNK_READ', { 
+          chunk: chunkIndex, 
+          chunkBytes: bytes.length,
+          totalBytes: totalBytesRead,
+          totalMB: (totalBytesRead / 1024 / 1024).toFixed(2),
+        });
+        
+        // Update progress
+        if (onProgress) {
+          onProgress({ 
+            progress: Math.min(40, 5 + chunkIndex * 5), 
+            bytesTransferred: totalBytesRead, 
+            totalBytes: totalBytesRead 
+          });
+        }
+        
+        // If we read less than chunk size, we're done
+        if (bytes.length < CHUNK_SIZE) {
+          break;
+        }
+        
+      } catch (chunkError: any) {
+        // If position is out of bounds, we've read everything
+        if (chunkError.message?.includes('position') || chunkError.message?.includes('bounds')) {
+          diagLogger.info('FIREBASE_CHUNK_END_OF_FILE', { chunk: chunkIndex });
+          break;
+        }
+        throw chunkError;
+      }
+    }
     
     const readDuration = Date.now() - readStart;
-    const base64SizeMB = (base64Data.length * 0.75) / (1024 * 1024); // Approximate original size
-    const fileSizeBytes = Math.round(base64Data.length * 0.75);
+    fileSize = totalBytesRead;
     
-    diagLogger.info('FIREBASE_BASE64_READ_COMPLETE', { 
+    diagLogger.info('FIREBASE_READ_COMPLETE', { 
+      chunks: chunks.length,
+      totalBytes: totalBytesRead,
+      totalMB: (totalBytesRead / 1024 / 1024).toFixed(2),
       readDurationMs: readDuration,
-      base64Length: base64Data.length,
-      estimatedSizeMB: base64SizeMB.toFixed(2),
     });
 
-    // Notify progress - file read complete
+    // Combine all chunks into one Uint8Array
+    diagLogger.info('FIREBASE_COMBINING_CHUNKS', { totalChunks: chunks.length });
+    const combinedArray = new Uint8Array(totalBytesRead);
+    let offset = 0;
+    for (const chunk of chunks) {
+      combinedArray.set(chunk, offset);
+      offset += chunk.length;
+    }
+    
+    // Create blob from combined array
+    const contentType = mediaType === 'image' ? 'image/jpeg' : 'video/mp4';
+    const blob = new Blob([combinedArray], { type: contentType });
+    
+    diagLogger.info('FIREBASE_BLOB_CREATED', { 
+      blobSize: blob.size,
+      blobSizeMB: (blob.size / 1024 / 1024).toFixed(2),
+      contentType,
+    });
+
+    // Update progress
     if (onProgress) {
-      onProgress({ progress: 40, bytesTransferred: fileSizeBytes * 0.4, totalBytes: fileSizeBytes });
+      onProgress({ progress: 50, bytesTransferred: fileSize / 2, totalBytes: fileSize });
     }
 
-    // Step 3: Create storage reference
+    // Upload to Firebase
     const storageRef = ref(storage, storagePath);
-
-    // Step 4: Determine content type and create data URL
-    const contentType = mediaType === 'image' ? 'image/jpeg' : 'video/mp4';
-    const dataUrl = `data:${contentType};base64,${base64Data}`;
+    const metadata = { contentType };
     
     diagLogger.info('FIREBASE_STARTING_UPLOAD', { 
-      contentType,
-      dataUrlLength: dataUrl.length,
+      sizeMB: (blob.size / 1024 / 1024).toFixed(2) 
     });
-
-    // Notify progress - starting upload
-    if (onProgress) {
-      onProgress({ progress: 50, bytesTransferred: fileSizeBytes * 0.5, totalBytes: fileSizeBytes });
-    }
-
-    // Step 5: Upload using uploadString with data_url format
+    
     const uploadStart = Date.now();
-    const snapshot = await uploadString(storageRef, dataUrl, 'data_url');
-    const uploadDuration = Date.now() - uploadStart;
-    
-    diagLogger.info('FIREBASE_UPLOAD_COMPLETE', { 
-      uploadDurationMs: uploadDuration,
-      uploadDurationSec: (uploadDuration / 1000).toFixed(1),
-      bytesTransferred: snapshot.metadata.size,
+
+    return new Promise((resolve) => {
+      const uploadTask = uploadBytesResumable(storageRef, blob, metadata);
+
+      uploadTask.on(
+        'state_changed',
+        (snapshot) => {
+          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          const adjustedProgress = 50 + (progress / 2); // 50-100%
+          
+          if (onProgress) {
+            onProgress({
+              progress: Math.round(adjustedProgress),
+              bytesTransferred: snapshot.bytesTransferred,
+              totalBytes: snapshot.totalBytes,
+            });
+          }
+          
+          // Log at milestones
+          const pct = Math.round(progress);
+          if (pct % 25 === 0 && pct > 0) {
+            diagLogger.info('FIREBASE_UPLOAD_PROGRESS', {
+              progress: pct,
+              transferred: `${(snapshot.bytesTransferred / 1024 / 1024).toFixed(1)}MB`,
+              total: `${(snapshot.totalBytes / 1024 / 1024).toFixed(1)}MB`,
+            });
+          }
+        },
+        (error) => {
+          const duration = Date.now() - startTime;
+          diagLogger.error('FIREBASE_UPLOAD_ERROR', {
+            error: error.message,
+            code: error.code,
+            durationMs: duration,
+          });
+          resolve({
+            success: false,
+            error: `Upload failed: ${error.message}`,
+          });
+        },
+        async () => {
+          try {
+            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+            const uploadDuration = Date.now() - uploadStart;
+            const totalDuration = Date.now() - startTime;
+            
+            diagLogger.info('FIREBASE_UPLOAD_SUCCESS', {
+              totalDurationMs: totalDuration,
+              uploadDurationMs: uploadDuration,
+              sizeMB: (fileSize / 1024 / 1024).toFixed(2),
+              url: downloadURL.substring(0, 80) + '...',
+            });
+            
+            if (onProgress) {
+              onProgress({ progress: 100, bytesTransferred: fileSize, totalBytes: fileSize });
+            }
+            
+            resolve({ success: true, url: downloadURL });
+          } catch (urlError: any) {
+            diagLogger.error('FIREBASE_GET_URL_ERROR', { error: urlError.message });
+            resolve({ success: false, error: `Failed to get URL: ${urlError.message}` });
+          }
+        }
+      );
     });
-
-    // Notify progress - upload complete
-    if (onProgress) {
-      onProgress({ progress: 90, bytesTransferred: fileSizeBytes * 0.9, totalBytes: fileSizeBytes });
-    }
-
-    // Step 6: Get download URL
-    const downloadURL = await getDownloadURL(snapshot.ref);
-    const totalDuration = Date.now() - startTime;
-    
-    diagLogger.info('FIREBASE_UPLOAD_SUCCESS', {
-      totalDurationMs: totalDuration,
-      totalDurationSec: (totalDuration / 1000).toFixed(1),
-      sizeMB: base64SizeMB.toFixed(2),
-      readTime: `${(readDuration / 1000).toFixed(1)}s`,
-      uploadTime: `${(uploadDuration / 1000).toFixed(1)}s`,
-      url: downloadURL.substring(0, 80) + '...',
-    });
-
-    // Notify progress - complete
-    if (onProgress) {
-      onProgress({ progress: 100, bytesTransferred: fileSizeBytes, totalBytes: fileSizeBytes });
-    }
-
-    return {
-      success: true,
-      url: downloadURL,
-    };
 
   } catch (error: any) {
     const duration = Date.now() - startTime;
@@ -156,18 +257,11 @@ export async function uploadMediaToFirebase(
       error: error.message,
       code: error.code,
       durationMs: duration,
-      stack: error.stack?.substring(0, 200),
     });
-    return {
-      success: false,
-      error: `Upload error: ${error.message}`,
-    };
+    return { success: false, error: `Upload error: ${error.message}` };
   }
 }
 
-/**
- * Upload multiple files in sequence
- */
 export async function uploadMultipleMedia(
   files: Array<{
     uri: string;
@@ -177,20 +271,10 @@ export async function uploadMultipleMedia(
   }>,
   onProgress?: (index: number, progress: UploadProgress) => void
 ): Promise<Array<UploadResult & { questionId: string }>> {
-  diagLogger.info('FIREBASE_BATCH_UPLOAD_START', {
-    totalFiles: files.length,
-  });
-
   const results: Array<UploadResult & { questionId: string }> = [];
 
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
-    diagLogger.info('FIREBASE_BATCH_ITEM', { 
-      index: i + 1, 
-      total: files.length, 
-      questionId: file.questionId 
-    });
-    
     const result = await uploadMediaToFirebase(
       file.uri,
       file.inspectionId,
@@ -200,13 +284,6 @@ export async function uploadMultipleMedia(
     );
     results.push({ ...result, questionId: file.questionId });
   }
-
-  const successCount = results.filter((r) => r.success).length;
-  diagLogger.info('FIREBASE_BATCH_UPLOAD_COMPLETE', {
-    total: files.length,
-    succeeded: successCount,
-    failed: files.length - successCount,
-  });
 
   return results;
 }
