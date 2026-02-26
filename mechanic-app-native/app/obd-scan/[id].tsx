@@ -14,8 +14,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { BleManager, Device, State } from 'react-native-ble-plx';
+import { inspectionsApi } from '../../src/lib/api';
+import { diagLogger } from '../../src/lib/diagLogger';
 
-type ScanState = 'idle' | 'discovering' | 'connecting' | 'initializing' | 'scanning' | 'completed' | 'error';
+type ScanState = 'idle' | 'discovering' | 'connecting' | 'initializing' | 'scanning' | 'completed' | 'submitting' | 'submitted' | 'error';
 
 interface BluetoothDevice {
   id: string;
@@ -27,6 +29,7 @@ interface DTCResult {
   code: string;
   category: string;
   description: string;
+  status?: 'Active' | 'Pending';
 }
 
 export default function OBDScanScreen() {
