@@ -2610,18 +2610,23 @@ export default function InspectionsPage() {
           setLiveProgressInspection(null);
         }
       }}>
-        <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-hidden flex flex-col" data-testid="live-progress-modal">
+        <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-hidden flex flex-col" data-testid="live-progress-modal">
           <DialogHeader className="border-b pb-4">
             <DialogTitle className="flex items-center gap-3">
               <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white ${
                 liveProgressData?.overall_stats?.completion_percentage === 100 
                   ? 'bg-gradient-to-r from-green-500 to-green-600'
-                  : 'bg-gradient-to-r from-blue-500 to-blue-600'
+                  : 'bg-gradient-to-r from-blue-500 to-blue-600 animate-pulse'
               }`}>
                 <Activity className="h-5 w-5" />
               </div>
               <div>
-                <p>Live Inspection Progress</p>
+                <p className="flex items-center gap-2">
+                  Live Inspection Progress
+                  {liveProgressData?.overall_stats?.completion_percentage === 100 && (
+                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Completed</span>
+                  )}
+                </p>
                 <p className="text-sm font-normal text-gray-500">
                   {liveProgressInspection?.customer_name} • {liveProgressInspection?.car_number}
                 </p>
@@ -2635,6 +2640,29 @@ export default function InspectionsPage() {
             </div>
           ) : liveProgressData ? (
             <div className="flex-1 overflow-y-auto space-y-4 py-4">
+              {/* Mechanic Info - Moved to Top */}
+              {liveProgressData.mechanic_name && (
+                <div className="bg-gradient-to-r from-slate-50 to-blue-50 rounded-xl p-4 border border-slate-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                        <User className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Mechanic</p>
+                        <p className="font-semibold text-gray-900">{liveProgressData.mechanic_name}</p>
+                      </div>
+                    </div>
+                    {liveProgressData.started_at && (
+                      <div className="text-right">
+                        <p className="text-sm text-gray-500">Started</p>
+                        <p className="font-medium text-gray-700">{new Date(liveProgressData.started_at).toLocaleString()}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+              
               {/* Auto-refresh toggle */}
               <div className="flex items-center justify-between bg-slate-50 rounded-lg px-4 py-3">
                 <div className="flex items-center gap-2">
@@ -2677,99 +2705,171 @@ export default function InspectionsPage() {
                 </div>
               </div>
               
-              {/* OBD Scan Status */}
-              <div className={`rounded-xl p-4 border ${
-                liveProgressData.obd_scan.completed ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'
-              }`}>
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                    liveProgressData.obd_scan.completed ? 'bg-green-100' : 'bg-gray-100'
-                  }`}>
-                    <Car className={`h-5 w-5 ${liveProgressData.obd_scan.completed ? 'text-green-600' : 'text-gray-400'}`} />
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-900">OBD-II Diagnostic</p>
-                    <p className={`text-sm ${liveProgressData.obd_scan.completed ? 'text-green-600' : 'text-gray-500'}`}>
-                      {liveProgressData.obd_scan.completed ? 'Completed' : 'Not yet completed'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Category-wise Progress */}
+              {/* Category-wise Q&A Accordion */}
               <div>
-                <h3 className="font-semibold text-gray-900 mb-3">Category Progress</h3>
+                <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <ClipboardList className="h-4 w-4" />
+                  Questions & Answers by Category
+                </h3>
                 <div className="space-y-2">
                   {liveProgressData.categories.map((category, index) => (
-                    <div key={category.category_id} className="bg-white rounded-lg border p-3 hover:shadow-sm transition-shadow">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-medium text-gray-800">{category.category_name}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-500">
-                            {category.answered_questions}/{category.total_questions}
-                          </span>
-                          {category.completion_percentage === 100 ? (
-                            <CheckCircle className="h-4 w-4 text-green-500" />
-                          ) : (
-                            <span className={`text-sm font-medium ${
-                              category.completion_percentage > 0 ? 'text-amber-600' : 'text-gray-400'
-                            }`}>
-                              {category.completion_percentage}%
+                    <details 
+                      key={category.category_id} 
+                      className="bg-white rounded-lg border group"
+                      open={category.completion_percentage > 0 && category.completion_percentage < 100}
+                    >
+                      <summary className="p-3 cursor-pointer hover:bg-gray-50 transition-colors list-none">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <ChevronRight className="h-4 w-4 text-gray-400 transition-transform group-open:rotate-90" />
+                            <span className="font-medium text-gray-800">{category.category_name}</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm text-gray-500">
+                              {category.answered_questions}/{category.total_questions}
                             </span>
-                          )}
+                            {category.completion_percentage === 100 ? (
+                              <CheckCircle className="h-5 w-5 text-green-500" />
+                            ) : category.completion_percentage > 0 ? (
+                              <div className="h-5 w-5 rounded-full border-2 border-amber-500 flex items-center justify-center">
+                                <span className="text-[10px] font-bold text-amber-600">{category.completion_percentage}%</span>
+                              </div>
+                            ) : (
+                              <div className="h-5 w-5 rounded-full border-2 border-gray-300" />
+                            )}
+                          </div>
                         </div>
+                        <div className="mt-2 ml-7 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full rounded-full transition-all duration-300 ${
+                              category.completion_percentage === 100 ? 'bg-green-500' : 
+                              category.completion_percentage > 0 ? 'bg-amber-500' : 'bg-gray-200'
+                            }`}
+                            style={{ width: `${category.completion_percentage}%` }}
+                          />
+                        </div>
+                      </summary>
+                      
+                      {/* Questions List inside accordion */}
+                      <div className="border-t bg-gray-50 p-3 space-y-2 max-h-[300px] overflow-y-auto">
+                        {category.questions?.map((q, qIdx) => (
+                          <div 
+                            key={q.question_id} 
+                            className={`bg-white rounded-lg p-3 border ${q.is_answered ? 'border-green-200' : 'border-gray-200'}`}
+                          >
+                            <div className="flex items-start gap-2">
+                              <span className={`text-xs font-medium px-2 py-0.5 rounded ${q.is_answered ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                                Q{qIdx + 1}
+                              </span>
+                              <div className="flex-1">
+                                <p className="text-sm font-medium text-gray-800">{q.question_text}</p>
+                                {q.is_answered ? (
+                                  <div className="mt-2">
+                                    <p className="text-xs text-gray-500 mb-1">Answer:</p>
+                                    {typeof q.answer === 'string' && (q.answer.startsWith('data:image') || q.answer.startsWith('http')) ? (
+                                      <img src={q.answer} alt="Answer" className="max-w-[200px] max-h-[150px] rounded-lg border object-cover" />
+                                    ) : typeof q.answer === 'string' && q.answer.startsWith('gs://') ? (
+                                      <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">📷 Media uploaded to cloud</span>
+                                    ) : typeof q.answer === 'object' && q.answer?.selection ? (
+                                      <div>
+                                        <span className="text-blue-600 font-medium">{q.answer.selection}</span>
+                                        {q.answer.media && (
+                                          <span className="ml-2 text-xs text-gray-500">(with media)</span>
+                                        )}
+                                      </div>
+                                    ) : (
+                                      <span className="text-blue-600 font-medium">{String(q.answer)}</span>
+                                    )}
+                                    {q.answered_at && (
+                                      <p className="text-[10px] text-gray-400 mt-1">
+                                        Answered: {new Date(q.answered_at).toLocaleString()}
+                                      </p>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <p className="text-xs text-gray-400 mt-1 italic">Not answered yet</p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                        <div 
-                          className={`h-full rounded-full transition-all duration-300 ${
-                            category.completion_percentage === 100 ? 'bg-green-500' : 
-                            category.completion_percentage > 0 ? 'bg-amber-500' : 'bg-gray-200'
-                          }`}
-                          style={{ width: `${category.completion_percentage}%` }}
-                        />
-                      </div>
-                    </div>
+                    </details>
                   ))}
                 </div>
               </div>
               
-              {/* Recent Answers */}
-              {liveProgressData.recent_answers.length > 0 && (
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-3">Recent Answers</h3>
-                  <div className="space-y-2 max-h-[200px] overflow-y-auto">
-                    {liveProgressData.recent_answers.map((answer, idx) => (
-                      <div key={idx} className="bg-gray-50 rounded-lg p-3 text-sm">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1">
-                            <p className="text-gray-500 text-xs mb-1">{answer.category}</p>
-                            <p className="font-medium text-gray-800">{answer.question}</p>
-                            <p className="text-blue-600 mt-1">{answer.answer}</p>
-                          </div>
-                          <span className="text-xs text-gray-400 whitespace-nowrap">
-                            {answer.answered_at ? new Date(answer.answered_at).toLocaleTimeString() : ''}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {/* Mechanic Info */}
-              {liveProgressData.mechanic_name && (
-                <div className="bg-slate-50 rounded-lg p-3 text-sm">
+              {/* OBD Scan Data Section */}
+              <div className={`rounded-xl border ${
+                liveProgressData.obd_scan.completed ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'
+              }`}>
+                <div className="p-4">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-gray-400" />
-                      <span className="text-gray-600">Mechanic: <strong>{liveProgressData.mechanic_name}</strong></span>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                        liveProgressData.obd_scan.completed ? 'bg-green-100' : 'bg-gray-100'
+                      }`}>
+                        <Car className={`h-5 w-5 ${liveProgressData.obd_scan.completed ? 'text-green-600' : 'text-gray-400'}`} />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">OBD-II Diagnostic</p>
+                        <p className={`text-sm ${liveProgressData.obd_scan.completed ? 'text-green-600' : 'text-gray-500'}`}>
+                          {liveProgressData.obd_scan.completed ? 'Scan Completed' : 'Not yet completed'}
+                        </p>
+                      </div>
                     </div>
-                    {liveProgressData.started_at && (
-                      <span className="text-gray-500">Started: {new Date(liveProgressData.started_at).toLocaleString()}</span>
+                    {liveProgressData.obd_scan.completed && (
+                      <CheckCircle className="h-6 w-6 text-green-500" />
                     )}
                   </div>
                 </div>
-              )}
+                
+                {/* OBD Data Details */}
+                {liveProgressData.obd_scan.completed && liveProgressData.obd_scan.data && (
+                  <div className="border-t border-green-200 p-4 bg-white/50 rounded-b-xl">
+                    <h4 className="text-sm font-semibold text-gray-700 mb-3">Diagnostic Results</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      {liveProgressData.obd_scan.data.dtc_codes && (
+                        <div className="bg-white rounded-lg p-3 border">
+                          <p className="text-xs text-gray-500 mb-1">DTC Codes</p>
+                          <p className={`font-semibold ${liveProgressData.obd_scan.data.dtc_codes.length > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                            {liveProgressData.obd_scan.data.dtc_codes.length > 0 
+                              ? liveProgressData.obd_scan.data.dtc_codes.join(', ')
+                              : 'No codes found'}
+                          </p>
+                        </div>
+                      )}
+                      {liveProgressData.obd_scan.data.battery_voltage && (
+                        <div className="bg-white rounded-lg p-3 border">
+                          <p className="text-xs text-gray-500 mb-1">Battery Voltage</p>
+                          <p className="font-semibold text-gray-800">{liveProgressData.obd_scan.data.battery_voltage}V</p>
+                        </div>
+                      )}
+                      {liveProgressData.obd_scan.data.engine_rpm && (
+                        <div className="bg-white rounded-lg p-3 border">
+                          <p className="text-xs text-gray-500 mb-1">Engine RPM</p>
+                          <p className="font-semibold text-gray-800">{liveProgressData.obd_scan.data.engine_rpm}</p>
+                        </div>
+                      )}
+                      {liveProgressData.obd_scan.data.coolant_temp && (
+                        <div className="bg-white rounded-lg p-3 border">
+                          <p className="text-xs text-gray-500 mb-1">Coolant Temp</p>
+                          <p className="font-semibold text-gray-800">{liveProgressData.obd_scan.data.coolant_temp}°C</p>
+                        </div>
+                      )}
+                    </div>
+                    {/* Show all other OBD fields */}
+                    {Object.keys(liveProgressData.obd_scan.data).filter(k => !['dtc_codes', 'battery_voltage', 'engine_rpm', 'coolant_temp'].includes(k)).length > 0 && (
+                      <details className="mt-3">
+                        <summary className="text-xs text-blue-600 cursor-pointer hover:underline">View all diagnostic data</summary>
+                        <div className="mt-2 bg-gray-50 rounded-lg p-3 text-xs font-mono overflow-x-auto">
+                          <pre>{JSON.stringify(liveProgressData.obd_scan.data, null, 2)}</pre>
+                        </div>
+                      </details>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           ) : (
             <div className="py-12 text-center text-gray-500">
