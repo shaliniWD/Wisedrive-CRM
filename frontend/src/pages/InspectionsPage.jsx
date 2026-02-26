@@ -1747,15 +1747,25 @@ export default function InspectionsPage() {
                     <td className="px-2 py-2.5 text-center">
                       <button
                         onClick={() => openLiveProgressModal(inspection)}
-                        className={`px-2.5 py-1 text-xs font-medium rounded transition-colors ${
+                        className={`px-3 py-1.5 text-xs font-semibold rounded-full transition-all duration-300 ${
                           ['INSPECTION_STARTED', 'IN_PROGRESS'].includes(inspection.inspection_status)
-                            ? 'text-green-700 bg-green-100 hover:bg-green-200 animate-pulse'
-                            : 'text-gray-500 bg-gray-100 hover:bg-gray-200'
+                            ? 'text-white bg-gradient-to-r from-green-500 to-emerald-500 shadow-lg shadow-green-500/40 animate-pulse hover:shadow-green-500/60'
+                            : inspection.inspection_status === 'COMPLETED' || inspection.inspection_answers && Object.keys(inspection.inspection_answers).length > 0
+                            ? 'text-gray-600 bg-gray-200 hover:bg-gray-300'
+                            : 'text-gray-400 bg-gray-100 hover:bg-gray-200'
                         }`}
-                        title="Live Progress"
+                        title={['INSPECTION_STARTED', 'IN_PROGRESS'].includes(inspection.inspection_status) ? 'Inspection in progress - Click to view live updates' : 'View inspection data'}
                         data-testid={`live-progress-${inspection.id}`}
                       >
-                        Live
+                        {['INSPECTION_STARTED', 'IN_PROGRESS'].includes(inspection.inspection_status) ? (
+                          <span className="flex items-center gap-1">
+                            <span className="relative flex h-2 w-2">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                            </span>
+                            Live
+                          </span>
+                        ) : 'Live'}
                       </button>
                     </td>
                     
