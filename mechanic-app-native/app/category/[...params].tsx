@@ -787,10 +787,25 @@ export default function CategoryQuestionsScreen() {
               <Text style={styles.comboMediaLabel}>Video Required (Max {question.video_max_duration || 30}s)</Text>
               {mediaData ? (
                 <View style={styles.mediaPreview}>
-                  <View style={styles.videoPlaceholder}>
-                    <Ionicons name="videocam" size={40} color={colors.success} />
-                    <Text style={styles.videoRecordedText}>Video Recorded</Text>
-                  </View>
+                  {(mediaData.startsWith('http://') || mediaData.startsWith('https://') || mediaData.startsWith('file://')) ? (
+                    <TouchableOpacity 
+                      style={styles.videoThumbnail} 
+                      onPress={() => playVideo(mediaData)}
+                      activeOpacity={0.8}
+                    >
+                      <View style={styles.videoThumbnailOverlay}>
+                        <View style={styles.playButtonCircle}>
+                          <Ionicons name="play" size={32} color="#fff" />
+                        </View>
+                        <Text style={styles.videoTapToPlay}>Tap to play video</Text>
+                      </View>
+                    </TouchableOpacity>
+                  ) : (
+                    <View style={styles.videoPlaceholder}>
+                      <Ionicons name="videocam" size={40} color={colors.success} />
+                      <Text style={styles.videoRecordedText}>Video Recorded</Text>
+                    </View>
+                  )}
                   <TouchableOpacity style={styles.retakeButton} onPress={() => handleComboMediaCapture(question.id, field, 'video', question.video_max_duration)}>
                     <Ionicons name="videocam" size={18} color="#fff" />
                     <Text style={styles.retakeText}>Retake</Text>
