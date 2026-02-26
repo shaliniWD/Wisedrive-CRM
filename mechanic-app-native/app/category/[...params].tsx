@@ -368,7 +368,8 @@ export default function CategoryQuestionsScreen() {
     // Helper function to upload media to Firebase and return URL
     const uploadToFirebase = async (uri: string, questionId: string, mediaType: 'image' | 'video'): Promise<string> => {
       diagLogger.info('FIREBASE_UPLOAD_STARTING', { questionId, mediaType });
-      const result = await uploadMediaToFirebase(uri, inspectionId, questionId, mediaType);
+      const token = await getAuthToken();
+      const result = await uploadMediaToFirebase(uri, inspectionId, questionId, mediaType, undefined, token || undefined);
       if (!result.success || !result.url) {
         throw new Error(result.error || 'Upload failed');
       }
