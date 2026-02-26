@@ -81,6 +81,7 @@ export async function uploadMediaToFirebase(
     
     const readDuration = Date.now() - readStart;
     const base64SizeMB = (base64Data.length * 0.75) / (1024 * 1024); // Approximate original size
+    const fileSizeBytes = Math.round(base64Data.length * 0.75);
     
     diagLogger.info('FIREBASE_BASE64_READ_COMPLETE', { 
       readDurationMs: readDuration,
