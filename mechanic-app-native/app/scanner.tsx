@@ -1409,11 +1409,11 @@ export default function OBDScannerScreen() {
             </TouchableOpacity>
           )}
 
-          {/* Show Scan Again only if there was an error */}
-          {submitError && (
-            <TouchableOpacity style={styles.scanAgainBtn} onPress={startScan}>
+          {/* Show Retry only if there was an error - retry submission, not new scan */}
+          {submitError && !isSubmitted && (
+            <TouchableOpacity style={styles.scanAgainBtn} onPress={handleSubmitOBDResults}>
               <MaterialIcons name="refresh" size={20} color={Colors.textMuted} />
-              <Text style={styles.scanAgainBtnText}>Scan Again</Text>
+              <Text style={styles.scanAgainBtnText}>Retry Submission</Text>
             </TouchableOpacity>
           )}
         </View>
