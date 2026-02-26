@@ -179,6 +179,7 @@ export default function OBDScannerScreen() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isCheckingBackend, setIsCheckingBackend] = useState(true);
   const [alreadySubmittedToBackend, setAlreadySubmittedToBackend] = useState(false);
+  const [pendingLocalData, setPendingLocalData] = useState<any | null>(null);
 
   const adapterRef = useRef<BLEAdapterInterface | null>(null);
   const elm327Ref = useRef<ELM327Service | null>(null);
@@ -195,6 +196,7 @@ export default function OBDScannerScreen() {
       const checkOBDStatus = async () => {
         setIsCheckingBackend(true);
         try {
+          // First check backend
           const inspection = await inspectionsApi.getInspection(currentInspectionId);
           // Backend stores obd_results_ref or obd_total_errors when OBD is submitted
           const hasOBD = !!(inspection?.obd_results_ref || inspection?.obd_total_errors !== undefined);
@@ -202,11 +204,26 @@ export default function OBDScannerScreen() {
             logger.info(MODULE, 'OBD already submitted for this inspection', { inspectionId: currentInspectionId });
             setAlreadySubmittedToBackend(true);
             setIsSubmitted(true);
+            // Clear any local pending data since backend has it
+            await clearOBDFromStorage(currentInspectionId);
           } else {
             setAlreadySubmittedToBackend(false);
+            
+            // Check for pending local data that wasn't submitted
+            const localData = await loadOBDFromStorage(currentInspectionId);
+            if (localData && !localData.submittedToBackend) {
+              logger.info(MODULE, 'Found pending local OBD data', { inspectionId: currentInspectionId });
+              setPendingLocalData(localData);
+            }
           }
         } catch (error: any) {
-          logger.warn(MODULE, 'Failed to check OBD status', { error: error.message });
+          logger.warn(MODULE, 'Failed to check OBD status from backend', { error: error.message });
+          // If backend check fails, still check local storage
+          const localData = await loadOBDFromStorage(currentInspectionId);
+          if (localData && !localData.submittedToBackend) {
+            logger.info(MODULE, 'Found pending local OBD data (backend unavailable)', { inspectionId: currentInspectionId });
+            setPendingLocalData(localData);
+          }
         } finally {
           setIsCheckingBackend(false);
         }
