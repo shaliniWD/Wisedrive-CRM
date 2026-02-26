@@ -627,13 +627,6 @@ export default function CategoryQuestionsScreen() {
       Alert.alert('Error', 'Failed to capture video. Please try again.');
     }
   };
-        updateDraftAnswer(questionId, result.assets[0].uri, field);
-      }
-    } catch (err) {
-      console.error('Video capture error:', err);
-      Alert.alert('Error', 'Failed to capture video. Please try again.');
-    }
-  };
 
   const renderAnswerInput = (question: Question, currentAnswer: any, field: string = 'answer', answerType?: string, options?: string[]) => {
     const isSubQuestion = field === 'sub_answer_1' || field === 'sub_answer_2';
