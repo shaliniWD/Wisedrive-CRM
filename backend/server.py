@@ -5524,6 +5524,12 @@ async def get_inspection_live_progress(inspection_id: str, current_user: dict = 
                             resolved_answer = media_url
                     except Exception as e:
                         logger.error(f"[LIVE_PROGRESS] Failed to resolve media_ref: {e}")
+                elif raw_answer.startswith("file://") or raw_answer.startswith("/data/"):
+                    # Local device file path - media was not uploaded to cloud
+                    # Mark as upload failed so frontend can display appropriate message
+                    q_detail["media_upload_failed"] = True
+                    q_detail["local_file_path"] = raw_answer
+                    logger.warning(f"[LIVE_PROGRESS] Media not uploaded - local path detected: {raw_answer[:100]}")
             elif isinstance(raw_answer, dict):
                 # Handle combo answers (selection + media)
                 if raw_answer.get("media"):
