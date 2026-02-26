@@ -1072,6 +1072,40 @@ export default function CategoryQuestionsScreen() {
           )}
         </TouchableOpacity>
       </View>
+
+      {/* Video Player Modal */}
+      <Modal
+        visible={videoModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={closeVideoModal}
+      >
+        <View style={styles.videoModalContainer}>
+          <View style={styles.videoModalContent}>
+            <View style={styles.videoModalHeader}>
+              <Text style={styles.videoModalTitle}>Video Preview</Text>
+              <TouchableOpacity onPress={closeVideoModal} style={styles.videoModalCloseButton}>
+                <Ionicons name="close" size={28} color="#fff" />
+              </TouchableOpacity>
+            </View>
+            {currentVideoUrl && (
+              <Video
+                ref={videoRef}
+                source={{ uri: currentVideoUrl }}
+                style={styles.videoPlayer}
+                useNativeControls
+                resizeMode={ResizeMode.CONTAIN}
+                shouldPlay={true}
+                isLooping={false}
+                onError={(error) => {
+                  diagLogger.error('VIDEO_PLAYBACK_ERROR', { error: String(error) });
+                  Alert.alert('Error', 'Failed to play video');
+                }}
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
