@@ -363,8 +363,8 @@ export default function InspectionCategoriesScreen() {
           <Text style={styles.sectionTitle}>Diagnostics</Text>
         </View>
 
-        {/* Show non-interactive card when OBD is already submitted */}
-        {obdCompleted ? (
+        {/* Show non-interactive card when OBD is already submitted and rescan is NOT enabled */}
+        {obdCompleted && !obdRescanEnabled ? (
           <View style={styles.obdCard}>
             <LinearGradient
               colors={['#059669', '#10B981']}
@@ -406,6 +406,45 @@ export default function InspectionCategoriesScreen() {
               </View>
             )}
           </View>
+        ) : obdSubmittedToBackend && obdRescanEnabled ? (
+          /* Show Re-scan option when rescan is enabled */
+          <TouchableOpacity 
+            style={styles.obdCard}
+            onPress={handleOBDScan}
+            activeOpacity={0.9}
+          >
+            <LinearGradient
+              colors={['#F59E0B', '#D97706']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.obdGradient}
+            >
+              <View style={styles.obdLeft}>
+                <View style={styles.obdIconBox}>
+                  <MaterialCommunityIcons 
+                    name="refresh"
+                    size={28} 
+                    color="#FFF" 
+                  />
+                </View>
+                <View style={styles.obdInfo}>
+                  <Text style={styles.obdTitle}>OBD-II Re-scan</Text>
+                  <Text style={styles.obdStatus}>Previous: {backendObdData?.dtcCount || 0} DTCs found</Text>
+                </View>
+              </View>
+              
+              <View style={[styles.obdStartChip, { backgroundColor: '#FEF3C7' }]}>
+                <MaterialIcons name="bluetooth-searching" size={16} color="#D97706" />
+                <Text style={[styles.obdStartText, { color: '#D97706' }]}>Re-scan</Text>
+              </View>
+            </LinearGradient>
+            
+            <View style={{ backgroundColor: '#FFFBEB', padding: 12, borderBottomLeftRadius: 12, borderBottomRightRadius: 12 }}>
+              <Text style={{ fontSize: 12, color: '#92400E', textAlign: 'center' }}>
+                ⚠️ New scan will replace existing OBD data
+              </Text>
+            </View>
+          </TouchableOpacity>
         ) : (
           <TouchableOpacity 
             style={styles.obdCard}
