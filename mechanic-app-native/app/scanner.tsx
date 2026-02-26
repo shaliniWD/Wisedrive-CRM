@@ -40,6 +40,8 @@ import { Manufacturer } from '../src/constants/manufacturers';
 import { getDTCDescription, getComponentForDTC, getDTCSeverity, getSeverityInfo } from '../src/constants/dtc-descriptions';
 import { getDTCKnowledge } from '../src/constants/dtc-knowledge-base';
 import { useInspection } from '../src/context/InspectionContext';
+import { inspectionsApi } from '../src/lib/api';
+import { diagLogger } from '../src/lib/diagLogger';
 
 const MODULE = 'OBD_SCANNER';
 
