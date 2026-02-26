@@ -14531,10 +14531,70 @@ async def mechanic_save_progress(
     request: Request,
     current_user: dict = Depends(get_current_user)
 ):
-    """Save inspection progress from mechanic app"""
+    """Save inspection progress from mechanic app
+    
+    IMPORTANT: To avoid MongoDB's 16MB document limit, media (images/videos) 
+    are stored in a separate 'inspection_media' collection. The inspection_answers
+    only stores references to the media.
+    """
     import logging
     import traceback
     logger = logging.getLogger(__name__)
+    
+    async def store_media_separately(media_data: str, inspection_id: str, question_id: str, field_name: str) -> str:
+        """Store base64 media in separate collection and return reference ID"""
+        if not media_data or not isinstance(media_data, str):
+            return media_data
+        
+        # Only process base64 data
+        if not media_data.startswith('data:'):
+            return media_data
+        
+        # Generate unique media ID
+        media_id = str(uuid.uuid4())
+        
+        # Determine media type
+        media_type = "image"
+        if "video" in media_data[:50]:
+            media_type = "video"
+        
+        # Store in separate collection
+        media_doc = {
+            "id": media_id,
+            "inspection_id": inspection_id,
+            "question_id": question_id,
+            "field_name": field_name,
+            "media_type": media_type,
+            "data": media_data,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_by": current_user["id"]
+        }
+        
+        await db.inspection_media.insert_one(media_doc)
+        logger.info(f"[SAVE_PROGRESS] Stored media separately: {media_id} ({len(media_data) // 1024}KB)")
+        
+        # Return reference instead of full data
+        return f"media_ref:{media_id}"
+    
+    async def process_answer_media(answer_data: any, inspection_id: str, question_id: str, field_name: str) -> any:
+        """Process answer to extract and store media separately"""
+        if answer_data is None:
+            return None
+        
+        # If it's a string (direct image/video)
+        if isinstance(answer_data, str) and answer_data.startswith('data:'):
+            return await store_media_separately(answer_data, inspection_id, question_id, field_name)
+        
+        # If it's a dict (combo answer with selection + media)
+        if isinstance(answer_data, dict):
+            processed = dict(answer_data)
+            if 'media' in processed and isinstance(processed['media'], str) and processed['media'].startswith('data:'):
+                processed['media'] = await store_media_separately(
+                    processed['media'], inspection_id, question_id, f"{field_name}_media"
+                )
+            return processed
+        
+        return answer_data
     
     try:
         # Log request size
@@ -14549,6 +14609,8 @@ async def mechanic_save_progress(
                 answer_size = len(data.answer)
                 if data.answer.startswith('data:image'):
                     answer_type = "base64_image"
+                elif data.answer.startswith('data:video'):
+                    answer_type = "base64_video"
                 elif data.answer.startswith('file://'):
                     answer_type = "file_uri"
                 else:
