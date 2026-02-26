@@ -17,6 +17,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { 
   Colors, 
   Spacing, 
@@ -44,6 +45,76 @@ import { inspectionsApi } from '../src/lib/api';
 import { diagLogger } from '../src/lib/diagLogger';
 
 const MODULE = 'OBD_SCANNER';
+
+// AsyncStorage keys for OBD data persistence
+const OBD_STORAGE_PREFIX = '@obd_data_';
+const getOBDStorageKey = (inspectionId: string) => `${OBD_STORAGE_PREFIX}${inspectionId}`;
+
+// Save OBD data to AsyncStorage as backup
+const saveOBDToStorage = async (inspectionId: string, obdData: any): Promise<void> => {
+  try {
+    const key = getOBDStorageKey(inspectionId);
+    await AsyncStorage.setItem(key, JSON.stringify({
+      ...obdData,
+      savedAt: new Date().toISOString(),
+      submittedToBackend: false,
+    }));
+    diagLogger.info('OBD_STORAGE_SAVE', { inspectionId, success: true });
+  } catch (error: any) {
+    diagLogger.error('OBD_STORAGE_SAVE_FAILED', { inspectionId, error: error.message });
+  }
+};
+
+// Mark OBD data as submitted in AsyncStorage
+const markOBDAsSubmitted = async (inspectionId: string): Promise<void> => {
+  try {
+    const key = getOBDStorageKey(inspectionId);
+    const stored = await AsyncStorage.getItem(key);
+    if (stored) {
+      const data = JSON.parse(stored);
+      data.submittedToBackend = true;
+      data.submittedAt = new Date().toISOString();
+      await AsyncStorage.setItem(key, JSON.stringify(data));
+      diagLogger.info('OBD_STORAGE_MARKED_SUBMITTED', { inspectionId });
+    }
+  } catch (error: any) {
+    diagLogger.error('OBD_STORAGE_MARK_FAILED', { inspectionId, error: error.message });
+  }
+};
+
+// Load OBD data from AsyncStorage
+const loadOBDFromStorage = async (inspectionId: string): Promise<any | null> => {
+  try {
+    const key = getOBDStorageKey(inspectionId);
+    const stored = await AsyncStorage.getItem(key);
+    if (stored) {
+      const data = JSON.parse(stored);
+      diagLogger.info('OBD_STORAGE_LOAD', { inspectionId, submittedToBackend: data.submittedToBackend });
+      return data;
+    }
+    return null;
+  } catch (error: any) {
+    diagLogger.error('OBD_STORAGE_LOAD_FAILED', { inspectionId, error: error.message });
+    return null;
+  }
+};
+
+// Check if there's pending (not submitted) OBD data in storage
+const hasPendingOBDData = async (inspectionId: string): Promise<boolean> => {
+  const data = await loadOBDFromStorage(inspectionId);
+  return data !== null && !data.submittedToBackend;
+};
+
+// Clear OBD data from storage after successful submission
+const clearOBDFromStorage = async (inspectionId: string): Promise<void> => {
+  try {
+    const key = getOBDStorageKey(inspectionId);
+    await AsyncStorage.removeItem(key);
+    diagLogger.info('OBD_STORAGE_CLEARED', { inspectionId });
+  } catch (error: any) {
+    diagLogger.error('OBD_STORAGE_CLEAR_FAILED', { inspectionId, error: error.message });
+  }
+};
 
 export default function OBDScannerScreen() {
   const insets = useSafeAreaInsets();
