@@ -260,6 +260,23 @@ export default function CategoryQuestionsScreen() {
   const [isSaving, setIsSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  
+  // Video player modal state
+  const [videoModalVisible, setVideoModalVisible] = useState(false);
+  const [currentVideoUrl, setCurrentVideoUrl] = useState<string | null>(null);
+  const videoRef = useRef<Video>(null);
+
+  // Function to play video in modal
+  const playVideo = (videoUrl: string) => {
+    setCurrentVideoUrl(videoUrl);
+    setVideoModalVisible(true);
+  };
+
+  // Close video modal
+  const closeVideoModal = () => {
+    setVideoModalVisible(false);
+    setCurrentVideoUrl(null);
+  };
 
   useEffect(() => {
     isMounted.current = true;
