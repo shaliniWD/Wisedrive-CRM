@@ -344,13 +344,17 @@ export default function CategoryQuestionsScreen() {
         
         // Merge: prefer local drafts (if isDraft) over server answers
         const mergedAnswers: Record<string, Answer> = {};
-        categoryQuestions.forEach((q: Question) => {
+        
+        // Process each question and resolve media URLs for server answers
+        for (const q of categoryQuestions) {
           if (localDrafts[q.id]?.isDraft) {
             mergedAnswers[q.id] = { ...localDrafts[q.id], isDraft: true };
           } else if (serverAnswers[q.id]) {
-            mergedAnswers[q.id] = { ...serverAnswers[q.id], isDraft: false };
+            // Resolve remote media URLs (gs://, media_ref:) to displayable URLs
+            const resolvedAnswer = await resolveAnswerMedia(serverAnswers[q.id]);
+            mergedAnswers[q.id] = { ...resolvedAnswer, isDraft: false };
           }
-        });
+        }
         
         setDraftAnswers(mergedAnswers);
         setHasUnsavedChanges(Object.values(mergedAnswers).some(a => a.isDraft));
