@@ -604,25 +604,29 @@ export default function CategoryQuestionsScreen() {
     }
   };
 
-  const handleVideoCapture = async (questionId: string, maxDuration: number = 10, field: string = 'answer') => {
+  const handleVideoCapture = async (questionId: string, maxDuration: number = 60, field: string = 'answer') => {
     try {
-      // Show warning about video length
-      Alert.alert(
-        'Video Recording',
-        `Please keep your video under 10 seconds for reliable upload. Recording will auto-stop at ${Math.min(maxDuration, 10)} seconds.`,
-        [{ text: 'OK' }]
-      );
-      
+      // With Firebase Storage, we can handle larger videos
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Videos,
         allowsEditing: true,
-        quality: 0.3, // Lower quality for smaller files
-        videoMaxDuration: Math.min(maxDuration, 10), // Max 10 seconds
+        quality: 0.5, // Medium quality
+        videoMaxDuration: maxDuration, // Use the configured duration
       });
 
       if (!result.canceled && result.assets[0]) {
-        // Store URI - size will be checked during save
-        diagLogger.info('VIDEO_CAPTURED_DIRECT', { uri: result.assets[0].uri.substring(0, 50) });
+        // Store URI - will be uploaded to Firebase during save
+        diagLogger.info('VIDEO_CAPTURED_DIRECT', { 
+          uri: result.assets[0].uri.substring(0, 50),
+          duration: result.assets[0].duration,
+        });
+        updateDraftAnswer(questionId, result.assets[0].uri, field);
+      }
+    } catch (err) {
+      console.error('Video capture error:', err);
+      Alert.alert('Error', 'Failed to capture video. Please try again.');
+    }
+  };
         updateDraftAnswer(questionId, result.assets[0].uri, field);
       }
     } catch (err) {
