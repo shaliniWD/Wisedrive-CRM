@@ -545,21 +545,15 @@ export default function CategoryQuestionsScreen() {
         result = await ImagePicker.launchCameraAsync({
           mediaTypes: ImagePicker.MediaTypeOptions.Images,
           allowsEditing: false,
-          quality: 0.5, // Lower quality to reduce memory
+          quality: 0.5,
         });
       } else {
-        // Show warning about video length
-        Alert.alert(
-          'Video Recording',
-          `Please keep your video under 10 seconds for reliable upload. Recording will auto-stop at ${maxDuration || 10} seconds.`,
-          [{ text: 'OK' }]
-        );
-        
+        // With Firebase Storage, we can handle larger videos
         result = await ImagePicker.launchCameraAsync({
           mediaTypes: ImagePicker.MediaTypeOptions.Videos,
           allowsEditing: true,
-          quality: 0.3, // Lower quality for smaller files
-          videoMaxDuration: Math.min(maxDuration || 10, 10), // Max 10 seconds
+          quality: 0.5,
+          videoMaxDuration: maxDuration || 60, // Allow longer videos
         });
       }
 
@@ -568,11 +562,14 @@ export default function CategoryQuestionsScreen() {
         let mediaData: string;
         
         if (mediaType === 'photo') {
-          // Compress image to prevent memory issues
+          // Compress image for faster upload
           mediaData = await compressImage(result.assets[0].uri);
         } else {
-          // For videos, store the URI - it will be processed and size-checked during save
-          diagLogger.info('VIDEO_CAPTURED', { uri: result.assets[0].uri.substring(0, 50) });
+          // Store video URI - will be uploaded to Firebase during save
+          diagLogger.info('VIDEO_CAPTURED', { 
+            uri: result.assets[0].uri.substring(0, 50),
+            duration: result.assets[0].duration,
+          });
           mediaData = result.assets[0].uri;
         }
         
