@@ -14647,25 +14647,28 @@ async def mechanic_save_progress(
             logger.info(f"[SAVE_PROGRESS] Processing question_id={data.question_id}")
             existing_answer = answers.get(data.question_id, {})
             
-            # Update main answer if provided
+            # Update main answer if provided - STORE MEDIA SEPARATELY
             if data.answer is not None:
                 logger.info(f"[SAVE_PROGRESS] Saving main answer for question {data.question_id}")
-                existing_answer["answer"] = data.answer
+                processed_answer = await process_answer_media(data.answer, inspection_id, data.question_id, "answer")
+                existing_answer["answer"] = processed_answer
                 existing_answer["answered_at"] = datetime.now(timezone.utc).isoformat()
                 existing_answer["answered_by"] = current_user["id"]
             else:
                 logger.warning(f"[SAVE_PROGRESS] data.answer is None, skipping main answer update")
             
-            # Update sub_answer_1 if provided
+            # Update sub_answer_1 if provided - STORE MEDIA SEPARATELY
             if data.sub_answer_1 is not None:
                 logger.info(f"[SAVE_PROGRESS] Saving sub_answer_1 for question {data.question_id}")
-                existing_answer["sub_answer_1"] = data.sub_answer_1
+                processed_sub1 = await process_answer_media(data.sub_answer_1, inspection_id, data.question_id, "sub_answer_1")
+                existing_answer["sub_answer_1"] = processed_sub1
                 existing_answer["sub_answer_1_at"] = datetime.now(timezone.utc).isoformat()
             
-            # Update sub_answer_2 if provided
+            # Update sub_answer_2 if provided - STORE MEDIA SEPARATELY
             if data.sub_answer_2 is not None:
                 logger.info(f"[SAVE_PROGRESS] Saving sub_answer_2 for question {data.question_id}")
-                existing_answer["sub_answer_2"] = data.sub_answer_2
+                processed_sub2 = await process_answer_media(data.sub_answer_2, inspection_id, data.question_id, "sub_answer_2")
+                existing_answer["sub_answer_2"] = processed_sub2
                 existing_answer["sub_answer_2_at"] = datetime.now(timezone.utc).isoformat()
             
             answers[data.question_id] = existing_answer
