@@ -105,9 +105,10 @@ export default function InspectionCategoriesScreen() {
   // Check OBD completion from both context AND backend data
   const [obdSubmittedToBackend, setObdSubmittedToBackend] = useState(false);
   const [backendObdData, setBackendObdData] = useState<{ dtcCount: number; liveDataCount: number } | null>(null);
+  const [obdRescanEnabled, setObdRescanEnabled] = useState(false);
   
-  // OBD is completed if either context says so OR backend has OBD data
-  const obdCompleted = obdScanResult?.completed || obdSubmittedToBackend;
+  // OBD is completed if either context says so OR backend has OBD data (and rescan is NOT enabled)
+  const obdCompleted = (obdScanResult?.completed || obdSubmittedToBackend) && !obdRescanEnabled;
   const obdResults = obdScanResult || (obdSubmittedToBackend ? { completed: true, ...backendObdData } : null);
 
   // Refresh data when screen comes into focus (after returning from Q&A)
