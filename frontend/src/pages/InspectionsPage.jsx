@@ -2873,10 +2873,54 @@ export default function InspectionsPage() {
                         </p>
                       </div>
                     </div>
-                    {liveProgressData.obd_scan.completed && (
-                      <CheckCircle className="h-6 w-6 text-white" />
-                    )}
+                    <div className="flex items-center gap-2">
+                      {liveProgressData.obd_scan.completed && (
+                        <CheckCircle className="h-6 w-6 text-white" />
+                      )}
+                    </div>
                   </div>
+                  
+                  {/* OBD Rescan Toggle - Only show when scan is completed */}
+                  {liveProgressData.obd_scan.completed && (
+                    <div className="mt-3 pt-3 border-t border-white/20">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <RefreshCw className={`h-4 w-4 ${liveProgressData.obd_scan.rescan_enabled ? 'text-amber-300' : 'text-white/60'}`} />
+                          <span className="text-sm text-white/90">
+                            {liveProgressData.obd_scan.rescan_enabled ? 'Rescan Enabled' : 'Allow Re-scan'}
+                          </span>
+                        </div>
+                        <button
+                          onClick={async () => {
+                            try {
+                              const newState = !liveProgressData.obd_scan.rescan_enabled;
+                              await inspectionsApi.toggleOBDRescan(liveProgressInspection?.id, newState);
+                              toast.success(newState ? 'OBD Re-scan enabled' : 'OBD Re-scan disabled');
+                              // Refresh the data
+                              fetchLiveProgress(liveProgressInspection?.id);
+                            } catch (error) {
+                              toast.error('Failed to toggle OBD rescan');
+                              console.error('Toggle OBD rescan error:', error);
+                            }
+                          }}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-white/30 ${
+                            liveProgressData.obd_scan.rescan_enabled ? 'bg-amber-400' : 'bg-white/30'
+                          }`}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${
+                              liveProgressData.obd_scan.rescan_enabled ? 'translate-x-6' : 'translate-x-1'
+                            }`}
+                          />
+                        </button>
+                      </div>
+                      {liveProgressData.obd_scan.rescan_enabled && (
+                        <p className="text-xs text-amber-200 mt-2">
+                          ⚠️ Mechanic can now re-scan OBD. New data will overwrite existing results.
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
                 
                 {/* OBD Data Details */}
