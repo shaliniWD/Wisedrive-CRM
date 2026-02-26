@@ -96,14 +96,19 @@ const CATEGORY_COLORS = [
 ];
 
 export default function InspectionCategoriesScreen() {
-  const { currentInspectionId, currentInspection, clearInspection, obdScanResult } = useInspection();
+  const { currentInspectionId, currentInspection, clearInspection, obdScanResult, setOBDScanResult } = useInspection();
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [templateName, setTemplateName] = useState<string>('');
   
-  const obdCompleted = obdScanResult?.completed || false;
-  const obdResults = obdScanResult;
+  // Check OBD completion from both context AND backend data
+  const [obdSubmittedToBackend, setObdSubmittedToBackend] = useState(false);
+  const [backendObdData, setBackendObdData] = useState<{ dtcCount: number; liveDataCount: number } | null>(null);
+  
+  // OBD is completed if either context says so OR backend has OBD data
+  const obdCompleted = obdScanResult?.completed || obdSubmittedToBackend;
+  const obdResults = obdScanResult || (obdSubmittedToBackend ? { completed: true, ...backendObdData } : null);
 
   // Refresh data when screen comes into focus (after returning from Q&A)
   useFocusEffect(
