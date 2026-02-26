@@ -141,6 +141,21 @@ export default function InspectionCategoriesScreen() {
       const savedAnswers = inspectionData?.inspection_answers || {};
       console.log('[Categories] Saved answers count:', Object.keys(savedAnswers).length);
       
+      // Check if OBD data was already submitted to backend
+      // Backend stores obd_results_ref or obd_total_errors when OBD is submitted
+      const hasOBDFromBackend = !!(inspectionData?.obd_results_ref || inspectionData?.obd_total_errors !== undefined);
+      if (hasOBDFromBackend) {
+        console.log('[Categories] OBD already submitted to backend');
+        setObdSubmittedToBackend(true);
+        setBackendObdData({
+          dtcCount: inspectionData?.obd_total_errors || 0,
+          liveDataCount: 0, // Backend doesn't store this separately
+        });
+      } else {
+        setObdSubmittedToBackend(false);
+        setBackendObdData(null);
+      }
+      
       setTemplateName(data.inspection_template_name || '');
       
       if (data && data.questions && Array.isArray(data.questions)) {
