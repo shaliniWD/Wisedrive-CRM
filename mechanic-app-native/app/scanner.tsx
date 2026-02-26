@@ -1265,26 +1265,57 @@ export default function OBDScannerScreen() {
             </View>
           )}
 
-          {scanResultJSON && (
-            <TouchableOpacity style={styles.jsonBtn} onPress={copyJSONResult}>
-              <MaterialIcons name="code" size={20} color={Colors.accent} />
-              <Text style={styles.jsonBtnText}>Copy JSON Result</Text>
+          {/* Error banner if submission failed */}
+          {submitError && (
+            <View style={styles.submitErrorBanner}>
+              <MaterialIcons name="error-outline" size={20} color="#DC2626" />
+              <Text style={styles.submitErrorText}>Data transfer failed. Please try again.</Text>
+            </View>
+          )}
+
+          {/* Submit Button - Primary action */}
+          {!isSubmitted ? (
+            <TouchableOpacity 
+              style={[styles.submitOBDBtn, isSubmitting && styles.submitOBDBtnDisabled]} 
+              onPress={handleSubmitOBDResults}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <ActivityIndicator size="small" color="#FFF" />
+                  <Text style={styles.submitOBDBtnText}>Submitting...</Text>
+                </>
+              ) : (
+                <>
+                  <MaterialIcons name="cloud-upload" size={24} color="#FFF" />
+                  <Text style={styles.submitOBDBtnText}>Submit OBD Data</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity 
+              style={styles.continueBtn} 
+              onPress={() => {
+                disconnect();
+                if (currentInspectionId) {
+                  router.push(`/checklist/${currentInspectionId}`);
+                } else {
+                  router.push('/home');
+                }
+              }}
+            >
+              <Text style={styles.continueBtnText}>Continue to Checklist</Text>
+              <MaterialIcons name="arrow-forward" size={24} color="#FFF" />
             </TouchableOpacity>
           )}
 
-          <TouchableOpacity style={styles.scanBtn} onPress={startScan}>
-            <MaterialIcons name="refresh" size={24} color={Colors.textInverse} />
-            <Text style={styles.scanBtnText}>Scan Again</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.homeBtn} onPress={() => {
-            disconnect();
-            clearInspection();
-            router.push('/home');
-          }}>
-            <MaterialIcons name="home" size={20} color={Colors.accent} />
-            <Text style={styles.homeBtnText}>Back to Home</Text>
-          </TouchableOpacity>
+          {/* Show Scan Again only if there was an error */}
+          {submitError && (
+            <TouchableOpacity style={styles.scanAgainBtn} onPress={startScan}>
+              <MaterialIcons name="refresh" size={20} color={Colors.textMuted} />
+              <Text style={styles.scanAgainBtnText}>Scan Again</Text>
+            </TouchableOpacity>
+          )}
         </View>
       );
     }
