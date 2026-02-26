@@ -1191,8 +1191,8 @@ export default function OBDScannerScreen() {
       );
     }
     
-    // Show "already submitted" state if OBD was previously submitted
-    if (alreadySubmittedToBackend && state === 'idle') {
+    // Show "already submitted" state if OBD was previously submitted and rescan is NOT enabled
+    if (alreadySubmittedToBackend && !rescanEnabled && state === 'idle') {
       return (
         <View style={styles.resultsContainer}>
           {/* Active Inspection Card */}
