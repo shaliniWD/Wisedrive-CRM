@@ -1,7 +1,7 @@
 // Firebase Storage upload service for media files
 // Uses expo-file-system for reliable file reading in React Native
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
-import * as FileSystem from 'expo-file-system';
+import { getInfoAsync, readAsStringAsync, EncodingType } from 'expo-file-system/legacy';
 import { storage } from './firebase';
 import { diagLogger } from './diagLogger';
 
