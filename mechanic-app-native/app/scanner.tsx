@@ -106,6 +106,8 @@ export default function OBDScannerScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isCheckingBackend, setIsCheckingBackend] = useState(true);
+  const [alreadySubmittedToBackend, setAlreadySubmittedToBackend] = useState(false);
 
   const adapterRef = useRef<BLEAdapterInterface | null>(null);
   const elm327Ref = useRef<ELM327Service | null>(null);
