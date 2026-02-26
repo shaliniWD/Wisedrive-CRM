@@ -145,15 +145,19 @@ export default function InspectionCategoriesScreen() {
       // Check if OBD data was already submitted to backend
       // Backend stores obd_results_ref or obd_total_errors when OBD is submitted
       const hasOBDFromBackend = !!(inspectionData?.obd_results_ref || inspectionData?.obd_total_errors !== undefined);
+      const rescanEnabled = inspectionData?.obd_rescan_enabled || false;
+      
       if (hasOBDFromBackend) {
-        console.log('[Categories] OBD already submitted to backend');
+        console.log('[Categories] OBD already submitted to backend, rescan enabled:', rescanEnabled);
         setObdSubmittedToBackend(true);
+        setObdRescanEnabled(rescanEnabled);
         setBackendObdData({
           dtcCount: inspectionData?.obd_total_errors || 0,
           liveDataCount: 0, // Backend doesn't store this separately
         });
       } else {
         setObdSubmittedToBackend(false);
+        setObdRescanEnabled(false);
         setBackendObdData(null);
       }
       
