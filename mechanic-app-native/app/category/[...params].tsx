@@ -847,14 +847,34 @@ export default function CategoryQuestionsScreen() {
         );
         
       case 'video':
+        const isPlayableVideo = currentAnswer && (
+          currentAnswer.startsWith('http://') || 
+          currentAnswer.startsWith('https://') || 
+          currentAnswer.startsWith('file://')
+        );
         return (
           <View style={styles.mediaContainer}>
             {currentAnswer ? (
               <View style={styles.mediaPreview}>
-                <View style={styles.videoPlaceholder}>
-                  <Ionicons name="videocam" size={40} color={colors.success} />
-                  <Text style={styles.videoRecordedText}>Video Recorded</Text>
-                </View>
+                {isPlayableVideo ? (
+                  <TouchableOpacity 
+                    style={styles.videoThumbnail} 
+                    onPress={() => playVideo(currentAnswer)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.videoThumbnailOverlay}>
+                      <View style={styles.playButtonCircle}>
+                        <Ionicons name="play" size={32} color="#fff" />
+                      </View>
+                      <Text style={styles.videoTapToPlay}>Tap to play video</Text>
+                    </View>
+                  </TouchableOpacity>
+                ) : (
+                  <View style={styles.videoPlaceholder}>
+                    <Ionicons name="videocam" size={40} color={colors.success} />
+                    <Text style={styles.videoRecordedText}>Video Recorded</Text>
+                  </View>
+                )}
                 <TouchableOpacity style={styles.retakeButton} onPress={() => handleVideoCapture(question.id, question.video_max_duration || 30, field)}>
                   <Ionicons name="videocam" size={18} color="#fff" />
                   <Text style={styles.retakeText}>Retake</Text>
