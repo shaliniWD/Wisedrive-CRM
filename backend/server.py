@@ -14716,6 +14716,28 @@ async def mechanic_save_progress(
         raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
 
 
+
+@api_router.get("/inspection-media/{media_id}")
+async def get_inspection_media(
+    media_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Retrieve stored media by ID (for displaying in CRM)"""
+    media = await db.inspection_media.find_one({"id": media_id}, {"_id": 0})
+    if not media:
+        raise HTTPException(status_code=404, detail="Media not found")
+    
+    return {
+        "id": media["id"],
+        "inspection_id": media.get("inspection_id"),
+        "question_id": media.get("question_id"),
+        "media_type": media.get("media_type"),
+        "data": media.get("data"),
+        "created_at": media.get("created_at")
+    }
+
+
+
 @api_router.post("/mechanic/inspections/{inspection_id}/complete")
 async def mechanic_complete_inspection(
     inspection_id: str,
