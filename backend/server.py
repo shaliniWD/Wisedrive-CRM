@@ -14904,49 +14904,56 @@ async def mechanic_submit_obd_results(
     current_user: dict = Depends(get_current_user)
 ):
     """Submit OBD-II diagnostic results from mechanic app"""
-    inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
-    if not inspection:
-        raise HTTPException(status_code=404, detail="Inspection not found")
-    
-    # Check if mechanic is assigned (optional - allow any authenticated user for now)
-    # if inspection.get("mechanic_id") != current_user["id"]:
-    #     raise HTTPException(status_code=403, detail="You are not assigned to this inspection")
-    
-    logger.info(f"[OBD_SUBMIT] Received OBD data for inspection {inspection_id}")
-    logger.info(f"[OBD_SUBMIT] Data: {obd_data}")
-    
-    # Store OBD results in the inspection document
-    update_data = {
-        "obd_results": obd_data,
-        "obd_scanned_at": obd_data.get("scanned_at") or datetime.now(timezone.utc).isoformat(),
-        "obd_scanned_by": current_user["id"],
-        "updated_at": datetime.now(timezone.utc).isoformat()
-    }
-    
-    await db.inspections.update_one({"id": inspection_id}, {"$set": update_data})
-    
-    # Log activity
-    activity = {
-        "id": str(uuid.uuid4()),
-        "inspection_id": inspection_id,
-        "user_id": current_user["id"],
-        "user_name": current_user.get("name", "Unknown"),
-        "user_role": "mechanic",
-        "action": "obd_scan_completed",
-        "action_label": "OBD Scan Completed",
-        "details": f"OBD diagnostic scan completed - {obd_data.get('total_errors', 0)} error(s) found",
-        "source": "MECHANIC_APP",
-        "created_at": datetime.now(timezone.utc).isoformat()
-    }
-    await db.inspection_activities.insert_one(activity)
-    
-    logger.info(f"[OBD_SUBMIT] OBD data saved successfully for inspection {inspection_id}")
-    
-    return {
-        "success": True,
-        "inspection_id": inspection_id,
-        "message": "OBD results saved successfully"
-    }
+    try:
+        inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
+        if not inspection:
+            raise HTTPException(status_code=404, detail="Inspection not found")
+        
+        logger.info(f"[OBD_SUBMIT] Received OBD data for inspection {inspection_id}")
+        logger.info(f"[OBD_SUBMIT] Data keys: {list(obd_data.keys()) if obd_data else 'None'}")
+        
+        # Store OBD results in the inspection document
+        update_data = {
+            "obd_results": obd_data,
+            "obd_scanned_at": obd_data.get("scanned_at") or datetime.now(timezone.utc).isoformat(),
+            "obd_scanned_by": current_user.get("id", "unknown"),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        await db.inspections.update_one({"id": inspection_id}, {"$set": update_data})
+        
+        # Log activity (wrapped in try-catch to not fail the main operation)
+        try:
+            activity = {
+                "id": str(uuid.uuid4()),
+                "inspection_id": inspection_id,
+                "user_id": current_user.get("id", "unknown"),
+                "user_name": current_user.get("name", "Unknown"),
+                "user_role": "mechanic",
+                "action": "obd_scan_completed",
+                "action_label": "OBD Scan Completed",
+                "details": f"OBD diagnostic scan completed - {obd_data.get('total_errors', 0)} error(s) found",
+                "source": "MECHANIC_APP",
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.inspection_activities.insert_one(activity)
+        except Exception as activity_err:
+            logger.warning(f"[OBD_SUBMIT] Failed to log activity: {activity_err}")
+        
+        logger.info(f"[OBD_SUBMIT] OBD data saved successfully for inspection {inspection_id}")
+        
+        return {
+            "success": True,
+            "inspection_id": inspection_id,
+            "message": "OBD results saved successfully"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[OBD_SUBMIT] Error saving OBD data: {str(e)}")
+        import traceback
+        logger.error(f"[OBD_SUBMIT] Traceback: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Failed to save OBD data: {str(e)}")
 
 
 @api_router.post("/uploads")
