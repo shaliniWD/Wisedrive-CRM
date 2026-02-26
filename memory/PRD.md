@@ -20,10 +20,10 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
 
 ### Mobile App (React Native/Expo)
 - **Location:** `/app/mechanic-app-native/`
-- **Current Version:** 1.6.9
+- **Current Version:** 1.7.0
 - **Key Files:**
-  - `app/scanner.tsx` - OBD Scanner (modified)
-  - `app/inspection-categories.tsx` - Categories page (modified)
+  - `app/scanner.tsx` - OBD Scanner (modified for persistence)
+  - `app/inspection-categories.tsx` - Categories page (checks backend OBD status)
   - `src/context/InspectionContext.tsx` - State management
 
 ## Third-Party Integrations
@@ -36,16 +36,22 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
 
 ## Recent Implementations (Dec 2025)
 
+### AsyncStorage Persistence for OBD Data (v1.7.0)
+- OBD data saved to AsyncStorage BEFORE backend submission as backup
+- Shows "Pending OBD Data" card if local unsubmitted data exists
+- "Upload Saved Data" button to retry failed submissions
+- Data marked as submitted after successful backend upload
+
 ### OBD Rescan Prevention (v1.6.9)
-- Added backend check on mount to detect if OBD was already submitted
+- Backend check on mount to detect if OBD was already submitted
 - Shows "Already Submitted" state instead of allowing rescan
 - Categories page shows non-interactive OBD card when already submitted
-- Removed ability to rescan after successful submission
 
-### MongoDB 16MB Document Limit Fix
-- OBD data now stored in separate `inspection_obd_results` collection
+### MongoDB 16MB Document Limit Fix (VERIFIED)
+- OBD data stored in separate `inspection_obd_results` collection
 - Main inspection document only stores reference (`obd_results_ref`)
 - Endpoint: `POST /api/mechanic/inspections/{id}/obd-results`
+- Tested successfully on preview server
 
 ### Firebase Streaming Upload
 - Fixed OutOfMemoryError for large video uploads
@@ -56,10 +62,10 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
 
 | Issue | Status | Priority |
 |-------|--------|----------|
-| OBD 16MB limit fix | Backend ready, pending production deploy | P0 |
-| OBD rescan prevention | Implemented in v1.6.9, pending test | P0 |
-| Media display in CRM | Implemented, pending verification | P1 |
-| Status consistency | Implemented, pending verification | P1 |
+| Production server 520 error | Needs investigation | P0 |
+| OBD persistence | Implemented in v1.7.0 | P0 |
+| OBD rescan prevention | Implemented in v1.6.9 | P0 |
+| Media display in CRM | Pending verification | P1 |
 
 ## API Endpoints
 
@@ -79,13 +85,14 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
 ## Backlog
 
 ### P1 (High Priority)
-- Verify all recent fixes on production
-- Add local persistence for OBD data (AsyncStorage)
+- Deploy backend to production and verify all fixes
+- Test offline OBD scan and retry scenario
 
 ### P2 (Medium Priority)
 - PDF export for inspection reports
 - WhatsApp sharing functionality
 - Customer reminders feature
+- Automatic retry for pending uploads (background sync)
 
 ### P3 (Low Priority - Refactoring)
 - Break down `server.py` into modular routers
