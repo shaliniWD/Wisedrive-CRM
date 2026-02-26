@@ -5440,7 +5440,21 @@ async def get_inspection_live_progress(inspection_id: str, current_user: dict = 
     
     # Get answers from inspection
     answers = inspection.get("inspection_answers", {})
-    obd_data = inspection.get("obd_results", {})
+    
+    # Get OBD data - check separate collection first, then fall back to inline data
+    obd_data = {}
+    obd_results_ref = inspection.get("obd_results_ref")
+    if obd_results_ref:
+        # Fetch from separate collection
+        obd_doc = await db.inspection_obd_results.find_one(
+            {"inspection_id": inspection_id},
+            {"_id": 0, "data": 1}
+        )
+        if obd_doc:
+            obd_data = obd_doc.get("data", {})
+    else:
+        # Fall back to inline data (legacy)
+        obd_data = inspection.get("obd_results", {})
     
     # Build category-wise stats
     category_stats = {}
