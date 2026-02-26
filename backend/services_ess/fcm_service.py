@@ -78,7 +78,9 @@ class FCMService:
             try:
                 cred_dict = json.loads(credentials_json)
                 cred = credentials.Certificate(cred_dict)
-                firebase_admin.initialize_app(cred)
+                firebase_admin.initialize_app(cred, {
+                    'storageBucket': 'wisedrive-ess-app.firebasestorage.app'
+                })
                 self.initialized = True
                 self.mock_mode = False
                 logger.info("FCM Service initialized from environment variable")
