@@ -134,6 +134,7 @@ export const inspectionsApi = {
   updateSchedule: (id, data) => axios.patch(`${API_URL}/inspections/${id}/schedule`, data),
   updateLocation: (id, data) => axios.patch(`${API_URL}/inspections/${id}/location`, data),
   getLiveProgress: (id) => axios.get(`${API_URL}/inspections/${id}/live-progress`),
+  toggleOBDRescan: (id, enableRescan) => axios.post(`${API_URL}/inspections/${id}/obd-rescan`, { enable_rescan: enableRescan }),
   // Notes & Activities
   getNotes: (id) => axios.get(`${API_URL}/inspections/${id}/notes`),
   addNote: (id, data) => axios.post(`${API_URL}/inspections/${id}/notes`, data),
