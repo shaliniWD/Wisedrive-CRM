@@ -1016,6 +1016,72 @@ export default function OBDScannerScreen() {
     }
   };
 
+  // Submit pending local OBD data that wasn't submitted before
+  const handleSubmitPendingData = async () => {
+    if (!currentInspectionId || !pendingLocalData) {
+      return;
+    }
+    
+    setIsSubmitting(true);
+    setSubmitError(null);
+    
+    diagLogger.info('OBD_SUBMIT_PENDING_START', { inspectionId: currentInspectionId });
+    
+    try {
+      // Submit the saved data to backend
+      await inspectionsApi.submitOBDResults(currentInspectionId, pendingLocalData);
+      
+      diagLogger.info('OBD_SUBMIT_PENDING_SUCCESS', { inspectionId: currentInspectionId });
+      setIsSubmitted(true);
+      setAlreadySubmittedToBackend(true);
+      setPendingLocalData(null);
+      
+      // Mark as submitted in AsyncStorage
+      await markOBDAsSubmitted(currentInspectionId);
+      
+      // Store result in context
+      if (setOBDScanResult) {
+        setOBDScanResult({
+          completed: true,
+          dtcCount: pendingLocalData.total_errors || 0,
+          liveDataCount: pendingLocalData.live_data?.length || 0,
+          timestamp: new Date().toISOString(),
+        });
+      }
+      
+      Alert.alert(
+        'OBD Data Submitted',
+        'The previously saved diagnostic results have been uploaded successfully.',
+        [
+          {
+            text: 'Continue',
+            onPress: () => {
+              if (currentInspectionId) {
+                router.push(`/checklist/${currentInspectionId}`);
+              } else {
+                router.push('/home');
+              }
+            },
+          },
+        ]
+      );
+    } catch (error: any) {
+      diagLogger.error('OBD_SUBMIT_PENDING_FAILED', { 
+        inspectionId: currentInspectionId, 
+        error: error.message 
+      });
+      setSubmitError(error.message || 'Failed to submit pending OBD data');
+      
+      Alert.alert(
+        'Submission Failed',
+        'Unable to upload the saved diagnostic data. The data is still saved locally and you can try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const copyLogsToClipboard = async (format: 'json' | 'txt') => {
     try {
       const content = format === 'json' ? logger.exportAsJSON() : logger.exportAsTXT();
