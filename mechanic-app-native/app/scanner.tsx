@@ -784,6 +784,106 @@ export default function OBDScannerScreen() {
     }
   };
 
+  // Submit OBD results to backend
+  const handleSubmitOBDResults = async () => {
+    if (!currentInspectionId) {
+      Alert.alert('Error', 'No inspection ID found. Please start an inspection first.');
+      return;
+    }
+    
+    setIsSubmitting(true);
+    setSubmitError(null);
+    
+    diagLogger.info('OBD_SUBMIT_START', { 
+      inspectionId: currentInspectionId, 
+      totalDTCs: storedDTCs.length + pendingDTCs.length + permanentDTCs.length 
+    });
+    
+    try {
+      // Prepare OBD data in the format expected by backend
+      const allDTCs = [
+        ...storedDTCs.map(d => ({ ...d, status: 'Stored' })),
+        ...pendingDTCs.map(d => ({ ...d, status: 'Pending' })),
+        ...permanentDTCs.map(d => ({ ...d, status: 'Active' })),
+      ];
+      
+      // Group DTCs by category
+      const categoriesMap: { [key: string]: any } = {};
+      allDTCs.forEach((dtc) => {
+        const cat = dtc.category || 'General';
+        if (!categoriesMap[cat]) {
+          categoriesMap[cat] = { name: cat, codes: [] };
+        }
+        categoriesMap[cat].codes.push({
+          code: dtc.code,
+          description: dtc.description,
+          status: dtc.status,
+        });
+      });
+      
+      const obdData = {
+        scanned_at: new Date().toISOString(),
+        device_name: connectedDeviceName || 'OBD Scanner',
+        protocol: protocol,
+        total_errors: allDTCs.length,
+        vin: vehicleVIN,
+        categories: Object.values(categoriesMap),
+        raw_codes: allDTCs,
+        live_data: liveData.map(ld => ({
+          pid: ld.pid,
+          name: ld.name,
+          value: ld.value,
+          unit: ld.unit,
+        })),
+        duration: currentSession?.duration || 0,
+      };
+      
+      // Submit to backend
+      await inspectionsApi.submitOBDResults(currentInspectionId, obdData);
+      
+      diagLogger.info('OBD_SUBMIT_SUCCESS', { inspectionId: currentInspectionId });
+      setIsSubmitted(true);
+      
+      // Store result in context for the inspection flow
+      if (setOBDScanResult) {
+        setOBDScanResult(obdData);
+      }
+      
+      Alert.alert(
+        'OBD Data Submitted',
+        'The diagnostic results have been saved successfully.',
+        [
+          {
+            text: 'Continue',
+            onPress: () => {
+              disconnect();
+              // Navigate to checklist or inspection page
+              if (currentInspectionId) {
+                router.push(`/checklist/${currentInspectionId}`);
+              } else {
+                router.push('/home');
+              }
+            },
+          },
+        ]
+      );
+    } catch (error: any) {
+      diagLogger.error('OBD_SUBMIT_FAILED', { 
+        inspectionId: currentInspectionId, 
+        error: error.message 
+      });
+      setSubmitError(error.message || 'Failed to submit OBD data');
+      
+      Alert.alert(
+        'Submission Failed',
+        'Unable to save the diagnostic data. Please try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const copyLogsToClipboard = async (format: 'json' | 'txt') => {
     try {
       const content = format === 'json' ? logger.exportAsJSON() : logger.exportAsTXT();
