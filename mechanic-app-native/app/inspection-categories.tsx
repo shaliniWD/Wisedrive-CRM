@@ -358,65 +358,82 @@ export default function InspectionCategoriesScreen() {
           <Text style={styles.sectionTitle}>Diagnostics</Text>
         </View>
 
-        <TouchableOpacity 
-          style={styles.obdCard}
-          onPress={handleOBDScan}
-          activeOpacity={0.9}
-        >
-          <LinearGradient
-            colors={obdCompleted ? ['#059669', '#10B981'] : [Colors.primary, Colors.primaryDark]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.obdGradient}
-          >
-            <View style={styles.obdLeft}>
-              <View style={styles.obdIconBox}>
-                <MaterialCommunityIcons 
-                  name={obdCompleted ? 'check-circle' : 'car-cog'} 
-                  size={28} 
-                  color="#FFF" 
-                />
+        {/* Show non-interactive card when OBD is already submitted */}
+        {obdCompleted ? (
+          <View style={styles.obdCard}>
+            <LinearGradient
+              colors={['#059669', '#10B981']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.obdGradient}
+            >
+              <View style={styles.obdLeft}>
+                <View style={styles.obdIconBox}>
+                  <MaterialCommunityIcons 
+                    name="check-circle"
+                    size={28} 
+                    color="#FFF" 
+                  />
+                </View>
+                <View style={styles.obdInfo}>
+                  <Text style={styles.obdTitle}>OBD-II Scan</Text>
+                  <Text style={styles.obdStatus}>Completed & Submitted</Text>
+                </View>
               </View>
-              <View style={styles.obdInfo}>
-                <Text style={styles.obdTitle}>OBD-II Scan</Text>
-                <Text style={styles.obdStatus}>
-                  {obdCompleted ? 'Completed' : 'Optional - can be done anytime'}
-                </Text>
-              </View>
-            </View>
-            
-            {obdCompleted ? (
+              
               <View style={styles.obdDoneChip}>
                 <Ionicons name="checkmark" size={14} color="#059669" />
                 <Text style={styles.obdDoneText}>Done</Text>
               </View>
-            ) : (
+            </LinearGradient>
+
+            {obdResults && (
+              <View style={styles.obdResults}>
+                <View style={styles.obdResultItem}>
+                  <Text style={styles.obdResultValue}>{obdResults.dtcCount || 0}</Text>
+                  <Text style={styles.obdResultLabel}>DTCs Found</Text>
+                </View>
+                <View style={styles.obdResultDivider} />
+                <View style={styles.obdResultItem}>
+                  <Text style={styles.obdResultValue}>{obdResults.liveDataCount || 0}</Text>
+                  <Text style={styles.obdResultLabel}>Data Points</Text>
+                </View>
+              </View>
+            )}
+          </View>
+        ) : (
+          <TouchableOpacity 
+            style={styles.obdCard}
+            onPress={handleOBDScan}
+            activeOpacity={0.9}
+          >
+            <LinearGradient
+              colors={[Colors.primary, Colors.primaryDark]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.obdGradient}
+            >
+              <View style={styles.obdLeft}>
+                <View style={styles.obdIconBox}>
+                  <MaterialCommunityIcons 
+                    name="car-cog"
+                    size={28} 
+                    color="#FFF" 
+                  />
+                </View>
+                <View style={styles.obdInfo}>
+                  <Text style={styles.obdTitle}>OBD-II Scan</Text>
+                  <Text style={styles.obdStatus}>Optional - can be done anytime</Text>
+                </View>
+              </View>
+              
               <View style={styles.obdStartChip}>
                 <MaterialIcons name="bluetooth-searching" size={16} color={Colors.primary} />
                 <Text style={styles.obdStartText}>Start</Text>
               </View>
-            )}
-          </LinearGradient>
-
-          {obdCompleted && obdResults && (
-            <View style={styles.obdResults}>
-              <View style={styles.obdResultItem}>
-                <Text style={styles.obdResultValue}>{obdResults.dtcCount || 0}</Text>
-                <Text style={styles.obdResultLabel}>DTCs</Text>
-              </View>
-              <View style={styles.obdResultDivider} />
-              <View style={styles.obdResultItem}>
-                <Text style={styles.obdResultValue}>{obdResults.liveDataCount || 0}</Text>
-                <Text style={styles.obdResultLabel}>Data Points</Text>
-              </View>
-              <View style={styles.obdResultDivider} />
-              <TouchableOpacity style={styles.obdViewBtn} onPress={handleOBDScan}>
-                <Text style={styles.obdViewText}>View</Text>
-                <Ionicons name="chevron-forward" size={14} color={Colors.primary} />
-              </TouchableOpacity>
-            </View>
-          )}
-        </TouchableOpacity>
+            </LinearGradient>
+          </TouchableOpacity>
+        )}
 
         {/* Categories Section */}
         <View style={styles.sectionHeader}>
