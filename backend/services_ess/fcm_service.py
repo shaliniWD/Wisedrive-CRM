@@ -62,7 +62,9 @@ class FCMService:
         if Path(credentials_path).exists():
             try:
                 cred = credentials.Certificate(credentials_path)
-                firebase_admin.initialize_app(cred)
+                firebase_admin.initialize_app(cred, {
+                    'storageBucket': 'wisedrive-ess-app.firebasestorage.app'
+                })
                 self.initialized = True
                 self.mock_mode = False
                 logger.info("FCM Service initialized successfully")
