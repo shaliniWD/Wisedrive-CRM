@@ -40,6 +40,8 @@ export default function OBDScanScreen() {
   const [scanProgress, setScanProgress] = useState(0);
   const [dtcCodes, setDtcCodes] = useState<DTCResult[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const bleManager = useRef<BleManager | null>(null);
   const connectedDevice = useRef<Device | null>(null);
