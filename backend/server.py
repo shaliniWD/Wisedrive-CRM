@@ -14845,6 +14845,139 @@ async def serve_uploaded_file(filename: str):
     return FileResponse(file_path)
 
 
+# ==================== FIREBASE STORAGE UPLOAD ====================
+
+class FirebaseUploadRequest(BaseModel):
+    filename: str
+    content_type: str
+    inspection_id: str
+    question_id: str
+
+class FirebaseSignedUrlResponse(BaseModel):
+    signed_url: str
+    firebase_path: str
+    expires_at: str
+
+# Initialize Firebase Admin SDK
+import firebase_admin
+from firebase_admin import credentials, storage as firebase_storage
+
+firebase_app = None
+
+def get_firebase_app():
+    """Get or initialize Firebase Admin app"""
+    global firebase_app
+    if firebase_app is None:
+        try:
+            cred_path = "/app/ess/api/firebase-credentials.json"
+            if os.path.exists(cred_path):
+                cred = credentials.Certificate(cred_path)
+                firebase_app = firebase_admin.initialize_app(cred, {
+                    'storageBucket': 'wisedrive-ess-app.firebasestorage.app'
+                })
+                logger.info("Firebase Admin SDK initialized successfully")
+            else:
+                logger.error(f"Firebase credentials file not found: {cred_path}")
+                raise HTTPException(status_code=500, detail="Firebase credentials not configured")
+        except ValueError:
+            # App already initialized
+            firebase_app = firebase_admin.get_app()
+    return firebase_app
+
+@api_router.post("/media/generate-upload-url", response_model=FirebaseSignedUrlResponse)
+async def generate_firebase_upload_url(
+    data: FirebaseUploadRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Generate a signed URL for uploading media to Firebase Storage
+    
+    This allows the mobile app to upload directly to Firebase without
+    loading the entire file into memory (streaming upload).
+    """
+    try:
+        # Initialize Firebase
+        get_firebase_app()
+        
+        # Generate unique filename with timestamp
+        timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
+        ext = data.filename.split('.')[-1] if '.' in data.filename else 'mp4'
+        unique_filename = f"{data.question_id}_{timestamp}.{ext}"
+        firebase_path = f"inspections/{data.inspection_id}/{unique_filename}"
+        
+        logger.info(f"[FIREBASE_UPLOAD] Generating signed URL for: {firebase_path}")
+        
+        # Get bucket reference
+        bucket = firebase_storage.bucket()
+        blob = bucket.blob(firebase_path)
+        
+        # Generate signed URL for resumable upload (PUT method)
+        # This URL allows direct upload without going through the server
+        expiration_time = datetime.now(timezone.utc) + timedelta(hours=1)
+        
+        signed_url = blob.generate_signed_url(
+            version="v4",
+            expiration=expiration_time,
+            method="PUT",
+            content_type=data.content_type,
+        )
+        
+        logger.info(f"[FIREBASE_UPLOAD] Signed URL generated, expires at: {expiration_time.isoformat()}")
+        
+        return FirebaseSignedUrlResponse(
+            signed_url=signed_url,
+            firebase_path=f"gs://wisedrive-ess-app.firebasestorage.app/{firebase_path}",
+            expires_at=expiration_time.isoformat()
+        )
+        
+    except Exception as e:
+        logger.error(f"[FIREBASE_UPLOAD] Error generating signed URL: {str(e)}")
+        import traceback
+        logger.error(f"[FIREBASE_UPLOAD] Traceback: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate upload URL: {str(e)}")
+
+
+@api_router.post("/media/get-download-url")
+async def get_firebase_download_url(
+    firebase_path: str = Form(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """Convert a Firebase Storage path (gs://...) to a public download URL"""
+    try:
+        get_firebase_app()
+        
+        # Extract path from gs:// URL
+        if firebase_path.startswith("gs://"):
+            # gs://bucket-name/path/to/file -> path/to/file
+            path_parts = firebase_path.replace("gs://", "").split("/", 1)
+            if len(path_parts) > 1:
+                file_path = path_parts[1]
+            else:
+                raise HTTPException(status_code=400, detail="Invalid Firebase path")
+        else:
+            file_path = firebase_path
+        
+        bucket = firebase_storage.bucket()
+        blob = bucket.blob(file_path)
+        
+        # Generate signed URL for download (GET method)
+        expiration_time = datetime.now(timezone.utc) + timedelta(hours=24)
+        
+        download_url = blob.generate_signed_url(
+            version="v4",
+            expiration=expiration_time,
+            method="GET",
+        )
+        
+        return {
+            "download_url": download_url,
+            "expires_at": expiration_time.isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"[FIREBASE_DOWNLOAD] Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get download URL: {str(e)}")
+
+
 # ==================== MECHANIC PUSH NOTIFICATIONS ====================
 
 class MechanicPushTokenRequest(BaseModel):
