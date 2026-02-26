@@ -1241,6 +1241,52 @@ export default function OBDScannerScreen() {
     if (state === 'idle') {
       return (
         <>
+          {/* Pending Local Data Card - Show if there's unsubmitted data */}
+          {pendingLocalData && (
+            <View style={[styles.inspectionCard, { borderColor: '#F59E0B', borderWidth: 2, backgroundColor: '#FFFBEB' }]}>
+              <View style={styles.inspectionHeader}>
+                <MaterialIcons name="cloud-off" size={20} color="#F59E0B" />
+                <Text style={[styles.inspectionLabel, { color: '#F59E0B' }]}>Pending OBD Data</Text>
+              </View>
+              <View style={{ marginTop: Spacing.sm }}>
+                <Text style={{ fontSize: FontSize.sm, color: '#92400E' }}>
+                  You have a previous scan that wasn't uploaded to the server.
+                </Text>
+                <Text style={{ fontSize: FontSize.xs, color: '#B45309', marginTop: 4 }}>
+                  Scanned: {new Date(pendingLocalData.savedAt || pendingLocalData.scanned_at).toLocaleString()}
+                </Text>
+                <Text style={{ fontSize: FontSize.xs, color: '#B45309' }}>
+                  DTCs Found: {pendingLocalData.total_errors || 0}
+                </Text>
+              </View>
+              
+              {/* Submit Pending Data Button */}
+              <TouchableOpacity 
+                style={[styles.submitOBDBtn, { marginTop: Spacing.md }, isSubmitting && styles.submitOBDBtnDisabled]}
+                onPress={handleSubmitPendingData}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <ActivityIndicator size="small" color="#FFF" />
+                    <Text style={styles.submitOBDBtnText}>Uploading...</Text>
+                  </>
+                ) : (
+                  <>
+                    <MaterialIcons name="cloud-upload" size={20} color="#FFF" />
+                    <Text style={styles.submitOBDBtnText}>Upload Saved Data</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+              
+              {submitError && (
+                <Text style={{ fontSize: FontSize.xs, color: '#DC2626', marginTop: Spacing.sm, textAlign: 'center' }}>
+                  {submitError}
+                </Text>
+              )}
+            </View>
+          )}
+          
           {/* Active Inspection Card - Show if came from inspection details */}
           {currentInspection && (
             <View style={[styles.inspectionCard, { borderColor: Colors.success, borderWidth: 2 }]}>
