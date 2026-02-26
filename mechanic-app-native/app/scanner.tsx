@@ -1324,6 +1324,24 @@ export default function OBDScannerScreen() {
               </View>
             </View>
           )}
+          
+          {/* Re-scan Warning - Show if OBD data exists but rescan is enabled */}
+          {alreadySubmittedToBackend && rescanEnabled && (
+            <View style={[styles.inspectionCard, { borderColor: '#F59E0B', borderWidth: 2, backgroundColor: '#FFFBEB' }]}>
+              <View style={styles.inspectionHeader}>
+                <MaterialIcons name="refresh" size={20} color="#F59E0B" />
+                <Text style={[styles.inspectionLabel, { color: '#F59E0B' }]}>Re-scan Mode</Text>
+              </View>
+              <View style={{ marginTop: Spacing.sm }}>
+                <Text style={{ fontSize: FontSize.sm, color: '#92400E' }}>
+                  OBD data was previously submitted for this inspection.
+                </Text>
+                <Text style={{ fontSize: FontSize.sm, color: '#B45309', marginTop: 4, fontWeight: '600' }}>
+                  ⚠️ Performing a new scan will replace the existing data.
+                </Text>
+              </View>
+            </View>
+          )}
 
           {/* Manual Inspection ID Input - Only show if no active inspection */}
           {!currentInspection && (
