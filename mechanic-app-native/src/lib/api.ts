@@ -5,6 +5,19 @@ import { diagLogger } from './diagLogger';
 // API Base URL - Production CRM backend
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://crmdev.wisedrive.com/api';
 
+// Export the base URL (without /api suffix) for direct fetch calls
+export const API_BASE = API_BASE_URL.replace(/\/api$/, '');
+
+// Helper to get auth token
+export const getAuthToken = async (): Promise<string | null> => {
+  try {
+    return await AsyncStorage.getItem('authToken');
+  } catch (e) {
+    diagLogger.warn('Error getting auth token', { error: String(e) });
+    return null;
+  }
+};
+
 // Increased timeout for large payloads (images)
 const api = axios.create({
   baseURL: API_BASE_URL,
