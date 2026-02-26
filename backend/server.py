@@ -5476,13 +5476,74 @@ async def get_inspection_live_progress(inspection_id: str, current_user: dict = 
         
         if answer_data:
             q_detail["is_answered"] = True
-            q_detail["answer"] = answer_data.get("answer")
+            raw_answer = answer_data.get("answer")
             q_detail["answered_at"] = answer_data.get("answered_at")
             category_stats[cat_id]["answered_questions"] += 1
+            
+            # Resolve media URLs (gs:// or media_ref:)
+            resolved_answer = raw_answer
+            media_url = None
+            
+            if isinstance(raw_answer, str):
+                if raw_answer.startswith("gs://"):
+                    # Convert Firebase gs:// URL to HTTPS download URL
+                    try:
+                        get_firebase_app()
+                        path_parts = raw_answer.replace("gs://", "").split("/", 1)
+                        if len(path_parts) > 1:
+                            file_path = path_parts[1]
+                            bucket = firebase_storage.bucket()
+                            blob = bucket.blob(file_path)
+                            expiration_time = datetime.now(timezone.utc) + timedelta(hours=24)
+                            media_url = blob.generate_signed_url(version="v4", expiration=expiration_time, method="GET")
+                            resolved_answer = media_url
+                    except Exception as e:
+                        logger.error(f"[LIVE_PROGRESS] Failed to resolve Firebase URL: {e}")
+                        media_url = None
+                elif raw_answer.startswith("media_ref:"):
+                    # Resolve media reference from separate collection
+                    try:
+                        media_id = raw_answer.replace("media_ref:", "")
+                        media_doc = await db.inspection_media.find_one({"id": media_id}, {"_id": 0, "data": 1, "media_type": 1})
+                        if media_doc and media_doc.get("data"):
+                            media_url = media_doc.get("data")
+                            resolved_answer = media_url
+                    except Exception as e:
+                        logger.error(f"[LIVE_PROGRESS] Failed to resolve media_ref: {e}")
+            elif isinstance(raw_answer, dict):
+                # Handle combo answers (selection + media)
+                if raw_answer.get("media"):
+                    media_val = raw_answer.get("media")
+                    if isinstance(media_val, str) and media_val.startswith("gs://"):
+                        try:
+                            get_firebase_app()
+                            path_parts = media_val.replace("gs://", "").split("/", 1)
+                            if len(path_parts) > 1:
+                                file_path = path_parts[1]
+                                bucket = firebase_storage.bucket()
+                                blob = bucket.blob(file_path)
+                                expiration_time = datetime.now(timezone.utc) + timedelta(hours=24)
+                                media_url = blob.generate_signed_url(version="v4", expiration=expiration_time, method="GET")
+                                resolved_answer = {**raw_answer, "media_url": media_url}
+                        except Exception as e:
+                            logger.error(f"[LIVE_PROGRESS] Failed to resolve combo media: {e}")
+                    elif isinstance(media_val, str) and media_val.startswith("media_ref:"):
+                        try:
+                            media_id = media_val.replace("media_ref:", "")
+                            media_doc = await db.inspection_media.find_one({"id": media_id}, {"_id": 0, "data": 1})
+                            if media_doc and media_doc.get("data"):
+                                media_url = media_doc.get("data")
+                                resolved_answer = {**raw_answer, "media_url": media_url}
+                        except Exception as e:
+                            logger.error(f"[LIVE_PROGRESS] Failed to resolve combo media_ref: {e}")
+            
+            q_detail["answer"] = resolved_answer
+            q_detail["media_url"] = media_url
+            
             answered_questions.append({
                 "category": cat_name,
                 "question": q_detail["question_text"],
-                "answer": q_detail["answer"],
+                "answer": resolved_answer,
                 "answered_at": q_detail["answered_at"]
             })
         
