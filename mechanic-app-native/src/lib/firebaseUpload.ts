@@ -54,7 +54,7 @@ export async function uploadMediaToFirebase(
 
     // Step 1: Get file info first
     diagLogger.info('FIREBASE_GETTING_FILE_INFO', { uri: uri.substring(0, 40) });
-    const fileInfo = await FileSystem.getInfoAsync(uri);
+    const fileInfo = await getInfoAsync(uri);
     
     if (!fileInfo.exists) {
       throw new Error('File does not exist at the specified URI');
@@ -79,8 +79,8 @@ export async function uploadMediaToFirebase(
     diagLogger.info('FIREBASE_READING_BASE64', { sizeMB: fileSizeMB.toFixed(2) });
     const readStart = Date.now();
     
-    const base64Data = await FileSystem.readAsStringAsync(uri, {
-      encoding: FileSystem.EncodingType.Base64,
+    const base64Data = await readAsStringAsync(uri, {
+      encoding: EncodingType.Base64,
     });
     
     const readDuration = Date.now() - readStart;
