@@ -1279,4 +1279,73 @@ const styles = StyleSheet.create({
   },
   saveButtonDisabled: { backgroundColor: colors.textSecondary },
   saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  
+  // Video thumbnail styles
+  videoThumbnail: {
+    width: '100%',
+    height: 180,
+    borderRadius: 12,
+    backgroundColor: '#1a1a2e',
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  videoThumbnailOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 12,
+  },
+  playButtonCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(61, 123, 61, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingLeft: 4,
+  },
+  videoTapToPlay: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  
+  // Video modal styles
+  videoModalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  videoModalContent: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+  },
+  videoModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    position: 'absolute',
+    top: 50,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+  },
+  videoModalTitle: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  videoModalCloseButton: {
+    padding: 8,
+  },
+  videoPlayer: {
+    width: '100%',
+    height: Dimensions.get('window').height * 0.6,
+  },
 });
