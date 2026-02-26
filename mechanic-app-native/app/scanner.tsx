@@ -114,11 +114,36 @@ export default function OBDScannerScreen() {
   const scanTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const scanActiveRef = useRef<boolean>(false);
 
-  // Set inspection ID from context when it changes
+  // Set inspection ID from context when it changes and check if OBD already submitted
   useEffect(() => {
     if (currentInspectionId) {
       setInspectionId(currentInspectionId);
       logger.info(MODULE, 'Inspection loaded from context', { inspectionId: currentInspectionId });
+      
+      // Check if OBD was already submitted for this inspection
+      const checkOBDStatus = async () => {
+        setIsCheckingBackend(true);
+        try {
+          const inspection = await inspectionsApi.getInspection(currentInspectionId);
+          // Backend stores obd_results_ref or obd_total_errors when OBD is submitted
+          const hasOBD = !!(inspection?.obd_results_ref || inspection?.obd_total_errors !== undefined);
+          if (hasOBD) {
+            logger.info(MODULE, 'OBD already submitted for this inspection', { inspectionId: currentInspectionId });
+            setAlreadySubmittedToBackend(true);
+            setIsSubmitted(true);
+          } else {
+            setAlreadySubmittedToBackend(false);
+          }
+        } catch (error: any) {
+          logger.warn(MODULE, 'Failed to check OBD status', { error: error.message });
+        } finally {
+          setIsCheckingBackend(false);
+        }
+      };
+      
+      checkOBDStatus();
+    } else {
+      setIsCheckingBackend(false);
     }
   }, [currentInspectionId]);
 
