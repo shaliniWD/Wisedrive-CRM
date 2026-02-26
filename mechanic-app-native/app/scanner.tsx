@@ -955,12 +955,20 @@ export default function OBDScannerScreen() {
         duration: currentSession?.duration || 0,
       };
       
+      // Save to AsyncStorage as backup BEFORE attempting backend submission
+      await saveOBDToStorage(currentInspectionId, obdData);
+      diagLogger.info('OBD_SAVED_LOCALLY', { inspectionId: currentInspectionId });
+      
       // Submit to backend
       await inspectionsApi.submitOBDResults(currentInspectionId, obdData);
       
       diagLogger.info('OBD_SUBMIT_SUCCESS', { inspectionId: currentInspectionId });
       setIsSubmitted(true);
       setAlreadySubmittedToBackend(true);
+      setPendingLocalData(null);
+      
+      // Mark as submitted in AsyncStorage
+      await markOBDAsSubmitted(currentInspectionId);
       
       // Store result in context for the inspection flow (with correct interface)
       if (setOBDScanResult) {
