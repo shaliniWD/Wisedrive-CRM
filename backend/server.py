@@ -14912,11 +14912,30 @@ async def mechanic_submit_obd_results(
         logger.info(f"[OBD_SUBMIT] Received OBD data for inspection {inspection_id}")
         logger.info(f"[OBD_SUBMIT] Data keys: {list(obd_data.keys()) if obd_data else 'None'}")
         
-        # Store OBD results in the inspection document
+        # Store OBD results in a SEPARATE collection to avoid 16MB limit
+        obd_doc_id = str(uuid.uuid4())
+        obd_document = {
+            "id": obd_doc_id,
+            "inspection_id": inspection_id,
+            "data": obd_data,
+            "scanned_at": obd_data.get("scanned_at") or datetime.now(timezone.utc).isoformat(),
+            "scanned_by": current_user.get("id", "unknown"),
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        # Upsert - replace existing OBD data for this inspection
+        await db.inspection_obd_results.update_one(
+            {"inspection_id": inspection_id},
+            {"$set": obd_document},
+            upsert=True
+        )
+        
+        # Update inspection with reference only (not full data)
         update_data = {
-            "obd_results": obd_data,
+            "obd_results_ref": obd_doc_id,
             "obd_scanned_at": obd_data.get("scanned_at") or datetime.now(timezone.utc).isoformat(),
             "obd_scanned_by": current_user.get("id", "unknown"),
+            "obd_total_errors": obd_data.get("total_errors", 0),
             "updated_at": datetime.now(timezone.utc).isoformat()
         }
         
@@ -14945,6 +14964,7 @@ async def mechanic_submit_obd_results(
         return {
             "success": True,
             "inspection_id": inspection_id,
+            "obd_doc_id": obd_doc_id,
             "message": "OBD results saved successfully"
         }
     except HTTPException:
