@@ -183,8 +183,8 @@ export default function OBDScanScreen() {
 
     // Simulate some DTC results
     const mockDTCs: DTCResult[] = [
-      { code: 'P0301', category: 'Powertrain', description: 'Cylinder 1 Misfire Detected' },
-      { code: 'P0420', category: 'Powertrain', description: 'Catalyst System Efficiency Below Threshold' },
+      { code: 'P0301', category: 'Powertrain', description: 'Cylinder 1 Misfire Detected', status: 'Active' },
+      { code: 'P0420', category: 'Powertrain', description: 'Catalyst System Efficiency Below Threshold', status: 'Pending' },
     ];
 
     // 50% chance of finding DTCs for demo
@@ -195,6 +195,78 @@ export default function OBDScanScreen() {
     }
 
     setScanState('completed');
+    setSubmitError(null);
+  };
+
+  const handleSubmitOBDResults = async () => {
+    setIsSubmitting(true);
+    setSubmitError(null);
+    setScanState('submitting');
+    
+    diagLogger.info('OBD_SUBMIT_START', { inspectionId, dtcCount: dtcCodes.length });
+    
+    try {
+      // Prepare OBD data in the format expected by backend/CRM
+      const obdData = {
+        scanned_at: new Date().toISOString(),
+        device_name: selectedDevice?.name || 'OBD Scanner',
+        total_errors: dtcCodes.length,
+        categories: groupDTCsByCategory(dtcCodes),
+        raw_codes: dtcCodes,
+      };
+      
+      // Submit to backend
+      await inspectionsApi.submitOBDResults(inspectionId!, obdData);
+      
+      diagLogger.info('OBD_SUBMIT_SUCCESS', { inspectionId });
+      setScanState('submitted');
+      
+      // Show success and navigate
+      Alert.alert(
+        'OBD Data Submitted',
+        'The diagnostic results have been saved successfully.',
+        [
+          {
+            text: 'Continue to Checklist',
+            onPress: () => router.push(`/checklist/${inspectionId}`),
+          },
+        ]
+      );
+    } catch (error: any) {
+      diagLogger.error('OBD_SUBMIT_FAILED', { inspectionId, error: error.message });
+      setSubmitError(error.message || 'Failed to submit OBD data');
+      setScanState('completed'); // Go back to completed state to allow retry
+      
+      Alert.alert(
+        'Submission Failed',
+        'Unable to save the diagnostic data. Please try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  // Helper function to group DTCs by category
+  const groupDTCsByCategory = (dtcs: DTCResult[]) => {
+    const grouped: { [key: string]: any } = {};
+    
+    dtcs.forEach((dtc) => {
+      const cat = dtc.category || 'General';
+      if (!grouped[cat]) {
+        grouped[cat] = {
+          name: cat,
+          codes: [],
+        };
+      }
+      grouped[cat].codes.push({
+        code: dtc.code,
+        description: dtc.description,
+        status: dtc.status || 'Active',
+      });
+    });
+    
+    return Object.values(grouped);
   };
 
   const handleSaveResults = () => {
