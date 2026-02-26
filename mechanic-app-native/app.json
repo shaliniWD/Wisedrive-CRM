@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "WiseDrive Mechanic",
+    "name": "WiseDrive Mechanic TEST",
     "slug": "wisedrive-mechanic",
-    "version": "1.4.2",
+    "version": "1.4.3-preview",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
