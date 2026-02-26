@@ -22,6 +22,7 @@
     "expo-clipboard": "~7.0.1",
     "expo-constants": "~17.0.8",
     "expo-dev-client": "~5.0.12",
+    "expo-file-system": "^55.0.9",
     "expo-font": "~13.0.4",
     "expo-image-manipulator": "~13.0.6",
     "expo-image-picker": "~16.0.6",
