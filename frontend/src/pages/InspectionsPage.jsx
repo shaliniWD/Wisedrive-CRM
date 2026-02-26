@@ -2784,23 +2784,70 @@ export default function InspectionsPage() {
                                 {q.is_answered ? (
                                   <div className="bg-gray-50 rounded-lg p-3">
                                     <p className="text-xs text-gray-500 mb-2 font-medium">Answer:</p>
-                                    {/* Display media if available */}
-                                    {q.media_url ? (
+                                    {/* Display media upload failed message */}
+                                    {q.media_upload_failed ? (
+                                      <div className="mb-2 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                                        <div className="flex items-center gap-2 text-amber-700">
+                                          <AlertCircle className="h-4 w-4" />
+                                          <span className="text-sm font-medium">Media upload failed</span>
+                                        </div>
+                                        <p className="text-xs text-amber-600 mt-1">
+                                          The file was saved locally on the device but could not be uploaded to cloud storage.
+                                        </p>
+                                        {q.local_file_path && (
+                                          <p className="text-xs text-gray-500 mt-1 font-mono truncate">
+                                            Local: {q.local_file_path.substring(0, 60)}...
+                                          </p>
+                                        )}
+                                      </div>
+                                    ) : q.media_url ? (
                                       <div className="mb-2">
-                                        {q.media_url.includes('video') || q.question_type?.includes('video') ? (
+                                        {q.media_url.includes('video') || q.question_type?.includes('video') || q.media_url.includes('.mp4') || q.media_url.includes('.mov') ? (
                                           <video 
                                             src={q.media_url} 
                                             controls 
                                             className="max-w-full max-h-[200px] rounded-lg border"
+                                            onError={(e) => {
+                                              e.target.style.display = 'none';
+                                              e.target.nextSibling && (e.target.nextSibling.style.display = 'flex');
+                                            }}
                                           />
                                         ) : (
-                                          <img 
-                                            src={q.media_url} 
-                                            alt="Answer" 
-                                            className="max-w-[250px] max-h-[180px] rounded-lg border object-cover cursor-pointer hover:opacity-90"
-                                            onClick={() => window.open(q.media_url, '_blank')}
-                                          />
+                                          <>
+                                            <img 
+                                              src={q.media_url} 
+                                              alt="Answer" 
+                                              className="max-w-[250px] max-h-[180px] rounded-lg border object-cover cursor-pointer hover:opacity-90"
+                                              onClick={() => window.open(q.media_url, '_blank')}
+                                              onError={(e) => {
+                                                e.target.style.display = 'none';
+                                                e.target.nextSibling && (e.target.nextSibling.style.display = 'flex');
+                                              }}
+                                            />
+                                            <div className="hidden bg-red-50 border border-red-200 rounded-lg p-3 items-center gap-2">
+                                              <AlertCircle className="h-4 w-4 text-red-500" />
+                                              <span className="text-sm text-red-700">Failed to load image</span>
+                                              <a 
+                                                href={q.media_url} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer" 
+                                                className="text-xs text-blue-500 hover:underline ml-2"
+                                              >
+                                                Try direct link →
+                                              </a>
+                                            </div>
+                                          </>
                                         )}
+                                      </div>
+                                    ) : typeof q.answer === 'string' && q.answer.startsWith('file://') ? (
+                                      <div className="mb-2 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                                        <div className="flex items-center gap-2 text-amber-700">
+                                          <AlertCircle className="h-4 w-4" />
+                                          <span className="text-sm font-medium">Media not uploaded</span>
+                                        </div>
+                                        <p className="text-xs text-amber-600 mt-1">
+                                          The file exists only on the device and was not uploaded to cloud.
+                                        </p>
                                       </div>
                                     ) : typeof q.answer === 'string' && (q.answer.startsWith('data:image') || (q.answer.startsWith('http') && !q.answer.includes('video'))) ? (
                                       <img 
@@ -2809,7 +2856,7 @@ export default function InspectionsPage() {
                                         className="max-w-[250px] max-h-[180px] rounded-lg border object-cover mb-2 cursor-pointer hover:opacity-90"
                                         onClick={() => window.open(q.answer, '_blank')}
                                       />
-                                    ) : typeof q.answer === 'string' && q.answer.startsWith('http') && q.answer.includes('video') ? (
+                                    ) : typeof q.answer === 'string' && q.answer.startsWith('http') && (q.answer.includes('video') || q.answer.includes('.mp4')) ? (
                                       <video 
                                         src={q.answer} 
                                         controls 
