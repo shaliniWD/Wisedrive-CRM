@@ -134,7 +134,7 @@ export async function uploadMediaToFirebase(
     diagLogger.info('FIREBASE_UPLOAD_SUCCESS', {
       totalDurationMs: totalDuration,
       totalDurationSec: (totalDuration / 1000).toFixed(1),
-      sizeMB: fileSizeMB.toFixed(2),
+      sizeMB: base64SizeMB.toFixed(2),
       readTime: `${(readDuration / 1000).toFixed(1)}s`,
       uploadTime: `${(uploadDuration / 1000).toFixed(1)}s`,
       url: downloadURL.substring(0, 80) + '...',
