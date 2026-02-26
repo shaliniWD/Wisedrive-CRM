@@ -64,6 +64,49 @@ const colors = {
 const getDraftKey = (inspectionId: string, categoryId: string) => 
   `@draft_answers_${inspectionId}_${categoryId}`;
 
+// Helper to check if a value is a remote media reference that needs resolution
+const isRemoteMediaRef = (value: any): boolean => {
+  if (!value || typeof value !== 'string') return false;
+  return value.startsWith('gs://') || value.startsWith('media_ref:');
+};
+
+// Helper to resolve all media in an answer object
+const resolveAnswerMedia = async (answer: any): Promise<any> => {
+  if (!answer) return answer;
+  
+  const resolved = { ...answer };
+  
+  // Resolve main answer if it's media
+  if (isRemoteMediaRef(resolved.answer)) {
+    const url = await resolveMediaUrl(resolved.answer);
+    if (url) resolved.answer = url;
+  } else if (resolved.answer && typeof resolved.answer === 'object' && isRemoteMediaRef(resolved.answer.media)) {
+    // Combo answer with media
+    const url = await resolveMediaUrl(resolved.answer.media);
+    if (url) resolved.answer = { ...resolved.answer, media: url };
+  }
+  
+  // Resolve sub_answer_1 if it's media
+  if (isRemoteMediaRef(resolved.sub_answer_1)) {
+    const url = await resolveMediaUrl(resolved.sub_answer_1);
+    if (url) resolved.sub_answer_1 = url;
+  } else if (resolved.sub_answer_1 && typeof resolved.sub_answer_1 === 'object' && isRemoteMediaRef(resolved.sub_answer_1.media)) {
+    const url = await resolveMediaUrl(resolved.sub_answer_1.media);
+    if (url) resolved.sub_answer_1 = { ...resolved.sub_answer_1, media: url };
+  }
+  
+  // Resolve sub_answer_2 if it's media
+  if (isRemoteMediaRef(resolved.sub_answer_2)) {
+    const url = await resolveMediaUrl(resolved.sub_answer_2);
+    if (url) resolved.sub_answer_2 = url;
+  } else if (resolved.sub_answer_2 && typeof resolved.sub_answer_2 === 'object' && isRemoteMediaRef(resolved.sub_answer_2.media)) {
+    const url = await resolveMediaUrl(resolved.sub_answer_2.media);
+    if (url) resolved.sub_answer_2 = { ...resolved.sub_answer_2, media: url };
+  }
+  
+  return resolved;
+};
+
 // Compress image aggressively to prevent network/memory issues
 // Target: <100KB for reliable network transfer
 const compressImage = async (uri: string): Promise<string> => {
