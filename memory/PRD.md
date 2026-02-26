@@ -3,83 +3,50 @@
 ## Original Problem Statement
 Build and maintain a CRM system for WiseDrive with an integrated React Native mechanic mobile app. The mechanic app allows field mechanics to perform vehicle inspections by answering configured questions (text, photo, video, multiple choice) and sub-questions.
 
-## Current Status (v1.4.2) - 2026-02-26
-**Critical fixes for file upload stability:**
-- Fixed profile version display (now shows correct version from app.json)
-- Fixed backend inspection_status bug (was "IN_PROGRESS" → now "INSPECTION_STARTED")
-- **NEW**: Implemented sequential answer saving (one-by-one instead of batch)
-- **NEW**: Added video size limit (5MB max) with clear error messages
-- **NEW**: Video duration limited to 10 seconds max for reliable uploads
-- **NEW**: Removed expo-file-system dependency (was causing build failures)
+## Current Status (v1.5.0) - 2026-02-26
 
-## User Personas
-1. **Admins**: Use CRM to manage inspections, configure questionnaires, track mechanics
-2. **Mechanics**: Use mobile app to perform inspections, answer questions, capture photos/videos
-3. **Customers**: Vehicle owners receiving inspection reports
+### 🔴 CRITICAL FIX: MongoDB Document Size Limit
+**Root Cause Found:** The inspection document exceeded MongoDB's 16MB limit because all images/videos were stored as base64 directly in the document.
 
-## Core Requirements
+**Solution Implemented (Backend v2.5.0):**
+- Media (images/videos) now stored in separate `inspection_media` collection
+- Inspection document only stores reference IDs (`media_ref:uuid`)
+- New endpoint `/api/inspection-media/{media_id}` to retrieve media
+- This completely eliminates the document size limit issue
 
-### CRM (Web Application)
-- Admin dashboard with inspection management
-- Questionnaire builder with complex question types
-- Live progress tracking of inspections
-- Mechanic management
-- Activity logging
+## Architecture Changes
 
-### Mechanic App (React Native)
-- OTP-based login for mechanics
-- View assigned inspections
-- Answer questions with multiple input types:
-  - Multiple Choice
-  - Photo capture
-  - Video capture (max 10 seconds, 5MB limit)
-  - Combined types (MCQ + Photo, MCQ + Video)
-  - Sub-questions with independent answer types
-- Offline capability (future)
-- Real-time sync with backend
+### New Collection: `inspection_media`
+```javascript
+{
+  "id": "uuid",
+  "inspection_id": "inspection-uuid",
+  "question_id": "question-uuid", 
+  "field_name": "answer|sub_answer_1|sub_answer_2",
+  "media_type": "image|video",
+  "data": "data:image/jpeg;base64,...",
+  "created_at": "ISO timestamp",
+  "created_by": "mechanic-id"
+}
+```
 
-## What's Been Implemented
+### How It Works:
+1. Mechanic takes photo → App sends base64 to `/progress` endpoint
+2. Backend detects base64 data → Stores in `inspection_media` collection
+3. Backend stores `media_ref:uuid` in inspection_answers (tiny reference)
+4. CRM retrieves media via `/inspection-media/{media_id}` when displaying
 
-### Recent Fixes (v1.4.2) - 2026-02-26
-- **Sequential Save**: Answers are now saved one-by-one instead of in a batch
-- **Video Limits**: Max 10 seconds duration, 5MB file size limit
-- **Video Processing**: Uses fetch/blob API instead of expo-file-system (more reliable)
-- **Better Error Messages**: Shows exactly which answer failed and why
-- **Diagnostic Logger**: Profile → Diagnostics → View Debug Logs for troubleshooting
-
-### Build History
-- v1.4.2: Sequential saves, video limits, removed expo-file-system (current)
-- v1.4.1: Added diagnostic logger
+## Build History
+- **v1.5.0**: Separate media storage (fixes document size limit)
+- v1.4.2: Sequential saves, video limits
+- v1.4.1: Diagnostic logger
 - v1.4.0: Profile version fix, image compression, status bug fix
-- v1.3.1: Aggressive image compression, API retry logic
-- v1.3.0: Removed custom logger, added expo-image-manipulator, questionnaire caching
-- v1.2.0: "Save & Next" with AsyncStorage drafts
-
-## Architecture
-
-```
-/app/
-├── backend/
-│   └── server.py           # FastAPI backend (v2.4.6)
-├── frontend/
-│   └── src/pages/          # React CRM pages
-│       └── InspectionsPage.jsx
-└── mechanic-app-native/
-    ├── app.json            # Version: 1.4.2
-    ├── app/
-    │   ├── profile.tsx     # Shows version + debug logs viewer
-    │   ├── home.tsx        # Inspection list with status logic
-    │   └── category/[...params].tsx  # Question answering with sequential saves
-    └── src/
-        ├── lib/api.ts      # API client with retry logic
-        └── lib/diagLogger.ts # Diagnostic logging system
-```
+- v1.3.0: Removed custom logger, questionnaire caching
 
 ## Key API Endpoints
-- `POST /api/mechanic/inspections/{id}/progress` - Save single answer (sets status to INSPECTION_STARTED)
+- `POST /api/mechanic/inspections/{id}/progress` - Save answer (media stored separately)
+- `GET /api/inspection-media/{media_id}` - Retrieve stored media
 - `GET /api/mechanic/inspections/{id}` - Get inspection with answers
-- `GET /api/mechanic/inspections` - List inspections (maps status for app)
-- `GET /api/inspections/{id}/questionnaire` - Get questions
 - `GET /api/inspections/{id}/live-progress` - CRM live progress view
 
 ## Third-Party Integrations
@@ -91,14 +58,15 @@ Build and maintain a CRM system for WiseDrive with an integrated React Native me
 - expo-image-manipulator: Client-side image compression
 
 ## Known Issues / Limitations
-- **Environment Mismatch**: Mechanic app saves to production (crmdev.wisedrive.com), CRM reads from preview backend. User must change REACT_APP_BACKEND_URL in /app/frontend/.env to production to test live progress.
-- **Video Size Limit**: Videos must be under 5MB (roughly 10 seconds at low quality)
+- **Video Size Limit**: Videos must be under 5MB (~10 seconds at low quality)
+- `videoMaxDuration` in ImagePicker is just a hint, doesn't force-stop recording
 
 ## Future Tasks (Backlog)
+- Implement proper video compression library
 - PDF export for inspection reports
 - WhatsApp sharing for reports
 - Customer reminders
-- Refactor InspectionsPage.jsx (3000+ lines)
+- Refactor InspectionsPage.jsx
 - Refactor server.py into routers
 - Offline mode for mechanic app
 
@@ -107,5 +75,5 @@ Build and maintain a CRM system for WiseDrive with an integrated React Native me
 - Mechanic Test: +919187458748 (Sai Bharath)
 
 ## APK Downloads
-- **v1.4.2**: https://expo.dev/artifacts/eas/8tTXCPUSazLu82nih2tAJA.apk
-- Build page: https://expo.dev/accounts/kalyandhar/projects/wisedrive-mechanic/builds/3c9512cb-9312-4f50-a7e4-c8713048af76
+- **v1.5.0-test (Preview Backend)**: https://expo.dev/artifacts/eas/LmHP31p3Gj21ek7V4RRzw.apk
+- **v1.4.2 (Production)**: https://expo.dev/artifacts/eas/8tTXCPUSazLu82nih2tAJA.apk
