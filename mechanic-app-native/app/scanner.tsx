@@ -769,6 +769,8 @@ export default function OBDScannerScreen() {
     setScanProgress(0);
     setScanResultJSON(null);
     setVehicleVIN(null);
+    setSubmitError(null);
+    setIsSubmitted(false);
   }, []);
 
   const disconnect = useCallback(async () => {
