@@ -2855,74 +2855,122 @@ export default function InspectionsPage() {
                 </div>
               </div>
               
-              {/* OBD Scan Data Section */}
-              <div className={`rounded-xl border ${
-                liveProgressData.obd_scan.completed ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'
-              }`}>
-                <div className="p-4">
+              {/* OBD-2 Diagnostics Section */}
+              <div className="rounded-xl border border-gray-200 overflow-hidden">
+                {/* Header */}
+                <div className={`p-4 ${liveProgressData.obd_scan.completed ? 'bg-gradient-to-r from-blue-600 to-indigo-600' : 'bg-gray-100'}`}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                        liveProgressData.obd_scan.completed ? 'bg-green-100' : 'bg-gray-100'
-                      }`}>
-                        <Car className={`h-5 w-5 ${liveProgressData.obd_scan.completed ? 'text-green-600' : 'text-gray-400'}`} />
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${liveProgressData.obd_scan.completed ? 'bg-white/20' : 'bg-gray-200'}`}>
+                        <Car className={`h-5 w-5 ${liveProgressData.obd_scan.completed ? 'text-white' : 'text-gray-400'}`} />
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900">OBD-II Diagnostic</p>
-                        <p className={`text-sm ${liveProgressData.obd_scan.completed ? 'text-green-600' : 'text-gray-500'}`}>
-                          {liveProgressData.obd_scan.completed ? 'Scan Completed' : 'Not yet completed'}
+                        <p className={`font-semibold ${liveProgressData.obd_scan.completed ? 'text-white' : 'text-gray-900'}`}>OBD-2 Diagnostics</p>
+                        <p className={`text-sm ${liveProgressData.obd_scan.completed ? 'text-white/80' : 'text-gray-500'}`}>
+                          {liveProgressData.obd_scan.completed 
+                            ? `${liveProgressData.obd_scan.data?.total_errors || liveProgressData.obd_scan.data?.categories?.reduce((acc, cat) => acc + (cat.codes?.length || 0), 0) || 0} error(s) found` 
+                            : 'Scan not yet completed'}
                         </p>
                       </div>
                     </div>
                     {liveProgressData.obd_scan.completed && (
-                      <CheckCircle className="h-6 w-6 text-green-500" />
+                      <CheckCircle className="h-6 w-6 text-white" />
                     )}
                   </div>
                 </div>
                 
                 {/* OBD Data Details */}
                 {liveProgressData.obd_scan.completed && liveProgressData.obd_scan.data && (
-                  <div className="border-t border-green-200 p-4 bg-white/50 rounded-b-xl">
-                    <h4 className="text-sm font-semibold text-gray-700 mb-3">Diagnostic Results</h4>
-                    <div className="grid grid-cols-2 gap-3">
-                      {liveProgressData.obd_scan.data.dtc_codes && (
-                        <div className="bg-white rounded-lg p-3 border">
-                          <p className="text-xs text-gray-500 mb-1">DTC Codes</p>
-                          <p className={`font-semibold ${liveProgressData.obd_scan.data.dtc_codes.length > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                            {liveProgressData.obd_scan.data.dtc_codes.length > 0 
-                              ? liveProgressData.obd_scan.data.dtc_codes.join(', ')
-                              : 'No codes found'}
-                          </p>
-                        </div>
-                      )}
-                      {liveProgressData.obd_scan.data.battery_voltage && (
-                        <div className="bg-white rounded-lg p-3 border">
-                          <p className="text-xs text-gray-500 mb-1">Battery Voltage</p>
-                          <p className="font-semibold text-gray-800">{liveProgressData.obd_scan.data.battery_voltage}V</p>
-                        </div>
-                      )}
-                      {liveProgressData.obd_scan.data.engine_rpm && (
-                        <div className="bg-white rounded-lg p-3 border">
-                          <p className="text-xs text-gray-500 mb-1">Engine RPM</p>
-                          <p className="font-semibold text-gray-800">{liveProgressData.obd_scan.data.engine_rpm}</p>
-                        </div>
-                      )}
-                      {liveProgressData.obd_scan.data.coolant_temp && (
-                        <div className="bg-white rounded-lg p-3 border">
-                          <p className="text-xs text-gray-500 mb-1">Coolant Temp</p>
-                          <p className="font-semibold text-gray-800">{liveProgressData.obd_scan.data.coolant_temp}°C</p>
-                        </div>
-                      )}
-                    </div>
-                    {/* Show all other OBD fields */}
-                    {Object.keys(liveProgressData.obd_scan.data).filter(k => !['dtc_codes', 'battery_voltage', 'engine_rpm', 'coolant_temp'].includes(k)).length > 0 && (
-                      <details className="mt-3">
-                        <summary className="text-xs text-blue-600 cursor-pointer hover:underline">View all diagnostic data</summary>
-                        <div className="mt-2 bg-gray-50 rounded-lg p-3 text-xs font-mono overflow-x-auto">
-                          <pre>{JSON.stringify(liveProgressData.obd_scan.data, null, 2)}</pre>
-                        </div>
-                      </details>
+                  <div className="p-4 space-y-4 bg-gray-50">
+                    {/* Critical Issues Alert */}
+                    {(liveProgressData.obd_scan.data.critical_issues || (liveProgressData.obd_scan.data.categories?.some(cat => cat.codes?.some(c => c.severity === 'critical')))) && (
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center gap-3">
+                        <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
+                        <p className="text-sm text-red-700 font-medium">
+                          Critical issues detected - Immediate attention required
+                        </p>
+                      </div>
                     )}
+                    
+                    {/* Categories with DTC Codes */}
+                    {liveProgressData.obd_scan.data.categories ? (
+                      // New format with categories
+                      liveProgressData.obd_scan.data.categories.map((category, idx) => (
+                        <div key={idx} className="bg-white rounded-lg border overflow-hidden">
+                          <div className="p-3 bg-gray-100 border-b flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-gray-800">{category.name || category.category}</span>
+                              <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                category.codes?.length > 0 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
+                              }`}>
+                                {category.codes?.length || 0} issue(s)
+                              </span>
+                            </div>
+                            {category.status && (
+                              <span className={`text-xs font-medium ${category.status === 'OK' ? 'text-green-600' : 'text-red-600'}`}>
+                                {category.status}
+                              </span>
+                            )}
+                          </div>
+                          {category.codes && category.codes.length > 0 && (
+                            <div className="p-3 space-y-2">
+                              {category.codes.map((code, codeIdx) => (
+                                <div key={codeIdx} className="flex items-start gap-3 p-2 bg-gray-50 rounded-lg">
+                                  <span className={`text-xs font-mono font-bold px-2 py-1 rounded ${
+                                    code.status === 'Active' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
+                                  }`}>
+                                    {code.code}
+                                  </span>
+                                  <div className="flex-1">
+                                    <p className="text-sm text-gray-800">{code.description}</p>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                      Status: <span className={code.status === 'Active' ? 'text-red-600 font-medium' : 'text-amber-600'}>{code.status || 'Pending'}</span>
+                                    </p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      // Legacy format - display as key-value pairs
+                      <div className="bg-white rounded-lg border p-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          {Object.entries(liveProgressData.obd_scan.data).map(([key, value]) => (
+                            <div key={key} className="p-3 bg-gray-50 rounded-lg">
+                              <p className="text-xs text-gray-500 mb-1 capitalize">{key.replace(/_/g, ' ')}</p>
+                              <p className="font-semibold text-gray-800">
+                                {Array.isArray(value) 
+                                  ? (value.length > 0 ? value.join(', ') : 'None')
+                                  : typeof value === 'object' 
+                                    ? JSON.stringify(value)
+                                    : String(value)}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Raw Data Expandable */}
+                    <details className="group">
+                      <summary className="text-xs text-blue-600 cursor-pointer hover:underline flex items-center gap-1">
+                        <ChevronRight className="h-3 w-3 transition-transform group-open:rotate-90" />
+                        View raw diagnostic data
+                      </summary>
+                      <div className="mt-2 bg-gray-800 rounded-lg p-3 text-xs font-mono text-green-400 overflow-x-auto">
+                        <pre>{JSON.stringify(liveProgressData.obd_scan.data, null, 2)}</pre>
+                      </div>
+                    </details>
+                  </div>
+                )}
+                
+                {/* Not completed state */}
+                {!liveProgressData.obd_scan.completed && (
+                  <div className="p-6 text-center bg-gray-50">
+                    <Car className="h-10 w-10 mx-auto text-gray-300 mb-2" />
+                    <p className="text-sm text-gray-500">Waiting for OBD scan data...</p>
                   </div>
                 )}
               </div>
