@@ -101,6 +101,11 @@ export default function OBDScannerScreen() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [logFilter, setLogFilter] = useState<LogLevel | null>(null);
   const [logModuleFilter, setLogModuleFilter] = useState<string | null>(null);
+  
+  // Submit state
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   const adapterRef = useRef<BLEAdapterInterface | null>(null);
   const elm327Ref = useRef<ELM327Service | null>(null);
