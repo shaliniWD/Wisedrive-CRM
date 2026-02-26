@@ -872,10 +872,17 @@ export default function OBDScannerScreen() {
       
       diagLogger.info('OBD_SUBMIT_SUCCESS', { inspectionId: currentInspectionId });
       setIsSubmitted(true);
+      setAlreadySubmittedToBackend(true);
       
-      // Store result in context for the inspection flow
+      // Store result in context for the inspection flow (with correct interface)
       if (setOBDScanResult) {
-        setOBDScanResult(obdData);
+        setOBDScanResult({
+          completed: true,
+          dtcCount: allDTCs.length,
+          liveDataCount: liveData.length,
+          sessionId: currentSession?.id,
+          timestamp: new Date().toISOString(),
+        });
       }
       
       Alert.alert(
