@@ -365,80 +365,112 @@ export default function CategoryQuestionsScreen() {
     
     const results: Array<{ questionId: string; success: boolean; error?: string }> = [];
     
+    // Helper function to upload media to Firebase and return URL
+    const uploadToFirebase = async (uri: string, questionId: string, mediaType: 'image' | 'video'): Promise<string> => {
+      diagLogger.info('FIREBASE_UPLOAD_STARTING', { questionId, mediaType });
+      const result = await uploadMediaToFirebase(uri, inspectionId, questionId, mediaType);
+      if (!result.success || !result.url) {
+        throw new Error(result.error || 'Upload failed');
+      }
+      diagLogger.info('FIREBASE_UPLOAD_COMPLETE', { questionId, url: result.url.substring(0, 50) + '...' });
+      return result.url;
+    };
+    
+    // Helper to determine if URI is a local file that needs uploading
+    const isLocalFile = (value: any): boolean => {
+      return typeof value === 'string' && value.startsWith('file://');
+    };
+    
+    // Helper to check if it's a base64 image (already compressed)
+    const isBase64Image = (value: any): boolean => {
+      return typeof value === 'string' && value.startsWith('data:image');
+    };
+    
     try {
-      // Save answers ONE BY ONE to avoid payload size issues
+      // Save answers ONE BY ONE
       for (let i = 0; i < answersToSave.length; i++) {
         const [questionId, answer] = answersToSave[i];
         
         diagLogger.info(`SAVE_ANSWER_${i + 1}/${answersToSave.length}`, { questionId });
         
         try {
-          // Process media in the answer before sending
           let processedAnswer = answer.answer;
           let processedSubAnswer1 = answer.sub_answer_1;
           let processedSubAnswer2 = answer.sub_answer_2;
           
-          // Process main answer if it's a direct video URI
-          if (typeof processedAnswer === 'string' && processedAnswer.startsWith('file://')) {
-            diagLogger.info('PROCESSING_DIRECT_VIDEO', { questionId });
+          // Process main answer - upload to Firebase if it's a local file
+          if (isLocalFile(processedAnswer)) {
+            // Direct video or image file
+            const isVideo = processedAnswer.includes('.mp4') || processedAnswer.includes('.mov');
+            const mediaType = isVideo ? 'video' : 'image';
+            diagLogger.info('PROCESSING_DIRECT_MEDIA', { questionId, mediaType });
             try {
-              processedAnswer = await processVideo(processedAnswer);
-            } catch (mediaErr: any) {
-              diagLogger.error('DIRECT_VIDEO_PROCESS_FAILED', { questionId, error: mediaErr.message });
-              results.push({ questionId, success: false, error: mediaErr.message });
+              processedAnswer = await uploadToFirebase(processedAnswer, questionId, mediaType);
+            } catch (uploadErr: any) {
+              diagLogger.error('DIRECT_MEDIA_UPLOAD_FAILED', { questionId, error: uploadErr.message });
+              results.push({ questionId, success: false, error: uploadErr.message });
               continue;
             }
+          } else if (isBase64Image(processedAnswer)) {
+            // Already a base64 image - send as is (backend will store it)
+            diagLogger.info('SENDING_BASE64_IMAGE', { questionId, sizeKB: Math.round(processedAnswer.length / 1024) });
           }
           
-          // Process main answer if it has media (combo type)
+          // Process combo answer with media
           if (processedAnswer && typeof processedAnswer === 'object' && processedAnswer.media) {
             const mediaUri = processedAnswer.media;
-            if (typeof mediaUri === 'string' && mediaUri.startsWith('file://')) {
-              // It's a video file URI - need to convert to base64
-              diagLogger.info('PROCESSING_MEDIA_IN_ANSWER', { questionId, mediaType: 'video' });
+            if (isLocalFile(mediaUri)) {
+              const isVideo = mediaUri.includes('.mp4') || mediaUri.includes('.mov');
+              const mediaType = isVideo ? 'video' : 'image';
+              diagLogger.info('PROCESSING_COMBO_MEDIA', { questionId, mediaType });
               try {
-                const processedMedia = await processVideo(mediaUri);
-                processedAnswer = { ...processedAnswer, media: processedMedia };
-              } catch (mediaErr: any) {
-                diagLogger.error('MEDIA_PROCESS_FAILED', { questionId, error: mediaErr.message });
-                results.push({ questionId, success: false, error: mediaErr.message });
-                continue; // Skip this answer but continue with others
+                const uploadedUrl = await uploadToFirebase(mediaUri, `${questionId}_combo`, mediaType);
+                processedAnswer = { ...processedAnswer, media: uploadedUrl };
+              } catch (uploadErr: any) {
+                diagLogger.error('COMBO_MEDIA_UPLOAD_FAILED', { questionId, error: uploadErr.message });
+                results.push({ questionId, success: false, error: uploadErr.message });
+                continue;
               }
             }
           }
           
-          // Process sub_answer_1 if it has media
+          // Process sub_answer_1 media
           if (processedSubAnswer1 && typeof processedSubAnswer1 === 'object' && processedSubAnswer1.media) {
             const mediaUri = processedSubAnswer1.media;
-            if (typeof mediaUri === 'string' && mediaUri.startsWith('file://')) {
-              diagLogger.info('PROCESSING_MEDIA_IN_SUB1', { questionId, mediaType: 'video' });
+            if (isLocalFile(mediaUri)) {
+              const isVideo = mediaUri.includes('.mp4') || mediaUri.includes('.mov');
+              const mediaType = isVideo ? 'video' : 'image';
+              diagLogger.info('PROCESSING_SUB1_MEDIA', { questionId, mediaType });
               try {
-                const processedMedia = await processVideo(mediaUri);
-                processedSubAnswer1 = { ...processedSubAnswer1, media: processedMedia };
-              } catch (mediaErr: any) {
-                diagLogger.error('SUB1_MEDIA_PROCESS_FAILED', { questionId, error: mediaErr.message });
-                results.push({ questionId, success: false, error: mediaErr.message });
+                const uploadedUrl = await uploadToFirebase(mediaUri, `${questionId}_sub1`, mediaType);
+                processedSubAnswer1 = { ...processedSubAnswer1, media: uploadedUrl };
+              } catch (uploadErr: any) {
+                diagLogger.error('SUB1_MEDIA_UPLOAD_FAILED', { questionId, error: uploadErr.message });
+                results.push({ questionId, success: false, error: uploadErr.message });
                 continue;
               }
             }
           }
           
-          // Process sub_answer_2 if it has media
+          // Process sub_answer_2 media
           if (processedSubAnswer2 && typeof processedSubAnswer2 === 'object' && processedSubAnswer2.media) {
             const mediaUri = processedSubAnswer2.media;
-            if (typeof mediaUri === 'string' && mediaUri.startsWith('file://')) {
-              diagLogger.info('PROCESSING_MEDIA_IN_SUB2', { questionId, mediaType: 'video' });
+            if (isLocalFile(mediaUri)) {
+              const isVideo = mediaUri.includes('.mp4') || mediaUri.includes('.mov');
+              const mediaType = isVideo ? 'video' : 'image';
+              diagLogger.info('PROCESSING_SUB2_MEDIA', { questionId, mediaType });
               try {
-                const processedMedia = await processVideo(mediaUri);
-                processedSubAnswer2 = { ...processedSubAnswer2, media: processedMedia };
-              } catch (mediaErr: any) {
-                diagLogger.error('SUB2_MEDIA_PROCESS_FAILED', { questionId, error: mediaErr.message });
-                results.push({ questionId, success: false, error: mediaErr.message });
+                const uploadedUrl = await uploadToFirebase(mediaUri, `${questionId}_sub2`, mediaType);
+                processedSubAnswer2 = { ...processedSubAnswer2, media: uploadedUrl };
+              } catch (uploadErr: any) {
+                diagLogger.error('SUB2_MEDIA_UPLOAD_FAILED', { questionId, error: uploadErr.message });
+                results.push({ questionId, success: false, error: uploadErr.message });
                 continue;
               }
             }
           }
           
+          // Save to backend (now with Firebase URLs instead of base64)
           await inspectionsApi.saveProgress(inspectionId, {
             question_id: questionId,
             category_id: categoryId,
@@ -471,10 +503,9 @@ export default function CategoryQuestionsScreen() {
       });
       
       if (failures.length > 0) {
-        const errorMessages = failures.map(f => f.error).filter(Boolean).join('\n');
         Alert.alert(
           'Partial Save',
-          `${successes.length} of ${results.length} answers saved.\n\nFailed questions:\n${failures.map(f => `• ${f.questionId.substring(0, 8)}...: ${f.error || 'Unknown error'}`).join('\n')}`,
+          `${successes.length} of ${results.length} answers saved.\n\nFailed:\n${failures.map(f => `• ${f.error || 'Unknown error'}`).join('\n')}`,
           [{ text: 'OK', onPress: () => router.back() }]
         );
       } else {
