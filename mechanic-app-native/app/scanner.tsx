@@ -180,6 +180,7 @@ export default function OBDScannerScreen() {
   const [isCheckingBackend, setIsCheckingBackend] = useState(true);
   const [alreadySubmittedToBackend, setAlreadySubmittedToBackend] = useState(false);
   const [pendingLocalData, setPendingLocalData] = useState<any | null>(null);
+  const [rescanEnabled, setRescanEnabled] = useState(false);
 
   const adapterRef = useRef<BLEAdapterInterface | null>(null);
   const elm327Ref = useRef<ELM327Service | null>(null);
@@ -196,18 +197,30 @@ export default function OBDScannerScreen() {
       const checkOBDStatus = async () => {
         setIsCheckingBackend(true);
         try {
-          // First check backend
-          const inspection = await inspectionsApi.getInspection(currentInspectionId);
-          // Backend stores obd_results_ref or obd_total_errors when OBD is submitted
-          const hasOBD = !!(inspection?.obd_results_ref || inspection?.obd_total_errors !== undefined);
-          if (hasOBD) {
-            logger.info(MODULE, 'OBD already submitted for this inspection', { inspectionId: currentInspectionId });
+          // Use the dedicated OBD status endpoint
+          const obdStatus = await inspectionsApi.getOBDStatus(currentInspectionId);
+          logger.info(MODULE, 'OBD status from backend', obdStatus);
+          
+          if (obdStatus.has_obd_data) {
+            logger.info(MODULE, 'OBD already submitted for this inspection', { 
+              inspectionId: currentInspectionId,
+              rescanEnabled: obdStatus.rescan_enabled 
+            });
             setAlreadySubmittedToBackend(true);
-            setIsSubmitted(true);
-            // Clear any local pending data since backend has it
-            await clearOBDFromStorage(currentInspectionId);
+            setRescanEnabled(obdStatus.rescan_enabled || false);
+            
+            // If rescan is enabled, allow scanning again
+            if (obdStatus.rescan_enabled) {
+              setIsSubmitted(false);
+              logger.info(MODULE, 'Rescan enabled - allowing new scan');
+            } else {
+              setIsSubmitted(true);
+              // Clear any local pending data since backend has it
+              await clearOBDFromStorage(currentInspectionId);
+            }
           } else {
             setAlreadySubmittedToBackend(false);
+            setRescanEnabled(false);
             
             // Check for pending local data that wasn't submitted
             const localData = await loadOBDFromStorage(currentInspectionId);
