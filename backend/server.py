@@ -14996,6 +14996,105 @@ async def mechanic_submit_obd_results(
         raise HTTPException(status_code=500, detail=f"Failed to save OBD data: {str(e)}")
 
 
+class OBDRescanRequest(BaseModel):
+    enable_rescan: bool
+
+
+@api_router.post("/inspections/{inspection_id}/obd-rescan")
+async def toggle_obd_rescan(
+    inspection_id: str,
+    request_data: OBDRescanRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Enable or disable OBD rescan for an inspection.
+    When enabled, mechanic can perform a new OBD scan which will overwrite existing data.
+    Only CRM users (non-mechanics) can toggle this.
+    """
+    try:
+        # Verify inspection exists
+        inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
+        if not inspection:
+            raise HTTPException(status_code=404, detail="Inspection not found")
+        
+        # Update inspection with rescan flag
+        update_data = {
+            "obd_rescan_enabled": request_data.enable_rescan,
+            "obd_rescan_enabled_by": current_user.get("id", "unknown"),
+            "obd_rescan_enabled_at": datetime.now(timezone.utc).isoformat() if request_data.enable_rescan else None,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        await db.inspections.update_one({"id": inspection_id}, {"$set": update_data})
+        
+        # Log activity
+        try:
+            action = "obd_rescan_enabled" if request_data.enable_rescan else "obd_rescan_disabled"
+            activity = {
+                "id": str(uuid.uuid4()),
+                "inspection_id": inspection_id,
+                "user_id": current_user.get("id", "unknown"),
+                "user_name": current_user.get("name", "Unknown"),
+                "user_role": current_user.get("role_code", "unknown"),
+                "action": action,
+                "action_label": "OBD Rescan " + ("Enabled" if request_data.enable_rescan else "Disabled"),
+                "details": f"OBD rescan {'enabled' if request_data.enable_rescan else 'disabled'} by {current_user.get('name', 'Unknown')}",
+                "source": "CRM",
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.inspection_activities.insert_one(activity)
+        except Exception as activity_err:
+            logger.warning(f"[OBD_RESCAN] Failed to log activity: {activity_err}")
+        
+        logger.info(f"[OBD_RESCAN] OBD rescan {'enabled' if request_data.enable_rescan else 'disabled'} for inspection {inspection_id}")
+        
+        return {
+            "success": True,
+            "inspection_id": inspection_id,
+            "obd_rescan_enabled": request_data.enable_rescan,
+            "message": f"OBD rescan {'enabled' if request_data.enable_rescan else 'disabled'} successfully"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[OBD_RESCAN] Error toggling OBD rescan: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to toggle OBD rescan: {str(e)}")
+
+
+@api_router.get("/mechanic/inspections/{inspection_id}/obd-status")
+async def get_obd_status(
+    inspection_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Get OBD status for an inspection - used by mechanic app to check if rescan is allowed.
+    """
+    try:
+        inspection = await db.inspections.find_one(
+            {"id": inspection_id}, 
+            {"_id": 0, "obd_results_ref": 1, "obd_total_errors": 1, "obd_rescan_enabled": 1, "obd_scanned_at": 1}
+        )
+        if not inspection:
+            raise HTTPException(status_code=404, detail="Inspection not found")
+        
+        has_obd_data = bool(inspection.get("obd_results_ref") or inspection.get("obd_total_errors") is not None)
+        rescan_enabled = inspection.get("obd_rescan_enabled", False)
+        
+        return {
+            "inspection_id": inspection_id,
+            "has_obd_data": has_obd_data,
+            "obd_scanned_at": inspection.get("obd_scanned_at"),
+            "obd_total_errors": inspection.get("obd_total_errors"),
+            "rescan_enabled": rescan_enabled,
+            "can_scan": not has_obd_data or rescan_enabled
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[OBD_STATUS] Error getting OBD status: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get OBD status: {str(e)}")
+
+
 @api_router.post("/uploads")
 async def mechanic_upload_file(
     file: UploadFile = File(...),
