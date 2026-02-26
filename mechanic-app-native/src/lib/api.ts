@@ -288,6 +288,11 @@ export const inspectionsApi = {
     return response.data;
   },
 
+  getOBDStatus: async (id: string) => {
+    const response = await api.get(`/mechanic/inspections/${id}/obd-status`);
+    return response.data;
+  },
+
   rescheduleInspection: async (id: string, data: { new_scheduled_date: string; reschedule_reason?: string }) => {
     const response = await api.post(`/mechanic/inspections/${id}/reschedule`, data);
     return response.data;
