@@ -3,85 +3,66 @@
 ## Original Problem Statement
 Build and maintain a CRM system for WiseDrive with an integrated React Native mechanic mobile app. The mechanic app allows field mechanics to perform vehicle inspections by answering configured questions (text, photo, video, multiple choice) and sub-questions.
 
-## Current Status (v1.6.4) - 2026-02-26
+## Current Status (v1.6.6) - 2026-02-26
 
-### ✅ FIXED: Firebase Streaming Upload for Large Videos
-**Root Cause:** Previous implementations tried to load entire video files into memory (as base64 or Blob), causing `java.lang.OutOfMemoryError` on mobile devices.
+### ✅ COMPLETED: Video Upload & Playback
+- Firebase streaming upload for large videos (fixes OutOfMemoryError)
+- Video thumbnail with play button in mobile app
+- Full-screen video player modal
 
-**Solution Implemented:**
-1. **Backend Signed URL Endpoint** (`/api/media/generate-upload-url`): 
-   - Uses Firebase Admin SDK to generate V4 signed URLs
-   - Mobile app can upload directly to Firebase Storage
-   - No file data passes through the backend
+### ✅ COMPLETED: CRM Live Progress Enhancements
+1. **Mechanic info at top** - Shows mechanic name and start time prominently
+2. **Removed Recent Answers section** - Cleaner UI
+3. **Accordion-style Q&A** - Categories expandable with questions/answers inside
+4. **OBD Data section** - Shows diagnostic results when available
+5. **Glowing Live button** - Green animated button for in-progress inspections
+6. **Grey Live button** - For completed inspections (still clickable)
 
-2. **Streaming Upload in Mobile App**:
-   - Uses `FileSystem.uploadAsync` from `expo-file-system`
-   - Streams file directly from device storage to Firebase
-   - Never loads entire file into memory
-   - Eliminates OutOfMemoryError completely
+## Architecture
 
-3. **Firebase URL Storage**:
-   - Backend stores `gs://bucket/path` URLs instead of base64
-   - CRM can retrieve download URLs via `/api/media/get-download-url`
+### Media Upload Flow (Firebase):
+1. Mechanic records video → App calls `/api/media/generate-upload-url`
+2. Backend returns Firebase signed URL
+3. App uses `FileSystem.uploadAsync` to stream file directly
+4. App saves Firebase path (`gs://...`) via `/progress` endpoint
+5. CRM converts `gs://` to HTTPS via `/api/media/get-download-url`
 
-## Architecture Changes (Firebase Integration)
-
-### New Endpoints:
-- `POST /api/media/generate-upload-url` - Get signed URL for upload
-- `POST /api/media/get-download-url` - Convert gs:// URL to HTTPS
-
-### Upload Flow:
-1. Mechanic records video → App calls `/media/generate-upload-url`
-2. Backend returns signed Firebase URL
-3. App uses `FileSystem.uploadAsync` to stream file to Firebase
-4. App saves Firebase path (gs://...) via `/progress` endpoint
-5. CRM converts gs:// to HTTPS via `/media/get-download-url` when displaying
+### Key Endpoints:
+- `POST /api/media/generate-upload-url` - Get Firebase signed URL
+- `POST /api/media/get-download-url` - Convert gs:// to HTTPS
+- `GET /api/inspections/{id}/live-progress` - Get live progress with Q&A
 
 ## Build History
-- **v1.6.4**: Firebase streaming upload (fixes OutOfMemoryError for large videos)
-- v1.6.3: Attempted chunked blob upload (still caused OOM)
-- v1.6.2: expo-file-system based upload (incomplete)
-- v1.6.1: XMLHttpRequest approach (failed)
-- v1.6.0: Initial Firebase integration
-- v1.5.0: Separate media storage (fixes MongoDB 16MB limit)
-- v1.4.x: Image compression, diagnostic logger, etc.
-
-## Key API Endpoints
-- `POST /api/mechanic/inspections/{id}/progress` - Save answer (now accepts Firebase URLs)
-- `POST /api/media/generate-upload-url` - Get Firebase signed URL for upload
-- `POST /api/media/get-download-url` - Convert gs:// to HTTPS download URL
-- `GET /api/inspection-media/{media_id}` - Retrieve stored media (legacy base64)
-- `GET /api/mechanic/inspections/{id}` - Get inspection with answers
+- **v1.6.6**: Video playback modal + CRM Live Progress UI enhancements
+- v1.6.5: Media URL resolution for displaying saved photos
+- v1.6.4: Firebase streaming upload (fixes OutOfMemoryError)
+- v1.5.0: Separate media storage
+- v1.4.x: Image compression, diagnostic logger
 
 ## Third-Party Integrations
-- **Firebase Storage**: Media file storage (photos, videos)
+- **Firebase Storage**: Media file storage
 - Fast2SMS: Mechanic OTP
 - Twilio: WhatsApp messages
 - Razorpay: Payments
-- Google Maps Places API: Address editing
-- EAS (Expo Application Services): APK builds
+- Google Maps Places API
+- EAS (Expo): APK builds
 
 ## Pending Tasks
-
-### P1 - After Video Upload Verification
-- [ ] Update CRM to display Firebase media (convert gs:// URLs to HTTPS)
-- [ ] Verify mechanic app status consistency ("Continue" vs "Accept")
-
-### Backlog
-- PDF export for inspection reports
-- WhatsApp sharing for reports
-- Customer reminders
-- Refactor InspectionsPage.jsx
-- Refactor server.py into routers
-- Offline mode for mechanic app
+- [ ] PDF export for inspection reports
+- [ ] WhatsApp sharing for reports
+- [ ] Customer reminders
+- [ ] Refactor InspectionsPage.jsx
+- [ ] Refactor server.py into routers
+- [ ] Offline mode for mechanic app
 
 ## Test Credentials
 - CRM Admin: kalyan@wisedrive.com / password123
-- Mechanic Test: +919187458748 (Sai Bharath)
+- Mechanic Test: +919187458748
 
 ## APK Downloads
-- **v1.6.4 (Firebase Streaming Upload)**: https://expo.dev/artifacts/eas/s7tQ5bbrUARubMbq759YdB.apk
-- v1.5.0: https://expo.dev/artifacts/eas/LmHP31p3Gj21ek7V4RRzw.apk
+- **v1.6.6**: https://expo.dev/artifacts/eas/uXtgAUDj8Js222jvzuFemm.apk
+- v1.6.5: https://expo.dev/artifacts/eas/vzfCihashY2iByump9apdX.apk
+- v1.6.4: https://expo.dev/artifacts/eas/s7tQ5bbrUARubMbq759YdB.apk
 
 ## Firebase Configuration
 - Project: wisedrive-ess-app
