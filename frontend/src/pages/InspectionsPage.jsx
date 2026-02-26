@@ -2729,76 +2729,121 @@ export default function InspectionsPage() {
                       className="bg-white rounded-lg border group"
                       open={category.completion_percentage > 0 && category.completion_percentage < 100}
                     >
-                      <summary className="p-3 cursor-pointer hover:bg-gray-50 transition-colors list-none">
+                      <summary className="p-4 cursor-pointer hover:bg-gray-50 transition-colors list-none">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <ChevronRight className="h-4 w-4 text-gray-400 transition-transform group-open:rotate-90" />
-                            <span className="font-medium text-gray-800">{category.category_name}</span>
+                            <ChevronRight className="h-5 w-5 text-gray-400 transition-transform group-open:rotate-90" />
+                            <span className="font-semibold text-gray-800">{category.category_name}</span>
                           </div>
-                          <div className="flex items-center gap-3">
-                            <span className="text-sm text-gray-500">
-                              {category.answered_questions}/{category.total_questions}
+                          <div className="flex items-center gap-4">
+                            <span className={`text-sm font-medium px-2 py-1 rounded-full ${
+                              category.completion_percentage === 100 ? 'bg-green-100 text-green-700' :
+                              category.completion_percentage > 0 ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500'
+                            }`}>
+                              {category.answered_questions}/{category.total_questions} answered
                             </span>
                             {category.completion_percentage === 100 ? (
-                              <CheckCircle className="h-5 w-5 text-green-500" />
+                              <CheckCircle className="h-6 w-6 text-green-500" />
                             ) : category.completion_percentage > 0 ? (
-                              <div className="h-5 w-5 rounded-full border-2 border-amber-500 flex items-center justify-center">
-                                <span className="text-[10px] font-bold text-amber-600">{category.completion_percentage}%</span>
+                              <div className="h-6 w-6 rounded-full border-2 border-amber-500 flex items-center justify-center bg-amber-50">
+                                <span className="text-[9px] font-bold text-amber-600">{Math.round(category.completion_percentage)}%</span>
                               </div>
                             ) : (
-                              <div className="h-5 w-5 rounded-full border-2 border-gray-300" />
+                              <div className="h-6 w-6 rounded-full border-2 border-gray-300 bg-gray-50" />
                             )}
                           </div>
                         </div>
-                        <div className="mt-2 ml-7 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        {/* Progress Bar */}
+                        <div className="mt-3 ml-8 h-2.5 bg-gray-200 rounded-full overflow-hidden">
                           <div 
-                            className={`h-full rounded-full transition-all duration-300 ${
+                            className={`h-full rounded-full transition-all duration-500 ${
                               category.completion_percentage === 100 ? 'bg-green-500' : 
-                              category.completion_percentage > 0 ? 'bg-amber-500' : 'bg-gray-200'
+                              category.completion_percentage > 0 ? 'bg-amber-500' : 'bg-gray-300'
                             }`}
-                            style={{ width: `${category.completion_percentage}%` }}
+                            style={{ width: `${Math.max(category.completion_percentage, 2)}%` }}
                           />
+                        </div>
+                        <div className="mt-1 ml-8 text-xs text-gray-500">
+                          {category.completion_percentage}% complete
                         </div>
                       </summary>
                       
                       {/* Questions List inside accordion */}
-                      <div className="border-t bg-gray-50 p-3 space-y-2 max-h-[300px] overflow-y-auto">
+                      <div className="border-t bg-gray-50 p-4 space-y-3 max-h-[400px] overflow-y-auto">
                         {category.questions?.map((q, qIdx) => (
                           <div 
                             key={q.question_id} 
-                            className={`bg-white rounded-lg p-3 border ${q.is_answered ? 'border-green-200' : 'border-gray-200'}`}
+                            className={`bg-white rounded-lg p-4 border-l-4 ${q.is_answered ? 'border-l-green-500 border border-green-100' : 'border-l-gray-300 border border-gray-200'}`}
                           >
-                            <div className="flex items-start gap-2">
-                              <span className={`text-xs font-medium px-2 py-0.5 rounded ${q.is_answered ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                                Q{qIdx + 1}
+                            <div className="flex items-start gap-3">
+                              <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${q.is_answered ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                                {qIdx + 1}
                               </span>
                               <div className="flex-1">
-                                <p className="text-sm font-medium text-gray-800">{q.question_text}</p>
+                                <p className="text-sm font-medium text-gray-800 mb-2">{q.question_text}</p>
                                 {q.is_answered ? (
-                                  <div className="mt-2">
-                                    <p className="text-xs text-gray-500 mb-1">Answer:</p>
-                                    {typeof q.answer === 'string' && (q.answer.startsWith('data:image') || q.answer.startsWith('http')) ? (
-                                      <img src={q.answer} alt="Answer" className="max-w-[200px] max-h-[150px] rounded-lg border object-cover" />
-                                    ) : typeof q.answer === 'string' && q.answer.startsWith('gs://') ? (
-                                      <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">📷 Media uploaded to cloud</span>
-                                    ) : typeof q.answer === 'object' && q.answer?.selection ? (
-                                      <div>
-                                        <span className="text-blue-600 font-medium">{q.answer.selection}</span>
-                                        {q.answer.media && (
-                                          <span className="ml-2 text-xs text-gray-500">(with media)</span>
+                                  <div className="bg-gray-50 rounded-lg p-3">
+                                    <p className="text-xs text-gray-500 mb-2 font-medium">Answer:</p>
+                                    {/* Display media if available */}
+                                    {q.media_url ? (
+                                      <div className="mb-2">
+                                        {q.media_url.includes('video') || q.question_type?.includes('video') ? (
+                                          <video 
+                                            src={q.media_url} 
+                                            controls 
+                                            className="max-w-full max-h-[200px] rounded-lg border"
+                                          />
+                                        ) : (
+                                          <img 
+                                            src={q.media_url} 
+                                            alt="Answer" 
+                                            className="max-w-[250px] max-h-[180px] rounded-lg border object-cover cursor-pointer hover:opacity-90"
+                                            onClick={() => window.open(q.media_url, '_blank')}
+                                          />
                                         )}
                                       </div>
-                                    ) : (
-                                      <span className="text-blue-600 font-medium">{String(q.answer)}</span>
-                                    )}
+                                    ) : typeof q.answer === 'string' && (q.answer.startsWith('data:image') || (q.answer.startsWith('http') && !q.answer.includes('video'))) ? (
+                                      <img 
+                                        src={q.answer} 
+                                        alt="Answer" 
+                                        className="max-w-[250px] max-h-[180px] rounded-lg border object-cover mb-2 cursor-pointer hover:opacity-90"
+                                        onClick={() => window.open(q.answer, '_blank')}
+                                      />
+                                    ) : typeof q.answer === 'string' && q.answer.startsWith('http') && q.answer.includes('video') ? (
+                                      <video 
+                                        src={q.answer} 
+                                        controls 
+                                        className="max-w-full max-h-[200px] rounded-lg border mb-2"
+                                      />
+                                    ) : null}
+                                    {/* Display text answer */}
+                                    {typeof q.answer === 'object' && q.answer?.selection ? (
+                                      <div className="flex items-center gap-2">
+                                        <CheckCircle className="h-4 w-4 text-green-500" />
+                                        <span className="text-blue-700 font-semibold">{q.answer.selection}</span>
+                                        {q.answer.media_url && (
+                                          <a href={q.answer.media_url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline ml-2">
+                                            View media →
+                                          </a>
+                                        )}
+                                      </div>
+                                    ) : typeof q.answer === 'string' && !q.answer.startsWith('data:') && !q.answer.startsWith('http') && !q.answer.startsWith('gs://') && !q.answer.startsWith('media_ref:') ? (
+                                      <div className="flex items-center gap-2">
+                                        <CheckCircle className="h-4 w-4 text-green-500" />
+                                        <span className="text-blue-700 font-semibold">{q.answer}</span>
+                                      </div>
+                                    ) : null}
                                     {q.answered_at && (
-                                      <p className="text-[10px] text-gray-400 mt-1">
-                                        Answered: {new Date(q.answered_at).toLocaleString()}
+                                      <p className="text-[11px] text-gray-400 mt-2">
+                                        ✓ Answered: {new Date(q.answered_at).toLocaleString()}
                                       </p>
                                     )}
                                   </div>
                                 ) : (
-                                  <p className="text-xs text-gray-400 mt-1 italic">Not answered yet</p>
+                                  <div className="flex items-center gap-2 text-gray-400">
+                                    <Clock className="h-4 w-4" />
+                                    <span className="text-xs italic">Awaiting response...</span>
+                                  </div>
                                 )}
                               </div>
                             </div>
