@@ -367,6 +367,8 @@ export default function OBDScanScreen() {
         );
 
       case 'completed':
+      case 'submitting':
+      case 'submitted':
         return (
           <View style={styles.content}>
             <View style={styles.resultHeader}>
@@ -380,6 +382,9 @@ export default function OBDScanScreen() {
               <Text style={styles.title}>
                 {dtcCodes.length === 0 ? 'No Issues Found' : `${dtcCodes.length} Issues Found`}
               </Text>
+              <Text style={styles.subtitle}>
+                {scanState === 'submitted' ? 'Data submitted successfully' : 'Scan completed'}
+              </Text>
             </View>
 
             {dtcCodes.length > 0 && (
@@ -392,16 +397,72 @@ export default function OBDScanScreen() {
                     <View style={styles.dtcInfo}>
                       <Text style={styles.dtcCategory}>{dtc.category}</Text>
                       <Text style={styles.dtcDescription}>{dtc.description}</Text>
+                      {dtc.status && (
+                        <View style={[styles.statusBadge, dtc.status === 'Active' ? styles.statusActive : styles.statusPending]}>
+                          <Text style={[styles.statusText, dtc.status === 'Active' ? styles.statusTextActive : styles.statusTextPending]}>
+                            {dtc.status}
+                          </Text>
+                        </View>
+                      )}
                     </View>
                   </View>
                 ))}
               </View>
             )}
 
-            <TouchableOpacity style={styles.primaryButton} onPress={handleSaveResults}>
-              <Text style={styles.buttonText}>Continue to Checklist</Text>
-              <Ionicons name="arrow-forward" size={24} color="#FFF" />
-            </TouchableOpacity>
+            {/* Show error message if submission failed */}
+            {submitError && (
+              <View style={styles.errorBanner}>
+                <Ionicons name="alert-circle" size={20} color="#DC2626" />
+                <Text style={styles.errorBannerText}>
+                  Data transfer failed. Please try again.
+                </Text>
+              </View>
+            )}
+
+            {/* Submit Button - Primary action */}
+            {scanState !== 'submitted' ? (
+              <TouchableOpacity 
+                style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]} 
+                onPress={handleSubmitOBDResults}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <ActivityIndicator size="small" color="#FFF" />
+                    <Text style={styles.submitButtonText}>Submitting...</Text>
+                  </>
+                ) : (
+                  <>
+                    <Ionicons name="cloud-upload" size={24} color="#FFF" />
+                    <Text style={styles.submitButtonText}>Submit OBD Data</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity 
+                style={styles.continueButton} 
+                onPress={() => router.push(`/checklist/${inspectionId}`)}
+              >
+                <Text style={styles.continueButtonText}>Continue to Checklist</Text>
+                <Ionicons name="arrow-forward" size={24} color="#FFF" />
+              </TouchableOpacity>
+            )}
+
+            {/* Show Scan Again only if there was an error */}
+            {submitError && (
+              <TouchableOpacity 
+                style={styles.scanAgainButton} 
+                onPress={() => {
+                  setSubmitError(null);
+                  setScanState('idle');
+                  setDtcCodes([]);
+                }}
+              >
+                <Ionicons name="refresh" size={20} color="#64748B" />
+                <Text style={styles.scanAgainButtonText}>Scan Again</Text>
+              </TouchableOpacity>
+            )}
           </View>
         );
 
