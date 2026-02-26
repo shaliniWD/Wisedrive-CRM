@@ -5365,10 +5365,10 @@ async def get_inspection_live_progress(inspection_id: str, current_user: dict = 
     if not inspection:
         raise HTTPException(status_code=404, detail="Inspection not found")
     
-    # Get the questionnaire template for this inspection
+    # Get the questionnaire template for this inspection - use same logic as mechanic questionnaire
     inspection_template_id = inspection.get("inspection_template_id")
     
-    # If no template assigned, try to get from partner
+    # Fallback 1: Try to get from partner
     if not inspection_template_id:
         partner_id = inspection.get("partner_id")
         if partner_id:
@@ -5376,7 +5376,27 @@ async def get_inspection_live_progress(inspection_id: str, current_user: dict = 
             if partner:
                 inspection_template_id = partner.get("inspection_template_id")
     
-    # Get template questions
+    # Fallback 2: Try to get from report_template
+    if not inspection_template_id:
+        report_template_id = inspection.get("report_template_id")
+        if report_template_id:
+            report_template = await db.report_templates.find_one(
+                {"id": report_template_id}, 
+                {"_id": 0, "inspection_template_id": 1}
+            )
+            if report_template:
+                inspection_template_id = report_template.get("inspection_template_id")
+    
+    # Fallback 3: Use default template
+    if not inspection_template_id:
+        default_template = await db.inspection_templates.find_one(
+            {"is_default": True, "is_active": True},
+            {"_id": 0}
+        )
+        if default_template:
+            inspection_template_id = default_template.get("id")
+    
+    # Get template questions - use same approach as mechanic questionnaire
     questions = []
     category_order = []
     categories_info = {}
@@ -5384,11 +5404,39 @@ async def get_inspection_live_progress(inspection_id: str, current_user: dict = 
     if inspection_template_id:
         insp_template = await db.inspection_templates.find_one({"id": inspection_template_id}, {"_id": 0})
         if insp_template:
-            questions = insp_template.get("questions", [])
             category_order = insp_template.get("category_order", [])
-            categories_data = insp_template.get("categories", [])
-            for cat in categories_data:
-                categories_info[cat.get("id")] = cat.get("name", cat.get("id"))
+            
+            # Try new approach: question_ids reference
+            question_ids = insp_template.get("question_ids", [])
+            if question_ids:
+                questions_cursor = await db.inspection_questions.find(
+                    {"id": {"$in": question_ids}},
+                    {"_id": 0}
+                ).to_list(500)
+                
+                # Sort questions by the order in question_ids
+                question_map = {q["id"]: q for q in questions_cursor}
+                questions = [question_map[qid] for qid in question_ids if qid in question_map]
+                
+                # Get categories for these questions
+                category_ids = list(set(q.get("category_id") for q in questions if q.get("category_id")))
+                categories_cursor = await db.inspection_qa_categories.find(
+                    {"id": {"$in": category_ids}},
+                    {"_id": 0}
+                ).to_list(100)
+                categories_info = {c["id"]: c.get("name", c["id"]) for c in categories_cursor}
+                
+                # Enrich questions with category info
+                for q in questions:
+                    cat_id = q.get("category_id")
+                    if cat_id and cat_id in categories_info:
+                        q["category_name"] = categories_info[cat_id]
+            else:
+                # Fallback to old approach: embedded questions array
+                questions = insp_template.get("questions", [])
+                categories_data = insp_template.get("categories", [])
+                for cat in categories_data:
+                    categories_info[cat.get("id")] = cat.get("name", cat.get("id"))
     
     # Get answers from inspection
     answers = inspection.get("inspection_answers", {})
