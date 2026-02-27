@@ -5499,7 +5499,13 @@ async def get_inspection_live_progress(inspection_id: str, current_user: dict = 
             media_url = None
             
             if isinstance(raw_answer, str):
-                if raw_answer.startswith("gs://"):
+                if raw_answer.startswith("UPLOAD_FAILED:"):
+                    # Upload failed - extract the local path for display
+                    local_path = raw_answer.replace("UPLOAD_FAILED:", "")
+                    q_detail["media_upload_failed"] = True
+                    q_detail["local_file_path"] = local_path
+                    logger.warning(f"[LIVE_PROGRESS] Media upload was failed for question: {local_path[:80]}")
+                elif raw_answer.startswith("gs://"):
                     # Convert Firebase gs:// URL to HTTPS download URL
                     try:
                         get_firebase_app()
