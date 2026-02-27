@@ -2941,7 +2941,7 @@ export default function InspectionsPage() {
                                           </a>
                                         )}
                                       </div>
-                                    ) : typeof q.answer === 'string' && !q.answer.startsWith('data:') && !q.answer.startsWith('http') && !q.answer.startsWith('gs://') && !q.answer.startsWith('media_ref:') ? (
+                                    ) : typeof q.answer === 'string' && !q.answer.startsWith('data:') && !q.answer.startsWith('http') && !q.answer.startsWith('gs://') && !q.answer.startsWith('media_ref:') && !q.answer.startsWith('file://') && !q.answer.startsWith('/data/') && !q.media_upload_failed ? (
                                       <div className="flex items-center gap-2">
                                         <CheckCircle className="h-4 w-4 text-green-500" />
                                         <span className="text-blue-700 font-semibold">{q.answer}</span>
