@@ -16257,11 +16257,11 @@ if mechanic_app_path.exists():
 
 
 # ============================================
-# APP DOWNLOAD RELEASES DATA
+# APP DOWNLOAD RELEASES - Dynamic Management
 # ============================================
 
-# App release versions - stored in memory for now (can be moved to DB later)
-MECHANIC_APP_RELEASES = [
+# Default release data (used to seed database if empty)
+DEFAULT_MECHANIC_RELEASES = [
     {
         "version": "1.7.1",
         "build_number": "47",
@@ -16299,26 +16299,12 @@ MECHANIC_APP_RELEASES = [
         "changes": [
             "Prevented OBD rescan after submission",
             "Backend check for OBD submission status on load",
-            "Non-interactive OBD card when already submitted",
-            "Changed 'Scan Again' to 'Retry Submission' on error"
-        ]
-    },
-    {
-        "version": "1.6.8",
-        "build_number": "44",
-        "release_date": "2025-02-25",
-        "status": "available",
-        "build_url": "https://expo.dev/accounts/kalyandhar/projects/wisedrive-mechanic/builds/previous",
-        "download_url": None,
-        "changes": [
-            "Implemented OBD data submission flow",
-            "Submit button replaces scan results UI",
-            "OBD data sent to backend on submission"
+            "Non-interactive OBD card when already submitted"
         ]
     }
 ]
 
-ESS_APP_RELEASES = [
+DEFAULT_ESS_RELEASES = [
     {
         "version": "1.3.3",
         "build_number": "6",
@@ -16355,44 +16341,186 @@ ESS_APP_RELEASES = [
             "Performance improvements",
             "UI enhancements"
         ]
-    },
-    {
-        "version": "1.3.1",
-        "build_number": "3",
-        "release_date": "2025-02-17",
-        "status": "available",
-        "build_url": "https://expo.dev/accounts/kalyandhar/projects/wisedrive-ess/builds/0e8001aa-9ac2-4dd0-8cc5-c07ddfc8e710",
-        "download_url": "https://expo.dev/artifacts/eas/2MRjUvC3jNwwufBbX5aNJd.apk",
-        "changes": [
-            "Bug fixes",
-            "Stability improvements"
-        ]
-    },
-    {
-        "version": "1.3.0",
-        "build_number": "2",
-        "release_date": "2025-02-17",
-        "status": "available",
-        "build_url": "https://expo.dev/accounts/kalyandhar/projects/wisedrive-ess/builds/fece8631-85e7-4af1-858e-e541ec2e528d",
-        "download_url": "https://expo.dev/artifacts/eas/xsWZjtyfJnxhySk4NEnvEV.apk",
-        "changes": [
-            "Initial ESS app release",
-            "Employee self-service features",
-            "Push notifications support"
-        ]
     }
 ]
 
-# API endpoints to manage releases (for future use)
+
+async def get_releases_from_db(app_type: str) -> list:
+    """Get releases from database, seed with defaults if empty"""
+    releases = await db.app_releases.find(
+        {"app_type": app_type}, 
+        {"_id": 0}
+    ).sort("release_date", -1).to_list(length=100)
+    
+    # If no releases in DB, seed with defaults
+    if not releases:
+        defaults = DEFAULT_MECHANIC_RELEASES if app_type == "mechanic" else DEFAULT_ESS_RELEASES
+        for release in defaults:
+            release_doc = {
+                "id": str(uuid.uuid4()),
+                "app_type": app_type,
+                **release,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.app_releases.insert_one(release_doc)
+        releases = await db.app_releases.find(
+            {"app_type": app_type}, 
+            {"_id": 0}
+        ).sort("release_date", -1).to_list(length=100)
+    
+    return releases
+
+
+# Pydantic models for release management
+class AppReleaseCreate(BaseModel):
+    version: str
+    build_number: str
+    release_date: str
+    status: str = "available"  # available, building, unavailable
+    build_url: Optional[str] = None
+    download_url: Optional[str] = None
+    changes: List[str] = []
+
+
+class AppReleaseUpdate(BaseModel):
+    version: Optional[str] = None
+    build_number: Optional[str] = None
+    release_date: Optional[str] = None
+    status: Optional[str] = None
+    build_url: Optional[str] = None
+    download_url: Optional[str] = None
+    changes: Optional[List[str]] = None
+
+
+# Admin API endpoints for release management
 @api_router.get("/app-releases/{app_type}")
 async def get_app_releases(app_type: str):
     """Get all releases for an app type"""
-    if app_type == "mechanic":
-        return {"app": "mechanic", "releases": MECHANIC_APP_RELEASES}
-    elif app_type == "ess":
-        return {"app": "ess", "releases": ESS_APP_RELEASES}
-    else:
+    if app_type not in ["mechanic", "ess"]:
+        raise HTTPException(status_code=404, detail="App type not found. Use 'mechanic' or 'ess'")
+    
+    releases = await get_releases_from_db(app_type)
+    return {"app": app_type, "releases": releases}
+
+
+@api_router.post("/app-releases/{app_type}")
+async def create_app_release(
+    app_type: str,
+    release: AppReleaseCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create a new app release (Admin only)"""
+    if app_type not in ["mechanic", "ess"]:
+        raise HTTPException(status_code=404, detail="App type not found. Use 'mechanic' or 'ess'")
+    
+    # Check if user has admin role
+    user_role = current_user.get("role_code", "")
+    if user_role not in ["super_admin", "admin", "country_head"]:
+        raise HTTPException(status_code=403, detail="Only admins can manage app releases")
+    
+    release_doc = {
+        "id": str(uuid.uuid4()),
+        "app_type": app_type,
+        "version": release.version,
+        "build_number": release.build_number,
+        "release_date": release.release_date,
+        "status": release.status,
+        "build_url": release.build_url,
+        "download_url": release.download_url,
+        "changes": release.changes,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": current_user.get("id", "unknown")
+    }
+    
+    await db.app_releases.insert_one(release_doc)
+    
+    logger.info(f"[APP_RELEASE] New {app_type} release v{release.version} created by {current_user.get('name')}")
+    
+    return {
+        "success": True,
+        "message": f"Release v{release.version} created successfully",
+        "release": {k: v for k, v in release_doc.items() if k != "_id"}
+    }
+
+
+@api_router.put("/app-releases/{app_type}/{release_id}")
+async def update_app_release(
+    app_type: str,
+    release_id: str,
+    release: AppReleaseUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update an existing app release (Admin only)"""
+    if app_type not in ["mechanic", "ess"]:
         raise HTTPException(status_code=404, detail="App type not found")
+    
+    # Check if user has admin role
+    user_role = current_user.get("role_code", "")
+    if user_role not in ["super_admin", "admin", "country_head"]:
+        raise HTTPException(status_code=403, detail="Only admins can manage app releases")
+    
+    # Check if release exists
+    existing = await db.app_releases.find_one({"id": release_id, "app_type": app_type})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Release not found")
+    
+    # Build update data
+    update_data = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    if release.version is not None:
+        update_data["version"] = release.version
+    if release.build_number is not None:
+        update_data["build_number"] = release.build_number
+    if release.release_date is not None:
+        update_data["release_date"] = release.release_date
+    if release.status is not None:
+        update_data["status"] = release.status
+    if release.build_url is not None:
+        update_data["build_url"] = release.build_url
+    if release.download_url is not None:
+        update_data["download_url"] = release.download_url
+    if release.changes is not None:
+        update_data["changes"] = release.changes
+    
+    await db.app_releases.update_one({"id": release_id}, {"$set": update_data})
+    
+    logger.info(f"[APP_RELEASE] {app_type} release {release_id} updated by {current_user.get('name')}")
+    
+    return {
+        "success": True,
+        "message": "Release updated successfully",
+        "release_id": release_id
+    }
+
+
+@api_router.delete("/app-releases/{app_type}/{release_id}")
+async def delete_app_release(
+    app_type: str,
+    release_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Delete an app release (Admin only)"""
+    if app_type not in ["mechanic", "ess"]:
+        raise HTTPException(status_code=404, detail="App type not found")
+    
+    # Check if user has admin role
+    user_role = current_user.get("role_code", "")
+    if user_role not in ["super_admin", "admin", "country_head"]:
+        raise HTTPException(status_code=403, detail="Only admins can manage app releases")
+    
+    # Check if release exists
+    existing = await db.app_releases.find_one({"id": release_id, "app_type": app_type})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Release not found")
+    
+    await db.app_releases.delete_one({"id": release_id})
+    
+    logger.info(f"[APP_RELEASE] {app_type} release {release_id} deleted by {current_user.get('name')}")
+    
+    return {
+        "success": True,
+        "message": "Release deleted successfully",
+        "release_id": release_id
+    }
 
 
 def generate_app_download_page(app_name: str, app_icon: str, releases: list, color: str) -> str:
