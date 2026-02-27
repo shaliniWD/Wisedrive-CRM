@@ -23,7 +23,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Video, ResizeMode } from 'expo-av';
 import { inspectionsApi, getAuthToken, resolveMediaUrl } from '../../src/lib/api';
 import { diagLogger } from '../../src/lib/diagLogger';
-import { uploadMediaToFirebase } from '../../src/lib/firebaseUpload';
+import uploadMediaWithRetry from '../../src/lib/firebaseUpload';
 
 interface Question {
   id: string;
