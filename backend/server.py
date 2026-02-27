@@ -3025,7 +3025,7 @@ async def check_lead_payment_status(lead_id: str, current_user: dict = Depends(g
 # ==================== WEBHOOKS ROUTES ====================
 
 from fastapi import Request, Form
-from fastapi.responses import Response
+from fastapi.responses import Response, HTMLResponse
 
 # Twilio WhatsApp Webhook - receives incoming messages from Meta ads
 @api_router.post("/webhooks/twilio/whatsapp")
