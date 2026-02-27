@@ -14721,16 +14721,41 @@ async def mechanic_save_progress(
             return None
         
         # If it's a string (direct image/video)
-        if isinstance(answer_data, str) and answer_data.startswith('data:'):
-            return await store_media_separately(answer_data, inspection_id, question_id, field_name)
+        if isinstance(answer_data, str):
+            # Reject local file paths - these should have been uploaded to Firebase first
+            if answer_data.startswith('file://') or answer_data.startswith('/data/'):
+                logger.warning(f"[SAVE_PROGRESS] Rejecting local file path for {question_id}: {answer_data[:80]}...")
+                # Store a marker indicating upload failed so CRM can show appropriate message
+                return f"UPLOAD_FAILED:{answer_data}"
+            
+            # Handle base64 data
+            if answer_data.startswith('data:'):
+                return await store_media_separately(answer_data, inspection_id, question_id, field_name)
+            
+            # gs:// URLs from Firebase are valid
+            if answer_data.startswith('gs://'):
+                logger.info(f"[SAVE_PROGRESS] Firebase URL for {question_id}: {answer_data}")
+                return answer_data
+            
+            # HTTP URLs are valid (from Firebase signed URLs)
+            if answer_data.startswith('http://') or answer_data.startswith('https://'):
+                logger.info(f"[SAVE_PROGRESS] HTTP URL for {question_id}: {answer_data[:60]}...")
+                return answer_data
         
         # If it's a dict (combo answer with selection + media)
         if isinstance(answer_data, dict):
             processed = dict(answer_data)
-            if 'media' in processed and isinstance(processed['media'], str) and processed['media'].startswith('data:'):
-                processed['media'] = await store_media_separately(
-                    processed['media'], inspection_id, question_id, f"{field_name}_media"
-                )
+            if 'media' in processed and isinstance(processed['media'], str):
+                media_value = processed['media']
+                
+                # Reject local file paths
+                if media_value.startswith('file://') or media_value.startswith('/data/'):
+                    logger.warning(f"[SAVE_PROGRESS] Rejecting local media path for {question_id}: {media_value[:80]}...")
+                    processed['media'] = f"UPLOAD_FAILED:{media_value}"
+                elif media_value.startswith('data:'):
+                    processed['media'] = await store_media_separately(
+                        media_value, inspection_id, question_id, f"{field_name}_media"
+                    )
             return processed
         
         return answer_data
