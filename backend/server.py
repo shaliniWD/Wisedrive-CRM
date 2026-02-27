@@ -16248,6 +16248,106 @@ if mechanic_app_path.exists():
     logger.info("Mechanic app mounted at /api/mechanic-app")
 
 
+# ============================================
+# APP DOWNLOAD RELEASES DATA
+# ============================================
+
+# App release versions - stored in memory for now (can be moved to DB later)
+MECHANIC_APP_RELEASES = [
+    {
+        "version": "1.7.1",
+        "build_number": "47",
+        "release_date": "2025-02-26",
+        "status": "building",
+        "build_url": "https://expo.dev/accounts/kalyandhar/projects/wisedrive-mechanic/builds/f2e32309-a4ae-4e13-98c7-070758fa09e4",
+        "download_url": None,
+        "changes": [
+            "Added OBD Re-scan feature - CRM can enable rescan for mechanic",
+            "Re-scan mode shows warning before overwriting existing data",
+            "Fixed media display issues in CRM Live Progress modal"
+        ]
+    },
+    {
+        "version": "1.7.0",
+        "build_number": "46",
+        "release_date": "2025-02-26",
+        "status": "available",
+        "build_url": "https://expo.dev/accounts/kalyandhar/projects/wisedrive-mechanic/builds/81b1a16c-1b0d-400b-9e07-be9832854a7d",
+        "download_url": "https://expo.dev/artifacts/eas/hLCkqXPTdRbTp9p5rWFmMD.apk",
+        "changes": [
+            "Added AsyncStorage persistence for OBD data backup",
+            "OBD data saved locally before backend submission",
+            "Shows 'Upload Saved Data' button for pending uploads",
+            "Fixed MongoDB 16MB document limit for OBD data"
+        ]
+    },
+    {
+        "version": "1.6.9",
+        "build_number": "45",
+        "release_date": "2025-02-26",
+        "status": "available",
+        "build_url": "https://expo.dev/accounts/kalyandhar/projects/wisedrive-mechanic/builds/95228ae8-2276-4dba-a665-2ae5a1c38a3a",
+        "download_url": "https://expo.dev/artifacts/eas/mQCrLTn1j6xqwkPnV4Zrfa.apk",
+        "changes": [
+            "Prevented OBD rescan after submission",
+            "Backend check for OBD submission status on load",
+            "Non-interactive OBD card when already submitted",
+            "Changed 'Scan Again' to 'Retry Submission' on error"
+        ]
+    },
+    {
+        "version": "1.6.8",
+        "build_number": "44",
+        "release_date": "2025-02-25",
+        "status": "available",
+        "build_url": "https://expo.dev/accounts/kalyandhar/projects/wisedrive-mechanic/builds/previous",
+        "download_url": None,
+        "changes": [
+            "Implemented OBD data submission flow",
+            "Submit button replaces scan results UI",
+            "OBD data sent to backend on submission"
+        ]
+    }
+]
+
+ESS_APP_RELEASES = [
+    {
+        "version": "1.2.0",
+        "build_number": "12",
+        "release_date": "2025-02-20",
+        "status": "available",
+        "build_url": "https://expo.dev/accounts/kalyandhar/projects/wisedrive-ess/builds/latest",
+        "download_url": None,
+        "changes": [
+            "Employee attendance tracking",
+            "Leave management system",
+            "Profile and document management"
+        ]
+    },
+    {
+        "version": "1.1.0",
+        "build_number": "11",
+        "release_date": "2025-02-15",
+        "status": "available",
+        "build_url": None,
+        "download_url": None,
+        "changes": [
+            "Initial ESS app release",
+            "Basic employee features"
+        ]
+    }
+]
+
+# API endpoints to manage releases (for future use)
+@api_router.get("/app-releases/{app_type}")
+async def get_app_releases(app_type: str):
+    """Get all releases for an app type"""
+    if app_type == "mechanic":
+        return {"app": "mechanic", "releases": MECHANIC_APP_RELEASES}
+    elif app_type == "ess":
+        return {"app": "ess", "releases": ESS_APP_RELEASES}
+    else:
+        raise HTTPException(status_code=404, detail="App type not found")
 # Include the router in the main app
 # Removed - will be added in correct location
 app.include_router(api_router)
