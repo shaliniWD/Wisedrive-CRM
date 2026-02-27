@@ -1115,6 +1115,27 @@ export default function InspectionsPage() {
     setAnswerHistory([]);
   };
 
+  // Generate AI Report Insights
+  const generateAIReport = async (inspectionId, forceRegenerate = false) => {
+    setGeneratingAIReport(true);
+    try {
+      const response = await inspectionsApi.generateAIReport(inspectionId, forceRegenerate);
+      if (response.data.success) {
+        toast.success(response.data.regenerated ? 'AI report generated successfully!' : 'AI insights already available');
+        setAiReportGenerated(true);
+        // Refresh the live progress data to get updated info
+        await fetchLiveProgress(inspectionId);
+      } else {
+        toast.error('Failed to generate AI report');
+      }
+    } catch (error) {
+      const msg = error.response?.data?.detail || 'Failed to generate AI report';
+      toast.error(msg);
+    } finally {
+      setGeneratingAIReport(false);
+    }
+  };
+
   // Handle Send Report action
   const handleSendReport = async (inspection) => {
     const isFullyPaid = inspection.payment_status === 'FULLY_PAID' || inspection.payment_status === 'PAID';
