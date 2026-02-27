@@ -5530,6 +5530,14 @@ async def get_inspection_live_progress(inspection_id: str, current_user: dict = 
                     q_detail["media_upload_failed"] = True
                     q_detail["local_file_path"] = raw_answer
                     logger.warning(f"[LIVE_PROGRESS] Media not uploaded - local path detected: {raw_answer[:100]}")
+                elif raw_answer.startswith("data:image") or raw_answer.startswith("data:video"):
+                    # Base64 encoded media - keep as is but set media_url too
+                    media_url = raw_answer
+                    resolved_answer = raw_answer
+                elif raw_answer.startswith("http://") or raw_answer.startswith("https://"):
+                    # Already a valid HTTP URL - use directly
+                    media_url = raw_answer
+                    resolved_answer = raw_answer
             elif isinstance(raw_answer, dict):
                 # Handle combo answers (selection + media)
                 if raw_answer.get("media"):
