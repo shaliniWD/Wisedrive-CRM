@@ -5942,6 +5942,14 @@ async def get_inspection_live_progress(inspection_id: str, current_user: dict = 
             "rescan_enabled": inspection.get("obd_rescan_enabled", False),
             "scanned_at": inspection.get("obd_scanned_at")
         },
+        "ai_report": {
+            "generated": bool(inspection.get("ai_insights")),
+            "stale": inspection.get("ai_report_stale", False),
+            "generated_at": inspection.get("ai_report_generated_at"),
+            "last_milestone": inspection.get("ai_report_last_milestone", 0),
+            "overall_rating": inspection.get("overall_rating", 0),
+            "recommended_to_buy": inspection.get("recommended_to_buy", False)
+        },
         "categories": sorted_categories,
         "recent_answers": sorted(answered_questions, key=lambda x: x.get("answered_at") or "", reverse=True)[:10]
     }
