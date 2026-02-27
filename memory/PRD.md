@@ -83,6 +83,11 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
 - `POST /api/inspections/{id}/obd-rescan` - Toggle rescan (CRM only)
 - `GET /api/inspections/{id}/live-progress` - Get progress with OBD data
 
+### Answer Editing (CRM) - NEW
+- `PUT /api/inspections/{id}/answers/{question_id}` - Edit answer (role-restricted)
+- `GET /api/inspections/{id}/answers/{question_id}/history` - Get edit history for question
+- `GET /api/inspections/{id}/edit-history` - Get all edits for inspection
+
 ### Media Related
 - `POST /api/media/generate-upload-url` - Get signed URL for upload
 - `POST /api/media/get-download-url` - Get signed URL for viewing
@@ -101,6 +106,7 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
 ### P1 (High Priority)  
 - Test OBD rescan flow end-to-end
 - Fix video upload in mechanic app
+- Build retry UI in mechanic app for failed uploads saved in AsyncStorage
 
 ### P2 (Medium Priority)
 - PDF export for inspection reports
