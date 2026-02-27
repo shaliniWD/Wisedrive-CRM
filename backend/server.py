@@ -16350,6 +16350,151 @@ async def get_app_releases(app_type: str):
         raise HTTPException(status_code=404, detail="App type not found")
 
 
+def generate_app_download_page(app_name: str, app_icon: str, releases: list, color: str) -> str:
+    """Generate HTML page for app downloads"""
+    
+    releases_html = ""
+    for idx, release in enumerate(releases):
+        is_latest = idx == 0
+        status_badge = ""
+        download_btn = ""
+        
+        if release["status"] == "building":
+            status_badge = '<span class="status-badge building">🔄 Building...</span>'
+            download_btn = f'''
+                <a href="{release['build_url']}" target="_blank" class="btn btn-secondary">
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zM4.5 7.5a.5.5 0 0 1 0-1h5.793L8.146 4.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 7.5H4.5z"/>
+                    </svg>
+                    View Build Progress
+                </a>
+            '''
+        elif release["download_url"]:
+            status_badge = '<span class="status-badge available">✓ Available</span>'
+            download_btn = f'''
+                <a href="{release['download_url']}" class="btn btn-primary" download>
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                        <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+                    </svg>
+                    Download APK
+                </a>
+            '''
+        else:
+            status_badge = '<span class="status-badge unavailable">— Not Available</span>'
+            if release.get("build_url"):
+                download_btn = f'''
+                    <a href="{release['build_url']}" target="_blank" class="btn btn-outline">
+                        View on Expo
+                    </a>
+                '''
+        
+        changes_html = "".join([f"<li>{change}</li>" for change in release.get("changes", [])])
+        
+        latest_badge = '<span class="latest-badge">LATEST</span>' if is_latest else ''
+        
+        releases_html += f'''
+        <div class="release-card {'latest' if is_latest else ''}">
+            <div class="release-header">
+                <div class="version-info">
+                    <h3>v{release['version']} {latest_badge}</h3>
+                    <span class="build-number">Build #{release['build_number']}</span>
+                </div>
+                <div class="release-meta">
+                    {status_badge}
+                    <span class="release-date">📅 {release['release_date']}</span>
+                </div>
+            </div>
+            <div class="release-body">
+                <h4>What's New:</h4>
+                <ul class="changes-list">
+                    {changes_html}
+                </ul>
+            </div>
+            <div class="release-footer">
+                {download_btn}
+            </div>
+        </div>
+        '''
+    
+    html = f'''
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{app_name} - Download</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        body {{ font-family: 'Inter', -apple-system, sans-serif; background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%); min-height: 100vh; color: #1a1a2e; }}
+        .header {{ background: linear-gradient(135deg, {color} 0%, {color}dd 100%); color: white; padding: 3rem 1rem; text-align: center; position: relative; overflow: hidden; }}
+        .header::before {{ content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%); animation: pulse 4s ease-in-out infinite; }}
+        @keyframes pulse {{ 0%, 100% {{ transform: scale(1); }} 50% {{ transform: scale(1.1); }} }}
+        .header-content {{ position: relative; z-index: 1; }}
+        .app-icon {{ font-size: 4rem; margin-bottom: 1rem; }}
+        .header h1 {{ font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; }}
+        .header p {{ opacity: 0.9; font-size: 1rem; }}
+        .container {{ max-width: 800px; margin: -2rem auto 2rem; padding: 0 1rem; position: relative; z-index: 2; }}
+        .release-card {{ background: white; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); margin-bottom: 1.5rem; overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; }}
+        .release-card:hover {{ transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.12); }}
+        .release-card.latest {{ border: 2px solid {color}; }}
+        .release-header {{ padding: 1.25rem 1.5rem; background: #fafbfc; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }}
+        .version-info h3 {{ font-size: 1.25rem; font-weight: 700; display: flex; align-items: center; gap: 0.75rem; }}
+        .build-number {{ font-size: 0.85rem; color: #666; font-weight: 500; }}
+        .latest-badge {{ background: {color}; color: white; font-size: 0.65rem; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: 600; }}
+        .release-meta {{ display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }}
+        .status-badge {{ padding: 0.35rem 0.75rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }}
+        .status-badge.available {{ background: #d1fae5; color: #059669; }}
+        .status-badge.building {{ background: #fef3c7; color: #d97706; animation: blink 1.5s infinite; }}
+        @keyframes blink {{ 0%, 100% {{ opacity: 1; }} 50% {{ opacity: 0.6; }} }}
+        .status-badge.unavailable {{ background: #f3f4f6; color: #6b7280; }}
+        .release-date {{ font-size: 0.85rem; color: #666; }}
+        .release-body {{ padding: 1.5rem; }}
+        .release-body h4 {{ font-size: 0.9rem; color: #666; margin-bottom: 0.75rem; font-weight: 600; }}
+        .changes-list {{ list-style: none; }}
+        .changes-list li {{ padding: 0.5rem 0; padding-left: 1.5rem; position: relative; color: #444; font-size: 0.95rem; line-height: 1.5; }}
+        .changes-list li::before {{ content: '•'; position: absolute; left: 0; color: {color}; font-weight: bold; }}
+        .release-footer {{ padding: 1rem 1.5rem; background: #fafbfc; border-top: 1px solid #eee; }}
+        .btn {{ display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; border-radius: 8px; font-size: 0.95rem; font-weight: 600; text-decoration: none; transition: all 0.2s; cursor: pointer; border: none; }}
+        .btn-primary {{ background: {color}; color: white; }}
+        .btn-primary:hover {{ background: {color}dd; transform: translateY(-1px); }}
+        .btn-secondary {{ background: #fef3c7; color: #d97706; }}
+        .btn-secondary:hover {{ background: #fde68a; }}
+        .btn-outline {{ background: transparent; color: #666; border: 1px solid #ddd; }}
+        .btn-outline:hover {{ background: #f5f5f5; }}
+        .footer {{ text-align: center; padding: 2rem; color: #666; font-size: 0.85rem; }}
+        .footer a {{ color: {color}; text-decoration: none; }}
+        @media (max-width: 600px) {{ .header {{ padding: 2rem 1rem; }} .header h1 {{ font-size: 1.5rem; }} .release-header {{ flex-direction: column; align-items: flex-start; }} .version-info h3 {{ font-size: 1.1rem; }} }}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="app-icon">{app_icon}</div>
+            <h1>{app_name}</h1>
+            <p>Download the latest version for Android</p>
+        </div>
+    </div>
+    <div class="container">
+        {releases_html}
+    </div>
+    <div class="footer">
+        <p>© 2025 WiseDrive. All rights reserved.</p>
+        <p><a href="/">Back to CRM</a></p>
+    </div>
+    <script>
+        const hasBuildingRelease = {str(any(r['status'] == 'building' for r in releases)).lower()};
+        if (hasBuildingRelease) {{ setTimeout(() => location.reload(), 30000); }}
+    </script>
+</body>
+</html>
+'''
+    return html
+
+
 @api_router.get("/mechanicapp", response_class=HTMLResponse)
 async def mechanic_app_download_page():
     """Mechanic App download page with version history"""
