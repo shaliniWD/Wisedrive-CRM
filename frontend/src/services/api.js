@@ -143,6 +143,9 @@ export const inspectionsApi = {
   editAnswer: (id, questionId, data) => axios.put(`${API_URL}/inspections/${id}/answers/${questionId}`, data),
   getAnswerHistory: (id, questionId) => axios.get(`${API_URL}/inspections/${id}/answers/${questionId}/history`),
   getEditHistory: (id) => axios.get(`${API_URL}/inspections/${id}/edit-history`),
+  // AI Report Generation
+  generateAIReport: (id, forceRegenerate = false) => axios.post(`${API_URL}/inspections/${id}/generate-ai-report`, { force_regenerate: forceRegenerate }),
+  getReport: (id) => axios.get(`${API_URL}/inspections/${id}/report`),
 };
 
 // Users API (V2)
