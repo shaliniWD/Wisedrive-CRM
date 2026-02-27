@@ -4955,8 +4955,129 @@ async def get_inspection_report(inspection_id: str):
 
 # ==================== AI REPORT GENERATION ====================
 
+# Milestones at which AI report should be auto-generated (percentage completion)
+AI_REPORT_AUTO_GENERATE_MILESTONES = [25, 50, 75, 100]
+
 class GenerateAIReportRequest(BaseModel):
     force_regenerate: bool = False  # Force regeneration even if AI insights exist
+
+
+async def auto_generate_ai_report_background(inspection_id: str, completion_percentage: int):
+    """
+    Background task to auto-generate AI report at milestones.
+    Called when mechanic saves progress.
+    """
+    from services.ai_report_service import generate_ai_report_insights
+    
+    try:
+        logger.info(f"[AI_REPORT_AUTO] Starting auto-generation for inspection {inspection_id} at {completion_percentage}%")
+        
+        # Get the inspection
+        inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
+        if not inspection:
+            logger.warning(f"[AI_REPORT_AUTO] Inspection {inspection_id} not found")
+            return
+        
+        # Check if already generated at this milestone
+        last_milestone = inspection.get("ai_report_last_milestone", 0)
+        if last_milestone >= completion_percentage:
+            logger.info(f"[AI_REPORT_AUTO] Already generated at {last_milestone}%, skipping")
+            return
+        
+        # Get associated lead for vehicle info
+        lead = None
+        if inspection.get("lead_id"):
+            lead = await db.leads.find_one({"id": inspection["lead_id"]}, {"_id": 0})
+        
+        # Prepare vehicle data
+        vehicle_data = {
+            "make": lead.get("vehicle_make") if lead else None or inspection.get("vehicle_make"),
+            "model": lead.get("vehicle_model") if lead else None or inspection.get("vehicle_model"),
+            "year": lead.get("vehicle_year") if lead else None or inspection.get("vehicle_year"),
+            "fuel_type": lead.get("fuel_type") if lead else None or inspection.get("fuel_type"),
+            "transmission": inspection.get("transmission"),
+            "colour": inspection.get("vehicle_colour"),
+            "reg_no": lead.get("vehicle_number") if lead else None or inspection.get("car_number"),
+            "engine_cc": inspection.get("engine_cc"),
+            "owners": inspection.get("owners"),
+        }
+        
+        # Get OBD data
+        obd_data = {}
+        obd_result = await db.inspection_obd_results.find_one({"inspection_id": inspection_id}, {"_id": 0})
+        if obd_result:
+            obd_data = obd_result.get("obd_data", {})
+        elif inspection.get("obd_data"):
+            obd_data = inspection.get("obd_data", {})
+        
+        # Get inspection answers
+        answers_data = inspection.get("inspection_answers", {})
+        
+        # Get categories
+        package_id = inspection.get("package_id")
+        categories_info = {}
+        
+        if package_id:
+            package = await db.packages.find_one({"id": package_id}, {"_id": 0})
+            category_ids = package.get("category_ids", []) if package else []
+            if category_ids:
+                categories = await db.inspection_categories.find({"id": {"$in": category_ids}}, {"_id": 0}).to_list(50)
+                for cat in categories:
+                    categories_info[cat.get("id")] = {"name": cat.get("name", cat.get("id")), "questions": cat.get("questions", [])}
+        
+        if not categories_info:
+            country_id = inspection.get("country_id")
+            all_categories = await db.inspection_categories.find({"country_id": country_id} if country_id else {}, {"_id": 0}).to_list(50)
+            for cat in all_categories:
+                categories_info[cat.get("id")] = {"name": cat.get("name", cat.get("id")), "questions": cat.get("questions", [])}
+        
+        # Prepare inspection data
+        inspection_data = {
+            "kms_driven": inspection.get("kms_driven") or (lead.get("kms_driven") if lead else 0),
+            "city": inspection.get("city") or (lead.get("city") if lead else ""),
+            "car_number": lead.get("vehicle_number") if lead else inspection.get("car_number"),
+            "created_at": inspection.get("created_at")
+        }
+        
+        # Generate AI insights
+        ai_insights = await generate_ai_report_insights(
+            inspection_data=inspection_data,
+            vehicle_data=vehicle_data,
+            obd_data=obd_data,
+            answers_data=answers_data,
+            categories_info=categories_info
+        )
+        
+        # Store AI insights
+        now = datetime.now(timezone.utc).isoformat()
+        await db.inspections.update_one(
+            {"id": inspection_id},
+            {
+                "$set": {
+                    "ai_insights": ai_insights,
+                    "overall_rating": ai_insights.get("overall_rating", 0),
+                    "recommended_to_buy": ai_insights.get("recommended_to_buy", False),
+                    "market_value_min": ai_insights.get("market_value", {}).get("min", 0),
+                    "market_value_max": ai_insights.get("market_value", {}).get("max", 0),
+                    "assessment_summary": ai_insights.get("assessment_summary", ""),
+                    "key_highlights": ai_insights.get("key_highlights", []),
+                    "engine_condition": ai_insights.get("condition_ratings", {}).get("engine", "PENDING"),
+                    "interior_condition": ai_insights.get("condition_ratings", {}).get("interior", "PENDING"),
+                    "exterior_condition": ai_insights.get("condition_ratings", {}).get("exterior", "PENDING"),
+                    "transmission_condition": ai_insights.get("condition_ratings", {}).get("transmission", "PENDING"),
+                    "category_ratings": ai_insights.get("category_ratings", {}),
+                    "ai_report_generated_at": now,
+                    "ai_report_last_milestone": completion_percentage,
+                    "ai_report_stale": False,  # Fresh report
+                    "updated_at": now
+                }
+            }
+        )
+        
+        logger.info(f"[AI_REPORT_AUTO] Successfully generated AI report for inspection {inspection_id} at {completion_percentage}%")
+        
+    except Exception as e:
+        logger.error(f"[AI_REPORT_AUTO] Error generating AI report: {e}")
 
 
 @api_router.post("/inspections/{inspection_id}/generate-ai-report")
