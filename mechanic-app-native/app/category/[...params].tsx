@@ -536,9 +536,21 @@ export default function CategoryQuestionsScreen() {
             const mediaType = isVideo ? 'video' : 'image';
             diagLogger.info('PROCESSING_DIRECT_MEDIA', { questionId, mediaType });
             try {
+              const originalUri = processedAnswer;
               processedAnswer = await uploadToFirebase(processedAnswer, questionId, mediaType);
+              // Remove from failed uploads if it was there
+              await removeFailedUpload(inspectionId, questionId);
             } catch (uploadErr: any) {
               diagLogger.error('DIRECT_MEDIA_UPLOAD_FAILED', { questionId, error: uploadErr.message });
+              // Save to failed uploads for later retry
+              await saveFailedUpload({
+                inspectionId,
+                questionId,
+                localUri: processedAnswer,
+                mediaType,
+                failedAt: new Date().toISOString(),
+                errorMessage: uploadErr.message,
+              });
               results.push({ questionId, success: false, error: uploadErr.message });
               continue;
             }
