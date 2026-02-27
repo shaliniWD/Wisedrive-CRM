@@ -16323,11 +16323,11 @@ ESS_APP_RELEASES = [
         "version": "1.3.3",
         "build_number": "6",
         "release_date": "2025-02-27",
-        "status": "building",
+        "status": "available",
         "build_url": "https://expo.dev/accounts/kalyandhar/projects/wisedrive-ess/builds/6ede51aa-f866-467c-82e5-5256e68d6a7b",
-        "download_url": None,
+        "download_url": "https://expo.dev/artifacts/eas/eG3SaX1LRzQQ5nrCsz5yzi.apk",
         "changes": [
-            "Latest build in progress",
+            "Latest stable build",
             "Bug fixes and improvements"
         ]
     },
