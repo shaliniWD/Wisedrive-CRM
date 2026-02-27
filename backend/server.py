@@ -5255,6 +5255,312 @@ async def generate_ai_inspection_report(
     }
 
 
+# ==================== PUBLIC REPORT ACCESS (OTP-PROTECTED) ====================
+
+class ReportOTPRequest(BaseModel):
+    """Request model for sending OTP"""
+    pass  # No additional fields needed
+
+
+class ReportOTPVerifyRequest(BaseModel):
+    """Request model for verifying OTP"""
+    otp: str
+    phone: str  # Last 4 digits for verification
+
+
+@api_router.get("/report/public/{short_code}")
+async def get_public_report_info(short_code: str):
+    """
+    Get basic report info for customer access (no sensitive data).
+    Returns enough info to show OTP input screen.
+    """
+    from services.report_url_service import decode_inspection_id
+    
+    # Decode the short code
+    inspection_id = decode_inspection_id(short_code)
+    if not inspection_id:
+        raise HTTPException(status_code=404, detail="Invalid or expired report link")
+    
+    # Get inspection
+    inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
+    if not inspection:
+        raise HTTPException(status_code=404, detail="Report not found")
+    
+    # Get customer info
+    customer = None
+    lead = None
+    if inspection.get("lead_id"):
+        lead = await db.leads.find_one({"id": inspection["lead_id"]}, {"_id": 0})
+    if lead and lead.get("customer_id"):
+        customer = await db.customers.find_one({"id": lead["customer_id"]}, {"_id": 0})
+    elif inspection.get("customer_id"):
+        customer = await db.customers.find_one({"id": inspection["customer_id"]}, {"_id": 0})
+    
+    # Get customer phone (masked)
+    customer_phone = customer.get("phone") if customer else lead.get("phone_number") if lead else None
+    masked_phone = None
+    if customer_phone:
+        # Show only last 4 digits: ******1234
+        clean_phone = ''.join(filter(str.isdigit, customer_phone))
+        if len(clean_phone) >= 4:
+            masked_phone = '*' * (len(clean_phone) - 4) + clean_phone[-4:]
+    
+    # Return basic info (no sensitive data)
+    return {
+        "inspection_id": inspection_id,
+        "vehicle_number": lead.get("vehicle_number") if lead else inspection.get("car_number", ""),
+        "vehicle_info": f"{lead.get('vehicle_make', '')} {lead.get('vehicle_model', '')}".strip() if lead else "",
+        "customer_name": customer.get("name") if customer else lead.get("customer_name") if lead else "",
+        "masked_phone": masked_phone,
+        "inspection_date": inspection.get("inspection_date"),
+        "package_name": inspection.get("package_name", "Inspection Report"),
+        "has_report": bool(inspection.get("ai_insights") or inspection.get("inspection_answers"))
+    }
+
+
+@api_router.post("/report/public/{short_code}/send-otp")
+async def send_report_access_otp(short_code: str):
+    """
+    Send OTP to customer's registered phone for report access.
+    Uses Fast2SMS for OTP delivery.
+    """
+    from services.report_url_service import decode_inspection_id, generate_report_otp
+    from services.fast2sms_service import get_fast2sms_service
+    
+    # Decode the short code
+    inspection_id = decode_inspection_id(short_code)
+    if not inspection_id:
+        raise HTTPException(status_code=404, detail="Invalid or expired report link")
+    
+    # Get inspection
+    inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
+    if not inspection:
+        raise HTTPException(status_code=404, detail="Report not found")
+    
+    # Get customer phone
+    customer = None
+    lead = None
+    if inspection.get("lead_id"):
+        lead = await db.leads.find_one({"id": inspection["lead_id"]}, {"_id": 0})
+    if lead and lead.get("customer_id"):
+        customer = await db.customers.find_one({"id": lead["customer_id"]}, {"_id": 0})
+    elif inspection.get("customer_id"):
+        customer = await db.customers.find_one({"id": inspection["customer_id"]}, {"_id": 0})
+    
+    customer_phone = customer.get("phone") if customer else lead.get("phone_number") if lead else None
+    if not customer_phone:
+        raise HTTPException(status_code=400, detail="No phone number associated with this report")
+    
+    # Clean phone number
+    clean_phone = ''.join(filter(str.isdigit, customer_phone))
+    if clean_phone.startswith('91') and len(clean_phone) == 12:
+        clean_phone = clean_phone[2:]  # Remove country code for Fast2SMS
+    
+    # Generate OTP
+    otp = generate_report_otp()
+    
+    # Store OTP with expiration (5 minutes)
+    otp_doc = {
+        "inspection_id": inspection_id,
+        "phone": clean_phone,
+        "otp": otp,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "expires_at": (datetime.now(timezone.utc) + timedelta(minutes=5)).isoformat(),
+        "verified": False,
+        "attempts": 0
+    }
+    
+    # Upsert OTP (replace existing)
+    await db.report_access_otps.update_one(
+        {"inspection_id": inspection_id},
+        {"$set": otp_doc},
+        upsert=True
+    )
+    
+    # Send OTP via Fast2SMS
+    try:
+        fast2sms = get_fast2sms_service()
+        result = await fast2sms.send_otp(clean_phone, otp)
+        
+        if not result.get("success"):
+            logger.error(f"[REPORT_OTP] Failed to send OTP: {result}")
+            raise HTTPException(status_code=500, detail="Failed to send OTP. Please try again.")
+        
+        logger.info(f"[REPORT_OTP] OTP sent to {clean_phone[-4:]} for inspection {inspection_id[:8]}...")
+        
+    except Exception as e:
+        logger.error(f"[REPORT_OTP] Error sending OTP: {e}")
+        raise HTTPException(status_code=500, detail="Failed to send OTP. Please try again.")
+    
+    return {
+        "success": True,
+        "message": "OTP sent successfully",
+        "masked_phone": '*' * (len(clean_phone) - 4) + clean_phone[-4:],
+        "expires_in_seconds": 300
+    }
+
+
+@api_router.post("/report/public/{short_code}/verify-otp")
+async def verify_report_access_otp(short_code: str, request_data: ReportOTPVerifyRequest):
+    """
+    Verify OTP and return full report data if valid.
+    """
+    from services.report_url_service import decode_inspection_id
+    
+    # Decode the short code
+    inspection_id = decode_inspection_id(short_code)
+    if not inspection_id:
+        raise HTTPException(status_code=404, detail="Invalid or expired report link")
+    
+    # Get stored OTP
+    otp_doc = await db.report_access_otps.find_one({"inspection_id": inspection_id}, {"_id": 0})
+    if not otp_doc:
+        raise HTTPException(status_code=400, detail="No OTP found. Please request a new one.")
+    
+    # Check expiration
+    expires_at = datetime.fromisoformat(otp_doc["expires_at"].replace('Z', '+00:00'))
+    if datetime.now(timezone.utc) > expires_at:
+        raise HTTPException(status_code=400, detail="OTP has expired. Please request a new one.")
+    
+    # Check attempts (max 3)
+    if otp_doc.get("attempts", 0) >= 3:
+        raise HTTPException(status_code=400, detail="Too many attempts. Please request a new OTP.")
+    
+    # Increment attempts
+    await db.report_access_otps.update_one(
+        {"inspection_id": inspection_id},
+        {"$inc": {"attempts": 1}}
+    )
+    
+    # Verify OTP
+    if otp_doc["otp"] != request_data.otp:
+        remaining = 3 - (otp_doc.get("attempts", 0) + 1)
+        raise HTTPException(status_code=400, detail=f"Invalid OTP. {remaining} attempts remaining.")
+    
+    # Verify phone last 4 digits match
+    stored_phone = otp_doc.get("phone", "")
+    if not stored_phone.endswith(request_data.phone[-4:]):
+        raise HTTPException(status_code=400, detail="Phone number mismatch")
+    
+    # Mark as verified
+    await db.report_access_otps.update_one(
+        {"inspection_id": inspection_id},
+        {"$set": {"verified": True, "verified_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    # Generate access token for this session (valid for 1 hour)
+    access_token = jwt.encode(
+        {
+            "inspection_id": inspection_id,
+            "type": "report_access",
+            "exp": datetime.now(timezone.utc) + timedelta(hours=1)
+        },
+        SECRET_KEY,
+        algorithm=ALGORITHM
+    )
+    
+    logger.info(f"[REPORT_OTP] OTP verified for inspection {inspection_id[:8]}...")
+    
+    return {
+        "success": True,
+        "message": "OTP verified successfully",
+        "access_token": access_token,
+        "expires_in_seconds": 3600
+    }
+
+
+@api_router.get("/report/public/{short_code}/data")
+async def get_public_report_data(short_code: str, token: str):
+    """
+    Get full report data after OTP verification.
+    Requires a valid access token from verify-otp endpoint.
+    """
+    from services.report_url_service import decode_inspection_id
+    
+    # Verify access token
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        if payload.get("type") != "report_access":
+            raise HTTPException(status_code=401, detail="Invalid access token")
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Access token has expired. Please verify OTP again.")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid access token")
+    
+    # Decode the short code
+    inspection_id = decode_inspection_id(short_code)
+    if not inspection_id:
+        raise HTTPException(status_code=404, detail="Invalid or expired report link")
+    
+    # Verify token matches this inspection
+    if payload.get("inspection_id") != inspection_id:
+        raise HTTPException(status_code=401, detail="Token does not match this report")
+    
+    # Get full inspection data (same as internal report endpoint)
+    inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
+    if not inspection:
+        raise HTTPException(status_code=404, detail="Inspection not found")
+    
+    # Get associated lead
+    lead = None
+    if inspection.get("lead_id"):
+        lead = await db.leads.find_one({"id": inspection["lead_id"]}, {"_id": 0})
+    
+    # Get customer info
+    customer = None
+    if lead and lead.get("customer_id"):
+        customer = await db.customers.find_one({"id": lead["customer_id"]}, {"_id": 0})
+    elif inspection.get("customer_id"):
+        customer = await db.customers.find_one({"id": inspection["customer_id"]}, {"_id": 0})
+    
+    # Get mechanic name
+    mechanic_name = None
+    if inspection.get("mechanic_id"):
+        mechanic = await db.users.find_one({"id": inspection["mechanic_id"]}, {"_id": 0, "name": 1})
+        mechanic_name = mechanic.get("name") if mechanic else None
+    
+    inspection["mechanic_name"] = mechanic_name
+    
+    # Log access
+    logger.info(f"[REPORT_ACCESS] Customer accessed report for inspection {inspection_id[:8]}...")
+    
+    return {
+        "inspection": inspection,
+        "lead": lead,
+        "customer": customer
+    }
+
+
+@api_router.get("/inspections/{inspection_id}/short-url")
+async def get_inspection_short_url(
+    inspection_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Generate a short URL for customer report access.
+    Returns the encrypted short code and full URL.
+    """
+    from services.report_url_service import encode_inspection_id, get_customer_report_url
+    
+    # Verify inspection exists
+    inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0, "id": 1})
+    if not inspection:
+        raise HTTPException(status_code=404, detail="Inspection not found")
+    
+    # Get base URL from environment
+    base_url = os.environ.get("FRONTEND_URL", "https://crmdev.wisedrive.com")
+    
+    short_code = encode_inspection_id(inspection_id)
+    full_url = get_customer_report_url(inspection_id, base_url)
+    
+    return {
+        "inspection_id": inspection_id,
+        "short_code": short_code,
+        "customer_url": full_url,
+        "internal_url": f"{base_url}/inspection-report/{inspection_id}"
+    }
+
+
 @api_router.post("/inspections")
 async def create_inspection(inspection_data: InspectionCreate, current_user: dict = Depends(get_current_user)):
     """Create a new inspection"""
