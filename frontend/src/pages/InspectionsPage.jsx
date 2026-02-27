@@ -2856,6 +2856,7 @@ export default function InspectionsPage() {
                         {category.questions?.map((q, qIdx) => (
                           <div 
                             key={q.question_id} 
+                            data-testid={`question-card-${q.question_id}`}
                             className={`bg-white rounded-lg p-4 border-l-4 ${q.is_answered ? 'border-l-green-500 border border-green-100' : 'border-l-gray-300 border border-gray-200'}`}
                           >
                             <div className="flex items-start gap-3">
@@ -2863,183 +2864,318 @@ export default function InspectionsPage() {
                                 {qIdx + 1}
                               </span>
                               <div className="flex-1">
-                                <p className="text-sm font-medium text-gray-800 mb-2">{q.question_text}</p>
-                                {q.is_answered ? (
-                                  <div className="bg-gray-50 rounded-lg p-3">
-                                    <p className="text-xs text-gray-500 mb-2 font-medium">Answer:</p>
-                                    {/* Display media upload failed message */}
-                                    {q.media_upload_failed ? (
-                                      <div className="mb-2 bg-amber-50 border border-amber-200 rounded-lg p-3">
-                                        <div className="flex items-center gap-2 text-amber-700">
-                                          <AlertCircle className="h-4 w-4" />
-                                          <span className="text-sm font-medium">Media upload failed</span>
-                                        </div>
-                                        <p className="text-xs text-amber-600 mt-1">
-                                          The file was saved locally on the device but could not be uploaded to cloud storage.
-                                        </p>
-                                        {q.local_file_path && (
-                                          <p className="text-xs text-gray-500 mt-1 font-mono truncate">
-                                            Local: {q.local_file_path.substring(0, 60)}...
-                                          </p>
-                                        )}
-                                      </div>
-                                    ) : q.media_url ? (
-                                      <div className="mb-2">
-                                        {q.media_url.includes('video') || q.question_type?.includes('video') || q.media_url.includes('.mp4') || q.media_url.includes('.mov') ? (
-                                          <div className="space-y-2">
-                                            <video 
-                                              src={q.media_url} 
-                                              controls 
-                                              className="max-w-full max-h-[200px] rounded-lg border"
-                                              onError={(e) => {
-                                                e.target.style.display = 'none';
-                                                const errorDiv = e.target.parentElement.querySelector('.video-error');
-                                                if (errorDiv) errorDiv.style.display = 'flex';
-                                              }}
-                                            />
-                                            <div className="video-error hidden bg-red-50 border border-red-200 rounded-lg p-3 items-center gap-2">
-                                              <AlertCircle className="h-4 w-4 text-red-500" />
-                                              <span className="text-sm text-red-700">Failed to load video</span>
-                                            </div>
-                                            <a 
-                                              href={q.media_url} 
-                                              download={`video_${q.question_id || 'download'}.mp4`}
-                                              className="inline-flex items-center gap-1.5 text-xs bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"
-                                            >
-                                              <Download className="h-3.5 w-3.5" />
-                                              Download Video
-                                            </a>
-                                          </div>
+                                <div className="flex items-start justify-between mb-2">
+                                  <p className="text-sm font-medium text-gray-800">{q.question_text}</p>
+                                  {/* Edit & History buttons for authorized users */}
+                                  {canEditAnswers && q.is_answered && (
+                                    <div className="flex items-center gap-1 ml-2 flex-shrink-0">
+                                      {editingQuestionId !== q.question_id && (
+                                        <>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => startEditingAnswer(q)}
+                                            className="h-7 px-2 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                            data-testid={`edit-answer-btn-${q.question_id}`}
+                                          >
+                                            <Pencil className="h-3 w-3 mr-1" />
+                                            Edit
+                                          </Button>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => fetchAnswerHistory(q.question_id)}
+                                            className="h-7 px-2 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                                            data-testid={`history-btn-${q.question_id}`}
+                                          >
+                                            <History className="h-3 w-3" />
+                                          </Button>
+                                        </>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                {/* Inline Edit Mode */}
+                                {editingQuestionId === q.question_id ? (
+                                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-3">
+                                    <div>
+                                      <Label className="text-xs text-gray-600 mb-1 block">New Answer</Label>
+                                      <Input
+                                        value={editAnswerValue}
+                                        onChange={(e) => setEditAnswerValue(e.target.value)}
+                                        placeholder="Enter new answer..."
+                                        className="text-sm"
+                                        data-testid={`edit-answer-input-${q.question_id}`}
+                                      />
+                                    </div>
+                                    <div>
+                                      <Label className="text-xs text-gray-600 mb-1 block">Reason for Edit (optional)</Label>
+                                      <Textarea
+                                        value={editAnswerReason}
+                                        onChange={(e) => setEditAnswerReason(e.target.value)}
+                                        placeholder="Why are you making this change?"
+                                        className="text-sm h-16 resize-none"
+                                        data-testid={`edit-reason-input-${q.question_id}`}
+                                      />
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Button
+                                        size="sm"
+                                        onClick={() => saveEditedAnswer(q.question_id)}
+                                        disabled={savingAnswer || !editAnswerValue.trim()}
+                                        className="h-8 px-3 text-xs bg-blue-600 hover:bg-blue-700"
+                                        data-testid={`save-answer-btn-${q.question_id}`}
+                                      >
+                                        {savingAnswer ? (
+                                          <Loader2 className="h-3 w-3 animate-spin mr-1" />
                                         ) : (
-                                          <div className="space-y-2">
-                                            <img 
-                                              src={q.media_url} 
-                                              alt="Answer" 
-                                              className="max-w-[250px] max-h-[180px] rounded-lg border object-cover cursor-pointer hover:opacity-90"
-                                              onClick={() => window.open(q.media_url, '_blank')}
-                                              onError={(e) => {
-                                                e.target.style.display = 'none';
-                                                const errorDiv = e.target.parentElement.querySelector('.image-error');
-                                                if (errorDiv) errorDiv.style.display = 'flex';
-                                              }}
-                                            />
-                                            <div className="image-error hidden bg-red-50 border border-red-200 rounded-lg p-3 items-center gap-2">
-                                              <AlertCircle className="h-4 w-4 text-red-500" />
-                                              <span className="text-sm text-red-700">Failed to load image</span>
-                                              <a 
-                                                href={q.media_url} 
-                                                target="_blank" 
-                                                rel="noopener noreferrer" 
-                                                className="text-xs text-blue-500 hover:underline ml-2"
-                                              >
-                                                Try direct link →
-                                              </a>
-                                            </div>
-                                            <a 
-                                              href={q.media_url} 
-                                              download={`image_${q.question_id || 'download'}.jpg`}
-                                              className="inline-flex items-center gap-1.5 text-xs bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"
-                                              onClick={(e) => {
-                                                // For cross-origin images, open in new tab
-                                                if (!q.media_url.startsWith('data:')) {
-                                                  e.preventDefault();
-                                                  window.open(q.media_url, '_blank');
-                                                }
-                                              }}
-                                            >
-                                              <Download className="h-3.5 w-3.5" />
-                                              Download Image
-                                            </a>
-                                          </div>
+                                          <Save className="h-3 w-3 mr-1" />
                                         )}
-                                      </div>
-                                    ) : typeof q.answer === 'string' && (q.answer.startsWith('file://') || q.answer.startsWith('/data/')) ? (
-                                      <div className="mb-2 bg-amber-50 border border-amber-200 rounded-lg p-3">
-                                        <div className="flex items-center gap-2 text-amber-700">
-                                          <AlertCircle className="h-4 w-4" />
-                                          <span className="text-sm font-medium">Media not uploaded</span>
-                                        </div>
-                                        <p className="text-xs text-amber-600 mt-1">
-                                          The file exists only on the device and was not uploaded to cloud.
-                                        </p>
-                                        <p className="text-xs text-gray-500 mt-1 font-mono truncate">
-                                          Path: {q.answer.substring(0, 60)}...
-                                        </p>
-                                      </div>
-                                    ) : typeof q.answer === 'string' && (q.answer.startsWith('data:image') || (q.answer.startsWith('http') && !q.answer.includes('video'))) ? (
-                                      <div className="space-y-2">
-                                        <img 
-                                          src={q.answer} 
-                                          alt="Answer" 
-                                          className="max-w-[250px] max-h-[180px] rounded-lg border object-cover cursor-pointer hover:opacity-90"
-                                          onClick={() => window.open(q.answer, '_blank')}
-                                        />
-                                        <a 
-                                          href={q.answer} 
-                                          download={`image_${q.question_id || 'download'}.jpg`}
-                                          className="inline-flex items-center gap-1.5 text-xs bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"
-                                          onClick={(e) => {
-                                            if (q.answer.startsWith('data:')) {
-                                              // For base64, create download link
-                                              const link = document.createElement('a');
-                                              link.href = q.answer;
-                                              link.download = `image_${q.question_id || 'download'}.jpg`;
-                                              link.click();
-                                              e.preventDefault();
-                                            } else if (!q.answer.startsWith('data:')) {
-                                              e.preventDefault();
-                                              window.open(q.answer, '_blank');
-                                            }
-                                          }}
-                                        >
-                                          <Download className="h-3.5 w-3.5" />
-                                          Download Image
-                                        </a>
-                                      </div>
-                                    ) : typeof q.answer === 'string' && q.answer.startsWith('http') && (q.answer.includes('video') || q.answer.includes('.mp4')) ? (
-                                      <div className="space-y-2">
-                                        <video 
-                                          src={q.answer} 
-                                          controls 
-                                          className="max-w-full max-h-[200px] rounded-lg border"
-                                        />
-                                        <a 
-                                          href={q.answer} 
-                                          download={`video_${q.question_id || 'download'}.mp4`}
-                                          className="inline-flex items-center gap-1.5 text-xs bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"
-                                        >
-                                          <Download className="h-3.5 w-3.5" />
-                                          Download Video
-                                        </a>
-                                      </div>
-                                    ) : null}
-                                    {/* Display text answer */}
-                                    {typeof q.answer === 'object' && q.answer?.selection ? (
-                                      <div className="flex items-center gap-2">
-                                        <CheckCircle className="h-4 w-4 text-green-500" />
-                                        <span className="text-blue-700 font-semibold">{q.answer.selection}</span>
-                                        {q.answer.media_url && (
-                                          <a href={q.answer.media_url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline ml-2">
-                                            View media →
-                                          </a>
-                                        )}
-                                      </div>
-                                    ) : typeof q.answer === 'string' && !q.answer.startsWith('data:') && !q.answer.startsWith('http') && !q.answer.startsWith('gs://') && !q.answer.startsWith('media_ref:') && !q.answer.startsWith('file://') && !q.answer.startsWith('/data/') && !q.media_upload_failed ? (
-                                      <div className="flex items-center gap-2">
-                                        <CheckCircle className="h-4 w-4 text-green-500" />
-                                        <span className="text-blue-700 font-semibold">{q.answer}</span>
-                                      </div>
-                                    ) : null}
-                                    {q.answered_at && (
-                                      <p className="text-[11px] text-gray-400 mt-2">
-                                        ✓ Answered: {new Date(q.answered_at).toLocaleString()}
-                                      </p>
-                                    )}
+                                        Save
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={cancelEditingAnswer}
+                                        disabled={savingAnswer}
+                                        className="h-8 px-3 text-xs"
+                                        data-testid={`cancel-edit-btn-${q.question_id}`}
+                                      >
+                                        Cancel
+                                      </Button>
+                                    </div>
                                   </div>
                                 ) : (
-                                  <div className="flex items-center gap-2 text-gray-400">
-                                    <Clock className="h-4 w-4" />
-                                    <span className="text-xs italic">Awaiting response...</span>
+                                  /* Display Answer (existing code) */
+                                  q.is_answered ? (
+                                    <div className="bg-gray-50 rounded-lg p-3">
+                                      <p className="text-xs text-gray-500 mb-2 font-medium">Answer:</p>
+                                      {/* Display media upload failed message */}
+                                      {q.media_upload_failed ? (
+                                        <div className="mb-2 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                                          <div className="flex items-center gap-2 text-amber-700">
+                                            <AlertCircle className="h-4 w-4" />
+                                            <span className="text-sm font-medium">Media upload failed</span>
+                                          </div>
+                                          <p className="text-xs text-amber-600 mt-1">
+                                            The file was saved locally on the device but could not be uploaded to cloud storage.
+                                          </p>
+                                          {q.local_file_path && (
+                                            <p className="text-xs text-gray-500 mt-1 font-mono truncate">
+                                              Local: {q.local_file_path.substring(0, 60)}...
+                                            </p>
+                                          )}
+                                        </div>
+                                      ) : q.media_url ? (
+                                        <div className="mb-2">
+                                          {q.media_url.includes('video') || q.question_type?.includes('video') || q.media_url.includes('.mp4') || q.media_url.includes('.mov') ? (
+                                            <div className="space-y-2">
+                                              <video 
+                                                src={q.media_url} 
+                                                controls 
+                                                className="max-w-full max-h-[200px] rounded-lg border"
+                                                onError={(e) => {
+                                                  e.target.style.display = 'none';
+                                                  const errorDiv = e.target.parentElement.querySelector('.video-error');
+                                                  if (errorDiv) errorDiv.style.display = 'flex';
+                                                }}
+                                              />
+                                              <div className="video-error hidden bg-red-50 border border-red-200 rounded-lg p-3 items-center gap-2">
+                                                <AlertCircle className="h-4 w-4 text-red-500" />
+                                                <span className="text-sm text-red-700">Failed to load video</span>
+                                              </div>
+                                              <a 
+                                                href={q.media_url} 
+                                                download={`video_${q.question_id || 'download'}.mp4`}
+                                                className="inline-flex items-center gap-1.5 text-xs bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"
+                                              >
+                                                <Download className="h-3.5 w-3.5" />
+                                                Download Video
+                                              </a>
+                                            </div>
+                                          ) : (
+                                            <div className="space-y-2">
+                                              <img 
+                                                src={q.media_url} 
+                                                alt="Answer" 
+                                                className="max-w-[250px] max-h-[180px] rounded-lg border object-cover cursor-pointer hover:opacity-90"
+                                                onClick={() => window.open(q.media_url, '_blank')}
+                                                onError={(e) => {
+                                                  e.target.style.display = 'none';
+                                                  const errorDiv = e.target.parentElement.querySelector('.image-error');
+                                                  if (errorDiv) errorDiv.style.display = 'flex';
+                                                }}
+                                              />
+                                              <div className="image-error hidden bg-red-50 border border-red-200 rounded-lg p-3 items-center gap-2">
+                                                <AlertCircle className="h-4 w-4 text-red-500" />
+                                                <span className="text-sm text-red-700">Failed to load image</span>
+                                                <a 
+                                                  href={q.media_url} 
+                                                  target="_blank" 
+                                                  rel="noopener noreferrer" 
+                                                  className="text-xs text-blue-500 hover:underline ml-2"
+                                                >
+                                                  Try direct link →
+                                                </a>
+                                              </div>
+                                              <a 
+                                                href={q.media_url} 
+                                                download={`image_${q.question_id || 'download'}.jpg`}
+                                                className="inline-flex items-center gap-1.5 text-xs bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"
+                                                onClick={(e) => {
+                                                  // For cross-origin images, open in new tab
+                                                  if (!q.media_url.startsWith('data:')) {
+                                                    e.preventDefault();
+                                                    window.open(q.media_url, '_blank');
+                                                  }
+                                                }}
+                                              >
+                                                <Download className="h-3.5 w-3.5" />
+                                                Download Image
+                                              </a>
+                                            </div>
+                                          )}
+                                        </div>
+                                      ) : typeof q.answer === 'string' && (q.answer.startsWith('file://') || q.answer.startsWith('/data/')) ? (
+                                        <div className="mb-2 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                                          <div className="flex items-center gap-2 text-amber-700">
+                                            <AlertCircle className="h-4 w-4" />
+                                            <span className="text-sm font-medium">Media not uploaded</span>
+                                          </div>
+                                          <p className="text-xs text-amber-600 mt-1">
+                                            The file exists only on the device and was not uploaded to cloud.
+                                          </p>
+                                          <p className="text-xs text-gray-500 mt-1 font-mono truncate">
+                                            Path: {q.answer.substring(0, 60)}...
+                                          </p>
+                                        </div>
+                                      ) : typeof q.answer === 'string' && (q.answer.startsWith('data:image') || (q.answer.startsWith('http') && !q.answer.includes('video'))) ? (
+                                        <div className="space-y-2">
+                                          <img 
+                                            src={q.answer} 
+                                            alt="Answer" 
+                                            className="max-w-[250px] max-h-[180px] rounded-lg border object-cover cursor-pointer hover:opacity-90"
+                                            onClick={() => window.open(q.answer, '_blank')}
+                                          />
+                                          <a 
+                                            href={q.answer} 
+                                            download={`image_${q.question_id || 'download'}.jpg`}
+                                            className="inline-flex items-center gap-1.5 text-xs bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"
+                                            onClick={(e) => {
+                                              if (q.answer.startsWith('data:')) {
+                                                // For base64, create download link
+                                                const link = document.createElement('a');
+                                                link.href = q.answer;
+                                                link.download = `image_${q.question_id || 'download'}.jpg`;
+                                                link.click();
+                                                e.preventDefault();
+                                              } else if (!q.answer.startsWith('data:')) {
+                                                e.preventDefault();
+                                                window.open(q.answer, '_blank');
+                                              }
+                                            }}
+                                          >
+                                            <Download className="h-3.5 w-3.5" />
+                                            Download Image
+                                          </a>
+                                        </div>
+                                      ) : typeof q.answer === 'string' && q.answer.startsWith('http') && (q.answer.includes('video') || q.answer.includes('.mp4')) ? (
+                                        <div className="space-y-2">
+                                          <video 
+                                            src={q.answer} 
+                                            controls 
+                                            className="max-w-full max-h-[200px] rounded-lg border"
+                                          />
+                                          <a 
+                                            href={q.answer} 
+                                            download={`video_${q.question_id || 'download'}.mp4`}
+                                            className="inline-flex items-center gap-1.5 text-xs bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"
+                                          >
+                                            <Download className="h-3.5 w-3.5" />
+                                            Download Video
+                                          </a>
+                                        </div>
+                                      ) : null}
+                                      {/* Display text answer */}
+                                      {typeof q.answer === 'object' && q.answer?.selection ? (
+                                        <div className="flex items-center gap-2">
+                                          <CheckCircle className="h-4 w-4 text-green-500" />
+                                          <span className="text-blue-700 font-semibold">{q.answer.selection}</span>
+                                          {q.answer.media_url && (
+                                            <a href={q.answer.media_url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline ml-2">
+                                              View media →
+                                            </a>
+                                          )}
+                                        </div>
+                                      ) : typeof q.answer === 'string' && !q.answer.startsWith('data:') && !q.answer.startsWith('http') && !q.answer.startsWith('gs://') && !q.answer.startsWith('media_ref:') && !q.answer.startsWith('file://') && !q.answer.startsWith('/data/') && !q.media_upload_failed ? (
+                                        <div className="flex items-center gap-2">
+                                          <CheckCircle className="h-4 w-4 text-green-500" />
+                                          <span className="text-blue-700 font-semibold">{q.answer}</span>
+                                        </div>
+                                      ) : null}
+                                      {q.answered_at && (
+                                        <p className="text-[11px] text-gray-400 mt-2">
+                                          ✓ Answered: {new Date(q.answered_at).toLocaleString()}
+                                        </p>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center gap-2 text-gray-400">
+                                      <Clock className="h-4 w-4" />
+                                      <span className="text-xs italic">Awaiting response...</span>
+                                    </div>
+                                  )
+                                )}
+                                
+                                {/* Edit History Panel */}
+                                {showingHistoryForQuestion === q.question_id && (
+                                  <div className="mt-3 bg-gray-100 border rounded-lg p-3" data-testid={`history-panel-${q.question_id}`}>
+                                    <div className="flex items-center justify-between mb-2">
+                                      <p className="text-xs font-semibold text-gray-700 flex items-center gap-1">
+                                        <History className="h-3 w-3" />
+                                        Edit History
+                                      </p>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={closeAnswerHistory}
+                                        className="h-6 w-6 p-0"
+                                      >
+                                        <X className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                    {loadingHistory ? (
+                                      <div className="flex items-center justify-center py-4">
+                                        <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+                                      </div>
+                                    ) : answerHistory.length === 0 ? (
+                                      <p className="text-xs text-gray-500 text-center py-2">No edit history</p>
+                                    ) : (
+                                      <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                                        {answerHistory.map((edit, idx) => (
+                                          <div key={edit.id || idx} className="bg-white rounded p-2 text-xs border">
+                                            <div className="flex items-center justify-between mb-1">
+                                              <span className="font-medium text-gray-700">{edit.edited_by_name}</span>
+                                              <span className="text-gray-400">{new Date(edit.edited_at).toLocaleString()}</span>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2 text-[11px]">
+                                              <div>
+                                                <span className="text-gray-500">From:</span>
+                                                <p className="text-red-600 truncate">{typeof edit.previous_answer === 'object' ? JSON.stringify(edit.previous_answer) : (edit.previous_answer || 'N/A')}</p>
+                                              </div>
+                                              <div>
+                                                <span className="text-gray-500">To:</span>
+                                                <p className="text-green-600 truncate">{typeof edit.new_answer === 'object' ? JSON.stringify(edit.new_answer) : edit.new_answer}</p>
+                                              </div>
+                                            </div>
+                                            {edit.edit_reason && (
+                                              <p className="text-gray-500 mt-1 italic">Reason: {edit.edit_reason}</p>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
                                   </div>
                                 )}
                               </div>
