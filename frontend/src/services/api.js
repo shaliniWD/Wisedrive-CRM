@@ -146,6 +146,8 @@ export const inspectionsApi = {
   // AI Report Generation
   generateAIReport: (id, forceRegenerate = false) => axios.post(`${API_URL}/inspections/${id}/generate-ai-report`, { force_regenerate: forceRegenerate }),
   getReport: (id) => axios.get(`${API_URL}/inspections/${id}/report`),
+  // Report URL (short URL for customer access)
+  getShortUrl: (id) => axios.get(`${API_URL}/inspections/${id}/short-url`),
 };
 
 // Users API (V2)
