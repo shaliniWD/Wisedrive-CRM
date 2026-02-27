@@ -2802,16 +2802,35 @@ export default function InspectionsPage() {
               
               {/* AI Report Generation Button */}
               {canEditAnswers && (
-                <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-200">
+                <div className={`rounded-xl p-4 border ${
+                  liveProgressData?.ai_report?.stale 
+                    ? 'bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200' 
+                    : 'bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200'
+                }`}>
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                        <span className="text-lg">✨</span> AI Report Generation
+                        <span className="text-lg">✨</span> AI Report
+                        {liveProgressData?.ai_report?.generated && !liveProgressData?.ai_report?.stale && (
+                          <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full ml-2">
+                            Generated
+                          </span>
+                        )}
+                        {liveProgressData?.ai_report?.stale && (
+                          <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full ml-2">
+                            Needs Update
+                          </span>
+                        )}
                       </h3>
                       <p className="text-sm text-gray-600 mt-1">
-                        Generate intelligent ratings, market value, and assessment summary using AI
+                        {liveProgressData?.ai_report?.stale 
+                          ? 'Answers changed since last AI generation. Click to update the report.'
+                          : liveProgressData?.ai_report?.generated
+                            ? `Rating: ${liveProgressData.ai_report.overall_rating}/5 • ${liveProgressData.ai_report.recommended_to_buy ? 'Recommended' : 'Not Recommended'}`
+                            : 'Generate intelligent ratings, market value, and assessment summary'
+                        }
                       </p>
-                      {liveProgressData?.overall_stats?.completion_percentage < 50 && (
+                      {liveProgressData?.overall_stats?.completion_percentage < 50 && !liveProgressData?.ai_report?.generated && (
                         <p className="text-xs text-amber-600 mt-1">
                           Note: Best results with 50%+ inspection completion
                         </p>
@@ -2820,13 +2839,27 @@ export default function InspectionsPage() {
                     <Button
                       onClick={() => generateAIReport(liveProgressInspection?.id, true)}
                       disabled={generatingAIReport}
-                      className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-4 py-2"
+                      className={`px-4 py-2 ${
+                        liveProgressData?.ai_report?.stale
+                          ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600'
+                          : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700'
+                      } text-white`}
                       data-testid="generate-ai-report-btn"
                     >
                       {generatingAIReport ? (
                         <>
                           <Loader2 className="h-4 w-4 animate-spin mr-2" />
                           Generating...
+                        </>
+                      ) : liveProgressData?.ai_report?.stale ? (
+                        <>
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          Update AI Report
+                        </>
+                      ) : liveProgressData?.ai_report?.generated ? (
+                        <>
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          Regenerate
                         </>
                       ) : (
                         <>
@@ -2836,9 +2869,12 @@ export default function InspectionsPage() {
                       )}
                     </Button>
                   </div>
-                  {liveProgressInspection?.ai_report_generated_at && (
-                    <p className="text-xs text-purple-600 mt-2">
-                      Last generated: {new Date(liveProgressInspection.ai_report_generated_at).toLocaleString()}
+                  {liveProgressData?.ai_report?.generated_at && (
+                    <p className="text-xs text-gray-500 mt-2">
+                      Last generated: {new Date(liveProgressData.ai_report.generated_at).toLocaleString()}
+                      {liveProgressData?.ai_report?.last_milestone > 0 && (
+                        <span className="ml-2">• Auto-generated at {liveProgressData.ai_report.last_milestone}% milestone</span>
+                      )}
                     </p>
                   )}
                 </div>
