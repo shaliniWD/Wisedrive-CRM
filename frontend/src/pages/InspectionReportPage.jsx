@@ -56,6 +56,10 @@ function ReportError({ error, onRetry }) {
 
 // Transform CRM inspection data to report format
 function transformInspectionToReport(inspection, lead, customer) {
+  // Extract AI insights if available
+  const aiInsights = inspection.ai_insights || {};
+  const conditionRatings = aiInsights.condition_ratings || {};
+  
   // Default structure matching the report format
   const reportData = {
     header: {
@@ -69,15 +73,18 @@ function transformInspectionToReport(inspection, lead, customer) {
       inspectionType: inspection.package_name || "Standard",
       location: inspection.city || lead?.city || "",
       marketValue: {
-        min: inspection.market_value_min || 0,
-        max: inspection.market_value_max || 0,
-        currency: "₹"
+        min: aiInsights.market_value?.min || inspection.market_value_min || 0,
+        max: aiInsights.market_value?.max || inspection.market_value_max || 0,
+        currency: "₹",
+        confidence: aiInsights.market_value?.confidence || "medium"
       },
-      recommendedToBuy: inspection.recommended_to_buy || false,
-      overallRating: inspection.overall_rating || 0,
+      recommendedToBuy: aiInsights.recommended_to_buy ?? inspection.recommended_to_buy ?? false,
+      overallRating: aiInsights.overall_rating || inspection.overall_rating || 0,
       checkpointsInspected: inspection.checkpoints_inspected || 0,
       isPublished: inspection.report_published || false,
-      lastSaved: inspection.updated_at ? new Date(inspection.updated_at).toLocaleString('en-IN') : "-"
+      lastSaved: inspection.updated_at ? new Date(inspection.updated_at).toLocaleString('en-IN') : "-",
+      aiGenerated: aiInsights.ai_generated || false,
+      aiGeneratedAt: aiInsights.generated_at || inspection.ai_report_generated_at || null
     },
 
     vehicleInfo: {
@@ -97,16 +104,18 @@ function transformInspectionToReport(inspection, lead, customer) {
     },
 
     assessmentSummary: {
-      paragraph: inspection.assessment_summary || "This vehicle has been inspected. Detailed assessment pending.",
-      keyHighlights: inspection.key_highlights || []
+      paragraph: aiInsights.assessment_summary || inspection.assessment_summary || "This vehicle has been inspected. Detailed assessment pending.",
+      keyHighlights: aiInsights.key_highlights || inspection.key_highlights || [],
+      riskFactors: aiInsights.risk_factors || [],
+      recommendations: aiInsights.recommendations || []
     },
 
     keyInfo: {
       kmsDriven: inspection.kms_driven || lead?.kms_driven || 0,
-      engineCondition: inspection.engine_condition || "PENDING",
-      interiorCondition: inspection.interior_condition || "PENDING",
-      transmission: inspection.transmission_condition || "PENDING",
-      exteriorCondition: inspection.exterior_condition || "PENDING",
+      engineCondition: conditionRatings.engine || inspection.engine_condition || "PENDING",
+      interiorCondition: conditionRatings.interior || inspection.interior_condition || "PENDING",
+      transmission: conditionRatings.transmission || inspection.transmission_condition || "PENDING",
+      exteriorCondition: conditionRatings.exterior || inspection.exterior_condition || "PENDING",
       accident: inspection.accident_history || false,
       floodDamage: inspection.flood_damage || false,
       dentsScratches: inspection.dents_scratches || false,
@@ -142,13 +151,17 @@ function transformInspectionToReport(inspection, lead, customer) {
     },
 
     inspectionCategories: inspection.inspection_categories || [],
+    categoryRatings: aiInsights.category_ratings || inspection.category_ratings || {},
 
     footer: {
       companyName: "WiseDrive",
       supportPhone: "+91 88848 54885",
       supportEmail: "support@wisedrive.in",
       website: "www.wisedrive.in"
-    }
+    },
+    
+    // Raw AI insights for debugging/display
+    aiInsights: aiInsights
   };
 
   return reportData;
