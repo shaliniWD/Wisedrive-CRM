@@ -58,7 +58,10 @@ function App() {
           {/* Meta OAuth Callback - Public route for popup */}
           <Route path="/meta-oauth-callback" element={<MetaOAuthCallback />} />
           
-          {/* Inspection Report - Public route (opens in new tab) */}
+          {/* Customer Report Access - Public route with OTP */}
+          <Route path="/r/:shortCode" element={<CustomerReportPage />} />
+          
+          {/* Inspection Report - Internal route (CRM users) */}
           <Route path="/inspection-report/:id" element={<InspectionReportPage />} />
           <Route path="/inspection-report" element={<InspectionReportPage />} />
           
