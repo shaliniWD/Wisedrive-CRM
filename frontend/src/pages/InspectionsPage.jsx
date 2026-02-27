@@ -2801,7 +2801,7 @@ export default function InspectionsPage() {
               </div>
               
               {/* AI Report Generation Button */}
-              {canEditAnswers && liveProgressData?.overall_stats?.completion_percentage >= 50 && (
+              {canEditAnswers && (
                 <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-200">
                   <div className="flex items-center justify-between">
                     <div>
@@ -2811,6 +2811,11 @@ export default function InspectionsPage() {
                       <p className="text-sm text-gray-600 mt-1">
                         Generate intelligent ratings, market value, and assessment summary using AI
                       </p>
+                      {liveProgressData?.overall_stats?.completion_percentage < 50 && (
+                        <p className="text-xs text-amber-600 mt-1">
+                          Note: Best results with 50%+ inspection completion
+                        </p>
+                      )}
                     </div>
                     <Button
                       onClick={() => generateAIReport(liveProgressInspection?.id, true)}
