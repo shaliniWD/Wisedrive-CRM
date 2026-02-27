@@ -5629,6 +5629,171 @@ async def get_inspection_live_progress(inspection_id: str, current_user: dict = 
     }
 
 
+# ==================== INSPECTION ANSWER EDIT (CRM) ====================
+
+class EditAnswerRequest(BaseModel):
+    answer: Any  # Can be string, dict, or any type depending on question type
+    sub_answer_1: Optional[Any] = None
+    sub_answer_2: Optional[Any] = None
+    edit_reason: Optional[str] = None  # Optional reason for the edit
+
+
+# Roles allowed to edit inspection answers
+ANSWER_EDIT_ALLOWED_ROLES = ["CEO", "INSPECTION_COORDINATOR", "INSPECTION_HEAD", "COUNTRY_HEAD_CE", "COUNTRY_HEAD"]
+
+
+@api_router.put("/inspections/{inspection_id}/answers/{question_id}")
+async def edit_inspection_answer(
+    inspection_id: str,
+    question_id: str,
+    request_data: EditAnswerRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Edit an inspection answer (CRM side).
+    Only allowed for: Inspection Coordinator, Inspection Head, Country Head CE, CEO
+    Creates an audit trail of all edits.
+    """
+    role_code = current_user.get("role_code", "")
+    
+    # Check role permission
+    if role_code not in ANSWER_EDIT_ALLOWED_ROLES:
+        raise HTTPException(
+            status_code=403, 
+            detail=f"Only {', '.join(ANSWER_EDIT_ALLOWED_ROLES)} can edit inspection answers"
+        )
+    
+    # Get the inspection
+    inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
+    if not inspection:
+        raise HTTPException(status_code=404, detail="Inspection not found")
+    
+    # Get current answers
+    current_answers = inspection.get("inspection_answers", {})
+    
+    # Get the previous answer for audit trail
+    previous_answer_data = current_answers.get(question_id, {})
+    previous_answer = previous_answer_data.get("answer") if isinstance(previous_answer_data, dict) else previous_answer_data
+    
+    # Create the new answer entry
+    now = datetime.now(timezone.utc)
+    new_answer_data = {
+        "answer": request_data.answer,
+        "answered_at": now.isoformat(),
+        "edited_by_crm": True,
+        "last_edited_at": now.isoformat(),
+        "last_edited_by": current_user.get("id"),
+        "last_edited_by_name": current_user.get("name", "Unknown")
+    }
+    
+    # Add sub-answers if provided
+    if request_data.sub_answer_1 is not None:
+        new_answer_data["sub_answer_1"] = request_data.sub_answer_1
+    if request_data.sub_answer_2 is not None:
+        new_answer_data["sub_answer_2"] = request_data.sub_answer_2
+    
+    # Update the inspection answers
+    current_answers[question_id] = new_answer_data
+    
+    await db.inspections.update_one(
+        {"id": inspection_id},
+        {
+            "$set": {
+                "inspection_answers": current_answers,
+                "updated_at": now.isoformat()
+            }
+        }
+    )
+    
+    # Create audit trail entry
+    edit_history_entry = {
+        "id": str(uuid.uuid4()),
+        "inspection_id": inspection_id,
+        "question_id": question_id,
+        "previous_answer": previous_answer,
+        "new_answer": request_data.answer,
+        "previous_sub_answer_1": previous_answer_data.get("sub_answer_1") if isinstance(previous_answer_data, dict) else None,
+        "new_sub_answer_1": request_data.sub_answer_1,
+        "previous_sub_answer_2": previous_answer_data.get("sub_answer_2") if isinstance(previous_answer_data, dict) else None,
+        "new_sub_answer_2": request_data.sub_answer_2,
+        "edit_reason": request_data.edit_reason,
+        "edited_by_id": current_user.get("id"),
+        "edited_by_name": current_user.get("name", "Unknown"),
+        "edited_by_role": role_code,
+        "edited_at": now.isoformat(),
+        "created_at": now.isoformat()
+    }
+    
+    await db.inspection_answer_edits.insert_one(edit_history_entry)
+    
+    # Log the activity
+    activity = {
+        "id": str(uuid.uuid4()),
+        "inspection_id": inspection_id,
+        "action": "ANSWER_EDITED",
+        "description": f"Answer for question edited by {current_user.get('name', 'Unknown')} ({role_code})" + (f" - Reason: {request_data.edit_reason}" if request_data.edit_reason else ""),
+        "user_id": current_user.get("id"),
+        "user_name": current_user.get("name", "Unknown"),
+        "metadata": {
+            "question_id": question_id,
+            "edit_reason": request_data.edit_reason
+        },
+        "created_at": now.isoformat()
+    }
+    await db.inspection_activities.insert_one(activity)
+    
+    logger.info(f"[ANSWER_EDIT] User {current_user.get('name')} ({role_code}) edited answer for question {question_id} in inspection {inspection_id}")
+    
+    return {
+        "success": True,
+        "message": "Answer updated successfully",
+        "question_id": question_id,
+        "new_answer": request_data.answer,
+        "edited_at": now.isoformat(),
+        "edited_by": current_user.get("name", "Unknown")
+    }
+
+
+@api_router.get("/inspections/{inspection_id}/answers/{question_id}/history")
+async def get_answer_edit_history(
+    inspection_id: str,
+    question_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get the edit history for a specific answer"""
+    # Get edit history for this question
+    history = await db.inspection_answer_edits.find(
+        {"inspection_id": inspection_id, "question_id": question_id},
+        {"_id": 0}
+    ).sort("edited_at", -1).to_list(50)
+    
+    return {
+        "inspection_id": inspection_id,
+        "question_id": question_id,
+        "edit_count": len(history),
+        "history": history
+    }
+
+
+@api_router.get("/inspections/{inspection_id}/edit-history")
+async def get_inspection_edit_history(
+    inspection_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all answer edit history for an inspection"""
+    # Get all edit history for this inspection
+    history = await db.inspection_answer_edits.find(
+        {"inspection_id": inspection_id},
+        {"_id": 0}
+    ).sort("edited_at", -1).to_list(200)
+    
+    return {
+        "inspection_id": inspection_id,
+        "total_edits": len(history),
+        "history": history
+    }
+
+
 class UpdateVehicleRequest(BaseModel):
     car_number: str
     car_make: Optional[str] = None
