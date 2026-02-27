@@ -4815,14 +4815,29 @@ async def get_inspections(
         query["country_id"] = country_id
     
     # Date range filtering
+    # For scheduled inspections: filter by scheduled_date
+    # For unscheduled inspections: filter by created_at (since scheduled_date is null)
     if date_from or date_to:
         date_query = {}
         if date_from:
             date_query["$gte"] = date_from
         if date_to:
-            date_query["$lte"] = date_to
+            date_query["$lte"] = date_to + "T23:59:59"
         if date_query:
-            query["scheduled_date"] = {**(query.get("scheduled_date") or {}), **date_query}
+            if is_scheduled is False:
+                # For unscheduled inspections, filter by created_at
+                query["created_at"] = date_query
+            elif is_scheduled is True:
+                # For scheduled inspections, filter by scheduled_date
+                query["scheduled_date"] = {**query.get("scheduled_date", {}), **date_query}
+            else:
+                # If is_scheduled not specified, use $or to check both fields
+                query["$and"] = query.get("$and", []) + [{
+                    "$or": [
+                        {"scheduled_date": date_query},
+                        {"$and": [{"scheduled_date": None}, {"created_at": date_query}]}
+                    ]
+                }]
     
     inspections = await db.inspections.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     
