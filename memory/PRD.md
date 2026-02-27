@@ -56,6 +56,22 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
 - **UI:** Dynamic AI Report section in Live Progress modal with status indicators
 - **Storage:** AI insights stored in `inspection.ai_insights` field, stale status in `inspection.ai_report_stale`
 
+### Dual-Access Report System - NEW (Feb 27, 2026)
+- **Customer Access URL:** `/r/{encrypted_short_code}` - OTP-protected
+  - Short, encrypted URL using HMAC signature
+  - Customer verifies with OTP sent to registered phone
+  - Session token valid for 1 hour after verification
+- **Internal CRM URL:** `/inspection-report/{id}` - CRM authenticated
+- **New Endpoints:**
+  - `GET /api/inspections/{id}/short-url` - Generate customer URL
+  - `GET /api/report/public/{code}` - Get basic report info (no auth)
+  - `POST /api/report/public/{code}/send-otp` - Send OTP to customer
+  - `POST /api/report/public/{code}/verify-otp` - Verify OTP, get access token
+  - `GET /api/report/public/{code}/data?token=` - Get full report with token
+- **New Files:**
+  - `/app/backend/services/report_url_service.py` - URL encryption/decryption
+  - `/app/frontend/src/pages/CustomerReportPage.jsx` - OTP verification UI
+
 ### Editable Inspection Answers (CRM) - Feb 27, 2026
 - **Feature:** CRM users can edit inspection answers directly from Live Progress modal
 - **Allowed Roles:** CEO, INSPECTION_COORDINATOR, INSPECTION_HEAD, COUNTRY_HEAD_CE, COUNTRY_HEAD
