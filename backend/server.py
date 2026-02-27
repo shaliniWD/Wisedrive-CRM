@@ -16731,7 +16731,7 @@ def generate_app_download_page(app_name: str, app_icon: str, releases: list, col
     return html
 
 
-@app.get("/api/mechanicapp", response_class=HTMLResponse)
+@app.get("/mechanicapp", response_class=HTMLResponse)
 async def mechanic_app_download_page():
     """Mechanic App download page with version history"""
     return generate_app_download_page(
@@ -16742,7 +16742,7 @@ async def mechanic_app_download_page():
     )
 
 
-@app.get("/api/essapp", response_class=HTMLResponse)
+@app.get("/essapp", response_class=HTMLResponse)
 async def ess_app_download_page():
     """ESS App download page with version history"""
     return generate_app_download_page(
