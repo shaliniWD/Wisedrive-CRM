@@ -2800,6 +2800,45 @@ export default function InspectionsPage() {
                 </button>
               </div>
               
+              {/* AI Report Generation Button */}
+              {canEditAnswers && liveProgressData?.overall_stats?.completion_percentage >= 50 && (
+                <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                        <span className="text-lg">✨</span> AI Report Generation
+                      </h3>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Generate intelligent ratings, market value, and assessment summary using AI
+                      </p>
+                    </div>
+                    <Button
+                      onClick={() => generateAIReport(liveProgressInspection?.id, true)}
+                      disabled={generatingAIReport}
+                      className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-4 py-2"
+                      data-testid="generate-ai-report-btn"
+                    >
+                      {generatingAIReport ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          Generate AI Report
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  {liveProgressInspection?.ai_report_generated_at && (
+                    <p className="text-xs text-purple-600 mt-2">
+                      Last generated: {new Date(liveProgressInspection.ai_report_generated_at).toLocaleString()}
+                    </p>
+                  )}
+                </div>
+              )}
+              
               {/* Overall Stats */}
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
                 <div className="flex items-center justify-between mb-3">
