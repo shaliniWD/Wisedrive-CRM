@@ -16415,7 +16415,7 @@ async def create_app_release(
     
     # Check if user has admin role
     user_role = current_user.get("role_code", "")
-    if user_role not in ["super_admin", "admin", "country_head"]:
+    if user_role not in ["super_admin", "admin", "country_head", "CEO", "ceo"]:
         raise HTTPException(status_code=403, detail="Only admins can manage app releases")
     
     release_doc = {
@@ -16456,7 +16456,7 @@ async def update_app_release(
     
     # Check if user has admin role
     user_role = current_user.get("role_code", "")
-    if user_role not in ["super_admin", "admin", "country_head"]:
+    if user_role not in ["super_admin", "admin", "country_head", "CEO", "ceo"]:
         raise HTTPException(status_code=403, detail="Only admins can manage app releases")
     
     # Check if release exists
@@ -16504,7 +16504,7 @@ async def delete_app_release(
     
     # Check if user has admin role
     user_role = current_user.get("role_code", "")
-    if user_role not in ["super_admin", "admin", "country_head"]:
+    if user_role not in ["super_admin", "admin", "country_head", "CEO", "ceo"]:
         raise HTTPException(status_code=403, detail="Only admins can manage app releases")
     
     # Check if release exists
