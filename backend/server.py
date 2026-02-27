@@ -16266,9 +16266,9 @@ MECHANIC_APP_RELEASES = [
         "version": "1.7.1",
         "build_number": "47",
         "release_date": "2025-02-26",
-        "status": "building",
+        "status": "available",
         "build_url": "https://expo.dev/accounts/kalyandhar/projects/wisedrive-mechanic/builds/f2e32309-a4ae-4e13-98c7-070758fa09e4",
-        "download_url": None,
+        "download_url": "https://expo.dev/artifacts/eas/vZzC8nqzmwXoDcyPk1zSVj.apk",
         "changes": [
             "Added OBD Re-scan feature - CRM can enable rescan for mechanic",
             "Re-scan mode shows warning before overwriting existing data",
@@ -16281,7 +16281,7 @@ MECHANIC_APP_RELEASES = [
         "release_date": "2025-02-26",
         "status": "available",
         "build_url": "https://expo.dev/accounts/kalyandhar/projects/wisedrive-mechanic/builds/81b1a16c-1b0d-400b-9e07-be9832854a7d",
-        "download_url": "https://expo.dev/artifacts/eas/hLCkqXPTdRbTp9p5rWFmMD.apk",
+        "download_url": "https://expo.dev/artifacts/eas/h1SYjs7DptUVuGzPcvkYY6.apk",
         "changes": [
             "Added AsyncStorage persistence for OBD data backup",
             "OBD data saved locally before backend submission",
