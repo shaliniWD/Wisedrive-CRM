@@ -6,17 +6,21 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
 - Mobile app for mechanics to perform vehicle inspections with OBD scanning capabilities
 - Razorpay payment integration
 - Activity logs and real-time progress tracking
+- AI-powered inspection report generation
 
 ## Current Architecture
 
 ### Backend (FastAPI)
-- **Location:** `/app/backend/server.py` (~16.8k lines - needs refactoring)
+- **Location:** `/app/backend/server.py` (~17k lines - needs refactoring)
 - **Database:** MongoDB
 - **Key Collections:** `inspections`, `inspection_obd_results`, `inspection_answer_edits`, `users`, `mechanics`
+- **AI Service:** `/app/backend/services/ai_report_service.py`
 
 ### Frontend (React)
 - **Location:** `/app/frontend/`
-- **Key Page:** `InspectionsPage.jsx` (~3.9k lines - needs refactoring)
+- **Key Pages:** 
+  - `InspectionsPage.jsx` (~4k lines - needs refactoring)
+  - `InspectionReportPage.jsx` (Report viewing with AI insights)
 
 ### Mobile App (React Native/Expo)
 - **Location:** `/app/mechanic-app-native/`
@@ -33,18 +37,34 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
 - Razorpay (Payments)
 - Google Maps Places API
 - EAS (Expo Application Services)
+- **OpenAI GPT-5.2** (AI Report Generation via Emergent LLM Key)
 
 ## Recent Implementations (Feb 2026)
 
-### Editable Inspection Answers (CRM) - NEW
+### AI Report Generation - NEW (Feb 27, 2026)
+- **Feature:** Generate AI-powered insights for inspection reports using OpenAI GPT-5.2
+- **AI Generates:**
+  - Overall Rating (1-5)
+  - Recommended Market Value (min/max with confidence)
+  - Assessment Summary (professional paragraph)
+  - Condition Ratings (Engine, Interior, Exterior, Transmission)
+  - Category-wise Ratings and Status
+  - Risk Factors and Recommendations
+- **New Endpoint:** `POST /api/inspections/{id}/generate-ai-report`
+- **UI:** "Generate AI Report" button in Live Progress modal
+- **Storage:** AI insights stored in `inspection.ai_insights` field
+
+### Editable Inspection Answers (CRM) - Feb 27, 2026
 - **Feature:** CRM users can edit inspection answers directly from Live Progress modal
 - **Allowed Roles:** CEO, INSPECTION_COORDINATOR, INSPECTION_HEAD, COUNTRY_HEAD_CE, COUNTRY_HEAD
-- **Audit Trail:** All edits tracked in `inspection_answer_edits` collection with editor info, timestamps, and reason
-- **New Endpoints:**
+- **Audit Trail:** All edits tracked in `inspection_answer_edits` collection
+- **Endpoints:**
   - `PUT /api/inspections/{id}/answers/{question_id}` - Edit answer
-  - `GET /api/inspections/{id}/answers/{question_id}/history` - Get edit history for specific question
-  - `GET /api/inspections/{id}/edit-history` - Get all edit history for inspection
-- **Frontend:** Edit/History buttons on answered questions in Live Progress modal
+  - `GET /api/inspections/{id}/answers/{question_id}/history` - Get edit history
+
+### Unscheduled Inspections Date Filter Fix - Feb 27, 2026
+- Fixed bug where unscheduled inspections were hidden when date filters applied
+- Now correctly filters by `created_at` for unscheduled and `scheduled_date` for scheduled
 
 ## Previous Implementations (Dec 2025)
 
