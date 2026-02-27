@@ -15356,6 +15356,35 @@ async def mechanic_save_progress(
             logger.error(f"[SAVE_PROGRESS] MongoDB traceback: {traceback.format_exc()}")
             raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
         
+        # Calculate completion percentage for AI report auto-generation
+        try:
+            total_questions = len(answers) + 5  # Rough estimate if we don't have exact count
+            # Try to get actual total from categories
+            if inspection.get("package_id"):
+                package = await db.packages.find_one({"id": inspection["package_id"]}, {"_id": 0, "category_ids": 1})
+                if package and package.get("category_ids"):
+                    categories = await db.inspection_categories.find(
+                        {"id": {"$in": package["category_ids"]}},
+                        {"_id": 0, "questions": 1}
+                    ).to_list(50)
+                    total_questions = sum(len(c.get("questions", [])) for c in categories)
+            
+            answered_count = len([k for k, v in answers.items() if v and (isinstance(v, dict) and v.get("answer")) or (isinstance(v, str) and v)])
+            completion_percentage = min(100, int((answered_count / max(total_questions, 1)) * 100))
+            
+            # Check if we've hit an AI report milestone
+            for milestone in AI_REPORT_AUTO_GENERATE_MILESTONES:
+                if completion_percentage >= milestone:
+                    # Get last milestone from inspection
+                    last_milestone = inspection.get("ai_report_last_milestone", 0)
+                    if last_milestone < milestone:
+                        logger.info(f"[SAVE_PROGRESS] Triggering AI report at {milestone}% milestone (current: {completion_percentage}%)")
+                        # Run AI generation in background (non-blocking)
+                        asyncio.create_task(auto_generate_ai_report_background(inspection_id, milestone))
+                        break
+        except Exception as e:
+            logger.warning(f"[SAVE_PROGRESS] Error in AI auto-generation check: {e}")
+        
         return {
             "id": inspection_id,
             "progress": current_progress,
