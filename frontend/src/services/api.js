@@ -139,6 +139,10 @@ export const inspectionsApi = {
   getNotes: (id) => axios.get(`${API_URL}/inspections/${id}/notes`),
   addNote: (id, data) => axios.post(`${API_URL}/inspections/${id}/notes`, data),
   getActivities: (id) => axios.get(`${API_URL}/inspections/${id}/activities`),
+  // Answer Editing (CRM)
+  editAnswer: (id, questionId, data) => axios.put(`${API_URL}/inspections/${id}/answers/${questionId}`, data),
+  getAnswerHistory: (id, questionId) => axios.get(`${API_URL}/inspections/${id}/answers/${questionId}/history`),
+  getEditHistory: (id) => axios.get(`${API_URL}/inspections/${id}/edit-history`),
 };
 
 // Users API (V2)
