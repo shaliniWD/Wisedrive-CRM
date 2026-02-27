@@ -432,13 +432,14 @@ export default function CategoryQuestionsScreen() {
     
     const results: Array<{ questionId: string; success: boolean; error?: string }> = [];
     
-    // Helper function to upload media to Firebase and return URL
+    // Helper function to upload media to Firebase with retry and return URL
     const uploadToFirebase = async (uri: string, questionId: string, mediaType: 'image' | 'video'): Promise<string> => {
       diagLogger.info('FIREBASE_UPLOAD_STARTING', { questionId, mediaType });
       const token = await getAuthToken();
-      const result = await uploadMediaToFirebase(uri, inspectionId, questionId, mediaType, undefined, token || undefined);
+      // Use uploadMediaWithRetry for automatic retry on failure
+      const result = await uploadMediaWithRetry(uri, inspectionId, questionId, mediaType, undefined, token || undefined, 3);
       if (!result.success || !result.url) {
-        throw new Error(result.error || 'Upload failed');
+        throw new Error(result.error || 'Upload failed after retries');
       }
       diagLogger.info('FIREBASE_UPLOAD_COMPLETE', { questionId, url: result.url.substring(0, 50) + '...' });
       return result.url;
