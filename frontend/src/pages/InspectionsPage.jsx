@@ -384,6 +384,10 @@ export default function InspectionsPage() {
   const [showingHistoryForQuestion, setShowingHistoryForQuestion] = useState(null);
   const [loadingHistory, setLoadingHistory] = useState(false);
   
+  // AI Report Generation
+  const [generatingAIReport, setGeneratingAIReport] = useState(false);
+  const [aiReportGenerated, setAiReportGenerated] = useState(false);
+  
   // Roles allowed to edit answers
   const ANSWER_EDIT_ALLOWED_ROLES = ["CEO", "INSPECTION_COORDINATOR", "INSPECTION_HEAD", "COUNTRY_HEAD_CE", "COUNTRY_HEAD"];
   const canEditAnswers = user?.role_code && ANSWER_EDIT_ALLOWED_ROLES.includes(user.role_code);
