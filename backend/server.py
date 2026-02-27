@@ -16671,10 +16671,11 @@ def generate_app_download_page(app_name: str, app_icon: str, releases: list, col
 @api_router.get("/mechanicapp", response_class=HTMLResponse)
 async def mechanic_app_download_page():
     """Mechanic App download page with version history"""
+    releases = await get_releases_from_db("mechanic")
     return generate_app_download_page(
         app_name="WiseDrive Mechanic App",
         app_icon="🔧",
-        releases=MECHANIC_APP_RELEASES,
+        releases=releases,
         color="#2563eb"
     )
 
@@ -16682,10 +16683,11 @@ async def mechanic_app_download_page():
 @api_router.get("/essapp", response_class=HTMLResponse)
 async def ess_app_download_page():
     """ESS App download page with version history"""
+    releases = await get_releases_from_db("ess")
     return generate_app_download_page(
         app_name="WiseDrive ESS App",
         app_icon="👤",
-        releases=ESS_APP_RELEASES,
+        releases=releases,
         color="#7c3aed"
     )
 
