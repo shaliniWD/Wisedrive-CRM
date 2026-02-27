@@ -16249,6 +16249,16 @@ if mechanic_app_path.exists():
 
 
 # Include the router in the main app
+# API endpoints to manage releases (for future use)
+@api_router.get("/app-releases/{app_type}")
+async def get_app_releases(app_type: str):
+    """Get all releases for an app type"""
+    if app_type == "mechanic":
+        return {"app": "mechanic", "releases": MECHANIC_APP_RELEASES}
+    elif app_type == "ess":
+        return {"app": "ess", "releases": ESS_APP_RELEASES}
+    else:
+        raise HTTPException(status_code=404, detail="App type not found")
 app.include_router(api_router)
 
 app.add_middleware(
