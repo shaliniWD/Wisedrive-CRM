@@ -4952,6 +4952,187 @@ async def get_inspection_report(inspection_id: str):
     }
 
 
+# ==================== AI REPORT GENERATION ====================
+
+class GenerateAIReportRequest(BaseModel):
+    force_regenerate: bool = False  # Force regeneration even if AI insights exist
+
+
+@api_router.post("/inspections/{inspection_id}/generate-ai-report")
+async def generate_ai_inspection_report(
+    inspection_id: str,
+    request_data: Optional[GenerateAIReportRequest] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Generate AI-powered insights for an inspection report.
+    Uses OpenAI GPT-5.2 to analyze inspection data and generate:
+    - Overall rating
+    - Market value recommendation
+    - Assessment summary
+    - Condition ratings (engine, interior, exterior, transmission)
+    - Category-wise ratings
+    - Risk factors and recommendations
+    """
+    from services.ai_report_service import generate_ai_report_insights
+    
+    force_regenerate = request_data.force_regenerate if request_data else False
+    
+    # Get the inspection
+    inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
+    if not inspection:
+        raise HTTPException(status_code=404, detail="Inspection not found")
+    
+    # Check if AI insights already exist and we're not forcing regeneration
+    if inspection.get("ai_insights") and not force_regenerate:
+        return {
+            "success": True,
+            "message": "AI insights already exist",
+            "ai_insights": inspection["ai_insights"],
+            "regenerated": False
+        }
+    
+    # Get associated lead for vehicle info
+    lead = None
+    if inspection.get("lead_id"):
+        lead = await db.leads.find_one({"id": inspection["lead_id"]}, {"_id": 0})
+    
+    # Prepare vehicle data (combine from inspection and lead)
+    vehicle_data = {
+        "make": lead.get("vehicle_make") if lead else None or inspection.get("vehicle_make"),
+        "model": lead.get("vehicle_model") if lead else None or inspection.get("vehicle_model"),
+        "year": lead.get("vehicle_year") if lead else None or inspection.get("vehicle_year"),
+        "fuel_type": lead.get("fuel_type") if lead else None or inspection.get("fuel_type"),
+        "transmission": inspection.get("transmission"),
+        "colour": inspection.get("vehicle_colour"),
+        "reg_no": lead.get("vehicle_number") if lead else None or inspection.get("car_number"),
+        "engine_cc": inspection.get("engine_cc"),
+        "owners": inspection.get("owners"),
+    }
+    
+    # Get OBD data from separate collection or inspection
+    obd_data = {}
+    obd_result = await db.inspection_obd_results.find_one(
+        {"inspection_id": inspection_id},
+        {"_id": 0}
+    )
+    if obd_result:
+        obd_data = obd_result.get("obd_data", {})
+    elif inspection.get("obd_data"):
+        obd_data = inspection.get("obd_data", {})
+    
+    # Get inspection answers
+    answers_data = inspection.get("inspection_answers", {})
+    
+    # Get inspection categories with questions
+    package_id = inspection.get("package_id")
+    categories_info = {}
+    
+    if package_id:
+        # Get categories for this package
+        package = await db.packages.find_one({"id": package_id}, {"_id": 0})
+        category_ids = package.get("category_ids", []) if package else []
+        
+        if category_ids:
+            categories = await db.inspection_categories.find(
+                {"id": {"$in": category_ids}},
+                {"_id": 0}
+            ).to_list(50)
+            
+            for cat in categories:
+                cat_id = cat.get("id")
+                categories_info[cat_id] = {
+                    "name": cat.get("name", cat_id),
+                    "questions": cat.get("questions", [])
+                }
+    
+    # If no package categories, try to get from inspection_categories
+    if not categories_info:
+        # Get all categories for this inspection's country
+        country_id = inspection.get("country_id")
+        all_categories = await db.inspection_categories.find(
+            {"country_id": country_id} if country_id else {},
+            {"_id": 0}
+        ).to_list(50)
+        
+        for cat in all_categories:
+            cat_id = cat.get("id")
+            categories_info[cat_id] = {
+                "name": cat.get("name", cat_id),
+                "questions": cat.get("questions", [])
+            }
+    
+    # Prepare inspection data
+    inspection_data = {
+        "kms_driven": inspection.get("kms_driven") or (lead.get("kms_driven") if lead else 0),
+        "city": inspection.get("city") or (lead.get("city") if lead else ""),
+        "car_number": lead.get("vehicle_number") if lead else inspection.get("car_number"),
+        "created_at": inspection.get("created_at")
+    }
+    
+    logger.info(f"[AI_REPORT] Generating AI insights for inspection {inspection_id}")
+    logger.info(f"[AI_REPORT] Vehicle: {vehicle_data.get('make')} {vehicle_data.get('model')} {vehicle_data.get('year')}")
+    logger.info(f"[AI_REPORT] Categories: {len(categories_info)}, Answers: {len(answers_data)}, OBD data: {bool(obd_data)}")
+    
+    # Generate AI insights
+    ai_insights = await generate_ai_report_insights(
+        inspection_data=inspection_data,
+        vehicle_data=vehicle_data,
+        obd_data=obd_data,
+        answers_data=answers_data,
+        categories_info=categories_info
+    )
+    
+    # Store AI insights in the inspection
+    now = datetime.now(timezone.utc).isoformat()
+    await db.inspections.update_one(
+        {"id": inspection_id},
+        {
+            "$set": {
+                "ai_insights": ai_insights,
+                "overall_rating": ai_insights.get("overall_rating", 0),
+                "recommended_to_buy": ai_insights.get("recommended_to_buy", False),
+                "market_value_min": ai_insights.get("market_value", {}).get("min", 0),
+                "market_value_max": ai_insights.get("market_value", {}).get("max", 0),
+                "assessment_summary": ai_insights.get("assessment_summary", ""),
+                "key_highlights": ai_insights.get("key_highlights", []),
+                "engine_condition": ai_insights.get("condition_ratings", {}).get("engine", "PENDING"),
+                "interior_condition": ai_insights.get("condition_ratings", {}).get("interior", "PENDING"),
+                "exterior_condition": ai_insights.get("condition_ratings", {}).get("exterior", "PENDING"),
+                "transmission_condition": ai_insights.get("condition_ratings", {}).get("transmission", "PENDING"),
+                "category_ratings": ai_insights.get("category_ratings", {}),
+                "ai_report_generated_at": now,
+                "updated_at": now
+            }
+        }
+    )
+    
+    # Log the activity
+    activity = {
+        "id": str(uuid.uuid4()),
+        "inspection_id": inspection_id,
+        "action": "AI_REPORT_GENERATED",
+        "description": f"AI report insights generated by {current_user.get('name', 'Unknown')}",
+        "user_id": current_user.get("id"),
+        "user_name": current_user.get("name", "Unknown"),
+        "metadata": {
+            "overall_rating": ai_insights.get("overall_rating"),
+            "recommended_to_buy": ai_insights.get("recommended_to_buy")
+        },
+        "created_at": now
+    }
+    await db.inspection_activities.insert_one(activity)
+    
+    logger.info(f"[AI_REPORT] Successfully generated AI insights for inspection {inspection_id}")
+    
+    return {
+        "success": True,
+        "message": "AI insights generated successfully",
+        "ai_insights": ai_insights,
+        "regenerated": True
+    }
+
+
 @api_router.post("/inspections")
 async def create_inspection(inspection_data: InspectionCreate, current_user: dict = Depends(get_current_user)):
     """Create a new inspection"""
