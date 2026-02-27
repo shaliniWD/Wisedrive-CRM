@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { inspectionsApi, utilityApi, vehicleApi, mechanicsApi, smsLogsApi } from '@/services/api';
 import { formatDate, formatTime, formatDateTime } from '@/utils/dateFormat';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
@@ -26,7 +28,7 @@ import {
   AlertCircle, Play, Plus, Send, CreditCard, DollarSign, FileText,
   UserCheck, CalendarClock, RefreshCw, Ban, Copy, ExternalLink, Link2, X,
   StickyNote, Activity, Phone, Mail, MessageSquare, Wallet, TrendingUp, MoreHorizontal,
-  ChevronRight, ClipboardList
+  ChevronRight, ClipboardList, History, Save, Pencil, Upload, Image, Video
 } from 'lucide-react';
 
 // Helper function to extract clean Make name from verbose manufacturer string
