@@ -10,17 +10,17 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
 ## Current Architecture
 
 ### Backend (FastAPI)
-- **Location:** `/app/backend/server.py` (~16k lines - needs refactoring)
+- **Location:** `/app/backend/server.py` (~16.8k lines - needs refactoring)
 - **Database:** MongoDB
-- **Key Collections:** `inspections`, `inspection_obd_results`, `users`, `mechanics`
+- **Key Collections:** `inspections`, `inspection_obd_results`, `inspection_answer_edits`, `users`, `mechanics`
 
 ### Frontend (React)
 - **Location:** `/app/frontend/`
-- **Key Page:** `InspectionsPage.jsx` (~3.7k lines - needs refactoring)
+- **Key Page:** `InspectionsPage.jsx` (~3.9k lines - needs refactoring)
 
 ### Mobile App (React Native/Expo)
 - **Location:** `/app/mechanic-app-native/`
-- **Current Version:** 1.7.1
+- **Current Version:** 1.7.2
 - **Key Files:**
   - `app/scanner.tsx` - OBD Scanner (rescan support added)
   - `app/inspection-categories.tsx` - Categories page (rescan UI)
@@ -34,7 +34,19 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
 - Google Maps Places API
 - EAS (Expo Application Services)
 
-## Recent Implementations (Dec 2025)
+## Recent Implementations (Feb 2026)
+
+### Editable Inspection Answers (CRM) - NEW
+- **Feature:** CRM users can edit inspection answers directly from Live Progress modal
+- **Allowed Roles:** CEO, INSPECTION_COORDINATOR, INSPECTION_HEAD, COUNTRY_HEAD_CE, COUNTRY_HEAD
+- **Audit Trail:** All edits tracked in `inspection_answer_edits` collection with editor info, timestamps, and reason
+- **New Endpoints:**
+  - `PUT /api/inspections/{id}/answers/{question_id}` - Edit answer
+  - `GET /api/inspections/{id}/answers/{question_id}/history` - Get edit history for specific question
+  - `GET /api/inspections/{id}/edit-history` - Get all edit history for inspection
+- **Frontend:** Edit/History buttons on answered questions in Live Progress modal
+
+## Previous Implementations (Dec 2025)
 
 ### OBD Re-scan Feature (v1.7.1)
 - CRM toggle in Live Progress modal to enable/disable rescan
