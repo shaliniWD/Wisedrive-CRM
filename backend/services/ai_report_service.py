@@ -122,11 +122,11 @@ Respond with ONLY the JSON object, no other text."""
                 # Remove markdown code blocks
                 lines = cleaned_response.split("\n")
                 # Remove first line (```json) and last line (```)
-                lines = [l for l in lines if not l.strip().startswith("```")]
+                lines = [line for line in lines if not line.strip().startswith("```")]
                 cleaned_response = "\n".join(lines)
             
             ai_insights = json.loads(cleaned_response)
-            logger.info(f"[AI_REPORT] Successfully parsed AI insights")
+            logger.info("[AI_REPORT] Successfully parsed AI insights")
             
             # Validate and fill missing fields
             ai_insights = validate_ai_response(ai_insights)
