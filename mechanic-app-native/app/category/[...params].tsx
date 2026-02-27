@@ -25,6 +25,68 @@ import { inspectionsApi, getAuthToken, resolveMediaUrl } from '../../src/lib/api
 import { diagLogger } from '../../src/lib/diagLogger';
 import uploadMediaWithRetry from '../../src/lib/firebaseUpload';
 
+// AsyncStorage key for failed uploads
+const FAILED_UPLOADS_KEY = '@failed_media_uploads';
+
+interface FailedUpload {
+  inspectionId: string;
+  questionId: string;
+  localUri: string;
+  mediaType: 'image' | 'video';
+  failedAt: string;
+  errorMessage: string;
+}
+
+// Save failed upload for later retry
+const saveFailedUpload = async (upload: FailedUpload): Promise<void> => {
+  try {
+    const existingStr = await AsyncStorage.getItem(FAILED_UPLOADS_KEY);
+    const existing: FailedUpload[] = existingStr ? JSON.parse(existingStr) : [];
+    
+    // Avoid duplicates
+    const isDuplicate = existing.some(
+      u => u.inspectionId === upload.inspectionId && u.questionId === upload.questionId
+    );
+    if (!isDuplicate) {
+      existing.push(upload);
+      await AsyncStorage.setItem(FAILED_UPLOADS_KEY, JSON.stringify(existing));
+      diagLogger.info('FAILED_UPLOAD_SAVED', { questionId: upload.questionId, totalPending: existing.length });
+    }
+  } catch (e: any) {
+    diagLogger.error('FAILED_UPLOAD_SAVE_ERROR', { error: e.message });
+  }
+};
+
+// Get all failed uploads for an inspection
+const getFailedUploads = async (inspectionId?: string): Promise<FailedUpload[]> => {
+  try {
+    const existingStr = await AsyncStorage.getItem(FAILED_UPLOADS_KEY);
+    const existing: FailedUpload[] = existingStr ? JSON.parse(existingStr) : [];
+    if (inspectionId) {
+      return existing.filter(u => u.inspectionId === inspectionId);
+    }
+    return existing;
+  } catch (e: any) {
+    diagLogger.error('FAILED_UPLOAD_GET_ERROR', { error: e.message });
+    return [];
+  }
+};
+
+// Remove a failed upload after successful retry
+const removeFailedUpload = async (inspectionId: string, questionId: string): Promise<void> => {
+  try {
+    const existingStr = await AsyncStorage.getItem(FAILED_UPLOADS_KEY);
+    const existing: FailedUpload[] = existingStr ? JSON.parse(existingStr) : [];
+    const filtered = existing.filter(
+      u => !(u.inspectionId === inspectionId && u.questionId === questionId)
+    );
+    await AsyncStorage.setItem(FAILED_UPLOADS_KEY, JSON.stringify(filtered));
+    diagLogger.info('FAILED_UPLOAD_REMOVED', { questionId, remaining: filtered.length });
+  } catch (e: any) {
+    diagLogger.error('FAILED_UPLOAD_REMOVE_ERROR', { error: e.message });
+  }
+};
+
 interface Question {
   id: string;
   question: string;
