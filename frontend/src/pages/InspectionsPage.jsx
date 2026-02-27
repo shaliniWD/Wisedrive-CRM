@@ -2803,17 +2803,32 @@ export default function InspectionsPage() {
                                     ) : q.media_url ? (
                                       <div className="mb-2">
                                         {q.media_url.includes('video') || q.question_type?.includes('video') || q.media_url.includes('.mp4') || q.media_url.includes('.mov') ? (
-                                          <video 
-                                            src={q.media_url} 
-                                            controls 
-                                            className="max-w-full max-h-[200px] rounded-lg border"
-                                            onError={(e) => {
-                                              e.target.style.display = 'none';
-                                              e.target.nextSibling && (e.target.nextSibling.style.display = 'flex');
-                                            }}
-                                          />
+                                          <div className="space-y-2">
+                                            <video 
+                                              src={q.media_url} 
+                                              controls 
+                                              className="max-w-full max-h-[200px] rounded-lg border"
+                                              onError={(e) => {
+                                                e.target.style.display = 'none';
+                                                const errorDiv = e.target.parentElement.querySelector('.video-error');
+                                                if (errorDiv) errorDiv.style.display = 'flex';
+                                              }}
+                                            />
+                                            <div className="video-error hidden bg-red-50 border border-red-200 rounded-lg p-3 items-center gap-2">
+                                              <AlertCircle className="h-4 w-4 text-red-500" />
+                                              <span className="text-sm text-red-700">Failed to load video</span>
+                                            </div>
+                                            <a 
+                                              href={q.media_url} 
+                                              download={`video_${q.question_id || 'download'}.mp4`}
+                                              className="inline-flex items-center gap-1.5 text-xs bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"
+                                            >
+                                              <Download className="h-3.5 w-3.5" />
+                                              Download Video
+                                            </a>
+                                          </div>
                                         ) : (
-                                          <>
+                                          <div className="space-y-2">
                                             <img 
                                               src={q.media_url} 
                                               alt="Answer" 
@@ -2821,10 +2836,11 @@ export default function InspectionsPage() {
                                               onClick={() => window.open(q.media_url, '_blank')}
                                               onError={(e) => {
                                                 e.target.style.display = 'none';
-                                                e.target.nextSibling && (e.target.nextSibling.style.display = 'flex');
+                                                const errorDiv = e.target.parentElement.querySelector('.image-error');
+                                                if (errorDiv) errorDiv.style.display = 'flex';
                                               }}
                                             />
-                                            <div className="hidden bg-red-50 border border-red-200 rounded-lg p-3 items-center gap-2">
+                                            <div className="image-error hidden bg-red-50 border border-red-200 rounded-lg p-3 items-center gap-2">
                                               <AlertCircle className="h-4 w-4 text-red-500" />
                                               <span className="text-sm text-red-700">Failed to load image</span>
                                               <a 
@@ -2836,10 +2852,25 @@ export default function InspectionsPage() {
                                                 Try direct link →
                                               </a>
                                             </div>
-                                          </>
+                                            <a 
+                                              href={q.media_url} 
+                                              download={`image_${q.question_id || 'download'}.jpg`}
+                                              className="inline-flex items-center gap-1.5 text-xs bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"
+                                              onClick={(e) => {
+                                                // For cross-origin images, open in new tab
+                                                if (!q.media_url.startsWith('data:')) {
+                                                  e.preventDefault();
+                                                  window.open(q.media_url, '_blank');
+                                                }
+                                              }}
+                                            >
+                                              <Download className="h-3.5 w-3.5" />
+                                              Download Image
+                                            </a>
+                                          </div>
                                         )}
                                       </div>
-                                    ) : typeof q.answer === 'string' && q.answer.startsWith('file://') ? (
+                                    ) : typeof q.answer === 'string' && (q.answer.startsWith('file://') || q.answer.startsWith('/data/')) ? (
                                       <div className="mb-2 bg-amber-50 border border-amber-200 rounded-lg p-3">
                                         <div className="flex items-center gap-2 text-amber-700">
                                           <AlertCircle className="h-4 w-4" />
@@ -2848,20 +2879,56 @@ export default function InspectionsPage() {
                                         <p className="text-xs text-amber-600 mt-1">
                                           The file exists only on the device and was not uploaded to cloud.
                                         </p>
+                                        <p className="text-xs text-gray-500 mt-1 font-mono truncate">
+                                          Path: {q.answer.substring(0, 60)}...
+                                        </p>
                                       </div>
                                     ) : typeof q.answer === 'string' && (q.answer.startsWith('data:image') || (q.answer.startsWith('http') && !q.answer.includes('video'))) ? (
-                                      <img 
-                                        src={q.answer} 
-                                        alt="Answer" 
-                                        className="max-w-[250px] max-h-[180px] rounded-lg border object-cover mb-2 cursor-pointer hover:opacity-90"
-                                        onClick={() => window.open(q.answer, '_blank')}
-                                      />
+                                      <div className="space-y-2">
+                                        <img 
+                                          src={q.answer} 
+                                          alt="Answer" 
+                                          className="max-w-[250px] max-h-[180px] rounded-lg border object-cover cursor-pointer hover:opacity-90"
+                                          onClick={() => window.open(q.answer, '_blank')}
+                                        />
+                                        <a 
+                                          href={q.answer} 
+                                          download={`image_${q.question_id || 'download'}.jpg`}
+                                          className="inline-flex items-center gap-1.5 text-xs bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"
+                                          onClick={(e) => {
+                                            if (q.answer.startsWith('data:')) {
+                                              // For base64, create download link
+                                              const link = document.createElement('a');
+                                              link.href = q.answer;
+                                              link.download = `image_${q.question_id || 'download'}.jpg`;
+                                              link.click();
+                                              e.preventDefault();
+                                            } else if (!q.answer.startsWith('data:')) {
+                                              e.preventDefault();
+                                              window.open(q.answer, '_blank');
+                                            }
+                                          }}
+                                        >
+                                          <Download className="h-3.5 w-3.5" />
+                                          Download Image
+                                        </a>
+                                      </div>
                                     ) : typeof q.answer === 'string' && q.answer.startsWith('http') && (q.answer.includes('video') || q.answer.includes('.mp4')) ? (
-                                      <video 
-                                        src={q.answer} 
-                                        controls 
-                                        className="max-w-full max-h-[200px] rounded-lg border mb-2"
-                                      />
+                                      <div className="space-y-2">
+                                        <video 
+                                          src={q.answer} 
+                                          controls 
+                                          className="max-w-full max-h-[200px] rounded-lg border"
+                                        />
+                                        <a 
+                                          href={q.answer} 
+                                          download={`video_${q.question_id || 'download'}.mp4`}
+                                          className="inline-flex items-center gap-1.5 text-xs bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"
+                                        >
+                                          <Download className="h-3.5 w-3.5" />
+                                          Download Video
+                                        </a>
+                                      </div>
                                     ) : null}
                                     {/* Display text answer */}
                                     {typeof q.answer === 'object' && q.answer?.selection ? (
