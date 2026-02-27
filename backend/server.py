@@ -16769,7 +16769,7 @@ async def ess_app_download_page():
     )
 
 
-# API endpoint moved to before router inclusion
+# Cleaned up
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
