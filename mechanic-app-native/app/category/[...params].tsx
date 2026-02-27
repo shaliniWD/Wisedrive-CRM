@@ -569,8 +569,17 @@ export default function CategoryQuestionsScreen() {
               try {
                 const uploadedUrl = await uploadToFirebase(mediaUri, `${questionId}_combo`, mediaType);
                 processedAnswer = { ...processedAnswer, media: uploadedUrl };
+                await removeFailedUpload(inspectionId, `${questionId}_combo`);
               } catch (uploadErr: any) {
                 diagLogger.error('COMBO_MEDIA_UPLOAD_FAILED', { questionId, error: uploadErr.message });
+                await saveFailedUpload({
+                  inspectionId,
+                  questionId: `${questionId}_combo`,
+                  localUri: mediaUri,
+                  mediaType,
+                  failedAt: new Date().toISOString(),
+                  errorMessage: uploadErr.message,
+                });
                 results.push({ questionId, success: false, error: uploadErr.message });
                 continue;
               }
@@ -587,6 +596,7 @@ export default function CategoryQuestionsScreen() {
               try {
                 const uploadedUrl = await uploadToFirebase(mediaUri, `${questionId}_sub1`, mediaType);
                 processedSubAnswer1 = { ...processedSubAnswer1, media: uploadedUrl };
+                await removeFailedUpload(inspectionId, `${questionId}_sub1`);
               } catch (uploadErr: any) {
                 diagLogger.error('SUB1_MEDIA_UPLOAD_FAILED', { questionId, error: uploadErr.message });
                 results.push({ questionId, success: false, error: uploadErr.message });
