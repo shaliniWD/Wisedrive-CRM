@@ -168,6 +168,84 @@ export async function uploadMediaToFirebase(
 }
 
 /**
+ * Upload with automatic retry on failure
+ * Uses exponential backoff: 1s, 2s, 4s delays between retries
+ */
+export async function uploadMediaWithRetry(
+  uri: string,
+  inspectionId: string,
+  questionId: string,
+  mediaType: 'image' | 'video',
+  onProgress?: (progress: UploadProgress) => void,
+  authToken?: string,
+  maxRetries: number = 3
+): Promise<UploadResult> {
+  let lastError: string = '';
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    diagLogger.info('FIREBASE_UPLOAD_ATTEMPT', {
+      attempt,
+      maxRetries,
+      questionId,
+      mediaType,
+    });
+    
+    const result = await uploadMediaToFirebase(
+      uri,
+      inspectionId,
+      questionId,
+      mediaType,
+      onProgress,
+      authToken
+    );
+    
+    if (result.success) {
+      if (attempt > 1) {
+        diagLogger.info('FIREBASE_UPLOAD_RETRY_SUCCESS', {
+          questionId,
+          attemptsTaken: attempt,
+        });
+      }
+      return result;
+    }
+    
+    lastError = result.error || 'Unknown error';
+    
+    // Don't retry on certain errors
+    if (lastError.includes('File does not exist') || 
+        lastError.includes('401') || 
+        lastError.includes('403')) {
+      diagLogger.warn('FIREBASE_UPLOAD_NO_RETRY', {
+        questionId,
+        reason: 'Non-retryable error',
+        error: lastError,
+      });
+      return result;
+    }
+    
+    // Wait before retry with exponential backoff
+    if (attempt < maxRetries) {
+      const delayMs = Math.pow(2, attempt - 1) * 1000; // 1s, 2s, 4s
+      diagLogger.info('FIREBASE_UPLOAD_RETRY_WAIT', {
+        questionId,
+        attempt,
+        delayMs,
+        error: lastError,
+      });
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+    }
+  }
+  
+  diagLogger.error('FIREBASE_UPLOAD_ALL_RETRIES_FAILED', {
+    questionId,
+    attempts: maxRetries,
+    lastError,
+  });
+  
+  return { success: false, error: `Upload failed after ${maxRetries} attempts: ${lastError}` };
+}
+
+/**
  * Upload multiple media files sequentially
  */
 export async function uploadMultipleMedia(
@@ -184,13 +262,15 @@ export async function uploadMultipleMedia(
 
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
-    const result = await uploadMediaToFirebase(
+    // Use retry mechanism for each file
+    const result = await uploadMediaWithRetry(
       file.uri,
       file.inspectionId,
       file.questionId,
       file.mediaType,
       onProgress ? (p) => onProgress(i, p) : undefined,
-      authToken
+      authToken,
+      3 // 3 retries
     );
     results.push({ ...result, questionId: file.questionId });
   }
@@ -198,4 +278,5 @@ export async function uploadMultipleMedia(
   return results;
 }
 
-export default uploadMediaToFirebase;
+export { uploadMediaToFirebase };
+export default uploadMediaWithRetry;
