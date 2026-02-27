@@ -294,6 +294,7 @@ const SummaryCard = ({ title, value, icon: Icon, color, subtitle, onClick, activ
 );
 
 export default function InspectionsPage() {
+  const { user } = useAuth();
   const [inspections, setInspections] = useState([]);
   const [mechanics, setMechanics] = useState([]);
   const [cities, setCities] = useState([]);
@@ -373,6 +374,19 @@ export default function InspectionsPage() {
   const [liveProgressData, setLiveProgressData] = useState(null);
   const [liveProgressLoading, setLiveProgressLoading] = useState(false);
   const [liveProgressAutoRefresh, setLiveProgressAutoRefresh] = useState(false);
+  
+  // Answer Edit State (CRM)
+  const [editingQuestionId, setEditingQuestionId] = useState(null);
+  const [editAnswerValue, setEditAnswerValue] = useState('');
+  const [editAnswerReason, setEditAnswerReason] = useState('');
+  const [savingAnswer, setSavingAnswer] = useState(false);
+  const [answerHistory, setAnswerHistory] = useState([]);
+  const [showingHistoryForQuestion, setShowingHistoryForQuestion] = useState(null);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  
+  // Roles allowed to edit answers
+  const ANSWER_EDIT_ALLOWED_ROLES = ["CEO", "INSPECTION_COORDINATOR", "INSPECTION_HEAD", "COUNTRY_HEAD_CE", "COUNTRY_HEAD"];
+  const canEditAnswers = user?.role_code && ANSWER_EDIT_ALLOWED_ROLES.includes(user.role_code);
   
   // Schedule Unscheduled Inspection Modal (NEW - with Vaahan API & Google Places)
   const [isScheduleUnscheduledModalOpen, setIsScheduleUnscheduledModalOpen] = useState(false);
