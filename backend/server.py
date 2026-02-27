@@ -16320,12 +16320,24 @@ MECHANIC_APP_RELEASES = [
 
 ESS_APP_RELEASES = [
     {
-        "version": "1.2.0",
-        "build_number": "12",
-        "release_date": "2025-02-20",
-        "status": "available",
-        "build_url": "https://expo.dev/accounts/kalyandhar/projects/wisedrive-ess/builds/latest",
+        "version": "1.3.3",
+        "build_number": "6",
+        "release_date": "2025-02-27",
+        "status": "building",
+        "build_url": "https://expo.dev/accounts/kalyandhar/projects/wisedrive-ess/builds/6ede51aa-f866-467c-82e5-5256e68d6a7b",
         "download_url": None,
+        "changes": [
+            "Latest build in progress",
+            "Bug fixes and improvements"
+        ]
+    },
+    {
+        "version": "1.3.3",
+        "build_number": "5",
+        "release_date": "2025-02-17",
+        "status": "available",
+        "build_url": "https://expo.dev/accounts/kalyandhar/projects/wisedrive-ess/builds/2fefc222-719f-4241-83ba-49d7e5b00629",
+        "download_url": "https://expo.dev/artifacts/eas/6VjTYZeejJDtkqe7UunLkB.apk",
         "changes": [
             "Employee attendance tracking",
             "Leave management system",
@@ -16333,15 +16345,40 @@ ESS_APP_RELEASES = [
         ]
     },
     {
-        "version": "1.1.0",
-        "build_number": "11",
-        "release_date": "2025-02-15",
+        "version": "1.3.2",
+        "build_number": "4",
+        "release_date": "2025-02-17",
         "status": "available",
-        "build_url": None,
-        "download_url": None,
+        "build_url": "https://expo.dev/accounts/kalyandhar/projects/wisedrive-ess/builds/dde34be3-7363-4ffc-8090-2b4c67c3d5eb",
+        "download_url": "https://expo.dev/artifacts/eas/tpbsDQjGyDTkKjjB5kKTDV.apk",
+        "changes": [
+            "Performance improvements",
+            "UI enhancements"
+        ]
+    },
+    {
+        "version": "1.3.1",
+        "build_number": "3",
+        "release_date": "2025-02-17",
+        "status": "available",
+        "build_url": "https://expo.dev/accounts/kalyandhar/projects/wisedrive-ess/builds/0e8001aa-9ac2-4dd0-8cc5-c07ddfc8e710",
+        "download_url": "https://expo.dev/artifacts/eas/2MRjUvC3jNwwufBbX5aNJd.apk",
+        "changes": [
+            "Bug fixes",
+            "Stability improvements"
+        ]
+    },
+    {
+        "version": "1.3.0",
+        "build_number": "2",
+        "release_date": "2025-02-17",
+        "status": "available",
+        "build_url": "https://expo.dev/accounts/kalyandhar/projects/wisedrive-ess/builds/fece8631-85e7-4af1-858e-e541ec2e528d",
+        "download_url": "https://expo.dev/artifacts/eas/xsWZjtyfJnxhySk4NEnvEV.apk",
         "changes": [
             "Initial ESS app release",
-            "Basic employee features"
+            "Employee self-service features",
+            "Push notifications support"
         ]
     }
 ]
