@@ -16348,6 +16348,30 @@ async def get_app_releases(app_type: str):
         return {"app": "ess", "releases": ESS_APP_RELEASES}
     else:
         raise HTTPException(status_code=404, detail="App type not found")
+
+
+@api_router.get("/mechanicapp", response_class=HTMLResponse)
+async def mechanic_app_download_page():
+    """Mechanic App download page with version history"""
+    return generate_app_download_page(
+        app_name="WiseDrive Mechanic App",
+        app_icon="🔧",
+        releases=MECHANIC_APP_RELEASES,
+        color="#2563eb"
+    )
+
+
+@api_router.get("/essapp", response_class=HTMLResponse)
+async def ess_app_download_page():
+    """ESS App download page with version history"""
+    return generate_app_download_page(
+        app_name="WiseDrive ESS App",
+        app_icon="👤",
+        releases=ESS_APP_RELEASES,
+        color="#7c3aed"
+    )
+
+
 # Include the router in the main app
 # Removed - will be added in correct location
 app.include_router(api_router)
