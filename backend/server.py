@@ -6018,6 +6018,7 @@ async def edit_inspection_answer(
         {
             "$set": {
                 "inspection_answers": current_answers,
+                "ai_report_stale": True,  # Mark AI report as needing update after CRM edit
                 "updated_at": now.isoformat()
             }
         }
