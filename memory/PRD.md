@@ -50,9 +50,11 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
   - Condition Ratings (Engine, Interior, Exterior, Transmission)
   - Category-wise Ratings and Status
   - Risk Factors and Recommendations
-- **New Endpoint:** `POST /api/inspections/{id}/generate-ai-report`
-- **UI:** "Generate AI Report" button in Live Progress modal
-- **Storage:** AI insights stored in `inspection.ai_insights` field
+- **Auto-Generation:** AI report automatically generates at milestones (25%, 50%, 75%, 100% completion) when mechanic submits answers
+- **Manual Regeneration:** When CRM user edits an answer, report is marked as "stale" and shows "Update AI Report" button
+- **Endpoint:** `POST /api/inspections/{id}/generate-ai-report`
+- **UI:** Dynamic AI Report section in Live Progress modal with status indicators
+- **Storage:** AI insights stored in `inspection.ai_insights` field, stale status in `inspection.ai_report_stale`
 
 ### Editable Inspection Answers (CRM) - Feb 27, 2026
 - **Feature:** CRM users can edit inspection answers directly from Live Progress modal
