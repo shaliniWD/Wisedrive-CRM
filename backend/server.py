@@ -6069,7 +6069,8 @@ async def edit_inspection_answer(
         "question_id": question_id,
         "new_answer": request_data.answer,
         "edited_at": now.isoformat(),
-        "edited_by": current_user.get("name", "Unknown")
+        "edited_by": current_user.get("name", "Unknown"),
+        "ai_report_stale": True  # Indicate AI report needs regeneration
     }
 
 
