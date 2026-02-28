@@ -92,9 +92,31 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
 - **Feature:** CRM users can edit inspection answers directly from Live Progress modal
 - **Allowed Roles:** CEO, INSPECTION_COORDINATOR, INSPECTION_HEAD, COUNTRY_HEAD_CE, COUNTRY_HEAD
 - **Audit Trail:** All edits tracked in `inspection_answer_edits` collection
+- **Enhancement (Feb 28):** Answer editing now restricted to predefined options only (dropdown selection instead of free-form text)
 - **Endpoints:**
   - `PUT /api/inspections/{id}/answers/{question_id}` - Edit answer
   - `GET /api/inspections/{id}/answers/{question_id}/history` - Get edit history
+
+### Inspection Editor UI Redesign - NEW (Feb 28, 2026)
+- **Tab Structure Reorganized:**
+  - Renamed "Overview" → "AI Analysis" 
+  - Renamed "Inspection" → "Q&A Details" (moved to last position)
+  - Merged "Verification" tab into "Vehicle & RTO" tab (all Vaahan API data together)
+  - Final tab order: AI Analysis, Vehicle & RTO, Repairs, Q&A Details
+- **Share Report Feature:**
+  - Added "Share Report with Customer" section at top of AI Analysis tab
+  - "Generate Link" button creates OTP-protected customer URL
+  - Shows copy and external link buttons after URL generation
+- **Market Price Display:**
+  - Renamed "Market Value Estimate" → "Recommended Purchase Price"
+  - Added "(5-10% below market average)" note in green
+  - Website-wise scraped prices shown below recommended price
+  - Sources include: CarDekho, CarWale, Cars24, Spinny, OLX
+- **Q&A Details Tab:**
+  - Category-wise progress grid at top showing completion percentages
+  - Collapsible category sections with questions
+  - Edit button for answered questions with predefined options
+  - Shows "(X options available)" for unanswered questions
 
 ### Unscheduled Inspections Date Filter Fix - Feb 27, 2026
 - Fixed bug where unscheduled inspections were hidden when date filters applied
