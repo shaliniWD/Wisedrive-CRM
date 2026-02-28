@@ -4846,26 +4846,39 @@ async def get_inspections(
     # For scheduled inspections: filter by scheduled_date
     # For unscheduled inspections: filter by created_at (since scheduled_date is null)
     if date_from or date_to:
-        date_query = {}
-        if date_from:
-            date_query["$gte"] = date_from
-        if date_to:
-            date_query["$lte"] = date_to + "T23:59:59"
-        if date_query:
+        # Handle both date-only ("2026-02-28") and datetime ("2026-02-28T10:00:00") formats
+        if date_from and date_to and date_from == date_to:
+            # Same day filter - use regex to match strings starting with this date
             if is_scheduled is False:
-                # For unscheduled inspections, filter by created_at
-                query["created_at"] = date_query
+                query["created_at"] = {"$gte": date_from, "$lte": date_to + "T23:59:59.999999"}
             elif is_scheduled is True:
-                # For scheduled inspections, filter by scheduled_date
-                query["scheduled_date"] = {**query.get("scheduled_date", {}), **date_query}
+                query["scheduled_date"] = {"$regex": f"^{date_from}"}
             else:
-                # If is_scheduled not specified, use $or to check both fields
                 query["$and"] = query.get("$and", []) + [{
                     "$or": [
-                        {"scheduled_date": date_query},
-                        {"$and": [{"scheduled_date": None}, {"created_at": date_query}]}
+                        {"scheduled_date": {"$regex": f"^{date_from}"}},
+                        {"$and": [{"scheduled_date": None}, {"created_at": {"$gte": date_from, "$lte": date_to + "T23:59:59.999999"}}]}
                     ]
                 }]
+        else:
+            # Date range filter
+            date_query = {}
+            if date_from:
+                date_query["$gte"] = date_from
+            if date_to:
+                date_query["$lte"] = date_to + "T23:59:59.999999"
+            if date_query:
+                if is_scheduled is False:
+                    query["created_at"] = date_query
+                elif is_scheduled is True:
+                    query["scheduled_date"] = {**query.get("scheduled_date", {}), **date_query}
+                else:
+                    query["$and"] = query.get("$and", []) + [{
+                        "$or": [
+                            {"scheduled_date": date_query},
+                            {"$and": [{"scheduled_date": None}, {"created_at": date_query}]}
+                        ]
+                    }]
     
     inspections = await db.inspections.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     
