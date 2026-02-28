@@ -11,6 +11,7 @@ Current structure:
 - webhooks.py: Twilio WhatsApp and external webhooks
 - meta_ads.py: Meta/Facebook Ads API integration
 - inspections.py: Vehicle inspection management
+- loans.py: Loan leads, banks, credit score, documents - MIGRATED (Feb 28, 2026)
 
 Migration Strategy:
 1. Use factory functions (create_*_router) to inject dependencies
@@ -34,6 +35,7 @@ from .partners import router as partners_router, init_partners_routes
 from .webhooks import router as webhooks_router, init_webhooks_routes
 from .meta_ads import router as meta_ads_router, init_meta_ads_routes
 from .inspections import router as inspections_router, init_inspections_routes
+from .loans import router as loans_router, init_loans_routes
 
 __all__ = [
     # New factory functions (recommended)
@@ -66,4 +68,8 @@ __all__ = [
     # Inspections
     'inspections_router',
     'init_inspections_routes',
+    
+    # Loans - NEW
+    'loans_router',
+    'init_loans_routes',
 ]
