@@ -16374,7 +16374,7 @@ async def verify_credit_score_otp(
         
         result = response.json()
         logger.info(f"[CREDIT_SCORE] Verify API response code: {result.get('code')}")
-        logger.info(f"[CREDIT_SCORE] Verify API full response: {json.dumps(result)[:500]}")
+        logger.info(f"[CREDIT_SCORE] Verify API full response: {str(result)[:500]}")
         
         if result.get("code") == 200:
             credit_data = result.get("result", {})
