@@ -1534,27 +1534,44 @@ export default function InspectionsPage() {
                       <span className="text-sm text-gray-700">{inspection.package_type || 'Standard'}</span>
                     </td>
                     <td className="px-4 py-4">
-                      <span className="inline-flex items-center justify-center h-7 w-7 rounded-full bg-blue-100 text-blue-700 font-semibold text-sm">
-                        {inspection.inspections_available || 1}
-                      </span>
+                      <div className="flex items-center gap-1">
+                        <span className={`inline-flex items-center justify-center h-7 px-2 rounded-full font-semibold text-sm ${
+                          (inspection.available_inspections || inspection.inspections_available || 1) > 0 
+                            ? 'bg-blue-100 text-blue-700' 
+                            : 'bg-gray-100 text-gray-500'
+                        }`}>
+                          {inspection.available_inspections || inspection.inspections_available || 1}
+                          <span className="text-xs font-normal ml-1">/ {inspection.total_inspections || 1}</span>
+                        </span>
+                      </div>
                     </td>
                     <td className="px-4 py-4">
                       <div className="text-xs space-y-0.5">
-                        <div className="text-gray-500">Total: <span className="font-medium text-gray-900">₹{inspection.total_amount || 0}</span></div>
-                        <div className="text-gray-500">Paid: <span className="font-medium text-emerald-600">₹{inspection.amount_paid || 0}</span></div>
+                        <div className="text-gray-500">Total: <span className="font-medium text-gray-900">₹{(inspection.total_amount || 0).toLocaleString()}</span></div>
+                        <div className="text-gray-500">Paid: <span className="font-medium text-emerald-600">₹{(inspection.amount_paid || 0).toLocaleString()}</span></div>
                       </div>
                     </td>
                     <td className="px-4 py-4">
                       <PaymentStatusBadge status={inspection.payment_type === 'Partial' ? 'PARTIALLY_PAID' : inspection.payment_status} balanceDue={inspection.balance_due || inspection.pending_amount} />
                     </td>
                     <td className="px-4 py-4">
-                      <button 
-                        className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg text-xs font-medium hover:from-blue-700 hover:to-blue-800 transition-all shadow-sm"
-                        onClick={() => openScheduleUnscheduledModal(inspection)}
-                        data-testid={`schedule-inspection-${inspection.id}`}
-                      >
-                        Schedule
-                      </button>
+                      {(inspection.available_inspections || inspection.inspections_available || 1) > 0 ? (
+                        <button 
+                          className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg text-xs font-medium hover:from-blue-700 hover:to-blue-800 transition-all shadow-sm"
+                          onClick={() => openScheduleUnscheduledModal(inspection)}
+                          data-testid={`schedule-inspection-${inspection.id}`}
+                        >
+                          Schedule
+                        </button>
+                      ) : (
+                        <button 
+                          className="px-4 py-2 bg-gray-200 text-gray-500 rounded-lg text-xs font-medium cursor-not-allowed"
+                          disabled
+                          title="All inspections in this package have been scheduled"
+                        >
+                          All Scheduled
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))
