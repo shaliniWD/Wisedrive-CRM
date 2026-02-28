@@ -180,8 +180,6 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
 - Investigate video upload failure (why file:// paths)
 
 ### P1 (High Priority)  
-- Restrict answer editing to predefined options only in Inspection Editor (no free-form text for dropdowns/radio buttons)
-- Add "Share Report" button to CRM for generating customer-facing short URLs
 - Test OBD rescan flow end-to-end
 - Fix video upload in mechanic app
 - Build retry UI in mechanic app for failed uploads saved in AsyncStorage
@@ -192,6 +190,6 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
 - Customer reminders feature
 
 ### P3 (Low Priority - Refactoring)
-- Break down `server.py` into modular routers (~17,500 lines)
+- Break down `server.py` into modular routers (~17,600 lines)
 - Refactor `InspectionsPage.jsx` into components (~4,100 lines)
 - Refactor `scanner.tsx` into smaller components
