@@ -7986,7 +7986,7 @@ async def create_repair_part(
     }
     
     await db.repair_parts.insert_one(part_doc)
-    del part_doc["_id"] if "_id" in part_doc else None
+    part_doc.pop("_id", None)
     return part_doc
 
 
