@@ -24,11 +24,13 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
 
 ### Mobile App (React Native/Expo)
 - **Location:** `/app/mechanic-app-native/`
-- **Current Version:** 1.7.2
+- **Current Version:** 1.9.0
 - **Key Files:**
   - `app/scanner.tsx` - OBD Scanner (rescan support added)
   - `app/inspection-categories.tsx` - Categories page (rescan UI)
+  - `app/home.tsx` - Main dashboard
   - `src/lib/api.ts` - API helpers (new OBD status endpoint)
+  - `src/utils/dateFormat.ts` - NEW: Indian date format utilities (dd/MM/yyyy)
 
 ## Third-Party Integrations
 - Firebase (Storage + Admin SDK)
