@@ -9,7 +9,8 @@ import {
   ChevronRight,
   Clock,
   Wallet,
-  Megaphone
+  Megaphone,
+  Banknote
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -19,6 +20,7 @@ const navigation = [
   { name: 'Leads', href: '/leads', icon: Users },
   { name: 'Customers', href: '/customers', icon: UserCheck },
   { name: 'Inspections', href: '/inspections', icon: ClipboardCheck },
+  { name: 'Loans', href: '/loans', icon: Banknote },
   { name: 'Ads Management', href: '/ad-analytics', icon: Megaphone },
   { name: 'HR Module', href: '/hr', icon: Clock },
   { name: 'Finance', href: '/finance', icon: Wallet },
