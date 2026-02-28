@@ -16239,6 +16239,248 @@ async def get_loan_document_download_url(
         raise HTTPException(status_code=500, detail=f"Failed to generate download URL: {str(e)}")
 
 
+# ---- Credit Score Check Endpoints (Experian via Invincible Ocean) ----
+
+EXPERIAN_CLIENT_ID = os.environ.get("EXPERIAN_CLIENT_ID", "")
+EXPERIAN_SECRET_KEY = os.environ.get("EXPERIAN_SECRET_KEY", "")
+
+class CreditScoreOTPRequest(BaseModel):
+    first_name: str
+    last_name: str
+    pan_number: str
+    dob: str  # Format: YYYYMMDD
+    mobile_number: str
+    email: str
+    gender: str  # "male" or "female"
+    pin_code: str
+
+class CreditScoreVerifyRequest(BaseModel):
+    token: str
+    otp: str
+
+
+@api_router.post("/loan-leads/{lead_id}/credit-score/request-otp")
+async def request_credit_score_otp(
+    lead_id: str,
+    request_data: CreditScoreOTPRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Request OTP for credit score check via Experian"""
+    try:
+        # Verify lead exists
+        lead = await db.loan_leads.find_one({"id": lead_id})
+        if not lead:
+            raise HTTPException(status_code=404, detail="Loan lead not found")
+        
+        if not EXPERIAN_CLIENT_ID or not EXPERIAN_SECRET_KEY:
+            raise HTTPException(status_code=500, detail="Credit score API not configured")
+        
+        logger.info(f"[CREDIT_SCORE] Requesting OTP for lead {lead_id}, mobile: {request_data.mobile_number}")
+        
+        # Call Experian API to request OTP
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(
+                "https://api.invincibleocean.com/invincible/genOtp/creditScoreCheckV4",
+                headers={
+                    "Content-Type": "application/json",
+                    "clientId": EXPERIAN_CLIENT_ID,
+                    "secretKey": EXPERIAN_SECRET_KEY
+                },
+                json={
+                    "firstName": request_data.first_name,
+                    "lastname": request_data.last_name,
+                    "panNumber": request_data.pan_number,
+                    "dob": request_data.dob,
+                    "mobileNumber": request_data.mobile_number,
+                    "email": request_data.email,
+                    "gender": request_data.gender,
+                    "pinCode": request_data.pin_code
+                }
+            )
+        
+        result = response.json()
+        logger.info(f"[CREDIT_SCORE] OTP API response code: {result.get('code')}")
+        
+        if result.get("code") == 200:
+            token = result.get("result", {}).get("token")
+            
+            # Store request info for later reference
+            await db.loan_leads.update_one(
+                {"id": lead_id},
+                {
+                    "$set": {
+                        "credit_score_request": {
+                            "status": "OTP_SENT",
+                            "mobile_number": request_data.mobile_number,
+                            "pan_number": request_data.pan_number[:5] + "XXXXX" + request_data.pan_number[-1],  # Mask PAN
+                            "requested_at": datetime.now(timezone.utc).isoformat(),
+                            "requested_by": current_user.get("email")
+                        }
+                    }
+                }
+            )
+            
+            return {
+                "success": True,
+                "message": result.get("message", "OTP sent successfully"),
+                "token": token,
+                "request_id": result.get("result", {}).get("sendOtpResponse", {}).get("request_id")
+            }
+        else:
+            error_msg = result.get("message", "Failed to send OTP")
+            logger.error(f"[CREDIT_SCORE] OTP request failed: {error_msg}")
+            raise HTTPException(status_code=400, detail=error_msg)
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[CREDIT_SCORE] Error requesting OTP: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to request OTP: {str(e)}")
+
+
+@api_router.post("/loan-leads/{lead_id}/credit-score/verify-otp")
+async def verify_credit_score_otp(
+    lead_id: str,
+    verify_data: CreditScoreVerifyRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Verify OTP and fetch credit score report from Experian"""
+    try:
+        # Verify lead exists
+        lead = await db.loan_leads.find_one({"id": lead_id})
+        if not lead:
+            raise HTTPException(status_code=404, detail="Loan lead not found")
+        
+        if not EXPERIAN_CLIENT_ID or not EXPERIAN_SECRET_KEY:
+            raise HTTPException(status_code=500, detail="Credit score API not configured")
+        
+        logger.info(f"[CREDIT_SCORE] Verifying OTP for lead {lead_id}")
+        
+        # Call Experian API to verify OTP and get credit score
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            response = await client.post(
+                "https://api.invincibleocean.com/invincible/verifyOtp/getCreditScoreCheckV4",
+                headers={
+                    "Content-Type": "application/json",
+                    "clientId": EXPERIAN_CLIENT_ID,
+                    "secretKey": EXPERIAN_SECRET_KEY
+                },
+                json={
+                    "token": verify_data.token,
+                    "otp": verify_data.otp
+                }
+            )
+        
+        result = response.json()
+        logger.info(f"[CREDIT_SCORE] Verify API response code: {result.get('code')}")
+        
+        if result.get("code") == 200:
+            credit_data = result.get("result", {})
+            
+            # Extract key information
+            score_data = credit_data.get("SCORE", {})
+            credit_score = score_data.get("FCIREXScore", 0)
+            
+            # Extract account summary
+            cais_summary = credit_data.get("CAIS_Account", {}).get("CAIS_Summary", {})
+            credit_account = cais_summary.get("Credit_Account", {})
+            outstanding = cais_summary.get("Total_Outstanding_Balance", {})
+            
+            # Create a summary object
+            credit_summary = {
+                "score": credit_score,
+                "score_confidence": score_data.get("FCIREXScoreConfidLevel", ""),
+                "report_date": credit_data.get("CreditProfileHeader", {}).get("ReportDate"),
+                "report_number": credit_data.get("CreditProfileHeader", {}).get("ReportNumber"),
+                "accounts": {
+                    "total": credit_account.get("CreditAccountTotal", 0),
+                    "active": credit_account.get("CreditAccountActive", 0),
+                    "closed": credit_account.get("CreditAccountClosed", 0),
+                    "default": credit_account.get("CreditAccountDefault", 0)
+                },
+                "outstanding_balance": {
+                    "total": outstanding.get("Outstanding_Balance_All", 0),
+                    "secured": outstanding.get("Outstanding_Balance_Secured", 0),
+                    "unsecured": outstanding.get("Outstanding_Balance_UnSecured", 0)
+                },
+                "enquiries": {
+                    "last_7_days": credit_data.get("TotalCAPS_Summary", {}).get("TotalCAPSLast7Days", 0),
+                    "last_30_days": credit_data.get("TotalCAPS_Summary", {}).get("TotalCAPSLast30Days", 0),
+                    "last_90_days": credit_data.get("TotalCAPS_Summary", {}).get("TotalCAPSLast90Days", 0),
+                    "last_180_days": credit_data.get("TotalCAPS_Summary", {}).get("TotalCAPSLast180Days", 0)
+                }
+            }
+            
+            # Store the credit score and report
+            now = datetime.now(timezone.utc)
+            await db.loan_leads.update_one(
+                {"id": lead_id},
+                {
+                    "$set": {
+                        "credit_score": credit_score,
+                        "credit_score_summary": credit_summary,
+                        "credit_score_full_report": credit_data,  # Store full report for reference
+                        "credit_score_request.status": "COMPLETED",
+                        "credit_score_request.completed_at": now.isoformat(),
+                        "updated_at": now
+                    }
+                }
+            )
+            
+            logger.info(f"[CREDIT_SCORE] Successfully fetched score {credit_score} for lead {lead_id}")
+            
+            return {
+                "success": True,
+                "message": "Credit report fetched successfully",
+                "credit_score": credit_score,
+                "summary": credit_summary
+            }
+        else:
+            error_msg = result.get("message", "Failed to verify OTP")
+            logger.error(f"[CREDIT_SCORE] OTP verification failed: {error_msg}")
+            
+            # Update status
+            await db.loan_leads.update_one(
+                {"id": lead_id},
+                {"$set": {"credit_score_request.status": "FAILED", "credit_score_request.error": error_msg}}
+            )
+            
+            raise HTTPException(status_code=400, detail=error_msg)
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[CREDIT_SCORE] Error verifying OTP: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to verify OTP: {str(e)}")
+
+
+@api_router.get("/loan-leads/{lead_id}/credit-score")
+async def get_credit_score(
+    lead_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get stored credit score for a loan lead"""
+    try:
+        lead = await db.loan_leads.find_one(
+            {"id": lead_id},
+            {"_id": 0, "credit_score": 1, "credit_score_summary": 1, "credit_score_request": 1}
+        )
+        if not lead:
+            raise HTTPException(status_code=404, detail="Loan lead not found")
+        
+        return {
+            "credit_score": lead.get("credit_score"),
+            "summary": lead.get("credit_score_summary"),
+            "request_status": lead.get("credit_score_request", {}).get("status")
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[CREDIT_SCORE] Error getting score: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get credit score: {str(e)}")
+
+
 # ---- Vehicle Loan Details Endpoints ----
 
 @api_router.post("/loan-leads/{lead_id}/vehicles")
