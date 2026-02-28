@@ -137,7 +137,7 @@ export default function ApprovalsScreen() {
                   <View style={styles.detailItem}>
                     <Ionicons name="calendar-outline" size={14} color={colors.text.tertiary} />
                     <Text style={styles.detailText}>
-                      {format(new Date(leave.start_date), 'MMM d')} - {format(new Date(leave.end_date), 'MMM d')}
+                      {formatDateShort(leave.start_date)} - {formatDateShort(leave.end_date)}
                     </Text>
                   </View>
                 </View>

@@ -200,7 +200,7 @@ export default function LeaveScreen() {
                   <View style={styles.leaveDates}>
                     <Ionicons name="calendar-outline" size={14} color={colors.text.tertiary} />
                     <Text style={styles.leaveDateText}>
-                      {format(new Date(leave.start_date), 'MMM d')} - {format(new Date(leave.end_date), 'MMM d, yyyy')}
+                      {formatDateRange(leave.start_date, leave.end_date)}
                     </Text>
                   </View>
                   {leave.reason && (

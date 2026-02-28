@@ -119,17 +119,17 @@ export default function LeaveDetailScreen() {
           <DetailRow 
             icon="calendar-outline" 
             label="Start Date" 
-            value={leave?.start_date ? format(new Date(leave.start_date), 'MMMM d, yyyy') : '-'} 
+            value={leave?.start_date ? formatDateLong(leave.start_date) : '-'} 
           />
           <DetailRow 
             icon="calendar-outline" 
             label="End Date" 
-            value={leave?.end_date ? format(new Date(leave.end_date), 'MMMM d, yyyy') : '-'} 
+            value={leave?.end_date ? formatDateLong(leave.end_date) : '-'} 
           />
           <DetailRow 
             icon="time-outline" 
             label="Applied On" 
-            value={leave?.created_at ? format(new Date(leave.created_at), 'MMM d, yyyy') : '-'} 
+            value={leave?.created_at ? formatDateMedium(leave.created_at) : '-'} 
           />
           {leave?.approver_name && (
             <DetailRow 

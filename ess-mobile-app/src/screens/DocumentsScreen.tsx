@@ -187,7 +187,7 @@ export default function DocumentsScreen() {
                       <>
                         <View style={styles.dot} />
                         <Text style={styles.docDate}>
-                          {format(new Date(doc.created_at), 'MMM d, yyyy')}
+                          {formatDateMedium(doc.created_at)}
                         </Text>
                       </>
                     )}

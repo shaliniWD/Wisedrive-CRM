@@ -152,7 +152,7 @@ export default function PayslipsScreen() {
                     {format(new Date(payslip.year, payslip.month - 1), 'MMMM yyyy')}
                   </Text>
                   <Text style={styles.payslipDate}>
-                    Generated: {payslip.generated_date ? format(new Date(payslip.generated_date), 'MMM d') : 'N/A'}
+                    Generated: {payslip.generated_date ? formatDateShort(payslip.generated_date) : 'N/A'}
                   </Text>
                 </View>
                 <View style={styles.payslipAmount}>
