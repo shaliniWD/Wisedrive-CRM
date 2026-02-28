@@ -811,6 +811,10 @@ export default function SettingsPage() {
               <Settings className="h-4 w-4" />
               Inspection Packages
             </TabsTrigger>
+            <TabsTrigger value="repairs" className="flex items-center gap-2">
+              <Wrench className="h-4 w-4" />
+              Repairs Module
+            </TabsTrigger>
           </TabsList>
 
           {/* Tokens Tab */}
