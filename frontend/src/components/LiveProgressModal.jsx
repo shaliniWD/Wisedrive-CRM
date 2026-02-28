@@ -253,14 +253,19 @@ export default function LiveProgressModal({
         assessmentSummary = assessmentSummary.overall || '';
       }
       
+      // Get market values from multiple possible sources
+      const aiInsights = inspection.ai_insights || {};
+      const marketValueMin = inspection.market_value_min || aiInsights.market_value?.min || 0;
+      const marketValueMax = inspection.market_value_max || aiInsights.market_value?.max || 0;
+      
       setEditData({
         // From AI insights
-        overall_rating: inspection.overall_rating || liveProgressData?.ai_report?.overall_rating || 0,
-        recommended_to_buy: inspection.recommended_to_buy || liveProgressData?.ai_report?.recommended_to_buy || false,
-        market_value_min: inspection.market_value_min || 0,
-        market_value_max: inspection.market_value_max || 0,
+        overall_rating: inspection.overall_rating || aiInsights.overall_rating || liveProgressData?.ai_report?.overall_rating || 0,
+        recommended_to_buy: inspection.recommended_to_buy ?? aiInsights.recommended_to_buy ?? liveProgressData?.ai_report?.recommended_to_buy ?? false,
+        market_value_min: marketValueMin,
+        market_value_max: marketValueMax,
         assessment_summary: assessmentSummary,
-        key_highlights: inspection.key_highlights || [],
+        key_highlights: inspection.key_highlights || aiInsights.key_highlights || [],
         
         // Vehicle
         vehicle_make: inspection.vehicle_make || '',
