@@ -1540,9 +1540,18 @@ export default function LiveProgressModal({
         {/* Footer with Save Button */}
         {canEdit && (
           <div className="p-4 border-t bg-gray-50 flex items-center justify-between">
-            <div className="text-xs text-gray-500">
-              {liveProgressData?.updated_at && (
-                <span>Last updated: {new Date(liveProgressData.updated_at).toLocaleString()}</span>
+            <div className="flex items-center gap-4">
+              <div className="text-xs text-gray-500">
+                {liveProgressData?.updated_at && (
+                  <span>Last updated: {new Date(liveProgressData.updated_at).toLocaleString()}</span>
+                )}
+              </div>
+              {/* Unsaved Changes Indicator */}
+              {hasUnsavedChanges && (
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-100 text-amber-700 rounded-full text-xs font-medium animate-pulse">
+                  <AlertCircle className="h-3 w-3" />
+                  Unsaved Changes
+                </div>
               )}
             </div>
             <div className="flex items-center gap-3">
@@ -1552,13 +1561,14 @@ export default function LiveProgressModal({
               <Button
                 onClick={saveChanges}
                 disabled={saving}
-                className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800"
+                className={`${hasUnsavedChanges ? 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600' : 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800'}`}
                 data-testid="save-all-btn"
               >
                 {saving ? (
                   <><Loader2 className="h-4 w-4 animate-spin mr-2" />Saving...</>
                 ) : (
-                  <><Save className="h-4 w-4 mr-2" />Save All Changes</>
+                  <><Save className="h-4 w-4 mr-2" />Save All Changes{hasUnsavedChanges && ' *'}</>
+                )}
                 )}
               </Button>
             </div>
