@@ -895,65 +895,163 @@ export default function LiveProgressModal({
               </Section>
             </TabsContent>
             
-            {/* Inspection Tab */}
+            {/* Q&A Details Tab (formerly Inspection) - Last tab with editable answers */}
             <TabsContent value="inspection" className="space-y-4 mt-0">
-              {/* Categories from live progress */}
+              {/* Category Progress Summary */}
+              <div className="bg-gradient-to-r from-slate-50 to-gray-50 rounded-xl p-4 border">
+                <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-blue-600" />
+                  Category-wise Progress
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                  {liveProgressData?.categories?.map((category, idx) => {
+                    const percentage = category.total > 0 ? Math.round((category.answered / category.total) * 100) : 0;
+                    return (
+                      <div key={idx} className="bg-white rounded-lg p-3 border">
+                        <p className="text-xs font-medium text-gray-700 truncate">{category.category_name}</p>
+                        <div className="flex items-center justify-between mt-1">
+                          <span className="text-sm font-bold text-gray-900">{category.answered}/{category.total}</span>
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${
+                            percentage === 100 ? 'bg-green-100 text-green-700' :
+                            percentage > 50 ? 'bg-yellow-100 text-yellow-700' :
+                            'bg-gray-100 text-gray-600'
+                          }`}>
+                            {percentage}%
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
+                          <div
+                            className={`h-1.5 rounded-full ${
+                              percentage === 100 ? 'bg-green-500' :
+                              percentage > 50 ? 'bg-yellow-500' :
+                              'bg-gray-400'
+                            }`}
+                            style={{ width: `${percentage}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              
+              {/* Categories with Q&A - Editable answers with predefined options */}
               {liveProgressData?.categories?.map((category, catIdx) => (
                 <Section
                   key={category.category_id || catIdx}
                   title={category.category_name}
-                  icon={Settings}
+                  icon={ClipboardList}
                   badge={`${category.answered}/${category.total}`}
                   defaultOpen={catIdx === 0}
                 >
                   <div className="space-y-3">
-                    {category.questions?.map((q, qIdx) => (
-                      <div
-                        key={q.question_id}
-                        className={`p-3 rounded-lg border-l-4 ${
-                          q.is_answered
-                            ? 'bg-green-50 border-l-green-500'
-                            : 'bg-gray-50 border-l-gray-300'
-                        }`}
-                      >
-                        <div className="flex items-start gap-3">
-                          <span className={`text-xs font-bold px-2 py-1 rounded-full ${
-                            q.is_answered ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'
-                          }`}>
-                            {qIdx + 1}
-                          </span>
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-gray-800">{q.question_text}</p>
-                            {q.is_answered ? (
-                              <div className="mt-2 p-2 bg-white rounded border">
-                                <p className="text-xs text-gray-500 mb-1">Answer:</p>
-                                {q.media_url ? (
-                                  <div>
-                                    {q.media_url.includes('video') || q.media_url.includes('.mp4') ? (
-                                      <video src={q.media_url} controls className="max-h-32 rounded" />
-                                    ) : (
-                                      <img src={q.media_url} alt="Answer" className="max-h-32 rounded cursor-pointer" onClick={() => window.open(q.media_url, '_blank')} />
-                                    )}
-                                  </div>
-                                ) : (
-                                  <p className="text-sm font-medium text-blue-700">
-                                    {typeof q.answer === 'object' ? q.answer?.selection : q.answer}
-                                  </p>
+                    {category.questions?.map((q, qIdx) => {
+                      const isEditing = editingAnswer?.questionId === q.question_id;
+                      const hasOptions = q.options && q.options.length > 0;
+                      const currentAnswer = typeof q.answer === 'object' ? q.answer?.selection : q.answer;
+                      
+                      return (
+                        <div
+                          key={q.question_id}
+                          className={`p-3 rounded-lg border-l-4 ${
+                            q.is_answered
+                              ? 'bg-green-50 border-l-green-500'
+                              : 'bg-gray-50 border-l-gray-300'
+                          }`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <span className={`text-xs font-bold px-2 py-1 rounded-full ${
+                              q.is_answered ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'
+                            }`}>
+                              {qIdx + 1}
+                            </span>
+                            <div className="flex-1">
+                              <div className="flex items-start justify-between">
+                                <p className="text-sm font-medium text-gray-800">{q.question_text}</p>
+                                {/* Edit button - only show for answered questions with predefined options */}
+                                {q.is_answered && hasOptions && canEdit && !isEditing && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setEditingAnswer({ questionId: q.question_id, categoryId: category.category_id })}
+                                    className="h-7 px-2 text-blue-600 hover:text-blue-800"
+                                  >
+                                    <Pencil className="h-3 w-3 mr-1" />
+                                    Edit
+                                  </Button>
                                 )}
-                                <p className="text-xs text-gray-400 mt-1">
-                                  {q.answered_at && new Date(q.answered_at).toLocaleString()}
-                                </p>
                               </div>
-                            ) : (
-                              <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                Awaiting response...
-                              </p>
-                            )}
+                              
+                              {q.is_answered ? (
+                                <div className="mt-2 p-2 bg-white rounded border">
+                                  {isEditing ? (
+                                    /* Edit mode - show dropdown for predefined options */
+                                    <div className="space-y-2">
+                                      <p className="text-xs text-gray-500">Select new answer:</p>
+                                      <Select
+                                        value={currentAnswer}
+                                        onValueChange={(val) => updateAnswer(q.question_id, val, q.options)}
+                                        disabled={savingAnswer}
+                                      >
+                                        <SelectTrigger className="h-9">
+                                          <SelectValue placeholder="Select option" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          {q.options.map((opt, optIdx) => (
+                                            <SelectItem key={optIdx} value={opt}>{opt}</SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                      <div className="flex items-center gap-2">
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => setEditingAnswer(null)}
+                                          disabled={savingAnswer}
+                                        >
+                                          Cancel
+                                        </Button>
+                                        {savingAnswer && <Loader2 className="h-4 w-4 animate-spin text-blue-600" />}
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    /* View mode */
+                                    <>
+                                      <p className="text-xs text-gray-500 mb-1">Answer:</p>
+                                      {q.media_url ? (
+                                        <div>
+                                          {q.media_url.includes('video') || q.media_url.includes('.mp4') ? (
+                                            <video src={q.media_url} controls className="max-h-32 rounded" />
+                                          ) : (
+                                            <img src={q.media_url} alt="Answer" className="max-h-32 rounded cursor-pointer" onClick={() => window.open(q.media_url, '_blank')} />
+                                          )}
+                                        </div>
+                                      ) : (
+                                        <p className="text-sm font-medium text-blue-700">{currentAnswer}</p>
+                                      )}
+                                      {hasOptions && (
+                                        <p className="text-xs text-gray-400 mt-1">
+                                          Options: {q.options.join(' | ')}
+                                        </p>
+                                      )}
+                                      <p className="text-xs text-gray-400 mt-1">
+                                        {q.answered_at && new Date(q.answered_at).toLocaleString()}
+                                      </p>
+                                    </>
+                                  )}
+                                </div>
+                              ) : (
+                                <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  Awaiting response...
+                                  {hasOptions && <span className="text-blue-500 ml-1">({q.options.length} options available)</span>}
+                                </p>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </Section>
               ))}
