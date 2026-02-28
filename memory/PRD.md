@@ -112,11 +112,19 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
   - Added "(5-10% below market average)" note in green
   - Website-wise scraped prices shown below recommended price
   - Sources include: CarDekho, CarWale, Cars24, Spinny, OLX
+  - Shows prompt to "Regenerate" if no market data available
 - **Q&A Details Tab:**
   - Category-wise progress grid at top showing completion percentages
+  - **Clickable category cards to filter Q&A** - click to show only questions for that category
+  - "Show All Categories" button to clear the filter
   - Collapsible category sections with questions
   - Edit button for answered questions with predefined options
   - Shows "(X options available)" for unanswered questions
+- **Refresh Controls:**
+  - Manual "Refresh" button in header
+  - Auto-refresh toggle (every 5 seconds) - enabled by default
+- **Scroll Fix:** 
+  - Fixed scroll issue in modal content area for proper scrolling
 
 ### Unscheduled Inspections Date Filter Fix - Feb 27, 2026
 - Fixed bug where unscheduled inspections were hidden when date filters applied
