@@ -156,8 +156,8 @@ const InspectionCard = ({
   onStart: () => void;
 }) => {
   const scheduledDate = new Date(inspection.scheduledAt);
-  const timeStr = scheduledDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-  const dateStr = scheduledDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+  const timeStr = formatTime(scheduledDate);
+  const dateStr = formatDateShort(scheduledDate);
   const cardStyle = getCardStyle(inspection.status);
   
   return (
