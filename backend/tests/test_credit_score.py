@@ -39,10 +39,13 @@ def api_client(auth_token):
 @pytest.fixture(scope="module")
 def test_lead_id(api_client):
     """Get a valid loan lead ID for testing"""
-    # Get loan leads
+    # Get loan leads - API returns paginated response with 'items' array
     response = api_client.get(f"{BASE_URL}/api/loan-leads")
     assert response.status_code == 200
-    leads = response.json()
+    data = response.json()
+    
+    # Handle paginated response
+    leads = data.get("items", []) if isinstance(data, dict) else data
     
     if not leads:
         pytest.skip("No loan leads available for testing")
@@ -213,7 +216,10 @@ class TestCreditScoreDataStructure:
         response = api_client.get(f"{BASE_URL}/api/loan-leads")
         
         assert response.status_code == 200
-        leads = response.json()
+        data = response.json()
+        
+        # Handle paginated response
+        leads = data.get("items", []) if isinstance(data, dict) else data
         
         if leads:
             # Check first lead has credit_score field accessible
