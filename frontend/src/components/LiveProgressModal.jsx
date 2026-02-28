@@ -863,6 +863,36 @@ export default function LiveProgressModal({
                   <EditableField label="IDV Value" value={editData.idv_value} onChange={(val) => updateField('idv_value', val)} type="number" disabled={!canEdit} />
                 </div>
               </Section>
+              
+              {/* RTO Verification (from Vaahan API) - moved from Verification tab */}
+              <Section title="RTO Verification (Vaahan API)" icon={Shield}>
+                <div className="grid grid-cols-2 gap-4">
+                  <EditableField
+                    label="Verification Status"
+                    value={editData.rto_verification_status}
+                    onChange={(val) => updateField('rto_verification_status', val)}
+                    type="select"
+                    options={['VERIFIED', 'PENDING', 'FAILED', 'NOT_AVAILABLE']}
+                    disabled={!canEdit}
+                  />
+                  <EditableField
+                    label="Hypothecation"
+                    value={editData.hypothecation}
+                    onChange={(val) => updateField('hypothecation', val)}
+                    placeholder="Bank/Financier name if any"
+                    disabled={!canEdit}
+                  />
+                  <div className="col-span-2">
+                    <EditableField
+                      label="Blacklisted"
+                      value={editData.blacklist_status}
+                      onChange={(val) => updateField('blacklist_status', val)}
+                      type="switch"
+                      disabled={!canEdit}
+                    />
+                  </div>
+                </div>
+              </Section>
             </TabsContent>
             
             {/* Inspection Tab */}
