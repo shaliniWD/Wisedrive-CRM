@@ -308,8 +308,8 @@ export default function InspectionsPage() {
 
   // Date Range Filter State
   const [dateRangeType, setDateRangeType] = useState('month'); // 'today', 'week', 'month', 'year', 'custom'
-  const [dateFrom, setDateFrom] = useState(new Date().toISOString().split('T')[0]);
-  const [dateTo, setDateTo] = useState(new Date().toISOString().split('T')[0]);
+  const [dateFrom, setDateFrom] = useState(getToday());
+  const [dateTo, setDateTo] = useState(getToday());
 
   // Modal states
   const [isCollectBalanceModalOpen, setIsCollectBalanceModalOpen] = useState(false);
