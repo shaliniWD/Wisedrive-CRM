@@ -1759,7 +1759,6 @@ export default function OBDScannerScreen() {
               contentContainerStyle={styles.historyList}
               renderItem={({ item }) => {
                 const totalDTCs = item.storedDTCs.length + item.pendingDTCs.length + item.permanentDTCs.length;
-                const date = new Date(item.timestamp);
                 const allDTCs = [...item.storedDTCs, ...item.pendingDTCs, ...item.permanentDTCs];
                 return (
                   <View style={styles.historyCard}>
@@ -1770,7 +1769,7 @@ export default function OBDScannerScreen() {
                         color={item.status === 'completed' ? Colors.success : Colors.error}
                       />
                       <Text style={styles.historyDate}>
-                        {date.toLocaleDateString()} {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {formatDateTime(item.timestamp)}
                       </Text>
                     </View>
                     <View style={styles.historyStats}>
