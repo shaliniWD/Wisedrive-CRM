@@ -1267,7 +1267,7 @@ export default function OBDScannerScreen() {
                   You have a previous scan that wasn't uploaded to the server.
                 </Text>
                 <Text style={{ fontSize: FontSize.xs, color: '#B45309', marginTop: 4 }}>
-                  Scanned: {new Date(pendingLocalData.savedAt || pendingLocalData.scanned_at).toLocaleString()}
+                  Scanned: {formatDateTime(pendingLocalData.savedAt || pendingLocalData.scanned_at)}
                 </Text>
                 <Text style={{ fontSize: FontSize.xs, color: '#B45309' }}>
                   DTCs Found: {pendingLocalData.total_errors || 0}
