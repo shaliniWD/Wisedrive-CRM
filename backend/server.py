@@ -16374,7 +16374,7 @@ async def verify_credit_score_otp(
     verify_data: CreditScoreVerifyRequest,
     current_user: dict = Depends(get_current_user)
 ):
-    """Verify OTP and fetch credit score report from Experian"""
+    """Verify OTP and fetch credit score report from Equifax (V1) or Experian (V4)"""
     try:
         # Verify lead exists
         lead = await db.loan_leads.find_one({"id": lead_id})
@@ -16384,61 +16384,96 @@ async def verify_credit_score_otp(
         if not EXPERIAN_CLIENT_ID or not EXPERIAN_SECRET_KEY:
             raise HTTPException(status_code=500, detail="Credit score API not configured")
         
-        logger.info(f"[CREDIT_SCORE] Verifying OTP for lead {lead_id}")
+        bureau = verify_data.bureau.lower() if verify_data.bureau else lead.get("credit_score_request", {}).get("bureau", "equifax")
+        logger.info(f"[CREDIT_SCORE] Verifying OTP via {bureau.upper()} for lead {lead_id}")
         
-        # Call Experian API to verify OTP and get credit score
         async with httpx.AsyncClient(timeout=60.0) as client:
-            response = await client.post(
-                "https://api.invincibleocean.com/invincible/verifyOtp/getCreditScoreCheckV4",
-                headers={
-                    "Content-Type": "application/json",
-                    "clientId": EXPERIAN_CLIENT_ID,
-                    "secretKey": EXPERIAN_SECRET_KEY
-                },
-                json={
-                    "token": verify_data.token,
-                    "otp": verify_data.otp
-                }
-            )
+            if bureau == "experian":
+                # Experian V4 API
+                response = await client.post(
+                    "https://api.invincibleocean.com/invincible/verifyOtp/getCreditScoreCheckV4",
+                    headers={
+                        "Content-Type": "application/json",
+                        "clientId": EXPERIAN_CLIENT_ID,
+                        "secretKey": EXPERIAN_SECRET_KEY
+                    },
+                    json={
+                        "token": verify_data.token,
+                        "otp": verify_data.otp
+                    }
+                )
+            else:
+                # Equifax V1 API
+                response = await client.post(
+                    "https://api.invincibleocean.com/invincible/verifyOtp/getCreditScoreCheckV1",
+                    headers={
+                        "Content-Type": "application/json",
+                        "clientId": EXPERIAN_CLIENT_ID,
+                        "secretKey": EXPERIAN_SECRET_KEY
+                    },
+                    json={
+                        "token": verify_data.token,
+                        "otp": verify_data.otp
+                    }
+                )
         
         result = response.json()
-        logger.info(f"[CREDIT_SCORE] Verify API response code: {result.get('code')}")
-        logger.info(f"[CREDIT_SCORE] Verify API full response: {str(result)[:500]}")
+        logger.info(f"[CREDIT_SCORE] {bureau.upper()} Verify API response code: {result.get('code')}")
+        logger.info(f"[CREDIT_SCORE] {bureau.upper()} Verify API full response: {json.dumps(result)[:2000]}")
         
         if result.get("code") == 200:
             credit_data = result.get("result", {})
             
-            # Extract key information
-            score_data = credit_data.get("SCORE", {})
-            credit_score = score_data.get("FCIREXScore", 0)
+            # Extract score - handle both Experian and Equifax structures
+            if bureau == "experian":
+                # Experian structure
+                score_data = credit_data.get("SCORE", {})
+                credit_score = score_data.get("FCIREXScore", 0) or score_data.get("BureauScore", 0)
+                cais_summary = credit_data.get("CAIS_Account", {}).get("CAIS_Summary", {})
+                credit_account = cais_summary.get("Credit_Account", {})
+                outstanding = cais_summary.get("Total_Outstanding_Balance", {})
+                total_caps = credit_data.get("TotalCAPS_Summary", {})
+            else:
+                # Equifax structure - may be similar or different
+                # Try common locations for score
+                credit_score = (
+                    credit_data.get("creditScore") or 
+                    credit_data.get("score") or
+                    credit_data.get("SCORE", {}).get("FCIREXScore") or
+                    credit_data.get("SCORE", {}).get("BureauScore") or
+                    credit_data.get("CreditScore") or
+                    0
+                )
+                # Try to extract from nested structure
+                cais_summary = credit_data.get("CAIS_Account", {}).get("CAIS_Summary", {}) or credit_data.get("accountSummary", {})
+                credit_account = cais_summary.get("Credit_Account", {}) or cais_summary.get("creditAccount", {})
+                outstanding = cais_summary.get("Total_Outstanding_Balance", {}) or cais_summary.get("outstandingBalance", {})
+                total_caps = credit_data.get("TotalCAPS_Summary", {}) or credit_data.get("enquirySummary", {})
+                score_data = credit_data.get("SCORE", {}) or {"score": credit_score}
             
-            # Extract account summary
-            cais_summary = credit_data.get("CAIS_Account", {}).get("CAIS_Summary", {})
-            credit_account = cais_summary.get("Credit_Account", {})
-            outstanding = cais_summary.get("Total_Outstanding_Balance", {})
-            
-            # Create a summary object
+            # Create a normalized summary object
             credit_summary = {
                 "score": credit_score,
-                "score_confidence": score_data.get("FCIREXScoreConfidLevel", ""),
-                "report_date": credit_data.get("CreditProfileHeader", {}).get("ReportDate"),
-                "report_number": credit_data.get("CreditProfileHeader", {}).get("ReportNumber"),
+                "bureau": bureau,
+                "score_confidence": score_data.get("FCIREXScoreConfidLevel", "") or score_data.get("confidence", ""),
+                "report_date": credit_data.get("CreditProfileHeader", {}).get("ReportDate") or credit_data.get("reportDate"),
+                "report_number": credit_data.get("CreditProfileHeader", {}).get("ReportNumber") or credit_data.get("reportNumber"),
                 "accounts": {
-                    "total": credit_account.get("CreditAccountTotal", 0),
-                    "active": credit_account.get("CreditAccountActive", 0),
-                    "closed": credit_account.get("CreditAccountClosed", 0),
-                    "default": credit_account.get("CreditAccountDefault", 0)
+                    "total": credit_account.get("CreditAccountTotal", 0) or credit_account.get("total", 0),
+                    "active": credit_account.get("CreditAccountActive", 0) or credit_account.get("active", 0),
+                    "closed": credit_account.get("CreditAccountClosed", 0) or credit_account.get("closed", 0),
+                    "default": credit_account.get("CreditAccountDefault", 0) or credit_account.get("default", 0)
                 },
                 "outstanding_balance": {
-                    "total": outstanding.get("Outstanding_Balance_All", 0),
-                    "secured": outstanding.get("Outstanding_Balance_Secured", 0),
-                    "unsecured": outstanding.get("Outstanding_Balance_UnSecured", 0)
+                    "total": outstanding.get("Outstanding_Balance_All", 0) or outstanding.get("total", 0),
+                    "secured": outstanding.get("Outstanding_Balance_Secured", 0) or outstanding.get("secured", 0),
+                    "unsecured": outstanding.get("Outstanding_Balance_UnSecured", 0) or outstanding.get("unsecured", 0)
                 },
                 "enquiries": {
-                    "last_7_days": credit_data.get("TotalCAPS_Summary", {}).get("TotalCAPSLast7Days", 0),
-                    "last_30_days": credit_data.get("TotalCAPS_Summary", {}).get("TotalCAPSLast30Days", 0),
-                    "last_90_days": credit_data.get("TotalCAPS_Summary", {}).get("TotalCAPSLast90Days", 0),
-                    "last_180_days": credit_data.get("TotalCAPS_Summary", {}).get("TotalCAPSLast180Days", 0)
+                    "last_7_days": total_caps.get("TotalCAPSLast7Days", 0) or total_caps.get("last7Days", 0),
+                    "last_30_days": total_caps.get("TotalCAPSLast30Days", 0) or total_caps.get("last30Days", 0),
+                    "last_90_days": total_caps.get("TotalCAPSLast90Days", 0) or total_caps.get("last90Days", 0),
+                    "last_180_days": total_caps.get("TotalCAPSLast180Days", 0) or total_caps.get("last180Days", 0)
                 }
             }
             
@@ -16449,8 +16484,9 @@ async def verify_credit_score_otp(
                 {
                     "$set": {
                         "credit_score": credit_score,
+                        "credit_score_bureau": bureau,
                         "credit_score_summary": credit_summary,
-                        "credit_score_full_report": credit_data,  # Store full report for reference
+                        "credit_score_full_report": credit_data,
                         "credit_score_request.status": "COMPLETED",
                         "credit_score_request.completed_at": now.isoformat(),
                         "updated_at": now
@@ -16458,17 +16494,20 @@ async def verify_credit_score_otp(
                 }
             )
             
-            logger.info(f"[CREDIT_SCORE] Successfully fetched score {credit_score} for lead {lead_id}")
+            logger.info(f"[CREDIT_SCORE] Successfully fetched {bureau.upper()} score {credit_score} for lead {lead_id}")
             
             return {
                 "success": True,
                 "message": "Credit report fetched successfully",
                 "credit_score": credit_score,
-                "summary": credit_summary
+                "bureau": bureau,
+                "summary": credit_summary,
+                "full_report": credit_data
             }
         else:
             error_msg = result.get("message", "Failed to verify OTP")
-            logger.error(f"[CREDIT_SCORE] OTP verification failed: {error_msg}")
+            logger.error(f"[CREDIT_SCORE] {bureau.upper()} OTP verification failed: {error_msg}")
+            logger.error(f"[CREDIT_SCORE] Full error response: {json.dumps(result)}")
             
             # Update status
             await db.loan_leads.update_one(
@@ -16482,6 +16521,8 @@ async def verify_credit_score_otp(
         raise
     except Exception as e:
         logger.error(f"[CREDIT_SCORE] Error verifying OTP: {str(e)}")
+        import traceback
+        logger.error(f"[CREDIT_SCORE] Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Failed to verify OTP: {str(e)}")
 
 
