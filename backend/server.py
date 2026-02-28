@@ -15677,6 +15677,869 @@ async def get_inspection_report_config(inspection_id: str, current_user: dict = 
     }
 
 
+# ==================== LOANS MODULE ====================
+# Used car loans for inspection customers
+
+from models.loan import (
+    LoanLead, LoanLeadCreate, LoanLeadUpdate,
+    LoanLeadStatus, CustomerType, LoanApplicationStatus,
+    BankMaster, BankMasterCreate, BankMasterUpdate,
+    BankPOC, EligibilityRule,
+    VehicleLoanDetails, VehicleLoanDetailsCreate,
+    LoanApplication, LoanApplicationCreate, LoanApplicationUpdate,
+    LoanDocument, BankEligibilityResult,
+    SALARIED_DOCUMENTS, SELF_EMPLOYED_DOCUMENTS
+)
+
+
+# ---- Bank Master Endpoints (Settings/Services Tab) ----
+
+@api_router.get("/banks")
+async def get_banks(
+    is_active: Optional[bool] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all banks from master data"""
+    query = {}
+    if is_active is not None:
+        query["is_active"] = is_active
+    
+    banks = await db.bank_master.find(query, {"_id": 0}).sort("bank_name", 1).to_list(100)
+    return banks
+
+
+@api_router.get("/banks/{bank_id}")
+async def get_bank(bank_id: str, current_user: dict = Depends(get_current_user)):
+    """Get a specific bank"""
+    bank = await db.bank_master.find_one({"id": bank_id}, {"_id": 0})
+    if not bank:
+        raise HTTPException(status_code=404, detail="Bank not found")
+    return bank
+
+
+@api_router.post("/banks")
+async def create_bank(
+    bank_data: BankMasterCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create a new bank in master data"""
+    now = datetime.now(timezone.utc)
+    
+    # Check for duplicate bank code
+    existing = await db.bank_master.find_one({"bank_code": bank_data.bank_code})
+    if existing:
+        raise HTTPException(status_code=400, detail="Bank code already exists")
+    
+    bank = {
+        "id": str(uuid.uuid4()),
+        "bank_name": bank_data.bank_name,
+        "bank_code": bank_data.bank_code.upper(),
+        "logo_url": bank_data.logo_url,
+        "interest_rate_min": bank_data.interest_rate_min,
+        "interest_rate_max": bank_data.interest_rate_max,
+        "max_tenure_months": bank_data.max_tenure_months,
+        "max_ltv_percent": bank_data.max_ltv_percent,
+        "processing_fee_percent": bank_data.processing_fee_percent,
+        "eligibility_rules": bank_data.eligibility_rules.model_dump() if bank_data.eligibility_rules else {},
+        "payout_commission_percent": bank_data.payout_commission_percent,
+        "city_pocs": [poc.model_dump() for poc in bank_data.city_pocs] if bank_data.city_pocs else [],
+        "is_active": bank_data.is_active,
+        "created_at": now.isoformat(),
+        "updated_at": now.isoformat()
+    }
+    
+    await db.bank_master.insert_one(bank)
+    bank.pop("_id", None)
+    return bank
+
+
+@api_router.put("/banks/{bank_id}")
+async def update_bank(
+    bank_id: str,
+    bank_data: BankMasterUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update a bank in master data"""
+    bank = await db.bank_master.find_one({"id": bank_id})
+    if not bank:
+        raise HTTPException(status_code=404, detail="Bank not found")
+    
+    update_dict = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    
+    for field, value in bank_data.model_dump(exclude_unset=True).items():
+        if value is not None:
+            if field == "eligibility_rules" and isinstance(value, dict):
+                update_dict[field] = value
+            elif field == "city_pocs" and isinstance(value, list):
+                update_dict[field] = [poc if isinstance(poc, dict) else poc.model_dump() for poc in value]
+            elif field == "bank_code":
+                update_dict[field] = value.upper()
+            else:
+                update_dict[field] = value
+    
+    await db.bank_master.update_one({"id": bank_id}, {"$set": update_dict})
+    
+    updated = await db.bank_master.find_one({"id": bank_id}, {"_id": 0})
+    return updated
+
+
+@api_router.delete("/banks/{bank_id}")
+async def delete_bank(bank_id: str, current_user: dict = Depends(get_current_user)):
+    """Delete a bank from master data"""
+    result = await db.bank_master.delete_one({"id": bank_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Bank not found")
+    return {"message": "Bank deleted successfully"}
+
+
+@api_router.post("/banks/{bank_id}/poc")
+async def add_bank_poc(
+    bank_id: str,
+    poc_data: BankPOC,
+    current_user: dict = Depends(get_current_user)
+):
+    """Add a point of contact to a bank"""
+    bank = await db.bank_master.find_one({"id": bank_id})
+    if not bank:
+        raise HTTPException(status_code=404, detail="Bank not found")
+    
+    poc = poc_data.model_dump()
+    
+    await db.bank_master.update_one(
+        {"id": bank_id},
+        {
+            "$push": {"city_pocs": poc},
+            "$set": {"updated_at": datetime.now(timezone.utc).isoformat()}
+        }
+    )
+    
+    return {"message": "POC added successfully", "poc": poc}
+
+
+# ---- Loan Lead Endpoints ----
+
+@api_router.get("/loan-leads")
+async def get_loan_leads(
+    status: Optional[str] = None,
+    city_id: Optional[str] = None,
+    search: Optional[str] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 50,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Get loan leads - these are customers who have paid for inspections
+    and are potential loan customers.
+    """
+    # Build query
+    query = {}
+    
+    if status:
+        query["status"] = status
+    
+    if city_id:
+        query["city_id"] = city_id
+    
+    if search:
+        query["$or"] = [
+            {"customer_name": {"$regex": search, "$options": "i"}},
+            {"customer_phone": {"$regex": search, "$options": "i"}}
+        ]
+    
+    if date_from:
+        query["created_at"] = {"$gte": date_from}
+    if date_to:
+        if "created_at" in query:
+            query["created_at"]["$lte"] = date_to
+        else:
+            query["created_at"] = {"$lte": date_to}
+    
+    # Get total count
+    total = await db.loan_leads.count_documents(query)
+    
+    # Get loan leads
+    leads = await db.loan_leads.find(query, {"_id": 0}).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    
+    return {
+        "items": leads,
+        "total": total,
+        "skip": skip,
+        "limit": limit
+    }
+
+
+@api_router.get("/loan-leads/sync-customers")
+async def sync_loan_leads_from_customers(
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Sync loan leads from customers who have paid for inspections.
+    This creates loan leads for customers who don't already have one.
+    """
+    now = datetime.now(timezone.utc)
+    
+    # Get all customers who have completed at least one paid inspection
+    # Find customers with paid inspections
+    paid_inspections = await db.inspections.find(
+        {
+            "payment_status": {"$in": ["PAID", "BALANCE_COLLECTED", "COMPLETED"]},
+            "customer_id": {"$exists": True, "$ne": None}
+        },
+        {"customer_id": 1, "customer_name": 1, "customer_phone": 1, "city_id": 1, "city_name": 1}
+    ).to_list(10000)
+    
+    # Get unique customers
+    customer_ids = list(set([i.get("customer_id") for i in paid_inspections if i.get("customer_id")]))
+    
+    # Get existing loan leads
+    existing_leads = await db.loan_leads.find(
+        {"customer_id": {"$in": customer_ids}},
+        {"customer_id": 1}
+    ).to_list(10000)
+    existing_customer_ids = set([l.get("customer_id") for l in existing_leads])
+    
+    # Create loan leads for new customers
+    new_leads = []
+    for customer_id in customer_ids:
+        if customer_id not in existing_customer_ids:
+            # Get customer details
+            inspection = next((i for i in paid_inspections if i.get("customer_id") == customer_id), None)
+            if inspection:
+                # Get full customer data
+                customer = await db.customers.find_one({"id": customer_id}, {"_id": 0})
+                if customer:
+                    lead = {
+                        "id": str(uuid.uuid4()),
+                        "customer_id": customer_id,
+                        "customer_name": customer.get("name", inspection.get("customer_name", "")),
+                        "customer_phone": customer.get("phone", inspection.get("customer_phone", "")),
+                        "customer_email": customer.get("email"),
+                        "city_id": customer.get("city_id", inspection.get("city_id")),
+                        "city_name": customer.get("city_name", inspection.get("city_name")),
+                        "status": "NEW",
+                        "status_notes": None,
+                        "last_contacted_at": None,
+                        "next_follow_up_at": None,
+                        "customer_type": None,
+                        "documents": [],
+                        "vehicles": [],
+                        "applications": [],
+                        "eligibility_results": [],
+                        "credit_score": None,
+                        "credit_score_fetched_at": None,
+                        "assigned_to": None,
+                        "created_at": now.isoformat(),
+                        "updated_at": now.isoformat(),
+                        "created_by": current_user.get("id")
+                    }
+                    new_leads.append(lead)
+    
+    # Insert new leads
+    if new_leads:
+        await db.loan_leads.insert_many(new_leads)
+    
+    return {
+        "message": f"Synced {len(new_leads)} new loan leads",
+        "total_customers": len(customer_ids),
+        "existing_leads": len(existing_customer_ids),
+        "new_leads": len(new_leads)
+    }
+
+
+@api_router.get("/loan-leads/{lead_id}")
+async def get_loan_lead(lead_id: str, current_user: dict = Depends(get_current_user)):
+    """Get a specific loan lead with full details"""
+    lead = await db.loan_leads.find_one({"id": lead_id}, {"_id": 0})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Loan lead not found")
+    
+    # Get customer's inspections
+    inspections = await db.inspections.find(
+        {"customer_id": lead.get("customer_id")},
+        {"_id": 0, "id": 1, "car_number": 1, "vehicle_make": 1, "vehicle_model": 1, 
+         "vehicle_year": 1, "market_price_research": 1, "scheduled_date": 1, "status": 1}
+    ).to_list(50)
+    
+    lead["customer_inspections"] = inspections
+    
+    return lead
+
+
+@api_router.put("/loan-leads/{lead_id}")
+async def update_loan_lead(
+    lead_id: str,
+    lead_data: LoanLeadUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update a loan lead (status, notes, etc.)"""
+    lead = await db.loan_leads.find_one({"id": lead_id})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Loan lead not found")
+    
+    now = datetime.now(timezone.utc)
+    update_dict = {"updated_at": now.isoformat()}
+    
+    for field, value in lead_data.model_dump(exclude_unset=True).items():
+        if value is not None:
+            update_dict[field] = value
+            
+            # Update last contacted if status changes
+            if field == "status" and value in ["INTERESTED", "NOT_INTERESTED", "RNR", "CALL_BACK", "FOLLOW_UP"]:
+                update_dict["last_contacted_at"] = now.isoformat()
+    
+    await db.loan_leads.update_one({"id": lead_id}, {"$set": update_dict})
+    
+    updated = await db.loan_leads.find_one({"id": lead_id}, {"_id": 0})
+    return updated
+
+
+@api_router.get("/loan-leads/{lead_id}/document-requirements")
+async def get_document_requirements(
+    lead_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get document requirements based on customer type"""
+    lead = await db.loan_leads.find_one({"id": lead_id}, {"_id": 0})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Loan lead not found")
+    
+    customer_type = lead.get("customer_type")
+    
+    if customer_type == "SALARIED":
+        requirements = [r.model_dump() for r in SALARIED_DOCUMENTS]
+    elif customer_type == "SELF_EMPLOYED":
+        requirements = [r.model_dump() for r in SELF_EMPLOYED_DOCUMENTS]
+    else:
+        # Return both types if not specified
+        requirements = {
+            "SALARIED": [r.model_dump() for r in SALARIED_DOCUMENTS],
+            "SELF_EMPLOYED": [r.model_dump() for r in SELF_EMPLOYED_DOCUMENTS]
+        }
+    
+    return {
+        "customer_type": customer_type,
+        "requirements": requirements,
+        "uploaded_documents": lead.get("documents", [])
+    }
+
+
+@api_router.post("/loan-leads/{lead_id}/documents")
+async def upload_loan_document(
+    lead_id: str,
+    document_type: str = Form(...),
+    file_url: str = Form(...),
+    file_name: str = Form(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """Add a document to a loan lead"""
+    lead = await db.loan_leads.find_one({"id": lead_id})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Loan lead not found")
+    
+    now = datetime.now(timezone.utc)
+    
+    document = {
+        "id": str(uuid.uuid4()),
+        "document_type": document_type,
+        "file_url": file_url,
+        "file_name": file_name,
+        "uploaded_at": now.isoformat(),
+        "uploaded_by": current_user.get("id")
+    }
+    
+    await db.loan_leads.update_one(
+        {"id": lead_id},
+        {
+            "$push": {"documents": document},
+            "$set": {"updated_at": now.isoformat()}
+        }
+    )
+    
+    return {"message": "Document uploaded", "document": document}
+
+
+@api_router.delete("/loan-leads/{lead_id}/documents/{document_id}")
+async def delete_loan_document(
+    lead_id: str,
+    document_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Delete a document from a loan lead"""
+    result = await db.loan_leads.update_one(
+        {"id": lead_id},
+        {
+            "$pull": {"documents": {"id": document_id}},
+            "$set": {"updated_at": datetime.now(timezone.utc).isoformat()}
+        }
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Document not found")
+    
+    return {"message": "Document deleted"}
+
+
+# ---- Vehicle Loan Details Endpoints ----
+
+@api_router.post("/loan-leads/{lead_id}/vehicles")
+async def add_vehicle_to_loan(
+    lead_id: str,
+    vehicle_data: VehicleLoanDetailsCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Add a vehicle for loan consideration"""
+    lead = await db.loan_leads.find_one({"id": lead_id})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Loan lead not found")
+    
+    now = datetime.now(timezone.utc)
+    
+    # Try to fetch Vaahan data if car number provided
+    vaahan_data = None
+    if vehicle_data.car_number:
+        try:
+            result = await vaahan_service.get_vehicle_details(vehicle_data.car_number)
+            if result.get("success"):
+                vaahan_data = result.get("data", {})
+                # Auto-populate fields from Vaahan
+                if not vehicle_data.car_make and vaahan_data.get("manufacturer"):
+                    vehicle_data.car_make = brand_mapper.normalize_brand(vaahan_data.get("manufacturer"))
+                if not vehicle_data.car_model and vaahan_data.get("model"):
+                    vehicle_data.car_model = vaahan_data.get("model")
+                if not vehicle_data.car_year and vaahan_data.get("manufacturing_date"):
+                    try:
+                        mfg_date = vaahan_data.get("manufacturing_date", "")
+                        if "/" in mfg_date:
+                            year = int(mfg_date.split("/")[-1])
+                        else:
+                            year = int(mfg_date[:4])
+                        vehicle_data.car_year = year
+                    except:
+                        pass
+        except Exception as e:
+            logger.error(f"Vaahan API error: {e}")
+    
+    vehicle = {
+        "vehicle_id": str(uuid.uuid4()),
+        "car_number": vehicle_data.car_number.upper().replace(" ", ""),
+        "car_make": vehicle_data.car_make,
+        "car_model": vehicle_data.car_model,
+        "car_year": vehicle_data.car_year,
+        "car_variant": vehicle_data.car_variant,
+        "vehicle_valuation": vehicle_data.vehicle_valuation,
+        "required_loan_amount": vehicle_data.required_loan_amount,
+        "expected_emi": vehicle_data.expected_emi,
+        "expected_interest_rate": vehicle_data.expected_interest_rate,
+        "expected_tenure_months": vehicle_data.expected_tenure_months,
+        "rc_card_url": None,
+        "insurance_doc_url": None,
+        "vaahan_data": vaahan_data,
+        "added_at": now.isoformat()
+    }
+    
+    # If from an inspection, copy the inspection's market price
+    if vehicle_data.inspection_id:
+        inspection = await db.inspections.find_one({"id": vehicle_data.inspection_id}, {"_id": 0})
+        if inspection and inspection.get("market_price_research"):
+            vehicle["vehicle_valuation"] = inspection.get("market_price_research", {}).get("market_average")
+    
+    await db.loan_leads.update_one(
+        {"id": lead_id},
+        {
+            "$push": {"vehicles": vehicle},
+            "$set": {"updated_at": now.isoformat()}
+        }
+    )
+    
+    return {"message": "Vehicle added", "vehicle": vehicle}
+
+
+@api_router.put("/loan-leads/{lead_id}/vehicles/{vehicle_id}")
+async def update_vehicle_loan_details(
+    lead_id: str,
+    vehicle_id: str,
+    vehicle_data: dict = Body(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """Update vehicle loan details"""
+    now = datetime.now(timezone.utc)
+    
+    # Build update operations
+    update_ops = {"updated_at": now.isoformat()}
+    
+    for field, value in vehicle_data.items():
+        if value is not None and field != "vehicle_id":
+            update_ops[f"vehicles.$.{field}"] = value
+    
+    result = await db.loan_leads.update_one(
+        {"id": lead_id, "vehicles.vehicle_id": vehicle_id},
+        {"$set": update_ops}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Vehicle not found")
+    
+    updated = await db.loan_leads.find_one({"id": lead_id}, {"_id": 0})
+    return updated
+
+
+@api_router.post("/loan-leads/{lead_id}/vehicles/{vehicle_id}/fetch-vaahan")
+async def fetch_vaahan_for_vehicle(
+    lead_id: str,
+    vehicle_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Fetch/Refresh Vaahan data for a vehicle"""
+    lead = await db.loan_leads.find_one({"id": lead_id}, {"_id": 0})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Loan lead not found")
+    
+    vehicle = next((v for v in lead.get("vehicles", []) if v.get("vehicle_id") == vehicle_id), None)
+    if not vehicle:
+        raise HTTPException(status_code=404, detail="Vehicle not found")
+    
+    car_number = vehicle.get("car_number")
+    if not car_number:
+        raise HTTPException(status_code=400, detail="No vehicle number")
+    
+    result = await vaahan_service.get_vehicle_details(car_number)
+    
+    if not result.get("success"):
+        return {"success": False, "error": result.get("error", "Vaahan API error")}
+    
+    vaahan_data = result.get("data", {})
+    now = datetime.now(timezone.utc)
+    
+    # Update vehicle with Vaahan data
+    update_ops = {
+        "updated_at": now.isoformat(),
+        "vehicles.$.vaahan_data": vaahan_data
+    }
+    
+    if vaahan_data.get("manufacturer"):
+        update_ops["vehicles.$.car_make"] = brand_mapper.normalize_brand(vaahan_data.get("manufacturer"))
+    if vaahan_data.get("model"):
+        update_ops["vehicles.$.car_model"] = vaahan_data.get("model")
+    if vaahan_data.get("manufacturing_date"):
+        try:
+            mfg_date = vaahan_data.get("manufacturing_date", "")
+            if "/" in mfg_date:
+                year = int(mfg_date.split("/")[-1])
+            else:
+                year = int(mfg_date[:4])
+            update_ops["vehicles.$.car_year"] = year
+        except:
+            pass
+    
+    await db.loan_leads.update_one(
+        {"id": lead_id, "vehicles.vehicle_id": vehicle_id},
+        {"$set": update_ops}
+    )
+    
+    return {"success": True, "vaahan_data": vaahan_data}
+
+
+@api_router.delete("/loan-leads/{lead_id}/vehicles/{vehicle_id}")
+async def remove_vehicle_from_loan(
+    lead_id: str,
+    vehicle_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Remove a vehicle from loan consideration"""
+    result = await db.loan_leads.update_one(
+        {"id": lead_id},
+        {
+            "$pull": {"vehicles": {"vehicle_id": vehicle_id}},
+            "$set": {"updated_at": datetime.now(timezone.utc).isoformat()}
+        }
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Vehicle not found")
+    
+    return {"message": "Vehicle removed"}
+
+
+# ---- Loan Processing & Bank Eligibility ----
+
+@api_router.post("/loan-leads/{lead_id}/vehicles/{vehicle_id}/check-eligibility")
+async def check_bank_eligibility(
+    lead_id: str,
+    vehicle_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Check loan eligibility with all active banks.
+    This is a MOCK implementation - in production, this would call actual bank APIs.
+    """
+    lead = await db.loan_leads.find_one({"id": lead_id}, {"_id": 0})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Loan lead not found")
+    
+    vehicle = next((v for v in lead.get("vehicles", []) if v.get("vehicle_id") == vehicle_id), None)
+    if not vehicle:
+        raise HTTPException(status_code=404, detail="Vehicle not found")
+    
+    # Get vehicle valuation
+    valuation = vehicle.get("vehicle_valuation", 0)
+    if not valuation or valuation <= 0:
+        raise HTTPException(status_code=400, detail="Vehicle valuation is required for eligibility check")
+    
+    required_amount = vehicle.get("required_loan_amount", valuation * 0.8)
+    requested_tenure = vehicle.get("expected_tenure_months", 60)
+    
+    # Get all active banks
+    banks = await db.bank_master.find({"is_active": True}, {"_id": 0}).to_list(100)
+    
+    if not banks:
+        return {"message": "No active banks configured", "results": []}
+    
+    now = datetime.now(timezone.utc)
+    results = []
+    
+    for bank in banks:
+        # MOCK eligibility check
+        max_ltv = bank.get("max_ltv_percent", 80)
+        max_loan = valuation * (max_ltv / 100)
+        
+        # Random eligibility for mock (70% chance eligible)
+        import random
+        is_eligible = random.random() > 0.3
+        
+        if is_eligible:
+            # Calculate EMI
+            interest_min = bank.get("interest_rate_min", 10)
+            interest_max = bank.get("interest_rate_max", 14)
+            offered_rate = round(random.uniform(interest_min, interest_max), 2)
+            
+            # Cap loan amount
+            approved_amount = min(required_amount, max_loan)
+            
+            # Calculate tenure
+            max_tenure = bank.get("max_tenure_months", 84)
+            tenure = min(requested_tenure, max_tenure)
+            
+            # EMI calculation: EMI = P * r * (1+r)^n / ((1+r)^n - 1)
+            monthly_rate = offered_rate / 12 / 100
+            if monthly_rate > 0:
+                emi = approved_amount * monthly_rate * pow(1 + monthly_rate, tenure) / (pow(1 + monthly_rate, tenure) - 1)
+            else:
+                emi = approved_amount / tenure
+            
+            processing_fee = approved_amount * (bank.get("processing_fee_percent", 1) / 100)
+            
+            result = {
+                "bank_id": bank.get("id"),
+                "bank_name": bank.get("bank_name"),
+                "bank_code": bank.get("bank_code"),
+                "is_eligible": True,
+                "interest_rate": offered_rate,
+                "max_loan_amount": round(approved_amount, 0),
+                "emi_amount": round(emi, 0),
+                "tenure_months": tenure,
+                "processing_fee": round(processing_fee, 0),
+                "rejection_reason": None,
+                "checked_at": now.isoformat()
+            }
+        else:
+            rejection_reasons = [
+                "Vehicle age exceeds limit",
+                "Loan amount below minimum threshold",
+                "Credit score requirement not met",
+                "Income criteria not satisfied"
+            ]
+            result = {
+                "bank_id": bank.get("id"),
+                "bank_name": bank.get("bank_name"),
+                "bank_code": bank.get("bank_code"),
+                "is_eligible": False,
+                "interest_rate": None,
+                "max_loan_amount": None,
+                "emi_amount": None,
+                "tenure_months": None,
+                "processing_fee": None,
+                "rejection_reason": random.choice(rejection_reasons),
+                "checked_at": now.isoformat()
+            }
+        
+        results.append(result)
+    
+    # Store results in the lead
+    await db.loan_leads.update_one(
+        {"id": lead_id},
+        {
+            "$set": {
+                "eligibility_results": results,
+                "updated_at": now.isoformat()
+            }
+        }
+    )
+    
+    return {
+        "vehicle_id": vehicle_id,
+        "vehicle_valuation": valuation,
+        "results": results,
+        "eligible_banks": len([r for r in results if r.get("is_eligible")])
+    }
+
+
+# ---- Loan Applications ----
+
+@api_router.post("/loan-leads/{lead_id}/applications")
+async def create_loan_application(
+    lead_id: str,
+    application_data: LoanApplicationCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Apply for a loan with a specific bank for a specific vehicle"""
+    lead = await db.loan_leads.find_one({"id": lead_id}, {"_id": 0})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Loan lead not found")
+    
+    # Verify vehicle exists
+    vehicle = next((v for v in lead.get("vehicles", []) if v.get("vehicle_id") == application_data.vehicle_loan_id), None)
+    if not vehicle:
+        raise HTTPException(status_code=404, detail="Vehicle not found")
+    
+    # Verify bank exists
+    bank = await db.bank_master.find_one({"id": application_data.bank_id}, {"_id": 0})
+    if not bank:
+        raise HTTPException(status_code=404, detail="Bank not found")
+    
+    now = datetime.now(timezone.utc)
+    
+    application = {
+        "id": str(uuid.uuid4()),
+        "loan_lead_id": lead_id,
+        "vehicle_loan_id": application_data.vehicle_loan_id,
+        "bank_id": application_data.bank_id,
+        "bank_name": bank.get("bank_name"),
+        "status": "APPLIED",
+        "applied_amount": application_data.applied_amount or vehicle.get("required_loan_amount"),
+        "approved_amount": None,
+        "interest_rate": None,
+        "tenure_months": application_data.tenure_months or vehicle.get("expected_tenure_months"),
+        "emi_amount": None,
+        "processing_fee": None,
+        "disbursement_date": None,
+        "bank_reference_number": None,
+        "remarks": None,
+        "status_history": [
+            {
+                "status": "APPLIED",
+                "timestamp": now.isoformat(),
+                "updated_by": current_user.get("id"),
+                "notes": "Application submitted"
+            }
+        ],
+        "created_at": now.isoformat(),
+        "updated_at": now.isoformat()
+    }
+    
+    await db.loan_leads.update_one(
+        {"id": lead_id},
+        {
+            "$push": {"applications": application},
+            "$set": {"updated_at": now.isoformat()}
+        }
+    )
+    
+    return {"message": "Loan application created", "application": application}
+
+
+@api_router.put("/loan-leads/{lead_id}/applications/{application_id}")
+async def update_loan_application(
+    lead_id: str,
+    application_id: str,
+    update_data: LoanApplicationUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update loan application status and details"""
+    lead = await db.loan_leads.find_one({"id": lead_id}, {"_id": 0})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Loan lead not found")
+    
+    now = datetime.now(timezone.utc)
+    
+    # Find application index
+    app_index = next((i for i, a in enumerate(lead.get("applications", [])) if a.get("id") == application_id), None)
+    if app_index is None:
+        raise HTTPException(status_code=404, detail="Application not found")
+    
+    # Build update ops
+    update_ops = {
+        "updated_at": now.isoformat(),
+        f"applications.{app_index}.updated_at": now.isoformat()
+    }
+    
+    for field, value in update_data.model_dump(exclude_unset=True).items():
+        if value is not None:
+            if field == "status":
+                # Add to status history
+                status_entry = {
+                    "status": value,
+                    "timestamp": now.isoformat(),
+                    "updated_by": current_user.get("id"),
+                    "notes": update_data.remarks
+                }
+                await db.loan_leads.update_one(
+                    {"id": lead_id},
+                    {"$push": {f"applications.{app_index}.status_history": status_entry}}
+                )
+            
+            if field == "disbursement_date" and isinstance(value, datetime):
+                update_ops[f"applications.{app_index}.{field}"] = value.isoformat()
+            else:
+                update_ops[f"applications.{app_index}.{field}"] = value
+    
+    await db.loan_leads.update_one({"id": lead_id}, {"$set": update_ops})
+    
+    updated = await db.loan_leads.find_one({"id": lead_id}, {"_id": 0})
+    return updated
+
+
+# ---- Loan Statistics ----
+
+@api_router.get("/loan-leads/stats")
+async def get_loan_stats(current_user: dict = Depends(get_current_user)):
+    """Get loan module statistics"""
+    now = datetime.now(timezone.utc)
+    
+    # Total leads by status
+    status_counts = {}
+    for status in ["NEW", "INTERESTED", "NOT_INTERESTED", "RNR", "CALL_BACK", "FOLLOW_UP"]:
+        count = await db.loan_leads.count_documents({"status": status})
+        status_counts[status] = count
+    
+    total_leads = sum(status_counts.values())
+    
+    # Application stats
+    pipeline = [
+        {"$unwind": "$applications"},
+        {"$group": {
+            "_id": "$applications.status",
+            "count": {"$sum": 1},
+            "total_amount": {"$sum": "$applications.applied_amount"}
+        }}
+    ]
+    
+    app_stats = await db.loan_leads.aggregate(pipeline).to_list(100)
+    application_counts = {s.get("_id"): {"count": s.get("count"), "amount": s.get("total_amount")} for s in app_stats}
+    
+    # Bank stats
+    bank_count = await db.bank_master.count_documents({"is_active": True})
+    
+    return {
+        "total_leads": total_leads,
+        "leads_by_status": status_counts,
+        "applications_by_status": application_counts,
+        "active_banks": bank_count,
+        "as_of": now.isoformat()
+    }
+
+
 # ==================== MECHANIC APP ENDPOINTS ====================
 # These endpoints are specifically for the mobile mechanic app
 
