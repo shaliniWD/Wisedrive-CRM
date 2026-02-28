@@ -593,7 +593,7 @@ export default function HomeScreen() {
     { key: 'history', label: 'History' },
   ];
 
-  const todayStr = new Date().toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' });
+  const todayStr = formatDateWithDay(new Date());
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
