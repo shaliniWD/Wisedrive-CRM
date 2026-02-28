@@ -578,11 +578,13 @@ export default function LiveProgressModal({
           </Tabs>
         </div>
         
-        {/* Content */}
-        <ScrollArea className="flex-1 p-4">
-          <Tabs value={activeTab} className="w-full">
-            {/* AI Analysis Tab (formerly Overview) */}
-            <TabsContent value="ai-analysis" className="space-y-4 mt-0">
+        {/* Content - Fixed height ScrollArea for proper scrolling */}
+        <div className="flex-1 overflow-hidden">
+          <ScrollArea className="h-full">
+            <div className="p-4">
+              <Tabs value={activeTab} className="w-full">
+                {/* AI Analysis Tab (formerly Overview) */}
+                <TabsContent value="ai-analysis" className="space-y-4 mt-0">
               {/* Share Report Button */}
               <div className="flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-200">
                 <div>
