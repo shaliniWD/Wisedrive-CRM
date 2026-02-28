@@ -720,6 +720,604 @@ const DocumentsModal = ({ isOpen, onClose, lead, onUpdate }) => {
   );
 };
 
+// Comprehensive Credit Report View Component
+const CreditReportView = ({ creditResult, fullReport, onRecheck, onClose }) => {
+  const [activeTab, setActiveTab] = useState('overview');
+  const [expandedAccounts, setExpandedAccounts] = useState({});
+  
+  const getScoreColor = (score) => {
+    if (score >= 750) return 'text-green-600 bg-green-100';
+    if (score >= 650) return 'text-yellow-600 bg-yellow-100';
+    if (score >= 550) return 'text-orange-600 bg-orange-100';
+    return 'text-red-600 bg-red-100';
+  };
+  
+  const getScoreLabel = (score) => {
+    if (score >= 750) return 'Excellent';
+    if (score >= 700) return 'Good';
+    if (score >= 650) return 'Fair';
+    if (score >= 550) return 'Poor';
+    return 'Very Poor';
+  };
+  
+  const getScoreRiskLevel = (score) => {
+    if (score >= 750) return { level: 'Low Risk', color: 'text-green-700 bg-green-50', desc: 'High probability of loan repayment' };
+    if (score >= 700) return { level: 'Moderate Risk', color: 'text-blue-700 bg-blue-50', desc: 'Good repayment history' };
+    if (score >= 650) return { level: 'Medium Risk', color: 'text-yellow-700 bg-yellow-50', desc: 'Some concerns in credit history' };
+    if (score >= 550) return { level: 'High Risk', color: 'text-orange-700 bg-orange-50', desc: 'Significant credit concerns' };
+    return { level: 'Very High Risk', color: 'text-red-700 bg-red-50', desc: 'Poor repayment history' };
+  };
+  
+  const formatDate = (dateNum) => {
+    if (!dateNum) return '-';
+    const str = String(dateNum);
+    if (str.length === 8) {
+      return `${str.slice(6,8)}/${str.slice(4,6)}/${str.slice(0,4)}`;
+    }
+    return str;
+  };
+  
+  const getAccountTypeName = (code) => {
+    const types = {
+      '00': 'Other', '01': 'Auto Loan', '02': 'Housing Loan', '03': 'Property Loan',
+      '04': 'Loan Against Shares', '05': 'Personal Loan', '06': 'Consumer Loan',
+      '07': 'Gold Loan', '08': 'Education Loan', '09': 'Loan to Professional',
+      '10': 'Credit Card', '11': 'Leasing', '12': 'Overdraft', '13': 'Two-Wheeler Loan',
+      '14': 'Non-Funded Credit Facility', '15': 'Loan Against Bank Deposits',
+      '16': 'Fleet Card', '17': 'Commercial Vehicle Loan', '18': 'Telco Wireless',
+      '19': 'Telco Landline', '20': 'Telco Broadband', '31': 'Secured Credit Card',
+      '32': 'Used Car Loan', '33': 'Construction Equipment Loan', '34': 'Tractor Loan',
+      '35': 'Corporate Credit Card', '36': 'Kisan Credit Card', '37': 'Loan on Credit Card',
+      '38': 'Prime Minister Jaan Dhan Yojana', '39': 'Mudra Loans – Shishu',
+      '40': 'Mudra Loans – Kishor', '41': 'Mudra Loans – Tarun', '42': 'Microfinance Business Loan',
+      '43': 'Microfinance Personal Loan', '44': 'Microfinance Housing Loan',
+      '45': 'Microfinance Other', '46': 'P2P Personal Loan', '47': 'P2P Business Loan',
+      '50': 'Business Loan – Secured', '51': 'Business Loan – Unsecured (General)',
+      '52': 'Business Loan – Unsecured (Priority Sector)',
+      '53': 'Business Non-Funded Credit Facility – Secured',
+      '54': 'Business Non-Funded Credit Facility - Unsecured',
+      '55': 'Business Loan Against Bank Deposits', '56': 'Staff Loan',
+      '61': 'Buyer Credit Foreign Currency', '69': 'BNPL'
+    };
+    return types[String(code).padStart(2, '0')] || `Type ${code}`;
+  };
+  
+  const getAccountStatus = (code) => {
+    const statuses = {
+      '00': { label: 'Active', color: 'bg-green-100 text-green-700' },
+      '11': { label: 'Current', color: 'bg-green-100 text-green-700' },
+      '12': { label: '1-30 DPD', color: 'bg-yellow-100 text-yellow-700' },
+      '13': { label: 'Closed', color: 'bg-gray-100 text-gray-700' },
+      '21': { label: '31-60 DPD', color: 'bg-orange-100 text-orange-700' },
+      '22': { label: '61-90 DPD', color: 'bg-orange-100 text-orange-700' },
+      '31': { label: '91-180 DPD', color: 'bg-red-100 text-red-700' },
+      '32': { label: 'Written Off', color: 'bg-red-100 text-red-700' },
+      '40': { label: 'Suit Filed', color: 'bg-red-100 text-red-700' },
+      '41': { label: 'Willful Default', color: 'bg-red-100 text-red-700' },
+      '71': { label: 'SMA', color: 'bg-yellow-100 text-yellow-700' },
+      '78': { label: 'NPA', color: 'bg-red-100 text-red-700' },
+      '80': { label: 'Settled', color: 'bg-blue-100 text-blue-700' },
+      '82': { label: 'Post Write-Off', color: 'bg-red-100 text-red-700' },
+      '83': { label: 'Account Sold', color: 'bg-gray-100 text-gray-700' },
+      '84': { label: 'Restructured', color: 'bg-yellow-100 text-yellow-700' },
+    };
+    return statuses[String(code)] || { label: `Status ${code}`, color: 'bg-gray-100 text-gray-700' };
+  };
+  
+  const getPaymentStatusColor = (dpd) => {
+    if (dpd === 0 || dpd === '0' || dpd === 'STD') return 'bg-green-500';
+    if (dpd === '?' || dpd === 'XXX' || dpd === 'NEW') return 'bg-gray-300';
+    const days = parseInt(dpd);
+    if (isNaN(days)) return 'bg-gray-300';
+    if (days <= 30) return 'bg-yellow-500';
+    if (days <= 60) return 'bg-orange-500';
+    if (days <= 90) return 'bg-red-400';
+    return 'bg-red-600';
+  };
+  
+  const toggleAccountExpand = (idx) => {
+    setExpandedAccounts(prev => ({ ...prev, [idx]: !prev[idx] }));
+  };
+  
+  // Extract data from full report or summary
+  const accounts = fullReport?.CAIS_Account?.CAIS_Account_DETAILS || [];
+  const caisSummary = fullReport?.CAIS_Account?.CAIS_Summary || creditResult?.summary || {};
+  const capsData = fullReport?.CAPS || {};
+  const nonCreditCaps = fullReport?.NonCreditCAPS || {};
+  const totalCaps = fullReport?.TotalCAPS_Summary || creditResult?.summary?.enquiries || {};
+  const profileHeader = fullReport?.CreditProfileHeader || {};
+  const currentApp = fullReport?.Current_Application?.Current_Application_Details || {};
+  const scoreData = fullReport?.SCORE || {};
+  const riskLevel = getScoreRiskLevel(creditResult.credit_score);
+  
+  const tabs = [
+    { id: 'overview', label: 'Overview', icon: Eye },
+    { id: 'accounts', label: 'Accounts', icon: Building2, count: accounts.length || caisSummary?.Credit_Account?.CreditAccountTotal },
+    { id: 'enquiries', label: 'Enquiries', icon: Search },
+    { id: 'profile', label: 'Profile', icon: Users },
+  ];
+  
+  return (
+    <div className="space-y-4">
+      {/* Score Header - Always visible */}
+      <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl">
+        <div className={`w-20 h-20 rounded-full flex flex-col items-center justify-center ${getScoreColor(creditResult.credit_score)}`}>
+          <span className="text-2xl font-bold">{creditResult.credit_score}</span>
+          <span className="text-xs font-medium">{getScoreLabel(creditResult.credit_score)}</span>
+        </div>
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <h3 className="text-lg font-semibold">Experian Credit Score</h3>
+            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${riskLevel.color}`}>
+              {riskLevel.level}
+            </span>
+          </div>
+          <p className="text-sm text-gray-500 mt-1">{riskLevel.desc}</p>
+          {profileHeader.ReportDate && (
+            <p className="text-xs text-gray-400 mt-1">
+              Report #{profileHeader.ReportNumber} • {formatDate(profileHeader.ReportDate)}
+            </p>
+          )}
+        </div>
+      </div>
+      
+      {/* Score Gauge */}
+      <div className="px-2">
+        <div className="relative h-2 bg-gradient-to-r from-red-500 via-yellow-500 to-green-500 rounded-full">
+          <div 
+            className="absolute top-1/2 w-4 h-4 bg-white border-2 border-gray-800 rounded-full transform -translate-x-1/2 -translate-y-1/2 shadow-lg"
+            style={{ left: `${Math.min(100, Math.max(0, ((creditResult.credit_score - 300) / 600) * 100))}%` }}
+          />
+        </div>
+        <div className="flex justify-between text-xs text-gray-400 mt-1">
+          <span>300</span>
+          <span>450</span>
+          <span>600</span>
+          <span>750</span>
+          <span>900</span>
+        </div>
+      </div>
+      
+      {/* Tab Navigation */}
+      <div className="flex gap-1 p-1 bg-gray-100 rounded-lg">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-all ${
+              activeTab === tab.id 
+                ? 'bg-white shadow-sm text-blue-600' 
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <tab.icon className="h-4 w-4" />
+            {tab.label}
+            {tab.count > 0 && (
+              <span className="text-xs bg-gray-200 text-gray-600 px-1.5 rounded-full">{tab.count}</span>
+            )}
+          </button>
+        ))}
+      </div>
+      
+      {/* Tab Content */}
+      <div className="min-h-[300px] max-h-[400px] overflow-y-auto">
+        {/* Overview Tab */}
+        {activeTab === 'overview' && (
+          <div className="space-y-4">
+            {/* Key Metrics */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="p-3 bg-green-50 rounded-lg border border-green-100">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <span className="text-xs font-medium text-green-700 uppercase">Merits</span>
+                </div>
+                <div className="mt-2 space-y-1 text-sm">
+                  <p className="text-green-800">✓ {caisSummary?.Credit_Account?.CreditAccountActive || creditResult.summary?.accounts?.active || 0} Active Accounts</p>
+                  <p className="text-green-800">✓ {caisSummary?.Credit_Account?.CreditAccountClosed || creditResult.summary?.accounts?.closed || 0} Closed Accounts</p>
+                  {creditResult.credit_score >= 700 && <p className="text-green-800">✓ Good Credit Standing</p>}
+                </div>
+              </div>
+              
+              <div className="p-3 bg-red-50 rounded-lg border border-red-100">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-red-600" />
+                  <span className="text-xs font-medium text-red-700 uppercase">Risks</span>
+                </div>
+                <div className="mt-2 space-y-1 text-sm">
+                  {(caisSummary?.Credit_Account?.CreditAccountDefault || creditResult.summary?.accounts?.default || 0) > 0 && (
+                    <p className="text-red-800">⚠ {caisSummary?.Credit_Account?.CreditAccountDefault || creditResult.summary?.accounts?.default} Default(s)</p>
+                  )}
+                  {(totalCaps?.TotalCAPSLast30Days || creditResult.summary?.enquiries?.last_30_days || 0) > 3 && (
+                    <p className="text-red-800">⚠ High Recent Enquiries</p>
+                  )}
+                  {creditResult.credit_score < 650 && <p className="text-red-800">⚠ Low Credit Score</p>}
+                  {(caisSummary?.Credit_Account?.CreditAccountDefault || creditResult.summary?.accounts?.default || 0) === 0 && 
+                   (totalCaps?.TotalCAPSLast30Days || creditResult.summary?.enquiries?.last_30_days || 0) <= 3 &&
+                   creditResult.credit_score >= 650 && <p className="text-gray-500">No major risks identified</p>}
+                </div>
+              </div>
+              
+              <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
+                <div className="flex items-center gap-2">
+                  <IndianRupee className="h-4 w-4 text-blue-600" />
+                  <span className="text-xs font-medium text-blue-700 uppercase">Exposure</span>
+                </div>
+                <div className="mt-2 space-y-1 text-sm">
+                  <p className="text-blue-800 font-semibold">
+                    ₹{((caisSummary?.Total_Outstanding_Balance?.Outstanding_Balance_All || creditResult.summary?.outstanding_balance?.total || 0)).toLocaleString()}
+                  </p>
+                  <p className="text-blue-600 text-xs">Total Outstanding</p>
+                </div>
+              </div>
+            </div>
+            
+            {/* Account Summary */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-4 bg-white rounded-lg border">
+                <h4 className="text-sm font-semibold text-gray-700 mb-3">Credit Accounts</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Total Accounts</span>
+                    <span className="font-semibold">{caisSummary?.Credit_Account?.CreditAccountTotal || creditResult.summary?.accounts?.total || 0}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Active</span>
+                    <span className="text-green-600 font-medium">{caisSummary?.Credit_Account?.CreditAccountActive || creditResult.summary?.accounts?.active || 0}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Closed</span>
+                    <span className="text-gray-600">{caisSummary?.Credit_Account?.CreditAccountClosed || creditResult.summary?.accounts?.closed || 0}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Defaulted</span>
+                    <span className={(caisSummary?.Credit_Account?.CreditAccountDefault || creditResult.summary?.accounts?.default || 0) > 0 ? 'text-red-600 font-medium' : 'text-gray-600'}>
+                      {caisSummary?.Credit_Account?.CreditAccountDefault || creditResult.summary?.accounts?.default || 0}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="p-4 bg-white rounded-lg border">
+                <h4 className="text-sm font-semibold text-gray-700 mb-3">Outstanding Balance</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Total</span>
+                    <span className="font-semibold">₹{(caisSummary?.Total_Outstanding_Balance?.Outstanding_Balance_All || creditResult.summary?.outstanding_balance?.total || 0).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Secured</span>
+                    <span>₹{(caisSummary?.Total_Outstanding_Balance?.Outstanding_Balance_Secured || creditResult.summary?.outstanding_balance?.secured || 0).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Unsecured</span>
+                    <span>₹{(caisSummary?.Total_Outstanding_Balance?.Outstanding_Balance_UnSecured || creditResult.summary?.outstanding_balance?.unsecured || 0).toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Enquiry Summary */}
+            <div className="p-4 bg-white rounded-lg border">
+              <h4 className="text-sm font-semibold text-gray-700 mb-3">Credit Enquiries (Hard Pulls)</h4>
+              <div className="grid grid-cols-4 gap-4 text-center">
+                {[
+                  { label: '7 Days', value: totalCaps?.TotalCAPSLast7Days || creditResult.summary?.enquiries?.last_7_days || 0 },
+                  { label: '30 Days', value: totalCaps?.TotalCAPSLast30Days || creditResult.summary?.enquiries?.last_30_days || 0 },
+                  { label: '90 Days', value: totalCaps?.TotalCAPSLast90Days || creditResult.summary?.enquiries?.last_90_days || 0 },
+                  { label: '180 Days', value: totalCaps?.TotalCAPSLast180Days || creditResult.summary?.enquiries?.last_180_days || 0 },
+                ].map((item, i) => (
+                  <div key={i} className="p-2 bg-gray-50 rounded-lg">
+                    <p className={`text-xl font-bold ${item.value > 3 ? 'text-orange-600' : 'text-gray-800'}`}>{item.value}</p>
+                    <p className="text-xs text-gray-500">{item.label}</p>
+                  </div>
+                ))}
+              </div>
+              {(totalCaps?.TotalCAPSLast30Days || creditResult.summary?.enquiries?.last_30_days || 0) > 3 && (
+                <p className="text-xs text-orange-600 mt-2 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  High number of recent enquiries may impact credit score
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+        
+        {/* Accounts Tab */}
+        {activeTab === 'accounts' && (
+          <div className="space-y-3">
+            {accounts.length > 0 ? (
+              accounts.map((account, idx) => {
+                const status = getAccountStatus(account.Account_Status);
+                const isExpanded = expandedAccounts[idx];
+                const history = account.CAIS_Account_History || [];
+                
+                return (
+                  <div key={idx} className="border rounded-lg overflow-hidden">
+                    {/* Account Header */}
+                    <button
+                      onClick={() => toggleAccountExpand(idx)}
+                      className="w-full p-3 bg-gray-50 flex items-center justify-between hover:bg-gray-100 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center border">
+                          <Building2 className="h-5 w-5 text-gray-400" />
+                        </div>
+                        <div className="text-left">
+                          <p className="font-medium text-sm">{account.Subscriber_Name || 'Unknown Lender'}</p>
+                          <p className="text-xs text-gray-500">{getAccountTypeName(account.Account_Type)} • {account.Account_Number?.slice(-4) ? `****${account.Account_Number.slice(-4)}` : ''}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="text-right">
+                          <p className="font-semibold text-sm">₹{(account.Current_Balance || 0).toLocaleString()}</p>
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${status.color}`}>{status.label}</span>
+                        </div>
+                        <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                      </div>
+                    </button>
+                    
+                    {/* Account Details */}
+                    {isExpanded && (
+                      <div className="p-3 border-t bg-white space-y-3">
+                        {/* Key Details */}
+                        <div className="grid grid-cols-3 gap-3 text-sm">
+                          <div>
+                            <p className="text-gray-500 text-xs">Sanctioned Amount</p>
+                            <p className="font-medium">₹{(account.Highest_Credit_or_Original_Loan_Amount || account.Credit_Limit_Amount || 0).toLocaleString()}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500 text-xs">Current Balance</p>
+                            <p className="font-medium">₹{(account.Current_Balance || 0).toLocaleString()}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500 text-xs">Past Due</p>
+                            <p className={`font-medium ${account.Amount_Past_Due > 0 ? 'text-red-600' : ''}`}>
+                              ₹{(account.Amount_Past_Due || 0).toLocaleString()}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500 text-xs">Opened On</p>
+                            <p className="font-medium">{formatDate(account.Open_Date)}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500 text-xs">Last Payment</p>
+                            <p className="font-medium">{formatDate(account.Date_of_Last_Payment)}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500 text-xs">Closed On</p>
+                            <p className="font-medium">{account.Date_Closed ? formatDate(account.Date_Closed) : '-'}</p>
+                          </div>
+                        </div>
+                        
+                        {/* Payment History */}
+                        {history.length > 0 && (
+                          <div>
+                            <p className="text-xs text-gray-500 mb-2">Payment History (Last {Math.min(12, history.length)} months)</p>
+                            <div className="flex gap-1">
+                              {history.slice(0, 12).map((h, i) => (
+                                <div key={i} className="flex-1 flex flex-col items-center">
+                                  <div 
+                                    className={`w-full h-6 rounded ${getPaymentStatusColor(h.Days_Past_Due)}`}
+                                    title={`${h.Month}/${h.Year}: ${h.Days_Past_Due} DPD`}
+                                  />
+                                  <span className="text-[8px] text-gray-400 mt-0.5">{h.Month}/{String(h.Year).slice(-2)}</span>
+                                </div>
+                              ))}
+                            </div>
+                            <div className="flex gap-2 mt-1 text-[10px] text-gray-500">
+                              <span className="flex items-center gap-1"><span className="w-2 h-2 bg-green-500 rounded"></span>On Time</span>
+                              <span className="flex items-center gap-1"><span className="w-2 h-2 bg-yellow-500 rounded"></span>1-30 DPD</span>
+                              <span className="flex items-center gap-1"><span className="w-2 h-2 bg-orange-500 rounded"></span>31-60 DPD</span>
+                              <span className="flex items-center gap-1"><span className="w-2 h-2 bg-red-500 rounded"></span>60+ DPD</span>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Written Off / Settlement Info */}
+                        {(account.Written_Off_Amt_Total || account.Settlement_Amount) && (
+                          <div className="p-2 bg-red-50 rounded text-sm">
+                            {account.Written_Off_Amt_Total && (
+                              <p className="text-red-700">Written Off: ₹{account.Written_Off_Amt_Total.toLocaleString()}</p>
+                            )}
+                            {account.Settlement_Amount && (
+                              <p className="text-orange-700">Settled For: ₹{account.Settlement_Amount.toLocaleString()}</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <Building2 className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+                <p>Account details available in full report</p>
+                <p className="text-sm text-gray-400">Summary: {caisSummary?.Credit_Account?.CreditAccountTotal || creditResult.summary?.accounts?.total || 0} accounts found</p>
+              </div>
+            )}
+          </div>
+        )}
+        
+        {/* Enquiries Tab */}
+        {activeTab === 'enquiries' && (
+          <div className="space-y-4">
+            {/* Credit Enquiries */}
+            <div className="p-4 bg-white rounded-lg border">
+              <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                <Search className="h-4 w-4" />
+                Credit Enquiries (Loan Applications)
+              </h4>
+              <div className="grid grid-cols-4 gap-3">
+                {[
+                  { label: 'Last 7 Days', value: capsData?.CAPS_Summary?.CAPSLast7Days ?? totalCaps?.TotalCAPSLast7Days ?? creditResult.summary?.enquiries?.last_7_days ?? 0 },
+                  { label: 'Last 30 Days', value: capsData?.CAPS_Summary?.CAPSLast30Days ?? totalCaps?.TotalCAPSLast30Days ?? creditResult.summary?.enquiries?.last_30_days ?? 0 },
+                  { label: 'Last 90 Days', value: capsData?.CAPS_Summary?.CAPSLast90Days ?? totalCaps?.TotalCAPSLast90Days ?? creditResult.summary?.enquiries?.last_90_days ?? 0 },
+                  { label: 'Last 180 Days', value: capsData?.CAPS_Summary?.CAPSLast180Days ?? totalCaps?.TotalCAPSLast180Days ?? creditResult.summary?.enquiries?.last_180_days ?? 0 },
+                ].map((item, i) => (
+                  <div key={i} className="text-center p-3 bg-gray-50 rounded-lg">
+                    <p className={`text-2xl font-bold ${item.value > 3 ? 'text-orange-600' : 'text-gray-800'}`}>{item.value}</p>
+                    <p className="text-xs text-gray-500">{item.label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            {/* Non-Credit Enquiries */}
+            {nonCreditCaps?.NonCreditCAPS_Summary && (
+              <div className="p-4 bg-white rounded-lg border">
+                <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  <Eye className="h-4 w-4" />
+                  Non-Credit Enquiries (Soft Pulls)
+                </h4>
+                <div className="grid grid-cols-4 gap-3">
+                  {[
+                    { label: 'Last 7 Days', value: nonCreditCaps.NonCreditCAPS_Summary.NonCreditCAPSLast7Days || 0 },
+                    { label: 'Last 30 Days', value: nonCreditCaps.NonCreditCAPS_Summary.NonCreditCAPSLast30Days || 0 },
+                    { label: 'Last 90 Days', value: nonCreditCaps.NonCreditCAPS_Summary.NonCreditCAPSLast90Days || 0 },
+                    { label: 'Last 180 Days', value: nonCreditCaps.NonCreditCAPS_Summary.NonCreditCAPSLast180Days || 0 },
+                  ].map((item, i) => (
+                    <div key={i} className="text-center p-3 bg-blue-50 rounded-lg">
+                      <p className="text-2xl font-bold text-blue-800">{item.value}</p>
+                      <p className="text-xs text-blue-600">{item.label}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Recent Enquiry Details */}
+            {capsData?.CAPS_Application_Details?.length > 0 && (
+              <div className="p-4 bg-white rounded-lg border">
+                <h4 className="text-sm font-semibold text-gray-700 mb-3">Recent Enquiry Details</h4>
+                <div className="space-y-2">
+                  {capsData.CAPS_Application_Details.slice(0, 5).map((enq, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                      <div>
+                        <p className="text-sm font-medium">{enq.Subscriber_Name || 'Unknown'}</p>
+                        <p className="text-xs text-gray-500">Amount: ₹{(enq.Amount_Financed || 0).toLocaleString()}</p>
+                      </div>
+                      <p className="text-xs text-gray-400">{formatDate(enq.Date_of_Request)}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Impact on Score */}
+            <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
+              <h4 className="text-sm font-semibold text-amber-800 mb-2 flex items-center gap-2">
+                <AlertCircle className="h-4 w-4" />
+                Enquiry Impact on Score
+              </h4>
+              <ul className="text-sm text-amber-700 space-y-1">
+                <li>• Multiple enquiries in short period may lower score by 5-10 points per enquiry</li>
+                <li>• Enquiries remain on report for 2 years</li>
+                <li>• {"< 3 enquiries in 6 months is considered healthy"}</li>
+              </ul>
+            </div>
+          </div>
+        )}
+        
+        {/* Profile Tab */}
+        {activeTab === 'profile' && (
+          <div className="space-y-4">
+            {/* Personal Information */}
+            {currentApp?.Current_Applicant_Details && (
+              <div className="p-4 bg-white rounded-lg border">
+                <h4 className="text-sm font-semibold text-gray-700 mb-3">Personal Information</h4>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <p className="text-gray-500 text-xs">Name</p>
+                    <p className="font-medium">
+                      {currentApp.Current_Applicant_Details.First_Name} {currentApp.Current_Applicant_Details.Middle_Name1} {currentApp.Current_Applicant_Details.Last_Name}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs">Date of Birth</p>
+                    <p className="font-medium">{formatDate(currentApp.Current_Applicant_Details.Date_Of_Birth_Applicant)}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs">Gender</p>
+                    <p className="font-medium">{currentApp.Current_Applicant_Details.Gender_Code === 1 ? 'Male' : 'Female'}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs">PAN</p>
+                    <p className="font-medium">{currentApp.Current_Applicant_Details.IncomeTaxPan || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs">Mobile</p>
+                    <p className="font-medium">{currentApp.Current_Applicant_Details.MobilePhoneNumber || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs">Email</p>
+                    <p className="font-medium">{currentApp.Current_Applicant_Details.EMailId || '-'}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Address */}
+            {currentApp?.Current_Applicant_Address_Details && (
+              <div className="p-4 bg-white rounded-lg border">
+                <h4 className="text-sm font-semibold text-gray-700 mb-3">Address on Record</h4>
+                <p className="text-sm text-gray-600">
+                  {currentApp.Current_Applicant_Address_Details.FlatNoPlotNoHouseNo}, {currentApp.Current_Applicant_Address_Details.BldgNoSocietyName} {currentApp.Current_Applicant_Address_Details.RoadNoNameAreaLocality}
+                </p>
+                <p className="text-sm text-gray-600">
+                  {currentApp.Current_Applicant_Address_Details.City}, PIN: {currentApp.Current_Applicant_Address_Details.PINCode}
+                </p>
+              </div>
+            )}
+            
+            {/* Score Details */}
+            {scoreData && (
+              <div className="p-4 bg-white rounded-lg border">
+                <h4 className="text-sm font-semibold text-gray-700 mb-3">Score Analysis</h4>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">FCIREX Score</span>
+                    <span className={`text-lg font-bold ${creditResult.credit_score >= 700 ? 'text-green-600' : creditResult.credit_score >= 600 ? 'text-yellow-600' : 'text-red-600'}`}>
+                      {scoreData.FCIREXScore || creditResult.credit_score}
+                    </span>
+                  </div>
+                  {scoreData.FCIREXScoreConfidLevel && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Confidence Level</span>
+                      <span className="text-sm font-medium">{scoreData.FCIREXScoreConfidLevel}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            {/* Match Result */}
+            {fullReport?.Match_result && (
+              <div className={`p-4 rounded-lg border ${fullReport.Match_result.Exact_match === 'Y' ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
+                <h4 className="text-sm font-semibold text-gray-700 mb-2">Identity Match</h4>
+                <p className={`text-sm ${fullReport.Match_result.Exact_match === 'Y' ? 'text-green-700' : 'text-yellow-700'}`}>
+                  {fullReport.Match_result.Exact_match === 'Y' ? '✓ Exact match confirmed' : '⚠ Partial match - verify details'}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      
+      {/* Action Buttons */}
+      <div className="flex gap-3 pt-4 border-t">
+        <Button variant="outline" className="flex-1" onClick={onRecheck}>
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Re-check Score
+        </Button>
+        <Button className="flex-1" onClick={onClose}>
+          Done
+        </Button>
+      </div>
+    </div>
+  );
+};
+
 // Credit Score Modal with OTP verification
 const CreditScoreModal = ({ isOpen, onClose, lead, onUpdate }) => {
   const [step, setStep] = useState(1); // 1: Form, 2: OTP, 3: Result
