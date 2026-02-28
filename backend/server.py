@@ -4153,7 +4153,10 @@ Thank you for choosing Wisedrive!"""
             # Add vehicle details if available
             if schedule_data.get("vehicle_data"):
                 vd = schedule_data["vehicle_data"]
-                inspection["car_make"] = vd.get("manufacturer", "")
+                # Normalize manufacturer name to CRM brand using brand mapper
+                raw_manufacturer = vd.get("manufacturer", "")
+                inspection["car_make"] = brand_mapper.get_brand_with_fallback(raw_manufacturer)
+                inspection["car_make_raw"] = raw_manufacturer  # Keep original for reference
                 inspection["car_model"] = vd.get("model", "")
                 inspection["car_year"] = vd.get("manufacturing_date", "").split("/")[-1] if vd.get("manufacturing_date") else ""
                 inspection["car_color"] = vd.get("color", "")
