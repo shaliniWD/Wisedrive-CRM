@@ -1186,7 +1186,9 @@ export default function LiveProgressModal({
               </Section>
             </TabsContent>
           </Tabs>
-        </ScrollArea>
+            </div>
+          </ScrollArea>
+        </div>
         
         {/* Footer with Save Button */}
         {canEdit && (
