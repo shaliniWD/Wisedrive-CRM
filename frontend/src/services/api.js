@@ -597,3 +597,40 @@ export const settingsApi = {
   getTwilioBalance: () => axios.get(`${API_URL}/twilio/balance`),
   getFast2SmsBalance: () => axios.get(`${API_URL}/sms/wallet`),
 };
+
+// Loans API
+export const loansApi = {
+  // Loan Leads
+  getAll: (params) => axios.get(`${API_URL}/loan-leads`, { params }),
+  getById: (id) => axios.get(`${API_URL}/loan-leads/${id}`),
+  update: (id, data) => axios.put(`${API_URL}/loan-leads/${id}`, data),
+  syncCustomers: () => axios.get(`${API_URL}/loan-leads/sync-customers`),
+  getStats: () => axios.get(`${API_URL}/loan-leads/stats`),
+  
+  // Documents
+  getDocumentRequirements: (leadId) => axios.get(`${API_URL}/loan-leads/${leadId}/document-requirements`),
+  uploadDocument: (leadId, data) => axios.post(`${API_URL}/loan-leads/${leadId}/documents`, data),
+  deleteDocument: (leadId, docId) => axios.delete(`${API_URL}/loan-leads/${leadId}/documents/${docId}`),
+  
+  // Vehicles
+  addVehicle: (leadId, data) => axios.post(`${API_URL}/loan-leads/${leadId}/vehicles`, data),
+  updateVehicle: (leadId, vehicleId, data) => axios.put(`${API_URL}/loan-leads/${leadId}/vehicles/${vehicleId}`, data),
+  removeVehicle: (leadId, vehicleId) => axios.delete(`${API_URL}/loan-leads/${leadId}/vehicles/${vehicleId}`),
+  fetchVaahanForVehicle: (leadId, vehicleId) => axios.post(`${API_URL}/loan-leads/${leadId}/vehicles/${vehicleId}/fetch-vaahan`),
+  
+  // Loan Processing
+  checkEligibility: (leadId, vehicleId) => axios.post(`${API_URL}/loan-leads/${leadId}/vehicles/${vehicleId}/check-eligibility`),
+  createApplication: (leadId, data) => axios.post(`${API_URL}/loan-leads/${leadId}/applications`, data),
+  updateApplication: (leadId, appId, data) => axios.put(`${API_URL}/loan-leads/${leadId}/applications/${appId}`, data),
+};
+
+// Bank Master API
+export const banksApi = {
+  getAll: (params) => axios.get(`${API_URL}/banks`, { params }),
+  getById: (id) => axios.get(`${API_URL}/banks/${id}`),
+  create: (data) => axios.post(`${API_URL}/banks`, data),
+  update: (id, data) => axios.put(`${API_URL}/banks/${id}`, data),
+  delete: (id) => axios.delete(`${API_URL}/banks/${id}`),
+  addPOC: (bankId, data) => axios.post(`${API_URL}/banks/${bankId}/poc`, data),
+};
+
