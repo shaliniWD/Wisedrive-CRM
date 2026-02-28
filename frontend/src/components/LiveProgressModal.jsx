@@ -712,7 +712,7 @@ export default function LiveProgressModal({
                     </div>
                     
                     {/* Market Research Results - Website-wise breakdown */}
-                    {inspection?.market_price_research?.market_average > 0 && (
+                    {inspection?.market_price_research?.market_average > 0 ? (
                       <div className="mt-3 pt-3 border-t border-gray-200">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-xs font-semibold text-gray-700">Market Research Data</span>
@@ -751,6 +751,13 @@ export default function LiveProgressModal({
                             </div>
                           </div>
                         )}
+                      </div>
+                    ) : (
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-50 p-2 rounded-lg">
+                          <AlertCircle className="h-4 w-4" />
+                          <span>Click "Regenerate" above to fetch latest market prices from web sources</span>
+                        </div>
                       </div>
                     )}
                   </div>
