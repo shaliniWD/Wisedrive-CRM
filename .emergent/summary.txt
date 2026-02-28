@@ -1,214 +1,228 @@
 <analysis>**original_problem_statement:**
-The initial task was to enhance a CRM by fixing UI bugs and adding a payment modal and activity log. The project's scope expanded significantly to integrate and debug a React Native mobile app for mechanics, which involved implementing secure OTP login, building Android APKs, and addressing numerous bugs reported by the user.
+The user initially requested to build a comprehensive Loans module within the existing CRM. This module is intended to be a follow-on product for customers who have paid for vehicle inspections.
 
-The current focus is on creating a robust, feature-rich inspection reporting system. This involves fixing critical bugs like large file upload failures () and MongoDB's 16MB document size limit by leveraging Firebase Storage for media and separate collections for large data.
-
-Recent user requests have driven a major redesign, aiming to:
-1.  Make all sections of an inspection report editable from a centralized Inspection Editor within the CRM.
-2.  Integrate AI (OpenAI) to generate an assessment summary, category-wise ratings, and an overall rating.
-3.  Implement a web-scraping mechanism to estimate a vehicle's market value by pulling data from Indian used car websites.
-4.  Secure the final customer-facing inspection report via an OTP-authenticated, encrypted short URL, while maintaining a separate internal-access version.
-
-**PRODUCT REQUIREMENTS:**
-1.  **Stable Mobile App:** The mechanic app must handle large media uploads flawlessly without crashing.
-2.  **Data Consistency:** Data from the mobile app must sync reliably in real-time to the CRM's Inspection Editor.
-3.  **Performant AI & Scraping:** The system must efficiently generate AI insights and scrape external websites without significant delay.
-4.  **Centralized Admin Control:** The CRM's Inspection Editor must be the single source of truth for all editable inspection data.
-5.  **Secure, Dual-Access Reports:** The final inspection report must have a secure, OTP-protected version for customers and a seamless-access version for internal teams.
+**PRODUCT REQUIREMENTS (Loans Module):**
+1.  **Tab & Data Source:** A new Loans tab should display all unique customers who have made a payment for an inspection.
+2.  **Columns:** The main view needs columns for:
+    *   Date/Time (customer creation)
+    *   Customer Name & Number, City
+    *   Status with notes (e.g., Interested, Not Interested, Follow up)
+    *   Documents (modal to upload documents based on customer type: Salaried/Self-employed)
+    *   Vehicle Details (modal showing inspected vehicles and allowing the addition of new ones via Vaahan API integration, capturing loan amount, EMI, interest rate, tenure, and document uploads like RC/Insurance)
+    *   Credit Score (placeholder)
+    *   Loan Processing (mocked eligibility check with banks)
+    *   Loan Status (e.g., Applied, Approved, Disbursed)
+3.  **Bank Master:** A separate master data management UI for Banks should be created in the Services tab, storing details like POC, eligibility rules, interest rates, and commission.
+4.  **Multi-Vehicle Handling:** A single customer can have multiple vehicles. The UI must support this by:
+    *   Showing a dropdown of vehicles in the main Vehicles column.
+    *   Allowing car-wise details (valuation, loan amount) to be viewed/edited.
+    *   Showing car-wise eligibility in the loan processing step.
+5.  **UI/UX:** The layout should be consistent with the existing CRM pages (e.g., Inspections Page).
 
 **User's preferred language**: English
 
 **what currently exists?**
-The project includes a React/FastAPI CRM and a React Native mobile app. Media is handled by Firebase Storage, and large OBD data is stored in a dedicated MongoDB collection.
+The project is a full-stack application with a React frontend, FastAPI backend, and MongoDB database.
 
-Key features implemented in this session:
--   **Inspection Editor Modal:** The old Live Progress modal has been completely redesigned and refactored into a new, comprehensive  component. This new modal serves as the central hub for editing all inspection data, organized into tabs (Overview, Vehicle, etc.).
--   **AI Report Generation:** An initial version of an AI-powered report feature has been implemented using OpenAI GPT-5.2. It can generate summaries and ratings. A backend service () and a placeholder web scraping service () have been created.
--   **Automated AI Flow:** The system automatically generates an AI report in the background when a mechanic's inspection progress hits key milestones (25%, 50%, etc.). If a CRM user manually edits an answer, the AI report is marked as stale, prompting the user to regenerate it.
--   **Dual-Access Secure Reports:** A system for generating secure, customer-facing report URLs () has been implemented. Access is protected by OTP sent to the customer's phone number. The internal report URL remains accessible to authenticated CRM users.
--   **Bug Fix:** A critical bug preventing unscheduled inspections from appearing in date-filtered lists has been fixed.
+In this session, the agent successfully:
+*   Confirmed with the user that the previous fixes for date filters and the mechanic app APK (v1.8.0) are working correctly.
+*   Standardized the date format to  across both the  and , creating centralized utility files () for both.
+*   Built and delivered a new mechanic app APK (**v1.9.0**) with the updated date formats.
+*   Fixed a bug in the  where Vaahan API data and Recommended Purchase Price (RPP) were not loading automatically.
+*   Added a Settings tab to the Ads Management page to conveniently store and copy a static Meta API key.
+*   **Built the foundational Loans module**, including:
+    *   Backend models (, ) and API endpoints for fetching leads, stats, and managing banks.
+    *   A Bank Master management UI in the Services page.
+    *   A new Loans page with stats, filters, and a customer list.
+    *   Corrected the navigation by moving the Loans tab to the main top navigation bar and updating RBAC permissions.
+    *   Populated the module with sample bank and loan lead data for demonstration.
+*   Began implementing the multi-vehicle handling enhancements for the Loans module.
 
 **Last working item**:
--   **Last item agent was working:** The agent was beginning to implement the more advanced AI and web scraping features for the inspection report. This involved creating a placeholder file for web scraping () and overwriting the AI service () to structure the new logic for enhanced summaries, category ratings, and integrating the scraped market price. The next step was to add the scraping logic and integrate it into the main AI report generation endpoint.
+-   **Last item agent was working:** The agent was enhancing the **Loans Module** to handle customers with multiple vehicles, as per the user's latest request. This involved a major update to the  file to add vehicle dropdowns and update the modals for adding/viewing vehicle-specific loan details.
 -   **Status:** IN PROGRESS
 -   **Agent Testing Done:** N
--   **Which testing method agent to use?** both. The backend web scraping and AI generation logic must be tested with . The frontend Inspection Editor should be tested with the  to confirm that the new data (market value, detailed ratings) is correctly displayed and editable.
+-   **Which testing method agent to use?** Frontend testing agent. The agent should instruct the testing agent to:
+    1.  Navigate to the Loans page.
+    2.  Verify that customers with multiple vehicles show a dropdown in the Vehicles column.
+    3.  Open the Vehicles modal for a customer and test the ability to add a new car, including the Vaahan API integration.
+    4.  Open the Loan Processing modal and confirm that eligibility is displayed on a per-vehicle basis.
 -   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
--   **Issue 1: Critical Video Upload Failure (P0)**
--   **Issue 2: Verify fix for MongoDB 16MB document size limit on production (P1)**
--   **Issue 3: Verify media display and download in CRM (P1)**
--   **Issue 4: Mechanic App Status Inconsistency (P2)**
--   **Issue 5: Duplicate inspections for customer  (P2)**
+-   **Issue 1: Complete and Verify Loans Module Enhancements (P0)**
+-   **Issue 2: Verify Vaahan/RPP Data Fix in LiveProgressModal (P1)**
+-   **Issue 3: Verify Meta API Key UI in Ads Management (P1)**
+-   **Issue 4: Verify Date Format Changes in  (P2)**
 
 **Issues Detail:**
--   **Issue 1: Critical Video Upload Failure (P0)**
-    -   **Attempted fixes:** Backend validation against  paths, client-side retry logic, and saving failed uploads to AsyncStorage have been implemented.
-    -   **Next debug checklist:** The user needs to test video uploads with the latest APK (v1.7.2) on their production environment. If it still fails, the next step is to implement a UI in the mechanic app for retrying uploads saved in AsyncStorage.
-    -   **Why fix this issue and what will be achieved with the fix?** This is a core functionality blocker. Fixing it ensures all media is reliably captured.
-    -   **Status:** USER VERIFICATION PENDING
-    -   **Is recurring issue?** Y
-    -   **Should Test frontend/backend/both after fix?** Both.
-    -   **Blocked on other issue:** None.
-
--   **Issue 2: Verify fix for MongoDB 16MB document size limit on production (P1)**
-    -   **Attempted fixes:** Moved large OBD scan data to a separate  collection. Verified on preview.
-    -   **Next debug checklist:** User needs to deploy the backend and test the full OBD scan feature on their production environment.
-    -   **Why fix this issue and what will be achieved with the fix?** This unblocks the OBD scanner feature.
-    -   **Status:** USER VERIFICATION PENDING
-    -   **Is recurring issue?** Y
-    -   **Should Test frontend/backend/both after fix?** Both (End-to-end user test).
-    -   **Blocked on other issue:** None.
-
--   **Issue 3: Verify media display and download in CRM (P1)**
-    -   **Attempted fixes:** The CRM UI was updated to show Media upload failed for broken links and provide a download button for valid media.
-    -   **Next debug checklist:** User needs to verify on their production environment after deploying the latest changes.
-    -   **Why fix this issue and what will be achieved with the fix?** Ensures all captured media is accessible in the CRM.
-    -   **Status:** USER VERIFICATION PENDING
-    -   **Is recurring issue?** Y
-    -   **Should Test frontend/backend/both after fix?** Both.
-    -   **Blocked on other issue:** Issue 1.
-
--   **Issue 4: Mechanic App Status Inconsistency (P2)**
-    -   **Attempted fixes:** Backend logic was adjusted to correctly set the  status.
-    -   **Next debug checklist:** User needs to verify that started inspections correctly show a Continue button in the mobile app.
-    -   **Why fix this issue and what will be achieved with the fix?** Improves the mechanic's user experience.
-    -   **Status:** USER VERIFICATION PENDING
-    -   **Is recurring issue?** Y
-    -   **Should Test frontend/backend/both after fix?** Frontend (Mechanic App).
-    -   **Blocked on other issue:** None.
-
--   **Issue 5: Duplicate inspections for customer  (P2)**
-    -   **Attempted fixes:** None. The agent identified two duplicate inspection records, likely caused by a double payment processing event.
-    -   **Next debug checklist:** Investigate the payment callback logic to prevent duplicate record creation. For now, advise the user to manually delete one of the duplicates after verifying the date filter fix.
-    -   **Why fix this issue and what will be achieved with the fix?** Improves data integrity.
-    -   **Status:** NOT STARTED
+-   **Issue 1: Complete and Verify Loans Module Enhancements (P0)**
+    -   **Attempted fixes:** The agent rewrote  to incorporate UI changes for multi-vehicle support.
+    -   **Next debug checklist:**
+        1.  Start the frontend and backend servers.
+        2.  Use the screenshot tool or frontend testing agent to log in and navigate to the  page.
+        3.  Inspect the UI to ensure the new dropdowns and modal functionalities are working as intended without breaking the existing layout.
+        4.  Check browser console for any new React errors.
+    -   **Why fix this issue and what will be achieved with the fix?** This is a core requirement for the Loans module, enabling it to handle realistic customer scenarios where one person owns multiple cars.
+    -   **Status:** IN PROGRESS
     -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?** Backend.
+    -   **Should Test frontend/backend/both after fix?** Frontend.
+    -   **Blocked on other issue:** None.
+
+-   **Issue 2: Verify Vaahan/RPP Data Fix in LiveProgressModal (P1)**
+    -   **Attempted fixes:** Created a new endpoint  and updated  to call it on open and on manual refresh. Also added an  callback to refresh the parent component's state.
+    -   **Next debug checklist:**
+        1.  Log into the CRM and navigate to the Inspections page.
+        2.  Open the  for an inspection that has a vehicle number but is missing make/model details.
+        3.  Verify that the vehicle details and market value automatically populate shortly after the modal opens.
+        4.  Click the Refresh button and verify the data is fetched again.
+    -   **Why fix this issue and what will be achieved with the fix?** Ensures that CRM users have immediate access to critical vehicle data and valuation without manual steps.
+    -   **Status:** TESTING PENDING
+    -   **Is recurring issue?** Y
+    -   **Should Test frontend/backend/both after fix?** Both.
+    -   **Blocked on other issue:** None.
+
+-   **Issue 3: Verify Meta API Key UI in Ads Management (P1)**
+    -   **Attempted fixes:** The agent added a new Settings tab to  containing the hardcoded key and a copy button.
+    -   **Next debug checklist:**
+        1.  Log in and navigate to the Ads Management page.
+        2.  Click the Settings tab.
+        3.  Verify the key is displayed correctly and the copy button works.
+    -   **Why fix this issue and what will be achieved with the fix?** Provides a user-requested convenience feature to streamline their ad management workflow.
+    -   **Status:** TESTING PENDING
+    -   **Is recurring issue?** N
+    -   **Should Test frontend/backend/both after fix?** Frontend.
+    -   **Blocked on other issue:** None.
+
+-   **Issue 4: Verify Date Format Changes in  (P2)**
+    -   **Attempted fixes:** The agent created a  utility and updated multiple screens to use the  format.
+    -   **Next debug checklist:** The  does not have a build process set up in the environment. This task requires manual code review or setting up a build process to generate an APK for testing. For now, a code review should suffice to ensure no syntax errors were introduced.
+    -   **Why fix this issue and what will be achieved with the fix?** Ensures UI consistency across all applications used by the company.
+    -   **Status:** TESTING PENDING
+    -   **Is recurring issue?** N
+    -   **Should Test frontend/backend/both after fix?** Frontend (Mobile App).
     -   **Blocked on other issue:** None.
 
 **In progress Task List**:
--   **Task 1: Implement Web Scraper and Enhanced AI Features (P0)**
-    -   **Where to resume:** . Implement the scraping logic to fetch car prices from sites like OLX, CarWale, etc. Then, update  to integrate this service into the  endpoint. Also enhance  to generate category-wise and final ratings.
-    -   **What will be achieved with this?** The AI report will provide a highly accurate market value and more granular, useful insights as requested by the user.
-    -   **Status:** IN PROGRESS
-    -   **Should Test frontend/backend/both after fix?** Both.
-    -   **Blocked on something:** None.
+There are no other tasks in progress besides the .
 
 **Upcoming and Future Tasks**
+
 **Upcoming Tasks:**
-*   **(P1) Refine Answer Editing in Inspection Editor:** Modify the new  to ensure that for questions with predefined answers (e.g., radio buttons, dropdowns), the user can only select from the existing options, not enter free-form text.
-*   **(P1) Add UI for Retrying Failed Uploads:** Implement the UI in the mechanic app to list media uploads that failed and were saved to AsyncStorage, allowing the mechanic to retry them.
-*   **(P2) Add Share Report button:** Implement a button in the CRM's  that, when clicked, generates and displays the secure customer-facing short URL for the report.
+*   **(P1) Implement Document Upload for Loans:** The Documents button in the Loans module is a placeholder. Implement the modal and integrate with Firebase Storage for file uploads.
+*   **(P1) Implement Mock Bank Eligibility Check:** The Loan Processing button needs to open a modal that shows a mocked eligibility check against the banks in the Bank Master.
+*   **(P1) Add Share Report Button:** Implement the Share Report button on the main , which was a carry-over task from the previous session.
 
 **Future Tasks:**
-*   Implement PDF export and Share via WhatsApp functionality for inspection reports.
-*   Implement a customer reminders feature.
-*   Refactor the monolithic  and .
+*   Integrate with real bank APIs for loan eligibility and processing.
+*   Implement PDF export and Share via WhatsApp for inspection reports.
+*   Build a customer reminders feature.
+*   Refactor the monolithic , , and .
 *   Implement an offline mode for the mechanic app.
-*   Add webhook integration with EAS to automatically update build status on download pages.
+*   Create a script to clean up old duplicate customer/inspection data from the database.
 
 **Completed work in this session**
--   **Unscheduled Inspections Bug Fix:** Fixed a bug where unscheduled inspections were hidden by the date filter in the API.
--   **Editable Answers Feature:** Implemented endpoints and UI for authorized CRM users to edit inspection answers, with a full audit trail.
--   **AI-Powered Report Generation:** Integrated OpenAI to generate summaries and ratings for inspections, with a Generate button in the UI.
--   **Automated AI Workflow:** Implemented background tasks to auto-generate the AI report at inspection milestones and a stale flag to prompt regeneration after manual edits.
--   **Secure Dual-Access Reports:** Created a public, OTP-protected report URL for customers, separate from the internal CRM access URL.
--   **Inspection Editor Redesign:** Fully refactored the Live Progress modal into a comprehensive, tab-based Inspection Editor component (), making it the central hub for data management.
+- **Mechanic App v1.9.0:** Updated all date formats to  and built a new APK.
+- **ESS Mobile App:** Standardized all date formats to .
+- **Live Progress Modal Fix:** Resolved a bug preventing automatic loading of Vaahan API and RPP data.
+- **Ads Management UI:** Added a Settings tab with a static Meta API key and copy button.
+- **Loans Module (Phase 1):**
+    - Created backend models (, ) and a full suite of API endpoints.
+    - Implemented frontend pages for  and .
+    - Integrated the Loans tab into the main top navigation and updated RBAC permissions.
+    - Fixed a FastAPI route ordering bug ( vs ).
+    - Populated the database with sample data for demonstration.
+- **User Verification:** Confirmed that APK v1.8.0 and date filter fixes from the previous session are working.
 
 **Earlier issues found/mentioned but not fixed**
--   **Issue 1: Duplicate Inspection Records**
-    -   **Debug checklist:** The agent identified that customer  () has two identical inspection records. The root cause is likely in the payment processing webhook or callback, which may be creating a new inspection on every interaction. This needs to be investigated to prevent future duplicates.
-    -   **Why to solve this issue and what will be achieved with this?** Prevents data clutter and ensures accurate reporting.
+-   **Issue 1: Cleanup of old duplicate records**
+    -   **Debug checklist:** The root cause (non-idempotent webhook) is fixed, but the duplicate data created before the fix still exists in the database. A one-time cleanup script is needed to remove these records.
+    -   **Why to solve this issue and what will be achieved with this?** Improves data integrity and prevents confusion in analytics and user views.
     -   **Should Test frontend/backend/both after fix:** Backend.
-    -   **Is recurring issue?** Y (Likely, until root cause is fixed).
+    -   **Is recurring issue?** N.
 
 **Known issue recurrence from previous fork**
 -   **Issue recurrence in previous fork:** Critical Video Upload Failure.
--   **Recurrence count:** High. This is a persistent, top-priority issue that has been attempted multiple times.
--   **Status:** USER VERIFICATION PENDING.
+-   **Recurrence count:** High.
+-   **Status:** USER VERIFICATION PENDING. (While the user confirmed APK v1.8.0 works, they did not specifically confirm this bug was resolved. It should be monitored).
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **AI Integration (OpenAI):** Using the  library to connect to GPT-5.2 for generating structured JSON outputs (ratings, summaries, market value).
--   **Web Scraping:** A new requirement to scrape Indian used car websites. A service file has been created, but implementation (using , ) is pending.
--   **Background Tasks (FastAPI):** Used for non-blocking, asynchronous AI report generation triggered when mechanics save progress.
--   **Component Refactoring:** The large, monolithic Live Progress modal was successfully extracted from  into its own  component, improving modularity.
--   **Secure URL & OTP Auth:** A dual-access pattern was implemented using a short, random code mapped to the inspection ID for a public URL, which is then secured with an OTP flow.
+-   **FastAPI Route Ordering:** Resolved a bug by placing specific routes (e.g., ) before dynamic path parameter routes (e.g., ) to ensure correct matching.
+-   **RBAC-driven UI:** Controlled the visibility of the new Loans tab by adding it to the  mapping in the backend's RBAC service, which dynamically populates the user's accessible tabs on the frontend.
+-   **Child-to-Parent State Update:** Implemented a callback prop () to allow the  to trigger a state refresh in its parent (), ensuring the UI reflects data updates from child components.
+-   **Code Reusability:** Created centralized  utility files for both React Native projects ( and ) to enforce consistency and simplify future changes.
 
 **key DB schema**
--   ** (Modified)**:
-    -   : (Object) Stores all AI-generated data (e.g., , , , ).
-    -   : (Boolean)  if an answer was edited after the last AI generation.
-    -   : (String) The unique code for the public report URL (e.g., ZjNmfA).
--   ** (New Collection)**:
-    -   Stores a log of all manual answer changes made in the CRM, including , , , , , and .
+-   **** (NEW): 
+-   **** (NEW): 
+-   **** (NEW):  (Model defined but not fully implemented in endpoints yet).
 
 **All files of reference**
--   **/app/backend/server.py**: The main FastAPI application file, heavily modified with new endpoints.
--   **/app/backend/services/ai_report_service.py**: Service for generating AI insights.
--   **/app/backend/services/car_price_scraper.py**: Placeholder for web scraping logic.
--   **/app/frontend/src/components/LiveProgressModal.jsx**: The new, comprehensive Inspection Editor.
--   **/app/frontend/src/pages/InspectionsPage.jsx**: The main inspections list page, now uses the new modal.
--   **/app/frontend/src/pages/CustomerReportPage.jsx**: The new public-facing page for OTP report access.
--   **/app/memory/PRD.md**: Updated with the latest completed tasks and future requirements.
+-    (Primary file for the current task)
+-    (Contains all new backend logic)
+-    (Contains the new Pydantic models)
+-   
+-   
+-   
+-   
+-   
+-   
 
 **Areas that need refactoring**:
--   : Critically oversized at over 17,500 lines. It must be broken into modular FastAPI routers.
--   : Remains very large at over 4,100 lines and should be broken down into smaller, more focused components.
+-   : This file has become critically oversized (now >19,500 lines). It urgently needs to be broken down into smaller, manageable FastAPI  files (e.g., , ).
+-   : As more features are added (modals for documents, vehicles, processing), this component is becoming complex and should be broken down into smaller sub-components.
+-    and : Remain extremely large and are candidates for significant refactoring.
 
 **key api endpoints**
--   : Triggers AI report generation.
--   : Updates a single inspection answer.
--   : Generates and returns the secure customer-facing report URL.
--   : Retrieves public info for a report before OTP.
--   : Sends an OTP to the customer's registered number.
--   : Verifies the OTP and returns the full report data.
--   : (Fixed) Correctly returns unscheduled inspections when using date filters.
+-   : Creates loan leads from existing customers.
+-   : Fetches all loan leads with filters.
+-   : Provides dashboard statistics for the Loans page.
+-   , : CRUD operations for the Bank Master.
+-   : Fetches vehicle data from Vaahan and updates the inspection document.
 
 **Critical Info for New Agent**
-1.  **Central Hub is **: All new editing functionality should be added to the new Inspection Editor component (), not the old modal or the read-only report page.
-2.  **Web Scraping is Next:** The immediate task is to implement the car price scraping logic in . This will require installing dependencies like  and  and handling potential blocks from target websites.
-3.  **Enforce Predefined Answers:** The user explicitly requested that editing answers in the new modal must be restricted to the predefined options from the Q&A configuration. This logic is not yet implemented and is a high-priority upcoming task.
-4.  **Backend is Huge:** Be extremely careful when editing . It is over 17,500 lines long. Use  and  extensively to navigate and add new code in the correct sections. The long-term goal is to refactor this file.
+1.  **Primary Focus:** Your immediate goal is to complete and test the multi-vehicle enhancement for the Loans module. Start by examining  and then testing the UI.
+2.  **Login/Screenshot Issues:** The previous agent frequently encountered issues logging in via the screenshot tool, which prevented UI verification. Be prepared for this. If it occurs, focus on testing the backend logic via  and ensuring the frontend code compiles without error.
+3.  **Refactoring is Urgent:** The backend  is unsustainably large. After completing the current feature, you should strongly recommend a refactoring task to the user to break it into separate routers. This is crucial for future development and maintenance.
+4.  **Mocked Logic:** Remember that the loan eligibility check is intended to be a mocked feature for now. Do not attempt to integrate with real APIs unless explicitly asked by the user.
 
 **documents and test reports created in this job**
--   /app/test_reports/iteration_74.json
--   /app/memory/PRD.md
+-   /app/memory/PRD.md (Updated with Loans Module summary)
 
 **Last 10 User Messages and any pending HUMAN messages**
--   **LATEST (Pending):** User provided detailed specs for the AI report: use predefined answer options for edits, scrape car prices for market value, and generate section-wise summaries/ratings with AI.
--   **Request (Pending):** Make the Live Progress modal the central editing hub for all inspection report sections.
--   **Request (Done):** Create a secure, OTP-based report URL for customers, separate from the internal CRM link.
--   **Request (Done):** Auto-generate AI reports on mechanic progress and require manual regeneration after CRM edits.
--   **Request (In Progress):** Integrate AI (OpenAI/Claude) to generate market value, ratings, and summaries.
--   **Approval (Done):** User approved the fix for the unscheduled inspection bug and confirmed they would deploy it.
--   **Bug Report (Done):** A new customer was not appearing in the inspection lists, which led to the discovery and fix of the date filter bug.
--   **Approval (Done):** User approved the agent's choice of OpenAI GPT-5.2 for the AI integration.
--   **Approval (Done):** User approved the summary of the Editable Inspection Answers feature.
--   **Clarification (Done):** User stated the mechanic app doesn't need changes for media retakes, focusing all work on the CRM.
+1.  **LATEST:** User wants to enhance the Loans module to handle multiple vehicles per customer, with specific UI requirements for dropdowns and modals. (Status: **In Progress**)
+2.  **User:** Requested sample customers to be created for the Loans module. (Status: **Completed**)
+3.  **User:** Pointed out that the Loans tab was incorrectly placed in the sidebar instead of the top navigation bar. (Status: **Completed**)
+4.  **User:** Provided detailed requirements for the new Loans module. (Status: **In Progress**)
+5.  **User:** Provided clarification on the Loans module requirements (Bank Master location, mocking APIs, one loan per vehicle). (Status: **Completed**)
+6.  **User:** Requested a new feature to store and copy a static Meta API key in the Ads Management UI. (Status: **Completed, Testing Pending**)
+7.  **User:** (from image) Reported that Vaahan API data and RPP were not showing in the . (Status: **Completed, Testing Pending**)
+8.  **User:** Approved updating the mechanic app date format and generating a new APK. (Status: **Completed**)
+9.  **User:** Requested an investigation into whether the CRM's date format change () impacted the  and . (Status: **Completed**)
+10. **User:** Confirmed that the date filters and APK v1.8.0 from the previous session are working fine. (Status: **Completed**)
 
 **Project Health Check:**
--   **Broken:** The end-to-end video upload flow is not yet confirmed to be working on the user's production environment. This is a critical recurring bug.
--   **Mocked:** The web scraping service in  is an empty placeholder and has no functional code.
+-   **Broken:** None.
+-   **Mocked:** The loan eligibility check ( endpoint) is designed to return mocked data, as per user requirements.
 
 **3rd Party Integrations**
--   **OpenAI GPT-5.2:** Used for AI report generation (summaries, ratings). Uses **Emergent LLM Key**.
--   **Firebase:** Used for media storage (Storage) and backend authentication.
--   **Expo Application Services (EAS):** Used for building Android APKs.
--   **Fast2SMS:** Used for sending OTPs for mechanic login.
--   **Twilio:** Used for WhatsApp messages.
--   **Razorpay:** Integrated for payments.
--   **Google Maps Places API:** Used for address input in the CRM.
+-   **OpenAI GPT-5.2:** For AI report generation. Uses **Emergent LLM Key**.
+-   **Firebase:** For media storage.
+-   **Expo Application Services (EAS):** For building Android APKs.
+-   **Fast2SMS:** For sending OTPs.
+-   **Twilio:** For WhatsApp messages.
+-   **Razorpay:** For payments.
+-   **Google Maps Places API:** For address input.
+-   **Vaahan API:** (via 3rd party service) for vehicle data lookup.
 
 **Testing status**
--   **Testing agent used after significant changes:** YES (For the editable answers feature).
+-   **Testing agent used after significant changes:** NO
 -   **Troubleshoot agent used after agent stuck in loop:** NO
--   **Test files created:** None
--   **Known regressions:** The failure of video uploads from the mechanic app is a significant and persistent regression.
+-   **Test files created:** None.
+-   **Known regressions:** None from this session.
 
 **Credentials to test flow:**
 -   **CRM Admin Login:**  / 
@@ -216,6 +230,4 @@ Key features implemented in this session:
 -   **Firebase Credentials:** Located at 
 
 **What agent forgot to execute**
--   The agent created the  file but did not add the necessary dependencies (e.g., , ) to  or implement any of the actual scraping logic.
--   The agent did not implement the user's requirement to restrict answer editing to only the predefined options available in the Q&A setup within the new .
--   The agent planned but did not add a Share Report button to the  UI to allow CRM users to easily get the generated customer-facing short URL.</analysis>
+-   The Share Report button on the main  has still not been implemented. This is a carry-over task from a previous session and was on the Upcoming Tasks list but was not addressed.</analysis>
