@@ -8058,6 +8058,53 @@ async def get_repair_rules(
     return rules
 
 
+# Get available questions for rule linking - MUST be before {rule_id} routes
+@api_router.get("/repair-rules/available-questions")
+async def get_available_questions_for_rules(
+    country_id: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all questions from inspection packages that can be linked to repair rules"""
+    query = {"is_active": True}
+    if country_id:
+        query["country_id"] = country_id
+    
+    # Get all packages
+    packages = await db.inspection_packages.find(query, {"_id": 0, "id": 1, "name": 1, "categories": 1}).to_list(50)
+    
+    questions = []
+    for pkg in packages:
+        for cat in pkg.get("categories", []):
+            for q in cat.get("questions", []):
+                questions.append({
+                    "question_id": q.get("id"),
+                    "question_text": q.get("question", q.get("text", "")),
+                    "question_type": q.get("answer_type", q.get("type", "text")),
+                    "options": q.get("options", []),
+                    "category_id": cat.get("id"),
+                    "category_name": cat.get("name"),
+                    "package_id": pkg.get("id"),
+                    "package_name": pkg.get("name")
+                })
+    
+    # Also check inspection_categories collection
+    categories = await db.inspection_categories.find({"is_active": {"$ne": False}}, {"_id": 0}).to_list(100)
+    for cat in categories:
+        for q in cat.get("questions", []):
+            questions.append({
+                "question_id": q.get("id"),
+                "question_text": q.get("question", q.get("text", "")),
+                "question_type": q.get("answer_type", q.get("type", "text")),
+                "options": q.get("options", []),
+                "category_id": cat.get("id"),
+                "category_name": cat.get("name"),
+                "package_id": None,
+                "package_name": "Standalone Category"
+            })
+    
+    return questions
+
+
 @api_router.get("/repair-rules/{rule_id}")
 async def get_repair_rule(
     rule_id: str,
