@@ -816,6 +816,10 @@ export default function SettingsPage() {
               <Wrench className="h-4 w-4" />
               Repairs Module
             </TabsTrigger>
+            <TabsTrigger value="banks" className="flex items-center gap-2">
+              <Building2 className="h-4 w-4" />
+              Bank Master
+            </TabsTrigger>
           </TabsList>
 
           {/* Tokens Tab */}
