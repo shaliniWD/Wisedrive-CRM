@@ -97,6 +97,38 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
   - `PUT /api/inspections/{id}/answers/{question_id}` - Edit answer
   - `GET /api/inspections/{id}/answers/{question_id}/history` - Get edit history
 
+### Repairs Module - NEW (Feb 28, 2026)
+- **Location:** Services tab > Repairs Module tab
+- **Purpose:** Comprehensive spare parts pricing and repair rules management
+- **Features:**
+  1. **Spare Parts Management:**
+     - Add/Edit/Delete spare parts
+     - Categories: Body Panels, Mechanical, Electrical, Interior, Glass, Tyres, AC, Exhaust
+     - Pricing by car type (Hatchback, Sedan, SUV)
+     - Each type has: Repair Price, Replace Price, Repair Labor, Replace Labor
+     - Brand-specific pricing overrides (e.g., BMW has different prices than Maruti)
+  2. **Question Rules:**
+     - Link spare parts to inspection questions
+     - Define conditions based on answer values
+     - Operators: equals, greater_than, less_than, between, contains
+     - Actions: repair, replace, inspect_further
+     - Priority levels: low, normal, high, critical
+  3. **Cost Calculation API:**
+     - Endpoint: `POST /api/repair-parts/calculate-cost`
+     - Takes question_id, answer, car_type, brand
+     - Returns recommended repairs with costs
+- **Database Collections:**
+  - `repair_parts` - Spare parts with pricing
+  - `repair_rules` - Question-to-part rules
+- **Endpoints:**
+  - `GET/POST /api/repair-parts` - List/Create parts
+  - `GET/PUT/DELETE /api/repair-parts/{id}` - Part CRUD
+  - `GET /api/repair-parts/categories` - Part categories
+  - `GET/POST /api/repair-rules` - List/Create rules
+  - `GET/PUT/DELETE /api/repair-rules/{id}` - Rule CRUD
+  - `GET /api/repair-rules/available-questions` - Questions for linking
+  - `POST /api/repair-parts/calculate-cost` - Calculate repair cost
+
 ### Inspection Editor UI Redesign - NEW (Feb 28, 2026)
 - **Tab Structure Reorganized:**
   - Renamed "Overview" → "AI Analysis" 
