@@ -950,9 +950,6 @@ const LoanProcessingModal = ({ isOpen, onClose, lead, onUpdate }) => {
                           </tbody>
                         </table>
                       </div>
-                      {!result?.is_eligible && result?.rejection_reason && (
-                        <p className="text-xs text-red-500 mt-2">{result.rejection_reason}</p>
-                      )}
                     </div>
                   )}
                 </div>
