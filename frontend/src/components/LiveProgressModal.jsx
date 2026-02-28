@@ -423,6 +423,55 @@ export default function LiveProgressModal({
     }
   };
   
+  // Generate Share URL
+  const generateShareUrl = async () => {
+    if (!inspection?.id) return;
+    
+    setGeneratingShareUrl(true);
+    try {
+      const response = await inspectionsApi.getShortUrl(inspection.id);
+      if (response.data.url) {
+        setShareUrl(response.data.url);
+        toast.success('Share link generated!');
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to generate share link');
+    } finally {
+      setGeneratingShareUrl(false);
+    }
+  };
+  
+  // Copy share URL to clipboard
+  const copyShareUrl = () => {
+    if (shareUrl) {
+      navigator.clipboard.writeText(shareUrl);
+      toast.success('Link copied to clipboard!');
+    }
+  };
+  
+  // Edit a single answer with predefined options
+  const updateAnswer = async (questionId, newAnswer, options = []) => {
+    if (!inspection?.id || !questionId) return;
+    
+    // If options provided, validate that newAnswer is in options
+    if (options.length > 0 && !options.includes(newAnswer)) {
+      toast.error('Please select a valid option');
+      return;
+    }
+    
+    setSavingAnswer(true);
+    try {
+      await inspectionsApi.updateAnswer(inspection.id, questionId, newAnswer);
+      toast.success('Answer updated successfully');
+      setEditingAnswer(null);
+      onRefresh(inspection.id);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to update answer');
+    } finally {
+      setSavingAnswer(false);
+    }
+  };
+  
   // Get completion stats
   const stats = liveProgressData?.overall_stats || {};
   const aiReport = liveProgressData?.ai_report || {};
