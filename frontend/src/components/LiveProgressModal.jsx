@@ -426,6 +426,108 @@ export default function LiveProgressModal({
     };
   };
   
+  // Request OBD Rescan
+  const requestObdRescan = async () => {
+    if (!inspection?.id) return;
+    setRequestingRescan(true);
+    try {
+      await inspectionsApi.requestObdRescan(inspection.id);
+      toast.success('OBD rescan requested. Mechanic will be notified.');
+      onRefresh(inspection.id);
+    } catch (err) {
+      toast.error('Failed to request OBD rescan');
+      console.error(err);
+    } finally {
+      setRequestingRescan(false);
+    }
+  };
+  
+  // Get DTC codes from OBD data
+  const dtcCodes = useMemo(() => {
+    const obdData = liveProgressData?.obd_scan?.data;
+    if (!obdData) return [];
+    
+    // Parse DTC codes from various possible formats
+    if (Array.isArray(obdData.dtc_codes)) return obdData.dtc_codes;
+    if (obdData.dtcCodes && Array.isArray(obdData.dtcCodes)) return obdData.dtcCodes;
+    if (obdData.trouble_codes && Array.isArray(obdData.trouble_codes)) return obdData.trouble_codes;
+    
+    // Try to extract from nested structure
+    const codes = [];
+    if (obdData.diagnostic_trouble_codes) {
+      Object.entries(obdData.diagnostic_trouble_codes).forEach(([system, systemCodes]) => {
+        if (Array.isArray(systemCodes)) {
+          codes.push(...systemCodes.map(c => ({ code: c.code || c, description: c.description || '', system })));
+        }
+      });
+    }
+    return codes;
+  }, [liveProgressData?.obd_scan?.data]);
+  
+  // Calculate repairs based on inspection answers and rules
+  const calculatedRepairCosts = useMemo(() => {
+    if (!repairRules.length || !repairParts.length) return [];
+    
+    const repairs = [];
+    const categories = liveProgressData?.categories || [];
+    const carType = inspection?.car_type || 'sedan'; // Default to sedan
+    const brand = inspection?.car_make || inspection?.vehicle_make || '';
+    
+    // Iterate through all answered questions and check rules
+    categories.forEach(cat => {
+      (cat.questions || []).forEach(q => {
+        if (!q.answer) return;
+        
+        // Find matching rules for this question
+        const matchingRules = repairRules.filter(rule => 
+          rule.question_text?.toLowerCase().includes(q.question?.toLowerCase().substring(0, 30)) &&
+          rule.is_active
+        );
+        
+        matchingRules.forEach(rule => {
+          const answer = String(q.answer).toLowerCase();
+          const conditionValue = (rule.condition_value || '').toLowerCase();
+          
+          let matches = false;
+          switch (rule.condition_type) {
+            case 'EQUALS':
+              matches = answer === conditionValue;
+              break;
+            case 'CONTAINS':
+              matches = answer.includes(conditionValue);
+              break;
+            default:
+              matches = answer.includes(conditionValue);
+          }
+          
+          if (matches) {
+            const part = repairParts.find(p => p.id === rule.part_id);
+            if (part) {
+              const pricing = part[carType.toLowerCase()] || part.sedan || {};
+              const cost = rule.action_type === 'REPLACE' 
+                ? (pricing.replace_price || 0) + (pricing.replace_labor || 0)
+                : (pricing.repair_price || 0) + (pricing.repair_labor || 0);
+              
+              if (cost > 0) {
+                repairs.push({
+                  part_name: part.name,
+                  category: part.category,
+                  action: rule.action_type,
+                  question: q.question,
+                  answer: q.answer,
+                  cost,
+                  priority: rule.priority || 'normal'
+                });
+              }
+            }
+          }
+        });
+      });
+    });
+    
+    return repairs;
+  }, [repairRules, repairParts, liveProgressData?.categories, inspection]);
+  
   // Save all changes
   const saveChanges = async () => {
     if (!inspection?.id) return;
