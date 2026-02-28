@@ -732,9 +732,19 @@ export default function LiveProgressModal({
                 <Car className="h-4 w-4 mr-2" />
                 Vehicle & RTO
               </TabsTrigger>
+              <TabsTrigger value="obd" className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-t-lg rounded-b-none h-10 px-4">
+                <Gauge className="h-4 w-4 mr-2" />
+                OBD-2
+                {liveProgressData?.obd_scan?.completed && (
+                  <span className="ml-2 h-2 w-2 rounded-full bg-green-500"></span>
+                )}
+              </TabsTrigger>
               <TabsTrigger value="repairs" className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-t-lg rounded-b-none h-10 px-4">
                 <Wrench className="h-4 w-4 mr-2" />
                 Repairs
+                {calculatedRepairCosts.length > 0 && (
+                  <span className="ml-2 px-1.5 py-0.5 text-xs bg-orange-100 text-orange-700 rounded-full">{calculatedRepairCosts.length}</span>
+                )}
               </TabsTrigger>
               <TabsTrigger value="inspection" className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-t-lg rounded-b-none h-10 px-4">
                 <ClipboardList className="h-4 w-4 mr-2" />
