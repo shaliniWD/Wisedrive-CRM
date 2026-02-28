@@ -954,6 +954,10 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
+  categoryCardLocked: {
+    backgroundColor: '#F8FAFC',
+    opacity: 0.8,
+  },
   categoryCardDisabled: {
     opacity: 0.5,
   },
@@ -973,6 +977,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Colors.textPrimary,
     marginBottom: 6,
+  },
+  categoryNameLocked: {
+    color: Colors.textMuted,
   },
   categoryMeta: {
     flexDirection: 'row',
@@ -996,6 +1003,9 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     minWidth: 32,
     textAlign: 'right',
+  },
+  categoryCountLocked: {
+    color: '#CBD5E1',
   },
   categoryArrow: {
     marginLeft: 8,
