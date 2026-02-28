@@ -237,6 +237,17 @@ export default function InspectionCategoriesScreen() {
   const completedQuestions = categories.reduce((acc, cat) => acc + cat.completedCount, 0);
   const allCategoriesCompleted = categories.length > 0 && categories.every(cat => cat.isCompleted);
   const progress = totalQuestions > 0 ? (completedQuestions / totalQuestions) * 100 : 0;
+  
+  // Check if Complete Inspection button should be enabled
+  // Requires: All categories completed AND OBD data submitted
+  const canCompleteInspection = allCategoriesCompleted && obdCompleted;
+  
+  // Check if a category is accessible (sequential category logic)
+  const isCategoryAccessible = (categoryIndex: number): boolean => {
+    if (categoryIndex === 0) return true; // First category is always accessible
+    // Previous category must be completed
+    return categories[categoryIndex - 1]?.isCompleted || false;
+  };
 
   const handleOBDScan = () => {
     router.push('/scanner');
