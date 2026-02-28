@@ -203,6 +203,7 @@ class RBACService:
             "leads": "leads",
             "customers": "customers",
             "inspections": "inspections",
+            "loans": "loans",
             "employees": "hr",
             "hr": "hr",
             "finance": "finance",
