@@ -578,10 +578,10 @@ export default function LiveProgressModal({
           </Tabs>
         </div>
         
-        {/* Content - Fixed height ScrollArea for proper scrolling */}
-        <div className="flex-1 overflow-hidden">
-          <ScrollArea className="h-full">
-            <div className="p-4">
+        {/* Content - ScrollArea with proper height calculation */}
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <ScrollArea className="h-full" style={{ maxHeight: 'calc(95vh - 220px)' }}>
+            <div className="p-4 pb-6">
               <Tabs value={activeTab} className="w-full">
                 {/* AI Analysis Tab (formerly Overview) */}
                 <TabsContent value="ai-analysis" className="space-y-4 mt-0">
