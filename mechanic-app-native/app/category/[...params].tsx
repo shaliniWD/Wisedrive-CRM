@@ -1004,48 +1004,79 @@ export default function CategoryQuestionsScreen() {
     }
   };
 
+  // Check if a question is accessible (sequential logic)
+  const isQuestionAccessible = (index: number): boolean => {
+    if (index === 0) return true; // First question is always accessible
+    // Check if previous question is answered
+    const prevQuestion = questions[index - 1];
+    return !!draftAnswers[prevQuestion.id]?.answer;
+  };
+
   const renderQuestion = (question: Question, index: number) => {
     const currentAnswer = draftAnswers[question.id];
     const isAnswered = !!currentAnswer?.answer;
     const isDraft = currentAnswer?.isDraft;
+    const isAccessible = isQuestionAccessible(index);
+    const isLocked = !isAccessible;
 
     return (
-      <View key={question.id} style={[styles.questionCard, isAnswered && styles.questionAnswered, isDraft && styles.questionDraft]}>
+      <View key={question.id} style={[
+        styles.questionCard, 
+        isAnswered && styles.questionAnswered, 
+        isDraft && styles.questionDraft,
+        isLocked && styles.questionLocked
+      ]}>
         <View style={styles.questionHeader}>
-          <View style={[styles.questionNumberBadge, isAnswered && styles.questionNumberBadgeAnswered]}>
-            {isAnswered ? (
+          <View style={[
+            styles.questionNumberBadge, 
+            isAnswered && styles.questionNumberBadgeAnswered,
+            isLocked && styles.questionNumberBadgeLocked
+          ]}>
+            {isLocked ? (
+              <Ionicons name="lock-closed" size={14} color="#94A3B8" />
+            ) : isAnswered ? (
               <Ionicons name="checkmark" size={16} color="#fff" />
             ) : (
               <Text style={styles.questionNumber}>{index + 1}</Text>
             )}
           </View>
           <View style={styles.questionTextContainer}>
-            <Text style={styles.questionText}>{question.question}</Text>
+            <Text style={[styles.questionText, isLocked && styles.questionTextLocked]}>{question.question}</Text>
             {question.is_mandatory && <Text style={styles.mandatoryBadge}>Required</Text>}
             {isDraft && <Text style={styles.draftBadge}>Unsaved</Text>}
+            {isLocked && <Text style={styles.lockedBadge}>Answer previous question first</Text>}
           </View>
         </View>
 
-        <View style={styles.answerContainer}>
-          {renderAnswerInput(question, currentAnswer?.answer, 'answer')}
-        </View>
-
-        {question.sub_question_1 && (
-          <View style={styles.subQuestionContainer}>
-            <Text style={styles.subQuestionText}>{question.sub_question_1}</Text>
-            <View style={styles.answerContainer}>
-              {renderAnswerInput(question, currentAnswer?.sub_answer_1, 'sub_answer_1', question.sub_answer_type_1, question.sub_options_1)}
-            </View>
+        {isLocked ? (
+          <View style={styles.lockedOverlay}>
+            <Ionicons name="lock-closed" size={32} color="#CBD5E1" />
+            <Text style={styles.lockedText}>Complete the previous question to unlock</Text>
           </View>
-        )}
-
-        {question.sub_question_2 && (
-          <View style={styles.subQuestionContainer}>
-            <Text style={styles.subQuestionText}>{question.sub_question_2}</Text>
+        ) : (
+          <>
             <View style={styles.answerContainer}>
-              {renderAnswerInput(question, currentAnswer?.sub_answer_2, 'sub_answer_2', question.sub_answer_type_2, question.sub_options_2)}
+              {renderAnswerInput(question, currentAnswer?.answer, 'answer')}
             </View>
-          </View>
+
+            {question.sub_question_1 && (
+              <View style={styles.subQuestionContainer}>
+                <Text style={styles.subQuestionText}>{question.sub_question_1}</Text>
+                <View style={styles.answerContainer}>
+                  {renderAnswerInput(question, currentAnswer?.sub_answer_1, 'sub_answer_1', question.sub_answer_type_1, question.sub_options_1)}
+                </View>
+              </View>
+            )}
+
+            {question.sub_question_2 && (
+              <View style={styles.subQuestionContainer}>
+                <Text style={styles.subQuestionText}>{question.sub_question_2}</Text>
+                <View style={styles.answerContainer}>
+                  {renderAnswerInput(question, currentAnswer?.sub_answer_2, 'sub_answer_2', question.sub_answer_type_2, question.sub_options_2)}
+                </View>
+              </View>
+            )}
+          </>
         )}
       </View>
     );
