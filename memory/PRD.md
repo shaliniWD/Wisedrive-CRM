@@ -357,7 +357,7 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
 ### P1 (High Priority)  
 - ~~Test OBD rescan flow end-to-end~~ ✅
 - ~~Fix video upload in mechanic app~~ ✅ Fixed in APK v1.8.0
-- Implement Document Upload for Loans Module (Firebase Storage integration)
+- ~~Implement Document Upload for Loans Module~~ ✅ Completed with Firebase Storage
 - Add "Share Report" button to main InspectionsPage
 - Build retry UI in mechanic app for failed uploads saved in AsyncStorage
 
