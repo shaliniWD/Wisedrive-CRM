@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format } from 'date-fns';
 import { getLeaveDetail, cancelLeave } from '../services/api';
 import { colors, spacing, fontSize, fontWeight, radius, iconSize } from '../theme';
+import { formatDateLong, formatDateMedium } from '../utils/dateFormat';
 
 export default function LeaveDetailScreen() {
   const navigation = useNavigation<any>();

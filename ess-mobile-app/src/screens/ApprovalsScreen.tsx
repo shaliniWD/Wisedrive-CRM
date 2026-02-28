@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format } from 'date-fns';
 import { getPendingApprovals, approveRejectLeave } from '../services/api';
 import { colors, spacing, fontSize, fontWeight, radius, iconSize } from '../theme';
+import { formatDateShort } from '../utils/dateFormat';
 
 export default function ApprovalsScreen() {
   const navigation = useNavigation<any>();

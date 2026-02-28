@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format } from 'date-fns';
 import { getLeavePeriodBalance, getLeaveHistory } from '../services/api';
 import { colors, spacing, fontSize, fontWeight, radius, iconSize } from '../theme';
+import { formatDateRange } from '../utils/dateFormat';
 
 type LeaveStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
 

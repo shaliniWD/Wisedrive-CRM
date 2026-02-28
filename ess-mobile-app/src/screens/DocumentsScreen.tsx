@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format } from 'date-fns';
 import { getDocuments, getAccessToken } from '../services/api';
 import { colors, spacing, fontSize, fontWeight, radius, iconSize } from '../theme';
+import { formatDateMedium } from '../utils/dateFormat';
 
 const DOC_TYPES = [
   { id: 'all', label: 'All' },

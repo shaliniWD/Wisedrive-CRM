@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format } from 'date-fns';
 import { getPayslips, getPayslipYears, getSalarySummary } from '../services/api';
 import { colors, spacing, fontSize, fontWeight, radius, iconSize, shadows } from '../theme';
+import { formatDateShort } from '../utils/dateFormat';
 
 export default function PayslipsScreen() {
   const navigation = useNavigation<any>();
