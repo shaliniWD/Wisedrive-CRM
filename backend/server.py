@@ -16541,46 +16541,6 @@ async def update_loan_application(
     return updated
 
 
-# ---- Loan Statistics ----
-
-@api_router.get("/loan-leads/stats")
-async def get_loan_stats(current_user: dict = Depends(get_current_user)):
-    """Get loan module statistics"""
-    now = datetime.now(timezone.utc)
-    
-    # Total leads by status
-    status_counts = {}
-    for status in ["NEW", "INTERESTED", "NOT_INTERESTED", "RNR", "CALL_BACK", "FOLLOW_UP"]:
-        count = await db.loan_leads.count_documents({"status": status})
-        status_counts[status] = count
-    
-    total_leads = sum(status_counts.values())
-    
-    # Application stats
-    pipeline = [
-        {"$unwind": "$applications"},
-        {"$group": {
-            "_id": "$applications.status",
-            "count": {"$sum": 1},
-            "total_amount": {"$sum": "$applications.applied_amount"}
-        }}
-    ]
-    
-    app_stats = await db.loan_leads.aggregate(pipeline).to_list(100)
-    application_counts = {s.get("_id"): {"count": s.get("count"), "amount": s.get("total_amount")} for s in app_stats}
-    
-    # Bank stats
-    bank_count = await db.bank_master.count_documents({"is_active": True})
-    
-    return {
-        "total_leads": total_leads,
-        "leads_by_status": status_counts,
-        "applications_by_status": application_counts,
-        "active_banks": bank_count,
-        "as_of": now.isoformat()
-    }
-
-
 # ==================== MECHANIC APP ENDPOINTS ====================
 # These endpoints are specifically for the mobile mechanic app
 
