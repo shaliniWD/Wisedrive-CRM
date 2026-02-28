@@ -149,7 +149,7 @@ export default function LeaveApplyScreen() {
                   <TouchableOpacity onPress={() => adjustDate('start', 'prev')}>
                     <Ionicons name="chevron-back" size={20} color={colors.text.secondary} />
                   </TouchableOpacity>
-                  <Text style={styles.dateValue}>{format(startDate, 'MMM d, yyyy')}</Text>
+                  <Text style={styles.dateValue}>{formatDateMedium(startDate)}</Text>
                   <TouchableOpacity onPress={() => adjustDate('start', 'next')}>
                     <Ionicons name="chevron-forward" size={20} color={colors.text.secondary} />
                   </TouchableOpacity>
@@ -161,7 +161,7 @@ export default function LeaveApplyScreen() {
                   <TouchableOpacity onPress={() => adjustDate('end', 'prev')}>
                     <Ionicons name="chevron-back" size={20} color={colors.text.secondary} />
                   </TouchableOpacity>
-                  <Text style={styles.dateValue}>{format(endDate, 'MMM d, yyyy')}</Text>
+                  <Text style={styles.dateValue}>{formatDateMedium(endDate)}</Text>
                   <TouchableOpacity onPress={() => adjustDate('end', 'next')}>
                     <Ionicons name="chevron-forward" size={20} color={colors.text.secondary} />
                   </TouchableOpacity>
