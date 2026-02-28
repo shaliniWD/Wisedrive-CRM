@@ -18184,6 +18184,155 @@ async def sync_eas_build_status(
     }
 
 
+# EAS Webhook Secret - Set this in environment or generate one
+EAS_WEBHOOK_SECRET = os.environ.get("EAS_WEBHOOK_SECRET", "wisedrive-eas-webhook-secret-2026")
+
+
+@api_router.post("/webhooks/eas/build")
+async def eas_build_webhook(
+    request: Request,
+    expo_signature: Optional[str] = Header(None, alias="expo-signature")
+):
+    """
+    EAS Build Webhook - Automatically updates release status when build completes.
+    
+    Configure webhook in EAS:
+    eas webhook:create --event BUILD --url https://crmdev.wisedrive.com/api/webhooks/eas/build --secret <your-secret>
+    
+    Payload format from EAS:
+    {
+        "id": "build-id",
+        "accountName": "kalyandhar",
+        "projectName": "wisedrive-mechanic",
+        "buildDetailsPageUrl": "https://expo.dev/accounts/.../builds/...",
+        "platform": "android",
+        "status": "finished" | "errored" | "canceled",
+        "artifacts": {
+            "buildUrl": "https://expo.dev/artifacts/eas/xxx.apk"
+        },
+        "metadata": {
+            "appVersion": "1.8.0",
+            "buildProfile": "production"
+        },
+        "createdAt": "2026-02-28T10:00:00.000Z",
+        "completedAt": "2026-02-28T10:15:00.000Z"
+    }
+    """
+    # Get raw body for signature verification
+    body = await request.body()
+    body_text = body.decode('utf-8')
+    
+    # Verify webhook signature if provided
+    if expo_signature and EAS_WEBHOOK_SECRET:
+        expected_signature = "sha1=" + hmac.new(
+            EAS_WEBHOOK_SECRET.encode('utf-8'),
+            body,
+            hashlib.sha1
+        ).hexdigest()
+        
+        if not hmac.compare_digest(expected_signature, expo_signature):
+            logger.warning("[EAS_WEBHOOK] Invalid signature received")
+            raise HTTPException(status_code=401, detail="Invalid webhook signature")
+    
+    # Parse payload
+    try:
+        import json
+        payload = json.loads(body_text)
+    except Exception as e:
+        logger.error(f"[EAS_WEBHOOK] Failed to parse payload: {e}")
+        raise HTTPException(status_code=400, detail="Invalid JSON payload")
+    
+    # Extract build info
+    build_id = payload.get("id", "")
+    project_name = payload.get("projectName", "")
+    platform = payload.get("platform", "")
+    status = payload.get("status", "")
+    artifacts = payload.get("artifacts", {})
+    metadata = payload.get("metadata", {})
+    build_url = payload.get("buildDetailsPageUrl", "")
+    
+    download_url = artifacts.get("buildUrl", "")
+    app_version = metadata.get("appVersion", "")
+    build_profile = metadata.get("buildProfile", "")
+    
+    logger.info(f"[EAS_WEBHOOK] Received build event: {project_name} v{app_version} - {status}")
+    
+    # Determine app type from project name
+    app_type = None
+    if "mechanic" in project_name.lower():
+        app_type = "mechanic"
+    elif "ess" in project_name.lower():
+        app_type = "ess"
+    else:
+        logger.warning(f"[EAS_WEBHOOK] Unknown project: {project_name}")
+        return {"status": "ignored", "reason": "Unknown project"}
+    
+    # Only process Android builds for now
+    if platform.lower() != "android":
+        logger.info(f"[EAS_WEBHOOK] Ignoring {platform} build")
+        return {"status": "ignored", "reason": f"Platform {platform} not handled"}
+    
+    # Find or create release record
+    release = await db.app_releases.find_one({
+        "app_type": app_type,
+        "version": app_version
+    })
+    
+    now = datetime.now(timezone.utc).isoformat()
+    
+    if not release:
+        # Create new release record
+        release_id = str(uuid.uuid4())
+        release = {
+            "id": release_id,
+            "app_type": app_type,
+            "version": app_version,
+            "build_number": build_id[:8] if build_id else "",
+            "release_date": now[:10],
+            "status": "building",
+            "build_url": build_url,
+            "download_url": "",
+            "changes": [f"Auto-created from EAS webhook - Build profile: {build_profile}"],
+            "created_at": now,
+            "updated_at": now
+        }
+        await db.app_releases.insert_one(release)
+        logger.info(f"[EAS_WEBHOOK] Created new release record for {app_type} v{app_version}")
+    
+    # Update release based on status
+    update_data = {"updated_at": now}
+    
+    if status == "finished":
+        update_data["status"] = "available"
+        if download_url:
+            update_data["download_url"] = download_url
+        update_data["build_url"] = build_url
+        logger.info(f"[EAS_WEBHOOK] Build finished! APK: {download_url}")
+    elif status == "errored":
+        update_data["status"] = "failed"
+        update_data["build_url"] = build_url
+        logger.error(f"[EAS_WEBHOOK] Build failed for {app_type} v{app_version}")
+    elif status == "canceled":
+        update_data["status"] = "canceled"
+        logger.warning(f"[EAS_WEBHOOK] Build canceled for {app_type} v{app_version}")
+    elif status in ["new", "in_queue", "in_progress"]:
+        update_data["status"] = "building"
+        update_data["build_url"] = build_url
+    
+    await db.app_releases.update_one(
+        {"id": release["id"]},
+        {"$set": update_data}
+    )
+    
+    return {
+        "status": "processed",
+        "app_type": app_type,
+        "version": app_version,
+        "build_status": status,
+        "download_url": download_url if status == "finished" else None
+    }
+
+
 def generate_app_download_page(app_name: str, app_icon: str, releases: list, color: str) -> str:
     """Generate HTML page for app downloads"""
     
