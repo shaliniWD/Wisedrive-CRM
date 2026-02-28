@@ -382,9 +382,9 @@ const PartFormModal = ({ isOpen, onClose, part, categories, onSave }) => {
                 onChange={(overrides) => setFormData({ ...formData, brand_overrides: overrides })}
               />
             </div>
-          </ScrollArea>
+          </div>
           
-          <DialogFooter className="pt-4 border-t">
+          <DialogFooter className="flex-shrink-0 pt-4 border-t">
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
             <Button type="submit" disabled={saving}>
               {saving ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Saving...</> : <><Save className="h-4 w-4 mr-2" />Save Part</>}
