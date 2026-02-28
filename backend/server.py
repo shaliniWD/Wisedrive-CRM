@@ -7844,6 +7844,473 @@ async def delete_inspection_package(
     return {"message": "Package deleted"}
 
 
+# ==================== REPAIRS MODULE ====================
+# Comprehensive spare parts, labor charges, and question-based repair rules
+
+# Pydantic models for Repairs Module
+class RepairPartPricing(BaseModel):
+    """Pricing structure for a car type"""
+    repair_price: float = 0
+    replace_price: float = 0
+    repair_labor: float = 0
+    replace_labor: float = 0
+
+class BrandOverride(BaseModel):
+    """Brand-specific price override"""
+    brand: str
+    hatchback: Optional[RepairPartPricing] = None
+    sedan: Optional[RepairPartPricing] = None
+    suv: Optional[RepairPartPricing] = None
+
+class RepairPartCreate(BaseModel):
+    """Create a new repair part"""
+    name: str
+    category: str  # body_panels, mechanical, electrical, interior, glass
+    description: Optional[str] = None
+    part_number: Optional[str] = None
+    # Default pricing by car type
+    hatchback: RepairPartPricing = RepairPartPricing()
+    sedan: RepairPartPricing = RepairPartPricing()
+    suv: RepairPartPricing = RepairPartPricing()
+    # Brand-specific overrides
+    brand_overrides: List[BrandOverride] = []
+    is_active: bool = True
+
+class RepairPartUpdate(BaseModel):
+    """Update repair part"""
+    name: Optional[str] = None
+    category: Optional[str] = None
+    description: Optional[str] = None
+    part_number: Optional[str] = None
+    hatchback: Optional[RepairPartPricing] = None
+    sedan: Optional[RepairPartPricing] = None
+    suv: Optional[RepairPartPricing] = None
+    brand_overrides: Optional[List[BrandOverride]] = None
+    is_active: Optional[bool] = None
+
+class RepairRuleCondition(BaseModel):
+    """Condition for repair rule"""
+    operator: str  # equals, greater_than, less_than, between, contains
+    value: Any  # Single value or [min, max] for between
+    
+class RepairRuleAction(BaseModel):
+    """Action to take when condition is met"""
+    action_type: str  # repair, replace, inspect_further
+    priority: str = "normal"  # low, normal, high, critical
+    notes: Optional[str] = None
+
+class RepairRuleCreate(BaseModel):
+    """Create a repair rule linking question to part"""
+    part_id: str
+    question_id: str
+    question_text: Optional[str] = None  # For display purposes
+    conditions: List[dict]  # [{condition: RepairRuleCondition, action: RepairRuleAction}]
+    country_id: Optional[str] = None
+    is_active: bool = True
+
+class RepairRuleUpdate(BaseModel):
+    """Update repair rule"""
+    conditions: Optional[List[dict]] = None
+    is_active: Optional[bool] = None
+
+
+# Repair Parts CRUD endpoints
+@api_router.get("/repair-parts")
+async def get_repair_parts(
+    category: Optional[str] = None,
+    search: Optional[str] = None,
+    country_id: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all repair parts with optional filtering"""
+    query = {"is_active": True}
+    if category:
+        query["category"] = category
+    if country_id:
+        query["$or"] = [{"country_id": country_id}, {"country_id": None}]
+    if search:
+        query["$or"] = [
+            {"name": {"$regex": search, "$options": "i"}},
+            {"description": {"$regex": search, "$options": "i"}},
+            {"part_number": {"$regex": search, "$options": "i"}}
+        ]
+    
+    parts = await db.repair_parts.find(query, {"_id": 0}).sort("category", 1).to_list(500)
+    return parts
+
+
+@api_router.get("/repair-parts/categories")
+async def get_repair_part_categories(
+    current_user: dict = Depends(get_current_user)
+):
+    """Get predefined repair part categories"""
+    categories = [
+        {"id": "body_panels", "name": "Body Panels", "description": "Doors, fenders, bumpers, hood, roof, panels"},
+        {"id": "mechanical", "name": "Mechanical Parts", "description": "Engine components, suspension, brakes, steering"},
+        {"id": "electrical", "name": "Electrical", "description": "Lights, wiring, sensors, battery, alternator"},
+        {"id": "interior", "name": "Interior", "description": "Seats, dashboard, trim, carpet, headliner"},
+        {"id": "glass", "name": "Glass & Mirrors", "description": "Windshield, windows, mirrors, sunroof"},
+        {"id": "tyres_wheels", "name": "Tyres & Wheels", "description": "Tyres, rims, wheel bearings, alignment"},
+        {"id": "ac_cooling", "name": "AC & Cooling", "description": "AC compressor, radiator, condenser, hoses"},
+        {"id": "exhaust", "name": "Exhaust System", "description": "Silencer, catalytic converter, exhaust pipes"}
+    ]
+    return categories
+
+
+@api_router.get("/repair-parts/{part_id}")
+async def get_repair_part(
+    part_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get a specific repair part"""
+    part = await db.repair_parts.find_one({"id": part_id}, {"_id": 0})
+    if not part:
+        raise HTTPException(status_code=404, detail="Repair part not found")
+    return part
+
+
+@api_router.post("/repair-parts")
+async def create_repair_part(
+    part: RepairPartCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create a new repair part"""
+    now = datetime.now(timezone.utc).isoformat()
+    part_doc = {
+        "id": str(uuid.uuid4()),
+        **part.model_dump(),
+        "country_id": current_user.get("country_id"),
+        "created_by": current_user.get("id"),
+        "created_at": now,
+        "updated_at": now
+    }
+    
+    await db.repair_parts.insert_one(part_doc)
+    del part_doc["_id"] if "_id" in part_doc else None
+    return part_doc
+
+
+@api_router.put("/repair-parts/{part_id}")
+async def update_repair_part(
+    part_id: str,
+    part: RepairPartUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update a repair part"""
+    update_data = {k: v for k, v in part.model_dump().items() if v is not None}
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    update_data["updated_by"] = current_user.get("id")
+    
+    result = await db.repair_parts.update_one(
+        {"id": part_id},
+        {"$set": update_data}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Repair part not found")
+    
+    updated = await db.repair_parts.find_one({"id": part_id}, {"_id": 0})
+    return updated
+
+
+@api_router.delete("/repair-parts/{part_id}")
+async def delete_repair_part(
+    part_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Soft delete a repair part"""
+    result = await db.repair_parts.update_one(
+        {"id": part_id},
+        {"$set": {"is_active": False, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Repair part not found")
+    return {"message": "Repair part deleted"}
+
+
+# Repair Rules CRUD endpoints
+@api_router.get("/repair-rules")
+async def get_repair_rules(
+    part_id: Optional[str] = None,
+    question_id: Optional[str] = None,
+    country_id: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all repair rules with optional filtering"""
+    query = {"is_active": True}
+    if part_id:
+        query["part_id"] = part_id
+    if question_id:
+        query["question_id"] = question_id
+    if country_id:
+        query["$or"] = [{"country_id": country_id}, {"country_id": None}]
+    
+    rules = await db.repair_rules.find(query, {"_id": 0}).to_list(500)
+    
+    # Enrich with part details
+    part_ids = list(set(r["part_id"] for r in rules))
+    parts = await db.repair_parts.find({"id": {"$in": part_ids}}, {"_id": 0, "id": 1, "name": 1, "category": 1}).to_list(500)
+    parts_map = {p["id"]: p for p in parts}
+    
+    for rule in rules:
+        rule["part"] = parts_map.get(rule["part_id"])
+    
+    return rules
+
+
+@api_router.get("/repair-rules/{rule_id}")
+async def get_repair_rule(
+    rule_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get a specific repair rule"""
+    rule = await db.repair_rules.find_one({"id": rule_id}, {"_id": 0})
+    if not rule:
+        raise HTTPException(status_code=404, detail="Repair rule not found")
+    
+    # Get part details
+    part = await db.repair_parts.find_one({"id": rule["part_id"]}, {"_id": 0, "id": 1, "name": 1, "category": 1})
+    rule["part"] = part
+    
+    return rule
+
+
+@api_router.post("/repair-rules")
+async def create_repair_rule(
+    rule: RepairRuleCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create a new repair rule"""
+    # Verify part exists
+    part = await db.repair_parts.find_one({"id": rule.part_id}, {"_id": 0})
+    if not part:
+        raise HTTPException(status_code=404, detail="Repair part not found")
+    
+    now = datetime.now(timezone.utc).isoformat()
+    rule_doc = {
+        "id": str(uuid.uuid4()),
+        **rule.model_dump(),
+        "country_id": rule.country_id or current_user.get("country_id"),
+        "created_by": current_user.get("id"),
+        "created_at": now,
+        "updated_at": now
+    }
+    
+    await db.repair_rules.insert_one(rule_doc)
+    rule_doc["part"] = {"id": part["id"], "name": part["name"], "category": part["category"]}
+    del rule_doc["_id"] if "_id" in rule_doc else None
+    return rule_doc
+
+
+@api_router.put("/repair-rules/{rule_id}")
+async def update_repair_rule(
+    rule_id: str,
+    rule: RepairRuleUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update a repair rule"""
+    update_data = {k: v for k, v in rule.model_dump().items() if v is not None}
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    update_data["updated_by"] = current_user.get("id")
+    
+    result = await db.repair_rules.update_one(
+        {"id": rule_id},
+        {"$set": update_data}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Repair rule not found")
+    
+    updated = await db.repair_rules.find_one({"id": rule_id}, {"_id": 0})
+    return updated
+
+
+@api_router.delete("/repair-rules/{rule_id}")
+async def delete_repair_rule(
+    rule_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Soft delete a repair rule"""
+    result = await db.repair_rules.update_one(
+        {"id": rule_id},
+        {"$set": {"is_active": False, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Repair rule not found")
+    return {"message": "Repair rule deleted"}
+
+
+# Calculate repair cost for an inspection answer
+@api_router.post("/repair-parts/calculate-cost")
+async def calculate_repair_cost(
+    data: dict = Body(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Calculate repair cost based on question answer
+    Expected data: {
+        question_id: str,
+        answer: any,
+        car_type: str (hatchback/sedan/suv),
+        brand: str (optional)
+    }
+    """
+    question_id = data.get("question_id")
+    answer = data.get("answer")
+    car_type = data.get("car_type", "sedan").lower()
+    brand = data.get("brand")
+    
+    if not question_id or answer is None:
+        raise HTTPException(status_code=400, detail="question_id and answer are required")
+    
+    # Find rules for this question
+    rules = await db.repair_rules.find(
+        {"question_id": question_id, "is_active": True},
+        {"_id": 0}
+    ).to_list(50)
+    
+    if not rules:
+        return {"recommendations": [], "message": "No repair rules found for this question"}
+    
+    recommendations = []
+    
+    for rule in rules:
+        # Get the part
+        part = await db.repair_parts.find_one({"id": rule["part_id"], "is_active": True}, {"_id": 0})
+        if not part:
+            continue
+        
+        # Evaluate conditions
+        for condition_group in rule.get("conditions", []):
+            condition = condition_group.get("condition", {})
+            action = condition_group.get("action", {})
+            
+            operator = condition.get("operator")
+            value = condition.get("value")
+            
+            matches = False
+            
+            # Evaluate based on operator
+            try:
+                if operator == "equals":
+                    matches = str(answer).lower() == str(value).lower()
+                elif operator == "greater_than":
+                    matches = float(answer) > float(value)
+                elif operator == "less_than":
+                    matches = float(answer) < float(value)
+                elif operator == "greater_than_or_equal":
+                    matches = float(answer) >= float(value)
+                elif operator == "less_than_or_equal":
+                    matches = float(answer) <= float(value)
+                elif operator == "between":
+                    if isinstance(value, list) and len(value) == 2:
+                        matches = float(value[0]) <= float(answer) <= float(value[1])
+                elif operator == "contains":
+                    matches = str(value).lower() in str(answer).lower()
+            except (ValueError, TypeError):
+                continue
+            
+            if matches:
+                # Get pricing for this car type
+                pricing = part.get(car_type, {})
+                
+                # Check for brand override
+                if brand:
+                    for override in part.get("brand_overrides", []):
+                        if override.get("brand", "").lower() == brand.lower():
+                            brand_pricing = override.get(car_type)
+                            if brand_pricing:
+                                pricing = brand_pricing
+                            break
+                
+                action_type = action.get("action_type", "repair")
+                
+                if action_type == "repair":
+                    cost = pricing.get("repair_price", 0)
+                    labor = pricing.get("repair_labor", 0)
+                elif action_type == "replace":
+                    cost = pricing.get("replace_price", 0)
+                    labor = pricing.get("replace_labor", 0)
+                else:
+                    cost = 0
+                    labor = 0
+                
+                recommendations.append({
+                    "part_id": part["id"],
+                    "part_name": part["name"],
+                    "part_category": part["category"],
+                    "action": action_type,
+                    "priority": action.get("priority", "normal"),
+                    "part_cost": cost,
+                    "labor_cost": labor,
+                    "total_cost": cost + labor,
+                    "notes": action.get("notes"),
+                    "car_type": car_type,
+                    "brand": brand
+                })
+                break  # Stop at first matching condition for this rule
+    
+    total_parts = sum(r["part_cost"] for r in recommendations)
+    total_labor = sum(r["labor_cost"] for r in recommendations)
+    
+    return {
+        "recommendations": recommendations,
+        "summary": {
+            "total_parts_cost": total_parts,
+            "total_labor_cost": total_labor,
+            "total_cost": total_parts + total_labor,
+            "items_count": len(recommendations)
+        }
+    }
+
+
+# Get available questions for rule linking
+@api_router.get("/repair-rules/available-questions")
+async def get_available_questions_for_rules(
+    country_id: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all questions from inspection packages that can be linked to repair rules"""
+    query = {"is_active": True}
+    if country_id:
+        query["country_id"] = country_id
+    
+    # Get all packages
+    packages = await db.inspection_packages.find(query, {"_id": 0, "id": 1, "name": 1, "categories": 1}).to_list(50)
+    
+    questions = []
+    for pkg in packages:
+        for cat in pkg.get("categories", []):
+            for q in cat.get("questions", []):
+                questions.append({
+                    "question_id": q.get("id"),
+                    "question_text": q.get("question", q.get("text", "")),
+                    "question_type": q.get("answer_type", q.get("type", "text")),
+                    "options": q.get("options", []),
+                    "category_id": cat.get("id"),
+                    "category_name": cat.get("name"),
+                    "package_id": pkg.get("id"),
+                    "package_name": pkg.get("name")
+                })
+    
+    # Also check inspection_categories collection
+    categories = await db.inspection_categories.find({"is_active": {"$ne": False}}, {"_id": 0}).to_list(100)
+    for cat in categories:
+        for q in cat.get("questions", []):
+            questions.append({
+                "question_id": q.get("id"),
+                "question_text": q.get("question", q.get("text", "")),
+                "question_type": q.get("answer_type", q.get("type", "text")),
+                "options": q.get("options", []),
+                "category_id": cat.get("id"),
+                "category_name": cat.get("name"),
+                "package_id": None,
+                "package_name": "Standalone Category"
+            })
+    
+    return questions
+
+
 # ==================== OFFERS ROUTES ====================
 
 @api_router.get("/offers")
