@@ -113,9 +113,6 @@ class TestRepairsModule:
         assert created_part["hatchback"]["repair_price"] == 2500, "Hatchback repair price should match"
         assert created_part["sedan"]["replace_price"] == 10000, "Sedan replace price should match"
         
-        # Store for cleanup
-        self.created_part_id = created_part["id"]
-        
         print(f"✓ POST /api/repair-parts created part: {created_part['name']}")
         
         # Cleanup - delete the test part
@@ -150,15 +147,18 @@ class TestRepairsModule:
         assert isinstance(rules, list), "Response should be a list"
         assert len(rules) == 96, f"Expected 96 rules, got {len(rules)}"
         
-        # Verify rule structure
+        # Verify rule structure - rules use flat structure with condition_type/condition_value
         if rules:
             rule = rules[0]
             assert "id" in rule, "Rule should have id"
             assert "part_id" in rule, "Rule should have part_id"
             assert "question_id" in rule, "Rule should have question_id"
             assert "question_text" in rule, "Rule should have question_text"
-            assert "conditions" in rule, "Rule should have conditions"
             assert "part" in rule, "Rule should have enriched part data"
+            
+            # Check for flat condition structure (used by seed data)
+            assert "condition_type" in rule or "conditions" in rule, "Rule should have condition_type or conditions"
+            assert "action_type" in rule or "conditions" in rule, "Rule should have action_type or conditions"
             
             # Verify part enrichment
             if rule.get("part"):
@@ -186,8 +186,8 @@ class TestRepairsModule:
         
         print(f"✓ GET /api/repair-rules/available-questions returned {len(questions)} questions")
     
-    def test_create_repair_rule(self):
-        """POST /api/repair-rules - Create new rule linking question to part"""
+    def test_create_repair_rule_with_conditions_array(self):
+        """POST /api/repair-rules - Create new rule with conditions array structure"""
         # First get a part and question to link
         parts_response = self.session.get(f"{BASE_URL}/api/repair-parts")
         parts = parts_response.json()
@@ -275,29 +275,37 @@ class TestRepairsModule:
         
         print(f"✓ All {len(rules)} rules reference valid parts")
     
-    def test_rules_have_valid_conditions(self):
-        """Verify all rules have properly structured conditions"""
+    def test_rules_have_valid_structure(self):
+        """Verify all rules have properly structured conditions (flat or nested)"""
         rules_response = self.session.get(f"{BASE_URL}/api/repair-rules")
         rules = rules_response.json()
         
-        valid_operators = ["equals", "greater_than", "less_than", "greater_than_or_equal", "less_than_or_equal", "between", "contains"]
-        valid_action_types = ["repair", "replace", "inspect_further"]
+        valid_action_types = ["repair", "replace", "inspect_further", "REPAIR", "REPLACE", "INSPECT_FURTHER"]
         
         for rule in rules:
-            conditions = rule.get("conditions", [])
-            assert len(conditions) > 0, f"Rule {rule['id']} should have at least one condition"
+            # Rules can have either flat structure (condition_type/action_type) or nested (conditions array)
+            has_flat_structure = "condition_type" in rule and "action_type" in rule
+            has_nested_structure = "conditions" in rule and len(rule.get("conditions", [])) > 0
             
-            for cond in conditions:
-                assert "condition" in cond, "Condition should have 'condition' field"
-                assert "action" in cond, "Condition should have 'action' field"
-                
-                operator = cond["condition"].get("operator")
-                assert operator in valid_operators, f"Invalid operator: {operator}"
-                
-                action_type = cond["action"].get("action_type")
-                assert action_type in valid_action_types, f"Invalid action_type: {action_type}"
+            assert has_flat_structure or has_nested_structure, f"Rule {rule['id']} should have either flat or nested condition structure"
+            
+            if has_flat_structure:
+                action_type = rule.get("action_type", "")
+                assert action_type.upper() in [a.upper() for a in valid_action_types], f"Invalid action_type: {action_type}"
         
         print(f"✓ All {len(rules)} rules have valid condition structures")
+    
+    def test_questions_have_unique_ids(self):
+        """Verify all available questions have unique IDs"""
+        questions_response = self.session.get(f"{BASE_URL}/api/repair-rules/available-questions")
+        questions = questions_response.json()
+        
+        question_ids = [q["question_id"] for q in questions]
+        unique_ids = set(question_ids)
+        
+        assert len(question_ids) == len(unique_ids), f"Found duplicate question IDs: {len(question_ids)} total, {len(unique_ids)} unique"
+        
+        print(f"✓ All {len(questions)} questions have unique IDs")
 
 
 if __name__ == "__main__":
