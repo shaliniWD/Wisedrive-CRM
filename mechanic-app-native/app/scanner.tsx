@@ -1965,7 +1965,7 @@ export default function OBDScannerScreen() {
                     </Text>
                     <Text style={styles.rawDataCommand}>{item.command || ''}</Text>
                     <Text style={styles.rawDataTime}>
-                      {item.timestamp ? new Date(item.timestamp).toLocaleTimeString() : ''}
+                      {item.timestamp ? formatTime(item.timestamp) : ''}
                     </Text>
                   </View>
                   <Text style={styles.rawDataResponse} selectable>{item.response || 'NO RESPONSE'}</Text>
