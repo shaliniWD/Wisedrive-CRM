@@ -43,6 +43,7 @@ import { getDTCKnowledge } from '../src/constants/dtc-knowledge-base';
 import { useInspection } from '../src/context/InspectionContext';
 import { inspectionsApi } from '../src/lib/api';
 import { diagLogger } from '../src/lib/diagLogger';
+import { formatDateTime, formatDateIndian, formatTime } from '../src/utils/dateFormat';
 
 const MODULE = 'OBD_SCANNER';
 
