@@ -905,12 +905,14 @@ export default function LiveProgressModal({
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                   {liveProgressData?.categories?.map((category, idx) => {
-                    const percentage = category.total > 0 ? Math.round((category.answered / category.total) * 100) : 0;
+                    const answered = category.answered_questions || 0;
+                    const total = category.total_questions || 0;
+                    const percentage = total > 0 ? Math.round((answered / total) * 100) : 0;
                     return (
                       <div key={idx} className="bg-white rounded-lg p-3 border">
                         <p className="text-xs font-medium text-gray-700 truncate">{category.category_name}</p>
                         <div className="flex items-center justify-between mt-1">
-                          <span className="text-sm font-bold text-gray-900">{category.answered}/{category.total}</span>
+                          <span className="text-sm font-bold text-gray-900">{answered}/{total}</span>
                           <span className={`text-xs px-2 py-0.5 rounded-full ${
                             percentage === 100 ? 'bg-green-100 text-green-700' :
                             percentage > 50 ? 'bg-yellow-100 text-yellow-700' :
