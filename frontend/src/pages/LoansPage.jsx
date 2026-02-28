@@ -720,6 +720,501 @@ const DocumentsModal = ({ isOpen, onClose, lead, onUpdate }) => {
   );
 };
 
+// Credit Score Modal with OTP verification
+const CreditScoreModal = ({ isOpen, onClose, lead, onUpdate }) => {
+  const [step, setStep] = useState(1); // 1: Form, 2: OTP, 3: Result
+  const [loading, setLoading] = useState(false);
+  const [token, setToken] = useState('');
+  const [creditResult, setCreditResult] = useState(null);
+  
+  // Form fields
+  const [formData, setFormData] = useState({
+    first_name: '',
+    last_name: '',
+    pan_number: '',
+    dob: '',
+    mobile_number: '',
+    email: '',
+    gender: 'male',
+    pin_code: ''
+  });
+  const [otp, setOtp] = useState('');
+  
+  // Pre-fill form with available data
+  useEffect(() => {
+    if (isOpen && lead) {
+      const nameParts = (lead.customer_name || '').split(' ');
+      setFormData({
+        first_name: nameParts[0] || '',
+        last_name: nameParts.slice(1).join(' ') || '',
+        pan_number: '',
+        dob: '',
+        mobile_number: (lead.customer_phone || '').replace('+91', '').replace(/\D/g, ''),
+        email: lead.customer_email || '',
+        gender: 'male',
+        pin_code: ''
+      });
+      
+      // Check if we already have a credit score
+      if (lead.credit_score) {
+        setCreditResult({
+          credit_score: lead.credit_score,
+          summary: lead.credit_score_summary
+        });
+        setStep(3);
+      } else {
+        setStep(1);
+        setCreditResult(null);
+      }
+    }
+  }, [isOpen, lead]);
+  
+  const handleRequestOTP = async () => {
+    // Validation
+    if (!formData.first_name || !formData.last_name) {
+      toast.error('Please enter full name');
+      return;
+    }
+    if (!formData.pan_number || formData.pan_number.length !== 10) {
+      toast.error('Please enter valid 10-digit PAN number');
+      return;
+    }
+    if (!formData.dob || formData.dob.length !== 8) {
+      toast.error('Please enter DOB in YYYYMMDD format (e.g., 19901231)');
+      return;
+    }
+    if (!formData.mobile_number || formData.mobile_number.length !== 10) {
+      toast.error('Please enter valid 10-digit mobile number');
+      return;
+    }
+    if (!formData.email) {
+      toast.error('Please enter email address');
+      return;
+    }
+    if (!formData.pin_code || formData.pin_code.length !== 6) {
+      toast.error('Please enter valid 6-digit PIN code');
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const res = await loansApi.requestCreditScoreOTP(lead.id, formData);
+      if (res.data.success) {
+        setToken(res.data.token);
+        toast.success('OTP sent to customer\'s mobile number');
+        setStep(2);
+      } else {
+        toast.error(res.data.message || 'Failed to send OTP');
+      }
+    } catch (err) {
+      console.error('OTP request error:', err);
+      toast.error(err.response?.data?.detail || 'Failed to send OTP');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const handleVerifyOTP = async () => {
+    if (!otp || otp.length < 4) {
+      toast.error('Please enter the OTP received by customer');
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const res = await loansApi.verifyCreditScoreOTP(lead.id, { token, otp });
+      if (res.data.success) {
+        setCreditResult(res.data);
+        toast.success('Credit report fetched successfully');
+        setStep(3);
+        onUpdate(); // Refresh parent data
+      } else {
+        toast.error(res.data.message || 'Failed to verify OTP');
+      }
+    } catch (err) {
+      console.error('OTP verify error:', err);
+      toast.error(err.response?.data?.detail || 'Failed to verify OTP. Please check and try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const getScoreColor = (score) => {
+    if (score >= 750) return 'text-green-600 bg-green-100';
+    if (score >= 650) return 'text-yellow-600 bg-yellow-100';
+    if (score >= 550) return 'text-orange-600 bg-orange-100';
+    return 'text-red-600 bg-red-100';
+  };
+  
+  const getScoreLabel = (score) => {
+    if (score >= 750) return 'Excellent';
+    if (score >= 700) return 'Good';
+    if (score >= 650) return 'Fair';
+    if (score >= 550) return 'Poor';
+    return 'Very Poor';
+  };
+  
+  const handleClose = () => {
+    setStep(1);
+    setOtp('');
+    setToken('');
+    onClose();
+  };
+  
+  const resetAndRetry = () => {
+    setStep(1);
+    setOtp('');
+    setToken('');
+    setCreditResult(null);
+  };
+  
+  return (
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <CreditCard className="h-5 w-5 text-blue-600" />
+            Credit Score Check
+          </DialogTitle>
+          <DialogDescription>
+            {lead?.customer_name} • {lead?.customer_phone}
+          </DialogDescription>
+        </DialogHeader>
+        
+        {/* Step Indicator */}
+        <div className="flex items-center justify-center gap-2 py-4">
+          {[1, 2, 3].map((s) => (
+            <div key={s} className="flex items-center">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                step === s 
+                  ? 'bg-blue-600 text-white' 
+                  : step > s 
+                    ? 'bg-green-100 text-green-700' 
+                    : 'bg-gray-100 text-gray-400'
+              }`}>
+                {step > s ? <CheckCircle className="h-4 w-4" /> : s}
+              </div>
+              {s < 3 && <div className={`w-12 h-0.5 ${step > s ? 'bg-green-400' : 'bg-gray-200'}`} />}
+            </div>
+          ))}
+        </div>
+        <div className="flex justify-center gap-8 text-xs text-gray-500 -mt-2 mb-4">
+          <span>Customer Info</span>
+          <span>Verify OTP</span>
+          <span>Credit Report</span>
+        </div>
+        
+        {/* Step 1: Customer Information Form */}
+        {step === 1 && (
+          <div className="space-y-4">
+            <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
+              <div className="flex gap-2">
+                <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0" />
+                <div className="text-sm text-amber-800">
+                  <p className="font-medium">OTP will be sent to customer</p>
+                  <p className="text-amber-600">The customer will receive an OTP on their mobile. Please ask them to share it with you.</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-sm">First Name *</Label>
+                <Input
+                  value={formData.first_name}
+                  onChange={(e) => setFormData({...formData, first_name: e.target.value})}
+                  placeholder="First name"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label className="text-sm">Last Name *</Label>
+                <Input
+                  value={formData.last_name}
+                  onChange={(e) => setFormData({...formData, last_name: e.target.value})}
+                  placeholder="Last name"
+                  className="mt-1"
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-sm">PAN Number *</Label>
+                <Input
+                  value={formData.pan_number}
+                  onChange={(e) => setFormData({...formData, pan_number: e.target.value.toUpperCase()})}
+                  placeholder="ABCDE1234F"
+                  maxLength={10}
+                  className="mt-1 uppercase"
+                />
+              </div>
+              <div>
+                <Label className="text-sm">Date of Birth *</Label>
+                <Input
+                  value={formData.dob}
+                  onChange={(e) => setFormData({...formData, dob: e.target.value.replace(/\D/g, '')})}
+                  placeholder="YYYYMMDD (e.g., 19901231)"
+                  maxLength={8}
+                  className="mt-1"
+                />
+                <p className="text-xs text-gray-400 mt-1">Format: YYYYMMDD</p>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-sm">Mobile Number *</Label>
+                <div className="flex mt-1">
+                  <span className="inline-flex items-center px-3 bg-gray-100 border border-r-0 border-gray-300 rounded-l-md text-gray-500 text-sm">
+                    +91
+                  </span>
+                  <Input
+                    value={formData.mobile_number}
+                    onChange={(e) => setFormData({...formData, mobile_number: e.target.value.replace(/\D/g, '')})}
+                    placeholder="9876543210"
+                    maxLength={10}
+                    className="rounded-l-none"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label className="text-sm">Email *</Label>
+                <Input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  placeholder="email@example.com"
+                  className="mt-1"
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-sm">Gender *</Label>
+                <Select
+                  value={formData.gender}
+                  onValueChange={(val) => setFormData({...formData, gender: val})}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="male">Male</SelectItem>
+                    <SelectItem value="female">Female</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-sm">PIN Code *</Label>
+                <Input
+                  value={formData.pin_code}
+                  onChange={(e) => setFormData({...formData, pin_code: e.target.value.replace(/\D/g, '')})}
+                  placeholder="560001"
+                  maxLength={6}
+                  className="mt-1"
+                />
+              </div>
+            </div>
+            
+            <Button 
+              className="w-full mt-4" 
+              onClick={handleRequestOTP}
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Sending OTP...
+                </>
+              ) : (
+                <>
+                  Send OTP to Customer
+                  <ArrowUpRight className="h-4 w-4 ml-2" />
+                </>
+              )}
+            </Button>
+          </div>
+        )}
+        
+        {/* Step 2: OTP Verification */}
+        {step === 2 && (
+          <div className="space-y-6">
+            <div className="text-center py-4">
+              <div className="w-16 h-16 mx-auto bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                <Phone className="h-8 w-8 text-blue-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900">OTP Sent Successfully</h3>
+              <p className="text-gray-500 mt-1">
+                An OTP has been sent to <span className="font-medium">+91 {formData.mobile_number}</span>
+              </p>
+              <p className="text-sm text-gray-400 mt-1">
+                Please ask the customer to share the OTP with you
+              </p>
+            </div>
+            
+            <div className="max-w-xs mx-auto">
+              <Label className="text-sm text-center block mb-2">Enter OTP</Label>
+              <Input
+                value={otp}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                placeholder="Enter 6-digit OTP"
+                maxLength={6}
+                className="text-center text-2xl tracking-widest h-14"
+                autoFocus
+              />
+            </div>
+            
+            <div className="flex gap-3 max-w-xs mx-auto">
+              <Button 
+                variant="outline" 
+                className="flex-1"
+                onClick={resetAndRetry}
+              >
+                Back
+              </Button>
+              <Button 
+                className="flex-1"
+                onClick={handleVerifyOTP}
+                disabled={loading || otp.length < 4}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Verifying...
+                  </>
+                ) : (
+                  'Verify & Fetch'
+                )}
+              </Button>
+            </div>
+            
+            <p className="text-center text-sm text-gray-400">
+              Didn't receive OTP? <button onClick={resetAndRetry} className="text-blue-600 hover:underline">Request again</button>
+            </p>
+          </div>
+        )}
+        
+        {/* Step 3: Credit Report Result */}
+        {step === 3 && creditResult && (
+          <div className="space-y-6">
+            {/* Credit Score Display */}
+            <div className="text-center py-6">
+              <div className={`w-32 h-32 mx-auto rounded-full flex flex-col items-center justify-center ${getScoreColor(creditResult.credit_score)}`}>
+                <span className="text-4xl font-bold">{creditResult.credit_score}</span>
+                <span className="text-sm font-medium">{getScoreLabel(creditResult.credit_score)}</span>
+              </div>
+              <p className="text-gray-500 mt-3">Experian Credit Score</p>
+              {creditResult.summary?.report_date && (
+                <p className="text-xs text-gray-400 mt-1">
+                  Report Date: {String(creditResult.summary.report_date).replace(/(\d{4})(\d{2})(\d{2})/, '$3/$2/$1')}
+                </p>
+              )}
+            </div>
+            
+            {/* Score Gauge Visual */}
+            <div className="relative h-3 bg-gradient-to-r from-red-500 via-yellow-500 to-green-500 rounded-full overflow-hidden">
+              <div 
+                className="absolute top-0 w-3 h-3 bg-white border-2 border-gray-800 rounded-full transform -translate-x-1/2"
+                style={{ left: `${Math.min(100, Math.max(0, ((creditResult.credit_score - 300) / 600) * 100))}%` }}
+              />
+            </div>
+            <div className="flex justify-between text-xs text-gray-400">
+              <span>300</span>
+              <span>500</span>
+              <span>700</span>
+              <span>900</span>
+            </div>
+            
+            {/* Account Summary */}
+            {creditResult.summary && (
+              <div className="grid grid-cols-2 gap-4 pt-4">
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <p className="text-xs text-gray-500 uppercase tracking-wide">Credit Accounts</p>
+                  <div className="mt-2 space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Total</span>
+                      <span className="font-semibold">{creditResult.summary.accounts?.total || 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Active</span>
+                      <span className="font-medium text-green-600">{creditResult.summary.accounts?.active || 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Closed</span>
+                      <span className="text-gray-500">{creditResult.summary.accounts?.closed || 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Defaulted</span>
+                      <span className={creditResult.summary.accounts?.default > 0 ? 'text-red-600 font-medium' : 'text-gray-500'}>
+                        {creditResult.summary.accounts?.default || 0}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <p className="text-xs text-gray-500 uppercase tracking-wide">Outstanding Balance</p>
+                  <div className="mt-2 space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Total</span>
+                      <span className="font-semibold">₹{(creditResult.summary.outstanding_balance?.total || 0).toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Secured</span>
+                      <span className="text-gray-500">₹{(creditResult.summary.outstanding_balance?.secured || 0).toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Unsecured</span>
+                      <span className="text-gray-500">₹{(creditResult.summary.outstanding_balance?.unsecured || 0).toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Credit Enquiries */}
+            {creditResult.summary?.enquiries && (
+              <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
+                <p className="text-xs text-blue-600 uppercase tracking-wide mb-2">Credit Enquiries</p>
+                <div className="grid grid-cols-4 gap-2 text-center">
+                  <div>
+                    <p className="text-lg font-semibold text-blue-800">{creditResult.summary.enquiries.last_7_days}</p>
+                    <p className="text-xs text-blue-600">7 Days</p>
+                  </div>
+                  <div>
+                    <p className="text-lg font-semibold text-blue-800">{creditResult.summary.enquiries.last_30_days}</p>
+                    <p className="text-xs text-blue-600">30 Days</p>
+                  </div>
+                  <div>
+                    <p className="text-lg font-semibold text-blue-800">{creditResult.summary.enquiries.last_90_days}</p>
+                    <p className="text-xs text-blue-600">90 Days</p>
+                  </div>
+                  <div>
+                    <p className="text-lg font-semibold text-blue-800">{creditResult.summary.enquiries.last_180_days}</p>
+                    <p className="text-xs text-blue-600">180 Days</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <div className="flex gap-3 pt-4">
+              <Button variant="outline" className="flex-1" onClick={resetAndRetry}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Re-check Score
+              </Button>
+              <Button className="flex-1" onClick={handleClose}>
+                Done
+              </Button>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 // Enhanced Vehicle Details Modal with Vaahan data display
 const VehicleDetailsModal = ({ isOpen, onClose, lead, onUpdate }) => {
   const [vehicles, setVehicles] = useState(lead?.vehicles || []);
