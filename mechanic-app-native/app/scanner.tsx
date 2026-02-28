@@ -1891,7 +1891,7 @@ export default function OBDScannerScreen() {
                   <View style={styles.logHeader}>
                     <Text style={[styles.logLevel, { color: LogLevelColors[item.level] || Colors.text }]}>{LogLevelNames[item.level] || 'LOG'}</Text>
                     <Text style={styles.logModule}>{item.module || 'APP'}</Text>
-                    <Text style={styles.logTime}>{item.timestamp ? new Date(item.timestamp).toLocaleTimeString() : ''}</Text>
+                    <Text style={styles.logTime}>{item.timestamp ? formatTime(item.timestamp) : ''}</Text>
                   </View>
                   <Text style={styles.logMessage} numberOfLines={2}>{item.action || ''}</Text>
                 </View>
