@@ -1,5 +1,5 @@
 """WiseDrive CRM V2 - Multi-tenant RBAC Backend"""
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, Request, UploadFile, File, Form, Body, BackgroundTasks
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, Request, UploadFile, File, Form, Body, BackgroundTasks, Header
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -8,6 +8,8 @@ import os
 import logging
 import re
 import asyncio
+import hmac
+import hashlib
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from typing import List, Optional, Any
