@@ -751,9 +751,9 @@ const RuleFormModal = ({ isOpen, onClose, rule, parts, questions, onSave }) => {
                 <Label>Rule is Active</Label>
               </div>
             </div>
-          </ScrollArea>
+          </div>
           
-          <DialogFooter className="pt-4 border-t">
+          <DialogFooter className="flex-shrink-0 pt-4 border-t">
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
             <Button type="submit" disabled={saving}>
               {saving ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Saving...</> : <><Save className="h-4 w-4 mr-2" />Save Rule</>}
