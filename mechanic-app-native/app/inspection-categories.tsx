@@ -528,20 +528,26 @@ export default function InspectionCategoriesScreen() {
         {/* Category Cards - Modern Design */}
         {categories.map((category, index) => {
           const colorSet = CATEGORY_COLORS[index % CATEGORY_COLORS.length];
+          const isAccessible = isCategoryAccessible(index);
+          const isLocked = !isAccessible;
           
           return (
             <TouchableOpacity
               key={category.id}
-              style={styles.categoryCard}
-              onPress={() => handleCategoryPress(category)}
-              activeOpacity={0.7}
+              style={[styles.categoryCard, isLocked && styles.categoryCardLocked]}
+              onPress={() => handleCategoryPress(category, index)}
+              activeOpacity={isLocked ? 0.5 : 0.7}
             >
-              <View style={[styles.categoryIcon, { backgroundColor: colorSet.bg }]}>
-                {renderIcon(category, colorSet.accent)}
+              <View style={[styles.categoryIcon, { backgroundColor: isLocked ? '#F1F5F9' : colorSet.bg }]}>
+                {isLocked ? (
+                  <Ionicons name="lock-closed" size={22} color="#94A3B8" />
+                ) : (
+                  renderIcon(category, colorSet.accent)
+                )}
               </View>
               
               <View style={styles.categoryContent}>
-                <Text style={styles.categoryName} numberOfLines={1}>{category.name}</Text>
+                <Text style={[styles.categoryName, isLocked && styles.categoryNameLocked]} numberOfLines={1}>{category.name}</Text>
                 <View style={styles.categoryMeta}>
                   <View style={styles.categoryProgressBar}>
                     <View 
@@ -549,12 +555,12 @@ export default function InspectionCategoriesScreen() {
                         styles.categoryProgressFill, 
                         { 
                           width: `${category.questionsCount > 0 ? (category.completedCount / category.questionsCount) * 100 : 0}%`,
-                          backgroundColor: colorSet.accent 
+                          backgroundColor: isLocked ? '#CBD5E1' : colorSet.accent 
                         }
                       ]} 
                     />
                   </View>
-                  <Text style={styles.categoryCount}>
+                  <Text style={[styles.categoryCount, isLocked && styles.categoryCountLocked]}>
                     {category.completedCount}/{category.questionsCount}
                   </Text>
                 </View>
@@ -564,6 +570,10 @@ export default function InspectionCategoriesScreen() {
                 {category.isCompleted ? (
                   <View style={[styles.completeBadge, { backgroundColor: Colors.successLight }]}>
                     <Ionicons name="checkmark" size={16} color={Colors.success} />
+                  </View>
+                ) : isLocked ? (
+                  <View style={[styles.completeBadge, { backgroundColor: '#F1F5F9' }]}>
+                    <Ionicons name="lock-closed" size={14} color="#94A3B8" />
                   </View>
                 ) : (
                   <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
