@@ -57,6 +57,25 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
   - `calculate-cost` endpoint now uses brand mapper for price lookups
   - New inspections automatically normalize `car_make` field from Vaahan API
 
+### Live Progress Modal Enhancements - NEW (Feb 28, 2026)
+- **OBD-2 Tab (NEW):**
+  - Moved from Q&A Details section to top-level tab
+  - Shows OBD scan status with timestamp
+  - "Request Rescan" button to request mechanic to rescan
+  - DTC codes displayed with icons and descriptions
+  - Raw OBD data viewer (JSON format)
+- **Repairs Module Integration (NEW):**
+  - "Auto-Detected Repairs" section - automatically calculates repairs from Q&A answers + rules
+  - Shows part name, category, action (REPAIR/REPLACE), cost
+  - "Manual Repair Entries" section for custom additions
+  - Combined total at bottom with purple gradient
+- **Unsaved Changes Indicator (NEW):**
+  - Amber "Unsaved Changes" badge pulsing next to save button
+  - Save button turns orange when there are unsaved changes
+- **Tab badges:**
+  - OBD-2: green dot when scan completed
+  - Repairs: count of auto-detected repairs
+
 ### Web Scraping for Market Prices - NEW (Feb 28, 2026)
 - **Feature:** Scrape Indian used car websites for real market price data
 - **Sources:** CarDekho, CarWale, Cars24, Spinny, OLX (with fallback to depreciation model)
