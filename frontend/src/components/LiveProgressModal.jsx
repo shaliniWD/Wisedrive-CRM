@@ -518,10 +518,38 @@ export default function LiveProgressModal({
               </div>
             </div>
             
-            {/* Progress indicator */}
-            <div className="text-right">
-              <p className="text-3xl font-bold">{stats.completion_percentage || 0}%</p>
-              <p className="text-xs text-blue-200">{stats.answered_questions || 0}/{stats.total_questions || 0} questions</p>
+            <div className="flex items-center gap-4">
+              {/* Refresh Controls */}
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleManualRefresh}
+                  disabled={refreshing}
+                  className="h-9 px-3 bg-white/10 hover:bg-white/20 text-white"
+                  data-testid="refresh-btn"
+                >
+                  <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                  Refresh
+                </Button>
+                <div className="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-1.5">
+                  <span className="text-xs text-blue-100">Auto</span>
+                  <Switch
+                    checked={autoRefresh}
+                    onCheckedChange={setAutoRefresh}
+                    className="data-[state=checked]:bg-green-500 scale-75"
+                  />
+                  {autoRefresh && (
+                    <span className="text-xs text-green-300 animate-pulse">5s</span>
+                  )}
+                </div>
+              </div>
+              
+              {/* Progress indicator */}
+              <div className="text-right">
+                <p className="text-3xl font-bold">{stats.completion_percentage || 0}%</p>
+                <p className="text-xs text-blue-200">{stats.answered_questions || 0}/{stats.total_questions || 0} questions</p>
+              </div>
             </div>
           </DialogTitle>
         </DialogHeader>
