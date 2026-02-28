@@ -346,20 +346,26 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
 ## Backlog
 
 ### P0 (Critical)
-- Deploy backend to production and verify all fixes
-- Investigate video upload failure (why file:// paths)
+- ~~Deploy backend to production and verify all fixes~~ ✅
+- ~~Investigate video upload failure (why file:// paths)~~ ✅ Fixed in APK v1.8.0
 
 ### P1 (High Priority)  
-- Test OBD rescan flow end-to-end
-- Fix video upload in mechanic app
+- ~~Test OBD rescan flow end-to-end~~ ✅
+- ~~Fix video upload in mechanic app~~ ✅ Fixed in APK v1.8.0
+- Implement Document Upload for Loans Module (Firebase Storage integration)
+- Add "Share Report" button to main InspectionsPage
 - Build retry UI in mechanic app for failed uploads saved in AsyncStorage
 
 ### P2 (Medium Priority)
 - PDF export for inspection reports
 - WhatsApp sharing functionality
 - Customer reminders feature
+- Verify LiveProgressModal Vaahan/RPP auto-load fix
+- Verify Meta API Key Settings tab in Ads Management
 
 ### P3 (Low Priority - Refactoring)
-- Break down `server.py` into modular routers (~17,600 lines)
+- Break down `server.py` into modular routers (~19,500 lines - URGENT)
 - Refactor `InspectionsPage.jsx` into components (~4,100 lines)
+- Refactor `LoansPage.jsx` into smaller modal components
 - Refactor `scanner.tsx` into smaller components
+- Clean up old duplicate inspection/customer records in database
