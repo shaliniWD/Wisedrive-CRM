@@ -5236,26 +5236,43 @@ async def generate_ai_inspection_report(
     
     # Store AI insights in the inspection
     now = datetime.now(timezone.utc).isoformat()
+    
+    # Build update document with market price data
+    update_doc = {
+        "ai_insights": ai_insights,
+        "overall_rating": ai_insights.get("overall_rating", 0),
+        "recommended_to_buy": ai_insights.get("recommended_to_buy", False),
+        "market_value_min": ai_insights.get("market_value", {}).get("min", 0),
+        "market_value_max": ai_insights.get("market_value", {}).get("max", 0),
+        "assessment_summary": ai_insights.get("assessment_summary", ""),
+        "key_highlights": ai_insights.get("key_highlights", []),
+        "engine_condition": ai_insights.get("condition_ratings", {}).get("engine", "PENDING"),
+        "interior_condition": ai_insights.get("condition_ratings", {}).get("interior", "PENDING"),
+        "exterior_condition": ai_insights.get("condition_ratings", {}).get("exterior", "PENDING"),
+        "transmission_condition": ai_insights.get("condition_ratings", {}).get("transmission", "PENDING"),
+        "category_ratings": ai_insights.get("category_ratings", {}),
+        "ai_report_generated_at": now,
+        "ai_report_stale": False,  # Reset stale flag after generation
+        "updated_at": now
+    }
+    
+    # Store market price research data if available
+    if market_price_data and market_price_data.get("success"):
+        update_doc["market_price_research"] = {
+            "market_average": market_price_data.get("market_average", 0),
+            "market_min": market_price_data.get("market_min", 0),
+            "market_max": market_price_data.get("market_max", 0),
+            "recommended_min": market_price_data.get("recommended_min", 0),
+            "recommended_max": market_price_data.get("recommended_max", 0),
+            "sources_count": market_price_data.get("sources_count", 0),
+            "sources": market_price_data.get("sources", []),
+            "estimation_method": market_price_data.get("estimation_method", "web_scraping"),
+            "fetched_at": market_price_data.get("fetched_at")
+        }
+    
     await db.inspections.update_one(
         {"id": inspection_id},
-        {
-            "$set": {
-                "ai_insights": ai_insights,
-                "overall_rating": ai_insights.get("overall_rating", 0),
-                "recommended_to_buy": ai_insights.get("recommended_to_buy", False),
-                "market_value_min": ai_insights.get("market_value", {}).get("min", 0),
-                "market_value_max": ai_insights.get("market_value", {}).get("max", 0),
-                "assessment_summary": ai_insights.get("assessment_summary", ""),
-                "key_highlights": ai_insights.get("key_highlights", []),
-                "engine_condition": ai_insights.get("condition_ratings", {}).get("engine", "PENDING"),
-                "interior_condition": ai_insights.get("condition_ratings", {}).get("interior", "PENDING"),
-                "exterior_condition": ai_insights.get("condition_ratings", {}).get("exterior", "PENDING"),
-                "transmission_condition": ai_insights.get("condition_ratings", {}).get("transmission", "PENDING"),
-                "category_ratings": ai_insights.get("category_ratings", {}),
-                "ai_report_generated_at": now,
-                "updated_at": now
-            }
-        }
+        {"$set": update_doc}
     )
     
     # Log the activity
