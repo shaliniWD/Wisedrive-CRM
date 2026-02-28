@@ -563,6 +563,22 @@ export default function LiveProgressModal({
                         disabled={!canEdit}
                       />
                     </div>
+                    {/* Market Research Info */}
+                    {inspection?.market_price_research?.market_average > 0 && (
+                      <div className="mt-2 pt-2 border-t border-gray-100">
+                        <div className="flex items-center gap-1 text-xs text-gray-500">
+                          <Info className="h-3 w-3" />
+                          <span>
+                            Market avg: ₹{(inspection.market_price_research.market_average / 100000).toFixed(2)}L
+                            {inspection.market_price_research.sources_count > 0 && (
+                              <span className="text-blue-600 ml-1">
+                                ({inspection.market_price_research.sources_count} sources)
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
