@@ -385,6 +385,55 @@ export default function LiveProgressModal({
     return () => clearInterval(interval);
   }, [isOpen, autoRefresh, inspection?.id, onRefresh]);
   
+  // Auto-fetch Vaahan data when modal opens and vehicle details are empty
+  useEffect(() => {
+    const autoFetchVaahanData = async () => {
+      // Only fetch if modal is open, we have an inspection ID, and vehicle details are missing
+      if (!isOpen || !inspection?.id) return;
+      
+      // Check if vehicle details are missing
+      const hasVehicleDetails = inspection.vehicle_make || inspection.vehicle_model || inspection.vaahan_data;
+      if (hasVehicleDetails) return; // Already have vehicle data
+      
+      // Check if car number exists
+      if (!inspection.car_number) return;
+      
+      try {
+        const vaahanResponse = await inspectionsApi.fetchVaahanData(inspection.id);
+        if (vaahanResponse.data?.success) {
+          const updatedInspection = vaahanResponse.data.inspection || {};
+          
+          setEditData(prev => ({
+            ...prev,
+            vehicle_make: updatedInspection.vehicle_make || prev.vehicle_make,
+            vehicle_model: updatedInspection.vehicle_model || prev.vehicle_model,
+            vehicle_year: updatedInspection.vehicle_year || prev.vehicle_year,
+            vehicle_colour: updatedInspection.vehicle_colour || prev.vehicle_colour,
+            fuel_type: updatedInspection.fuel_type || prev.fuel_type,
+            owners: updatedInspection.owners || prev.owners,
+            insurer_name: updatedInspection.insurer_name || prev.insurer_name,
+            insurance_expiry: updatedInspection.insurance_expiry || prev.insurance_expiry,
+            insurance_status: updatedInspection.insurance_status || prev.insurance_status,
+            policy_number: updatedInspection.policy_number || prev.policy_number,
+            hypothecation: updatedInspection.hypothecation || prev.hypothecation,
+            blacklist_status: updatedInspection.blacklist_status || prev.blacklist_status,
+            rto_verification_status: updatedInspection.rto_verification_status || prev.rto_verification_status,
+          }));
+          
+          if (onInspectionUpdated) {
+            onInspectionUpdated(updatedInspection);
+          }
+          
+          toast.success('Vehicle data loaded from Vaahan API');
+        }
+      } catch (err) {
+        console.log('Auto Vaahan fetch failed:', err.message);
+      }
+    };
+    
+    autoFetchVaahanData();
+  }, [isOpen, inspection?.id, inspection?.car_number, inspection?.vehicle_make, inspection?.vehicle_model, inspection?.vaahan_data, onInspectionUpdated]);
+  
   // Update a single field
   const updateField = (field, value) => {
     setEditData(prev => ({ ...prev, [field]: value }));
