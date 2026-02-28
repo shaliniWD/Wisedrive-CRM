@@ -511,25 +511,21 @@ export default function LiveProgressModal({
         <div className="border-b bg-gray-50 px-4">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="bg-transparent h-12 p-0 gap-1">
-              <TabsTrigger value="overview" className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-t-lg rounded-b-none h-10 px-4">
-                <FileText className="h-4 w-4 mr-2" />
-                Overview
+              <TabsTrigger value="ai-analysis" className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-t-lg rounded-b-none h-10 px-4">
+                <Zap className="h-4 w-4 mr-2" />
+                AI Analysis
               </TabsTrigger>
               <TabsTrigger value="vehicle" className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-t-lg rounded-b-none h-10 px-4">
                 <Car className="h-4 w-4 mr-2" />
-                Vehicle
-              </TabsTrigger>
-              <TabsTrigger value="inspection" className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-t-lg rounded-b-none h-10 px-4">
-                <Settings className="h-4 w-4 mr-2" />
-                Inspection
+                Vehicle & RTO
               </TabsTrigger>
               <TabsTrigger value="repairs" className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-t-lg rounded-b-none h-10 px-4">
                 <Wrench className="h-4 w-4 mr-2" />
                 Repairs
               </TabsTrigger>
-              <TabsTrigger value="verification" className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-t-lg rounded-b-none h-10 px-4">
-                <Shield className="h-4 w-4 mr-2" />
-                Verification
+              <TabsTrigger value="inspection" className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-t-lg rounded-b-none h-10 px-4">
+                <ClipboardList className="h-4 w-4 mr-2" />
+                Q&A Details
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -538,8 +534,47 @@ export default function LiveProgressModal({
         {/* Content */}
         <ScrollArea className="flex-1 p-4">
           <Tabs value={activeTab} className="w-full">
-            {/* Overview Tab */}
-            <TabsContent value="overview" className="space-y-4 mt-0">
+            {/* AI Analysis Tab (formerly Overview) */}
+            <TabsContent value="ai-analysis" className="space-y-4 mt-0">
+              {/* Share Report Button */}
+              <div className="flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-200">
+                <div>
+                  <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+                    <Share2 className="h-5 w-5 text-blue-600" />
+                    Share Report with Customer
+                  </h4>
+                  <p className="text-sm text-gray-600 mt-1">Generate a secure OTP-protected link for the customer</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {shareUrl ? (
+                    <>
+                      <div className="flex items-center gap-2 bg-white rounded-lg px-3 py-2 border">
+                        <span className="text-xs text-gray-600 max-w-[200px] truncate">{shareUrl}</span>
+                        <Button variant="ghost" size="sm" onClick={copyShareUrl} className="h-7 w-7 p-0">
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => window.open(shareUrl, '_blank')} className="h-7 w-7 p-0">
+                          <ExternalLink className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <Button
+                      onClick={generateShareUrl}
+                      disabled={generatingShareUrl}
+                      className="bg-blue-600 hover:bg-blue-700"
+                      data-testid="share-report-btn"
+                    >
+                      {generatingShareUrl ? (
+                        <><Loader2 className="h-4 w-4 animate-spin mr-2" />Generating...</>
+                      ) : (
+                        <><Share2 className="h-4 w-4 mr-2" />Generate Link</>
+                      )}
+                    </Button>
+                  )}
+                </div>
+              </div>
+              
               {/* AI Report Section */}
               <div className={`rounded-xl p-4 border-2 ${
                 aiReport.stale ? 'border-amber-300 bg-amber-50' : 'border-purple-200 bg-gradient-to-r from-purple-50 to-pink-50'
