@@ -1698,12 +1698,10 @@ const CreditScoreModal = ({ isOpen, onClose, lead, onUpdate }) => {
         {step === 3 && creditResult && (
           <CreditReportView 
             creditResult={creditResult}
-            fullReport={selectedLead?.credit_score_full_report}
+            fullReport={lead?.credit_score_full_report}
             onRecheck={resetAndRetry}
             onClose={handleClose}
           />
-        )}
-          </div>
         )}
       </DialogContent>
     </Dialog>
