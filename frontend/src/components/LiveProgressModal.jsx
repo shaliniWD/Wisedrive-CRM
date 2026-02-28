@@ -173,6 +173,7 @@ export default function LiveProgressModal({
   inspection,
   liveProgressData,
   onRefresh,
+  onInspectionUpdated, // NEW: callback to update inspection data
   canEdit = false,
   user
 }) {
