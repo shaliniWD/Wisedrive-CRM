@@ -422,35 +422,25 @@ export default function InspectionsPage() {
     scheduled_date: '', scheduled_time: '', notes: '',
   });
   
-  // Calculate date range based on dateRangeType
+  // Calculate date range based on dateRangeType - TIMEZONE AWARE
   const getDateRange = useCallback(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
     switch (dateRangeType) {
-      case 'today':
-        return { from: today.toISOString().split('T')[0], to: today.toISOString().split('T')[0] };
-      case 'week': {
-        const startOfWeek = new Date(today);
-        startOfWeek.setDate(today.getDate() - today.getDay());
-        const endOfWeek = new Date(startOfWeek);
-        endOfWeek.setDate(startOfWeek.getDate() + 6);
-        return { from: startOfWeek.toISOString().split('T')[0], to: endOfWeek.toISOString().split('T')[0] };
+      case 'today': {
+        const today = getToday();
+        return { from: today, to: today };
       }
-      case 'month': {
-        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-        const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-        return { from: startOfMonth.toISOString().split('T')[0], to: endOfMonth.toISOString().split('T')[0] };
-      }
-      case 'year': {
-        const startOfYear = new Date(today.getFullYear(), 0, 1);
-        const endOfYear = new Date(today.getFullYear(), 11, 31);
-        return { from: startOfYear.toISOString().split('T')[0], to: endOfYear.toISOString().split('T')[0] };
-      }
+      case 'week':
+        return { from: getStartOfWeek(), to: getEndOfWeek() };
+      case 'month':
+        return { from: getStartOfMonth(), to: getEndOfMonth() };
+      case 'year':
+        return { from: getStartOfYear(), to: getEndOfYear() };
       case 'custom':
         return { from: dateFrom, to: dateTo };
-      default:
-        return { from: today.toISOString().split('T')[0], to: today.toISOString().split('T')[0] };
+      default: {
+        const today = getToday();
+        return { from: today, to: today };
+      }
     }
   }, [dateRangeType, dateFrom, dateTo]);
 
