@@ -16278,32 +16278,29 @@ async def request_credit_score_otp(
         
         logger.info(f"[CREDIT_SCORE] Requesting OTP for lead {lead_id}, mobile: {request_data.mobile_number}")
         
-        # Call Experian API to request OTP
+        # Call Equifax API to request OTP (simpler format than Experian)
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(
-                "https://api.invincibleocean.com/invincible/genOtp/creditScoreCheckV4",
+                "https://api.invincibleocean.com/invincible/creditScoreCheckV1",
                 headers={
                     "Content-Type": "application/json",
                     "clientId": EXPERIAN_CLIENT_ID,
                     "secretKey": EXPERIAN_SECRET_KEY
                 },
                 json={
-                    "firstName": request_data.first_name,
-                    "lastname": request_data.last_name,
+                    "name": f"{request_data.first_name} {request_data.last_name}",
                     "panNumber": request_data.pan_number,
-                    "dob": request_data.dob,
-                    "mobileNumber": request_data.mobile_number,
-                    "email": request_data.email,
-                    "gender": request_data.gender,
-                    "pinCode": request_data.pin_code
+                    "mobileNumber": request_data.mobile_number
                 }
             )
         
         result = response.json()
         logger.info(f"[CREDIT_SCORE] OTP API response code: {result.get('code')}")
+        logger.info(f"[CREDIT_SCORE] OTP API full response: {str(result)[:500]}")
         
         if result.get("code") == 200:
-            token = result.get("result", {}).get("token")
+            # Equifax returns token at root level
+            token = result.get("token") or result.get("result", {}).get("token")
             
             # Store request info for later reference
             await db.loan_leads.update_one(
