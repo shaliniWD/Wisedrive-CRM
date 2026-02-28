@@ -877,6 +877,11 @@ export default function SettingsPage() {
           <TabsContent value="repairs">
             <RepairsModulePage />
           </TabsContent>
+
+          {/* Bank Master Tab */}
+          <TabsContent value="banks">
+            <BankMasterPage />
+          </TabsContent>
         </Tabs>
       </div>
     </div>
