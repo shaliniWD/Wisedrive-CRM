@@ -556,6 +556,28 @@ export const inspectionPackagesApi = {
   deleteOffer: (id) => axios.delete(`${API_URL}/offers/${id}`),
 };
 
+// Repairs Module API
+export const repairsApi = {
+  // Repair Parts
+  getParts: (params) => axios.get(`${API_URL}/repair-parts`, { params }),
+  getPartCategories: () => axios.get(`${API_URL}/repair-parts/categories`),
+  getPart: (id) => axios.get(`${API_URL}/repair-parts/${id}`),
+  createPart: (data) => axios.post(`${API_URL}/repair-parts`, data),
+  updatePart: (id, data) => axios.put(`${API_URL}/repair-parts/${id}`, data),
+  deletePart: (id) => axios.delete(`${API_URL}/repair-parts/${id}`),
+  
+  // Repair Rules
+  getRules: (params) => axios.get(`${API_URL}/repair-rules`, { params }),
+  getRule: (id) => axios.get(`${API_URL}/repair-rules/${id}`),
+  createRule: (data) => axios.post(`${API_URL}/repair-rules`, data),
+  updateRule: (id, data) => axios.put(`${API_URL}/repair-rules/${id}`, data),
+  deleteRule: (id) => axios.delete(`${API_URL}/repair-rules/${id}`),
+  
+  // Helper endpoints
+  getAvailableQuestions: (countryId) => axios.get(`${API_URL}/repair-rules/available-questions`, { params: { country_id: countryId } }),
+  calculateCost: (data) => axios.post(`${API_URL}/repair-parts/calculate-cost`, data),
+};
+
 // SMS Logs API
 export const smsLogsApi = {
   getLogs: (params = {}) => axios.get(`${API_URL}/sms/logs`, { params }),
