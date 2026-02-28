@@ -1045,4 +1045,19 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FFF',
   },
+  
+  // Incomplete Notice
+  incompleteNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 12,
+    paddingHorizontal: 16,
+  },
+  incompleteNoticeText: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+  },
 });
