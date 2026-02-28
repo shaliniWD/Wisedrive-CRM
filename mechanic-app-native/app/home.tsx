@@ -435,7 +435,7 @@ export default function HomeScreen() {
   };
 
   const formatDateDisplay = (date: Date) => {
-    return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+    return formatDateMedium(date);
   };
 
   const fetchInspections = useCallback(async (filterType?: string, fromDate?: Date, toDate?: Date) => {
