@@ -8224,6 +8224,39 @@ async def delete_repair_rule(
     return {"message": "Repair rule deleted"}
 
 
+# Brand normalization endpoint
+@api_router.post("/repair-parts/normalize-brand")
+async def normalize_brand(
+    data: dict = Body(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Normalize a Vaahan API manufacturer name to CRM brand name
+    Expected data: { "manufacturer": "Hyundai Motor Indian Pvt Ltd" }
+    Returns: { "original": "...", "normalized": "Hyundai", "is_known": true }
+    """
+    manufacturer = data.get("manufacturer", "")
+    normalized = brand_mapper.get_crm_brand(manufacturer)
+    
+    return {
+        "original": manufacturer,
+        "normalized": normalized or brand_mapper.get_brand_with_fallback(manufacturer),
+        "is_known": brand_mapper.is_known_brand(normalized) if normalized else False
+    }
+
+
+@api_router.get("/repair-parts/known-brands")
+async def get_known_brands(
+    current_user: dict = Depends(get_current_user)
+):
+    """Get list of all known CRM brands for repair pricing"""
+    from services.brand_mapper import BRAND_MAPPINGS
+    return {
+        "brands": sorted(BRAND_MAPPINGS.keys()),
+        "count": len(BRAND_MAPPINGS)
+    }
+
+
 # Calculate repair cost for an inspection answer
 @api_router.post("/repair-parts/calculate-cost")
 async def calculate_repair_cost(
