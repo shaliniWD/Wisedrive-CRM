@@ -946,19 +946,40 @@ export default function LiveProgressModal({
             
             {/* Q&A Details Tab (formerly Inspection) - Last tab with editable answers */}
             <TabsContent value="inspection" className="space-y-4 mt-0">
-              {/* Category Progress Summary */}
+              {/* Category Progress Summary - Clickable cards for filtering */}
               <div className="bg-gradient-to-r from-slate-50 to-gray-50 rounded-xl p-4 border">
-                <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                  <Activity className="h-5 w-5 text-blue-600" />
-                  Category-wise Progress
-                </h3>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                    <Activity className="h-5 w-5 text-blue-600" />
+                    Category-wise Progress
+                  </h3>
+                  {selectedCategoryId && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedCategoryId(null)}
+                      className="text-blue-600 h-8"
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      Show All Categories
+                    </Button>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 mb-3">Click a category to filter questions below</p>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                   {liveProgressData?.categories?.map((category, idx) => {
                     const answered = category.answered_questions || 0;
                     const total = category.total_questions || 0;
                     const percentage = total > 0 ? Math.round((answered / total) * 100) : 0;
+                    const isSelected = selectedCategoryId === category.category_id;
                     return (
-                      <div key={idx} className="bg-white rounded-lg p-3 border">
+                      <button
+                        key={idx}
+                        onClick={() => setSelectedCategoryId(isSelected ? null : category.category_id)}
+                        className={`bg-white rounded-lg p-3 border text-left transition-all hover:shadow-md ${
+                          isSelected ? 'ring-2 ring-blue-500 border-blue-500' : 'hover:border-blue-300'
+                        }`}
+                      >
                         <p className="text-xs font-medium text-gray-700 truncate">{category.category_name}</p>
                         <div className="flex items-center justify-between mt-1">
                           <span className="text-sm font-bold text-gray-900">{answered}/{total}</span>
@@ -980,14 +1001,14 @@ export default function LiveProgressModal({
                             style={{ width: `${percentage}%` }}
                           />
                         </div>
-                      </div>
+                      </button>
                     );
                   })}
                 </div>
               </div>
               
-              {/* Categories with Q&A - Editable answers with predefined options */}
-              {liveProgressData?.categories?.map((category, catIdx) => (
+              {/* Categories with Q&A - Filtered by selected category */}
+              {categoriesToDisplay?.map((category, catIdx) => (
                 <Section
                   key={category.category_id || catIdx}
                   title={category.category_name}
