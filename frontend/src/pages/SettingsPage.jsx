@@ -15,7 +15,7 @@ import {
   Settings, Key, RefreshCw, CheckCircle, XCircle, AlertCircle, 
   Eye, EyeOff, Copy, Loader2, Zap, Wallet, MessageSquare,
   CreditCard, Phone, ExternalLink, ShieldCheck, Clock,
-  MapPin, Plus, Edit2, Trash2, Search, Globe, Tag, X
+  MapPin, Plus, Edit2, Trash2, Search, Globe, Tag, X, Wrench
 } from 'lucide-react';
 import InspectionPackagesPage from './InspectionPackagesPage';
 import RepairsModulePage from './RepairsModulePage';
