@@ -36,17 +36,22 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
 - **Backend Models:** `/app/backend/models/loan.py`
 - **Frontend Page:** `/app/frontend/src/pages/LoansPage.jsx`
 - **Bank Master Page:** `/app/frontend/src/pages/BankMasterPage.jsx`
-- **Status:** ✅ FULLY FUNCTIONAL with multi-vehicle support
+- **Status:** ✅ FULLY FUNCTIONAL with multi-vehicle support & document uploads
 - **Features:**
   - Loan leads from inspection customers (auto-sync from paid inspections)
   - Bank master data management (4 banks: HDFC, ICICI, Axis, Kotak)
-  - Document uploads (Salaried/Self-employed requirements)
+  - **Document Upload/Download with Firebase Storage** ✅ NEW
+    - Employment type selection (Salaried/Self-Employed)
+    - Different document requirements per type
+    - Drag & drop upload with progress indicator
+    - View, Replace, Delete functionality
+    - Progress bar showing completion percentage
   - **Multi-vehicle support per customer** (dropdown shows "2 Cars", "3 Cars", etc.)
   - Vehicle loan details with Vaahan API integration
   - Per-vehicle bank eligibility checking (MOCKED with 70% approval rate)
   - Loan applications per vehicle per bank with status tracking
   - Vehicle-wise loan parameters (valuation, loan amount, EMI, interest, tenure)
-- **Testing:** ✅ 89% backend tests passed, 100% frontend tests passed
+- **Testing:** ✅ 93% backend tests, 100% frontend tests
 
 ## Third-Party Integrations
 - Firebase (Storage + Admin SDK)
