@@ -474,6 +474,23 @@ export default function LiveProgressModal({
     }
   };
   
+  // Manual refresh
+  const handleManualRefresh = async () => {
+    if (!inspection?.id) return;
+    setRefreshing(true);
+    try {
+      await onRefresh(inspection.id);
+      toast.success('Data refreshed');
+    } finally {
+      setTimeout(() => setRefreshing(false), 500);
+    }
+  };
+  
+  // Get categories to display based on filter
+  const categoriesToDisplay = selectedCategoryId 
+    ? liveProgressData?.categories?.filter(c => c.category_id === selectedCategoryId)
+    : liveProgressData?.categories;
+  
   // Get completion stats
   const stats = liveProgressData?.overall_stats || {};
   const aiReport = liveProgressData?.ai_report || {};
