@@ -368,22 +368,58 @@ class UsedCarPriceScraper:
     
     def _is_valid_price(self, price: int, year: int) -> bool:
         """Check if price is within reasonable range for the vehicle age"""
-        if price < 50000:  # Less than 50k is too low
+        if price < 100000:  # Less than 1 lakh is too low for a car
             return False
-        if price > 50000000:  # More than 5 crore is too high for used cars
+        if price > 5000000:  # More than 50 lakh is too high for typical used cars
             return False
         
         # Age-based validation
         current_year = datetime.now().year
         age = current_year - year
         
-        # Rough validation: older cars should be cheaper
-        if age > 15 and price > 1000000:  # 15+ year old car shouldn't be > 10L generally
-            return False
-        if age > 10 and price > 2000000:  # 10+ year old car shouldn't be > 20L generally
-            return False
+        # Reasonable price ranges based on age
+        if age <= 0:  # Brand new or future year
+            if price > 4000000:  # New cars rarely above 40L (except luxury)
+                return False
+        elif age <= 3:  # 1-3 years old
+            if price > 3000000:  # 3 year old cars rarely above 30L
+                return False
+        elif age <= 5:  # 4-5 years old
+            if price > 2000000:  # 5 year old cars rarely above 20L
+                return False
+        elif age <= 10:  # 6-10 years old
+            if price > 1500000:  # 10 year old cars rarely above 15L
+                return False
+        elif age <= 15:  # 11-15 years old
+            if price > 800000:  # Old cars rarely above 8L
+                return False
+        else:  # 15+ years old
+            if price > 500000:  # Very old cars rarely above 5L
+                return False
         
         return True
+    
+    def _filter_outliers(self, prices: List[int]) -> List[int]:
+        """Remove outlier prices using IQR method"""
+        if len(prices) < 3:
+            return prices
+        
+        sorted_prices = sorted(prices)
+        n = len(sorted_prices)
+        
+        # Calculate quartiles
+        q1_idx = n // 4
+        q3_idx = (3 * n) // 4
+        q1 = sorted_prices[q1_idx]
+        q3 = sorted_prices[q3_idx]
+        iqr = q3 - q1
+        
+        # Filter outliers (1.5 * IQR rule)
+        lower_bound = q1 - 1.5 * iqr
+        upper_bound = q3 + 1.5 * iqr
+        
+        filtered = [p for p in prices if lower_bound <= p <= upper_bound]
+        return filtered if filtered else prices  # Return original if all filtered
     
     def _estimate_price_fallback(
         self, make: str, model: str, year: int, kms_driven: int
