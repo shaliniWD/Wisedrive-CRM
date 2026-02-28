@@ -4,9 +4,10 @@ import { loansApi } from '@/services/api';
 import { toast } from 'sonner';
 import {
   ShieldCheck, AlertCircle, CreditCard, User,
-  Calendar, Mail, Phone, MapPin, Building2, Search, Eye, X, Loader2,
+  Phone, MapPin, Building2, Search, Eye, X, Loader2,
   ChevronDown, CheckCircle, ArrowRight, RefreshCw,
-  Download, FileText, AlertTriangle, Lock, Activity, Info
+  Download, FileText, AlertTriangle, Lock, Activity, Info,
+  XCircle, Ban, Filter
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,21 +19,28 @@ import {
   Dialog, DialogContent,
 } from '@/components/ui/dialog';
 
-// Sample data for demonstration when APIs return 500
+// Sample data with MORE realistic scenarios including defaults, write-offs, missed payments
 const SAMPLE_EQUIFAX_REPORT = {
   creditScore: 742,
   CreditProfileHeader: { ReportDate: 20260228, ReportNumber: 'EQF-2026-001234' },
   SCORE: { FCIREXScore: 742, FCIREXScoreConfidLevel: 'HIGH' },
   CAIS_Account: {
     CAIS_Summary: {
-      Credit_Account: { CreditAccountTotal: 6, CreditAccountActive: 4, CreditAccountClosed: 2, CreditAccountDefault: 0 },
-      Total_Outstanding_Balance: { Outstanding_Balance_All: 485000, Outstanding_Balance_Secured: 400000, Outstanding_Balance_UnSecured: 85000 }
+      Credit_Account: { CreditAccountTotal: 7, CreditAccountActive: 4, CreditAccountClosed: 2, CreditAccountDefault: 1 },
+      Total_Outstanding_Balance: { Outstanding_Balance_All: 535000, Outstanding_Balance_Secured: 400000, Outstanding_Balance_UnSecured: 135000 }
     },
     CAIS_Account_DETAILS: [
-      { Subscriber_Name: 'HDFC Bank', Account_Type: '10', Account_Number: '4532XXXXXXXX1234', Account_Status: '11', Current_Balance: 45000, Highest_Credit_or_Original_Loan_Amount: 100000, Open_Date: 20220315, Date_of_Last_Payment: 20260215, CAIS_Account_History: [{Month: '02', Year: '2026', Days_Past_Due: 0}, {Month: '01', Year: '2026', Days_Past_Due: 0}, {Month: '12', Year: '2025', Days_Past_Due: 0}] },
-      { Subscriber_Name: 'ICICI Bank', Account_Type: '05', Account_Number: 'PL98XXXXXXXX5678', Account_Status: '11', Current_Balance: 180000, Highest_Credit_or_Original_Loan_Amount: 300000, Open_Date: 20230601, Date_of_Last_Payment: 20260220, Amount_Past_Due: 0, CAIS_Account_History: [{Month: '02', Year: '2026', Days_Past_Due: 0}, {Month: '01', Year: '2026', Days_Past_Due: 0}] },
-      { Subscriber_Name: 'Axis Bank', Account_Type: '01', Account_Number: 'AL76XXXXXXXX9012', Account_Status: '11', Current_Balance: 220000, Highest_Credit_or_Original_Loan_Amount: 500000, Open_Date: 20210901, Date_of_Last_Payment: 20260218, CAIS_Account_History: [{Month: '02', Year: '2026', Days_Past_Due: 0}, {Month: '01', Year: '2026', Days_Past_Due: 0}] },
-      { Subscriber_Name: 'SBI Cards', Account_Type: '10', Account_Number: '5234XXXXXXXX3456', Account_Status: '13', Current_Balance: 0, Highest_Credit_or_Original_Loan_Amount: 75000, Open_Date: 20190315, Date_Closed: 20240601 }
+      // Active accounts
+      { Subscriber_Name: 'HDFC Bank', Account_Type: '10', Account_Number: '4532XXXXXXXX1234', Account_Status: '11', Current_Balance: 45000, Highest_Credit_or_Original_Loan_Amount: 100000, Open_Date: 20220315, Date_of_Last_Payment: 20260215, Amount_Past_Due: 0, CAIS_Account_History: [{Month: '02', Year: '2026', Days_Past_Due: 0}, {Month: '01', Year: '2026', Days_Past_Due: 0}, {Month: '12', Year: '2025', Days_Past_Due: 0}, {Month: '11', Year: '2025', Days_Past_Due: 0}, {Month: '10', Year: '2025', Days_Past_Due: 0}, {Month: '09', Year: '2025', Days_Past_Due: 0}] },
+      { Subscriber_Name: 'ICICI Bank', Account_Type: '05', Account_Number: 'PL98XXXXXXXX5678', Account_Status: '11', Current_Balance: 180000, Highest_Credit_or_Original_Loan_Amount: 300000, Open_Date: 20230601, Date_of_Last_Payment: 20260220, Amount_Past_Due: 12500, CAIS_Account_History: [{Month: '02', Year: '2026', Days_Past_Due: 15}, {Month: '01', Year: '2026', Days_Past_Due: 0}, {Month: '12', Year: '2025', Days_Past_Due: 30}, {Month: '11', Year: '2025', Days_Past_Due: 0}, {Month: '10', Year: '2025', Days_Past_Due: 0}, {Month: '09', Year: '2025', Days_Past_Due: 45}] },
+      { Subscriber_Name: 'Axis Bank Auto Loan', Account_Type: '01', Account_Number: 'AL76XXXXXXXX9012', Account_Status: '11', Current_Balance: 220000, Highest_Credit_or_Original_Loan_Amount: 500000, Open_Date: 20210901, Date_of_Last_Payment: 20260218, Amount_Past_Due: 0, CAIS_Account_History: [{Month: '02', Year: '2026', Days_Past_Due: 0}, {Month: '01', Year: '2026', Days_Past_Due: 0}, {Month: '12', Year: '2025', Days_Past_Due: 0}, {Month: '11', Year: '2025', Days_Past_Due: 0}, {Month: '10', Year: '2025', Days_Past_Due: 0}, {Month: '09', Year: '2025', Days_Past_Due: 0}] },
+      { Subscriber_Name: 'Bajaj Finance EMI', Account_Type: '06', Account_Number: 'BF34XXXXXXXX7890', Account_Status: '11', Current_Balance: 25000, Highest_Credit_or_Original_Loan_Amount: 50000, Open_Date: 20250601, Date_of_Last_Payment: 20260215, Amount_Past_Due: 0, CAIS_Account_History: [{Month: '02', Year: '2026', Days_Past_Due: 0}, {Month: '01', Year: '2026', Days_Past_Due: 0}] },
+      // Closed account (good standing)
+      { Subscriber_Name: 'SBI Cards', Account_Type: '10', Account_Number: '5234XXXXXXXX3456', Account_Status: '13', Current_Balance: 0, Highest_Credit_or_Original_Loan_Amount: 75000, Open_Date: 20190315, Date_Closed: 20240601, Amount_Past_Due: 0, CAIS_Account_History: [] },
+      // Written-off account (BAD)
+      { Subscriber_Name: 'Kotak Credit Card', Account_Type: '10', Account_Number: '4567XXXXXXXX8901', Account_Status: '78', Current_Balance: 0, Highest_Credit_or_Original_Loan_Amount: 50000, Open_Date: 20180601, Date_Closed: 20220301, Written_Off_Amt_Total: 35000, Written_Off_Amt_Principal: 28000, Date_Written_Off: 20220301, Amount_Past_Due: 0, CAIS_Account_History: [{Month: '02', Year: '2022', Days_Past_Due: 180}, {Month: '01', Year: '2022', Days_Past_Due: 150}, {Month: '12', Year: '2021', Days_Past_Due: 120}] },
+      // Default account (BAD)
+      { Subscriber_Name: 'Home Credit Finance', Account_Type: '05', Account_Number: 'HC89XXXXXXXX2345', Account_Status: '97', Current_Balance: 65000, Highest_Credit_or_Original_Loan_Amount: 100000, Open_Date: 20200801, Date_of_Last_Payment: 20230515, Amount_Past_Due: 65000, Days_Past_Due: 180, SuitFiledWilfulDefault: 'Y', CAIS_Account_History: [{Month: '02', Year: '2026', Days_Past_Due: 180}, {Month: '01', Year: '2026', Days_Past_Due: 150}, {Month: '12', Year: '2025', Days_Past_Due: 120}, {Month: '11', Year: '2025', Days_Past_Due: 90}, {Month: '10', Year: '2025', Days_Past_Due: 60}, {Month: '09', Year: '2025', Days_Past_Due: 30}] }
     ]
   },
   TotalCAPS_Summary: { TotalCAPSLast7Days: 0, TotalCAPSLast30Days: 1, TotalCAPSLast90Days: 2, TotalCAPSLast180Days: 3 },
@@ -48,15 +56,22 @@ const SAMPLE_EXPERIAN_REPORT = {
   SCORE: { FCIREXScore: 758, BureauScore: 758, FCIREXScoreConfidLevel: 'VERY HIGH' },
   CAIS_Account: {
     CAIS_Summary: {
-      Credit_Account: { CreditAccountTotal: 5, CreditAccountActive: 3, CreditAccountClosed: 2, CreditAccountDefault: 0 },
-      Total_Outstanding_Balance: { Outstanding_Balance_All: 520000, Outstanding_Balance_Secured: 450000, Outstanding_Balance_UnSecured: 70000 }
+      Credit_Account: { CreditAccountTotal: 6, CreditAccountActive: 3, CreditAccountClosed: 2, CreditAccountDefault: 1 },
+      Total_Outstanding_Balance: { Outstanding_Balance_All: 570000, Outstanding_Balance_Secured: 450000, Outstanding_Balance_UnSecured: 120000 }
     },
     CAIS_Account_DETAILS: [
-      { Subscriber_Name: 'Kotak Mahindra Bank', Account_Type: '02', Account_Number: 'HL45XXXXXXXX7890', Account_Status: '11', Current_Balance: 450000, Highest_Credit_or_Original_Loan_Amount: 2500000, Open_Date: 20200115, Date_of_Last_Payment: 20260210, CAIS_Account_History: [{Month: '02', Year: '2026', Days_Past_Due: 0}, {Month: '01', Year: '2026', Days_Past_Due: 0}, {Month: '12', Year: '2025', Days_Past_Due: 15}] },
-      { Subscriber_Name: 'Bajaj Finserv', Account_Type: '06', Account_Number: 'CL23XXXXXXXX4567', Account_Status: '11', Current_Balance: 35000, Highest_Credit_or_Original_Loan_Amount: 80000, Open_Date: 20240801, Date_of_Last_Payment: 20260212, CAIS_Account_History: [{Month: '02', Year: '2026', Days_Past_Due: 0}] },
-      { Subscriber_Name: 'HDFC Bank', Account_Type: '10', Account_Number: '4147XXXXXXXX8901', Account_Status: '11', Current_Balance: 35000, Highest_Credit_or_Original_Loan_Amount: 150000, Open_Date: 20210601, Date_of_Last_Payment: 20260205, CAIS_Account_History: [{Month: '02', Year: '2026', Days_Past_Due: 0}, {Month: '01', Year: '2026', Days_Past_Due: 0}] },
-      { Subscriber_Name: 'IndusInd Bank', Account_Type: '05', Account_Number: 'PL67XXXXXXXX2345', Account_Status: '13', Current_Balance: 0, Highest_Credit_or_Original_Loan_Amount: 200000, Open_Date: 20180901, Date_Closed: 20230301 },
-      { Subscriber_Name: 'Tata Capital', Account_Type: '13', Account_Number: 'TW89XXXXXXXX6789', Account_Status: '13', Current_Balance: 0, Highest_Credit_or_Original_Loan_Amount: 85000, Open_Date: 20190601, Date_Closed: 20220601 }
+      // Active - Housing Loan with some late payments
+      { Subscriber_Name: 'Kotak Mahindra Bank', Account_Type: '02', Account_Number: 'HL45XXXXXXXX7890', Account_Status: '11', Current_Balance: 450000, Highest_Credit_or_Original_Loan_Amount: 2500000, Open_Date: 20200115, Date_of_Last_Payment: 20260210, Amount_Past_Due: 8500, CAIS_Account_History: [{Month: '02', Year: '2026', Days_Past_Due: 0}, {Month: '01', Year: '2026', Days_Past_Due: 15}, {Month: '12', Year: '2025', Days_Past_Due: 30}, {Month: '11', Year: '2025', Days_Past_Due: 0}, {Month: '10', Year: '2025', Days_Past_Due: 0}, {Month: '09', Year: '2025', Days_Past_Due: 0}] },
+      // Active - Consumer Loan (good)
+      { Subscriber_Name: 'Bajaj Finserv', Account_Type: '06', Account_Number: 'CL23XXXXXXXX4567', Account_Status: '11', Current_Balance: 35000, Highest_Credit_or_Original_Loan_Amount: 80000, Open_Date: 20240801, Date_of_Last_Payment: 20260212, Amount_Past_Due: 0, CAIS_Account_History: [{Month: '02', Year: '2026', Days_Past_Due: 0}, {Month: '01', Year: '2026', Days_Past_Due: 0}, {Month: '12', Year: '2025', Days_Past_Due: 0}] },
+      // Active - Credit Card (good)
+      { Subscriber_Name: 'HDFC Bank Credit Card', Account_Type: '10', Account_Number: '4147XXXXXXXX8901', Account_Status: '11', Current_Balance: 35000, Highest_Credit_or_Original_Loan_Amount: 150000, Open_Date: 20210601, Date_of_Last_Payment: 20260205, Amount_Past_Due: 0, CAIS_Account_History: [{Month: '02', Year: '2026', Days_Past_Due: 0}, {Month: '01', Year: '2026', Days_Past_Due: 0}, {Month: '12', Year: '2025', Days_Past_Due: 0}, {Month: '11', Year: '2025', Days_Past_Due: 0}] },
+      // Closed - Personal Loan (settled for less - CAUTION)
+      { Subscriber_Name: 'IndusInd Bank', Account_Type: '05', Account_Number: 'PL67XXXXXXXX2345', Account_Status: '13', Current_Balance: 0, Highest_Credit_or_Original_Loan_Amount: 200000, Open_Date: 20180901, Date_Closed: 20230301, Settlement_Amount: 150000, Amount_Past_Due: 0, CAIS_Account_History: [] },
+      // Closed - Two Wheeler Loan (good)
+      { Subscriber_Name: 'Tata Capital', Account_Type: '13', Account_Number: 'TW89XXXXXXXX6789', Account_Status: '13', Current_Balance: 0, Highest_Credit_or_Original_Loan_Amount: 85000, Open_Date: 20190601, Date_Closed: 20220601, Amount_Past_Due: 0, CAIS_Account_History: [] },
+      // Default - Credit Card (BAD)
+      { Subscriber_Name: 'ICICI Bank Credit Card', Account_Type: '10', Account_Number: '5432XXXXXXXX1098', Account_Status: '97', Current_Balance: 50000, Highest_Credit_or_Original_Loan_Amount: 75000, Open_Date: 20190301, Date_of_Last_Payment: 20230801, Amount_Past_Due: 50000, Days_Past_Due: 270, SuitFiledWilfulDefault: 'N', CAIS_Account_History: [{Month: '02', Year: '2026', Days_Past_Due: 270}, {Month: '01', Year: '2026', Days_Past_Due: 240}, {Month: '12', Year: '2025', Days_Past_Due: 210}, {Month: '11', Year: '2025', Days_Past_Due: 180}, {Month: '10', Year: '2025', Days_Past_Due: 150}, {Month: '09', Year: '2025', Days_Past_Due: 120}] }
     ]
   },
   TotalCAPS_Summary: { TotalCAPSLast7Days: 1, TotalCAPSLast30Days: 2, TotalCAPSLast90Days: 4, TotalCAPSLast180Days: 5 },
@@ -66,67 +81,98 @@ const SAMPLE_EXPERIAN_REPORT = {
   Match_result: { Exact_match: 'Y' }
 };
 
-// Premium Score Gauge Component
-const ScoreGauge = ({ score, maxScore = 900, minScore = 300 }) => {
-  const percentage = Math.max(0, Math.min(100, ((score - minScore) / (maxScore - minScore)) * 100));
-  const circumference = 2 * Math.PI * 88;
-  const strokeDashoffset = circumference - (percentage / 100) * circumference * 0.75;
-  
+// REDESIGNED Score Card - Clean layout without overlap
+const ScoreCard = ({ score, bureauName, bureauColor, reportDate, reportNumber }) => {
   const getScoreColor = (s) => {
-    if (s >= 750) return { stroke: '#10B981', text: 'text-emerald-600' };
-    if (s >= 700) return { stroke: '#3B82F6', text: 'text-blue-600' };
-    if (s >= 650) return { stroke: '#F59E0B', text: 'text-amber-600' };
-    if (s >= 550) return { stroke: '#F97316', text: 'text-orange-600' };
-    return { stroke: '#EF4444', text: 'text-red-600' };
-  };
-  
-  const getScoreLabel = (s) => {
-    if (s >= 750) return 'Excellent';
-    if (s >= 700) return 'Good';
-    if (s >= 650) return 'Fair';
-    if (s >= 550) return 'Poor';
-    return 'Very Poor';
+    if (s >= 750) return { bg: 'bg-emerald-500', text: 'text-emerald-600', label: 'Excellent', risk: 'Low Risk' };
+    if (s >= 700) return { bg: 'bg-blue-500', text: 'text-blue-600', label: 'Good', risk: 'Moderate' };
+    if (s >= 650) return { bg: 'bg-amber-500', text: 'text-amber-600', label: 'Fair', risk: 'Medium' };
+    if (s >= 550) return { bg: 'bg-orange-500', text: 'text-orange-600', label: 'Poor', risk: 'High' };
+    return { bg: 'bg-red-500', text: 'text-red-600', label: 'Very Poor', risk: 'Very High' };
   };
   
   const colors = getScoreColor(score);
+  const percentage = Math.max(0, Math.min(100, ((score - 300) / 600) * 100));
   
   return (
-    <div className="relative flex flex-col items-center">
-      <svg width="180" height="140" viewBox="0 0 200 160" className="overflow-visible">
-        <path d="M 20 140 A 88 88 0 0 1 180 140" fill="none" stroke="#E2E8F0" strokeWidth="12" strokeLinecap="round" />
-        <motion.path
-          d="M 20 140 A 88 88 0 0 1 180 140"
-          fill="none" stroke={colors.stroke} strokeWidth="12" strokeLinecap="round"
-          strokeDasharray={circumference * 0.75}
-          initial={{ strokeDashoffset: circumference * 0.75 }}
-          animate={{ strokeDashoffset }}
-          transition={{ duration: 1.5, ease: 'easeOut', delay: 0.2 }}
-        />
-        {[300, 450, 600, 750, 900].map((mark, i) => {
-          const angle = -180 + (i * 45);
-          const rad = (angle * Math.PI) / 180;
-          const x = 100 + 72 * Math.cos(rad);
-          const y = 140 + 72 * Math.sin(rad);
-          return <text key={mark} x={x} y={y} textAnchor="middle" className="fill-slate-400 text-[10px] font-medium">{mark}</text>;
-        })}
-      </svg>
-      <motion.div className="absolute top-10 flex flex-col items-center" initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.5, duration: 0.5 }}>
-        <span className="text-4xl font-bold tracking-tighter text-slate-900">{score}</span>
-        <span className={`text-sm font-semibold uppercase tracking-wider mt-1 ${colors.text}`}>{getScoreLabel(score)}</span>
-      </motion.div>
+    <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+      {/* Bureau Header */}
+      <div className="px-4 py-2 border-b border-slate-100 flex items-center justify-between">
+        <div className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-semibold ${bureauColor}`}>
+          <span className="w-2 h-2 rounded-full bg-current opacity-80"></span>
+          {bureauName}
+        </div>
+        {reportDate && <span className="text-xs text-slate-400">{formatDateFromNum(reportDate)}</span>}
+      </div>
+      
+      {/* Score Display - Clean Layout */}
+      <div className="p-4">
+        <div className="flex items-center gap-4">
+          {/* Big Score Number */}
+          <div className="text-center">
+            <motion.div 
+              className="text-5xl font-bold text-slate-900 tabular-nums"
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5 }}
+            >
+              {score}
+            </motion.div>
+            <div className={`text-sm font-semibold uppercase tracking-wider mt-1 ${colors.text}`}>
+              {colors.label}
+            </div>
+          </div>
+          
+          {/* Score Bar Visualization */}
+          <div className="flex-1">
+            <div className="flex justify-between text-xs text-slate-400 mb-1">
+              <span>300</span>
+              <span>900</span>
+            </div>
+            <div className="h-3 bg-gradient-to-r from-red-200 via-amber-200 via-emerald-200 to-emerald-300 rounded-full overflow-hidden relative">
+              <motion.div 
+                className="absolute top-0 bottom-0 w-1 bg-slate-900 rounded-full shadow-lg"
+                initial={{ left: '0%' }}
+                animate={{ left: `${percentage}%` }}
+                transition={{ duration: 1, ease: 'easeOut' }}
+              />
+            </div>
+            <div className="flex justify-between text-[10px] text-slate-400 mt-1">
+              <span>Poor</span>
+              <span>Fair</span>
+              <span>Good</span>
+              <span>Excellent</span>
+            </div>
+          </div>
+        </div>
+        
+        {/* Risk Level */}
+        <div className="flex items-center gap-2 mt-4 p-2.5 bg-slate-50 rounded-lg">
+          <div className={`w-3 h-3 rounded-full ${colors.bg}`} />
+          <span className="text-sm font-semibold text-slate-900">{colors.risk}</span>
+          <span className="text-xs text-slate-500">• Repayment probability assessment</span>
+        </div>
+      </div>
+      
+      {/* Report Number Footer */}
+      {reportNumber && (
+        <div className="px-4 py-2 bg-slate-50 border-t border-slate-100 text-xs text-slate-400 text-center">
+          Report #{reportNumber}
+        </div>
+      )}
     </div>
   );
 };
 
 // Data Card Component
-const DataCard = ({ label, value, icon: Icon, className = '' }) => (
-  <div className={`bg-white p-3 rounded-xl border border-slate-100 shadow-sm ${className}`}>
+const DataCard = ({ label, value, icon: Icon, alert, className = '' }) => (
+  <div className={`bg-white p-3 rounded-xl border ${alert ? 'border-red-200 bg-red-50' : 'border-slate-100'} shadow-sm ${className}`}>
     <div className="flex items-start justify-between">
       <div>
         <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">{label}</p>
-        <p className="text-xl font-bold text-slate-900 mt-1">{value}</p>
+        <p className={`text-xl font-bold mt-1 ${alert ? 'text-red-600' : 'text-slate-900'}`}>{value}</p>
       </div>
-      {Icon && <div className="p-1.5 bg-slate-50 rounded-lg"><Icon className="h-4 w-4 text-slate-600" /></div>}
+      {Icon && <div className={`p-1.5 rounded-lg ${alert ? 'bg-red-100' : 'bg-slate-50'}`}><Icon className={`h-4 w-4 ${alert ? 'text-red-600' : 'text-slate-600'}`} /></div>}
     </div>
   </div>
 );
@@ -150,33 +196,89 @@ const getAccountTypeConfig = (code) => {
   const types = {
     '01': { name: 'Auto Loan', icon: '🚗' }, '02': { name: 'Housing Loan', icon: '🏠' },
     '05': { name: 'Personal Loan', icon: '💰' }, '06': { name: 'Consumer Loan', icon: '🛒' },
-    '10': { name: 'Credit Card', icon: '💳' }, '13': { name: 'Two-Wheeler Loan', icon: '🛵' },
+    '10': { name: 'Credit Card', icon: '💳' }, '13': { name: 'Two-Wheeler', icon: '🛵' },
   };
-  return types[String(code).padStart(2, '0')] || { name: `Type ${code}`, icon: '📄' };
+  return types[String(code).padStart(2, '0')] || { name: `Loan Type ${code}`, icon: '📄' };
 };
 
-// Payment History Bar
+// Account Status Config
+const getAccountStatus = (status, account) => {
+  // Check for written off
+  if (account.Written_Off_Amt_Total > 0 || status === '78' || status === '89') {
+    return { label: 'Written Off', color: 'bg-red-600 text-white', severity: 'critical' };
+  }
+  // Check for default/suit filed
+  if (status === '97' || status === '98' || account.SuitFiledWilfulDefault === 'Y') {
+    return { label: 'Default', color: 'bg-red-500 text-white', severity: 'critical' };
+  }
+  // Check for settlement
+  if (account.Settlement_Amount > 0) {
+    return { label: 'Settled', color: 'bg-orange-500 text-white', severity: 'warning' };
+  }
+  // Closed
+  if (status === '13' || status === '14' || status === '15') {
+    return { label: 'Closed', color: 'bg-slate-500 text-white', severity: 'normal' };
+  }
+  // Check for overdue
+  if (account.Amount_Past_Due > 0 || account.Days_Past_Due > 30) {
+    return { label: 'Overdue', color: 'bg-orange-500 text-white', severity: 'warning' };
+  }
+  // Active/Current
+  return { label: 'Active', color: 'bg-emerald-500 text-white', severity: 'good' };
+};
+
+// Payment History Bar with Legend
 const PaymentHistoryBar = ({ history }) => {
   if (!history || history.length === 0) return null;
+  
   const getStatusColor = (dpd) => {
-    if (dpd === 0 || dpd === '0' || dpd === 'STD') return 'bg-emerald-500';
-    if (dpd === '?' || dpd === 'XXX' || dpd === 'NEW') return 'bg-slate-300';
+    if (dpd === 0 || dpd === '0' || dpd === 'STD') return { bg: 'bg-emerald-500', label: 'On Time' };
+    if (dpd === '?' || dpd === 'XXX' || dpd === 'NEW') return { bg: 'bg-slate-300', label: 'No Data' };
     const days = parseInt(dpd);
-    if (isNaN(days)) return 'bg-slate-300';
-    if (days <= 30) return 'bg-amber-500';
-    if (days <= 60) return 'bg-orange-500';
-    return 'bg-red-500';
+    if (isNaN(days)) return { bg: 'bg-slate-300', label: 'N/A' };
+    if (days <= 30) return { bg: 'bg-amber-500', label: '1-30 DPD' };
+    if (days <= 60) return { bg: 'bg-orange-500', label: '31-60 DPD' };
+    if (days <= 90) return { bg: 'bg-red-400', label: '61-90 DPD' };
+    return { bg: 'bg-red-600', label: '90+ DPD' };
   };
+  
+  // Count missed payments
+  const missedCount = history.filter(h => parseInt(h.Days_Past_Due) > 0).length;
+  
   return (
     <div className="mt-3">
-      <p className="text-xs font-medium text-slate-500 mb-1">Payment History</p>
+      <div className="flex items-center justify-between mb-1">
+        <p className="text-xs font-medium text-slate-500">Payment History (Last {history.length} months)</p>
+        {missedCount > 0 && (
+          <span className="text-xs font-medium text-red-600 bg-red-50 px-2 py-0.5 rounded-full">
+            {missedCount} missed
+          </span>
+        )}
+      </div>
       <div className="flex gap-0.5">
-        {history.slice(0, 12).map((h, i) => (
-          <div key={i} className="flex-1 flex flex-col items-center">
-            <div className={`w-full h-5 rounded-sm ${getStatusColor(h.Days_Past_Due)}`} title={`${h.Month}/${h.Year}: ${h.Days_Past_Due || 0} DPD`} />
-            <span className="text-[7px] text-slate-400 mt-0.5">{h.Month}</span>
-          </div>
-        ))}
+        {history.slice(0, 12).map((h, i) => {
+          const status = getStatusColor(h.Days_Past_Due);
+          return (
+            <div key={i} className="flex-1 flex flex-col items-center group relative">
+              <div className={`w-full h-5 rounded-sm ${status.bg} cursor-pointer`} />
+              <span className="text-[7px] text-slate-400 mt-0.5">{h.Month}</span>
+              {/* Tooltip */}
+              <div className="absolute bottom-full mb-1 hidden group-hover:block z-10">
+                <div className="bg-slate-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                  {h.Month}/{h.Year}: {h.Days_Past_Due || 0} days late
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {/* Legend */}
+      <div className="flex flex-wrap gap-2 mt-2 text-[9px] text-slate-500">
+        <span className="flex items-center gap-1"><span className="w-2 h-2 bg-emerald-500 rounded-sm" />On Time</span>
+        <span className="flex items-center gap-1"><span className="w-2 h-2 bg-amber-500 rounded-sm" />1-30</span>
+        <span className="flex items-center gap-1"><span className="w-2 h-2 bg-orange-500 rounded-sm" />31-60</span>
+        <span className="flex items-center gap-1"><span className="w-2 h-2 bg-red-400 rounded-sm" />61-90</span>
+        <span className="flex items-center gap-1"><span className="w-2 h-2 bg-red-600 rounded-sm" />90+</span>
       </div>
     </div>
   );
@@ -186,6 +288,7 @@ const PaymentHistoryBar = ({ history }) => {
 const BureauReportView = ({ report, bureauName, bureauColor }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const [expandedAccounts, setExpandedAccounts] = useState({});
+  const [accountFilter, setAccountFilter] = useState('all'); // all, active, closed, problem
   
   const score = report?.SCORE?.FCIREXScore || report?.SCORE?.BureauScore || report?.creditScore || 0;
   const caisSummary = report?.CAIS_Account?.CAIS_Summary || {};
@@ -199,9 +302,29 @@ const BureauReportView = ({ report, bureauName, bureauColor }) => {
   const profileHeader = report?.CreditProfileHeader || {};
   const scoreData = report?.SCORE || {};
   
+  // Calculate problem accounts (defaults, write-offs, overdue)
+  const problemAccounts = accounts.filter(acc => {
+    const status = getAccountStatus(acc.Account_Status, acc);
+    return status.severity === 'critical' || status.severity === 'warning';
+  });
+  
+  // Calculate total overdue amount
+  const totalOverdue = accounts.reduce((sum, acc) => sum + (acc.Amount_Past_Due || 0), 0);
+  const totalWrittenOff = accounts.reduce((sum, acc) => sum + (acc.Written_Off_Amt_Total || 0), 0);
+  
+  // Filter accounts
+  const filteredAccounts = accounts.filter(acc => {
+    if (accountFilter === 'all') return true;
+    const status = getAccountStatus(acc.Account_Status, acc);
+    if (accountFilter === 'active') return status.label === 'Active' || status.label === 'Overdue';
+    if (accountFilter === 'closed') return status.label === 'Closed' || status.label === 'Settled';
+    if (accountFilter === 'problem') return status.severity === 'critical' || status.severity === 'warning';
+    return true;
+  });
+  
   const tabs = [
     { id: 'overview', label: 'Overview', icon: Eye },
-    { id: 'accounts', label: 'Accounts', icon: Building2, count: accounts.length || creditAccount.CreditAccountTotal },
+    { id: 'accounts', label: 'Accounts', icon: Building2, count: accounts.length },
     { id: 'enquiries', label: 'Enquiries', icon: Search },
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'raw', label: 'Raw Data', icon: FileText },
@@ -209,40 +332,19 @@ const BureauReportView = ({ report, bureauName, bureauColor }) => {
   
   const toggleAccount = (idx) => setExpandedAccounts(prev => ({ ...prev, [idx]: !prev[idx] }));
   
-  const getRisk = (s) => {
-    if (s >= 750) return { level: 'Low Risk', color: 'bg-emerald-500', desc: 'Excellent repayment probability' };
-    if (s >= 700) return { level: 'Moderate', color: 'bg-blue-500', desc: 'Good credit standing' };
-    if (s >= 650) return { level: 'Medium', color: 'bg-amber-500', desc: 'Some concerns noted' };
-    if (s >= 550) return { level: 'High Risk', color: 'bg-orange-500', desc: 'Significant concerns' };
-    return { level: 'Very High', color: 'bg-red-500', desc: 'Poor credit history' };
-  };
-  
-  const risk = getRisk(score);
-  
   return (
     <div className="space-y-4">
-      {/* Score Header */}
+      {/* Score Header - REDESIGNED */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {/* Score Section */}
+        {/* Score Card - NEW CLEAN DESIGN */}
         <div className="lg:col-span-4">
-          <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-4">
-            <div className="flex items-center justify-between mb-2">
-              <div className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-semibold ${bureauColor}`}>
-                <span className="w-2 h-2 rounded-full bg-current opacity-80"></span>
-                {bureauName}
-              </div>
-              {profileHeader.ReportDate && <span className="text-xs text-slate-400">{formatDateFromNum(profileHeader.ReportDate)}</span>}
-            </div>
-            <ScoreGauge score={score} />
-            <div className="flex items-center gap-3 p-2.5 bg-slate-50 rounded-lg mt-2">
-              <div className={`w-3 h-3 rounded-full ${risk.color}`} />
-              <div>
-                <p className="text-sm font-semibold text-slate-900">{risk.level}</p>
-                <p className="text-xs text-slate-500">{risk.desc}</p>
-              </div>
-            </div>
-            {profileHeader.ReportNumber && <p className="text-xs text-slate-400 text-center mt-2">Report #{profileHeader.ReportNumber}</p>}
-          </div>
+          <ScoreCard 
+            score={score} 
+            bureauName={bureauName} 
+            bureauColor={bureauColor}
+            reportDate={profileHeader.ReportDate}
+            reportNumber={profileHeader.ReportNumber}
+          />
         </div>
         
         {/* Summary Cards */}
@@ -251,8 +353,15 @@ const BureauReportView = ({ report, bureauName, bureauColor }) => {
             <DataCard label="Total Accounts" value={creditAccount.CreditAccountTotal || 0} icon={Building2} />
             <DataCard label="Active" value={creditAccount.CreditAccountActive || 0} icon={CheckCircle} />
             <DataCard label="Closed" value={creditAccount.CreditAccountClosed || 0} icon={Lock} />
-            <DataCard label="Defaults" value={creditAccount.CreditAccountDefault || 0} icon={AlertTriangle} />
+            <DataCard 
+              label="Defaults" 
+              value={creditAccount.CreditAccountDefault || 0} 
+              icon={AlertTriangle}
+              alert={(creditAccount.CreditAccountDefault || 0) > 0}
+            />
           </div>
+          
+          {/* Outstanding Balances */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-4 text-white">
               <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Total Outstanding</p>
@@ -267,6 +376,33 @@ const BureauReportView = ({ report, bureauName, bureauColor }) => {
               <p className="text-xl font-bold text-slate-900 mt-1">{formatINR(outstanding.Outstanding_Balance_UnSecured)}</p>
             </div>
           </div>
+          
+          {/* Problem Indicators - NEW */}
+          {(totalOverdue > 0 || totalWrittenOff > 0 || problemAccounts.length > 0) && (
+            <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-xl">
+              <div className="flex items-center gap-2 mb-2">
+                <AlertTriangle className="h-4 w-4 text-red-600" />
+                <span className="text-sm font-semibold text-red-800">Warning Indicators</span>
+              </div>
+              <div className="flex flex-wrap gap-3 text-sm">
+                {totalOverdue > 0 && (
+                  <span className="text-red-700">
+                    <strong>Overdue:</strong> {formatINR(totalOverdue)}
+                  </span>
+                )}
+                {totalWrittenOff > 0 && (
+                  <span className="text-red-700">
+                    <strong>Written Off:</strong> {formatINR(totalWrittenOff)}
+                  </span>
+                )}
+                {problemAccounts.length > 0 && (
+                  <span className="text-red-700">
+                    <strong>Problem Accounts:</strong> {problemAccounts.length}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
       
@@ -292,6 +428,7 @@ const BureauReportView = ({ report, bureauName, bureauColor }) => {
         {/* Overview Tab */}
         {activeTab === 'overview' && (
           <div className="space-y-3">
+            {/* Strengths & Concerns */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
                 <div className="flex items-center gap-2 mb-2"><CheckCircle className="h-5 w-5 text-emerald-600" /><h4 className="font-semibold text-emerald-900">Strengths</h4></div>
@@ -304,13 +441,17 @@ const BureauReportView = ({ report, bureauName, bureauColor }) => {
               <div className="bg-red-50 rounded-xl p-4 border border-red-100">
                 <div className="flex items-center gap-2 mb-2"><AlertTriangle className="h-5 w-5 text-red-600" /><h4 className="font-semibold text-red-900">Concerns</h4></div>
                 <ul className="space-y-1 text-sm text-red-800">
-                  {(creditAccount.CreditAccountDefault || 0) > 0 && <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 bg-red-500 rounded-full" />{creditAccount.CreditAccountDefault} Default account(s)</li>}
-                  {(totalCaps.TotalCAPSLast30Days || 0) > 3 && <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 bg-red-500 rounded-full" />High recent enquiries</li>}
+                  {(creditAccount.CreditAccountDefault || 0) > 0 && <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 bg-red-500 rounded-full" /><strong>{creditAccount.CreditAccountDefault}</strong> Default account(s)</li>}
+                  {totalOverdue > 0 && <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 bg-red-500 rounded-full" />Overdue: <strong>{formatINR(totalOverdue)}</strong></li>}
+                  {totalWrittenOff > 0 && <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 bg-red-500 rounded-full" />Written Off: <strong>{formatINR(totalWrittenOff)}</strong></li>}
+                  {(totalCaps.TotalCAPSLast30Days || 0) > 3 && <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 bg-red-500 rounded-full" />High recent enquiries ({totalCaps.TotalCAPSLast30Days})</li>}
                   {score < 650 && <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 bg-red-500 rounded-full" />Low credit score</li>}
-                  {(creditAccount.CreditAccountDefault || 0) === 0 && (totalCaps.TotalCAPSLast30Days || 0) <= 3 && score >= 650 && <li className="text-slate-500">No major concerns</li>}
+                  {problemAccounts.length === 0 && totalOverdue === 0 && totalWrittenOff === 0 && <li className="text-slate-500">No major concerns</li>}
                 </ul>
               </div>
             </div>
+            
+            {/* Enquiries Timeline */}
             <div className="bg-white rounded-xl p-4 border border-slate-100">
               <h4 className="font-semibold text-slate-900 mb-3">Credit Enquiries Timeline</h4>
               <div className="grid grid-cols-4 gap-3">
@@ -325,48 +466,140 @@ const BureauReportView = ({ report, bureauName, bureauColor }) => {
           </div>
         )}
         
-        {/* Accounts Tab */}
+        {/* Accounts Tab - ENHANCED with filters */}
         {activeTab === 'accounts' && (
-          <div className="space-y-2">
-            {accounts.length > 0 ? accounts.map((account, idx) => {
+          <div className="space-y-3">
+            {/* Account Filters */}
+            <div className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg">
+              <Filter className="h-4 w-4 text-slate-500" />
+              <span className="text-xs text-slate-500 mr-2">Filter:</span>
+              {[
+                { id: 'all', label: 'All', count: accounts.length },
+                { id: 'active', label: 'Active', count: accounts.filter(a => ['11', '21', '31'].includes(a.Account_Status) && !a.Written_Off_Amt_Total).length },
+                { id: 'closed', label: 'Closed', count: accounts.filter(a => ['13', '14', '15'].includes(a.Account_Status) || a.Date_Closed).length },
+                { id: 'problem', label: 'Problem', count: problemAccounts.length, alert: problemAccounts.length > 0 },
+              ].map(filter => (
+                <button
+                  key={filter.id}
+                  onClick={() => setAccountFilter(filter.id)}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                    accountFilter === filter.id
+                      ? filter.alert ? 'bg-red-500 text-white' : 'bg-white shadow-sm text-slate-900'
+                      : filter.alert ? 'text-red-600 hover:bg-red-100' : 'text-slate-600 hover:bg-white'
+                  }`}
+                >
+                  {filter.label} ({filter.count})
+                </button>
+              ))}
+            </div>
+            
+            {/* Account List */}
+            {filteredAccounts.length > 0 ? filteredAccounts.map((account, idx) => {
               const isExpanded = expandedAccounts[idx];
               const typeConfig = getAccountTypeConfig(account.Account_Type);
+              const status = getAccountStatus(account.Account_Status, account);
+              const hasOverdue = (account.Amount_Past_Due || 0) > 0;
+              const hasWriteOff = (account.Written_Off_Amt_Total || 0) > 0;
+              
               return (
-                <div key={idx} className="bg-white rounded-xl border border-slate-100 overflow-hidden">
+                <div key={idx} className={`bg-white rounded-xl border overflow-hidden ${
+                  status.severity === 'critical' ? 'border-red-300' : 
+                  status.severity === 'warning' ? 'border-orange-300' : 'border-slate-100'
+                }`}>
                   <button onClick={() => toggleAccount(idx)} className="w-full p-3 flex items-center justify-between hover:bg-slate-50 transition-colors">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-xl">{typeConfig.icon}</div>
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl ${
+                        status.severity === 'critical' ? 'bg-red-100' : 
+                        status.severity === 'warning' ? 'bg-orange-100' : 'bg-slate-100'
+                      }`}>
+                        {status.severity === 'critical' ? <XCircle className="h-5 w-5 text-red-500" /> : 
+                         status.severity === 'warning' ? <AlertTriangle className="h-5 w-5 text-orange-500" /> : typeConfig.icon}
+                      </div>
                       <div className="text-left">
-                        <p className="font-semibold text-slate-900 text-sm">{account.Subscriber_Name || 'Unknown Lender'}</p>
+                        <p className="font-semibold text-slate-900 text-sm">{account.Subscriber_Name || 'Unknown'}</p>
                         <p className="text-xs text-slate-500">{typeConfig.name} • ****{account.Account_Number?.slice(-4)}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="text-right">
-                        <p className="font-bold text-slate-900 text-sm">{formatINR(account.Current_Balance)}</p>
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${account.Account_Status === '13' ? 'bg-slate-100 text-slate-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                          {account.Account_Status === '13' ? 'Closed' : 'Active'}
-                        </span>
+                        <p className={`font-bold text-sm ${hasOverdue || hasWriteOff ? 'text-red-600' : 'text-slate-900'}`}>
+                          {formatINR(account.Current_Balance)}
+                        </p>
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${status.color}`}>{status.label}</span>
                       </div>
                       <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                     </div>
                   </button>
+                  
                   {isExpanded && (
                     <div className="p-3 pt-0 border-t border-slate-100 bg-slate-50">
+                      {/* Account Details Grid */}
                       <div className="grid grid-cols-3 md:grid-cols-6 gap-3 text-xs">
                         <div><p className="text-slate-500">Sanctioned</p><p className="font-semibold">{formatINR(account.Highest_Credit_or_Original_Loan_Amount || account.Credit_Limit_Amount)}</p></div>
                         <div><p className="text-slate-500">Balance</p><p className="font-semibold">{formatINR(account.Current_Balance)}</p></div>
-                        <div><p className="text-slate-500">Past Due</p><p className={`font-semibold ${account.Amount_Past_Due > 0 ? 'text-red-600' : ''}`}>{formatINR(account.Amount_Past_Due || 0)}</p></div>
+                        <div>
+                          <p className="text-slate-500">Past Due</p>
+                          <p className={`font-semibold ${hasOverdue ? 'text-red-600' : ''}`}>{formatINR(account.Amount_Past_Due || 0)}</p>
+                        </div>
                         <div><p className="text-slate-500">Opened</p><p className="font-semibold">{formatDateFromNum(account.Open_Date)}</p></div>
                         <div><p className="text-slate-500">Last Payment</p><p className="font-semibold">{formatDateFromNum(account.Date_of_Last_Payment)}</p></div>
                         <div><p className="text-slate-500">Closed</p><p className="font-semibold">{account.Date_Closed ? formatDateFromNum(account.Date_Closed) : '-'}</p></div>
                       </div>
+                      
+                      {/* Written Off Alert */}
+                      {hasWriteOff && (
+                        <div className="mt-3 p-3 bg-red-100 rounded-lg border border-red-200">
+                          <div className="flex items-center gap-2 text-red-800 font-semibold text-sm">
+                            <Ban className="h-4 w-4" />
+                            Written Off Account
+                          </div>
+                          <div className="grid grid-cols-3 gap-3 mt-2 text-xs">
+                            <div><p className="text-red-600">Total Written Off</p><p className="font-bold text-red-800">{formatINR(account.Written_Off_Amt_Total)}</p></div>
+                            <div><p className="text-red-600">Principal</p><p className="font-bold text-red-800">{formatINR(account.Written_Off_Amt_Principal)}</p></div>
+                            <div><p className="text-red-600">Date</p><p className="font-bold text-red-800">{formatDateFromNum(account.Date_Written_Off)}</p></div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Settlement Alert */}
+                      {account.Settlement_Amount > 0 && (
+                        <div className="mt-3 p-3 bg-orange-100 rounded-lg border border-orange-200">
+                          <div className="flex items-center gap-2 text-orange-800 font-semibold text-sm">
+                            <AlertTriangle className="h-4 w-4" />
+                            Settled for Less Than Full Amount
+                          </div>
+                          <div className="grid grid-cols-2 gap-3 mt-2 text-xs">
+                            <div><p className="text-orange-600">Original Amount</p><p className="font-bold text-orange-800">{formatINR(account.Highest_Credit_or_Original_Loan_Amount)}</p></div>
+                            <div><p className="text-orange-600">Settlement Amount</p><p className="font-bold text-orange-800">{formatINR(account.Settlement_Amount)}</p></div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Default/Suit Filed Alert */}
+                      {(account.SuitFiledWilfulDefault === 'Y' || account.Account_Status === '97') && (
+                        <div className="mt-3 p-3 bg-red-100 rounded-lg border border-red-200">
+                          <div className="flex items-center gap-2 text-red-800 font-semibold text-sm">
+                            <XCircle className="h-4 w-4" />
+                            {account.SuitFiledWilfulDefault === 'Y' ? 'Suit Filed / Wilful Default' : 'Account in Default'}
+                          </div>
+                          {account.Days_Past_Due > 0 && (
+                            <p className="text-xs text-red-700 mt-1">Days Past Due: <strong>{account.Days_Past_Due}</strong></p>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* Payment History */}
                       <PaymentHistoryBar history={account.CAIS_Account_History} />
                     </div>
                   )}
                 </div>
               );
-            }) : <div className="text-center py-8 text-slate-500"><Building2 className="h-10 w-10 mx-auto mb-2 text-slate-300" /><p>No account details available</p></div>}
+            }) : (
+              <div className="text-center py-8 text-slate-500">
+                <Building2 className="h-10 w-10 mx-auto mb-2 text-slate-300" />
+                <p>No accounts match this filter</p>
+              </div>
+            )}
           </div>
         )}
         
@@ -616,9 +849,7 @@ const CreditScoreModal = ({ isOpen, onClose, lead, onUpdate }) => {
         email: lead.customer_email || '',
       }));
       
-      // Check for existing credit reports
       if (lead.credit_score || lead.credit_score_full_report) {
-        // Use existing data or sample data
         setEquifaxReport(lead.credit_score_full_report || SAMPLE_EQUIFAX_REPORT);
         setExperianReport(SAMPLE_EXPERIAN_REPORT);
         setStep(3);
@@ -644,7 +875,6 @@ const CreditScoreModal = ({ isOpen, onClose, lead, onUpdate }) => {
     if (!validateForm()) return;
     setLoading(true);
     try {
-      // Try to request OTP from Equifax first
       const res = await loansApi.requestCreditScoreOTP(lead.id, { ...formData, bureau: 'equifax' });
       if (res.data.success) {
         setToken(res.data.token);
@@ -655,7 +885,6 @@ const CreditScoreModal = ({ isOpen, onClose, lead, onUpdate }) => {
       }
     } catch (err) {
       console.error('OTP request error:', err);
-      // If API fails (500 error from provider), use sample data for demo
       if (err.response?.status === 500 || err.response?.status === 400) {
         toast.info('API temporarily unavailable. Loading sample data for preview.');
         setEquifaxReport(SAMPLE_EQUIFAX_REPORT);
@@ -673,28 +902,19 @@ const CreditScoreModal = ({ isOpen, onClose, lead, onUpdate }) => {
     if (!otp || otp.length < 4) { toast.error('Please enter valid OTP'); return; }
     setLoading(true);
     try {
-      // Fetch both reports
       const equifaxRes = await loansApi.verifyCreditScoreOTP(lead.id, { token, otp, bureau: 'equifax' });
-      if (equifaxRes.data.success) {
-        setEquifaxReport(equifaxRes.data.full_report || equifaxRes.data);
-      }
+      if (equifaxRes.data.success) setEquifaxReport(equifaxRes.data.full_report || equifaxRes.data);
     } catch (err) {
       console.error('Equifax error:', err);
-      // Use sample data if API fails
       setEquifaxReport(SAMPLE_EQUIFAX_REPORT);
     }
-    
     try {
       const experianRes = await loansApi.verifyCreditScoreOTP(lead.id, { token, otp, bureau: 'experian' });
-      if (experianRes.data.success) {
-        setExperianReport(experianRes.data.full_report || experianRes.data);
-      }
+      if (experianRes.data.success) setExperianReport(experianRes.data.full_report || experianRes.data);
     } catch (err) {
       console.error('Experian error:', err);
-      // Use sample data if API fails
       setExperianReport(SAMPLE_EXPERIAN_REPORT);
     }
-    
     toast.success('Credit reports loaded!');
     setStep(3);
     onUpdate();
@@ -707,7 +927,6 @@ const CreditScoreModal = ({ isOpen, onClose, lead, onUpdate }) => {
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className={`${step === 3 ? 'max-w-5xl' : 'max-w-xl'} max-h-[90vh] overflow-y-auto p-0 bg-slate-50`}>
-        {/* Header */}
         <div className="sticky top-0 z-10 px-5 py-3 bg-white border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl"><CreditCard className="h-5 w-5 text-white" /></div>
@@ -719,7 +938,6 @@ const CreditScoreModal = ({ isOpen, onClose, lead, onUpdate }) => {
           <button onClick={handleClose} className="p-2 hover:bg-slate-100 rounded-lg"><X className="h-5 w-5 text-slate-500" /></button>
         </div>
         
-        {/* Step Indicator */}
         {step < 3 && (
           <div className="px-5 py-3 bg-white border-b border-slate-100">
             <div className="flex items-center justify-center gap-2">
@@ -740,7 +958,6 @@ const CreditScoreModal = ({ isOpen, onClose, lead, onUpdate }) => {
           </div>
         )}
         
-        {/* Content */}
         <div className="p-5">
           <AnimatePresence mode="wait">
             {step === 1 && <CustomerInfoForm key="form" formData={formData} setFormData={setFormData} onSubmit={handleRequestOTP} loading={loading} />}
