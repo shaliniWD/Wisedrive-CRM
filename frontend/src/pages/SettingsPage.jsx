@@ -867,6 +867,11 @@ export default function SettingsPage() {
           <TabsContent value="packages">
             <InspectionPackagesPage />
           </TabsContent>
+
+          {/* Repairs Module Tab */}
+          <TabsContent value="repairs">
+            <RepairsModulePage />
+          </TabsContent>
         </Tabs>
       </div>
     </div>
