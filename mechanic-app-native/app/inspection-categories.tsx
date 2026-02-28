@@ -585,22 +585,38 @@ export default function InspectionCategoriesScreen() {
 
         {/* Submit Button */}
         {categories.length > 0 && (
-          <TouchableOpacity
-            style={[styles.submitBtn, !allCategoriesCompleted && styles.submitBtnDisabled]}
-            onPress={handleSubmitInspection}
-            disabled={!allCategoriesCompleted}
-            activeOpacity={0.9}
-          >
-            <LinearGradient
-              colors={allCategoriesCompleted ? [Colors.success, '#059669'] : ['#CBD5E1', '#94A3B8']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.submitGradient}
+          <View>
+            <TouchableOpacity
+              style={[styles.submitBtn, !canCompleteInspection && styles.submitBtnDisabled]}
+              onPress={handleSubmitInspection}
+              disabled={!canCompleteInspection}
+              activeOpacity={canCompleteInspection ? 0.9 : 1}
             >
-              <MaterialIcons name="check-circle" size={22} color="#FFF" />
-              <Text style={styles.submitText}>Complete Inspection</Text>
-            </LinearGradient>
-          </TouchableOpacity>
+              <LinearGradient
+                colors={canCompleteInspection ? [Colors.success, '#059669'] : ['#CBD5E1', '#94A3B8']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.submitGradient}
+              >
+                <MaterialIcons name={canCompleteInspection ? "check-circle" : "lock"} size={22} color="#FFF" />
+                <Text style={styles.submitText}>Complete Inspection</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+            
+            {/* Incomplete Requirements Notice */}
+            {!canCompleteInspection && (
+              <View style={styles.incompleteNotice}>
+                <Ionicons name="information-circle" size={16} color={Colors.warning} />
+                <Text style={styles.incompleteNoticeText}>
+                  {!allCategoriesCompleted && !obdCompleted 
+                    ? 'Complete all categories and OBD scan to submit'
+                    : !allCategoriesCompleted 
+                    ? `Complete all categories (${categories.filter(c => !c.isCompleted).length} remaining)`
+                    : 'Complete OBD scan to submit'}
+                </Text>
+              </View>
+            )}
+          </View>
         )}
 
         <View style={{ height: 40 }} />
