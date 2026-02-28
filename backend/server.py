@@ -13077,6 +13077,11 @@ async def admin_sync_users():
 from routes.notification_config import router as notification_config_router
 api_router.include_router(notification_config_router, tags=["Notification Configuration"])
 
+# Import and include loans router (refactored from server.py)
+from routes.loans import router as loans_router, init_loans_routes
+init_loans_routes(db, get_current_user, storage_service)
+api_router.include_router(loans_router, tags=["Loans"])
+
 # Import and include ESS Mobile API routes
 from routes_ess import auth as ess_auth
 from routes_ess import leave as ess_leave
