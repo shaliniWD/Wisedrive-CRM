@@ -2642,6 +2642,7 @@ export default function InspectionsPage() {
         inspection={liveProgressInspection}
         liveProgressData={liveProgressData}
         onRefresh={fetchLiveProgress}
+        onInspectionUpdated={(updatedInspection) => setLiveProgressInspection(updatedInspection)}
         canEdit={canEditAnswers}
         user={user}
       />
