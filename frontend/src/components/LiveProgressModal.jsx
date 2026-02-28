@@ -1394,10 +1394,73 @@ export default function LiveProgressModal({
             
             {/* Repairs Tab - ENHANCED */}
             <TabsContent value="repairs" className="space-y-4 mt-0">
-              <Section title="Estimated Repairs" icon={Wrench} defaultOpen={true}>
+              {/* Auto-Calculated Repairs from Rules */}
+              {calculatedRepairCosts.length > 0 && (
+                <Section title="Auto-Detected Repairs" icon={Zap} defaultOpen={true} badge={`${calculatedRepairCosts.length} items`}>
+                  <div className="space-y-3">
+                    <p className="text-sm text-gray-600">
+                      These repairs were automatically detected based on inspection answers and repair rules.
+                    </p>
+                    
+                    {/* Repair Items from Rules */}
+                    <div className="space-y-2">
+                      {calculatedRepairCosts.map((repair, idx) => (
+                        <div key={idx} className={`p-3 rounded-lg border-l-4 ${
+                          repair.action === 'REPLACE' ? 'bg-red-50 border-l-red-500' : 'bg-amber-50 border-l-amber-500'
+                        }`}>
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                  repair.action === 'REPLACE' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
+                                }`}>
+                                  {repair.action}
+                                </span>
+                                <span className="font-medium text-gray-900">{repair.part_name}</span>
+                                <span className="text-xs text-gray-500">({repair.category})</span>
+                              </div>
+                              <p className="text-xs text-gray-600 mt-1">
+                                Q: {repair.question?.substring(0, 50)}...
+                              </p>
+                              <p className="text-xs text-blue-600 mt-0.5">
+                                A: {repair.answer}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-lg font-bold text-gray-900">₹{repair.cost.toLocaleString()}</p>
+                              <p className="text-xs text-gray-500">incl. labor</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {/* Total from Auto-Detected */}
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-200">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-gray-600">Auto-Detected Total</p>
+                          <p className="text-2xl font-bold text-blue-700">
+                            ₹{calculatedRepairCosts.reduce((sum, r) => sum + r.cost, 0).toLocaleString()}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs text-gray-500">
+                            Replace: {calculatedRepairCosts.filter(r => r.action === 'REPLACE').length} |
+                            Repair: {calculatedRepairCosts.filter(r => r.action === 'REPAIR').length}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </Section>
+              )}
+              
+              {/* Manual Repairs Section */}
+              <Section title="Manual Repair Entries" icon={Wrench} defaultOpen={calculatedRepairCosts.length === 0}>
                 <div className="space-y-4">
                   <p className="text-sm text-gray-600">
-                    Add repairs needed based on the inspection findings. This helps estimate the true cost of ownership.
+                    Add additional repairs that weren't auto-detected. These will be included in the final estimate.
                   </p>
                   
                   {/* Repair Items */}
@@ -1415,7 +1478,7 @@ export default function LiveProgressModal({
                   
                   {canEdit && (
                     <Button variant="outline" onClick={addRepair} className="w-full">
-                      + Add Repair Item
+                      + Add Manual Repair Item
                     </Button>
                   )}
                   
@@ -1424,24 +1487,51 @@ export default function LiveProgressModal({
                     <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-xl p-4 border border-orange-200">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-gray-600">Estimated Total Repair Cost</p>
+                          <p className="text-sm text-gray-600">Manual Entries Total</p>
                           <p className="text-2xl font-bold text-orange-700">
                             ₹{calculateRepairTotals().min.toLocaleString()} - ₹{calculateRepairTotals().max.toLocaleString()}
                           </p>
                         </div>
                         <div className="text-right">
                           <p className="text-xs text-gray-500">Items: {editData.repairs.length}</p>
-                          <p className="text-xs text-gray-500">
-                            Critical: {editData.repairs.filter(r => r.type === 'CRITICAL').length} |
-                            Major: {editData.repairs.filter(r => r.type === 'MAJOR').length} |
-                            Minor: {editData.repairs.filter(r => r.type === 'MINOR').length}
-                          </p>
                         </div>
                       </div>
                     </div>
                   )}
                 </div>
               </Section>
+              
+              {/* Combined Total */}
+              {(calculatedRepairCosts.length > 0 || editData.repairs.length > 0) && (
+                <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl p-5 text-white">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-purple-200 text-sm">Total Estimated Repair Cost</p>
+                      <p className="text-3xl font-bold">
+                        ₹{(calculatedRepairCosts.reduce((sum, r) => sum + r.cost, 0) + calculateRepairTotals().min).toLocaleString()}
+                        {calculateRepairTotals().max !== calculateRepairTotals().min && (
+                          <span className="text-xl font-normal text-purple-200"> - ₹{(calculatedRepairCosts.reduce((sum, r) => sum + r.cost, 0) + calculateRepairTotals().max).toLocaleString()}</span>
+                        )}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <Package className="h-10 w-10 text-purple-200" />
+                      <p className="text-xs text-purple-200 mt-1">
+                        {calculatedRepairCosts.length + editData.repairs.length} total items
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* No Repairs */}
+              {calculatedRepairCosts.length === 0 && editData.repairs.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  <CheckCircle className="h-12 w-12 mx-auto text-green-500 mb-2" />
+                  <p className="font-medium">No Repairs Detected</p>
+                  <p className="text-sm">No repair requirements have been identified from the inspection</p>
+                </div>
+              )}
             </TabsContent>
           </Tabs>
             </div>
