@@ -200,7 +200,7 @@ const DocumentsModal = ({ isOpen, onClose, lead, onUpdate }) => {
   const [downloadingDoc, setDownloadingDoc] = useState(null);
   const [deletingDoc, setDeletingDoc] = useState(null);
   const [dragOver, setDragOver] = useState(null);
-  const fileInputRef = React.useRef(null);
+  const fileInputRef = useRef(null);
   const [selectedDocType, setSelectedDocType] = useState(null);
   
   useEffect(() => {
