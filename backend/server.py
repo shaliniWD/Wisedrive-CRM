@@ -17,6 +17,7 @@ import uuid
 from datetime import datetime, timezone, timedelta
 import jwt
 import bcrypt
+import httpx
 
 # Import V2 models
 from models.user import (
