@@ -8069,12 +8069,36 @@ async def get_available_questions_for_rules(
     if country_id:
         query["country_id"] = country_id
     
-    # Get all packages
-    packages = await db.inspection_packages.find(query, {"_id": 0, "id": 1, "name": 1, "categories": 1}).to_list(50)
-    
     questions = []
+    
+    # Get all packages
+    packages = await db.inspection_packages.find(query, {"_id": 0}).to_list(50)
+    
+    # Collect all category IDs from packages
+    category_ids = set()
     for pkg in packages:
-        for cat in pkg.get("categories", []):
+        cats = pkg.get("categories", [])
+        for cat in cats:
+            if isinstance(cat, str):
+                category_ids.add(cat)
+            elif isinstance(cat, dict) and cat.get("id"):
+                category_ids.add(cat.get("id"))
+    
+    # Fetch categories from inspection_qa_categories or inspection_categories
+    if category_ids:
+        categories_data = await db.inspection_qa_categories.find(
+            {"id": {"$in": list(category_ids)}},
+            {"_id": 0}
+        ).to_list(100)
+        
+        if not categories_data:
+            # Fallback to inspection_categories
+            categories_data = await db.inspection_categories.find(
+                {"id": {"$in": list(category_ids)}},
+                {"_id": 0}
+            ).to_list(100)
+        
+        for cat in categories_data:
             for q in cat.get("questions", []):
                 questions.append({
                     "question_id": q.get("id"),
@@ -8083,24 +8107,33 @@ async def get_available_questions_for_rules(
                     "options": q.get("options", []),
                     "category_id": cat.get("id"),
                     "category_name": cat.get("name"),
-                    "package_id": pkg.get("id"),
-                    "package_name": pkg.get("name")
+                    "package_id": None,
+                    "package_name": "Inspection Category"
                 })
     
-    # Also check inspection_categories collection
-    categories = await db.inspection_categories.find({"is_active": {"$ne": False}}, {"_id": 0}).to_list(100)
-    for cat in categories:
+    # Also directly get categories that have questions
+    all_categories = await db.inspection_qa_categories.find(
+        {"is_active": {"$ne": False}, "questions": {"$exists": True, "$ne": []}},
+        {"_id": 0}
+    ).to_list(100)
+    
+    seen_ids = {q["question_id"] for q in questions if q.get("question_id")}
+    
+    for cat in all_categories:
         for q in cat.get("questions", []):
-            questions.append({
-                "question_id": q.get("id"),
-                "question_text": q.get("question", q.get("text", "")),
-                "question_type": q.get("answer_type", q.get("type", "text")),
-                "options": q.get("options", []),
-                "category_id": cat.get("id"),
-                "category_name": cat.get("name"),
-                "package_id": None,
-                "package_name": "Standalone Category"
-            })
+            q_id = q.get("id")
+            if q_id and q_id not in seen_ids:
+                questions.append({
+                    "question_id": q_id,
+                    "question_text": q.get("question", q.get("text", "")),
+                    "question_type": q.get("answer_type", q.get("type", "text")),
+                    "options": q.get("options", []),
+                    "category_id": cat.get("id"),
+                    "category_name": cat.get("name"),
+                    "package_id": None,
+                    "package_name": "Q&A Category"
+                })
+                seen_ids.add(q_id)
     
     return questions
 
