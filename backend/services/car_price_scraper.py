@@ -99,15 +99,29 @@ class UsedCarPriceScraper:
             # If no prices found, use estimation based on vehicle age
             return self._estimate_price_fallback(make, model, year, kms_driven)
         
-        # Calculate statistics
-        avg_price = sum(prices) / len(prices)
-        min_price = min(prices)
-        max_price = max(prices)
+        # Filter outliers before calculating statistics
+        filtered_prices = self._filter_outliers(prices)
+        
+        # If we have too few reliable prices, use fallback estimation
+        if len(filtered_prices) < 2:
+            logger.info(f"[PRICE_SCRAPER] Too few reliable prices ({len(filtered_prices)}), using fallback estimation")
+            fallback = self._estimate_price_fallback(make, model, year, kms_driven)
+            # Merge scraped data with fallback
+            fallback["web_scraped_prices"] = prices
+            fallback["note"] = "Limited web data, using estimation model"
+            return fallback
+        
+        # Calculate statistics from filtered prices
+        avg_price = sum(filtered_prices) / len(filtered_prices)
+        min_price = min(filtered_prices)
+        max_price = max(filtered_prices)
         
         # Recommended price is 5-10% below average (for buyer)
-        discount_percent = 0.075  # 7.5% average of 5-10%
         recommended_min = int(avg_price * (1 - 0.10))  # 10% below average
         recommended_max = int(avg_price * (1 - 0.05))  # 5% below average
+        
+        # Filter sources to only include valid prices
+        valid_sources = [s for s in sources if s["price"] in filtered_prices]
         
         return {
             "success": True,
@@ -117,8 +131,9 @@ class UsedCarPriceScraper:
             "recommended_min": recommended_min,
             "recommended_max": recommended_max,
             "discount_applied": "5-10% below market average",
-            "sources_count": len(prices),
-            "sources": sources,
+            "sources_count": len(filtered_prices),
+            "sources": valid_sources,
+            "estimation_method": "web_scraping",
             "vehicle": {
                 "make": make,
                 "model": model,
