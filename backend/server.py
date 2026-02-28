@@ -8295,10 +8295,15 @@ async def calculate_repair_cost(
                 # Get pricing for this car type
                 pricing = part.get(car_type, {})
                 
-                # Check for brand override
+                # Check for brand override - use brand mapper for normalization
                 if brand:
+                    # Normalize the brand name from Vaahan API to CRM brand
+                    normalized_brand = brand_mapper.get_crm_brand(brand) or brand
                     for override in part.get("brand_overrides", []):
-                        if override.get("brand", "").lower() == brand.lower():
+                        override_brand = override.get("brand", "")
+                        # Compare both normalized and original
+                        if (override_brand.lower() == normalized_brand.lower() or
+                            override_brand.lower() == brand.lower()):
                             brand_pricing = override.get(car_type)
                             if brand_pricing:
                                 pricing = brand_pricing
