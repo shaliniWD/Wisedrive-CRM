@@ -147,7 +147,7 @@ export default function ScanDetailScreen() {
             <View style={styles.summaryItem}>
               <Text style={styles.summaryLabel}>Date</Text>
               <Text style={styles.summaryValue}>
-                {new Date(session.timestamp).toLocaleString()}
+                {formatDateTime(session.timestamp)}
               </Text>
             </View>
             <View style={styles.summaryItem}>
