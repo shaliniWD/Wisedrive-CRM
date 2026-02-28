@@ -178,10 +178,14 @@ export default function LiveProgressModal({
   user
 }) {
   // Local state for editing
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('ai-analysis');
   const [saving, setSaving] = useState(false);
   const [generatingAI, setGeneratingAI] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(false);
+  const [shareUrl, setShareUrl] = useState('');
+  const [generatingShareUrl, setGeneratingShareUrl] = useState(false);
+  const [editingAnswer, setEditingAnswer] = useState(null); // { questionId, categoryId }
+  const [savingAnswer, setSavingAnswer] = useState(false);
   
   // Editable data state
   const [editData, setEditData] = useState({
