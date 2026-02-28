@@ -253,11 +253,23 @@ export default function InspectionCategoriesScreen() {
     router.push('/scanner');
   };
 
-  const handleCategoryPress = (category: Category) => {
+  const handleCategoryPress = (category: Category, index: number) => {
     if (!currentInspectionId) {
       Alert.alert('Error', 'No inspection selected');
       return;
     }
+    
+    // Check if category is accessible (sequential logic)
+    if (!isCategoryAccessible(index)) {
+      const prevCategory = categories[index - 1];
+      Alert.alert(
+        'Category Locked',
+        `Please complete "${prevCategory?.name || 'previous category'}" before proceeding to "${category.name}".`,
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+    
     // Navigate directly to category questions screen with inspection ID and category ID
     // Using the catch-all route /category/[...params] with format: /category/inspectionId/categoryId
     router.push(`/category/${currentInspectionId}/${category.id}`);
