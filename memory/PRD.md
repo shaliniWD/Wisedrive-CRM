@@ -48,20 +48,23 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
     - Progress bar showing completion percentage
   - **Comprehensive Credit Score Check via Experian & Equifax APIs** ✅ ENHANCED (Feb 28, 2026)
     - **Dual Bureau Support:** Equifax (V1) and Experian (V4) APIs via Invincible Ocean
+    - **Dual Bureau Tabbed UI:** Shows BOTH bureau reports side-by-side with tab navigation
+    - **Score Comparison Bar:** Visual comparison with difference and average scores
     - OTP-based verification (OTP sent to customer's mobile)
-    - 3-step modal: Customer Info → OTP Verification → Credit Report
-    - **Bureau Selection:** Dropdown to choose between Equifax and Experian
+    - 3-step modal: Customer Info → OTP Verification → Dual Bureau Reports
     - **Premium Fintech UI Design:**
-      - Animated Score Gauge with risk indicators
+      - Bureau tabs (Equifax/Experian) with score badges
+      - Animated Score Gauge with risk indicators per bureau
       - Bento-style summary grid (Total Accounts, Active, Closed, Defaults)
       - Outstanding balance breakdown (Total, Secured, Unsecured)
       - Color-coded risk levels (Low/Moderate/Medium/High/Very High)
-    - **5-tab Credit Report View:**
+    - **5 Sub-tabs per Bureau:**
       - Overview: Strengths (✓), Concerns (⚠), Credit Enquiries Timeline
       - Accounts: Expandable account list with payment history visualization (color-coded DPD)
       - Enquiries: Hard pulls and Soft pulls with detailed breakdown
       - Profile: Personal info, address, PAN, score analysis from bureau
       - Raw Data: Full JSON response for debugging/advanced use
+    - **Sample Data Fallback:** Shows demo data when APIs return 500 errors
     - Account type mapping (Personal Loan, Credit Card, Auto Loan, etc.)
     - Payment status color coding (Green=On Time, Yellow=1-30 DPD, Orange=31-60 DPD, Red=60+)
     - **Note:** Both APIs return 500 errors from provider - awaiting activation on Monday
