@@ -18,6 +18,7 @@ import {
   MapPin, Plus, Edit2, Trash2, Search, Globe, Tag, X
 } from 'lucide-react';
 import InspectionPackagesPage from './InspectionPackagesPage';
+import RepairsModulePage from './RepairsModulePage';
 
 const TokenCard = ({ token, onUpdate, onTest }) => {
   const [isUpdating, setIsUpdating] = useState(false);
