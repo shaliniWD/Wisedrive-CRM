@@ -3933,6 +3933,29 @@ Thank you for choosing Wisedrive!"""
         payment_id = payment_entity.get("id")
         amount = payment_entity.get("amount", 0) / 100  # Convert from paise
         
+        # IDEMPOTENCY CHECK: Skip if this payment was already processed
+        # Check 1: Lead already has this payment_id recorded
+        if lead.get("razorpay_payment_id") == payment_id:
+            logger.info(f"Duplicate webhook: Payment {payment_id} already processed for lead {lead_id}")
+            return {"status": "already_processed", "lead_id": lead_id}
+        
+        # Check 2: Lead already converted to customer
+        if lead.get("customer_id"):
+            logger.info(f"Duplicate webhook: Lead {lead_id} already converted to customer {lead.get('customer_id')}")
+            return {"status": "already_converted", "lead_id": lead_id, "customer_id": lead.get("customer_id")}
+        
+        # Check 3: Customer already exists for this lead
+        existing_customer = await db.customers.find_one({"lead_id": lead_id}, {"_id": 0, "id": 1})
+        if existing_customer:
+            logger.info(f"Duplicate webhook: Customer already exists for lead {lead_id}")
+            return {"status": "customer_exists", "lead_id": lead_id, "customer_id": existing_customer.get("id")}
+        
+        # Check 4: Inspections already exist for this lead
+        existing_inspection = await db.inspections.find_one({"lead_id": lead_id}, {"_id": 0, "id": 1})
+        if existing_inspection:
+            logger.info(f"Duplicate webhook: Inspection already exists for lead {lead_id}")
+            return {"status": "inspection_exists", "lead_id": lead_id, "inspection_id": existing_inspection.get("id")}
+        
         # Update lead as paid
         update_dict = {
             "status": "PAID",
