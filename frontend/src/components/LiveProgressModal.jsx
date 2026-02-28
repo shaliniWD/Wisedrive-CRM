@@ -393,7 +393,9 @@ export default function LiveProgressModal({
           recommended_to_buy: ai.recommended_to_buy ?? prev.recommended_to_buy,
           market_value_min: ai.market_value?.min || prev.market_value_min,
           market_value_max: ai.market_value?.max || prev.market_value_max,
-          assessment_summary: ai.assessment_summary || prev.assessment_summary,
+          assessment_summary: typeof ai.assessment_summary === 'object' 
+            ? ai.assessment_summary.overall || '' 
+            : ai.assessment_summary || prev.assessment_summary,
           key_highlights: ai.key_highlights || prev.key_highlights,
           engine_condition: ai.condition_ratings?.engine || prev.engine_condition,
           interior_condition: ai.condition_ratings?.interior || prev.interior_condition,
