@@ -2284,6 +2284,14 @@ export default function LoansPage() {
         lead={selectedLead}
         onUpdate={refreshSelectedLead}
       />
+      
+      {/* Credit Score Modal */}
+      <CreditScoreModal
+        isOpen={creditScoreModalOpen}
+        onClose={() => setCreditScoreModalOpen(false)}
+        lead={selectedLead}
+        onUpdate={refreshSelectedLead}
+      />
     </div>
   );
 }
