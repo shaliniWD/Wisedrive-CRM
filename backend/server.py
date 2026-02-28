@@ -5207,12 +5207,14 @@ async def generate_ai_inspection_report(
         model = vehicle_data.get("model")
         year = vehicle_data.get("year")
         
-        if make and model and year:
-            logger.info(f"[AI_REPORT] Fetching market prices for {make} {model} {year}")
+        if make and model:
+            # Default year to current year - 3 if not provided
+            year_value = int(year) if year else datetime.now().year - 3
+            logger.info(f"[AI_REPORT] Fetching market prices for {make} {model} {year_value}")
             market_price_data = await scraper.get_market_price(
                 make=make,
                 model=model,
-                year=int(year) if year else 2020,
+                year=year_value,
                 fuel_type=vehicle_data.get("fuel_type"),
                 transmission=vehicle_data.get("transmission"),
                 kms_driven=inspection_data.get("kms_driven"),
@@ -5220,7 +5222,7 @@ async def generate_ai_inspection_report(
             )
             logger.info(f"[AI_REPORT] Market price fetch result: success={market_price_data.get('success')}, sources={market_price_data.get('sources_count', 0)}")
         else:
-            logger.warning("[AI_REPORT] Skipping market price fetch - missing vehicle details")
+            logger.warning("[AI_REPORT] Skipping market price fetch - missing make or model")
     except Exception as e:
         logger.error(f"[AI_REPORT] Failed to fetch market prices: {e}")
         market_price_data = None
