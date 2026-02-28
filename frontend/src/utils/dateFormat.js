@@ -125,3 +125,146 @@ export const getUserTimezoneName = () => {
   };
   return timezoneNames[timezone] || timezone;
 };
+
+/**
+ * Get today's date in user's timezone as YYYY-MM-DD string
+ * This is critical for accurate date filtering
+ * @returns {string} - Date in YYYY-MM-DD format
+ */
+export const getToday = () => {
+  const timezone = getUserTimezone();
+  const now = new Date();
+  
+  // Convert current time to user's timezone and get date
+  const zonedNow = toZonedTime(now, timezone);
+  return format(zonedNow, 'yyyy-MM-dd');
+};
+
+/**
+ * Get start of week in user's timezone as YYYY-MM-DD string
+ * @returns {string}
+ */
+export const getStartOfWeek = () => {
+  const timezone = getUserTimezone();
+  const now = new Date();
+  const zonedNow = toZonedTime(now, timezone);
+  
+  // Get day of week (0 = Sunday)
+  const dayOfWeek = zonedNow.getDay();
+  const startOfWeek = new Date(zonedNow);
+  startOfWeek.setDate(zonedNow.getDate() - dayOfWeek);
+  
+  return format(startOfWeek, 'yyyy-MM-dd');
+};
+
+/**
+ * Get end of week in user's timezone as YYYY-MM-DD string
+ * @returns {string}
+ */
+export const getEndOfWeek = () => {
+  const timezone = getUserTimezone();
+  const now = new Date();
+  const zonedNow = toZonedTime(now, timezone);
+  
+  const dayOfWeek = zonedNow.getDay();
+  const endOfWeek = new Date(zonedNow);
+  endOfWeek.setDate(zonedNow.getDate() + (6 - dayOfWeek));
+  
+  return format(endOfWeek, 'yyyy-MM-dd');
+};
+
+/**
+ * Get start of month in user's timezone as YYYY-MM-DD string
+ * @returns {string}
+ */
+export const getStartOfMonth = () => {
+  const timezone = getUserTimezone();
+  const now = new Date();
+  const zonedNow = toZonedTime(now, timezone);
+  
+  const startOfMonth = new Date(zonedNow.getFullYear(), zonedNow.getMonth(), 1);
+  return format(startOfMonth, 'yyyy-MM-dd');
+};
+
+/**
+ * Get end of month in user's timezone as YYYY-MM-DD string
+ * @returns {string}
+ */
+export const getEndOfMonth = () => {
+  const timezone = getUserTimezone();
+  const now = new Date();
+  const zonedNow = toZonedTime(now, timezone);
+  
+  const endOfMonth = new Date(zonedNow.getFullYear(), zonedNow.getMonth() + 1, 0);
+  return format(endOfMonth, 'yyyy-MM-dd');
+};
+
+/**
+ * Get start of year in user's timezone as YYYY-MM-DD string
+ * @returns {string}
+ */
+export const getStartOfYear = () => {
+  const timezone = getUserTimezone();
+  const now = new Date();
+  const zonedNow = toZonedTime(now, timezone);
+  
+  return format(new Date(zonedNow.getFullYear(), 0, 1), 'yyyy-MM-dd');
+};
+
+/**
+ * Get end of year in user's timezone as YYYY-MM-DD string
+ * @returns {string}
+ */
+export const getEndOfYear = () => {
+  const timezone = getUserTimezone();
+  const now = new Date();
+  const zonedNow = toZonedTime(now, timezone);
+  
+  return format(new Date(zonedNow.getFullYear(), 11, 31), 'yyyy-MM-dd');
+};
+
+/**
+ * Format date for display in date input (dd/mm/yyyy for India)
+ * @param {string} isoDate - Date in YYYY-MM-DD format
+ * @returns {string} - Date in localized format
+ */
+export const formatDateForDisplay = (isoDate) => {
+  if (!isoDate) return '';
+  
+  try {
+    const date = parseISO(isoDate);
+    if (!isValid(date)) return '';
+    
+    // For India, use dd/mm/yyyy
+    const userStr = localStorage.getItem('user');
+    const user = userStr ? JSON.parse(userStr) : {};
+    const countryCode = user.country_code || 'IN';
+    
+    if (countryCode === 'IN') {
+      return format(date, 'dd/MM/yyyy');
+    }
+    return format(date, 'MM/dd/yyyy');
+  } catch {
+    return isoDate;
+  }
+};
+
+/**
+ * Format date for input field (HTML date inputs require YYYY-MM-DD)
+ * @param {string} isoDate - Date in YYYY-MM-DD format
+ * @returns {string} - Date in YYYY-MM-DD format for HTML input
+ */
+export const formatDateForInput = (isoDate) => {
+  // HTML date inputs always use YYYY-MM-DD
+  return isoDate;
+};
+
+/**
+ * Parse date from display format to YYYY-MM-DD
+ * @param {string} displayDate - Date in localized format (dd/mm/yyyy for India)
+ * @returns {string} - Date in YYYY-MM-DD format
+ */
+export const parseDateFromInput = (inputDate) => {
+  // HTML date inputs always give YYYY-MM-DD
+  return inputDate;
+};
