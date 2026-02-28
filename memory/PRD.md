@@ -210,9 +210,27 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
 
 | Issue | Status | Priority |
 |-------|--------|----------|
+| **Duplicate records on payment** | **FIXED** (Feb 28) - Added idempotency checks | P0 |
+| **Today's inspections not showing** | **FIXED** (Feb 28) - Date filter regex fix | P1 |
 | Video `file://` paths | Under investigation | P1 |
 | OBD rescan feature | Implemented | P0 |
 | Media upload failures | Shows warning now | P1 |
+
+## Bug Fixes (Feb 28, 2026)
+
+### Duplicate Customer/Inspection Records - FIXED
+- **Root Cause:** Razorpay webhook handler had no idempotency check, causing duplicate records when webhook was called multiple times
+- **Fix:** Added 4 idempotency checks in `/api/webhooks/razorpay/payment`:
+  1. Check if payment_id already recorded on lead
+  2. Check if lead already has customer_id
+  3. Check if customer already exists for lead_id
+  4. Check if inspections already exist for lead_id
+- **File:** `/app/backend/server.py` - `razorpay_payment_webhook()` function
+
+### Today's Inspections Filter - FIXED
+- **Root Cause:** `scheduled_date` field has mixed formats (date-only "2026-02-28" and datetime "2026-02-28T10:00:00"), simple string comparison didn't match datetime formats
+- **Fix:** For same-day queries, use regex `{"$regex": "^2026-02-28"}` to match both formats
+- **File:** `/app/backend/server.py` - `get_inspections()` function
 
 ## API Endpoints
 
