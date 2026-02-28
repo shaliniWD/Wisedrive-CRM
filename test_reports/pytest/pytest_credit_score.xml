@@ -1,22 +1,20 @@
-<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="6" failures="1" skipped="0" tests="11" time="1.656" timestamp="2026-02-28T17:43:39.931559+00:00" hostname="agent-env-799b9c9c-1b1a-4ef7-9cb6-5af84e16531c"><testcase classname="backend.tests.test_credit_score.TestCreditScoreEndpoints" name="test_get_credit_score_endpoint_exists" time="1.323"><error message="failed on setup with &quot;KeyError: 0&quot;">backend/tests/test_credit_score.py:51: in test_lead_id
-    return leads[0]["id"]
-           ^^^^^^^^
-E   KeyError: 0</error></testcase><testcase classname="backend.tests.test_credit_score.TestCreditScoreEndpoints" name="test_get_credit_score_invalid_lead_id" time="0.058" /><testcase classname="backend.tests.test_credit_score.TestCreditScoreEndpoints" name="test_request_otp_endpoint_exists" time="0.000"><error message="failed on setup with &quot;KeyError: 0&quot;">backend/tests/test_credit_score.py:51: in test_lead_id
-    return leads[0]["id"]
-           ^^^^^^^^
-E   KeyError: 0</error></testcase><testcase classname="backend.tests.test_credit_score.TestCreditScoreEndpoints" name="test_request_otp_invalid_lead_id" time="0.057" /><testcase classname="backend.tests.test_credit_score.TestCreditScoreEndpoints" name="test_request_otp_validation_pan_format" time="0.000"><error message="failed on setup with &quot;KeyError: 0&quot;">backend/tests/test_credit_score.py:51: in test_lead_id
-    return leads[0]["id"]
-           ^^^^^^^^
-E   KeyError: 0</error></testcase><testcase classname="backend.tests.test_credit_score.TestCreditScoreEndpoints" name="test_verify_otp_endpoint_exists" time="0.000"><error message="failed on setup with &quot;KeyError: 0&quot;">backend/tests/test_credit_score.py:51: in test_lead_id
-    return leads[0]["id"]
-           ^^^^^^^^
-E   KeyError: 0</error></testcase><testcase classname="backend.tests.test_credit_score.TestCreditScoreEndpoints" name="test_verify_otp_invalid_lead_id" time="0.059" /><testcase classname="backend.tests.test_credit_score.TestCreditScoreDataStructure" name="test_loan_lead_has_credit_score_field" time="0.000"><error message="failed on setup with &quot;KeyError: 0&quot;">backend/tests/test_credit_score.py:51: in test_lead_id
-    return leads[0]["id"]
-           ^^^^^^^^
-E   KeyError: 0</error></testcase><testcase classname="backend.tests.test_credit_score.TestCreditScoreDataStructure" name="test_loan_leads_list_includes_credit_score" time="0.059"><failure message="KeyError: 0">backend/tests/test_credit_score.py:220: in test_loan_leads_list_includes_credit_score
-    first_lead = leads[0]
-                 ^^^^^^^^
-E   KeyError: 0</failure></testcase><testcase classname="backend.tests.test_credit_score.TestCreditScoreColorCoding" name="test_score_color_logic" time="0.000" /><testcase classname="backend.tests.test_credit_score.TestCreditScoreAPIConfiguration" name="test_experian_credentials_configured" time="0.000"><error message="failed on setup with &quot;KeyError: 0&quot;">backend/tests/test_credit_score.py:51: in test_lead_id
-    return leads[0]["id"]
-           ^^^^^^^^
-E   KeyError: 0</error></testcase></testsuite></testsuites>
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="11" time="3.124" timestamp="2026-02-28T17:44:21.916636+00:00" hostname="agent-env-799b9c9c-1b1a-4ef7-9cb6-5af84e16531c"><testcase classname="backend.tests.test_credit_score.TestCreditScoreEndpoints" name="test_get_credit_score_endpoint_exists" time="2.493"><failure message="assert 404 == 200&#10; +  where 404 = &lt;Response [404]&gt;.status_code">backend/tests/test_credit_score.py:65: in test_get_credit_score_endpoint_exists
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = &lt;Response [404]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_credit_score.TestCreditScoreEndpoints" name="test_get_credit_score_invalid_lead_id" time="0.058" /><testcase classname="backend.tests.test_credit_score.TestCreditScoreEndpoints" name="test_request_otp_endpoint_exists" time="0.060"><failure message="AssertionError: Unexpected status: 500, body: {&quot;detail&quot;:&quot;Failed to request OTP: name 'httpx' is not defined&quot;}&#10;assert 500 in [200, 400]&#10; +  where 500 = &lt;Response [500]&gt;.status_code">backend/tests/test_credit_score.py:104: in test_request_otp_endpoint_exists
+    assert response.status_code in [200, 400], f"Unexpected status: {response.status_code}, body: {response.text}"
+E   AssertionError: Unexpected status: 500, body: {"detail":"Failed to request OTP: name 'httpx' is not defined"}
+E   assert 500 in [200, 400]
+E    +  where 500 = &lt;Response [500]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_credit_score.TestCreditScoreEndpoints" name="test_request_otp_invalid_lead_id" time="0.063" /><testcase classname="backend.tests.test_credit_score.TestCreditScoreEndpoints" name="test_request_otp_validation_pan_format" time="0.065"><failure message="AssertionError: Status: 500&#10;assert 500 in [200, 400, 422]&#10; +  where 500 = &lt;Response [500]&gt;.status_code">backend/tests/test_credit_score.py:158: in test_request_otp_validation_pan_format
+    assert response.status_code in [200, 400, 422], f"Status: {response.status_code}"
+E   AssertionError: Status: 500
+E   assert 500 in [200, 400, 422]
+E    +  where 500 = &lt;Response [500]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_credit_score.TestCreditScoreEndpoints" name="test_verify_otp_endpoint_exists" time="0.060"><failure message="AssertionError: Unexpected status: 500, body: {&quot;detail&quot;:&quot;Failed to verify OTP: name 'httpx' is not defined&quot;}&#10;assert 500 in [200, 400]&#10; +  where 500 = &lt;Response [500]&gt;.status_code">backend/tests/test_credit_score.py:175: in test_verify_otp_endpoint_exists
+    assert response.status_code in [200, 400], f"Unexpected status: {response.status_code}, body: {response.text}"
+E   AssertionError: Unexpected status: 500, body: {"detail":"Failed to verify OTP: name 'httpx' is not defined"}
+E   assert 500 in [200, 400]
+E    +  where 500 = &lt;Response [500]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_credit_score.TestCreditScoreEndpoints" name="test_verify_otp_invalid_lead_id" time="0.055" /><testcase classname="backend.tests.test_credit_score.TestCreditScoreDataStructure" name="test_loan_lead_has_credit_score_field" time="0.060" /><testcase classname="backend.tests.test_credit_score.TestCreditScoreDataStructure" name="test_loan_leads_list_includes_credit_score" time="0.057" /><testcase classname="backend.tests.test_credit_score.TestCreditScoreColorCoding" name="test_score_color_logic" time="0.000" /><testcase classname="backend.tests.test_credit_score.TestCreditScoreAPIConfiguration" name="test_experian_credentials_configured" time="0.057"><failure message="AssertionError: Unexpected status: 500&#10;assert 500 in [200, 400]&#10; +  where 500 = &lt;Response [500]&gt;.status_code">backend/tests/test_credit_score.py:302: in test_experian_credentials_configured
+    assert response.status_code in [200, 400], f"Unexpected status: {response.status_code}"
+E   AssertionError: Unexpected status: 500
+E   assert 500 in [200, 400]
+E    +  where 500 = &lt;Response [500]&gt;.status_code</failure></testcase></testsuite></testsuites>
