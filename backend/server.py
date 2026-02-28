@@ -8098,7 +8098,7 @@ async def create_repair_rule(
     
     await db.repair_rules.insert_one(rule_doc)
     rule_doc["part"] = {"id": part["id"], "name": part["name"], "category": part["category"]}
-    del rule_doc["_id"] if "_id" in rule_doc else None
+    rule_doc.pop("_id", None)
     return rule_doc
 
 
