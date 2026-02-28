@@ -2136,7 +2136,36 @@ export default function LoansPage() {
                       />
                     </td>
                     <td className="p-4 text-center">
-                      <span className="text-gray-400">-</span>
+                      {lead.credit_score ? (
+                        <button
+                          onClick={async () => {
+                            const fullLead = await openLeadDetails(lead.id);
+                            if (fullLead) setCreditScoreModalOpen(true);
+                          }}
+                          className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-bold ${
+                            lead.credit_score >= 750 ? 'bg-green-100 text-green-700 hover:bg-green-200' :
+                            lead.credit_score >= 650 ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' :
+                            lead.credit_score >= 550 ? 'bg-orange-100 text-orange-700 hover:bg-orange-200' :
+                            'bg-red-100 text-red-700 hover:bg-red-200'
+                          }`}
+                        >
+                          {lead.credit_score}
+                          <Eye className="h-3 w-3" />
+                        </button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={async () => {
+                            const fullLead = await openLeadDetails(lead.id);
+                            if (fullLead) setCreditScoreModalOpen(true);
+                          }}
+                          className="text-xs"
+                        >
+                          <CreditCard className="h-3 w-3 mr-1" />
+                          Check
+                        </Button>
+                      )}
                     </td>
                     <td className="p-4 text-center">
                       <Button
