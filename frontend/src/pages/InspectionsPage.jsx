@@ -30,6 +30,7 @@ import {
   StickyNote, Activity, Phone, Mail, MessageSquare, Wallet, TrendingUp, MoreHorizontal,
   ChevronRight, ClipboardList, History, Save, Pencil, Upload, Image, Video
 } from 'lucide-react';
+import LiveProgressModal from '@/components/LiveProgressModal';
 
 // Helper function to extract clean Make name from verbose manufacturer string
 const extractMake = (manufacturer) => {
