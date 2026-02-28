@@ -16268,7 +16268,7 @@ async def request_credit_score_otp(
     request_data: CreditScoreOTPRequest,
     current_user: dict = Depends(get_current_user)
 ):
-    """Request OTP for credit score check via Experian"""
+    """Request OTP for credit score check via Equifax (V1) or Experian (V4)"""
     try:
         # Verify lead exists
         lead = await db.loan_leads.find_one({"id": lead_id})
@@ -16278,30 +16278,55 @@ async def request_credit_score_otp(
         if not EXPERIAN_CLIENT_ID or not EXPERIAN_SECRET_KEY:
             raise HTTPException(status_code=500, detail="Credit score API not configured")
         
-        logger.info(f"[CREDIT_SCORE] Requesting OTP for lead {lead_id}, mobile: {request_data.mobile_number}")
+        bureau = request_data.bureau.lower() if request_data.bureau else "equifax"
+        logger.info(f"[CREDIT_SCORE] Requesting OTP via {bureau.upper()} for lead {lead_id}, mobile: {request_data.mobile_number}")
         
-        # Call Equifax API to request OTP (simpler format than Experian)
         async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(
-                "https://api.invincibleocean.com/invincible/creditScoreCheckV1",
-                headers={
-                    "Content-Type": "application/json",
-                    "clientId": EXPERIAN_CLIENT_ID,
-                    "secretKey": EXPERIAN_SECRET_KEY
-                },
-                json={
-                    "name": f"{request_data.first_name} {request_data.last_name}",
-                    "panNumber": request_data.pan_number,
-                    "mobileNumber": request_data.mobile_number
-                }
-            )
+            if bureau == "experian":
+                # Experian V4 API - Uses genOtp endpoint first
+                response = await client.post(
+                    "https://api.invincibleocean.com/invincible/genOtp/creditScoreCheckV4",
+                    headers={
+                        "Content-Type": "application/json",
+                        "clientId": EXPERIAN_CLIENT_ID,
+                        "secretKey": EXPERIAN_SECRET_KEY
+                    },
+                    json={
+                        "firstName": request_data.first_name,
+                        "surName": request_data.last_name,
+                        "panNumber": request_data.pan_number,
+                        "dateOfBirth": request_data.dob,
+                        "mobileNumber": request_data.mobile_number,
+                        "email": request_data.email,
+                        "gender": request_data.gender.upper()[0] if request_data.gender else "M",
+                        "flatno": "",
+                        "city": "",
+                        "state": "",
+                        "pincode": request_data.pin_code
+                    }
+                )
+            else:
+                # Equifax V1 API - Simpler format
+                response = await client.post(
+                    "https://api.invincibleocean.com/invincible/genOtp/creditScoreCheckV1",
+                    headers={
+                        "Content-Type": "application/json",
+                        "clientId": EXPERIAN_CLIENT_ID,
+                        "secretKey": EXPERIAN_SECRET_KEY
+                    },
+                    json={
+                        "name": f"{request_data.first_name} {request_data.last_name}",
+                        "panNumber": request_data.pan_number,
+                        "mobileNumber": request_data.mobile_number
+                    }
+                )
         
         result = response.json()
-        logger.info(f"[CREDIT_SCORE] OTP API response code: {result.get('code')}")
-        logger.info(f"[CREDIT_SCORE] OTP API full response: {str(result)[:500]}")
+        logger.info(f"[CREDIT_SCORE] {bureau.upper()} OTP API response code: {result.get('code')}")
+        logger.info(f"[CREDIT_SCORE] {bureau.upper()} OTP API full response: {json.dumps(result)[:1000]}")
         
         if result.get("code") == 200:
-            # Equifax returns token at root level
+            # Extract token - different locations for different APIs
             token = result.get("token") or result.get("result", {}).get("token")
             
             # Store request info for later reference
@@ -16311,8 +16336,9 @@ async def request_credit_score_otp(
                     "$set": {
                         "credit_score_request": {
                             "status": "OTP_SENT",
+                            "bureau": bureau,
                             "mobile_number": request_data.mobile_number,
-                            "pan_number": request_data.pan_number[:5] + "XXXXX" + request_data.pan_number[-1],  # Mask PAN
+                            "pan_number": request_data.pan_number[:5] + "XXXXX" + request_data.pan_number[-1],
                             "requested_at": datetime.now(timezone.utc).isoformat(),
                             "requested_by": current_user.get("email")
                         }
@@ -16324,17 +16350,21 @@ async def request_credit_score_otp(
                 "success": True,
                 "message": result.get("message", "OTP sent successfully"),
                 "token": token,
+                "bureau": bureau,
                 "request_id": result.get("result", {}).get("sendOtpResponse", {}).get("request_id")
             }
         else:
             error_msg = result.get("message", "Failed to send OTP")
-            logger.error(f"[CREDIT_SCORE] OTP request failed: {error_msg}")
+            logger.error(f"[CREDIT_SCORE] {bureau.upper()} OTP request failed: {error_msg}")
+            logger.error(f"[CREDIT_SCORE] Full error response: {json.dumps(result)}")
             raise HTTPException(status_code=400, detail=error_msg)
             
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"[CREDIT_SCORE] Error requesting OTP: {str(e)}")
+        import traceback
+        logger.error(f"[CREDIT_SCORE] Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Failed to request OTP: {str(e)}")
 
 
