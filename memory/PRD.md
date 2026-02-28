@@ -41,6 +41,22 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
 
 ## Recent Implementations (Feb 2026)
 
+### Brand Mapper Service - NEW (Feb 28, 2026)
+- **Purpose:** Automatically map Vaahan API manufacturer names to CRM brand names for repair cost calculations
+- **Problem:** Vaahan API returns names like "Hyundai Motor Indian Pvt Ltd" but CRM uses "Hyundai"
+- **Implementation:** `/app/backend/services/brand_mapper.py`
+- **Features:**
+  - Comprehensive mapping for 50+ brands (Japanese, Korean, German, American, British, Indian, French, Italian, Chinese, Swedish, Czech)
+  - Handles various suffixes: "Pvt Ltd", "Private Limited", "Ltd", "Inc", etc.
+  - Fuzzy matching for partial name matches
+  - Returns original if no match found
+- **Endpoints:**
+  - `POST /api/repair-parts/normalize-brand` - Normalize a manufacturer name
+  - `GET /api/repair-parts/known-brands` - List all known CRM brands
+- **Integration:**
+  - `calculate-cost` endpoint now uses brand mapper for price lookups
+  - New inspections automatically normalize `car_make` field from Vaahan API
+
 ### Web Scraping for Market Prices - NEW (Feb 28, 2026)
 - **Feature:** Scrape Indian used car websites for real market price data
 - **Sources:** CarDekho, CarWale, Cars24, Spinny, OLX (with fallback to depreciation model)
