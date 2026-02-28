@@ -131,6 +131,54 @@ class InspectionUpdate(BaseModel):
     report_data: Optional[dict] = None
     report_sent: Optional[bool] = None
     notes: Optional[str] = None
+    
+    # AI Report & Assessment fields (NEW)
+    overall_rating: Optional[float] = None
+    recommended_to_buy: Optional[bool] = None
+    market_value_min: Optional[float] = None
+    market_value_max: Optional[float] = None
+    assessment_summary: Optional[str] = None
+    key_highlights: Optional[List[str]] = None
+    
+    # Vehicle Details (NEW)
+    vehicle_make: Optional[str] = None
+    vehicle_model: Optional[str] = None
+    vehicle_year: Optional[str] = None
+    fuel_type: Optional[str] = None
+    transmission: Optional[str] = None
+    vehicle_colour: Optional[str] = None
+    engine_cc: Optional[int] = None
+    kms_driven: Optional[int] = None
+    owners: Optional[int] = None
+    
+    # Condition Ratings (NEW)
+    engine_condition: Optional[str] = None
+    interior_condition: Optional[str] = None
+    exterior_condition: Optional[str] = None
+    transmission_condition: Optional[str] = None
+    
+    # Vehicle History (NEW)
+    accident_history: Optional[bool] = None
+    flood_damage: Optional[bool] = None
+    dents_scratches: Optional[bool] = None
+    
+    # Insurance (NEW)
+    insurance_status: Optional[str] = None
+    insurer_name: Optional[str] = None
+    policy_number: Optional[str] = None
+    insurance_expiry: Optional[str] = None
+    policy_type: Optional[str] = None
+    idv_value: Optional[float] = None
+    
+    # Repairs Estimation (NEW)
+    repairs: Optional[List[dict]] = None
+    total_repair_cost_min: Optional[float] = None
+    total_repair_cost_max: Optional[float] = None
+    
+    # RTO Verification (NEW)
+    rto_verification_status: Optional[str] = None
+    hypothecation: Optional[str] = None
+    blacklist_status: Optional[bool] = None
 
 
 class Inspection(InspectionBase):
