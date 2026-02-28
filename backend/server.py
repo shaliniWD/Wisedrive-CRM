@@ -6676,6 +6676,133 @@ async def update_inspection_vehicle(
     return updated
 
 
+@api_router.post("/inspections/{inspection_id}/fetch-vaahan-data")
+async def fetch_vaahan_data_for_inspection(
+    inspection_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Fetch vehicle data from Vaahan API and update the inspection record.
+    This should be called when:
+    1. The Refresh button is clicked in the Inspection Editor
+    2. When an inspection is scheduled (for pre-populating data)
+    
+    Returns the updated inspection data with Vaahan-sourced vehicle info.
+    """
+    from services.brand_mapper import brand_mapper
+    
+    inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
+    if not inspection:
+        raise HTTPException(status_code=404, detail="Inspection not found")
+    
+    car_number = inspection.get("car_number", "")
+    if not car_number:
+        raise HTTPException(status_code=400, detail="No vehicle number found in inspection")
+    
+    # Fetch from Vaahan API
+    result = await vaahan_service.get_vehicle_details(car_number)
+    
+    if not result.get("success"):
+        return {
+            "success": False,
+            "error": result.get("error", "Failed to fetch vehicle details"),
+            "inspection": inspection
+        }
+    
+    vaahan_data = result.get("data", {})
+    now = datetime.now(timezone.utc).isoformat()
+    
+    # Normalize manufacturer name using brand mapper
+    raw_manufacturer = vaahan_data.get("manufacturer", "")
+    normalized_make = brand_mapper.normalize_brand(raw_manufacturer) if raw_manufacturer else ""
+    
+    # Prepare update dict with Vaahan data
+    update_dict = {
+        "vaahan_data": vaahan_data,
+        "vaahan_fetched_at": now,
+        "rto_verification_status": "VERIFIED",
+        "updated_at": now
+    }
+    
+    # Update vehicle details if not already set or if Vaahan has better data
+    if vaahan_data.get("manufacturer") and (not inspection.get("vehicle_make") or inspection.get("vehicle_make") == ""):
+        update_dict["vehicle_make"] = normalized_make
+        update_dict["car_make"] = normalized_make
+    
+    if vaahan_data.get("model") and (not inspection.get("vehicle_model") or inspection.get("vehicle_model") == ""):
+        update_dict["vehicle_model"] = vaahan_data.get("model")
+        update_dict["car_model"] = vaahan_data.get("model")
+    
+    if vaahan_data.get("color") and (not inspection.get("vehicle_colour") or inspection.get("vehicle_colour") == ""):
+        update_dict["vehicle_colour"] = vaahan_data.get("color")
+        update_dict["car_color"] = vaahan_data.get("color")
+    
+    if vaahan_data.get("fuel_type") and (not inspection.get("fuel_type") or inspection.get("fuel_type") == ""):
+        update_dict["fuel_type"] = vaahan_data.get("fuel_type")
+    
+    # Extract year from manufacturing date if available
+    mfg_date = vaahan_data.get("manufacturing_date", "")
+    if mfg_date and (not inspection.get("vehicle_year") or inspection.get("vehicle_year") == ""):
+        # Format is usually "MM/YYYY" or "YYYY"
+        try:
+            if "/" in mfg_date:
+                year = mfg_date.split("/")[-1]
+            else:
+                year = mfg_date[:4] if len(mfg_date) >= 4 else mfg_date
+            if year.isdigit():
+                update_dict["vehicle_year"] = int(year)
+                update_dict["car_year"] = int(year)
+        except:
+            pass
+    
+    # Update owner count
+    if vaahan_data.get("owner_count") and (not inspection.get("owners") or inspection.get("owners") == 0):
+        try:
+            update_dict["owners"] = int(vaahan_data.get("owner_count", 1))
+        except:
+            update_dict["owners"] = 1
+    
+    # Update insurance details
+    if vaahan_data.get("insurance_company"):
+        update_dict["insurer_name"] = vaahan_data.get("insurance_company")
+    if vaahan_data.get("insurance_valid_upto"):
+        update_dict["insurance_expiry"] = vaahan_data.get("insurance_valid_upto")
+        # Check if insurance is expired
+        try:
+            exp_date = vaahan_data.get("insurance_valid_upto")
+            if exp_date:
+                # Try parsing different formats
+                from dateutil import parser
+                exp_datetime = parser.parse(exp_date)
+                if exp_datetime < datetime.now():
+                    update_dict["insurance_status"] = "Expired"
+                else:
+                    update_dict["insurance_status"] = "Active"
+        except:
+            pass
+    if vaahan_data.get("insurance_policy_number"):
+        update_dict["policy_number"] = vaahan_data.get("insurance_policy_number")
+    
+    # Update hypothecation/finance info
+    if vaahan_data.get("hypothecation_bank"):
+        update_dict["hypothecation"] = vaahan_data.get("hypothecation_bank")
+    
+    # Check blacklist status
+    if vaahan_data.get("blacklist_status"):
+        update_dict["blacklist_status"] = vaahan_data.get("blacklist_status", "").lower() == "yes"
+    
+    await db.inspections.update_one({"id": inspection_id}, {"$set": update_dict})
+    
+    updated_inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
+    
+    return {
+        "success": True,
+        "message": "Vehicle data fetched from Vaahan API",
+        "vaahan_data": vaahan_data,
+        "inspection": updated_inspection
+    }
+
+
 class AssignMechanicRequest(BaseModel):
     mechanic_id: Optional[str] = None  # None to unassign
 
