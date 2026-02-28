@@ -10,6 +10,7 @@ import DashboardPage from "@/pages/DashboardPage";
 import LeadsPage from "@/pages/LeadsPage";
 import CustomersPage from "@/pages/CustomersPage";
 import InspectionsPage from "@/pages/InspectionsPage";
+import LoansPage from "@/pages/LoansPage";
 import FinancePage from "@/pages/FinancePage";
 import SettingsPage from "@/pages/SettingsPage";
 import HRModulePage from "@/pages/HRModulePage";
@@ -31,6 +32,7 @@ const SmartRedirect = () => {
     leads: '/leads',
     customers: '/customers',
     inspections: '/inspections',
+    loans: '/loans',
     'ad-analytics': '/ad-analytics',
     hr: '/hr',
     finance: '/finance',
@@ -71,6 +73,7 @@ function App() {
             <Route path="/leads" element={<LeadsPage />} />
             <Route path="/customers" element={<CustomersPage />} />
             <Route path="/inspections" element={<InspectionsPage />} />
+            <Route path="/loans" element={<LoansPage />} />
             <Route path="/ad-analytics" element={<AdAnalyticsPage />} />
             <Route path="/hr" element={<HRModulePage />} />
             <Route path="/hr/notifications" element={<NotificationConfigPage />} />
