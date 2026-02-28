@@ -1,0 +1,92 @@
+{
+  "summary": "Document Upload and Download feature for Loans Module tested successfully. Backend: 14/15 tests passed (93%). Frontend: All UI features verified working - Documents modal, employment type selection, document requirements, progress bar, upload/view/replace/delete buttons.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "DELETE /api/loan-leads/{lead_id}/documents/{document_id}", "issue": "Returns 200 instead of 404 for invalid document_id - should return 404 for non-existent document", "priority": "LOW"}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_document_upload.py",
+    "/app/test_reports/pytest/pytest_document_upload.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Firebase Storage integration is REAL - not mocked. Documents are stored in gs://wisedrive-ess-app.firebasestorage.app/loan_documents/",
+    "3-step upload workflow working: 1) Generate signed URL, 2) Upload to Firebase, 3) Save document record",
+    "Document requirements correctly differentiate between SALARIED and SELF_EMPLOYED customer types",
+    "Progress bar correctly calculates completion percentage based on required documents only"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_document_upload.py"
+  ],
+  "success_rate": {
+    "backend": "93% - 14/15 tests passed",
+    "frontend": "100% - All UI features verified"
+  },
+  "test_credentials": {
+    "email": "kalyan@wisedrive.com",
+    "password": "password123",
+    "country": "India"
+  },
+  "seed_data_creation": "Test document (ITR_2024_TestDoc.pdf) already uploaded for Rajesh Sharma (lead_id: c6691f1f-ecbc-446a-ab92-be5386eff6f7). Customer type is SELF_EMPLOYED.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Document Upload feature fully functional. Firebase Storage integration is real. Test lead Rajesh Sharma has 1 document uploaded (itr_1 type). All CRUD operations for documents working. Employment type switching updates document requirements correctly.",
+  "tests_executed": {
+    "backend_tests": [
+      {"test": "GET /api/loan-leads/{lead_id}/document-requirements for SELF_EMPLOYED", "result": "PASSED"},
+      {"test": "Document requirements structure validation", "result": "PASSED"},
+      {"test": "404 for invalid lead ID on document-requirements", "result": "PASSED"},
+      {"test": "POST /api/loan-leads/{lead_id}/documents/generate-upload-url", "result": "PASSED"},
+      {"test": "404 for invalid lead ID on generate-upload-url", "result": "PASSED"},
+      {"test": "Generate upload URL for different content types (PDF, JPG, PNG)", "result": "PASSED"},
+      {"test": "POST /api/loan-leads/{lead_id}/documents saves document record", "result": "PASSED"},
+      {"test": "404 for invalid lead ID on document upload", "result": "PASSED"},
+      {"test": "POST /api/loan-leads/{lead_id}/documents/{document_id}/download-url", "result": "PASSED"},
+      {"test": "404 for invalid document ID on download-url", "result": "PASSED"},
+      {"test": "404 for invalid lead ID on download-url", "result": "PASSED"},
+      {"test": "DELETE /api/loan-leads/{lead_id}/documents/{document_id}", "result": "PASSED"},
+      {"test": "404 for invalid document ID on delete", "result": "FAILED - returns 200"},
+      {"test": "Complete 3-step upload workflow", "result": "PASSED"},
+      {"test": "SALARIED document requirements", "result": "PASSED"}
+    ],
+    "frontend_tests": [
+      {"test": "Login and navigate to Loans page", "result": "PASSED"},
+      {"test": "Documents modal opens correctly", "result": "PASSED"},
+      {"test": "Employment Type selection (Salaried/Self Employed)", "result": "PASSED"},
+      {"test": "SALARIED documents shown (Salary Slip x3, Bank Statement 6mo, ID Proof, Address Proof)", "result": "PASSED"},
+      {"test": "SELF_EMPLOYED documents shown (ITR x2, Bank Statement 12mo, Business Reg, GST, ID, Address)", "result": "PASSED"},
+      {"test": "Progress bar shows completion percentage (17% for 1/6 required)", "result": "PASSED"},
+      {"test": "Upload buttons present for each document type", "result": "PASSED"},
+      {"test": "View button for uploaded documents", "result": "PASSED"},
+      {"test": "Replace button for uploaded documents", "result": "PASSED"},
+      {"test": "Delete button (trash icon) for uploaded documents", "result": "PASSED"},
+      {"test": "Document count shows correctly in main table (3 for Rajesh)", "result": "PASSED"},
+      {"test": "Pending documents count shown (5 required document(s) pending)", "result": "PASSED"},
+      {"test": "Customer type updated toast notification", "result": "PASSED"},
+      {"test": "Drag & drop hint text displayed", "result": "PASSED"}
+    ]
+  },
+  "api_verification": {
+    "GET /api/loan-leads/{lead_id}/document-requirements": {"status": 200, "customer_type": "SELF_EMPLOYED", "requirements_count": 8},
+    "POST /api/loan-leads/{lead_id}/documents/generate-upload-url": {"status": 200, "returns": "signed_url, firebase_path, expires_at"},
+    "POST /api/loan-leads/{lead_id}/documents": {"status": 200, "returns": "document object with id, document_type, file_url, file_name, uploaded_at"},
+    "POST /api/loan-leads/{lead_id}/documents/{document_id}/download-url": {"status": 200, "returns": "download_url, expires_at, file_name"},
+    "DELETE /api/loan-leads/{lead_id}/documents/{document_id}": {"status": 200, "returns": "message: Document deleted"}
+  },
+  "document_types_verified": {
+    "SALARIED": ["salary_slip_1", "salary_slip_2", "salary_slip_3", "bank_statement", "id_proof", "address_proof", "photo"],
+    "SELF_EMPLOYED": ["itr_1", "itr_2", "bank_statement", "business_registration", "gst_returns", "id_proof", "address_proof", "photo"]
+  },
+  "firebase_integration": {
+    "storage_bucket": "wisedrive-ess-app.firebasestorage.app",
+    "path_format": "loan_documents/{lead_id}/{document_type}_{timestamp}.{ext}",
+    "signed_url_expiry": "1 hour for upload, 24 hours for download"
+  }
+}
