@@ -79,7 +79,7 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
 - Google Maps Places API
 - EAS (Expo Application Services)
 - **OpenAI GPT-5.2** (AI Report Generation via Emergent LLM Key)
-- **Experian Credit Score** (via Invincible Ocean API) ✅ NEW
+- **Equifax & Experian Credit Score** (via Invincible Ocean API) ✅ DUAL BUREAU SUPPORT
 
 ## Recent Implementations (Feb 2026)
 
