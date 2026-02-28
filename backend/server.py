@@ -5119,17 +5119,18 @@ async def generate_ai_inspection_report(
     if inspection.get("lead_id"):
         lead = await db.leads.find_one({"id": inspection["lead_id"]}, {"_id": 0})
     
-    # Prepare vehicle data (combine from inspection and lead)
+    # Prepare vehicle data (combine from inspection and lead - handle multiple field naming conventions)
     vehicle_data = {
-        "make": lead.get("vehicle_make") if lead else None or inspection.get("vehicle_make"),
-        "model": lead.get("vehicle_model") if lead else None or inspection.get("vehicle_model"),
-        "year": lead.get("vehicle_year") if lead else None or inspection.get("vehicle_year"),
-        "fuel_type": lead.get("fuel_type") if lead else None or inspection.get("fuel_type"),
+        "make": (lead.get("vehicle_make") if lead else None) or inspection.get("vehicle_make") or inspection.get("make") or inspection.get("car_make"),
+        "model": (lead.get("vehicle_model") if lead else None) or inspection.get("vehicle_model") or inspection.get("model") or inspection.get("car_model"),
+        "year": (lead.get("vehicle_year") if lead else None) or inspection.get("vehicle_year") or inspection.get("year") or inspection.get("car_year"),
+        "fuel_type": (lead.get("fuel_type") if lead else None) or inspection.get("fuel_type"),
         "transmission": inspection.get("transmission"),
-        "colour": inspection.get("vehicle_colour"),
-        "reg_no": lead.get("vehicle_number") if lead else None or inspection.get("car_number"),
+        "colour": inspection.get("vehicle_colour") or inspection.get("colour") or inspection.get("car_color"),
+        "reg_no": (lead.get("vehicle_number") if lead else None) or inspection.get("car_number"),
         "engine_cc": inspection.get("engine_cc"),
         "owners": inspection.get("owners"),
+        "variant": inspection.get("variant"),
     }
     
     # Get OBD data from separate collection or inspection
