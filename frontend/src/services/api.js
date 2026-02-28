@@ -626,6 +626,11 @@ export const loansApi = {
   getDocumentDownloadUrl: (leadId, docId) => axios.post(`${API_URL}/loan-leads/${leadId}/documents/${docId}/download-url`),
   deleteDocument: (leadId, docId) => axios.delete(`${API_URL}/loan-leads/${leadId}/documents/${docId}`),
   
+  // Credit Score
+  requestCreditScoreOTP: (leadId, data) => axios.post(`${API_URL}/loan-leads/${leadId}/credit-score/request-otp`, data),
+  verifyCreditScoreOTP: (leadId, data) => axios.post(`${API_URL}/loan-leads/${leadId}/credit-score/verify-otp`, data),
+  getCreditScore: (leadId) => axios.get(`${API_URL}/loan-leads/${leadId}/credit-score`),
+  
   // Vehicles
   addVehicle: (leadId, data) => axios.post(`${API_URL}/loan-leads/${leadId}/vehicles`, data),
   updateVehicle: (leadId, vehicleId, data) => axios.put(`${API_URL}/loan-leads/${leadId}/vehicles/${vehicleId}`, data),
