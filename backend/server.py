@@ -4900,6 +4900,80 @@ async def get_inspections(
     
     inspections = await db.inspections.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     
+    # For UNSCHEDULED inspections, group by customer/order to show package-based view
+    if is_scheduled is False:
+        # Group by customer_id or order_id or lead_id
+        grouped = {}
+        for insp in inspections:
+            # Use customer_id + payment_date as grouping key, or order_id if available
+            group_key = insp.get("order_id") or insp.get("lead_id") or f"{insp.get('customer_id') or insp.get('customer_mobile')}_{insp.get('payment_date')}"
+            
+            if group_key not in grouped:
+                grouped[group_key] = {
+                    "id": insp.get("id"),  # Use first inspection's ID as primary
+                    "order_id": insp.get("order_id"),
+                    "lead_id": insp.get("lead_id"),
+                    "customer_id": insp.get("customer_id"),
+                    "customer_name": insp.get("customer_name"),
+                    "customer_mobile": insp.get("customer_mobile"),
+                    "customer_email": insp.get("customer_email"),
+                    "package_type": insp.get("package_type"),
+                    "package_id": insp.get("package_id"),
+                    "country_id": insp.get("country_id"),
+                    "payment_date": insp.get("payment_date"),
+                    "created_at": insp.get("created_at"),
+                    "total_amount": 0,
+                    "amount_paid": 0,
+                    "balance_due": 0,
+                    "payment_status": insp.get("payment_status"),
+                    "payment_type": insp.get("payment_type"),
+                    "total_inspections": 0,  # Total purchased
+                    "used_inspections": 0,    # Already scheduled/completed
+                    "available_inspections": 0,  # Remaining to schedule
+                    "inspection_ids": [],  # All inspection IDs in this group
+                }
+            
+            group = grouped[group_key]
+            group["total_inspections"] += 1
+            group["total_amount"] += insp.get("total_amount", 0)
+            group["amount_paid"] += insp.get("amount_paid", 0)
+            group["balance_due"] += insp.get("balance_due", 0) or insp.get("pending_amount", 0)
+            group["inspection_ids"].append(insp.get("id"))
+            
+            # Count as "used" if it has been scheduled at any point
+            if insp.get("scheduled_date"):
+                group["used_inspections"] += 1
+        
+        # Calculate available inspections for each group
+        # Also count scheduled inspections from same order that are not in current query
+        for group_key, group in grouped.items():
+            # Query to count scheduled inspections from same order
+            scheduled_count = 0
+            if group.get("order_id"):
+                scheduled_count = await db.inspections.count_documents({
+                    "order_id": group["order_id"],
+                    "scheduled_date": {"$ne": None}
+                })
+            elif group.get("lead_id"):
+                scheduled_count = await db.inspections.count_documents({
+                    "lead_id": group["lead_id"],
+                    "scheduled_date": {"$ne": None}
+                })
+            
+            group["used_inspections"] = scheduled_count
+            group["available_inspections"] = group["total_inspections"] - scheduled_count
+            # Alias for frontend compatibility
+            group["inspections_available"] = group["available_inspections"]
+        
+        # Filter out groups where all inspections have been used
+        # Return only groups with available inspections
+        inspections = [g for g in grouped.values() if g["available_inspections"] > 0]
+        
+        # Sort by payment_date descending
+        inspections.sort(key=lambda x: x.get("payment_date") or x.get("created_at") or "", reverse=True)
+        
+        return inspections
+    
     # Status normalization mapping (legacy -> new)
     status_mapping = {
         "NEW": "NEW_INSPECTION",
