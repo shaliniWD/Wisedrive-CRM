@@ -922,7 +922,141 @@ export default function AdAnalyticsPage() {
           >
             <MapPin className="h-4 w-4" /> Ad ID Mapping
           </button>
+          <button
+            onClick={() => setActiveTab('settings')}
+            className={`px-6 py-4 text-sm font-medium flex items-center gap-2 transition-all border-b-2 -mb-px ${
+              activeTab === 'settings'
+                ? 'border-blue-600 text-blue-600 bg-white'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+            data-testid="settings-tab"
+          >
+            <Settings className="h-4 w-4" /> Settings
+          </button>
         </div>
+
+        {/* Settings Tab */}
+        {activeTab === 'settings' && (
+          <div className="p-6">
+            <div className="max-w-3xl">
+              {/* Meta API Access Token Section */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6 mb-6">
+                <div className="flex items-start gap-4">
+                  <div className="p-3 bg-blue-100 rounded-xl">
+                    <Key className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1">Meta API Access Token</h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Use this token to connect Meta Ads. Copy and paste it in the token field when connecting.
+                    </p>
+                    
+                    {/* Token Display Box */}
+                    <div className="bg-white rounded-lg border border-gray-200 p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Access Token</span>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs"
+                          onClick={() => {
+                            navigator.clipboard.writeText('EAAKyp6qvmZBgBQ7HoUB9S58CAPJDQl4kb0XvGYsZCb1TB2K0q5rDb2MELujQ6ZAZCSsYZBOfMtXpzeXNpiUfHeERRA9HNnvJ9tZBWHaVl0NbQvqGCFHEkgrDRcuZAY4Nqk3j0n1YcP0zZBkbQI6NXGhdaNmCMSBGeO8Fx8fnrIOE0E90P85fYSQOYXUS7LLBx9Oxc4wVvTcJD7KH8iK9PBhcudNKrOJekp5h');
+                            toast.success('Token copied to clipboard!');
+                          }}
+                          data-testid="copy-meta-token-btn"
+                        >
+                          <svg className="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                          Copy Token
+                        </Button>
+                      </div>
+                      <div className="bg-gray-50 rounded-md p-3 font-mono text-xs text-gray-700 break-all select-all border">
+                        EAAKyp6qvmZBgBQ7HoUB9S58CAPJDQl4kb0XvGYsZCb1TB2K0q5rDb2MELujQ6ZAZCSsYZBOfMtXpzeXNpiUfHeERRA9HNnvJ9tZBWHaVl0NbQvqGCFHEkgrDRcuZAY4Nqk3j0n1YcP0zZBkbQI6NXGhdaNmCMSBGeO8Fx8fnrIOE0E90P85fYSQOYXUS7LLBx9Oxc4wVvTcJD7KH8iK9PBhcudNKrOJekp5h
+                      </div>
+                    </div>
+                    
+                    {/* Instructions */}
+                    <div className="mt-4 space-y-2">
+                      <p className="text-sm font-medium text-gray-700">How to connect:</p>
+                      <ol className="text-sm text-gray-600 space-y-1 list-decimal list-inside">
+                        <li>Click "Copy Token" above</li>
+                        <li>Click "Connect Meta Ads" button on Ad Performance tab</li>
+                        <li>Paste the token when prompted</li>
+                        <li>Click "Save & Sync" to fetch your ad data</li>
+                      </ol>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Token Status Section */}
+              {tokenInfo && (
+                <div className={`rounded-xl border p-6 ${tokenInfo.is_valid ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
+                  <div className="flex items-start gap-4">
+                    <div className={`p-3 rounded-xl ${tokenInfo.is_valid ? 'bg-emerald-100' : 'bg-red-100'}`}>
+                      {tokenInfo.is_valid ? (
+                        <CheckCircle className="h-6 w-6 text-emerald-600" />
+                      ) : (
+                        <AlertCircle className="h-6 w-6 text-red-600" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-1">Current Token Status</h3>
+                      <div className="grid grid-cols-2 gap-4 mt-3">
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase">Status</p>
+                          <p className={`text-sm font-medium ${tokenInfo.is_valid ? 'text-emerald-600' : 'text-red-600'}`}>
+                            {tokenInfo.is_valid ? 'Active' : 'Expired/Invalid'}
+                          </p>
+                        </div>
+                        {tokenInfo.expires_in_days !== undefined && (
+                          <div>
+                            <p className="text-xs text-gray-500 uppercase">Expires In</p>
+                            <p className="text-sm font-medium text-gray-900">
+                              {tokenInfo.expires_in_days > 0 ? `${tokenInfo.expires_in_days} days` : 'Expired'}
+                            </p>
+                          </div>
+                        )}
+                        {tokenInfo.ad_account_id && (
+                          <div>
+                            <p className="text-xs text-gray-500 uppercase">Ad Account</p>
+                            <p className="text-sm font-medium text-gray-900">{tokenInfo.ad_account_id}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Quick Actions */}
+              <div className="mt-6 flex gap-3">
+                <Button
+                  onClick={() => setActiveTab('performance')}
+                  className="bg-blue-600 hover:bg-blue-700"
+                  data-testid="go-to-performance-btn"
+                >
+                  <BarChart3 className="h-4 w-4 mr-2" />
+                  Go to Ad Performance
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleRefreshToken}
+                  disabled={tokenLoading}
+                  data-testid="refresh-token-btn"
+                >
+                  {tokenLoading ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                  )}
+                  Refresh Token
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Performance Tab */}
         {activeTab === 'performance' && (
