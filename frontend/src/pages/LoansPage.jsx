@@ -1096,118 +1096,15 @@ const CreditScoreModal = ({ isOpen, onClose, lead, onUpdate }) => {
           </div>
         )}
         
-        {/* Step 3: Credit Report Result */}
+        {/* Step 3: Comprehensive Credit Report Result */}
         {step === 3 && creditResult && (
-          <div className="space-y-6">
-            {/* Credit Score Display */}
-            <div className="text-center py-6">
-              <div className={`w-32 h-32 mx-auto rounded-full flex flex-col items-center justify-center ${getScoreColor(creditResult.credit_score)}`}>
-                <span className="text-4xl font-bold">{creditResult.credit_score}</span>
-                <span className="text-sm font-medium">{getScoreLabel(creditResult.credit_score)}</span>
-              </div>
-              <p className="text-gray-500 mt-3">Experian Credit Score</p>
-              {creditResult.summary?.report_date && (
-                <p className="text-xs text-gray-400 mt-1">
-                  Report Date: {String(creditResult.summary.report_date).replace(/(\d{4})(\d{2})(\d{2})/, '$3/$2/$1')}
-                </p>
-              )}
-            </div>
-            
-            {/* Score Gauge Visual */}
-            <div className="relative h-3 bg-gradient-to-r from-red-500 via-yellow-500 to-green-500 rounded-full overflow-hidden">
-              <div 
-                className="absolute top-0 w-3 h-3 bg-white border-2 border-gray-800 rounded-full transform -translate-x-1/2"
-                style={{ left: `${Math.min(100, Math.max(0, ((creditResult.credit_score - 300) / 600) * 100))}%` }}
-              />
-            </div>
-            <div className="flex justify-between text-xs text-gray-400">
-              <span>300</span>
-              <span>500</span>
-              <span>700</span>
-              <span>900</span>
-            </div>
-            
-            {/* Account Summary */}
-            {creditResult.summary && (
-              <div className="grid grid-cols-2 gap-4 pt-4">
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <p className="text-xs text-gray-500 uppercase tracking-wide">Credit Accounts</p>
-                  <div className="mt-2 space-y-1">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Total</span>
-                      <span className="font-semibold">{creditResult.summary.accounts?.total || 0}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Active</span>
-                      <span className="font-medium text-green-600">{creditResult.summary.accounts?.active || 0}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Closed</span>
-                      <span className="text-gray-500">{creditResult.summary.accounts?.closed || 0}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Defaulted</span>
-                      <span className={creditResult.summary.accounts?.default > 0 ? 'text-red-600 font-medium' : 'text-gray-500'}>
-                        {creditResult.summary.accounts?.default || 0}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <p className="text-xs text-gray-500 uppercase tracking-wide">Outstanding Balance</p>
-                  <div className="mt-2 space-y-1">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Total</span>
-                      <span className="font-semibold">₹{(creditResult.summary.outstanding_balance?.total || 0).toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Secured</span>
-                      <span className="text-gray-500">₹{(creditResult.summary.outstanding_balance?.secured || 0).toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Unsecured</span>
-                      <span className="text-gray-500">₹{(creditResult.summary.outstanding_balance?.unsecured || 0).toLocaleString()}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {/* Credit Enquiries */}
-            {creditResult.summary?.enquiries && (
-              <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
-                <p className="text-xs text-blue-600 uppercase tracking-wide mb-2">Credit Enquiries</p>
-                <div className="grid grid-cols-4 gap-2 text-center">
-                  <div>
-                    <p className="text-lg font-semibold text-blue-800">{creditResult.summary.enquiries.last_7_days}</p>
-                    <p className="text-xs text-blue-600">7 Days</p>
-                  </div>
-                  <div>
-                    <p className="text-lg font-semibold text-blue-800">{creditResult.summary.enquiries.last_30_days}</p>
-                    <p className="text-xs text-blue-600">30 Days</p>
-                  </div>
-                  <div>
-                    <p className="text-lg font-semibold text-blue-800">{creditResult.summary.enquiries.last_90_days}</p>
-                    <p className="text-xs text-blue-600">90 Days</p>
-                  </div>
-                  <div>
-                    <p className="text-lg font-semibold text-blue-800">{creditResult.summary.enquiries.last_180_days}</p>
-                    <p className="text-xs text-blue-600">180 Days</p>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            <div className="flex gap-3 pt-4">
-              <Button variant="outline" className="flex-1" onClick={resetAndRetry}>
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Re-check Score
-              </Button>
-              <Button className="flex-1" onClick={handleClose}>
-                Done
-              </Button>
-            </div>
+          <CreditReportView 
+            creditResult={creditResult}
+            fullReport={selectedLead?.credit_score_full_report}
+            onRecheck={resetAndRetry}
+            onClose={handleClose}
+          />
+        )}
           </div>
         )}
       </DialogContent>
