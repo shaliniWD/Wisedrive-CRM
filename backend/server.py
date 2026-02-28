@@ -18122,6 +18122,66 @@ async def delete_app_release(
     }
 
 
+@api_router.post("/app-releases/{app_type}/sync-build")
+async def sync_eas_build_status(
+    app_type: str,
+    data: dict = Body(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Sync EAS build status with release record.
+    Called when a build finishes to update the download URL.
+    
+    Expected data: {
+        "version": "1.8.0",
+        "build_id": "52394c77-aa5d-4286-9d31-dd0988744930",
+        "status": "finished" | "errored" | "canceled",
+        "download_url": "https://expo.dev/artifacts/eas/xxx.apk"
+    }
+    """
+    if app_type not in ["mechanic", "ess"]:
+        raise HTTPException(status_code=404, detail="App type not found")
+    
+    version = data.get("version")
+    build_status = data.get("status")
+    download_url = data.get("download_url")
+    
+    if not version:
+        raise HTTPException(status_code=400, detail="Version is required")
+    
+    # Find the release by version
+    release = await db.app_releases.find_one({
+        "app_type": app_type,
+        "version": version
+    })
+    
+    if not release:
+        raise HTTPException(status_code=404, detail=f"Release v{version} not found")
+    
+    # Update based on build status
+    update_data = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    
+    if build_status == "finished":
+        update_data["status"] = "available"
+        if download_url:
+            update_data["download_url"] = download_url
+    elif build_status in ["errored", "canceled"]:
+        update_data["status"] = "failed"
+    
+    await db.app_releases.update_one(
+        {"id": release["id"]},
+        {"$set": update_data}
+    )
+    
+    logger.info(f"[APP_RELEASE] Synced {app_type} v{version} build status: {build_status}")
+    
+    return {
+        "success": True,
+        "message": f"Release v{version} updated with status: {build_status}",
+        "download_url": download_url
+    }
+
+
 def generate_app_download_page(app_name: str, app_icon: str, releases: list, color: str) -> str:
     """Generate HTML page for app downloads"""
     
