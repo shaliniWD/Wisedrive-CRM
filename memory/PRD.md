@@ -225,6 +225,38 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
 - OBD data stored in separate `inspection_obd_results` collection
 - Tested successfully on preview server
 
+## Mechanic App Updates
+
+### v1.8.0 - Sequential Inspection Flow (Feb 28, 2026) - BUILD IN PROGRESS
+- **Build URL:** https://expo.dev/accounts/kalyandhar/projects/wisedrive-mechanic/builds/52394c77-aa5d-4286-9d31-dd0988744930
+- **Production Status Page:** https://crmdev.wisedrive.com/api/mechanicapp
+
+**Changes:**
+1. **Sequential Question Answering:**
+   - Questions must be answered in order within each category
+   - Next question is locked until previous is answered
+   - Visual lock icon and "Answer previous question first" message
+
+2. **Sequential Category Completion:**
+   - Categories must be completed in order
+   - Next category is locked until previous is completed
+   - Shows "Category Locked" alert with explanation
+
+3. **Complete Button Requirements:**
+   - Button disabled (greyed out) until ALL conditions met:
+     - All categories completed
+     - OBD scan completed (MANDATORY now)
+   - Shows notice: "Complete all categories and OBD scan to submit"
+
+4. **Visual Indicators:**
+   - Lock icons on locked questions/categories
+   - Greyed out styling for locked items
+   - Progress indicators show remaining work
+
+### v1.7.2 - Previous Version
+- Video upload retry logic
+- Failed uploads saved to AsyncStorage
+
 ## Known Issues & Status
 
 | Issue | Status | Priority |
