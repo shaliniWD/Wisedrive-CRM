@@ -461,7 +461,7 @@ export default function LiveProgressModal({
     
     setSavingAnswer(true);
     try {
-      await inspectionsApi.updateAnswer(inspection.id, questionId, newAnswer);
+      await inspectionsApi.editAnswer(inspection.id, questionId, { answer: newAnswer });
       toast.success('Answer updated successfully');
       setEditingAnswer(null);
       onRefresh(inspection.id);
