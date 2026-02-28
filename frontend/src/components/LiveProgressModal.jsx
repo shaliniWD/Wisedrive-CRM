@@ -1134,38 +1134,6 @@ export default function LiveProgressModal({
                 </div>
               </Section>
             </TabsContent>
-            
-            {/* Verification Tab */}
-            <TabsContent value="verification" className="space-y-4 mt-0">
-              <Section title="RTO Verification" icon={Shield} defaultOpen={true}>
-                <div className="grid grid-cols-2 gap-4">
-                  <EditableField
-                    label="Verification Status"
-                    value={editData.rto_verification_status}
-                    onChange={(val) => updateField('rto_verification_status', val)}
-                    type="select"
-                    options={['VERIFIED', 'PENDING', 'FAILED', 'NOT_AVAILABLE']}
-                    disabled={!canEdit}
-                  />
-                  <EditableField
-                    label="Hypothecation"
-                    value={editData.hypothecation}
-                    onChange={(val) => updateField('hypothecation', val)}
-                    placeholder="Bank/Financier name if any"
-                    disabled={!canEdit}
-                  />
-                  <div className="col-span-2">
-                    <EditableField
-                      label="Blacklisted"
-                      value={editData.blacklist_status}
-                      onChange={(val) => updateField('blacklist_status', val)}
-                      type="switch"
-                      disabled={!canEdit}
-                    />
-                  </div>
-                </div>
-              </Section>
-            </TabsContent>
           </Tabs>
         </ScrollArea>
         
