@@ -1,35 +1,38 @@
 <analysis>**original_problem_statement:**
-The initial goal was to fix UI bugs and add features to a CRM, including a Razorpay payment modal and an activity log. The scope quickly expanded to a major initiative: integrating and debugging a separate React Native mechanic mobile app.
+The initial task was to enhance a CRM by fixing UI bugs and adding a payment modal and activity log. The project's scope expanded significantly to integrate and debug a React Native mobile app for mechanics, which involved implementing secure OTP login, building Android APKs, and addressing numerous bugs reported by the user.
 
-This involved implementing secure OTP-based login, building distributable Android APKs, and continuously improving both the CRM and the mobile app based on user feedback. The current focus is on fixing critical bugs related to large file uploads (OutOfMemoryError), data storage limits (MongoDB 16MB cap), and ensuring data consistency between the mobile app and the CRM's Live Progress view. The project has pivoted to using Firebase Storage for robust media handling and is now addressing similar storage limitations for large OBD scan results.
+The current focus is on creating a robust, feature-rich inspection reporting system. This involves fixing critical bugs like large file upload failures () and MongoDB's 16MB document size limit by leveraging Firebase Storage for media and separate collections for large data.
 
-The latest user requests include making inspection answers editable from the CRM and adding a feature for CRM users to request that mechanics retake specific photos or videos.
+Recent user requests have driven a major redesign, aiming to:
+1.  Make all sections of an inspection report editable from a centralized Inspection Editor within the CRM.
+2.  Integrate AI (OpenAI) to generate an assessment summary, category-wise ratings, and an overall rating.
+3.  Implement a web-scraping mechanism to estimate a vehicle's market value by pulling data from Indian used car websites.
+4.  Secure the final customer-facing inspection report via an OTP-authenticated, encrypted short URL, while maintaining a separate internal-access version.
 
 **PRODUCT REQUIREMENTS:**
-1.  **Stable Mobile App:** The mechanic app must have a reliable, role-based login and provide a smooth, intuitive workflow for mechanics. It must not crash during normal operation. Large video and multiple image uploads must work flawlessly.
-2.  **Data Consistency & Real-Time Sync:** Answers submitted from the mobile app, including photos/videos (stored in Firebase) and OBD scan data, must be reliably saved to the backend. The CRM's Live Progress view must accurately reflect the data saved by the mechanic in real-time.
-3.  **Performant:** The app must load questions quickly and handle large media uploads without crashing or running out of memory.
-4.  **Admin UI for Configuration & Control:** Admins must be able to configure complex questions, manage app releases, and have control over the inspection process, such as enabling re-scans or requesting media retakes.
-5.  **Modern UI/UX:** Both the CRM and the mobile app must be professional, intuitive, and free of visual bugs. The CRM Live Progress modal should be highly detailed and user-friendly.
+1.  **Stable Mobile App:** The mechanic app must handle large media uploads flawlessly without crashing.
+2.  **Data Consistency:** Data from the mobile app must sync reliably in real-time to the CRM's Inspection Editor.
+3.  **Performant AI & Scraping:** The system must efficiently generate AI insights and scrape external websites without significant delay.
+4.  **Centralized Admin Control:** The CRM's Inspection Editor must be the single source of truth for all editable inspection data.
+5.  **Secure, Dual-Access Reports:** The final inspection report must have a secure, OTP-protected version for customers and a seamless-access version for internal teams.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The project consists of a React/FastAPI CRM and a React Native mobile app for mechanics. Key infrastructure is in place for handling large data: media uploads are streamed to Firebase Storage, and large OBD scan data is stored in a separate MongoDB collection () to avoid document size limits.
+The project includes a React/FastAPI CRM and a React Native mobile app. Media is handled by Firebase Storage, and large OBD data is stored in a dedicated MongoDB collection.
 
-Recent work has focused on improving stability and adding features:
--   **App Download Pages:** Dynamic, database-driven HTML pages have been created (, ) to display version history and provide direct APK download links. These are managed via a new suite of admin APIs.
--   **OBD Re-scan Feature:** A CRM user can now enable an OBD re-scan for a specific inspection, which then allows the mechanic to perform the scan again.
--   **Media Upload Robustness:** To combat persistent video upload failures, the mobile app now includes a retry mechanism with exponential backoff and saves failed uploads to local storage (AsyncStorage) for later attempts. The backend now explicitly rejects invalid local file paths () from being saved.
--   **CRM UI Enhancements:** The Live Progress modal has been updated to handle failed media uploads gracefully and now includes download buttons for media files.
+Key features implemented in this session:
+-   **Inspection Editor Modal:** The old Live Progress modal has been completely redesigned and refactored into a new, comprehensive  component. This new modal serves as the central hub for editing all inspection data, organized into tabs (Overview, Vehicle, etc.).
+-   **AI Report Generation:** An initial version of an AI-powered report feature has been implemented using OpenAI GPT-5.2. It can generate summaries and ratings. A backend service () and a placeholder web scraping service () have been created.
+-   **Automated AI Flow:** The system automatically generates an AI report in the background when a mechanic's inspection progress hits key milestones (25%, 50%, etc.). If a CRM user manually edits an answer, the AI report is marked as stale, prompting the user to regenerate it.
+-   **Dual-Access Secure Reports:** A system for generating secure, customer-facing report URLs () has been implemented. Access is protected by OTP sent to the customer's phone number. The internal report URL remains accessible to authenticated CRM users.
+-   **Bug Fix:** A critical bug preventing unscheduled inspections from appearing in date-filtered lists has been fixed.
 
 **Last working item**:
--   **Last item agent was working:** The agent was beginning to implement two new features requested by the user:
-    1.  Making inspection answers editable directly within the CRM's Live Progress modal.
-    2.  Creating a feature for a CRM user to request that a mechanic retake a photo or video for a specific question.
--   **Status:** NOT STARTED (The agent was in the initial phase of exploring the backend code in  to plan the new endpoints).
+-   **Last item agent was working:** The agent was beginning to implement the more advanced AI and web scraping features for the inspection report. This involved creating a placeholder file for web scraping () and overwriting the AI service () to structure the new logic for enhanced summaries, category ratings, and integrating the scraped market price. The next step was to add the scraping logic and integrate it into the main AI report generation endpoint.
+-   **Status:** IN PROGRESS
 -   **Agent Testing Done:** N
--   **Which testing method agent to use?** both. Use curl to test the new backend endpoints. Use the frontend testing agent to verify the new UI functionality in the CRM's Live Progress modal.
+-   **Which testing method agent to use?** both. The backend web scraping and AI generation logic must be tested with . The frontend Inspection Editor should be tested with the  to confirm that the new data (market value, detailed ratings) is correctly displayed and editable.
 -   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
@@ -37,181 +40,175 @@ Recent work has focused on improving stability and adding features:
 -   **Issue 2: Verify fix for MongoDB 16MB document size limit on production (P1)**
 -   **Issue 3: Verify media display and download in CRM (P1)**
 -   **Issue 4: Mechanic App Status Inconsistency (P2)**
+-   **Issue 5: Duplicate inspections for customer  (P2)**
 
 **Issues Detail:**
 -   **Issue 1: Critical Video Upload Failure (P0)**
-    -   **Attempted fixes:** This is a persistent issue where videos fail to upload to Firebase, and a local  path is saved instead. The agent has implemented several layers of fixes:
-        1.  Backend: Added validation in  to reject and log any answer containing a  path.
-        2.  Mobile App: Implemented a retry mechanism with exponential backoff for the upload function in .
-        3.  Mobile App: Added logic in  to save the details of failed uploads to AsyncStorage.
-    -   **Next debug checklist:**
-        1.  Guide the user to deploy the latest backend changes.
-        2.  Have the user test video uploads using the latest mechanic app APK (v1.7.2).
-        3.  If it still fails, check backend logs for any rejected  saves.
-        4.  Implement the UI in the mechanic app for retrying uploads saved in AsyncStorage.
-    -   **Why fix this issue and what will be achieved with the fix?** This is a critical blocker for the app's core functionality. Fixing it will ensure all captured media is saved and accessible.
+    -   **Attempted fixes:** Backend validation against  paths, client-side retry logic, and saving failed uploads to AsyncStorage have been implemented.
+    -   **Next debug checklist:** The user needs to test video uploads with the latest APK (v1.7.2) on their production environment. If it still fails, the next step is to implement a UI in the mechanic app for retrying uploads saved in AsyncStorage.
+    -   **Why fix this issue and what will be achieved with the fix?** This is a core functionality blocker. Fixing it ensures all media is reliably captured.
     -   **Status:** USER VERIFICATION PENDING
     -   **Is recurring issue?** Y
     -   **Should Test frontend/backend/both after fix?** Both.
     -   **Blocked on other issue:** None.
 
 -   **Issue 2: Verify fix for MongoDB 16MB document size limit on production (P1)**
-    -   **Attempted fixes:** Large OBD data is now stored in a separate  collection. Agent verified this on the preview server.
-    -   **Next debug checklist:**
-        1.  Instruct the user to deploy the latest backend changes to their production environment.
-        2.  Have the user test the full OBD scan feature with the latest APK (v1.7.2).
-        3.  Confirm no  occurs and data appears in the CRM.
-    -   **Why fix this issue and what will be achieved with the fix?** This is a blocker for the OBD scanner feature.
+    -   **Attempted fixes:** Moved large OBD scan data to a separate  collection. Verified on preview.
+    -   **Next debug checklist:** User needs to deploy the backend and test the full OBD scan feature on their production environment.
+    -   **Why fix this issue and what will be achieved with the fix?** This unblocks the OBD scanner feature.
     -   **Status:** USER VERIFICATION PENDING
     -   **Is recurring issue?** Y
     -   **Should Test frontend/backend/both after fix?** Both (End-to-end user test).
     -   **Blocked on other issue:** None.
 
 -   **Issue 3: Verify media display and download in CRM (P1)**
-    -   **Attempted fixes:** The agent updated  to show Media upload failed for  paths, hide the broken link, and add a Download button for valid media.
-    -   **Next debug checklist:** After the user deploys the latest backend and frontend changes, have them re-verify that images and videos are displaying correctly and that download buttons work.
-    -   **Why fix this issue and what will be achieved with the fix?** Ensures media is viewable and accessible in the CRM.
+    -   **Attempted fixes:** The CRM UI was updated to show Media upload failed for broken links and provide a download button for valid media.
+    -   **Next debug checklist:** User needs to verify on their production environment after deploying the latest changes.
+    -   **Why fix this issue and what will be achieved with the fix?** Ensures all captured media is accessible in the CRM.
     -   **Status:** USER VERIFICATION PENDING
     -   **Is recurring issue?** Y
     -   **Should Test frontend/backend/both after fix?** Both.
-    -   **Blocked on other issue:** Blocked on Issue 1: Critical Video Upload Failure.
+    -   **Blocked on other issue:** Issue 1.
 
 -   **Issue 4: Mechanic App Status Inconsistency (P2)**
-    -   **Attempted fixes:** Backend logic was changed to correctly set  status.
-    -   **Next debug checklist:** Ask the user to verify if started inspections correctly show a Continue button on the mobile app's home screen.
-    -   **Why fix this issue and what will be achieved with the fix?** Improves user experience for mechanics.
+    -   **Attempted fixes:** Backend logic was adjusted to correctly set the  status.
+    -   **Next debug checklist:** User needs to verify that started inspections correctly show a Continue button in the mobile app.
+    -   **Why fix this issue and what will be achieved with the fix?** Improves the mechanic's user experience.
     -   **Status:** USER VERIFICATION PENDING
     -   **Is recurring issue?** Y
     -   **Should Test frontend/backend/both after fix?** Frontend (Mechanic App).
     -   **Blocked on other issue:** None.
 
+-   **Issue 5: Duplicate inspections for customer  (P2)**
+    -   **Attempted fixes:** None. The agent identified two duplicate inspection records, likely caused by a double payment processing event.
+    -   **Next debug checklist:** Investigate the payment callback logic to prevent duplicate record creation. For now, advise the user to manually delete one of the duplicates after verifying the date filter fix.
+    -   **Why fix this issue and what will be achieved with the fix?** Improves data integrity.
+    -   **Status:** NOT STARTED
+    -   **Is recurring issue?** N
+    -   **Should Test frontend/backend/both after fix?** Backend.
+    -   **Blocked on other issue:** None.
+
 **In progress Task List**:
--   **Task 1: Implement Editable Answers & Media Retake Request (P0)**
-    -   **Where to resume:** . The agent was planning the implementation.
-        -   Create a new endpoint  to allow admins to update an answer.
-        -   Create a new endpoint  to flag a question for media retake.
-        -   Update the CRM  to add UI controls for these actions.
-        -   Update the mechanic app to check for the retake flag and allow re-capturing media.
-    -   **What will be achieved with this?** This will give the CRM team crucial quality control over the inspection data before a report is finalized.
+-   **Task 1: Implement Web Scraper and Enhanced AI Features (P0)**
+    -   **Where to resume:** . Implement the scraping logic to fetch car prices from sites like OLX, CarWale, etc. Then, update  to integrate this service into the  endpoint. Also enhance  to generate category-wise and final ratings.
+    -   **What will be achieved with this?** The AI report will provide a highly accurate market value and more granular, useful insights as requested by the user.
     -   **Status:** IN PROGRESS
     -   **Should Test frontend/backend/both after fix?** Both.
     -   **Blocked on something:** None.
 
 **Upcoming and Future Tasks**
-
 **Upcoming Tasks:**
-*   **(P1)** Implement a UI in the mechanic app to list and retry failed media uploads that were saved to AsyncStorage.
+*   **(P1) Refine Answer Editing in Inspection Editor:** Modify the new  to ensure that for questions with predefined answers (e.g., radio buttons, dropdowns), the user can only select from the existing options, not enter free-form text.
+*   **(P1) Add UI for Retrying Failed Uploads:** Implement the UI in the mechanic app to list media uploads that failed and were saved to AsyncStorage, allowing the mechanic to retry them.
+*   **(P2) Add Share Report button:** Implement a button in the CRM's  that, when clicked, generates and displays the secure customer-facing short URL for the report.
 
 **Future Tasks:**
 *   Implement PDF export and Share via WhatsApp functionality for inspection reports.
 *   Implement a customer reminders feature.
-*   Refactor the monolithic .
-*   Refactor  into smaller, modular router files.
+*   Refactor the monolithic  and .
 *   Implement an offline mode for the mechanic app.
-*   Add webhook integration with EAS to automatically update the build status on the app download pages.
+*   Add webhook integration with EAS to automatically update build status on download pages.
 
 **Completed work in this session**
--   **Implemented Editable App Release Pages:** Created dynamic, DB-driven download pages for the mechanic and ESS apps, complete with admin APIs for CRUD operations on releases.
--   **Fixed OBD Data Persistence:** Resolved an issue where OBD data was lost on navigation by fetching the completion status from the backend instead of relying solely on local React Context.
--   **Implemented OBD Re-scan Feature:** Created the full end-to-end flow for a CRM user to enable an OBD re-scan, which then appears as an option for the mechanic.
--   **Enhanced Media Upload Reliability:**
-    -   Added a server-side validation to reject  paths, preventing bad data from entering the database.
-    -   Implemented a client-side retry mechanism with exponential backoff for Firebase uploads.
-    -   Added a fallback to save failed uploads to AsyncStorage for later retry attempts.
--   **Fixed CRM Media Display:** Improved the Live Progress modal to correctly handle failed uploads, add download buttons, and prevent broken links from being displayed.
--   **Generated and Deployed New APKs:** Built and updated the download pages with new APKs for both the mechanic app (v1.7.2) and the ESS app (v1.3.3).
+-   **Unscheduled Inspections Bug Fix:** Fixed a bug where unscheduled inspections were hidden by the date filter in the API.
+-   **Editable Answers Feature:** Implemented endpoints and UI for authorized CRM users to edit inspection answers, with a full audit trail.
+-   **AI-Powered Report Generation:** Integrated OpenAI to generate summaries and ratings for inspections, with a Generate button in the UI.
+-   **Automated AI Workflow:** Implemented background tasks to auto-generate the AI report at inspection milestones and a stale flag to prompt regeneration after manual edits.
+-   **Secure Dual-Access Reports:** Created a public, OTP-protected report URL for customers, separate from the internal CRM access URL.
+-   **Inspection Editor Redesign:** Fully refactored the Live Progress modal into a comprehensive, tab-based Inspection Editor component (), making it the central hub for data management.
+
+**Earlier issues found/mentioned but not fixed**
+-   **Issue 1: Duplicate Inspection Records**
+    -   **Debug checklist:** The agent identified that customer  () has two identical inspection records. The root cause is likely in the payment processing webhook or callback, which may be creating a new inspection on every interaction. This needs to be investigated to prevent future duplicates.
+    -   **Why to solve this issue and what will be achieved with this?** Prevents data clutter and ensures accurate reporting.
+    -   **Should Test frontend/backend/both after fix:** Backend.
+    -   **Is recurring issue?** Y (Likely, until root cause is fixed).
+
+**Known issue recurrence from previous fork**
+-   **Issue recurrence in previous fork:** Critical Video Upload Failure.
+-   **Recurrence count:** High. This is a persistent, top-priority issue that has been attempted multiple times.
+-   **Status:** USER VERIFICATION PENDING.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Production vs. Preview Environment:** The agent's changes must be deployed by the user to their production server () to be effective.
--   **MongoDB 16MB Document Limit:** A recurring constraint addressed by offloading large data (OBD results) to separate collections.
--   **Firebase Storage Streaming Upload:** Core mechanism for handling large media files.
--   **Dynamic Content Generation (FastAPI):** Serving dynamic HTML pages based on data from MongoDB.
--   **Admin APIs & RBAC:** Creating secured endpoints for administrative tasks with role-based checks.
--   **Client-Side Resilience:** Using retry logic (exponential backoff) and local persistence (AsyncStorage) to handle unreliable network operations.
+-   **AI Integration (OpenAI):** Using the  library to connect to GPT-5.2 for generating structured JSON outputs (ratings, summaries, market value).
+-   **Web Scraping:** A new requirement to scrape Indian used car websites. A service file has been created, but implementation (using , ) is pending.
+-   **Background Tasks (FastAPI):** Used for non-blocking, asynchronous AI report generation triggered when mechanics save progress.
+-   **Component Refactoring:** The large, monolithic Live Progress modal was successfully extracted from  into its own  component, improving modularity.
+-   **Secure URL & OTP Auth:** A dual-access pattern was implemented using a short, random code mapped to the inspection ID for a public URL, which is then secured with an OTP flow.
 
 **key DB schema**
--   ** (New Collection)**:
-    -   : ObjectId
-    -   : String (e.g., mechanic-app)
-    -   : String
-    -   : String (building, available)
-    -   : String (Download link)
-    -   : String (Expo build page link)
 -   ** (Modified)**:
-    -   : Boolean
-    -   : The  field is now validated to not contain  paths.
+    -   : (Object) Stores all AI-generated data (e.g., , , , ).
+    -   : (Boolean)  if an answer was edited after the last AI generation.
+    -   : (String) The unique code for the public report URL (e.g., ZjNmfA).
+-   ** (New Collection)**:
+    -   Stores a log of all manual answer changes made in the CRM, including , , , , , and .
 
 **All files of reference**
--   
--   
--   
--   
--   
--    (entire directory)
--   
+-   **/app/backend/server.py**: The main FastAPI application file, heavily modified with new endpoints.
+-   **/app/backend/services/ai_report_service.py**: Service for generating AI insights.
+-   **/app/backend/services/car_price_scraper.py**: Placeholder for web scraping logic.
+-   **/app/frontend/src/components/LiveProgressModal.jsx**: The new, comprehensive Inspection Editor.
+-   **/app/frontend/src/pages/InspectionsPage.jsx**: The main inspections list page, now uses the new modal.
+-   **/app/frontend/src/pages/CustomerReportPage.jsx**: The new public-facing page for OTP report access.
+-   **/app/memory/PRD.md**: Updated with the latest completed tasks and future requirements.
 
 **Areas that need refactoring**:
--    is critically oversized (>16,700 lines) and must be broken into modular routers.
--    (>3,800 lines) needs to be broken into smaller components.
--    (~3,200 lines) should be refactored.
+-   : Critically oversized at over 17,500 lines. It must be broken into modular FastAPI routers.
+-   : Remains very large at over 4,100 lines and should be broken down into smaller, more focused components.
 
 **key api endpoints**
--   **Admin Release Management:**
-    -   
-    -   
-    -   
-    -   
--   **Public App Downloads:**
-    -   
-    -   
--   **OBD Re-scan Flow:**
-    -   
-    -   
--   **Core Data Endpoints (Modified):**
-    -   : Now returns  flag and flags failed media uploads.
-    -   : Now validates media answers to reject local file paths.
+-   : Triggers AI report generation.
+-   : Updates a single inspection answer.
+-   : Generates and returns the secure customer-facing report URL.
+-   : Retrieves public info for a report before OTP.
+-   : Sends an OTP to the customer's registered number.
+-   : Verifies the OTP and returns the full report data.
+-   : (Fixed) Correctly returns unscheduled inspections when using date filters.
 
 **Critical Info for New Agent**
-1.  **User Must Deploy Backend Changes:** Your backend changes only exist on a preview server. The user tests against their production server. You **must** explicitly tell the user to deploy your backend changes before they can test full functionality.
-2.  **Video Uploads are a Critical, Recurring Bug:** This is the highest priority issue. Multiple layers of fixes have been implemented (backend validation, client-side retry, local persistence). Do not assume the issue is solved. The next step is user verification with the latest APK (v1.7.2) and potentially building the UI for retrying failed uploads.
-3.  **New Feature Request is Top Priority:** The user's request for editable answers and media retake requests is the next major task. Start by implementing the necessary backend endpoints.
-4.  **App Releases are Dynamic:** The app download pages are powered by the  collection in MongoDB, not static code. Use the admin APIs for any changes.
+1.  **Central Hub is **: All new editing functionality should be added to the new Inspection Editor component (), not the old modal or the read-only report page.
+2.  **Web Scraping is Next:** The immediate task is to implement the car price scraping logic in . This will require installing dependencies like  and  and handling potential blocks from target websites.
+3.  **Enforce Predefined Answers:** The user explicitly requested that editing answers in the new modal must be restricted to the predefined options from the Q&A configuration. This logic is not yet implemented and is a high-priority upcoming task.
+4.  **Backend is Huge:** Be extremely careful when editing . It is over 17,500 lines long. Use  and  extensively to navigate and add new code in the correct sections. The long-term goal is to refactor this file.
 
 **documents and test reports created in this job**
--    (updated)
+-   /app/test_reports/iteration_74.json
+-   /app/memory/PRD.md
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User (LATEST):** Requested editable answers in Live Progress and a retake media feature. *Status: In Progress*
-2.  **User:** Stated that video upload/download is still a crucial issue. *Status: Addressed (new fixes implemented, pending verification).*
-3.  **User:** Requested to add admin API to update release data dynamically. *Status: Completed.*
-4.  **User:** Reported that build statuses on the download pages were not updating. *Status: Completed.*
-5.  **User:** Reported the ESS app download page was broken and pointed to an empty Expo page. *Status: Completed.*
-6.  **User:** Pointed out a UI bug where a  link was still visible for failed uploads. *Status: Completed.*
-7.  **User:** Reported issues with media display (image not opening, wrong video URL) and requested the OBD Re-scan feature. *Status: Completed.*
-8.  **User:** Requested the creation of download pages for the Mechanic and ESS apps. *Status: Completed.*
-9.  **User:** Reported that submitted OBD data was resetting upon navigation, allowing rescan. *Status: Completed.*
-10. **Agent:** Initial plan confirmation request.
+-   **LATEST (Pending):** User provided detailed specs for the AI report: use predefined answer options for edits, scrape car prices for market value, and generate section-wise summaries/ratings with AI.
+-   **Request (Pending):** Make the Live Progress modal the central editing hub for all inspection report sections.
+-   **Request (Done):** Create a secure, OTP-based report URL for customers, separate from the internal CRM link.
+-   **Request (Done):** Auto-generate AI reports on mechanic progress and require manual regeneration after CRM edits.
+-   **Request (In Progress):** Integrate AI (OpenAI/Claude) to generate market value, ratings, and summaries.
+-   **Approval (Done):** User approved the fix for the unscheduled inspection bug and confirmed they would deploy it.
+-   **Bug Report (Done):** A new customer was not appearing in the inspection lists, which led to the discovery and fix of the date filter bug.
+-   **Approval (Done):** User approved the agent's choice of OpenAI GPT-5.2 for the AI integration.
+-   **Approval (Done):** User approved the summary of the Editable Inspection Answers feature.
+-   **Clarification (Done):** User stated the mechanic app doesn't need changes for media retakes, focusing all work on the CRM.
 
 **Project Health Check:**
--   **Broken:** The end-to-end video upload flow is not confirmed to be working reliably on the user's production environment. This is the most critical broken component.
--   **Mocked:** None.
+-   **Broken:** The end-to-end video upload flow is not yet confirmed to be working on the user's production environment. This is a critical recurring bug.
+-   **Mocked:** The web scraping service in  is an empty placeholder and has no functional code.
 
 **3rd Party Integrations**
--   **Firebase:** Used for media storage (Storage) and backend authentication (Admin SDK).
--   **Expo Application Services (EAS):** Used for building and distributing Android APKs.
+-   **OpenAI GPT-5.2:** Used for AI report generation (summaries, ratings). Uses **Emergent LLM Key**.
+-   **Firebase:** Used for media storage (Storage) and backend authentication.
+-   **Expo Application Services (EAS):** Used for building Android APKs.
 -   **Fast2SMS:** Used for sending OTPs for mechanic login.
 -   **Twilio:** Used for WhatsApp messages.
 -   **Razorpay:** Integrated for payments.
 -   **Google Maps Places API:** Used for address input in the CRM.
 
 **Testing status**
--   **Testing agent used after significant changes:** NO
+-   **Testing agent used after significant changes:** YES (For the editable answers feature).
 -   **Troubleshoot agent used after agent stuck in loop:** NO
 -   **Test files created:** None
--   **Known regressions:** The failure of video uploads from the mechanic app is a significant recurring regression.
+-   **Known regressions:** The failure of video uploads from the mechanic app is a significant and persistent regression.
 
 **Credentials to test flow:**
 -   **CRM Admin Login:**  / 
@@ -219,4 +216,6 @@ Recent work has focused on improving stability and adding features:
 -   **Firebase Credentials:** Located at 
 
 **What agent forgot to execute**
--   After implementing the logic to save failed media uploads to AsyncStorage in the mechanic app, the agent did not create the corresponding UI for the user to view these failed uploads and trigger a manual retry. This remains an important missing piece of the upload-resilience feature.</analysis>
+-   The agent created the  file but did not add the necessary dependencies (e.g., , ) to  or implement any of the actual scraping logic.
+-   The agent did not implement the user's requirement to restrict answer editing to only the predefined options available in the Q&A setup within the new .
+-   The agent planned but did not add a Share Report button to the  UI to allow CRM users to easily get the generated customer-facing short URL.</analysis>
