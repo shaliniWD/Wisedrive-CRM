@@ -323,8 +323,55 @@ export default function LiveProgressModal({
         obd_connected: liveProgressData?.obd_scan?.completed || false,
         dtc_codes: inspection.dtc_codes || []
       });
+      
+      // Store original data for change tracking
+      setOriginalData(JSON.stringify({
+        overall_rating: inspection.overall_rating || 0,
+        recommended_to_buy: inspection.recommended_to_buy || false,
+        market_value_min: marketValueMin,
+        market_value_max: marketValueMax,
+        assessment_summary: assessmentSummary,
+        repairs: inspection.repairs || []
+      }));
+      setHasUnsavedChanges(false);
     }
   }, [inspection, liveProgressData]);
+  
+  // Track changes
+  useEffect(() => {
+    if (originalData) {
+      const currentData = JSON.stringify({
+        overall_rating: editData.overall_rating,
+        recommended_to_buy: editData.recommended_to_buy,
+        market_value_min: editData.market_value_min,
+        market_value_max: editData.market_value_max,
+        assessment_summary: editData.assessment_summary,
+        repairs: editData.repairs
+      });
+      setHasUnsavedChanges(currentData !== originalData);
+    }
+  }, [editData, originalData]);
+  
+  // Fetch repair parts and rules on mount
+  useEffect(() => {
+    const fetchRepairsData = async () => {
+      if (!isOpen) return;
+      setLoadingRepairs(true);
+      try {
+        const [partsRes, rulesRes] = await Promise.all([
+          repairsApi.getParts(),
+          repairsApi.getRules()
+        ]);
+        setRepairParts(partsRes.data || []);
+        setRepairRules(rulesRes.data || []);
+      } catch (err) {
+        console.error('Failed to load repairs data:', err);
+      } finally {
+        setLoadingRepairs(false);
+      }
+    };
+    fetchRepairsData();
+  }, [isOpen]);
   
   // Auto-refresh effect
   useEffect(() => {
