@@ -5196,13 +5196,42 @@ async def generate_ai_inspection_report(
     logger.info(f"[AI_REPORT] Vehicle: {vehicle_data.get('make')} {vehicle_data.get('model')} {vehicle_data.get('year')}")
     logger.info(f"[AI_REPORT] Categories: {len(categories_info)}, Answers: {len(answers_data)}, OBD data: {bool(obd_data)}")
     
+    # Fetch market price data from web scraping
+    market_price_data = None
+    try:
+        from services.car_price_scraper import get_price_scraper
+        
+        scraper = get_price_scraper()
+        make = vehicle_data.get("make")
+        model = vehicle_data.get("model")
+        year = vehicle_data.get("year")
+        
+        if make and model and year:
+            logger.info(f"[AI_REPORT] Fetching market prices for {make} {model} {year}")
+            market_price_data = await scraper.get_market_price(
+                make=make,
+                model=model,
+                year=int(year) if year else 2020,
+                fuel_type=vehicle_data.get("fuel_type"),
+                transmission=vehicle_data.get("transmission"),
+                kms_driven=inspection_data.get("kms_driven"),
+                city=inspection_data.get("city")
+            )
+            logger.info(f"[AI_REPORT] Market price fetch result: success={market_price_data.get('success')}, sources={market_price_data.get('sources_count', 0)}")
+        else:
+            logger.warning("[AI_REPORT] Skipping market price fetch - missing vehicle details")
+    except Exception as e:
+        logger.error(f"[AI_REPORT] Failed to fetch market prices: {e}")
+        market_price_data = None
+    
     # Generate AI insights
     ai_insights = await generate_ai_report_insights(
         inspection_data=inspection_data,
         vehicle_data=vehicle_data,
         obd_data=obd_data,
         answers_data=answers_data,
-        categories_info=categories_info
+        categories_info=categories_info,
+        market_price_data=market_price_data
     )
     
     # Store AI insights in the inspection
