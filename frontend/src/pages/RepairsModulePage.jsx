@@ -298,15 +298,15 @@ const PartFormModal = ({ isOpen, onClose, part, categories, onSave }) => {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Package className="h-5 w-5 text-blue-600" />
             {part ? 'Edit Repair Part' : 'Add New Repair Part'}
           </DialogTitle>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="flex-1 overflow-hidden flex flex-col">
-          <ScrollArea className="flex-1 pr-4" style={{ maxHeight: 'calc(90vh - 180px)' }}>
+        <form onSubmit={handleSubmit} className="flex-1 min-h-0 flex flex-col">
+          <div className="flex-1 min-h-0 overflow-y-auto pr-4" style={{ maxHeight: 'calc(90vh - 160px)' }}>
             <div className="space-y-6 py-4">
               {/* Basic Info */}
               <div className="grid grid-cols-2 gap-4">
