@@ -237,6 +237,17 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
 
 ## Bug Fixes (Feb 28, 2026)
 
+### Unscheduled Inspections - Package Grouping (MAJOR FIX)
+- **Problem:** When customer purchased package with 2+ inspections, showed as 2 separate rows instead of 1 grouped row
+- **Fix:** 
+  - Backend groups unscheduled inspections by `order_id`, `lead_id`, or `customer_mobile + payment_date`
+  - Shows "Available X / Total Y" format (e.g., "1 / 2" means 1 available out of 2 purchased)
+  - Schedule button disabled when all inspections used (shows "All Scheduled")
+  - Date filter for unscheduled now uses `payment_date` (not `created_at`)
+  - Date filter for scheduled uses `scheduled_date`
+- **File:** `/app/backend/server.py` - `get_inspections()` function
+- **Frontend:** `/app/frontend/src/pages/InspectionsPage.jsx` - Shows available/total and disables button
+
 ### Duplicate Customer/Inspection Records - FIXED
 - **Root Cause:** Razorpay webhook handler had no idempotency check, causing duplicate records when webhook was called multiple times
 - **Fix:** Added 4 idempotency checks in `/api/webhooks/razorpay/payment`:
