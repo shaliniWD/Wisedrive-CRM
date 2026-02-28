@@ -269,6 +269,15 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
 
 ## Bug Fixes (Feb 28, 2026)
 
+### Unscheduled Inspections - Date Filter Fix (Feb 28, 2026)
+- **Problem:** "Today" filter not showing correct results; date format mismatch
+- **Fix:**
+  1. Added timezone-aware date calculations (`getToday()`, `getStartOfMonth()`, etc.) in `/app/frontend/src/utils/dateFormat.js`
+  2. Uses user's timezone (IST for India) for accurate date filtering
+  3. Backend date filter now includes fallback to `created_at` when `payment_date` is null/empty
+  4. Both regex (same-day) and range queries support null payment_date fallback
+- **Note:** HTML5 date inputs always use YYYY-MM-DD format internally (browser standard), but display depends on user's browser locale
+
 ### Unscheduled Inspections - Package Grouping (MAJOR FIX)
 - **Problem:** When customer purchased package with 2+ inspections, showed as 2 separate rows instead of 1 grouped row
 - **Fix:** 
