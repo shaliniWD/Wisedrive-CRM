@@ -41,12 +41,25 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
 
 ## Recent Implementations (Feb 2026)
 
-### AI Report Generation - NEW (Feb 27, 2026)
+### Web Scraping for Market Prices - NEW (Feb 28, 2026)
+- **Feature:** Scrape Indian used car websites for real market price data
+- **Sources:** CarDekho, CarWale, Cars24, Spinny, OLX (with fallback to depreciation model)
+- **Implementation:**
+  - `/app/backend/services/car_price_scraper.py` - UsedCarPriceScraper class
+  - Async scraping using aiohttp + BeautifulSoup4
+  - Price validation with age-based bounds (prevents outliers)
+  - Outlier filtering using IQR method
+  - Fallback depreciation model for common Indian car models
+- **Data Fields Stored:** market_average, market_min, market_max, recommended_min/max, sources_count, sources (with URLs), estimation_method
+- **Integration:** Automatically called during AI report generation to enhance market value estimates
+- **Frontend Display:** Market avg with sources count shown below market value inputs in Inspection Editor
+
+### AI Report Generation - Enhanced (Feb 28, 2026)
 - **Feature:** Generate AI-powered insights for inspection reports using OpenAI GPT-5.2
 - **AI Generates:**
   - Overall Rating (1-5)
-  - Recommended Market Value (min/max with confidence)
-  - Assessment Summary (professional paragraph)
+  - Recommended Market Value (min/max with confidence) - now backed by web scraping data
+  - Assessment Summary (professional paragraph with section-wise breakdown)
   - Condition Ratings (Engine, Interior, Exterior, Transmission)
   - Category-wise Ratings and Status
   - Risk Factors and Recommendations
@@ -54,7 +67,10 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
 - **Manual Regeneration:** When CRM user edits an answer, report is marked as "stale" and shows "Update AI Report" button
 - **Endpoint:** `POST /api/inspections/{id}/generate-ai-report`
 - **UI:** Dynamic AI Report section in Live Progress modal with status indicators
-- **Storage:** AI insights stored in `inspection.ai_insights` field, stale status in `inspection.ai_report_stale`
+- **Storage:** 
+  - AI insights stored in `inspection.ai_insights` field
+  - Market research stored in `inspection.market_price_research` field
+  - Stale status in `inspection.ai_report_stale`
 
 ### Dual-Access Report System - NEW (Feb 27, 2026)
 - **Customer Access URL:** `/r/{encrypted_short_code}` - OTP-protected
