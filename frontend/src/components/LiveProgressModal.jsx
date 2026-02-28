@@ -640,11 +640,42 @@ export default function LiveProgressModal({
     }
   };
   
-  // Manual refresh
+  // Manual refresh - also fetches Vaahan data
   const handleManualRefresh = async () => {
     if (!inspection?.id) return;
     setRefreshing(true);
     try {
+      // Fetch Vaahan data first to update vehicle details
+      try {
+        const vaahanResponse = await inspectionsApi.fetchVaahanData(inspection.id);
+        if (vaahanResponse.data?.success) {
+          // Update editData with fetched vehicle info
+          const vaahanData = vaahanResponse.data.vaahan_data || {};
+          const updatedInspection = vaahanResponse.data.inspection || {};
+          
+          setEditData(prev => ({
+            ...prev,
+            vehicle_make: updatedInspection.vehicle_make || prev.vehicle_make,
+            vehicle_model: updatedInspection.vehicle_model || prev.vehicle_model,
+            vehicle_year: updatedInspection.vehicle_year || prev.vehicle_year,
+            vehicle_colour: updatedInspection.vehicle_colour || prev.vehicle_colour,
+            fuel_type: updatedInspection.fuel_type || prev.fuel_type,
+            owners: updatedInspection.owners || prev.owners,
+            insurer_name: updatedInspection.insurer_name || prev.insurer_name,
+            insurance_expiry: updatedInspection.insurance_expiry || prev.insurance_expiry,
+            insurance_status: updatedInspection.insurance_status || prev.insurance_status,
+            policy_number: updatedInspection.policy_number || prev.policy_number,
+            hypothecation: updatedInspection.hypothecation || prev.hypothecation,
+            blacklist_status: updatedInspection.blacklist_status || prev.blacklist_status,
+            rto_verification_status: updatedInspection.rto_verification_status || prev.rto_verification_status,
+          }));
+          toast.success('Vehicle data updated from Vaahan API');
+        }
+      } catch (vaahanError) {
+        console.log('Vaahan fetch skipped or failed:', vaahanError?.response?.data?.error || vaahanError.message);
+      }
+      
+      // Also refresh live progress data
       await onRefresh(inspection.id);
       toast.success('Data refreshed');
     } finally {
