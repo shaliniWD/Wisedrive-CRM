@@ -36,6 +36,8 @@ from .webhooks import router as webhooks_router, init_webhooks_routes
 from .meta_ads import router as meta_ads_router, init_meta_ads_routes
 from .inspections import router as inspections_router, init_inspections_routes
 from .loans import router as loans_router, init_loans_routes
+from .customers import router as customers_router, init_customers_routes
+from .finance import router as finance_router, init_finance_routes
 
 __all__ = [
     # New factory functions (recommended)
@@ -69,7 +71,15 @@ __all__ = [
     'inspections_router',
     'init_inspections_routes',
     
-    # Loans - NEW
+    # Loans
     'loans_router',
     'init_loans_routes',
+    
+    # Customers - NEW
+    'customers_router',
+    'init_customers_routes',
+    
+    # Finance - NEW
+    'finance_router',
+    'init_finance_routes',
 ]
