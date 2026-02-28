@@ -1219,7 +1219,6 @@ export default function LiveProgressModal({
             </TabsContent>
           </Tabs>
             </div>
-          </ScrollArea>
         </div>
         
         {/* Footer with Save Button */}
