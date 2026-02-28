@@ -20,6 +20,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { format, differenceInDays, addDays } from 'date-fns';
 import { applyLeave } from '../services/api';
 import { colors, spacing, fontSize, fontWeight, radius, iconSize } from '../theme';
+import { formatDateMedium } from '../utils/dateFormat';
 
 const LEAVE_TYPES = [
   { id: 'casual', label: 'Casual Leave', color: colors.success },
