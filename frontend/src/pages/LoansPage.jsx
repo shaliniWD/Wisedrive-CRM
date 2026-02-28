@@ -1879,6 +1879,7 @@ export default function LoansPage() {
   const [vehicleModalOpen, setVehicleModalOpen] = useState(false);
   const [processingModalOpen, setProcessingModalOpen] = useState(false);
   const [statusModalOpen, setStatusModalOpen] = useState(false);
+  const [creditScoreModalOpen, setCreditScoreModalOpen] = useState(false);
   
   // Status update
   const [statusNotes, setStatusNotes] = useState('');
