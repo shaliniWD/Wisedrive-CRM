@@ -181,11 +181,13 @@ export default function LiveProgressModal({
   const [activeTab, setActiveTab] = useState('ai-analysis');
   const [saving, setSaving] = useState(false);
   const [generatingAI, setGeneratingAI] = useState(false);
-  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(true); // Auto-refresh enabled by default
+  const [refreshing, setRefreshing] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
   const [generatingShareUrl, setGeneratingShareUrl] = useState(false);
   const [editingAnswer, setEditingAnswer] = useState(null); // { questionId, categoryId }
   const [savingAnswer, setSavingAnswer] = useState(false);
+  const [selectedCategoryId, setSelectedCategoryId] = useState(null); // For filtering Q&A by category;
   
   // Editable data state
   const [editData, setEditData] = useState({
