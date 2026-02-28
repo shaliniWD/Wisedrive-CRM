@@ -43,6 +43,7 @@ from services.round_robin import RoundRobinService
 from services.audit import AuditService
 from services.seed_v2 import seed_v2_data
 from services.vaahan_service import vaahan_service
+from services.brand_mapper import brand_mapper
 
 # Import HR Module services
 from services.attendance_service import AttendanceService
