@@ -136,6 +136,8 @@ export const inspectionsApi = {
   getLiveProgress: (id) => axios.get(`${API_URL}/inspections/${id}/live-progress`),
   toggleOBDRescan: (id, enableRescan) => axios.post(`${API_URL}/inspections/${id}/obd-rescan`, { enable_rescan: enableRescan }),
   requestObdRescan: (id) => axios.post(`${API_URL}/inspections/${id}/obd-rescan`, { enable_rescan: true }),
+  // Vaahan API integration
+  fetchVaahanData: (id) => axios.post(`${API_URL}/inspections/${id}/fetch-vaahan-data`),
   // Notes & Activities
   getNotes: (id) => axios.get(`${API_URL}/inspections/${id}/notes`),
   addNote: (id, data) => axios.post(`${API_URL}/inspections/${id}/notes`, data),
