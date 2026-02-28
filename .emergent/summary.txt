@@ -1,233 +1,189 @@
 <analysis>**original_problem_statement:**
-The user initially requested to build a comprehensive Loans module within the existing CRM. This module is intended to be a follow-on product for customers who have paid for vehicle inspections.
+The user's primary goal is to build a comprehensive Loans module within their existing vehicle CRM application. This module is designed for customers who have previously paid for vehicle inspections.
 
-**PRODUCT REQUIREMENTS (Loans Module):**
-1.  **Tab & Data Source:** A new Loans tab should display all unique customers who have made a payment for an inspection.
-2.  **Columns:** The main view needs columns for:
-    *   Date/Time (customer creation)
-    *   Customer Name & Number, City
-    *   Status with notes (e.g., Interested, Not Interested, Follow up)
-    *   Documents (modal to upload documents based on customer type: Salaried/Self-employed)
-    *   Vehicle Details (modal showing inspected vehicles and allowing the addition of new ones via Vaahan API integration, capturing loan amount, EMI, interest rate, tenure, and document uploads like RC/Insurance)
-    *   Credit Score (placeholder)
-    *   Loan Processing (mocked eligibility check with banks)
-    *   Loan Status (e.g., Applied, Approved, Disbursed)
-3.  **Bank Master:** A separate master data management UI for Banks should be created in the Services tab, storing details like POC, eligibility rules, interest rates, and commission.
-4.  **Multi-Vehicle Handling:** A single customer can have multiple vehicles. The UI must support this by:
-    *   Showing a dropdown of vehicles in the main Vehicles column.
-    *   Allowing car-wise details (valuation, loan amount) to be viewed/edited.
-    *   Showing car-wise eligibility in the loan processing step.
-5.  **UI/UX:** The layout should be consistent with the existing CRM pages (e.g., Inspections Page).
+**PRODUCT REQUIREMENTS:**
+1.  **Loans Module Core:**
+    *   A new Loans tab in the main navigation bar.
+    *   A data table displaying loan leads, populated from customers who have made payments.
+    *   Table columns for Customer Details, Loan Status, Vehicle Info, **Documents**, and **Credit Score**.
+2.  **Multi-Vehicle Support:** A single customer can have multiple vehicles, and the UI must allow managing loans on a per-vehicle basis.
+3.  **Document Management:** A modal to upload and manage customer documents (e.g., ITR, Bank Statements) required for loan applications, with different requirements for Salaried vs. Self-Employed customers. Files should be stored in Firebase.
+4.  **Credit Score Check:** A feature in the Credit Score column to check a customer's credit history via a third-party API. This involves a multi-step modal for an OTP-based verification process. The UI should display the full, detailed credit report from the bureau.
+5.  **Bank Master:** A UI to manage bank details and lending rules.
+6.  **Mocked Logic:** Loan eligibility and processing logic should be mocked for now.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The project is a full-stack application with a React frontend, FastAPI backend, and MongoDB database.
+The project is a full-stack application (React, FastAPI, MongoDB). The foundational Loans module has been implemented, including the main page, API endpoints, and database models.
 
-In this session, the agent successfully:
-*   Confirmed with the user that the previous fixes for date filters and the mechanic app APK (v1.8.0) are working correctly.
-*   Standardized the date format to  across both the  and , creating centralized utility files () for both.
-*   Built and delivered a new mechanic app APK (**v1.9.0**) with the updated date formats.
-*   Fixed a bug in the  where Vaahan API data and Recommended Purchase Price (RPP) were not loading automatically.
-*   Added a Settings tab to the Ads Management page to conveniently store and copy a static Meta API key.
-*   **Built the foundational Loans module**, including:
-    *   Backend models (, ) and API endpoints for fetching leads, stats, and managing banks.
-    *   A Bank Master management UI in the Services page.
-    *   A new Loans page with stats, filters, and a customer list.
-    *   Corrected the navigation by moving the Loans tab to the main top navigation bar and updating RBAC permissions.
-    *   Populated the module with sample bank and loan lead data for demonstration.
-*   Began implementing the multi-vehicle handling enhancements for the Loans module.
+In the last session, the agent successfully implemented and verified:
+*   **Multi-Vehicle Enhancements:** The loans table and modals now correctly handle customers with multiple vehicles.
+*   **Document Upload/Download:** A complete, user-friendly document management modal was created. It supports drag-and-drop, different document requirements based on employment type, and integrates with Firebase for storage.
+*   **Comprehensive Credit Report UI:** A detailed, multi-tabbed modal was built to display a full credit report, including merits, risks, account payment history, and enquiries.
+*   **API Pivot:** After encountering persistent 500 Internal Server Error issues with the Experian API, the agent successfully analyzed user-provided documentation and pivoted the implementation to use an alternative **Equifax API** from the same provider (Invincible Ocean).
 
 **Last working item**:
--   **Last item agent was working:** The agent was enhancing the **Loans Module** to handle customers with multiple vehicles, as per the user's latest request. This involved a major update to the  file to add vehicle dropdowns and update the modals for adding/viewing vehicle-specific loan details.
+-   **Last item agent was working:** The agent was in the middle of a real-time debugging session with the user to integrate the **Equifax Credit Score API**. The initial Experian API integration failed consistently. The agent switched the backend to use the Equifax endpoints and successfully triggered an OTP request to the user's real mobile number. The next immediate step is to use the OTP provided by the user to fetch the credit report.
 -   **Status:** IN PROGRESS
--   **Agent Testing Done:** N
--   **Which testing method agent to use?** Frontend testing agent. The agent should instruct the testing agent to:
-    1.  Navigate to the Loans page.
-    2.  Verify that customers with multiple vehicles show a dropdown in the Vehicles column.
-    3.  Open the Vehicles modal for a customer and test the ability to add a new car, including the Vaahan API integration.
-    4.  Open the Loan Processing modal and confirm that eligibility is displayed on a per-vehicle basis.
+-   **Agent Testing Done:** N (The OTP generation part was tested via , but the full flow including OTP verification is not complete).
+-   **Which testing method agent to use?** Manual testing by  or . The agent must ask the user for a fresh OTP and immediately use it to call the  endpoint to fetch the full credit report and analyze its structure.
 -   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
--   **Issue 1: Complete and Verify Loans Module Enhancements (P0)**
--   **Issue 2: Verify Vaahan/RPP Data Fix in LiveProgressModal (P1)**
--   **Issue 3: Verify Meta API Key UI in Ads Management (P1)**
--   **Issue 4: Verify Date Format Changes in  (P2)**
+-   **Issue 1: Complete Equifax Credit Score Integration (P0)**
+-   **Issue 2: Experian API Integration Failure (P2)**
+-   **Issue 3: Verify Vaahan/RPP Data Fix in LiveProgressModal (P2)**
+-   **Issue 4: Verify Meta API Key UI in Ads Management (P2)**
 
 **Issues Detail:**
--   **Issue 1: Complete and Verify Loans Module Enhancements (P0)**
-    -   **Attempted fixes:** The agent rewrote  to incorporate UI changes for multi-vehicle support.
+-   **Issue 1: Complete Equifax Credit Score Integration (P0)**
+    -   **Attempted fixes:** The agent identified the Experian API was failing and pivoted the implementation to use the Equifax API () based on user-provided documentation. The OTP generation endpoint () was successfully called.
     -   **Next debug checklist:**
-        1.  Start the frontend and backend servers.
-        2.  Use the screenshot tool or frontend testing agent to log in and navigate to the  page.
-        3.  Inspect the UI to ensure the new dropdowns and modal functionalities are working as intended without breaking the existing layout.
-        4.  Check browser console for any new React errors.
-    -   **Why fix this issue and what will be achieved with the fix?** This is a core requirement for the Loans module, enabling it to handle realistic customer scenarios where one person owns multiple cars.
+        1.  Request a **new OTP** from the user, as the previous ones are expired.
+        2.  Immediately call the Equifax verification endpoint  using the new OTP and the token from the previous step.
+        3.  Analyze the full JSON response from the Equifax API.
+        4.  Update the backend endpoint  in  to correctly parse the new response structure and save the full report to the  collection in MongoDB.
+        5.  Verify that the existing frontend  component in  correctly displays the data from the Equifax report. Adjust the component if the data structure is different from the mock data.
+    -   **Why fix this issue and what will be achieved with the fix?** This is a critical feature for the Loans module, enabling users to assess customer creditworthiness.
     -   **Status:** IN PROGRESS
     -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?** Frontend.
-    -   **Blocked on other issue:** None.
-
--   **Issue 2: Verify Vaahan/RPP Data Fix in LiveProgressModal (P1)**
-    -   **Attempted fixes:** Created a new endpoint  and updated  to call it on open and on manual refresh. Also added an  callback to refresh the parent component's state.
-    -   **Next debug checklist:**
-        1.  Log into the CRM and navigate to the Inspections page.
-        2.  Open the  for an inspection that has a vehicle number but is missing make/model details.
-        3.  Verify that the vehicle details and market value automatically populate shortly after the modal opens.
-        4.  Click the Refresh button and verify the data is fetched again.
-    -   **Why fix this issue and what will be achieved with the fix?** Ensures that CRM users have immediate access to critical vehicle data and valuation without manual steps.
-    -   **Status:** TESTING PENDING
-    -   **Is recurring issue?** Y
     -   **Should Test frontend/backend/both after fix?** Both.
     -   **Blocked on other issue:** None.
 
--   **Issue 3: Verify Meta API Key UI in Ads Management (P1)**
-    -   **Attempted fixes:** The agent added a new Settings tab to  containing the hardcoded key and a copy button.
-    -   **Next debug checklist:**
-        1.  Log in and navigate to the Ads Management page.
-        2.  Click the Settings tab.
-        3.  Verify the key is displayed correctly and the copy button works.
-    -   **Why fix this issue and what will be achieved with the fix?** Provides a user-requested convenience feature to streamline their ad management workflow.
-    -   **Status:** TESTING PENDING
-    -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?** Frontend.
-    -   **Blocked on other issue:** None.
+-   **Issue 2: Experian API Integration Failure (P2)**
+    -   **Attempted fixes:** Extensive debugging (retries, logging, format changes) confirmed the issue is a persistent 500 Internal Server Error from the provider's end during OTP verification.
+    -   **Next debug checklist:** This issue is blocked by the external API provider. The agent has correctly pivoted to an alternative. No further action is required unless the user wants to revisit it.
+    -   **Status:** BLOCKED
+    -   **Is recurring issue?** Y
+    -   **Should Test frontend/backend/both after fix?** N/A
+    -   **Blocked on other issue:** External API Provider.
 
--   **Issue 4: Verify Date Format Changes in  (P2)**
-    -   **Attempted fixes:** The agent created a  utility and updated multiple screens to use the  format.
-    -   **Next debug checklist:** The  does not have a build process set up in the environment. This task requires manual code review or setting up a build process to generate an APK for testing. For now, a code review should suffice to ensure no syntax errors were introduced.
-    -   **Why fix this issue and what will be achieved with the fix?** Ensures UI consistency across all applications used by the company.
-    -   **Status:** TESTING PENDING
-    -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?** Frontend (Mobile App).
-    -   **Blocked on other issue:** None.
+-   **Issue 3: Verify Vaahan/RPP Data Fix in LiveProgressModal (P2)**
+    -   **Status:** USER VERIFICATION PENDING
+    -   **Note:** This is a completed fix from a previous session awaiting user confirmation.
+
+-   **Issue 4: Verify Meta API Key UI in Ads Management (P2)**
+    -   **Status:** USER VERIFICATION PENDING
+    -   **Note:** This is a completed fix from a previous session awaiting user confirmation.
 
 **In progress Task List**:
-There are no other tasks in progress besides the .
+The 
+wtmp begins Sat Feb 28 16:44:24 2026 covers the only in-progress task.
 
 **Upcoming and Future Tasks**
-
 **Upcoming Tasks:**
-*   **(P1) Implement Document Upload for Loans:** The Documents button in the Loans module is a placeholder. Implement the modal and integrate with Firebase Storage for file uploads.
-*   **(P1) Implement Mock Bank Eligibility Check:** The Loan Processing button needs to open a modal that shows a mocked eligibility check against the banks in the Bank Master.
-*   **(P1) Add Share Report Button:** Implement the Share Report button on the main , which was a carry-over task from the previous session.
+*   **(P1) PDF Export for Credit Report:** Add a button to the credit report modal to download the report as a PDF.
+*   **(P2) Share Report Button:** Implement the Share Report button on  (carry-over task).
 
 **Future Tasks:**
-*   Integrate with real bank APIs for loan eligibility and processing.
-*   Implement PDF export and Share via WhatsApp for inspection reports.
+*   Integrate with real bank APIs for loan processing.
+*   Implement Share via WhatsApp for inspection reports.
 *   Build a customer reminders feature.
-*   Refactor the monolithic , , and .
-*   Implement an offline mode for the mechanic app.
-*   Create a script to clean up old duplicate customer/inspection data from the database.
+*   **Refactor  and **.
+*   Implement offline mode for the mechanic app.
+*   Create a cleanup script for old duplicate data.
 
 **Completed work in this session**
-- **Mechanic App v1.9.0:** Updated all date formats to  and built a new APK.
-- **ESS Mobile App:** Standardized all date formats to .
-- **Live Progress Modal Fix:** Resolved a bug preventing automatic loading of Vaahan API and RPP data.
-- **Ads Management UI:** Added a Settings tab with a static Meta API key and copy button.
-- **Loans Module (Phase 1):**
-    - Created backend models (, ) and a full suite of API endpoints.
-    - Implemented frontend pages for  and .
-    - Integrated the Loans tab into the main top navigation and updated RBAC permissions.
-    - Fixed a FastAPI route ordering bug ( vs ).
-    - Populated the database with sample data for demonstration.
-- **User Verification:** Confirmed that APK v1.8.0 and date filter fixes from the previous session are working.
+-   **Loans Module - Document Upload & Management:**
+    -   Implemented a completely redesigned  with a user-friendly UI (drag-drop, progress bars, file management).
+    -   Integrated the feature with Firebase for file storage and retrieval.
+    -   Completed and verified with the testing agent.
+-   **Loans Module - Credit Score Check Feature:**
+    -   Created backend endpoints and a multi-step frontend modal for OTP-based verification.
+    -   Built a comprehensive, multi-tabbed  component to display a detailed credit report with visual charts and summaries.
+    -   Diagnosed a persistent 500 error with the Experian API and successfully pivoted the implementation to an alternative Equifax API based on user-provided documentation.
 
 **Earlier issues found/mentioned but not fixed**
 -   **Issue 1: Cleanup of old duplicate records**
-    -   **Debug checklist:** The root cause (non-idempotent webhook) is fixed, but the duplicate data created before the fix still exists in the database. A one-time cleanup script is needed to remove these records.
-    -   **Why to solve this issue and what will be achieved with this?** Improves data integrity and prevents confusion in analytics and user views.
+    -   **Debug checklist:** A one-time cleanup script is needed to remove duplicate customer/inspection data created before a webhook fix.
+    -   **Why to solve this issue and what will be achieved with this?** To improve data integrity.
     -   **Should Test frontend/backend/both after fix:** Backend.
     -   **Is recurring issue?** N.
 
 **Known issue recurrence from previous fork**
 -   **Issue recurrence in previous fork:** Critical Video Upload Failure.
 -   **Recurrence count:** High.
--   **Status:** USER VERIFICATION PENDING. (While the user confirmed APK v1.8.0 works, they did not specifically confirm this bug was resolved. It should be monitored).
+-   **Status:** USER VERIFICATION PENDING.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **FastAPI Route Ordering:** Resolved a bug by placing specific routes (e.g., ) before dynamic path parameter routes (e.g., ) to ensure correct matching.
--   **RBAC-driven UI:** Controlled the visibility of the new Loans tab by adding it to the  mapping in the backend's RBAC service, which dynamically populates the user's accessible tabs on the frontend.
--   **Child-to-Parent State Update:** Implemented a callback prop () to allow the  to trigger a state refresh in its parent (), ensuring the UI reflects data updates from child components.
--   **Code Reusability:** Created centralized  utility files for both React Native projects ( and ) to enforce consistency and simplify future changes.
+-   **External API Integration & Pivot:** Successfully integrated a third-party API, diagnosed a blocking error (500 Internal Server Error), and pivoted to an alternative API (Experian -> Equifax) based on user-provided documentation, all while in a live debugging session.
+-   **Complex UI Components:** Built sophisticated, stateful React components for multi-step modals () and detailed data visualization ( with tabs, charts, and conditional rendering).
+-   **File Uploads with Signed URLs:** Implemented a secure file upload flow by generating signed URLs on the backend for direct client-side uploads to Firebase Storage.
 
 **key DB schema**
--   **** (NEW): 
--   **** (NEW): 
--   **** (NEW):  (Model defined but not fully implemented in endpoints yet).
+-   ****: This collection was modified to include:
+    -   :  - Stores metadata for uploaded loan documents.
+    -   :  - The customer's credit score.
+    -   :  - e.g., 'COMPLETED', 'PENDING_OTP'.
+    -   :  - Stores the complete JSON response from the credit bureau.
 
 **All files of reference**
--    (Primary file for the current task)
--    (Contains all new backend logic)
--    (Contains the new Pydantic models)
--   
--   
--   
--   
--   
+-    (Contains the credit score API logic)
+-    (Contains the UI for all new features)
+-    (Contains API credentials)
+-    (Contains frontend API service calls)
 -   
 
 **Areas that need refactoring**:
--   : This file has become critically oversized (now >19,500 lines). It urgently needs to be broken down into smaller, manageable FastAPI  files (e.g., , ).
--   : As more features are added (modals for documents, vehicles, processing), this component is becoming complex and should be broken down into smaller sub-components.
--    and : Remain extremely large and are candidates for significant refactoring.
+-   ** (CRITICAL):** This file is now extremely large (over 2,800 lines) and contains several major components (, , , ). It must be broken down into separate files for maintainability.
+-   ** (CRITICAL):** This monolithic file continues to grow (now over 19,800 lines) and is a major liability. It urgently needs to be split into multiple  files based on functionality (e.g., , ).
 
 **key api endpoints**
--   : Creates loan leads from existing customers.
--   : Fetches all loan leads with filters.
--   : Provides dashboard statistics for the Loans page.
--   , : CRUD operations for the Bank Master.
--   : Fetches vehicle data from Vaahan and updates the inspection document.
+-   : Generates signed URL for document upload.
+-   : Saves document metadata post-upload.
+-   : Generates signed URL for download.
+-   : Requests OTP for credit check (now using Equifax).
+-   : Verifies OTP and fetches credit report (now using Equifax).
 
 **Critical Info for New Agent**
-1.  **Primary Focus:** Your immediate goal is to complete and test the multi-vehicle enhancement for the Loans module. Start by examining  and then testing the UI.
-2.  **Login/Screenshot Issues:** The previous agent frequently encountered issues logging in via the screenshot tool, which prevented UI verification. Be prepared for this. If it occurs, focus on testing the backend logic via  and ensuring the frontend code compiles without error.
-3.  **Refactoring is Urgent:** The backend  is unsustainably large. After completing the current feature, you should strongly recommend a refactoring task to the user to break it into separate routers. This is crucial for future development and maintenance.
-4.  **Mocked Logic:** Remember that the loan eligibility check is intended to be a mocked feature for now. Do not attempt to integrate with real APIs unless explicitly asked by the user.
+1.  **Primary Focus:** Your immediate task is to **complete the Equifax credit score integration**. The user is actively testing with you. You must request a **new OTP**, use it to call the  endpoint, capture the full JSON response, and adapt the backend/frontend to handle the real data structure.
+2.  **API to Use:** **DO NOT** use the Experian API (). It is broken. Use only the **Equifax API** () as implemented in the last few steps.
+3.  **Refactoring is URGENT:** After verifying the credit score feature, your highest priority should be to propose and execute the refactoring of . Breaking the large modals and views into separate component files is essential for future development.
+4.  **Interactive Session:** The user is providing real-time data and feedback. Continue to work interactively. Be clear when you need an OTP and be ready to act on it quickly.
 
 **documents and test reports created in this job**
--   /app/memory/PRD.md (Updated with Loans Module summary)
+-   
+-   
+-   
+-   User-provided artifact  was analyzed.
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **LATEST:** User wants to enhance the Loans module to handle multiple vehicles per customer, with specific UI requirements for dropdowns and modals. (Status: **In Progress**)
-2.  **User:** Requested sample customers to be created for the Loans module. (Status: **Completed**)
-3.  **User:** Pointed out that the Loans tab was incorrectly placed in the sidebar instead of the top navigation bar. (Status: **Completed**)
-4.  **User:** Provided detailed requirements for the new Loans module. (Status: **In Progress**)
-5.  **User:** Provided clarification on the Loans module requirements (Bank Master location, mocking APIs, one loan per vehicle). (Status: **Completed**)
-6.  **User:** Requested a new feature to store and copy a static Meta API key in the Ads Management UI. (Status: **Completed, Testing Pending**)
-7.  **User:** (from image) Reported that Vaahan API data and RPP were not showing in the . (Status: **Completed, Testing Pending**)
-8.  **User:** Approved updating the mechanic app date format and generating a new APK. (Status: **Completed**)
-9.  **User:** Requested an investigation into whether the CRM's date format change () impacted the  and . (Status: **Completed**)
-10. **User:** Confirmed that the date filters and APK v1.8.0 from the previous session are working fine. (Status: **Completed**)
+1.  **LATEST:** wait let me tell you something the client ID and Secret key which you are using for fetching credit report is same as vaahan API... check if that is the problem (Status: **Addressed**. Agent confirmed this is expected behavior from the API provider).
+2.  298571 (Status: **Used**. An expired OTP for the failed Experian attempt).
+3.  Wait ... give me a frontend where I enter this information and let us see if I am getting the same error... (Status: **Addressed**. Agent provided the UI for testing and enhanced logging).
+4.  User uploaded PDF documentation for the Equifax API. (Status: **Acted Upon**. Agent pivoted to Equifax).
+5.  Now check the error logs (Status: **Addressed**. Agent found the full error response).
+6.  Names json is not defined error came ... (Status: **Fixed**. Agent corrected a Python bug).
+7.  I have real customer data... can we map and check... let me know can I put in real data ? (Status: **In Progress**. This initiated the live testing session).
+8.  The most important part of credit scoring is understand the score itself... plot the entire information inside the inside the modal... (Status: **Completed**. Agent built the comprehensive report view).
+9.  I have completed the initial steps and now invite you to test through the frontend. (Status: **Pending**. The user needs to test again after the  bug fix).
+10. The user has provided multiple OTPs for the failed Experian attempts.
 
 **Project Health Check:**
--   **Broken:** None.
--   **Mocked:** The loan eligibility check ( endpoint) is designed to return mocked data, as per user requirements.
+-   **Broken:** The Experian API integration () is non-functional due to persistent 500 errors from the provider.
+-   **Mocked:** The core loan eligibility logic remains mocked as per the original requirements.
 
 **3rd Party Integrations**
--   **OpenAI GPT-5.2:** For AI report generation. Uses **Emergent LLM Key**.
--   **Firebase:** For media storage.
--   **Expo Application Services (EAS):** For building Android APKs.
--   **Fast2SMS:** For sending OTPs.
--   **Twilio:** For WhatsApp messages.
--   **Razorpay:** For payments.
--   **Google Maps Places API:** For address input.
--   **Vaahan API:** (via 3rd party service) for vehicle data lookup.
+-   **Invincible Ocean API:** Provider for:
+    -   **Vaahan API:** (Vehicle Lookup) - In Use.
+    -   **Experian API:** (Credit Score) - **DEPRECATED**.
+    -   **Equifax API:** (Credit Score) - **IN PROGRESS**.
+-   **Firebase:** Used for media storage (including new loan documents).
+-   **OpenAI GPT-5.2, Expo (EAS), Fast2SMS, Twilio, Razorpay, Google Maps:** Other existing integrations.
 
 **Testing status**
--   **Testing agent used after significant changes:** NO
+-   **Testing agent used after significant changes:** YES (Used for Document Upload feature).
 -   **Troubleshoot agent used after agent stuck in loop:** NO
 -   **Test files created:** None.
--   **Known regressions:** None from this session.
+-   **Known regressions:** None.
 
 **Credentials to test flow:**
 -   **CRM Admin Login:**  / 
--   **Mechanic Test Number:** 
--   **Firebase Credentials:** Located at 
+-   **Invincible Ocean API Keys:** Stored in  as  and  (names are now misleading but keys are correct for Equifax).
 
 **What agent forgot to execute**
--   The Share Report button on the main  has still not been implemented. This is a carry-over task from a previous session and was on the Upcoming Tasks list but was not addressed.</analysis>
+-   The agent did not immediately use the last provided OTP to call the corresponding verification endpoint. This is a minor process gap, as the agent continued debugging the API provider issue instead. The key takeaway is to act on user-provided OTPs immediately.</analysis>

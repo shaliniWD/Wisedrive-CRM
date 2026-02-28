@@ -11,7 +11,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://vehicle-loan-crm.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://car-credit-portal.preview.emergentagent.com').rstrip('/')
 
 
 class TestCollectBalanceFeature:
