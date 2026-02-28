@@ -1199,7 +1199,10 @@ export default function InspectionsPage() {
         updateData.fuel_type = scheduleVehicleData.fuel_type || '';
       }
       
-      await inspectionsApi.updateSchedule(scheduleUnscheduledInspection.id, updateData);
+      // Use the first available inspection_id from the group if multiple IDs exist
+      const inspectionIdToSchedule = scheduleUnscheduledInspection.inspection_ids?.[0] || scheduleUnscheduledInspection.id;
+      
+      await inspectionsApi.updateSchedule(inspectionIdToSchedule, updateData);
       toast.success('Inspection scheduled successfully!');
       setIsScheduleUnscheduledModalOpen(false);
       setActiveTab('scheduled'); // Switch to scheduled tab
