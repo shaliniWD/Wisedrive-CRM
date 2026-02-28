@@ -609,7 +609,21 @@ export const loansApi = {
   
   // Documents
   getDocumentRequirements: (leadId) => axios.get(`${API_URL}/loan-leads/${leadId}/document-requirements`),
-  uploadDocument: (leadId, data) => axios.post(`${API_URL}/loan-leads/${leadId}/documents`, data),
+  generateUploadUrl: (leadId, data) => {
+    const formData = new FormData();
+    formData.append('document_type', data.document_type);
+    formData.append('filename', data.filename);
+    formData.append('content_type', data.content_type);
+    return axios.post(`${API_URL}/loan-leads/${leadId}/documents/generate-upload-url`, formData);
+  },
+  uploadDocument: (leadId, data) => {
+    const formData = new FormData();
+    formData.append('document_type', data.document_type);
+    formData.append('file_url', data.file_url);
+    formData.append('file_name', data.file_name);
+    return axios.post(`${API_URL}/loan-leads/${leadId}/documents`, formData);
+  },
+  getDocumentDownloadUrl: (leadId, docId) => axios.post(`${API_URL}/loan-leads/${leadId}/documents/${docId}/download-url`),
   deleteDocument: (leadId, docId) => axios.delete(`${API_URL}/loan-leads/${leadId}/documents/${docId}`),
   
   // Vehicles
