@@ -16122,6 +16122,123 @@ async def delete_loan_document(
     return {"message": "Document deleted"}
 
 
+@api_router.post("/loan-leads/{lead_id}/documents/generate-upload-url")
+async def generate_loan_document_upload_url(
+    lead_id: str,
+    document_type: str = Form(...),
+    filename: str = Form(...),
+    content_type: str = Form(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """Generate a signed URL for uploading loan documents to Firebase Storage"""
+    try:
+        # Verify lead exists
+        lead = await db.loan_leads.find_one({"id": lead_id})
+        if not lead:
+            raise HTTPException(status_code=404, detail="Loan lead not found")
+        
+        # Initialize Firebase
+        get_firebase_app()
+        
+        # Generate unique filename with timestamp
+        timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
+        ext = filename.split('.')[-1] if '.' in filename else 'pdf'
+        safe_doc_type = document_type.replace(' ', '_').lower()
+        unique_filename = f"{safe_doc_type}_{timestamp}.{ext}"
+        firebase_path = f"loan_documents/{lead_id}/{unique_filename}"
+        
+        logger.info(f"[LOAN_DOC_UPLOAD] Generating signed URL for: {firebase_path}")
+        
+        # Get bucket reference
+        bucket = firebase_storage.bucket()
+        blob = bucket.blob(firebase_path)
+        
+        # Generate signed URL for upload (PUT method)
+        expiration_time = datetime.now(timezone.utc) + timedelta(hours=1)
+        
+        signed_url = blob.generate_signed_url(
+            version="v4",
+            expiration=expiration_time,
+            method="PUT",
+            content_type=content_type,
+        )
+        
+        logger.info(f"[LOAN_DOC_UPLOAD] Signed URL generated for loan lead {lead_id}")
+        
+        return {
+            "signed_url": signed_url,
+            "firebase_path": f"gs://wisedrive-ess-app.firebasestorage.app/{firebase_path}",
+            "expires_at": expiration_time.isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[LOAN_DOC_UPLOAD] Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate upload URL: {str(e)}")
+
+
+@api_router.post("/loan-leads/{lead_id}/documents/{document_id}/download-url")
+async def get_loan_document_download_url(
+    lead_id: str,
+    document_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get a signed download URL for a loan document"""
+    try:
+        # Find the lead and document
+        lead = await db.loan_leads.find_one({"id": lead_id}, {"_id": 0, "documents": 1})
+        if not lead:
+            raise HTTPException(status_code=404, detail="Loan lead not found")
+        
+        document = next((d for d in lead.get("documents", []) if d.get("id") == document_id), None)
+        if not document:
+            raise HTTPException(status_code=404, detail="Document not found")
+        
+        file_url = document.get("file_url", "")
+        
+        # If it's already a public URL, return it
+        if file_url.startswith("http://") or file_url.startswith("https://"):
+            return {"download_url": file_url, "expires_at": None}
+        
+        # If it's a Firebase gs:// path, generate signed URL
+        if file_url.startswith("gs://"):
+            get_firebase_app()
+            
+            # Extract path from gs:// URL
+            path_parts = file_url.replace("gs://", "").split("/", 1)
+            if len(path_parts) > 1:
+                file_path = path_parts[1]
+            else:
+                raise HTTPException(status_code=400, detail="Invalid Firebase path")
+            
+            bucket = firebase_storage.bucket()
+            blob = bucket.blob(file_path)
+            
+            # Generate signed URL for download (24 hours)
+            expiration_time = datetime.now(timezone.utc) + timedelta(hours=24)
+            
+            download_url = blob.generate_signed_url(
+                version="v4",
+                expiration=expiration_time,
+                method="GET",
+            )
+            
+            return {
+                "download_url": download_url,
+                "expires_at": expiration_time.isoformat(),
+                "file_name": document.get("file_name", "document")
+            }
+        
+        raise HTTPException(status_code=400, detail="Invalid document URL format")
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[LOAN_DOC_DOWNLOAD] Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate download URL: {str(e)}")
+
+
 # ---- Vehicle Loan Details Endpoints ----
 
 @api_router.post("/loan-leads/{lead_id}/vehicles")
