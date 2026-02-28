@@ -97,20 +97,25 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
   - `PUT /api/inspections/{id}/answers/{question_id}` - Edit answer
   - `GET /api/inspections/{id}/answers/{question_id}/history` - Get edit history
 
-### Repairs Module - NEW (Feb 28, 2026)
-- **Location:** Services tab > Repairs Module tab
+### Repairs Module - COMPLETED (Feb 28, 2026)
+- **Location:** Settings > Repairs Module tab
 - **Purpose:** Comprehensive spare parts pricing and repair rules management
+- **Status:** ✅ FULLY FUNCTIONAL with sample data
+- **Sample Data Populated:**
+  - **30 Repair Parts** across 9 categories (AC & Cooling, Body Panels, Electrical, Exhaust, Glass, Mechanical, Tyres & Wheels)
+  - **13 Q&A Categories** with **38 inspection questions** (Front/Rear Bumper, Fenders, Doors, Hood, Trunk, Headlights, Taillights, Windshield, Mirrors, Tyres, Brakes, Battery, AC, Exhaust, Engine Oil)
+  - **96 Repair Rules** linking questions to parts with conditions (EQUALS, CONTAINS) and actions (REPAIR, REPLACE)
 - **Features:**
   1. **Spare Parts Management:**
      - Add/Edit/Delete spare parts
      - Categories: Body Panels, Mechanical, Electrical, Interior, Glass, Tyres, AC, Exhaust
      - Pricing by car type (Hatchback, Sedan, SUV)
      - Each type has: Repair Price, Replace Price, Repair Labor, Replace Labor
-     - Brand-specific pricing overrides (e.g., BMW has different prices than Maruti)
+     - Brand-specific pricing overrides (e.g., BMW, Mercedes-Benz have different prices)
   2. **Question Rules:**
      - Link spare parts to inspection questions
      - Define conditions based on answer values
-     - Operators: equals, greater_than, less_than, between, contains
+     - Operators: equals, contains, greater_than, less_than, between
      - Actions: repair, replace, inspect_further
      - Priority levels: low, normal, high, critical
   3. **Cost Calculation API:**
@@ -118,16 +123,18 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
      - Takes question_id, answer, car_type, brand
      - Returns recommended repairs with costs
 - **Database Collections:**
-  - `repair_parts` - Spare parts with pricing
-  - `repair_rules` - Question-to-part rules
+  - `repair_parts` - 30 spare parts with pricing
+  - `repair_rules` - 96 question-to-part rules
+  - `inspection_qa_categories` - 13 Q&A categories with embedded questions
 - **Endpoints:**
-  - `GET/POST /api/repair-parts` - List/Create parts
+  - `GET/POST /api/repair-parts` - List/Create parts (30 parts)
   - `GET/PUT/DELETE /api/repair-parts/{id}` - Part CRUD
   - `GET /api/repair-parts/categories` - Part categories
-  - `GET/POST /api/repair-rules` - List/Create rules
+  - `GET/POST /api/repair-rules` - List/Create rules (96 rules)
   - `GET/PUT/DELETE /api/repair-rules/{id}` - Rule CRUD
-  - `GET /api/repair-rules/available-questions` - Questions for linking
+  - `GET /api/repair-rules/available-questions` - Questions for linking (38 questions)
   - `POST /api/repair-parts/calculate-cost` - Calculate repair cost
+- **Script:** `/app/backend/scripts/populate_repair_rules.py` - Populates sample data
 
 ### Inspection Editor UI Redesign - NEW (Feb 28, 2026)
 - **Tab Structure Reorganized:**
