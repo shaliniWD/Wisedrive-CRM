@@ -186,7 +186,20 @@ export default function LiveProgressModal({
   const [generatingShareUrl, setGeneratingShareUrl] = useState(false);
   const [editingAnswer, setEditingAnswer] = useState(null); // { questionId, categoryId }
   const [savingAnswer, setSavingAnswer] = useState(false);
-  const [selectedCategoryId, setSelectedCategoryId] = useState(null); // For filtering Q&A by category;
+  const [selectedCategoryId, setSelectedCategoryId] = useState(null); // For filtering Q&A by category
+  
+  // OBD Rescan state
+  const [requestingRescan, setRequestingRescan] = useState(false);
+  
+  // Repairs Module state
+  const [repairParts, setRepairParts] = useState([]);
+  const [repairRules, setRepairRules] = useState([]);
+  const [loadingRepairs, setLoadingRepairs] = useState(false);
+  const [calculatedRepairs, setCalculatedRepairs] = useState([]);
+  
+  // Track unsaved changes
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [originalData, setOriginalData] = useState(null);
   
   // Editable data state
   const [editData, setEditData] = useState({
