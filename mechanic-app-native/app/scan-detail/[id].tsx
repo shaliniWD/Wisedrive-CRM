@@ -15,6 +15,7 @@ import * as Clipboard from 'expo-clipboard';
 import { Colors, Spacing, FontSize, Radius } from '../../src/constants/theme';
 import { getScanSession } from '../../src/services/database';
 import { ScanSession, DTCResult, RawECUResponse, DTCCategoryColors } from '../../src/types';
+import { formatDateTime } from '../../src/utils/dateFormat';
 
 export default function ScanDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
