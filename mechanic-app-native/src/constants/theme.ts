@@ -65,8 +65,8 @@ export const FontSize = {
   xxxxl: 36,
 };
 
-export const APP_VERSION = '7.0.0';
-export const APP_BUILD = '7';
+export const APP_VERSION = '1.9.0';
+export const APP_BUILD = '19';
 export const DEFAULT_SCAN_DURATION = 120;
 export const MAX_BREADCRUMBS = 50;
 
