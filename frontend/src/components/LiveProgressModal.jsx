@@ -240,13 +240,19 @@ export default function LiveProgressModal({
   // Initialize edit data from inspection and live progress
   useEffect(() => {
     if (inspection && liveProgressData) {
+      // Handle assessment_summary - it might be an object or a string
+      let assessmentSummary = inspection.assessment_summary || '';
+      if (typeof assessmentSummary === 'object' && assessmentSummary !== null) {
+        assessmentSummary = assessmentSummary.overall || '';
+      }
+      
       setEditData({
         // From AI insights
         overall_rating: inspection.overall_rating || liveProgressData?.ai_report?.overall_rating || 0,
         recommended_to_buy: inspection.recommended_to_buy || liveProgressData?.ai_report?.recommended_to_buy || false,
         market_value_min: inspection.market_value_min || 0,
         market_value_max: inspection.market_value_max || 0,
-        assessment_summary: inspection.assessment_summary || '',
+        assessment_summary: assessmentSummary,
         key_highlights: inspection.key_highlights || [],
         
         // Vehicle
