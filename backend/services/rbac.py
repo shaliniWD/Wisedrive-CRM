@@ -30,15 +30,15 @@ class RBACService:
     
     # Tab visibility by role code
     TAB_VISIBILITY = {
-        CEO: ["leads", "customers", "inspections", "reports", "hr", "settings", "finance", "ad-analytics"],
-        CTO: ["leads", "customers", "inspections", "reports", "hr", "settings", "finance", "ad-analytics"],
+        CEO: ["leads", "customers", "inspections", "loans", "reports", "hr", "settings", "finance", "ad-analytics"],
+        CTO: ["leads", "customers", "inspections", "loans", "reports", "hr", "settings", "finance", "ad-analytics"],
         HR_MANAGER: ["leads", "hr", "finance", "ad-analytics"],  # HR sees Leads, HR Module (includes employees) and Finance
-        FINANCE_MANAGER: ["finance", "hr"],  # Finance Manager sees Finance and HR Module (for payroll)
-        COUNTRY_HEAD: ["leads", "customers", "inspections", "reports", "hr", "settings", "finance", "ad-analytics"],
-        SALES_HEAD: ["leads", "customers", "hr", "ad-analytics"],
-        INSPECTION_HEAD: ["customers", "inspections", "reports", "hr"],
-        SALES_LEAD: ["leads", "customers", "hr"],
-        INSPECTION_LEAD: ["customers", "inspections", "reports", "hr"],
+        FINANCE_MANAGER: ["finance", "hr", "loans"],  # Finance Manager sees Finance, HR Module and Loans
+        COUNTRY_HEAD: ["leads", "customers", "inspections", "loans", "reports", "hr", "settings", "finance", "ad-analytics"],
+        SALES_HEAD: ["leads", "customers", "loans", "hr", "ad-analytics"],
+        INSPECTION_HEAD: ["customers", "inspections", "loans", "reports", "hr"],
+        SALES_LEAD: ["leads", "customers", "loans", "hr"],
+        INSPECTION_LEAD: ["customers", "inspections", "loans", "reports", "hr"],
         SALES_EXEC: ["leads"],  # Sales executives ONLY see leads tab
         INSPECTION_COORD: ["inspections", "hr"],
         REPORT_REVIEWER: ["inspections", "reports", "hr"],
