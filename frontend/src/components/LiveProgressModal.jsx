@@ -1014,7 +1014,7 @@ export default function LiveProgressModal({
                   title={category.category_name}
                   icon={ClipboardList}
                   badge={`${category.answered_questions || 0}/${category.total_questions || 0}`}
-                  defaultOpen={catIdx === 0}
+                  defaultOpen={selectedCategoryId ? true : catIdx === 0}
                 >
                   <div className="space-y-3">
                     {category.questions?.map((q, qIdx) => {
