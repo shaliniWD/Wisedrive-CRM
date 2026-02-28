@@ -46,17 +46,25 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
     - Drag & drop upload with progress indicator
     - View, Replace, Delete functionality
     - Progress bar showing completion percentage
-  - **Comprehensive Credit Score Check via Experian API** ✅ ENHANCED
+  - **Comprehensive Credit Score Check via Experian & Equifax APIs** ✅ ENHANCED (Feb 28, 2026)
+    - **Dual Bureau Support:** Equifax (V1) and Experian (V4) APIs via Invincible Ocean
     - OTP-based verification (OTP sent to customer's mobile)
     - 3-step modal: Customer Info → OTP Verification → Credit Report
-    - **4-tab Credit Report View:**
-      - Overview: Merits (✓), Risks (⚠), Exposure (₹), Account/Balance summary
+    - **Bureau Selection:** Dropdown to choose between Equifax and Experian
+    - **Premium Fintech UI Design:**
+      - Animated Score Gauge with risk indicators
+      - Bento-style summary grid (Total Accounts, Active, Closed, Defaults)
+      - Outstanding balance breakdown (Total, Secured, Unsecured)
+      - Color-coded risk levels (Low/Moderate/Medium/High/Very High)
+    - **5-tab Credit Report View:**
+      - Overview: Strengths (✓), Concerns (⚠), Credit Enquiries Timeline
       - Accounts: Expandable account list with payment history visualization (color-coded DPD)
-      - Enquiries: Credit (hard) and Non-Credit (soft) pulls with recent details
-      - Profile: Personal info, address, PAN from bureau
-    - Score gauge with risk level indicators (Low/Moderate/Medium/High/Very High)
+      - Enquiries: Hard pulls and Soft pulls with detailed breakdown
+      - Profile: Personal info, address, PAN, score analysis from bureau
+      - Raw Data: Full JSON response for debugging/advanced use
     - Account type mapping (Personal Loan, Credit Card, Auto Loan, etc.)
     - Payment status color coding (Green=On Time, Yellow=1-30 DPD, Orange=31-60 DPD, Red=60+)
+    - **Note:** Both APIs return 500 errors from provider - awaiting activation on Monday
   - **Multi-vehicle support per customer** (dropdown shows "2 Cars", "3 Cars", etc.)
   - Vehicle loan details with Vaahan API integration
   - Per-vehicle bank eligibility checking (MOCKED with 70% approval rate)
