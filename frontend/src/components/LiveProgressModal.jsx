@@ -639,7 +639,8 @@ export default function LiveProgressModal({
                   </div>
                   
                   <div className="bg-white rounded-lg p-3 border col-span-2">
-                    <Label className="text-xs text-gray-500">Market Value Estimate</Label>
+                    <Label className="text-xs text-gray-500">Recommended Purchase Price</Label>
+                    <p className="text-xs text-green-600 mb-2">(5-10% below market average)</p>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-gray-500">₹</span>
                       <Input
@@ -660,20 +661,47 @@ export default function LiveProgressModal({
                         disabled={!canEdit}
                       />
                     </div>
-                    {/* Market Research Info */}
+                    
+                    {/* Market Research Results - Website-wise breakdown */}
                     {inspection?.market_price_research?.market_average > 0 && (
-                      <div className="mt-2 pt-2 border-t border-gray-100">
-                        <div className="flex items-center gap-1 text-xs text-gray-500">
-                          <Info className="h-3 w-3" />
-                          <span>
-                            Market avg: ₹{(inspection.market_price_research.market_average / 100000).toFixed(2)}L
-                            {inspection.market_price_research.sources_count > 0 && (
-                              <span className="text-blue-600 ml-1">
-                                ({inspection.market_price_research.sources_count} sources)
-                              </span>
-                            )}
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-semibold text-gray-700">Market Research Data</span>
+                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                            {inspection.market_price_research.sources_count} sources
                           </span>
                         </div>
+                        
+                        {/* Market Average */}
+                        <div className="bg-gray-50 rounded-lg p-2 mb-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs text-gray-600">Market Average:</span>
+                            <span className="text-sm font-bold text-gray-800">
+                              ₹{(inspection.market_price_research.market_average / 100000).toFixed(2)} Lakh
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center mt-1">
+                            <span className="text-xs text-gray-600">Range:</span>
+                            <span className="text-xs text-gray-700">
+                              ₹{(inspection.market_price_research.market_min / 100000).toFixed(2)}L - ₹{(inspection.market_price_research.market_max / 100000).toFixed(2)}L
+                            </span>
+                          </div>
+                        </div>
+                        
+                        {/* Website-wise breakdown */}
+                        {inspection.market_price_research.sources?.length > 0 && (
+                          <div className="space-y-1">
+                            <span className="text-xs text-gray-500">Prices by Source:</span>
+                            <div className="grid grid-cols-2 gap-1">
+                              {inspection.market_price_research.sources.slice(0, 6).map((source, idx) => (
+                                <div key={idx} className="flex items-center justify-between bg-white rounded px-2 py-1 border text-xs">
+                                  <span className="text-blue-600 font-medium">{source.source}</span>
+                                  <span className="text-gray-700">₹{(source.price / 100000).toFixed(2)}L</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
