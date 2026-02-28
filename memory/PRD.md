@@ -32,6 +32,18 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
   - `src/lib/api.ts` - API helpers (new OBD status endpoint)
   - `src/utils/dateFormat.ts` - NEW: Indian date format utilities (dd/MM/yyyy)
 
+### Loans Module
+- **Backend Models:** `/app/backend/models/loan.py`
+- **Frontend Page:** `/app/frontend/src/pages/LoansPage.jsx`
+- **Bank Master Page:** `/app/frontend/src/pages/BankMasterPage.jsx`
+- **Features:**
+  - Loan leads from inspection customers
+  - Bank master data management
+  - Document uploads (Salaried/Self-employed)
+  - Vehicle loan details with Vaahan integration
+  - Bank eligibility checking (mocked)
+  - Loan applications per vehicle per bank
+
 ## Third-Party Integrations
 - Firebase (Storage + Admin SDK)
 - Fast2SMS (OTP)
