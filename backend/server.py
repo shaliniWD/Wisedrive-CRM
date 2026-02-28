@@ -16254,10 +16254,12 @@ class CreditScoreOTPRequest(BaseModel):
     email: str
     gender: str  # "male" or "female"
     pin_code: str
+    bureau: str = "equifax"  # "equifax" (V1) or "experian" (V4)
 
 class CreditScoreVerifyRequest(BaseModel):
     token: str
     otp: str
+    bureau: str = "equifax"  # "equifax" (V1) or "experian" (V4)
 
 
 @api_router.post("/loan-leads/{lead_id}/credit-score/request-otp")
