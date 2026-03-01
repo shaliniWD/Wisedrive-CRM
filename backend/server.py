@@ -300,6 +300,7 @@ async def auto_migrate_bangalore_to_bengaluru():
     # If Bengaluru already exists and Bangalore doesn't, migration is mostly complete
     if bengaluru_city and not bangalore_city:
         aliases = bengaluru_city.get("aliases", [])
+        original_aliases = set(aliases)
         # Clean up: remove city name from aliases if present (bug fix)
         aliases = [a for a in aliases if a.lower() != NEW_NAME.lower()]
         # Ensure OLD_NAME is in aliases
@@ -309,12 +310,14 @@ async def auto_migrate_bangalore_to_bengaluru():
         if "BLR" not in aliases:
             aliases.append("BLR")
         # Update if changed
-        if set(aliases) != set(bengaluru_city.get("aliases", [])):
+        if set(aliases) != original_aliases:
             await db.cities.update_one(
                 {"id": bengaluru_city["id"]},
                 {"$set": {"aliases": aliases}}
             )
             logger.info(f"Cleaned up aliases for '{NEW_NAME}': {aliases}")
+        else:
+            logger.info(f"City '{NEW_NAME}' already correctly configured with aliases: {aliases}")
         return
     
     # If neither exists, create Bengaluru with Bangalore as alias
