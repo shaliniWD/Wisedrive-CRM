@@ -2233,3 +2233,682 @@ async def remove_charge_from_offer(
         "new_total_charges": total_charges,
         "new_net_disbursal": net_disbursal
     }
+
+
+# ========================
+# CUSTOMER PROFILE ENDPOINTS
+# ========================
+
+# Location classification based on city tier
+METRO_CITIES = ["Mumbai", "Delhi", "Bangalore", "Bengaluru", "Chennai", "Kolkata", "Hyderabad", "Pune"]
+URBAN_CITIES = ["Ahmedabad", "Surat", "Jaipur", "Lucknow", "Kanpur", "Nagpur", "Indore", "Thane", "Bhopal", 
+                "Visakhapatnam", "Patna", "Vadodara", "Ghaziabad", "Ludhiana", "Agra", "Nashik", "Faridabad",
+                "Meerut", "Rajkot", "Varanasi", "Srinagar", "Aurangabad", "Dhanbad", "Amritsar", "Allahabad"]
+
+
+def classify_location(city_name: str, pincode: str = None) -> str:
+    """Classify location as METRO, URBAN, SEMI_URBAN, or RURAL"""
+    if not city_name:
+        return None
+    
+    city_upper = city_name.upper().strip()
+    
+    # Check metro cities
+    for metro in METRO_CITIES:
+        if metro.upper() in city_upper or city_upper in metro.upper():
+            return "METRO"
+    
+    # Check urban cities
+    for urban in URBAN_CITIES:
+        if urban.upper() in city_upper or city_upper in urban.upper():
+            return "URBAN"
+    
+    # Use pincode if available (first digit indicates region)
+    if pincode and len(pincode) >= 6:
+        # Metro areas typically have lower pincodes
+        try:
+            pin_prefix = int(pincode[:2])
+            # Basic heuristic - can be refined with actual pincode data
+            if pin_prefix in [11, 40, 56, 60, 50, 70]:  # Delhi, Mumbai, Bangalore, Chennai, Hyderabad, Kolkata
+                return "METRO"
+        except:
+            pass
+    
+    # Default to semi-urban for unrecognized cities
+    return "SEMI_URBAN"
+
+
+def calculate_vehicle_age(car_year: int) -> dict:
+    """Calculate vehicle age and eligibility flags"""
+    if not car_year:
+        return {"age_years": None, "is_within_10_years": False, "is_within_15_years": False}
+    
+    current_year = datetime.now().year
+    age = current_year - car_year
+    
+    return {
+        "age_years": age,
+        "is_within_10_years": age <= 10,
+        "is_within_15_years": age <= 15
+    }
+
+
+EXCLUDED_MAKES_INDIA = {
+    "CHEVROLET": "Chevrolet exited India - no service network available",
+    "FORD": "Ford exited India - limited service network",
+    "FIAT": "Fiat exited India - limited parts availability"
+}
+
+
+def check_excluded_make(car_make: str) -> dict:
+    """Check if car make is excluded from financing"""
+    if not car_make:
+        return {"is_excluded": False, "reason": None}
+    
+    make_upper = car_make.upper().strip()
+    for excluded, reason in EXCLUDED_MAKES_INDIA.items():
+        if excluded in make_upper:
+            return {"is_excluded": True, "reason": reason}
+    
+    return {"is_excluded": False, "reason": None}
+
+
+@router.get("/{lead_id}/profile")
+async def get_customer_profile(
+    lead_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get customer profile for a loan lead"""
+    lead = await db.loan_leads.find_one({"id": lead_id}, {"_id": 0})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Loan lead not found")
+    
+    # Check if profile exists
+    profile = await db.customer_profiles.find_one({"loan_lead_id": lead_id}, {"_id": 0})
+    
+    if not profile:
+        # Create initial profile
+        profile = await create_initial_profile(lead_id, lead)
+    
+    return profile
+
+
+async def create_initial_profile(lead_id: str, lead: dict) -> dict:
+    """Create initial customer profile with auto-detected values"""
+    now = datetime.now(timezone.utc)
+    
+    # Auto-detect location
+    city_name = lead.get("city_name", "")
+    location_type = classify_location(city_name)
+    
+    # Analyze vehicles
+    vehicles = lead.get("vehicles", [])
+    vehicle_analyses = []
+    
+    for v in vehicles:
+        age_info = calculate_vehicle_age(v.get("car_year"))
+        excluded_info = check_excluded_make(v.get("car_make"))
+        
+        vehicle_analyses.append({
+            "vehicle_id": v.get("vehicle_id"),
+            "car_number": v.get("car_number"),
+            "car_make": v.get("car_make"),
+            "car_model": v.get("car_model"),
+            "car_year": v.get("car_year"),
+            "vehicle_valuation": v.get("vehicle_valuation"),
+            "valuation_source": "MANUAL" if v.get("vehicle_valuation") else None,
+            "vehicle_age_years": age_info["age_years"],
+            "is_within_10_years": age_info["is_within_10_years"],
+            "is_within_15_years": age_info["is_within_15_years"],
+            "is_excluded_make": excluded_info["is_excluded"],
+            "excluded_make_reason": excluded_info["reason"],
+            "eligible_banks_count": 0,
+            "max_loan_eligible": None,
+            "recommended_loan_amount": None
+        })
+    
+    # Extract KYC from lead
+    kyc = {
+        "full_name": lead.get("customer_name"),
+        "mobile_primary": lead.get("customer_phone"),
+        "email": lead.get("customer_email"),
+        "current_city": city_name,
+        "employment_type": lead.get("customer_type")
+    }
+    
+    # Create profile
+    profile = {
+        "id": str(uuid.uuid4()),
+        "loan_lead_id": lead_id,
+        "profile_status": "INCOMPLETE",
+        "profile_score": 0,
+        "bank_statement_analysis": None,
+        "bank_statement_document_id": None,
+        "credit_profile": None,
+        "location_type": location_type,
+        "location_auto_detected": True,
+        "location_city": city_name,
+        "location_pincode": None,
+        "vehicle_analyses": vehicle_analyses,
+        "kyc": kyc,
+        "overall_eligibility_score": None,
+        "eligibility_factors": [],
+        "recommended_banks": [],
+        "created_at": now.isoformat(),
+        "updated_at": now.isoformat(),
+        "analyzed_by": None
+    }
+    
+    # Calculate initial profile score
+    profile["profile_score"] = calculate_profile_score(profile)
+    profile["profile_status"] = get_profile_status(profile["profile_score"])
+    
+    # Save to database
+    await db.customer_profiles.insert_one(profile)
+    
+    return profile
+
+
+def calculate_profile_score(profile: dict) -> int:
+    """Calculate profile completeness score (0-100)"""
+    score = 0
+    
+    # Bank statement analysis (25 points)
+    if profile.get("bank_statement_analysis"):
+        score += 25
+    
+    # Credit profile (25 points)
+    if profile.get("credit_profile"):
+        score += 25
+    
+    # Location (10 points)
+    if profile.get("location_type"):
+        score += 10
+    
+    # Vehicle analysis (20 points)
+    vehicles = profile.get("vehicle_analyses", [])
+    if vehicles:
+        complete_vehicles = sum(1 for v in vehicles if v.get("vehicle_valuation"))
+        score += min(20, (complete_vehicles / len(vehicles)) * 20) if vehicles else 0
+    
+    # KYC (20 points)
+    kyc = profile.get("kyc", {})
+    kyc_fields = ["full_name", "mobile_primary", "pan_number", "current_address", "employment_type"]
+    filled = sum(1 for f in kyc_fields if kyc.get(f))
+    score += (filled / len(kyc_fields)) * 20
+    
+    return int(score)
+
+
+def get_profile_status(score: int) -> str:
+    """Get profile status based on score"""
+    if score >= 90:
+        return "VERIFIED"
+    elif score >= 60:
+        return "COMPLETE"
+    elif score >= 30:
+        return "PARTIAL"
+    return "INCOMPLETE"
+
+
+@router.put("/{lead_id}/profile")
+async def update_customer_profile(
+    lead_id: str,
+    data: CustomerProfileUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update customer profile"""
+    profile = await db.customer_profiles.find_one({"loan_lead_id": lead_id})
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    
+    now = datetime.now(timezone.utc)
+    updates = {"updated_at": now.isoformat()}
+    
+    if data.location_type:
+        updates["location_type"] = data.location_type
+        updates["location_auto_detected"] = False
+    
+    if data.location_pincode:
+        updates["location_pincode"] = data.location_pincode
+    
+    if data.kyc:
+        # Merge KYC data
+        existing_kyc = profile.get("kyc", {})
+        new_kyc = data.kyc.model_dump(exclude_none=True)
+        merged_kyc = {**existing_kyc, **new_kyc}
+        updates["kyc"] = merged_kyc
+    
+    await db.customer_profiles.update_one(
+        {"loan_lead_id": lead_id},
+        {"$set": updates}
+    )
+    
+    # Recalculate score
+    updated_profile = await db.customer_profiles.find_one({"loan_lead_id": lead_id}, {"_id": 0})
+    new_score = calculate_profile_score(updated_profile)
+    new_status = get_profile_status(new_score)
+    
+    await db.customer_profiles.update_one(
+        {"loan_lead_id": lead_id},
+        {"$set": {"profile_score": new_score, "profile_status": new_status}}
+    )
+    
+    return await db.customer_profiles.find_one({"loan_lead_id": lead_id}, {"_id": 0})
+
+
+@router.post("/{lead_id}/profile/analyze-bank-statement")
+async def analyze_bank_statement_endpoint(
+    lead_id: str,
+    document_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Analyze bank statement document using AI"""
+    # Get the lead
+    lead = await db.loan_leads.find_one({"id": lead_id})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Loan lead not found")
+    
+    # Find the document
+    documents = lead.get("documents", [])
+    doc = next((d for d in documents if d.get("id") == document_id), None)
+    
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    
+    if doc.get("document_type") != "bank_statement":
+        raise HTTPException(status_code=400, detail="Document is not a bank statement")
+    
+    file_url = doc.get("file_url")
+    if not file_url:
+        raise HTTPException(status_code=400, detail="Document has no file URL")
+    
+    # Get download URL if it's a Firebase path
+    try:
+        if storage_service:
+            download_url = await storage_service.get_download_url(file_url)
+        else:
+            download_url = file_url
+    except Exception as e:
+        logger.error(f"Failed to get download URL: {e}")
+        raise HTTPException(status_code=500, detail="Failed to access document")
+    
+    # Analyze using AI
+    try:
+        analysis_result = await analyze_bank_statement_from_url(download_url, storage_service)
+    except Exception as e:
+        logger.error(f"Bank statement analysis failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
+    
+    if not analysis_result.get("success"):
+        raise HTTPException(
+            status_code=500, 
+            detail=analysis_result.get("error", "Analysis failed")
+        )
+    
+    # Update profile with analysis
+    now = datetime.now(timezone.utc)
+    
+    bank_statement_analysis = {
+        "bank_name": analysis_result.get("bank_name"),
+        "account_number_masked": analysis_result.get("account_number_masked"),
+        "statement_period_from": analysis_result.get("statement_period_from"),
+        "statement_period_to": analysis_result.get("statement_period_to"),
+        "average_bank_balance": analysis_result.get("average_bank_balance"),
+        "minimum_balance": analysis_result.get("minimum_balance"),
+        "maximum_balance": analysis_result.get("maximum_balance"),
+        "end_of_month_balances": analysis_result.get("end_of_month_balances", []),
+        "total_credits": analysis_result.get("total_credits"),
+        "average_monthly_credits": analysis_result.get("average_monthly_credits"),
+        "salary_credits_identified": analysis_result.get("salary_credits_identified"),
+        "regular_income_sources": analysis_result.get("regular_income_sources", []),
+        "total_debits": analysis_result.get("total_debits"),
+        "average_monthly_debits": analysis_result.get("average_monthly_debits"),
+        "emi_payments_identified": analysis_result.get("emi_payments_identified", []),
+        "loan_repayments_total": analysis_result.get("loan_repayments_total"),
+        "high_value_transactions": analysis_result.get("high_value_transactions", []),
+        "bounce_count": analysis_result.get("bounce_count", 0),
+        "low_balance_days": analysis_result.get("low_balance_days", 0),
+        "cash_withdrawal_ratio": analysis_result.get("cash_withdrawal_ratio"),
+        "analyzed_at": now.isoformat(),
+        "confidence_score": analysis_result.get("confidence_score"),
+        "analysis_notes": analysis_result.get("analysis_notes"),
+        "raw_analysis": analysis_result
+    }
+    
+    # Ensure profile exists
+    profile = await db.customer_profiles.find_one({"loan_lead_id": lead_id})
+    if not profile:
+        await create_initial_profile(lead_id, lead)
+    
+    # Update profile
+    await db.customer_profiles.update_one(
+        {"loan_lead_id": lead_id},
+        {
+            "$set": {
+                "bank_statement_analysis": bank_statement_analysis,
+                "bank_statement_document_id": document_id,
+                "updated_at": now.isoformat()
+            }
+        }
+    )
+    
+    # Recalculate profile score
+    updated_profile = await db.customer_profiles.find_one({"loan_lead_id": lead_id}, {"_id": 0})
+    new_score = calculate_profile_score(updated_profile)
+    new_status = get_profile_status(new_score)
+    
+    await db.customer_profiles.update_one(
+        {"loan_lead_id": lead_id},
+        {"$set": {"profile_score": new_score, "profile_status": new_status}}
+    )
+    
+    return {
+        "success": True,
+        "message": "Bank statement analyzed successfully",
+        "analysis": bank_statement_analysis
+    }
+
+
+@router.post("/{lead_id}/profile/sync-credit-report")
+async def sync_credit_report_to_profile(
+    lead_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Sync credit report from lead to profile"""
+    lead = await db.loan_leads.find_one({"id": lead_id})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Loan lead not found")
+    
+    credit_report = lead.get("credit_score_full_report")
+    if not credit_report:
+        raise HTTPException(status_code=400, detail="No credit report available. Please check credit score first.")
+    
+    # Extract key metrics from credit report
+    credit_profile = {
+        "credit_score": lead.get("credit_score"),
+        "score_rating": get_score_rating(lead.get("credit_score")),
+        "bureau_source": credit_report.get("bureau", "unknown"),
+        "total_accounts": 0,
+        "active_accounts": 0,
+        "closed_accounts": 0,
+        "delinquent_accounts": 0,
+        "total_outstanding": 0,
+        "secured_outstanding": 0,
+        "unsecured_outstanding": 0,
+        "on_time_payment_percent": None,
+        "max_dpd_last_12_months": 0,
+        "existing_auto_loans": [],
+        "existing_personal_loans": [],
+        "credit_cards": [],
+        "has_write_offs": False,
+        "has_settlements": False,
+        "has_defaults": False,
+        "enquiry_count_last_6_months": 0,
+        "analyzed_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    # Parse accounts if available
+    accounts = credit_report.get("accounts", [])
+    for acc in accounts:
+        if acc.get("account_status") == "Active":
+            credit_profile["active_accounts"] += 1
+        elif acc.get("account_status") == "Closed":
+            credit_profile["closed_accounts"] += 1
+        
+        if acc.get("dpd", 0) > 0:
+            credit_profile["delinquent_accounts"] += 1
+        
+        outstanding = acc.get("current_balance", 0) or 0
+        credit_profile["total_outstanding"] += outstanding
+        
+        acc_type = acc.get("account_type", "").lower()
+        if "auto" in acc_type or "vehicle" in acc_type or "car" in acc_type:
+            credit_profile["existing_auto_loans"].append({
+                "lender": acc.get("subscriber_name"),
+                "amount": acc.get("sanctioned_amount"),
+                "emi": acc.get("emi_amount"),
+                "status": acc.get("account_status")
+            })
+        elif "personal" in acc_type:
+            credit_profile["existing_personal_loans"].append({
+                "lender": acc.get("subscriber_name"),
+                "amount": acc.get("sanctioned_amount"),
+                "emi": acc.get("emi_amount"),
+                "status": acc.get("account_status")
+            })
+        elif "credit card" in acc_type or "card" in acc_type:
+            credit_profile["credit_cards"].append({
+                "bank": acc.get("subscriber_name"),
+                "limit": acc.get("credit_limit"),
+                "utilization": (outstanding / acc.get("credit_limit", 1) * 100) if acc.get("credit_limit") else None
+            })
+    
+    credit_profile["total_accounts"] = credit_profile["active_accounts"] + credit_profile["closed_accounts"]
+    
+    # Ensure profile exists
+    profile = await db.customer_profiles.find_one({"loan_lead_id": lead_id})
+    if not profile:
+        await create_initial_profile(lead_id, lead)
+    
+    # Update profile
+    now = datetime.now(timezone.utc)
+    await db.customer_profiles.update_one(
+        {"loan_lead_id": lead_id},
+        {
+            "$set": {
+                "credit_profile": credit_profile,
+                "updated_at": now.isoformat()
+            }
+        }
+    )
+    
+    # Recalculate profile score
+    updated_profile = await db.customer_profiles.find_one({"loan_lead_id": lead_id}, {"_id": 0})
+    new_score = calculate_profile_score(updated_profile)
+    new_status = get_profile_status(new_score)
+    
+    await db.customer_profiles.update_one(
+        {"loan_lead_id": lead_id},
+        {"$set": {"profile_score": new_score, "profile_status": new_status}}
+    )
+    
+    return {
+        "success": True,
+        "message": "Credit report synced to profile",
+        "credit_profile": credit_profile
+    }
+
+
+def get_score_rating(score: int) -> str:
+    """Get rating for credit score"""
+    if not score:
+        return None
+    if score >= 750:
+        return "EXCELLENT"
+    elif score >= 700:
+        return "GOOD"
+    elif score >= 650:
+        return "FAIR"
+    elif score >= 550:
+        return "POOR"
+    return "VERY_POOR"
+
+
+@router.post("/{lead_id}/profile/calculate-eligibility")
+async def calculate_eligibility(
+    lead_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Calculate overall eligibility based on profile data"""
+    profile = await db.customer_profiles.find_one({"loan_lead_id": lead_id}, {"_id": 0})
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found. Please fetch profile first.")
+    
+    # Get all active banks
+    banks = await db.bank_master.find({"is_active": True}, {"_id": 0}).to_list(50)
+    
+    # Calculate eligibility factors
+    factors = []
+    total_weight = 0
+    weighted_score = 0
+    
+    # 1. Credit Score (30% weight)
+    credit_profile = profile.get("credit_profile", {})
+    credit_score = credit_profile.get("credit_score") if credit_profile else None
+    if credit_score:
+        credit_factor = min(100, (credit_score - 300) / 5.5)  # Normalize 300-850 to 0-100
+        factors.append({
+            "factor": "Credit Score",
+            "value": credit_score,
+            "score": int(credit_factor),
+            "weight": 30,
+            "notes": f"Score: {credit_score} ({credit_profile.get('score_rating', 'N/A')})"
+        })
+        weighted_score += credit_factor * 30
+        total_weight += 30
+    else:
+        factors.append({
+            "factor": "Credit Score",
+            "value": None,
+            "score": 0,
+            "weight": 30,
+            "notes": "Not checked - Please check credit score"
+        })
+    
+    # 2. Bank Statement / ABB (25% weight)
+    bank_analysis = profile.get("bank_statement_analysis", {})
+    if bank_analysis:
+        abb = bank_analysis.get("average_bank_balance", 0)
+        bounce_count = bank_analysis.get("bounce_count", 0)
+        
+        # Higher ABB is better (normalize to 0-100 based on 50k-5L range)
+        abb_score = min(100, max(0, (abb - 10000) / 4000)) if abb else 0
+        
+        # Deduct for bounces
+        abb_score = max(0, abb_score - (bounce_count * 10))
+        
+        factors.append({
+            "factor": "Bank Statement (ABB)",
+            "value": abb,
+            "score": int(abb_score),
+            "weight": 25,
+            "notes": f"ABB: ₹{abb:,.0f}, Bounces: {bounce_count}" if abb else "Not analyzed"
+        })
+        weighted_score += abb_score * 25
+        total_weight += 25
+    else:
+        factors.append({
+            "factor": "Bank Statement (ABB)",
+            "value": None,
+            "score": 0,
+            "weight": 25,
+            "notes": "Not analyzed - Please analyze bank statement"
+        })
+    
+    # 3. Location (10% weight)
+    location_type = profile.get("location_type")
+    location_scores = {"METRO": 100, "URBAN": 80, "SEMI_URBAN": 60, "RURAL": 40}
+    location_score = location_scores.get(location_type, 50)
+    factors.append({
+        "factor": "Location",
+        "value": location_type,
+        "score": location_score,
+        "weight": 10,
+        "notes": f"{location_type or 'Unknown'} - {profile.get('location_city', 'N/A')}"
+    })
+    weighted_score += location_score * 10
+    total_weight += 10
+    
+    # 4. Vehicle Analysis (25% weight)
+    vehicle_analyses = profile.get("vehicle_analyses", [])
+    if vehicle_analyses:
+        vehicle_scores = []
+        for v in vehicle_analyses:
+            v_score = 0
+            if v.get("vehicle_valuation"):
+                v_score += 40  # Has valuation
+            if v.get("is_within_10_years"):
+                v_score += 40  # Good age
+            elif v.get("is_within_15_years"):
+                v_score += 20  # Acceptable age
+            if not v.get("is_excluded_make"):
+                v_score += 20  # Not excluded make
+            vehicle_scores.append(v_score)
+        
+        avg_vehicle_score = sum(vehicle_scores) / len(vehicle_scores) if vehicle_scores else 0
+        factors.append({
+            "factor": "Vehicle Analysis",
+            "value": len(vehicle_analyses),
+            "score": int(avg_vehicle_score),
+            "weight": 25,
+            "notes": f"{len(vehicle_analyses)} vehicle(s) analyzed"
+        })
+        weighted_score += avg_vehicle_score * 25
+        total_weight += 25
+    else:
+        factors.append({
+            "factor": "Vehicle Analysis",
+            "value": 0,
+            "score": 0,
+            "weight": 25,
+            "notes": "No vehicles added"
+        })
+    
+    # 5. KYC Completeness (10% weight)
+    kyc = profile.get("kyc", {})
+    kyc_fields = ["full_name", "mobile_primary", "pan_number", "current_address", "employment_type", "monthly_income"]
+    kyc_filled = sum(1 for f in kyc_fields if kyc.get(f))
+    kyc_score = (kyc_filled / len(kyc_fields)) * 100
+    factors.append({
+        "factor": "KYC Completeness",
+        "value": f"{kyc_filled}/{len(kyc_fields)}",
+        "score": int(kyc_score),
+        "weight": 10,
+        "notes": f"{kyc_filled} of {len(kyc_fields)} fields complete"
+    })
+    weighted_score += kyc_score * 10
+    total_weight += 10
+    
+    # Calculate overall score
+    overall_score = int(weighted_score / total_weight) if total_weight > 0 else 0
+    
+    # Determine recommended banks based on eligibility
+    recommended_banks = []
+    for bank in banks:
+        rules = bank.get("eligibility_rules", {})
+        
+        # Check credit score requirement
+        min_credit = rules.get("min_credit_score", 0)
+        if credit_score and credit_score >= min_credit:
+            recommended_banks.append({
+                "bank_id": bank["id"],
+                "bank_name": bank["bank_name"],
+                "reason": "Meets credit score requirement"
+            })
+    
+    # Sort by bank name
+    recommended_banks.sort(key=lambda x: x["bank_name"])
+    
+    # Update profile
+    now = datetime.now(timezone.utc)
+    await db.customer_profiles.update_one(
+        {"loan_lead_id": lead_id},
+        {
+            "$set": {
+                "overall_eligibility_score": overall_score,
+                "eligibility_factors": factors,
+                "recommended_banks": [b["bank_id"] for b in recommended_banks],
+                "updated_at": now.isoformat()
+            }
+        }
+    )
+    
+    return {
+        "success": True,
+        "overall_eligibility_score": overall_score,
+        "eligibility_factors": factors,
+        "recommended_banks": recommended_banks,
+        "profile_status": profile.get("profile_status")
+    }
+
