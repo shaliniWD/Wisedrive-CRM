@@ -1102,9 +1102,11 @@ const LoanProcessingModal = ({ isOpen, onClose, lead, onUpdate }) => {
   const [checking, setChecking] = useState(null);
   const [vehicleEligibility, setVehicleEligibility] = useState({});
   const [applying, setApplying] = useState(null);
+  const [bankOffersModal, setBankOffersModal] = useState({ open: false, vehicle: null, application: null });
   
   const vehicles = lead?.vehicles || [];
   const applications = lead?.applications || [];
+  const loanOffers = lead?.loan_offers || [];
   
   const handleCheckEligibility = async (vehicleId) => {
     const vehicle = vehicles.find(v => v.vehicle_id === vehicleId);
