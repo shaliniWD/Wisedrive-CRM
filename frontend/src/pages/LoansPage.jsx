@@ -97,8 +97,7 @@ export default function LoansPage() {
   
   // Modals
   const [selectedLead, setSelectedLead] = useState(null);
-  const [documentsModalOpen, setDocumentsModalOpen] = useState(false);
-  const [vehicleModalOpen, setVehicleModalOpen] = useState(false);
+  const [customerDetailsModalOpen, setCustomerDetailsModalOpen] = useState(false);
   const [processingModalOpen, setProcessingModalOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [statusModalOpen, setStatusModalOpen] = useState(false);
