@@ -278,6 +278,7 @@ async def auto_migrate_bangalore_to_bengaluru():
     1. The city is named "Bengaluru" (official name)
     2. "Bangalore" is an alias
     3. All existing data references are updated
+    4. No duplicate aliases exist (city name should NOT be in aliases)
     
     This runs on every startup but only makes changes if needed.
     """
@@ -296,17 +297,24 @@ async def auto_migrate_bangalore_to_bengaluru():
         {"_id": 0}
     )
     
-    # If Bengaluru already exists and Bangalore doesn't, migration is complete
+    # If Bengaluru already exists and Bangalore doesn't, migration is mostly complete
     if bengaluru_city and not bangalore_city:
-        # Just verify Bangalore is in aliases
         aliases = bengaluru_city.get("aliases", [])
+        # Clean up: remove city name from aliases if present (bug fix)
+        aliases = [a for a in aliases if a.lower() != NEW_NAME.lower()]
+        # Ensure OLD_NAME is in aliases
         if OLD_NAME not in aliases:
             aliases.append(OLD_NAME)
+        # Ensure BLR is in aliases
+        if "BLR" not in aliases:
+            aliases.append("BLR")
+        # Update if changed
+        if set(aliases) != set(bengaluru_city.get("aliases", [])):
             await db.cities.update_one(
                 {"id": bengaluru_city["id"]},
                 {"$set": {"aliases": aliases}}
             )
-            logger.info(f"Added '{OLD_NAME}' as alias to '{NEW_NAME}'")
+            logger.info(f"Cleaned up aliases for '{NEW_NAME}': {aliases}")
         return
     
     # If neither exists, create Bengaluru with Bangalore as alias
