@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
-import { hrApi, rolesApi, departmentsApi, teamsApi, payrollApi } from '@/services/api';
+import { hrApi, rolesApi, departmentsApi, teamsApi, payrollApi, citiesApi } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
