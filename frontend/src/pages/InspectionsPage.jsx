@@ -465,6 +465,38 @@ export default function InspectionsPage() {
       console.error('Failed to load mechanics:', error);
     }
   }, []);
+  
+  // Fetch city alias map for mechanic matching
+  const fetchCityAliases = useCallback(async () => {
+    try {
+      const response = await citiesApi.getAll();
+      const citiesData = response.data || [];
+      
+      // Build a map: { alias.toLowerCase() => canonicalCityName.toLowerCase() }
+      // And also: { canonicalCityName.toLowerCase() => [all valid names including aliases] }
+      const aliasMap = {};
+      citiesData.forEach(city => {
+        const canonical = city.name?.toLowerCase()?.trim();
+        if (!canonical) return;
+        
+        // Map the canonical name to itself
+        aliasMap[canonical] = canonical;
+        
+        // Map each alias to the canonical name
+        const aliases = city.aliases || [];
+        aliases.forEach(alias => {
+          if (alias) {
+            aliasMap[alias.toLowerCase().trim()] = canonical;
+          }
+        });
+      });
+      
+      setCityAliasMap(aliasMap);
+      console.log('City alias map loaded:', Object.keys(aliasMap).length, 'entries');
+    } catch (error) {
+      console.error('Failed to load city aliases:', error);
+    }
+  }, []);
 
   // Handle Collect Balance action - Generate Payment Link
   const handleCollectBalance = async (sendWhatsApp = true) => {
