@@ -13082,6 +13082,16 @@ from routes.loans import router as loans_router, init_loans_routes
 init_loans_routes(db, get_current_user, get_storage_service())
 api_router.include_router(loans_router, tags=["Loans"])
 
+# Import and include customers router (refactored from server.py)
+from routes.customers import router as customers_router, init_customers_routes
+init_customers_routes(db, get_current_user, rbac_service)
+api_router.include_router(customers_router, tags=["Customers"])
+
+# Import and include finance router (refactored from server.py)
+from routes.finance import router as finance_router, init_finance_routes
+init_finance_routes(db, get_current_user)
+api_router.include_router(finance_router, tags=["Finance"])
+
 # Import and include ESS Mobile API routes
 from routes_ess import auth as ess_auth
 from routes_ess import leave as ess_leave
