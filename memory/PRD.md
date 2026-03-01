@@ -120,8 +120,15 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
   - Document Handling Fee
   - RTO Charges
   - Insurance Charges
-  - Valuation Charges ✅ NEW
-  - Stamp Duty Amount ✅ NEW
+  - Valuation Charges
+  - Stamp Duty Amount
+- **LTV-Based Loan Calculation:** ✅ NEW
+  - LTV % from Bank Master (editable per offer)
+  - Car Valuation from Vehicle data
+  - Loan Amount = LTV × Car Valuation (auto-calculated, editable)
+  - Interest Rate prefilled from Bank Master
+  - Tenure prefilled from Vehicle's expected tenure
+  - EMI auto-calculated using standard formula
 - **Features:**
   - Track Loan Amount Approved + Loan Insurance = Total Loan Amount
   - Add charges from dropdown of saved charge types
@@ -132,7 +139,7 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
   - Multiple offers from different banks for comparison
   - Manual offer entry for banker-approved exceptions
   - Accept offer flow updates application status
-- **Testing:** ✅ 100% (13/13 backend tests, all frontend features verified)
+- **Testing:** ✅ Verified via screenshots
 
 ### Backend Modularization - MAJOR REFACTOR (Mar 1, 2026)
 - **Purpose:** Break down monolithic server.py into smaller, maintainable router modules
