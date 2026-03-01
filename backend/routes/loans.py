@@ -1111,3 +1111,627 @@ async def update_loan_application(
     
     updated = await db.loan_leads.find_one({"id": lead_id}, {"_id": 0})
     return {"message": "Application updated", "application": updated["applications"][app_index]}
+
+
+# ========================
+# LOAN OFFERS
+# ========================
+
+@router.get("/loan-leads/{lead_id}/offers")
+async def get_loan_offers(
+    lead_id: str,
+    current_user: dict = Depends(lambda: get_current_user)
+):
+    """Get all loan offers for a lead"""
+    lead = await db.loan_leads.find_one({"id": lead_id}, {"_id": 0})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Loan lead not found")
+    
+    return lead.get("loan_offers", [])
+
+
+@router.post("/loan-leads/{lead_id}/offers")
+async def create_loan_offer(
+    lead_id: str,
+    offer_data: LoanOfferCreate,
+    current_user: dict = Depends(lambda: get_current_user)
+):
+    """Create a new loan offer from a bank (after approval)"""
+    lead = await db.loan_leads.find_one({"id": lead_id}, {"_id": 0})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Loan lead not found")
+    
+    # Find the application
+    application = None
+    for app in lead.get("applications", []):
+        if app.get("id") == offer_data.application_id:
+            application = app
+            break
+    
+    if not application:
+        raise HTTPException(status_code=404, detail="Application not found")
+    
+    # Get bank details
+    bank = await db.bank_master.find_one({"id": application["bank_id"]}, {"_id": 0})
+    if not bank:
+        raise HTTPException(status_code=404, detail="Bank not found")
+    
+    now = datetime.now(timezone.utc)
+    
+    # Calculate total loan amount
+    total_loan_amount = offer_data.loan_amount_approved + offer_data.loan_insurance
+    
+    # Build charges list
+    charges = []
+    total_charges = 0
+    
+    # Processing Fee
+    if offer_data.processing_fee_percent is not None:
+        proc_fee = round(offer_data.loan_amount_approved * offer_data.processing_fee_percent / 100, 0)
+        charges.append({
+            "charge_type": "processing_fee",
+            "charge_name": "Processing Fee",
+            "amount": proc_fee,
+            "is_percentage": True,
+            "percentage_value": offer_data.processing_fee_percent,
+            "is_waived": False,
+            "is_negotiable": True,
+            "notes": f"{offer_data.processing_fee_percent}% of loan amount"
+        })
+        total_charges += proc_fee
+    elif offer_data.processing_fee_amount is not None:
+        charges.append({
+            "charge_type": "processing_fee",
+            "charge_name": "Processing Fee",
+            "amount": offer_data.processing_fee_amount,
+            "is_percentage": False,
+            "is_waived": False,
+            "is_negotiable": True,
+            "notes": None
+        })
+        total_charges += offer_data.processing_fee_amount
+    
+    # Document Handling Fee
+    if offer_data.document_handling_fee:
+        charges.append({
+            "charge_type": "document_handling",
+            "charge_name": "Document Handling Fee",
+            "amount": offer_data.document_handling_fee,
+            "is_percentage": False,
+            "is_waived": False,
+            "is_negotiable": True,
+            "notes": None
+        })
+        total_charges += offer_data.document_handling_fee
+    
+    # RTO Charges
+    if offer_data.rto_charges:
+        charges.append({
+            "charge_type": "rto_charges",
+            "charge_name": "RTO Charges",
+            "amount": offer_data.rto_charges,
+            "is_percentage": False,
+            "is_waived": False,
+            "is_negotiable": True,
+            "notes": None
+        })
+        total_charges += offer_data.rto_charges
+    
+    # Insurance Charges
+    if offer_data.insurance_charges:
+        charges.append({
+            "charge_type": "insurance_charges",
+            "charge_name": "Insurance Charges",
+            "amount": offer_data.insurance_charges,
+            "is_percentage": False,
+            "is_waived": False,
+            "is_negotiable": True,
+            "notes": "Vehicle insurance required"
+        })
+        total_charges += offer_data.insurance_charges
+    
+    # Other charges
+    if offer_data.other_charges:
+        for other in offer_data.other_charges:
+            charges.append({
+                "charge_type": "other",
+                "charge_name": other.get("name", "Other Charge"),
+                "amount": other.get("amount", 0),
+                "is_percentage": False,
+                "is_waived": False,
+                "is_negotiable": True,
+                "notes": other.get("notes")
+            })
+            total_charges += other.get("amount", 0)
+    
+    # Calculate EMI
+    monthly_rate = offer_data.interest_rate / 12 / 100
+    tenure = offer_data.tenure_months
+    emi = total_loan_amount * monthly_rate * ((1 + monthly_rate) ** tenure) / (((1 + monthly_rate) ** tenure) - 1)
+    
+    # Calculate net disbursal
+    net_disbursal = total_loan_amount - total_charges
+    
+    offer = {
+        "id": str(uuid.uuid4()),
+        "application_id": offer_data.application_id,
+        "loan_lead_id": lead_id,
+        "vehicle_loan_id": application.get("vehicle_loan_id"),
+        "bank_id": application["bank_id"],
+        "bank_name": bank["bank_name"],
+        
+        # Amounts
+        "loan_amount_approved": offer_data.loan_amount_approved,
+        "loan_insurance": offer_data.loan_insurance,
+        "total_loan_amount": total_loan_amount,
+        
+        # Interest and EMI
+        "interest_rate": offer_data.interest_rate,
+        "tenure_months": offer_data.tenure_months,
+        "emi_amount": round(emi, 0),
+        
+        # Charges
+        "charges": charges,
+        "total_charges": total_charges,
+        "net_disbursal_amount": net_disbursal,
+        
+        # Bank reference
+        "bank_reference_number": offer_data.bank_reference_number,
+        "bank_sanction_letter_url": None,
+        
+        # Status
+        "offer_status": "PENDING",
+        "offer_valid_until": offer_data.offer_valid_until.isoformat() if offer_data.offer_valid_until else None,
+        
+        # History
+        "negotiation_history": [],
+        "final_charges": None,
+        "final_net_disbursal": None,
+        
+        # Audit
+        "created_at": now.isoformat(),
+        "updated_at": now.isoformat(),
+        "created_by": current_user.get("email")
+    }
+    
+    # Update application status
+    app_index = None
+    for i, app in enumerate(lead.get("applications", [])):
+        if app.get("id") == offer_data.application_id:
+            app_index = i
+            break
+    
+    update_ops = {
+        "$push": {"loan_offers": offer},
+        "$set": {
+            "updated_at": now.isoformat(),
+            f"applications.{app_index}.status": "OFFER_RECEIVED",
+            f"applications.{app_index}.approved_amount": offer_data.loan_amount_approved,
+            f"applications.{app_index}.interest_rate": offer_data.interest_rate,
+            f"applications.{app_index}.tenure_months": offer_data.tenure_months,
+            f"applications.{app_index}.emi_amount": round(emi, 0)
+        }
+    }
+    
+    await db.loan_leads.update_one({"id": lead_id}, update_ops)
+    
+    return {"message": "Loan offer created", "offer": offer}
+
+
+@router.get("/loan-leads/{lead_id}/offers/{offer_id}")
+async def get_loan_offer(
+    lead_id: str,
+    offer_id: str,
+    current_user: dict = Depends(lambda: get_current_user)
+):
+    """Get a specific loan offer"""
+    lead = await db.loan_leads.find_one({"id": lead_id}, {"_id": 0})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Loan lead not found")
+    
+    for offer in lead.get("loan_offers", []):
+        if offer.get("id") == offer_id:
+            return offer
+    
+    raise HTTPException(status_code=404, detail="Offer not found")
+
+
+@router.put("/loan-leads/{lead_id}/offers/{offer_id}")
+async def update_loan_offer(
+    lead_id: str,
+    offer_id: str,
+    update_data: LoanOfferUpdate,
+    current_user: dict = Depends(lambda: get_current_user)
+):
+    """Update loan offer (status, charges negotiation)"""
+    lead = await db.loan_leads.find_one({"id": lead_id}, {"_id": 0})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Loan lead not found")
+    
+    # Find offer
+    offer_index = None
+    offer = None
+    for i, o in enumerate(lead.get("loan_offers", [])):
+        if o.get("id") == offer_id:
+            offer_index = i
+            offer = o
+            break
+    
+    if offer_index is None:
+        raise HTTPException(status_code=404, detail="Offer not found")
+    
+    now = datetime.now(timezone.utc)
+    update_dict = {f"loan_offers.{offer_index}.updated_at": now.isoformat()}
+    
+    # Update offer status
+    if update_data.offer_status:
+        update_dict[f"loan_offers.{offer_index}.offer_status"] = update_data.offer_status
+    
+    # Process charge updates (negotiation)
+    if update_data.charges_updates:
+        charges = offer.get("charges", [])
+        new_total_charges = 0
+        
+        for charge_update in update_data.charges_updates:
+            for i, charge in enumerate(charges):
+                if charge.get("charge_type") == charge_update.charge_type:
+                    if charge_update.new_amount is not None:
+                        charges[i]["amount"] = charge_update.new_amount
+                    if charge_update.is_waived is not None:
+                        charges[i]["is_waived"] = charge_update.is_waived
+                    if charge_update.notes:
+                        charges[i]["notes"] = charge_update.notes
+                    break
+        
+        # Recalculate total charges
+        for charge in charges:
+            if not charge.get("is_waived"):
+                new_total_charges += charge.get("amount", 0)
+        
+        # Calculate new net disbursal
+        total_loan_amount = offer.get("total_loan_amount", 0)
+        new_net_disbursal = total_loan_amount - new_total_charges
+        
+        update_dict[f"loan_offers.{offer_index}.charges"] = charges
+        update_dict[f"loan_offers.{offer_index}.total_charges"] = new_total_charges
+        update_dict[f"loan_offers.{offer_index}.net_disbursal_amount"] = new_net_disbursal
+        
+        # Record negotiation history
+        negotiation_entry = {
+            "timestamp": now.isoformat(),
+            "user": current_user.get("email"),
+            "changes": [cu.model_dump() for cu in update_data.charges_updates],
+            "notes": update_data.negotiation_notes,
+            "new_total_charges": new_total_charges,
+            "new_net_disbursal": new_net_disbursal
+        }
+        
+        await db.loan_leads.update_one(
+            {"id": lead_id},
+            {"$push": {f"loan_offers.{offer_index}.negotiation_history": negotiation_entry}}
+        )
+    
+    update_dict["updated_at"] = now.isoformat()
+    
+    await db.loan_leads.update_one({"id": lead_id}, {"$set": update_dict})
+    
+    updated_lead = await db.loan_leads.find_one({"id": lead_id}, {"_id": 0})
+    return {"message": "Offer updated", "offer": updated_lead["loan_offers"][offer_index]}
+
+
+@router.post("/loan-leads/{lead_id}/offers/{offer_id}/accept")
+async def accept_loan_offer(
+    lead_id: str,
+    offer_id: str,
+    current_user: dict = Depends(lambda: get_current_user)
+):
+    """Accept a loan offer - finalizes the charges and marks as accepted"""
+    lead = await db.loan_leads.find_one({"id": lead_id}, {"_id": 0})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Loan lead not found")
+    
+    # Find offer
+    offer_index = None
+    offer = None
+    for i, o in enumerate(lead.get("loan_offers", [])):
+        if o.get("id") == offer_id:
+            offer_index = i
+            offer = o
+            break
+    
+    if offer_index is None:
+        raise HTTPException(status_code=404, detail="Offer not found")
+    
+    now = datetime.now(timezone.utc)
+    
+    # Store final values
+    final_charges = offer.get("charges", [])
+    final_net_disbursal = offer.get("net_disbursal_amount")
+    
+    update_dict = {
+        f"loan_offers.{offer_index}.offer_status": "ACCEPTED",
+        f"loan_offers.{offer_index}.final_charges": final_charges,
+        f"loan_offers.{offer_index}.final_net_disbursal": final_net_disbursal,
+        f"loan_offers.{offer_index}.updated_at": now.isoformat(),
+        "updated_at": now.isoformat()
+    }
+    
+    # Also update the application status
+    app_id = offer.get("application_id")
+    for i, app in enumerate(lead.get("applications", [])):
+        if app.get("id") == app_id:
+            update_dict[f"applications.{i}.status"] = "OFFER_ACCEPTED"
+            break
+    
+    await db.loan_leads.update_one({"id": lead_id}, {"$set": update_dict})
+    
+    return {"message": "Offer accepted", "final_net_disbursal": final_net_disbursal}
+
+
+@router.post("/loan-leads/{lead_id}/offers/{offer_id}/add-charge")
+async def add_charge_to_offer(
+    lead_id: str,
+    offer_id: str,
+    charge_type: str,
+    charge_name: str,
+    amount: float,
+    is_negotiable: bool = True,
+    notes: Optional[str] = None,
+    current_user: dict = Depends(lambda: get_current_user)
+):
+    """Add a new charge to an existing offer"""
+    lead = await db.loan_leads.find_one({"id": lead_id}, {"_id": 0})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Loan lead not found")
+    
+    # Find offer
+    offer_index = None
+    offer = None
+    for i, o in enumerate(lead.get("loan_offers", [])):
+        if o.get("id") == offer_id:
+            offer_index = i
+            offer = o
+            break
+    
+    if offer_index is None:
+        raise HTTPException(status_code=404, detail="Offer not found")
+    
+    now = datetime.now(timezone.utc)
+    
+    new_charge = {
+        "charge_type": charge_type,
+        "charge_name": charge_name,
+        "amount": amount,
+        "is_percentage": False,
+        "is_waived": False,
+        "is_negotiable": is_negotiable,
+        "notes": notes
+    }
+    
+    # Calculate new totals
+    current_charges = offer.get("charges", [])
+    current_charges.append(new_charge)
+    
+    new_total_charges = sum(c.get("amount", 0) for c in current_charges if not c.get("is_waived"))
+    new_net_disbursal = offer.get("total_loan_amount", 0) - new_total_charges
+    
+    await db.loan_leads.update_one(
+        {"id": lead_id},
+        {
+            "$push": {f"loan_offers.{offer_index}.charges": new_charge},
+            "$set": {
+                f"loan_offers.{offer_index}.total_charges": new_total_charges,
+                f"loan_offers.{offer_index}.net_disbursal_amount": new_net_disbursal,
+                f"loan_offers.{offer_index}.updated_at": now.isoformat(),
+                "updated_at": now.isoformat()
+            }
+        }
+    )
+    
+    updated_lead = await db.loan_leads.find_one({"id": lead_id}, {"_id": 0})
+    return {"message": "Charge added", "offer": updated_lead["loan_offers"][offer_index]}
+
+
+@router.post("/loan-leads/{lead_id}/manual-offer")
+async def create_manual_bank_offer(
+    lead_id: str,
+    bank_id: str,
+    vehicle_loan_id: str,
+    loan_amount_approved: float,
+    interest_rate: float,
+    tenure_months: int,
+    loan_insurance: float = 0,
+    processing_fee_percent: Optional[float] = None,
+    processing_fee_amount: Optional[float] = None,
+    document_handling_fee: Optional[float] = None,
+    rto_charges: Optional[float] = None,
+    insurance_charges: Optional[float] = None,
+    bank_reference_number: Optional[str] = None,
+    notes: Optional[str] = None,
+    current_user: dict = Depends(lambda: get_current_user)
+):
+    """
+    Manually add a bank offer even if not eligible by system rules.
+    Used when banker approves a loan outside normal eligibility criteria.
+    """
+    lead = await db.loan_leads.find_one({"id": lead_id}, {"_id": 0})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Loan lead not found")
+    
+    # Verify vehicle exists
+    vehicle = None
+    for v in lead.get("vehicles", []):
+        if v.get("vehicle_id") == vehicle_loan_id:
+            vehicle = v
+            break
+    
+    if not vehicle:
+        raise HTTPException(status_code=404, detail="Vehicle not found")
+    
+    # Get bank details
+    bank = await db.bank_master.find_one({"id": bank_id}, {"_id": 0})
+    if not bank:
+        raise HTTPException(status_code=404, detail="Bank not found")
+    
+    now = datetime.now(timezone.utc)
+    
+    # First create a manual application if it doesn't exist
+    application_id = None
+    for app in lead.get("applications", []):
+        if app.get("bank_id") == bank_id and app.get("vehicle_loan_id") == vehicle_loan_id:
+            application_id = app.get("id")
+            break
+    
+    if not application_id:
+        # Create new application
+        application_id = str(uuid.uuid4())
+        application = {
+            "id": application_id,
+            "loan_lead_id": lead_id,
+            "vehicle_loan_id": vehicle_loan_id,
+            "bank_id": bank_id,
+            "bank_name": bank["bank_name"],
+            "status": "OFFER_RECEIVED",
+            "applied_amount": loan_amount_approved,
+            "approved_amount": loan_amount_approved,
+            "interest_rate": interest_rate,
+            "tenure_months": tenure_months,
+            "remarks": notes or "Manual application - banker approved outside normal criteria",
+            "status_history": [{
+                "status": "OFFER_RECEIVED",
+                "changed_at": now.isoformat(),
+                "changed_by": current_user.get("email"),
+                "remarks": "Manual offer created"
+            }],
+            "created_at": now.isoformat(),
+            "updated_at": now.isoformat()
+        }
+        
+        await db.loan_leads.update_one(
+            {"id": lead_id},
+            {"$push": {"applications": application}}
+        )
+    
+    # Calculate amounts
+    total_loan_amount = loan_amount_approved + loan_insurance
+    
+    # Build charges
+    charges = []
+    total_charges = 0
+    
+    if processing_fee_percent is not None:
+        proc_fee = round(loan_amount_approved * processing_fee_percent / 100, 0)
+        charges.append({
+            "charge_type": "processing_fee",
+            "charge_name": "Processing Fee",
+            "amount": proc_fee,
+            "is_percentage": True,
+            "percentage_value": processing_fee_percent,
+            "is_waived": False,
+            "is_negotiable": True,
+            "notes": f"{processing_fee_percent}% of loan amount"
+        })
+        total_charges += proc_fee
+    elif processing_fee_amount is not None:
+        charges.append({
+            "charge_type": "processing_fee",
+            "charge_name": "Processing Fee",
+            "amount": processing_fee_amount,
+            "is_percentage": False,
+            "is_waived": False,
+            "is_negotiable": True,
+            "notes": None
+        })
+        total_charges += processing_fee_amount
+    
+    if document_handling_fee:
+        charges.append({
+            "charge_type": "document_handling",
+            "charge_name": "Document Handling Fee",
+            "amount": document_handling_fee,
+            "is_percentage": False,
+            "is_waived": False,
+            "is_negotiable": True,
+            "notes": None
+        })
+        total_charges += document_handling_fee
+    
+    if rto_charges:
+        charges.append({
+            "charge_type": "rto_charges",
+            "charge_name": "RTO Charges",
+            "amount": rto_charges,
+            "is_percentage": False,
+            "is_waived": False,
+            "is_negotiable": True,
+            "notes": None
+        })
+        total_charges += rto_charges
+    
+    if insurance_charges:
+        charges.append({
+            "charge_type": "insurance_charges",
+            "charge_name": "Insurance Charges",
+            "amount": insurance_charges,
+            "is_percentage": False,
+            "is_waived": False,
+            "is_negotiable": True,
+            "notes": "Vehicle insurance required"
+        })
+        total_charges += insurance_charges
+    
+    # Calculate EMI
+    monthly_rate = interest_rate / 12 / 100
+    emi = total_loan_amount * monthly_rate * ((1 + monthly_rate) ** tenure_months) / (((1 + monthly_rate) ** tenure_months) - 1)
+    
+    # Calculate net disbursal
+    net_disbursal = total_loan_amount - total_charges
+    
+    offer = {
+        "id": str(uuid.uuid4()),
+        "application_id": application_id,
+        "loan_lead_id": lead_id,
+        "vehicle_loan_id": vehicle_loan_id,
+        "bank_id": bank_id,
+        "bank_name": bank["bank_name"],
+        
+        "loan_amount_approved": loan_amount_approved,
+        "loan_insurance": loan_insurance,
+        "total_loan_amount": total_loan_amount,
+        
+        "interest_rate": interest_rate,
+        "tenure_months": tenure_months,
+        "emi_amount": round(emi, 0),
+        
+        "charges": charges,
+        "total_charges": total_charges,
+        "net_disbursal_amount": net_disbursal,
+        
+        "bank_reference_number": bank_reference_number,
+        "bank_sanction_letter_url": None,
+        
+        "offer_status": "PENDING",
+        "offer_valid_until": None,
+        
+        "negotiation_history": [],
+        "final_charges": None,
+        "final_net_disbursal": None,
+        
+        "is_manual": True,  # Flag to indicate this was manually added
+        "manual_notes": notes,
+        
+        "created_at": now.isoformat(),
+        "updated_at": now.isoformat(),
+        "created_by": current_user.get("email")
+    }
+    
+    await db.loan_leads.update_one(
+        {"id": lead_id},
+        {
+            "$push": {"loan_offers": offer},
+            "$set": {"updated_at": now.isoformat()}
+        }
+    )
+    
+    return {"message": "Manual bank offer created successfully", "offer": offer}
+
