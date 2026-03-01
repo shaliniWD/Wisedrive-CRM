@@ -46,6 +46,37 @@ class LocalStorageService(StorageService):
         """For local storage, just return the path"""
         return path
     
+    async def get_signed_upload_url(self, key: str, content_type: str, expires_in: int = 3600) -> dict:
+        """For local storage, return a direct upload endpoint"""
+        # Create directory structure if needed
+        full_path = f"{self.base_path}/{key}"
+        dir_path = os.path.dirname(full_path)
+        os.makedirs(dir_path, exist_ok=True)
+        
+        # Return info for direct upload
+        # In local mode, frontend will upload to /api/media/upload directly
+        backend_url = os.environ.get('REACT_APP_BACKEND_URL', 'http://localhost:8001')
+        return {
+            "upload_url": f"{backend_url}/api/media/upload-direct",
+            "file_path": full_path,
+            "key": key,
+            "fields": {
+                "key": key,
+                "content_type": content_type
+            }
+        }
+    
+    async def upload_direct(self, key: str, file_bytes: bytes) -> str:
+        """Direct upload for local storage"""
+        full_path = f"{self.base_path}/{key}"
+        dir_path = os.path.dirname(full_path)
+        os.makedirs(dir_path, exist_ok=True)
+        
+        with open(full_path, 'wb') as f:
+            f.write(file_bytes)
+        
+        return full_path
+    
     async def delete_file(self, path: str) -> bool:
         """Delete local file"""
         try:
