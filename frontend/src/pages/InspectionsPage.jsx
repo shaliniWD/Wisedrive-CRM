@@ -2754,14 +2754,12 @@ export default function InspectionsPage() {
                   value={scheduleFormData.scheduled_date}
                   onChange={(e) => {
                     const value = e.target.value;
-                    console.log('Date change event:', e.target.value, e.target.valueAsDate);
                     setScheduleFormData(prev => ({...prev, scheduled_date: value}));
                   }}
                   onBlur={(e) => {
                     // Fallback for Safari - capture value on blur as well
                     const value = e.target.value;
                     if (value && value !== scheduleFormData.scheduled_date) {
-                      console.log('Date blur capture:', value);
                       setScheduleFormData(prev => ({...prev, scheduled_date: value}));
                     }
                   }}
@@ -2780,14 +2778,12 @@ export default function InspectionsPage() {
                   value={scheduleFormData.scheduled_time}
                   onChange={(e) => {
                     const value = e.target.value;
-                    console.log('Time change event:', e.target.value);
                     setScheduleFormData(prev => ({...prev, scheduled_time: value}));
                   }}
                   onBlur={(e) => {
                     // Fallback for Safari - capture value on blur as well
                     const value = e.target.value;
                     if (value && value !== scheduleFormData.scheduled_time) {
-                      console.log('Time blur capture:', value);
                       setScheduleFormData(prev => ({...prev, scheduled_time: value}));
                     }
                   }}
