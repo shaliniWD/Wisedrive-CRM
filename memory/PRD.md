@@ -39,10 +39,42 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
   - `DocumentsModal.jsx` (~546 lines) - Document upload/download
   - `LoanProcessingModal.jsx` (~425 lines) - Loan eligibility & applications
   - `VehicleDetailsModal.jsx` (~390 lines) - Vehicle management
+  - `CustomerProfileModal.jsx` (~550 lines) - NEW: Comprehensive customer profile
   - `VehicleDropdown.jsx` (~123 lines) - Vehicle display dropdown
   - `StatusBadges.jsx` (~26 lines) - Status badge components
   - `utils.js` (~34 lines) - Shared utilities
   - `index.js` - Barrel export
+
+### Customer Profile Feature (NEW - Mar 1, 2026)
+- **Location:** `/app/frontend/src/components/loans/CustomerProfileModal.jsx`
+- **Backend:** `/app/backend/routes/loans.py` (profile endpoints)
+- **AI Service:** `/app/backend/services/bank_statement_service.py` (Gemini AI integration)
+- **Database Collection:** `customer_profiles`
+- **Features:**
+  1. **Bank Statement Analysis (AI-powered)**
+     - Extracts: Bank name, ABB (Average Bank Balance), spending patterns
+     - Uses Gemini AI via Emergent LLM Key
+     - Analyzes: Income sources, EMI payments, bounces, cash withdrawals
+     - Shows: End-of-month balances, total credits/debits
+  2. **Credit Bureau Report Analysis**
+     - Syncs from existing credit score check
+     - Shows: Score, rating, account summary, existing loans
+     - Risk flags: Write-offs, settlements, defaults
+  3. **Location Classification**
+     - Auto-detects: METRO, URBAN, SEMI_URBAN, RURAL from city
+     - Editable by loan officer
+     - Affects bank eligibility rules
+  4. **Vehicle Eligibility Analysis**
+     - Car age check (10 years / 15 years limits)
+     - Excluded makes: Chevrolet, Ford, Fiat (no service network in India)
+     - Valuation and LTV calculations
+  5. **KYC Details**
+     - Full name, PAN, address, employment details
+     - Editable form with save functionality
+  6. **Overall Eligibility Score**
+     - Weighted calculation from all factors
+     - Visual gauge with score 0-100
+     - Recommended banks list
 
 ### Mobile App (React Native/Expo)
 - **Location:** `/app/mechanic-app-native/`
