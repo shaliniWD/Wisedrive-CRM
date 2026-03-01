@@ -183,6 +183,13 @@ async def startup():
     await meta_ads_scheduler.start()
     logger.info("Meta Ads Scheduler started (sync every 6 hours)")
     
+    # ==================== AUTO-MIGRATE BANGALORE TO BENGALURU ====================
+    # This ensures the city is always named "Bengaluru" with "Bangalore" as alias
+    try:
+        await auto_migrate_bangalore_to_bengaluru()
+    except Exception as e:
+        logger.warning(f"City migration check completed with warning: {e}")
+    
     # Initialize Fast2SMS service with database reference for logging
     from services.fast2sms_service import get_fast2sms_service
     fast2sms = get_fast2sms_service()
