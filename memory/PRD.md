@@ -562,3 +562,24 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
 - Backend: 100% (18/18 tests passed)
 - Frontend: 100% (all features verified)
 - Test Report: `/app/test_reports/iteration_82.json`
+
+## Bug Fixes (Mar 1, 2026 - Session 2 Continued)
+
+### Inspection Count Bug Fix - ✅ FIXED
+- **Bug:** Customer had 4 inspections, scheduled 1, but showed 2/3 instead of 3/4
+- **Root Cause:** The grouping logic only counted unscheduled inspections in `total_inspections`, not ALL inspections from the order/package
+- **Fix:** Modified `/app/backend/server.py` lines 4670-4745 to:
+  - Count ALL inspections (scheduled + unscheduled) for `total_inspections`
+  - Query database for actual scheduled count per order_id/lead_id
+  - Correctly calculate `available_inspections = total - scheduled`
+- **File Modified:** `/app/backend/server.py`
+
+### Vehicle Number Not Showing Bug Fix - ✅ FIXED
+- **Bug:** Vehicle number not showing in Vehicle column after scheduling from unscheduled tab
+- **Root Cause:** The schedule endpoint only saved date/time, not vehicle data
+- **Fix:** Extended `PATCH /api/inspections/{id}/schedule` to accept and save:
+  - `car_number`, `car_make`, `car_model`, `car_year`, `car_color`, `fuel_type`
+  - `address`, `city`, `latitude`, `longitude`
+- **File Modified:** `/app/backend/server.py` (UpdateScheduleRequest model + endpoint)
+- **Frontend Already Sends:** The frontend was already sending vehicle data (lines 1181-1190 in InspectionsPage.jsx)
+
