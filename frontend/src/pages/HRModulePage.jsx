@@ -8,6 +8,7 @@ import AdminPage from './AdminPage';
 
 // Import HR-specific components
 import { AttendanceDashboard, PayrollDashboard, LeaveManagement, HolidayCalendar, InspectionCityManagement } from './HRComponents';
+import { CityManagement } from './SettingsPage';
 
 export default function HRModulePage() {
   const { user } = useAuth();
