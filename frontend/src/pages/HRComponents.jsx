@@ -2812,10 +2812,21 @@ export function InspectionCityManagement() {
       console.log(`Found ${mechanicEmployees.length} mechanics out of ${employees.length} employees`);
       setMechanics(mechanicEmployees);
       
-      // Update available inspection cities from selected country
-      const selectedCountry = countries.find(c => c.id === selectedCountryId);
-      const inspCities = selectedCountry?.inspection_cities || [];
-      setAvailableInspectionCities(inspCities);
+      // Fetch available inspection cities from Cities Master API (not from country)
+      try {
+        const citiesRes = await citiesApi.getAll(false); // Only active cities
+        const allCities = citiesRes.data || [];
+        // Extract just the city names for selection
+        const cityNames = allCities.map(c => c.name).sort();
+        setAvailableInspectionCities(cityNames);
+        console.log(`Loaded ${cityNames.length} cities from Cities Master`);
+      } catch (citiesError) {
+        console.error('Failed to load cities from master:', citiesError);
+        // Fallback to country inspection_cities if Cities API fails
+        const selectedCountry = countries.find(c => c.id === selectedCountryId);
+        const inspCities = selectedCountry?.inspection_cities || [];
+        setAvailableInspectionCities(inspCities);
+      }
     } catch (error) {
       console.error('Failed to load mechanics:', error);
       toast.error('Failed to load mechanics');
