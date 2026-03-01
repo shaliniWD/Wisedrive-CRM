@@ -70,10 +70,18 @@ class CreditScoreVerifyRequest(BaseModel):
 
 def init_loans_routes(_db, _get_current_user, _storage_service=None):
     """Initialize loans routes with dependencies"""
-    global db, get_current_user, storage_service
+    global db, _auth_validator, storage_service
     db = _db
-    get_current_user = _get_current_user
+    _auth_validator = _get_current_user
     storage_service = _storage_service
+
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
+    """Authenticate user using the injected validator"""
+    if _auth_validator is None:
+        raise HTTPException(status_code=500, detail="Auth not initialized")
+    # Call the injected auth validator with credentials
+    return await _auth_validator(credentials)
 
 
 # ========================
