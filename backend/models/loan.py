@@ -301,12 +301,16 @@ class LoanLead(BaseModel):
     # Loan applications (per vehicle per bank)
     applications: List[LoanApplication] = []
     
+    # Bank loan offers (after approval)
+    loan_offers: List[LoanOffer] = []
+    
     # Bank eligibility results
     eligibility_results: List[BankEligibilityResult] = []
     
     # Credit score (future use)
     credit_score: Optional[int] = None
     credit_score_fetched_at: Optional[datetime] = None
+    credit_score_full_report: Optional[dict] = None
     
     # Audit
     assigned_to: Optional[str] = None
