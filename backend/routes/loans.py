@@ -1533,6 +1533,150 @@ async def delete_vehicle_from_loan_lead(
     return {"message": "Vehicle deleted successfully"}
 
 
+@router.post("/loan-leads/{lead_id}/vehicles/{vehicle_id}/fetch-vaahan")
+async def fetch_vaahan_for_loan_vehicle(
+    lead_id: str,
+    vehicle_id: str,
+    force_refresh: bool = False,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Fetch vehicle data from Vaahan API (with local DB caching) and update the loan vehicle record.
+    
+    Flow:
+    1. First checks local vehicles collection for cached data
+    2. Only calls Vaahan API if not found or force_refresh=true
+    3. Saves to local DB for future use
+    4. Updates the vehicle in the loan lead
+    """
+    from services.vaahan_service import vaahan_service
+    from services.brand_mapper import brand_mapper
+    
+    lead = await db.loan_leads.find_one({"id": lead_id})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Loan lead not found")
+    
+    vehicle = None
+    vehicle_index = -1
+    for i, v in enumerate(lead.get("vehicles", [])):
+        if v.get("vehicle_id") == vehicle_id:
+            vehicle = v
+            vehicle_index = i
+            break
+    
+    if not vehicle:
+        raise HTTPException(status_code=404, detail="Vehicle not found")
+    
+    car_number = vehicle.get("car_number", "")
+    if not car_number:
+        raise HTTPException(status_code=400, detail="No vehicle number found")
+    
+    # Clean registration number
+    clean_number = car_number.replace(" ", "").replace("-", "").upper()
+    
+    # Step 1: Check local DB first (unless force_refresh)
+    vehicle_data = None
+    source = "local_db"
+    
+    if not force_refresh:
+        cached_vehicle = await db.vehicles.find_one(
+            {"registration_number": {"$regex": f"^{clean_number}$", "$options": "i"}},
+            {"_id": 0}
+        )
+        if cached_vehicle:
+            logger.info(f"Vehicle {clean_number} found in local DB for loan lead {lead_id}")
+            vehicle_data = cached_vehicle.get("vaahan_raw_response", cached_vehicle)
+    
+    # Step 2: If not in cache or force_refresh, call Vaahan API
+    if vehicle_data is None:
+        logger.info(f"Fetching vehicle {clean_number} from Vaahan API for loan lead {lead_id}")
+        result = await vaahan_service.get_vehicle_details(clean_number)
+        
+        if not result.get("success"):
+            return {
+                "success": False,
+                "error": result.get("error", "Failed to fetch vehicle details"),
+                "vehicle": vehicle
+            }
+        
+        vehicle_data = result.get("data", {})
+        source = "vaahan_api"
+        
+        # Save to local DB for future use
+        vehicle_record = {
+            "id": str(uuid.uuid4()),
+            "registration_number": clean_number,
+            "manufacturer": vehicle_data.get("manufacturer", ""),
+            "model": vehicle_data.get("model", ""),
+            "color": vehicle_data.get("color", ""),
+            "fuel_type": vehicle_data.get("fuel_type", ""),
+            "manufacturing_date": vehicle_data.get("manufacturing_date", ""),
+            "owner_count": vehicle_data.get("owner_count", ""),
+            "insurance_company": vehicle_data.get("insurance_company", ""),
+            "insurance_valid_upto": vehicle_data.get("insurance_valid_upto", ""),
+            "hypothecation_bank": vehicle_data.get("hypothecation_bank", ""),
+            "blacklist_status": vehicle_data.get("blacklist_status", ""),
+            "vaahan_raw_response": vehicle_data,
+            "country_id": current_user.get("country_id"),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_by": current_user["id"],
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "updated_by": current_user["id"],
+        }
+        
+        await db.vehicles.update_one(
+            {"registration_number": {"$regex": f"^{clean_number}$", "$options": "i"}},
+            {"$set": vehicle_record},
+            upsert=True
+        )
+        logger.info(f"Vehicle {clean_number} saved to local DB")
+    
+    # Update the vehicle in the loan lead with Vaahan data
+    now = datetime.now(timezone.utc).isoformat()
+    
+    # Normalize manufacturer
+    raw_manufacturer = vehicle_data.get("manufacturer", "")
+    normalized_make = brand_mapper.normalize_brand(raw_manufacturer) if raw_manufacturer else vehicle.get("car_make", "")
+    
+    # Extract year from manufacturing date
+    car_year = vehicle.get("car_year", "")
+    mfg_date = vehicle_data.get("manufacturing_date", "")
+    if mfg_date:
+        try:
+            if "/" in mfg_date:
+                car_year = mfg_date.split("/")[-1]
+            else:
+                car_year = mfg_date[:4] if len(mfg_date) >= 4 else car_year
+        except:
+            pass
+    
+    update_data = {
+        f"vehicles.{vehicle_index}.car_make": normalized_make or vehicle.get("car_make", ""),
+        f"vehicles.{vehicle_index}.car_model": vehicle_data.get("model", "") or vehicle.get("car_model", ""),
+        f"vehicles.{vehicle_index}.car_year": car_year,
+        f"vehicles.{vehicle_index}.fuel_type": vehicle_data.get("fuel_type", ""),
+        f"vehicles.{vehicle_index}.color": vehicle_data.get("color", ""),
+        f"vehicles.{vehicle_index}.owner_count": vehicle_data.get("owner_count", ""),
+        f"vehicles.{vehicle_index}.vaahan_data": vehicle_data,
+        f"vehicles.{vehicle_index}.vaahan_fetched_at": now,
+        "updated_at": now
+    }
+    
+    await db.loan_leads.update_one({"id": lead_id}, {"$set": update_data})
+    
+    # Return updated vehicle
+    updated_lead = await db.loan_leads.find_one({"id": lead_id}, {"_id": 0})
+    updated_vehicle = updated_lead.get("vehicles", [])[vehicle_index] if updated_lead else vehicle
+    
+    return {
+        "success": True,
+        "message": f"Vehicle data loaded from {source}",
+        "source": source,
+        "vaahan_data": vehicle_data,
+        "vehicle": updated_vehicle
+    }
+
+
 # ========================
 # BANK ELIGIBILITY
 # ========================
