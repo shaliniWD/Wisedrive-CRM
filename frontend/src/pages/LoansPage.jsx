@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import {
   Users, Phone, RefreshCw, Search, Filter,
-  FileText, CreditCard, Loader2, Eye
+  FileText, CreditCard, Loader2, Eye, UserCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,6 +23,7 @@ import {
   DocumentsModal,
   VehicleDetailsModal,
   LoanProcessingModal,
+  CustomerProfileModal,
   VehicleDropdown,
   StatusBadge,
   AppStatusBadge
@@ -48,6 +49,7 @@ export default function LoansPage() {
   const [documentsModalOpen, setDocumentsModalOpen] = useState(false);
   const [vehicleModalOpen, setVehicleModalOpen] = useState(false);
   const [processingModalOpen, setProcessingModalOpen] = useState(false);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [creditScoreModalOpen, setCreditScoreModalOpen] = useState(false);
   
