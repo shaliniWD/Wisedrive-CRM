@@ -449,6 +449,51 @@ async def update_loan_lead_cities(current_user: dict = Depends(get_current_user)
     }
 
 
+@router.post("/loan-leads/update-phones")
+async def update_loan_lead_phones(current_user: dict = Depends(get_current_user)):
+    """Update phone numbers for existing loan leads from their inspection data"""
+    
+    # Find leads without phone
+    leads_without_phone = await db.loan_leads.find(
+        {"$or": [{"customer_phone": None}, {"customer_phone": ""}, {"customer_phone": {"$exists": False}}]}
+    ).to_list(1000)
+    
+    updated_count = 0
+    
+    for lead in leads_without_phone:
+        customer_id = lead.get("customer_id")
+        if not customer_id:
+            continue
+        
+        # Find inspection for this customer
+        inspection = await db.inspections.find_one(
+            {"customer_id": customer_id},
+            {"customer_phone": 1, "customer_mobile": 1, "mobile": 1, "phone": 1}
+        )
+        
+        if not inspection:
+            continue
+        
+        # Try multiple phone fields
+        phone = (inspection.get("customer_phone") or 
+                 inspection.get("customer_mobile") or 
+                 inspection.get("mobile") or 
+                 inspection.get("phone") or "")
+        
+        if phone:
+            await db.loan_leads.update_one(
+                {"id": lead["id"]},
+                {"$set": {"customer_phone": phone}}
+            )
+            updated_count += 1
+    
+    return {
+        "message": f"Updated phone numbers for {updated_count} loan leads",
+        "updated_count": updated_count,
+        "total_without_phone": len(leads_without_phone)
+    }
+
+
 @router.get("/loan-leads/{lead_id}")
 async def get_loan_lead(lead_id: str, current_user: dict = Depends(get_current_user)):
     """Get a specific loan lead with all details"""
