@@ -11,12 +11,15 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
 ## Current Architecture
 
 ### Backend (FastAPI)
-- **Location:** `/app/backend/server.py` (~17.1k lines - refactored Mar 1, 2026)
+- **Location:** `/app/backend/server.py` (~16.6k lines - refactored Mar 1, 2026)
 - **Modular Routes:** `/app/backend/routes/`
-  - `loans.py` - Loan leads, banks, credit score, documents (~1100 lines)
-  - `customers.py` - **NEW** - Customer CRUD, payment history, notes, activities (~700 lines extracted Mar 1)
-  - `finance.py` - **NEW** - Payments, approvals, payslips, summary (~700 lines extracted Mar 1)
-  - `auth.py`, `leads.py`, `partners.py`, `webhooks.py`, `meta_ads.py`, `inspections.py`
+  - `loans.py` - Loan leads, banks, credit score, documents (~1,112 lines, 25 endpoints)
+  - `customers.py` - Customer CRUD, payment history, notes, activities (~694 lines, 14 endpoints)
+  - `finance.py` - Payments, approvals, payslips, summary (~710 lines, 15 endpoints)
+  - `hr.py` - Employees, attendance, holidays, countries (~1,306 lines, 47 endpoints)
+  - `mechanic.py` - Mechanic app, inspections (~448 lines, 11 endpoints)
+  - `meta_ads.py` - Meta/Facebook Ads integration (~426 lines, 13 endpoints)
+  - `auth.py`, `leads.py`, `partners.py`, `webhooks.py`, `notification_config.py`, `inspections.py`
 - **Database:** MongoDB
 - **Key Collections:** `inspections`, `inspection_obd_results`, `inspection_answer_edits`, `users`, `mechanics`, `loan_leads`, `bank_master`
 - **AI Service:** `/app/backend/services/ai_report_service.py`
