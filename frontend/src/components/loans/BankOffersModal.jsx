@@ -325,40 +325,161 @@ const OfferCard = ({ offer, onUpdate, onAccept, lead, expanded, onToggleExpand, 
           <div className="mb-4">
             <div className="flex items-center justify-between mb-2">
               <h5 className="text-sm font-medium text-gray-700">Charges (Deducted from Loan)</h5>
-              {offer.offer_status === 'PENDING' && (
-                <Button 
-                  size="sm" 
-                  variant={isEditing ? "default" : "outline"}
-                  onClick={() => {
-                    if (isEditing) {
-                      handleSaveNegotiation();
-                    } else {
-                      setIsEditing(true);
-                    }
-                  }}
-                  disabled={saving}
-                >
-                  {saving ? (
-                    <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                  ) : isEditing ? (
-                    <Save className="h-3 w-3 mr-1" />
-                  ) : (
-                    <Edit2 className="h-3 w-3 mr-1" />
-                  )}
-                  {isEditing ? 'Save Changes' : 'Negotiate'}
-                </Button>
-              )}
+              <div className="flex items-center gap-2">
+                {offer.offer_status === 'PENDING' && (
+                  <>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => setShowAddCharge(!showAddCharge)}
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      Add Charge
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant={isEditing ? "default" : "outline"}
+                      onClick={() => {
+                        if (isEditing) {
+                          handleSaveNegotiation();
+                        } else {
+                          setIsEditing(true);
+                        }
+                      }}
+                      disabled={saving}
+                    >
+                      {saving ? (
+                        <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                      ) : isEditing ? (
+                        <Save className="h-3 w-3 mr-1" />
+                      ) : (
+                        <Edit2 className="h-3 w-3 mr-1" />
+                      )}
+                      {isEditing ? 'Save Changes' : 'Negotiate'}
+                    </Button>
+                  </>
+                )}
+              </div>
             </div>
+            
+            {/* Add Charge Form */}
+            {showAddCharge && offer.offer_status === 'PENDING' && (
+              <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <h6 className="text-sm font-medium text-blue-900 mb-3">Add New Charge</h6>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs">Charge Type</Label>
+                    <Select value={newCharge.charge_type} onValueChange={handleChargeTypeSelect}>
+                      <SelectTrigger className="h-9">
+                        <SelectValue placeholder="Select charge type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableChargeTypes.map((ct) => (
+                          <SelectItem key={ct.charge_key} value={ct.charge_key}>
+                            <div className="flex items-center gap-2">
+                              <span>{ct.charge_name}</span>
+                              {ct.is_system && <span className="text-[10px] text-gray-400">(System)</span>}
+                            </div>
+                          </SelectItem>
+                        ))}
+                        <SelectItem value="custom">
+                          <div className="flex items-center gap-2 text-purple-600">
+                            <Plus className="h-3 w-3" />
+                            Custom Charge
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {newCharge.charge_type === 'custom' && (
+                    <div>
+                      <Label className="text-xs">Custom Name</Label>
+                      <Input
+                        value={newCharge.charge_name}
+                        onChange={(e) => setNewCharge({...newCharge, charge_name: e.target.value, charge_type: e.target.value.toLowerCase().replace(/\s+/g, '_')})}
+                        placeholder="Enter charge name"
+                        className="h-9"
+                      />
+                    </div>
+                  )}
+                  
+                  <div>
+                    <Label className="text-xs">
+                      Amount {newCharge.is_percentage ? '(%)' : '(₹)'}
+                    </Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        value={newCharge.amount}
+                        onChange={(e) => setNewCharge({...newCharge, amount: e.target.value})}
+                        placeholder={newCharge.is_percentage ? "1.5" : "5000"}
+                        className="h-9"
+                      />
+                      <div className="flex items-center gap-1">
+                        <Switch
+                          checked={newCharge.is_percentage}
+                          onCheckedChange={(v) => setNewCharge({...newCharge, is_percentage: v})}
+                          className="h-4 w-8"
+                        />
+                        <span className="text-xs text-gray-500">%</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label className="text-xs">Notes (optional)</Label>
+                    <Input
+                      value={newCharge.notes}
+                      onChange={(e) => setNewCharge({...newCharge, notes: e.target.value})}
+                      placeholder="Additional notes"
+                      className="h-9"
+                    />
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between mt-3">
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={newCharge.is_negotiable}
+                      onCheckedChange={(v) => setNewCharge({...newCharge, is_negotiable: v})}
+                      className="h-4 w-8"
+                    />
+                    <span className="text-xs text-gray-600">Negotiable</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="ghost" onClick={() => setShowAddCharge(false)}>Cancel</Button>
+                    <Button size="sm" onClick={handleAddCharge} disabled={addingCharge}>
+                      {addingCharge ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Plus className="h-3 w-3 mr-1" />}
+                      Add
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
             
             <div className="space-y-2">
               {offer.charges?.map((charge, idx) => (
-                <ChargeRow
-                  key={idx}
-                  charge={charge}
-                  isEditing={isEditing}
-                  disabled={offer.offer_status !== 'PENDING'}
-                  onUpdate={handleChargeUpdate}
-                />
+                <div key={idx} className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <ChargeRow
+                      charge={charge}
+                      isEditing={isEditing}
+                      disabled={offer.offer_status !== 'PENDING'}
+                      onUpdate={handleChargeUpdate}
+                    />
+                  </div>
+                  {offer.offer_status === 'PENDING' && isEditing && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                      onClick={() => handleRemoveCharge(charge.charge_type)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                </div>
               ))}
               
               {(!offer.charges || offer.charges.length === 0) && (
