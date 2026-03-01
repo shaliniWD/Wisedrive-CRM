@@ -190,30 +190,50 @@ async def get_customers(
 
 @router.get("/sales-reps-with-counts")
 async def get_sales_reps_with_customer_counts(
-    country_id: Optional[str] = None,
     current_user: dict = Depends(lambda: get_current_user)
 ):
-    """Get sales reps with their customer counts"""
+    """Get all sales reps with their customer counts"""
+    # Get all sales role IDs
     sales_role_ids = await get_sales_role_ids()
     
-    query = {"role_id": {"$in": sales_role_ids}, "is_active": True}
-    if country_id:
-        query["country_id"] = country_id
+    # Get all sales reps
+    sales_reps = await db.users.find(
+        {"role_id": {"$in": sales_role_ids}, "is_active": True},
+        {"_id": 0, "id": 1, "name": 1, "email": 1}
+    ).to_list(100)
     
-    sales_reps = await db.users.find(query, {"_id": 0, "id": 1, "name": 1, "email": 1}).to_list(100)
+    # Get customer counts per sales rep from leads
+    lead_counts = await db.leads.aggregate([
+        {"$match": {"assigned_to": {"$ne": None}, "payment_status": "paid"}},
+        {"$group": {"_id": "$assigned_to", "count": {"$sum": 1}}}
+    ]).to_list(100)
     
+    lead_count_map = {lc["_id"]: lc["count"] for lc in lead_counts}
+    
+    # Also count customers created by each user
+    customer_counts = await db.customers.aggregate([
+        {"$match": {"created_by": {"$ne": None}}},
+        {"$group": {"_id": "$created_by", "count": {"$sum": 1}}}
+    ]).to_list(100)
+    
+    customer_count_map = {cc["_id"]: cc["count"] for cc in customer_counts}
+    
+    # Combine counts and return
+    result = []
     for rep in sales_reps:
-        customer_count = await db.customers.count_documents({"created_by": rep["id"]})
-        rep["customer_count"] = customer_count
-        
-        # Get recent activity
-        recent_customer = await db.customers.find_one(
-            {"created_by": rep["id"]},
-            {"_id": 0, "created_at": 1}
-        )
-        rep["last_customer_added"] = recent_customer.get("created_at") if recent_customer else None
+        rep_id = rep["id"]
+        count = lead_count_map.get(rep_id, 0) + customer_count_map.get(rep_id, 0)
+        result.append({
+            "id": rep_id,
+            "name": rep["name"],
+            "email": rep.get("email"),
+            "customer_count": count
+        })
     
-    return sales_reps
+    # Sort by customer count descending
+    result.sort(key=lambda x: x["customer_count"], reverse=True)
+    
+    return result
 
 
 @router.get("/{customer_id}")
