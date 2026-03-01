@@ -566,6 +566,8 @@ const AddOfferForm = ({ lead, application, onClose, onSuccess }) => {
     document_handling_fee: '',
     rto_charges: '',
     insurance_charges: '',
+    valuation_charges: '',
+    stamp_duty: '',
   });
 
   // Calculate totals in real-time
@@ -579,7 +581,9 @@ const AddOfferForm = ({ lead, application, onClose, onSuccess }) => {
   const docFee = parseFloat(formData.document_handling_fee) || 0;
   const rtoCharges = parseFloat(formData.rto_charges) || 0;
   const insuranceCharges = parseFloat(formData.insurance_charges) || 0;
-  const totalCharges = processingFee + docFee + rtoCharges + insuranceCharges;
+  const valuationCharges = parseFloat(formData.valuation_charges) || 0;
+  const stampDuty = parseFloat(formData.stamp_duty) || 0;
+  const totalCharges = processingFee + docFee + rtoCharges + insuranceCharges + valuationCharges + stampDuty;
   const netDisbursal = totalLoan - totalCharges;
 
   const handleSubmit = async (e) => {
