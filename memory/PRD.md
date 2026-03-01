@@ -11,9 +11,11 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
 ## Current Architecture
 
 ### Backend (FastAPI)
-- **Location:** `/app/backend/server.py` (~18.6k lines - refactored)
+- **Location:** `/app/backend/server.py` (~17.1k lines - refactored Mar 1, 2026)
 - **Modular Routes:** `/app/backend/routes/`
-  - `loans.py` - **NEW** - Loan leads, banks, credit score, documents (~780 lines extracted)
+  - `loans.py` - Loan leads, banks, credit score, documents (~1100 lines)
+  - `customers.py` - **NEW** - Customer CRUD, payment history, notes, activities (~700 lines extracted Mar 1)
+  - `finance.py` - **NEW** - Payments, approvals, payslips, summary (~700 lines extracted Mar 1)
   - `auth.py`, `leads.py`, `partners.py`, `webhooks.py`, `meta_ads.py`, `inspections.py`
 - **Database:** MongoDB
 - **Key Collections:** `inspections`, `inspection_obd_results`, `inspection_answer_edits`, `users`, `mechanics`, `loan_leads`, `bank_master`
