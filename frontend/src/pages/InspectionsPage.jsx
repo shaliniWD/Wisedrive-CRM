@@ -1169,13 +1169,19 @@ export default function InspectionsPage() {
   const handleScheduleUnscheduledSubmit = async () => {
     if (!scheduleUnscheduledInspection) return;
     
-    console.log('Schedule Form Data:', scheduleFormData);
-    console.log('Date value:', scheduleFormData.scheduled_date, 'Type:', typeof scheduleFormData.scheduled_date);
-    console.log('Time value:', scheduleFormData.scheduled_time, 'Type:', typeof scheduleFormData.scheduled_time);
+    // Debug logging
+    console.log('=== SCHEDULE SUBMIT DEBUG ===');
+    console.log('Full Form Data:', JSON.stringify(scheduleFormData, null, 2));
+    console.log('scheduled_date:', scheduleFormData.scheduled_date, '| type:', typeof scheduleFormData.scheduled_date, '| length:', scheduleFormData.scheduled_date?.length);
+    console.log('scheduled_time:', scheduleFormData.scheduled_time, '| type:', typeof scheduleFormData.scheduled_time, '| length:', scheduleFormData.scheduled_time?.length);
     
-    if (!scheduleFormData.scheduled_date || !scheduleFormData.scheduled_time) {
-      toast.error('Please select date and time');
-      console.log('Validation failed - date:', scheduleFormData.scheduled_date, 'time:', scheduleFormData.scheduled_time);
+    // Trim whitespace and check for empty strings
+    const dateValue = scheduleFormData.scheduled_date?.trim();
+    const timeValue = scheduleFormData.scheduled_time?.trim();
+    
+    if (!dateValue || !timeValue) {
+      toast.error(`Please select date and time. Current values - Date: "${dateValue || 'empty'}", Time: "${timeValue || 'empty'}"`);
+      console.log('Validation failed - dateValue:', dateValue, 'timeValue:', timeValue);
       return;
     }
     if (!scheduleFormData.city) {
