@@ -89,29 +89,29 @@ export default function HRModulePage() {
           {/* Employees Tab - Uses AdminPage employee section */}
           {activeTab === 'employees' && <AdminPageEmployeesSection />}
           
-          {/* Attendance Tab */}
-          {activeTab === 'attendance' && <AttendanceDashboard isHR={isHR} />}
-          
-          {/* Payroll Tab */}
-          {activeTab === 'payroll' && isHROrFinance && <PayrollDashboard isHR={isHR} isFinance={isFinance} />}
+          {/* Holiday Calendar Tab */}
+          {activeTab === 'holidays' && isHRHead && <HolidayCalendar />}
           
           {/* Leave Tab */}
-          {activeTab === 'leave' && <LeaveManagement isHR={isHR} />}
+          {activeTab === 'leave' && <LeaveManagement isHR={isHRHead} />}
           
-          {/* City Master Tab */}
-          {activeTab === 'city-master' && isHR && <CityManagement />}
+          {/* Attendance Tab */}
+          {activeTab === 'attendance' && <AttendanceDashboard isHR={isHRHead} />}
           
-          {/* Inspection City Tab - Assign cities to mechanics */}
-          {activeTab === 'inspection-city' && isInspectionHead && <InspectionCityManagement />}
+          {/* Payroll Tab */}
+          {activeTab === 'payroll' && isHROrFinance && <PayrollDashboard isHR={isHRHead} isFinance={isFinance} />}
           
           {/* Roles Tab - Uses AdminPage roles section */}
-          {activeTab === 'roles' && isHR && <AdminPageRolesSection />}
-          
-          {/* Holiday Calendar Tab */}
-          {activeTab === 'holidays' && isHR && <HolidayCalendar />}
+          {activeTab === 'roles' && isHRHead && <AdminPageRolesSection />}
           
           {/* Countries Tab - Uses AdminPage countries section (CEO only) */}
           {activeTab === 'countries' && isCEO && <AdminPageCountriesSection />}
+          
+          {/* City Master Tab */}
+          {activeTab === 'city-master' && isHRHead && <CityManagement />}
+          
+          {/* Inspection City Tab - Assign cities to mechanics */}
+          {activeTab === 'inspection-city' && isInspectionHead && <InspectionCityManagement />}
         </div>
       </div>
     </div>
