@@ -1316,6 +1316,8 @@ export default function BankOffersModal({ isOpen, onClose, lead, vehicle, applic
               <AddOfferForm
                 lead={lead}
                 application={application}
+                vehicle={vehicle}
+                bank={selectedBank}
                 onClose={() => setShowAddForm(false)}
                 onSuccess={handleFormSuccess}
               />
