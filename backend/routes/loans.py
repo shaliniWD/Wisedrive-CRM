@@ -91,7 +91,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 @router.get("/banks")
 async def get_banks(
     is_active: Optional[bool] = None,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Get all banks from master data"""
     query = {}
@@ -103,7 +103,7 @@ async def get_banks(
 
 
 @router.get("/banks/{bank_id}")
-async def get_bank(bank_id: str, current_user: dict = Depends(lambda: get_current_user)):
+async def get_bank(bank_id: str, current_user: dict = Depends(get_current_user)):
     """Get a specific bank"""
     bank = await db.bank_master.find_one({"id": bank_id}, {"_id": 0})
     if not bank:
@@ -114,7 +114,7 @@ async def get_bank(bank_id: str, current_user: dict = Depends(lambda: get_curren
 @router.post("/banks")
 async def create_bank(
     bank_data: BankMasterCreate,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Create a new bank in master data"""
     now = datetime.now(timezone.utc)
@@ -150,7 +150,7 @@ async def create_bank(
 async def update_bank(
     bank_id: str,
     bank_data: BankMasterUpdate,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Update a bank in master data"""
     bank = await db.bank_master.find_one({"id": bank_id})
@@ -176,7 +176,7 @@ async def update_bank(
 
 
 @router.delete("/banks/{bank_id}")
-async def delete_bank(bank_id: str, current_user: dict = Depends(lambda: get_current_user)):
+async def delete_bank(bank_id: str, current_user: dict = Depends(get_current_user)):
     """Delete a bank from master data"""
     result = await db.bank_master.delete_one({"id": bank_id})
     if result.deleted_count == 0:
@@ -188,7 +188,7 @@ async def delete_bank(bank_id: str, current_user: dict = Depends(lambda: get_cur
 async def add_bank_poc(
     bank_id: str,
     poc_data: BankPOC,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Add a point of contact to a bank"""
     bank = await db.bank_master.find_one({"id": bank_id})
@@ -221,7 +221,7 @@ async def get_loan_leads(
     date_to: Optional[str] = None,
     skip: int = 0,
     limit: int = 50,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Get loan leads with filtering"""
     query = {}
@@ -256,7 +256,7 @@ async def get_loan_leads(
 
 @router.get("/loan-leads/sync-customers")
 async def sync_loan_leads_from_customers(
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Sync loan leads from customers who have paid inspections"""
     now = datetime.now(timezone.utc)
@@ -317,7 +317,7 @@ async def sync_loan_leads_from_customers(
 
 
 @router.get("/loan-leads/stats")
-async def get_loan_lead_stats(current_user: dict = Depends(lambda: get_current_user)):
+async def get_loan_lead_stats(current_user: dict = Depends(get_current_user)):
     """Get loan lead statistics"""
     pipeline = [
         {"$group": {"_id": "$status", "count": {"$sum": 1}}}
@@ -338,7 +338,7 @@ async def get_loan_lead_stats(current_user: dict = Depends(lambda: get_current_u
 
 
 @router.get("/loan-leads/{lead_id}")
-async def get_loan_lead(lead_id: str, current_user: dict = Depends(lambda: get_current_user)):
+async def get_loan_lead(lead_id: str, current_user: dict = Depends(get_current_user)):
     """Get a specific loan lead with all details"""
     lead = await db.loan_leads.find_one({"id": lead_id}, {"_id": 0})
     if not lead:
@@ -350,7 +350,7 @@ async def get_loan_lead(lead_id: str, current_user: dict = Depends(lambda: get_c
 async def update_loan_lead(
     lead_id: str,
     update_data: LoanLeadUpdate,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Update a loan lead"""
     lead = await db.loan_leads.find_one({"id": lead_id})
@@ -381,7 +381,7 @@ async def update_loan_lead(
 @router.get("/loan-leads/{lead_id}/document-requirements")
 async def get_document_requirements(
     lead_id: str,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Get document requirements based on customer type"""
     lead = await db.loan_leads.find_one({"id": lead_id}, {"_id": 0})
@@ -421,7 +421,7 @@ class DocumentMetadata(BaseModel):
 async def add_loan_document(
     lead_id: str,
     doc_data: DocumentMetadata,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Add or update a document for a loan lead"""
     lead = await db.loan_leads.find_one({"id": lead_id})
@@ -462,7 +462,7 @@ async def add_loan_document(
 async def delete_loan_document(
     lead_id: str,
     document_id: str,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Delete a document from a loan lead"""
     result = await db.loan_leads.update_one(
@@ -489,7 +489,7 @@ class GenerateUploadUrlRequest(BaseModel):
 async def generate_document_upload_url(
     lead_id: str,
     request_data: GenerateUploadUrlRequest,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Generate a signed URL for document upload to Firebase"""
     lead = await db.loan_leads.find_one({"id": lead_id})
@@ -528,7 +528,7 @@ async def generate_document_upload_url(
 async def generate_document_download_url(
     lead_id: str,
     document_id: str,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Generate a signed URL for document download"""
     lead = await db.loan_leads.find_one({"id": lead_id}, {"_id": 0})
@@ -560,7 +560,7 @@ async def generate_document_download_url(
 async def request_credit_score_otp(
     lead_id: str,
     request_data: CreditScoreOTPRequest,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Request OTP for credit score check via Equifax (V1) or Experian (V4)"""
     try:
@@ -656,7 +656,7 @@ async def request_credit_score_otp(
 async def verify_credit_score_otp(
     lead_id: str,
     verify_data: CreditScoreVerifyRequest,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Verify OTP and fetch credit score report from Equifax (V1) or Experian (V4)"""
     try:
@@ -790,7 +790,7 @@ async def verify_credit_score_otp(
 @router.get("/loan-leads/{lead_id}/credit-score")
 async def get_credit_score(
     lead_id: str,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Get stored credit score for a loan lead"""
     lead = await db.loan_leads.find_one(
@@ -816,7 +816,7 @@ async def get_credit_score(
 async def add_vehicle_to_loan_lead(
     lead_id: str,
     vehicle_data: VehicleLoanDetailsCreate,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Add a vehicle to a loan lead"""
     lead = await db.loan_leads.find_one({"id": lead_id})
@@ -869,7 +869,7 @@ async def update_vehicle_in_loan_lead(
     lead_id: str,
     vehicle_id: str,
     vehicle_data: VehicleLoanDetailsCreate,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Update a vehicle in a loan lead"""
     lead = await db.loan_leads.find_one({"id": lead_id})
@@ -904,7 +904,7 @@ async def update_vehicle_in_loan_lead(
 async def delete_vehicle_from_loan_lead(
     lead_id: str,
     vehicle_id: str,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Delete a vehicle from a loan lead"""
     result = await db.loan_leads.update_one(
@@ -929,7 +929,7 @@ async def delete_vehicle_from_loan_lead(
 async def check_bank_eligibility(
     lead_id: str,
     vehicle_id: str,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Check bank eligibility for a vehicle - MOCKED for now"""
     lead = await db.loan_leads.find_one({"id": lead_id}, {"_id": 0})
@@ -1024,7 +1024,7 @@ async def check_bank_eligibility(
 async def create_loan_application(
     lead_id: str,
     application_data: LoanApplicationCreate,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Create a loan application for a vehicle to a bank"""
     lead = await db.loan_leads.find_one({"id": lead_id}, {"_id": 0})
@@ -1082,7 +1082,7 @@ async def update_loan_application(
     lead_id: str,
     application_id: str,
     update_data: LoanApplicationUpdate,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Update loan application status and details"""
     lead = await db.loan_leads.find_one({"id": lead_id}, {"_id": 0})
@@ -1132,7 +1132,7 @@ async def update_loan_application(
 @router.get("/loan-leads/{lead_id}/offers")
 async def get_loan_offers(
     lead_id: str,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Get all loan offers for a lead"""
     lead = await db.loan_leads.find_one({"id": lead_id}, {"_id": 0})
@@ -1146,7 +1146,7 @@ async def get_loan_offers(
 async def create_loan_offer(
     lead_id: str,
     offer_data: LoanOfferCreate,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Create a new loan offer from a bank (after approval)"""
     lead = await db.loan_leads.find_one({"id": lead_id}, {"_id": 0})
@@ -1334,7 +1334,7 @@ async def create_loan_offer(
 async def get_loan_offer(
     lead_id: str,
     offer_id: str,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Get a specific loan offer"""
     lead = await db.loan_leads.find_one({"id": lead_id}, {"_id": 0})
@@ -1353,7 +1353,7 @@ async def update_loan_offer(
     lead_id: str,
     offer_id: str,
     update_data: LoanOfferUpdate,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Update loan offer (status, charges negotiation)"""
     lead = await db.loan_leads.find_one({"id": lead_id}, {"_id": 0})
@@ -1435,7 +1435,7 @@ async def update_loan_offer(
 async def accept_loan_offer(
     lead_id: str,
     offer_id: str,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Accept a loan offer - finalizes the charges and marks as accepted"""
     lead = await db.loan_leads.find_one({"id": lead_id}, {"_id": 0})
@@ -1489,7 +1489,7 @@ async def add_charge_to_offer(
     amount: float,
     is_negotiable: bool = True,
     notes: Optional[str] = None,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Add a new charge to an existing offer"""
     lead = await db.loan_leads.find_one({"id": lead_id}, {"_id": 0})
@@ -1560,7 +1560,7 @@ async def create_manual_bank_offer(
     insurance_charges: Optional[float] = None,
     bank_reference_number: Optional[str] = None,
     notes: Optional[str] = None,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Manually add a bank offer even if not eligible by system rules.
