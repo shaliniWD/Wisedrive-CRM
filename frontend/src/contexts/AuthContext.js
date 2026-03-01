@@ -184,17 +184,10 @@ export const AuthProvider = ({ children }) => {
     return fullUserData;
   };
 
-  const logout = async () => {
+  const handleLogout = async () => {
     // End session tracking before logout
     await endSessionTracking();
-    
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    delete axios.defaults.headers.common['Authorization'];
-    setToken(null);
-    setUser(null);
-    setPermissions([]);
-    setVisibleTabs([]);
+    logout();
   };
 
   // Check if user has a specific permission
