@@ -251,6 +251,17 @@ def create_auth_router(db, secret_key: str, rbac_service=None):
         """Get current user with full permissions"""
         return current_user
     
+    @router.post("/refresh-token")
+    async def refresh_token(current_user: dict = Depends(get_current_user_internal)):
+        """Refresh access token - returns new token with extended expiry"""
+        # Create new token with current user's data
+        access_token = create_access_token({"sub": current_user["id"], "email": current_user["email"]})
+        
+        return {
+            "access_token": access_token,
+            "token_type": "bearer"
+        }
+    
     # Store get_current_user on router for external access
     router.get_current_user = get_current_user_internal
     
