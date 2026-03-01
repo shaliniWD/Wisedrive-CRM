@@ -608,6 +608,8 @@ const AddOfferForm = ({ lead, application, onClose, onSuccess }) => {
         document_handling_fee: formData.document_handling_fee ? parseFloat(formData.document_handling_fee) : null,
         rto_charges: formData.rto_charges ? parseFloat(formData.rto_charges) : null,
         insurance_charges: formData.insurance_charges ? parseFloat(formData.insurance_charges) : null,
+        valuation_charges: formData.valuation_charges ? parseFloat(formData.valuation_charges) : null,
+        stamp_duty: formData.stamp_duty ? parseFloat(formData.stamp_duty) : null,
       });
       toast.success('Bank offer added successfully');
       onSuccess();
