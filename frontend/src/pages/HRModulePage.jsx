@@ -97,6 +97,9 @@ export default function HRModulePage() {
           {/* Leave Tab */}
           {activeTab === 'leave' && <LeaveManagement isHR={isHR} />}
           
+          {/* City Master Tab */}
+          {activeTab === 'city-master' && isHR && <CityManagement />}
+          
           {/* Inspection City Tab - Assign cities to mechanics */}
           {activeTab === 'inspection-city' && isInspectionHead && <InspectionCityManagement />}
           
