@@ -10159,23 +10159,26 @@ async def sync_all_ad_mappings(current_user: dict = Depends(get_current_user)):
     
     logger.info("Starting comprehensive ad mapping sync from Meta...")
     
-    # Region to city mapping (for Indian states)
-    region_to_city = {
-        "Karnataka": "Bangalore",
-        "Tamil Nadu": "Chennai", 
-        "Maharashtra": "Mumbai",
-        "Telangana": "Hyderabad",
-        "Andhra Pradesh": "Vizag",
-        "Delhi": "Delhi",
-        "West Bengal": "Kolkata",
-        "Gujarat": "Ahmedabad",
-        "Kerala": "Kochi",
-        "Rajasthan": "Jaipur",
-        "Uttar Pradesh": "Lucknow",
-        "Punjab": "Chandigarh",
-        "Haryana": "Delhi",
-        "Madhya Pradesh": "Indore",
-    }
+    # Build region_to_city mapping dynamically from Cities Master
+    # Assumes city.state field contains the state/region name
+    all_cities = await db.cities.find({"is_active": True}, {"_id": 0, "name": 1, "state": 1, "aliases": 1}).to_list(100)
+    region_to_city = {}
+    city_keywords = {}
+    
+    for city_doc in all_cities:
+        canonical_name = city_doc["name"]
+        state = city_doc.get("state", "")
+        
+        # Map state to city
+        if state:
+            region_to_city[state] = canonical_name
+        
+        # Build city keywords from name and aliases
+        city_keywords[canonical_name.lower()] = canonical_name
+        for alias in city_doc.get("aliases", []):
+            city_keywords[alias.lower()] = canonical_name
+    
+    logger.info(f"Built region_to_city with {len(region_to_city)} entries and city_keywords with {len(city_keywords)} entries from Cities Master")
     
     # Fetch all ads with targeting from Meta
     meta_ads = await meta_ads_service.get_ads_with_targeting()
