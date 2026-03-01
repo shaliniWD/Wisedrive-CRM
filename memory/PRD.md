@@ -395,8 +395,14 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
 - Verify LiveProgressModal Vaahan/RPP auto-load fix
 - Verify Meta API Key Settings tab in Ads Management
 
-### P3 (Low Priority - Refactoring)
-- Break down `server.py` into modular routers (~19,500 lines - URGENT)
+### P3 (Low Priority - Refactoring) - IN PROGRESS (Mar 1, 2026)
+- ~~Break down `server.py` into modular routers~~ **IN PROGRESS** (~17,100 lines now, was 18,600)
+  - ✅ `loans.py` - Extracted Feb 28
+  - ✅ `customers.py` - Extracted Mar 1 (~700 lines)
+  - ✅ `finance.py` - Extracted Mar 1 (~700 lines)
+  - 🟡 `hr.py` - Next to extract (38 endpoints)
+  - 🟡 `inspections.py` - Needs updating (15 endpoints)
+  - 🟡 `mechanic.py` - To extract (9 endpoints)
 - Refactor `InspectionsPage.jsx` into components (~4,100 lines)
 - Refactor `LoansPage.jsx` into smaller modal components
 - Refactor `scanner.tsx` into smaller components
