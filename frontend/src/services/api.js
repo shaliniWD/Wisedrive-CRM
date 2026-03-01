@@ -649,7 +649,14 @@ export const loansApi = {
   updateOffer: (leadId, offerId, data) => axios.put(`${API_URL}/loan-leads/${leadId}/offers/${offerId}`, data),
   acceptOffer: (leadId, offerId) => axios.post(`${API_URL}/loan-leads/${leadId}/offers/${offerId}/accept`),
   addChargeToOffer: (leadId, offerId, params) => axios.post(`${API_URL}/loan-leads/${leadId}/offers/${offerId}/add-charge`, null, { params }),
+  removeChargeFromOffer: (leadId, offerId, chargeType) => axios.delete(`${API_URL}/loan-leads/${leadId}/offers/${offerId}/charges/${chargeType}`),
   createManualOffer: (leadId, params) => axios.post(`${API_URL}/loan-leads/${leadId}/manual-offer`, null, { params }),
+  
+  // Charge Types
+  getChargeTypes: (includeInactive = false) => axios.get(`${API_URL}/charge-types`, { params: { include_inactive: includeInactive } }),
+  createChargeType: (data) => axios.post(`${API_URL}/charge-types`, data),
+  updateChargeType: (id, params) => axios.put(`${API_URL}/charge-types/${id}`, null, { params }),
+  deleteChargeType: (id) => axios.delete(`${API_URL}/charge-types/${id}`),
 };
 
 // Bank Master API
