@@ -105,15 +105,29 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
   - `POST /api/loan-leads/{lead_id}/manual-offer` - Create manual offer (when eligibility failed)
   - `POST /api/loan-leads/{lead_id}/offers/{offer_id}/accept` - Accept an offer
   - `PUT /api/loan-leads/{lead_id}/offers/{offer_id}` - Update charges (negotiation)
-- **Models:** `LoanOffer`, `LoanOfferCharge` in `/app/backend/models/loan.py`
+  - `POST /api/loan-leads/{lead_id}/offers/{offer_id}/add-charge` - Add new charge to offer
+  - `DELETE /api/loan-leads/{lead_id}/offers/{offer_id}/charges/{charge_type}` - Remove charge
+  - `GET /api/charge-types` - Get all charge types (system + custom)
+  - `POST /api/charge-types` - Create custom charge type
+  - `PUT /api/charge-types/{id}` - Update charge type
+  - `DELETE /api/charge-types/{id}` - Deactivate charge type
+- **Models:** `LoanOffer`, `LoanOfferCharge`, `ChargeType` in `/app/backend/models/loan.py`
 - **Frontend Components:**
   - `/app/frontend/src/components/loans/BankOffersModal.jsx` - Full offers management modal
   - Integrated into `LoanProcessingModal` in `LoansPage.jsx`
+- **Default Charge Types (System):**
+  - Processing Fee (% based)
+  - Document Handling Fee
+  - RTO Charges
+  - Insurance Charges
+  - Valuation Charges ✅ NEW
+  - Stamp Duty Amount ✅ NEW
 - **Features:**
   - Track Loan Amount Approved + Loan Insurance = Total Loan Amount
-  - Add charges: Processing Fee (% or fixed), Document Handling Fee, RTO Charges, Insurance Charges
+  - Add charges from dropdown of saved charge types
+  - Create custom charge types that are saved to DB for reuse
   - Real-time Net Disbursal calculation (Total Loan - Total Charges)
-  - Mark charges as negotiable, waive charges
+  - Mark charges as negotiable, waive charges, delete charges
   - Negotiation history tracking with timestamps
   - Multiple offers from different banks for comparison
   - Manual offer entry for banker-approved exceptions
