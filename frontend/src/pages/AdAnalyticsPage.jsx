@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { metaAdsApi, adCityMappingsApi, partnersApi } from '@/services/api';
+import { metaAdsApi, adCityMappingsApi, partnersApi, citiesApi } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { 
