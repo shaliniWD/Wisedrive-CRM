@@ -1848,7 +1848,7 @@ async def create_charge_type(
     }
     
     await db.charge_types.insert_one(charge_type)
-    del charge_type["_id"] if "_id" in charge_type else None
+    charge_type.pop("_id", None)
     
     return {"message": "Charge type created successfully", "charge_type": charge_type}
 
