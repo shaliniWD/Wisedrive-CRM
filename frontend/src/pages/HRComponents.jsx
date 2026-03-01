@@ -2793,17 +2793,23 @@ export function InspectionCityManagement() {
   const fetchMechanics = useCallback(async () => {
     if (!selectedCountryId) return;
     
+    setLoading(true); // Show loader while fetching mechanics
     try {
       // Fetch employees with MECHANIC role for the selected country
       const response = await hrApi.getEmployees({ country_id: selectedCountryId });
       const employees = response.data || [];
       
-      // Filter only mechanics (check role)
+      // Filter only mechanics (check role_name since role_code is not returned by API)
       const mechanicEmployees = employees.filter(emp => {
-        const roleCode = emp.roles?.[0]?.code || emp.role_code || '';
-        return roleCode === 'MECHANIC' || roleCode.toLowerCase().includes('mechanic');
+        const roleName = emp.role_name || '';
+        const roleCode = emp.role_code || '';
+        return roleName.toLowerCase() === 'mechanic' || 
+               roleCode === 'MECHANIC' || 
+               roleCode.toLowerCase().includes('mechanic') ||
+               roleName.toLowerCase().includes('mechanic');
       });
       
+      console.log(`Found ${mechanicEmployees.length} mechanics out of ${employees.length} employees`);
       setMechanics(mechanicEmployees);
       
       // Update available inspection cities from selected country
@@ -2811,7 +2817,10 @@ export function InspectionCityManagement() {
       const inspCities = selectedCountry?.inspection_cities || [];
       setAvailableInspectionCities(inspCities);
     } catch (error) {
+      console.error('Failed to load mechanics:', error);
       toast.error('Failed to load mechanics');
+    } finally {
+      setLoading(false);
     }
   }, [selectedCountryId, countries]);
   
