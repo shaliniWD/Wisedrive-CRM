@@ -118,11 +118,21 @@ const ChargeRow = ({ charge, onUpdate, isEditing, disabled }) => {
 };
 
 // Single Offer Card Component
-const OfferCard = ({ offer, onUpdate, onAccept, lead, expanded, onToggleExpand }) => {
+const OfferCard = ({ offer, onUpdate, onAccept, lead, expanded, onToggleExpand, chargeTypes }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [chargesUpdates, setChargesUpdates] = useState([]);
   const [saving, setSaving] = useState(false);
   const [accepting, setAccepting] = useState(false);
+  const [showAddCharge, setShowAddCharge] = useState(false);
+  const [addingCharge, setAddingCharge] = useState(false);
+  const [newCharge, setNewCharge] = useState({
+    charge_type: '',
+    charge_name: '',
+    amount: '',
+    is_percentage: false,
+    is_negotiable: true,
+    notes: ''
+  });
 
   const handleChargeUpdate = (update) => {
     setChargesUpdates(prev => {
@@ -172,6 +182,62 @@ const OfferCard = ({ offer, onUpdate, onAccept, lead, expanded, onToggleExpand }
       setAccepting(false);
     }
   };
+
+  const handleAddCharge = async () => {
+    if (!newCharge.charge_type || !newCharge.amount) {
+      toast.error('Please select charge type and enter amount');
+      return;
+    }
+
+    setAddingCharge(true);
+    try {
+      await loansApi.addChargeToOffer(lead.id, offer.id, {
+        charge_type: newCharge.charge_type,
+        charge_name: newCharge.charge_name || newCharge.charge_type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+        amount: parseFloat(newCharge.amount),
+        is_percentage: newCharge.is_percentage,
+        percentage_value: newCharge.is_percentage ? parseFloat(newCharge.amount) : null,
+        is_negotiable: newCharge.is_negotiable,
+        notes: newCharge.notes || null
+      });
+      toast.success('Charge added successfully');
+      setShowAddCharge(false);
+      setNewCharge({ charge_type: '', charge_name: '', amount: '', is_percentage: false, is_negotiable: true, notes: '' });
+      onUpdate();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to add charge');
+    } finally {
+      setAddingCharge(false);
+    }
+  };
+
+  const handleRemoveCharge = async (chargeType) => {
+    try {
+      await loansApi.removeChargeFromOffer(lead.id, offer.id, chargeType);
+      toast.success('Charge removed');
+      onUpdate();
+    } catch (err) {
+      toast.error('Failed to remove charge');
+    }
+  };
+
+  const handleChargeTypeSelect = (value) => {
+    const selectedType = chargeTypes.find(ct => ct.charge_key === value);
+    if (selectedType) {
+      setNewCharge({
+        ...newCharge,
+        charge_type: selectedType.charge_key,
+        charge_name: selectedType.charge_name,
+        amount: selectedType.is_percentage ? (selectedType.default_percentage || '') : (selectedType.default_amount || ''),
+        is_percentage: selectedType.is_percentage,
+        is_negotiable: selectedType.is_negotiable
+      });
+    }
+  };
+
+  // Get existing charge types on this offer
+  const existingChargeTypes = offer.charges?.map(c => c.charge_type) || [];
+  const availableChargeTypes = chargeTypes.filter(ct => !existingChargeTypes.includes(ct.charge_key));
 
   // Calculate current totals from charges
   const activeCharges = offer.charges?.filter(c => !c.is_waived) || [];
