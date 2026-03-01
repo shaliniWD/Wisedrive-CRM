@@ -7,6 +7,7 @@ Handles all customer-related endpoints including:
 - Sales rep assignment
 """
 from fastapi import APIRouter, HTTPException, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone, timedelta
 from pydantic import BaseModel
@@ -18,9 +19,12 @@ logger = logging.getLogger(__name__)
 # Create router
 router = APIRouter(prefix="/customers", tags=["Customers"])
 
+# Security scheme
+security = HTTPBearer()
+
 # These will be set by init_customers_routes
 db = None
-get_current_user = None
+_auth_validator = None
 rbac_service = None
 
 
@@ -48,10 +52,17 @@ class CustomerNote(BaseModel):
 
 def init_customers_routes(_db, _get_current_user, _rbac_service=None):
     """Initialize customers routes with dependencies"""
-    global db, get_current_user, rbac_service
+    global db, _auth_validator, rbac_service
     db = _db
-    get_current_user = _get_current_user
+    _auth_validator = _get_current_user
     rbac_service = _rbac_service
+
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
+    """Authenticate user using the injected validator"""
+    if _auth_validator is None:
+        raise HTTPException(status_code=500, detail="Auth not initialized")
+    return await _auth_validator(credentials)
 
 
 async def get_sales_role_ids():
