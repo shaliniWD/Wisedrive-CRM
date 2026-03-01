@@ -680,13 +680,19 @@ async def get_loan_leads(
             {"customer_name": {"$regex": search, "$options": "i"}},
             {"customer_phone": {"$regex": search, "$options": "i"}}
         ]
+    
+    # Fix date filtering - append time components for proper ISO string comparison
     if date_from:
-        query["created_at"] = {"$gte": date_from}
+        # Start of day: append T00:00:00
+        date_from_iso = f"{date_from}T00:00:00" if "T" not in date_from else date_from
+        query["created_at"] = {"$gte": date_from_iso}
     if date_to:
+        # End of day: append T23:59:59
+        date_to_iso = f"{date_to}T23:59:59" if "T" not in date_to else date_to
         if "created_at" in query:
-            query["created_at"]["$lte"] = date_to
+            query["created_at"]["$lte"] = date_to_iso
         else:
-            query["created_at"] = {"$lte": date_to}
+            query["created_at"] = {"$lte": date_to_iso}
     
     total = await db.loan_leads.count_documents(query)
     leads = await db.loan_leads.find(query, {"_id": 0}).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
