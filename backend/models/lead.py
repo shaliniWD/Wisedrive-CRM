@@ -105,6 +105,13 @@ class LeadUpdate(BaseModel):
     payment_link: Optional[str] = None
     partner_id: Optional[str] = None
     partner_name: Optional[str] = None
+    # Vehicle fields
+    vehicle_number: Optional[str] = None
+    vehicle_make: Optional[str] = None
+    vehicle_model: Optional[str] = None
+    vehicle_year: Optional[str] = None
+    vehicle_fuel_type: Optional[str] = None
+    vehicle_data: Optional[dict] = None
 
 
 class Lead(LeadBase):
