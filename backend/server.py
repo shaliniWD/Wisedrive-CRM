@@ -271,6 +271,147 @@ async def auto_fix_password_hashes():
         logger.info(f"Password validation: All {valid_count} users have valid password hashes")
 
 
+async def auto_migrate_bangalore_to_bengaluru():
+    """
+    Automatically migrate Bangalore to Bengaluru on startup.
+    This ensures:
+    1. The city is named "Bengaluru" (official name)
+    2. "Bangalore" is an alias
+    3. All existing data references are updated
+    
+    This runs on every startup but only makes changes if needed.
+    """
+    OLD_NAME = "Bangalore"
+    NEW_NAME = "Bengaluru"
+    STATE = "Karnataka"
+    
+    # Check if migration is needed
+    bangalore_city = await db.cities.find_one(
+        {"name": {"$regex": f"^{OLD_NAME}$", "$options": "i"}},
+        {"_id": 0}
+    )
+    
+    bengaluru_city = await db.cities.find_one(
+        {"name": {"$regex": f"^{NEW_NAME}$", "$options": "i"}},
+        {"_id": 0}
+    )
+    
+    # If Bengaluru already exists and Bangalore doesn't, migration is complete
+    if bengaluru_city and not bangalore_city:
+        # Just verify Bangalore is in aliases
+        aliases = bengaluru_city.get("aliases", [])
+        if OLD_NAME not in aliases:
+            aliases.append(OLD_NAME)
+            await db.cities.update_one(
+                {"id": bengaluru_city["id"]},
+                {"$set": {"aliases": aliases}}
+            )
+            logger.info(f"Added '{OLD_NAME}' as alias to '{NEW_NAME}'")
+        return
+    
+    # If neither exists, create Bengaluru with Bangalore as alias
+    if not bangalore_city and not bengaluru_city:
+        new_city = {
+            "id": str(uuid.uuid4()),
+            "name": NEW_NAME,
+            "state": STATE,
+            "aliases": [OLD_NAME, "BLR"],
+            "country_id": "india",
+            "is_active": True,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_by": "system"
+        }
+        await db.cities.insert_one(new_city)
+        logger.info(f"Created city '{NEW_NAME}' with aliases ['{OLD_NAME}', 'BLR']")
+        return
+    
+    # If Bangalore exists, we need to migrate
+    if bangalore_city:
+        logger.info(f"Starting auto-migration: '{OLD_NAME}' -> '{NEW_NAME}'")
+        
+        stats = {"leads": 0, "customers": 0, "inspections": 0, "ad_mappings": 0, 
+                 "employees_inspection": 0, "employees_assigned": 0, "round_robin": 0}
+        
+        # Step 1: Update Cities Master
+        if bengaluru_city:
+            # Both exist - merge into Bengaluru
+            current_aliases = bengaluru_city.get("aliases", [])
+            if OLD_NAME not in current_aliases:
+                current_aliases.append(OLD_NAME)
+            for alias in bangalore_city.get("aliases", []):
+                if alias not in current_aliases and alias.lower() != NEW_NAME.lower():
+                    current_aliases.append(alias)
+            await db.cities.update_one(
+                {"id": bengaluru_city["id"]},
+                {"$set": {"aliases": current_aliases, "state": STATE}}
+            )
+            await db.cities.delete_one({"id": bangalore_city["id"]})
+            logger.info(f"Merged '{OLD_NAME}' into '{NEW_NAME}'")
+        else:
+            # Only Bangalore exists - rename it
+            old_aliases = bangalore_city.get("aliases", [])
+            new_aliases = [a for a in old_aliases if a.lower() != OLD_NAME.lower()]
+            if OLD_NAME not in new_aliases:
+                new_aliases.append(OLD_NAME)
+            if "BLR" not in new_aliases:
+                new_aliases.append("BLR")
+            
+            await db.cities.update_one(
+                {"id": bangalore_city["id"]},
+                {"$set": {"name": NEW_NAME, "aliases": new_aliases, "state": STATE}}
+            )
+            logger.info(f"Renamed '{OLD_NAME}' to '{NEW_NAME}'")
+        
+        # Step 2: Update all references (case-insensitive)
+        old_regex = {"$regex": f"^{OLD_NAME}$", "$options": "i"}
+        
+        # Update single-value city fields
+        result = await db.leads.update_many({"city": old_regex}, {"$set": {"city": NEW_NAME}})
+        stats["leads"] = result.modified_count
+        
+        result = await db.customers.update_many({"city": old_regex}, {"$set": {"city": NEW_NAME}})
+        stats["customers"] = result.modified_count
+        
+        result = await db.inspections.update_many({"city": old_regex}, {"$set": {"city": NEW_NAME}})
+        stats["inspections"] = result.modified_count
+        
+        result = await db.ad_city_mappings.update_many({"city": old_regex}, {"$set": {"city": NEW_NAME}})
+        stats["ad_mappings"] = result.modified_count
+        
+        result = await db.round_robin_counters.update_many({"city": old_regex}, {"$set": {"city": NEW_NAME}})
+        stats["round_robin"] = result.modified_count
+        
+        # Update array fields in users
+        users_insp = await db.users.find({"inspection_cities": old_regex}).to_list(1000)
+        for user in users_insp:
+            old_cities = user.get("inspection_cities", [])
+            new_cities = list(set([NEW_NAME if c.lower() == OLD_NAME.lower() else c for c in old_cities]))
+            await db.users.update_one({"_id": user["_id"]}, {"$set": {"inspection_cities": new_cities}})
+            stats["employees_inspection"] += 1
+        
+        users_assigned = await db.users.find({"assigned_cities": old_regex}).to_list(1000)
+        for user in users_assigned:
+            old_cities = user.get("assigned_cities", [])
+            new_cities = list(set([NEW_NAME if c.lower() == OLD_NAME.lower() else c for c in old_cities]))
+            await db.users.update_one({"_id": user["_id"]}, {"$set": {"assigned_cities": new_cities}})
+            stats["employees_assigned"] += 1
+        
+        # Update country arrays
+        countries = await db.countries.find({
+            "$or": [{"leads_cities": old_regex}, {"inspection_cities": old_regex}]
+        }).to_list(100)
+        for country in countries:
+            update = {}
+            if "leads_cities" in country:
+                update["leads_cities"] = list(set([NEW_NAME if c.lower() == OLD_NAME.lower() else c for c in country["leads_cities"]]))
+            if "inspection_cities" in country:
+                update["inspection_cities"] = list(set([NEW_NAME if c.lower() == OLD_NAME.lower() else c for c in country["inspection_cities"]]))
+            if update:
+                await db.countries.update_one({"_id": country["_id"]}, {"$set": update})
+        
+        logger.info(f"City migration complete: {stats}")
+
+
 # ==================== AUTH MODELS ====================
 
 class UserLogin(BaseModel):
