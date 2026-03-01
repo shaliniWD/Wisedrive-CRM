@@ -5,6 +5,7 @@ export { default as DocumentsModal } from './DocumentsModal';
 export { default as VehicleDetailsModal } from './VehicleDetailsModal';
 export { default as LoanProcessingModal } from './LoanProcessingModal';
 export { default as CustomerProfileModal } from './CustomerProfileModal';
+export { default as CustomerDetailsModal } from './CustomerDetailsModal';
 export { default as VehicleDropdown } from './VehicleDropdown';
 export { StatusBadge, AppStatusBadge } from './StatusBadges';
 export { formatCurrency, STATUS_CONFIG, APP_STATUS_CONFIG } from './utils';
