@@ -27,7 +27,104 @@ class LoanApplicationStatus(str, Enum):
     IN_PROCESS = "IN_PROCESS"
     REJECTED_BY_BANK = "REJECTED_BY_BANK"
     APPROVED_BY_BANK = "APPROVED_BY_BANK"
+    OFFER_RECEIVED = "OFFER_RECEIVED"  # New: Bank has sent offer with charges
+    OFFER_NEGOTIATED = "OFFER_NEGOTIATED"  # New: Customer negotiated charges
+    OFFER_ACCEPTED = "OFFER_ACCEPTED"  # New: Customer accepted the offer
     LOAN_DISBURSED = "LOAN_DISBURSED"
+
+
+# Loan Offer Charges Model
+class LoanOfferCharge(BaseModel):
+    """Individual charge in a loan offer"""
+    charge_type: str  # processing_fee, document_handling, rto_charges, insurance_charges, other
+    charge_name: str
+    amount: float
+    is_percentage: bool = False  # If true, amount is a percentage of loan amount
+    percentage_value: Optional[float] = None  # Original percentage if applicable
+    is_waived: bool = False
+    is_negotiable: bool = True
+    notes: Optional[str] = None
+
+
+class LoanOffer(BaseModel):
+    """Bank loan offer with all charges - created when bank approves"""
+    id: str
+    application_id: str
+    loan_lead_id: str
+    vehicle_loan_id: str
+    bank_id: str
+    bank_name: str
+    
+    # Approved amounts
+    loan_amount_approved: float  # Principal approved by bank
+    loan_insurance: float = 0  # Insurance added to loan
+    total_loan_amount: float  # loan_amount_approved + loan_insurance
+    
+    # Interest and tenure
+    interest_rate: float
+    tenure_months: int
+    emi_amount: float
+    
+    # Charges (deducted from total loan amount)
+    charges: List[LoanOfferCharge] = []
+    total_charges: float = 0  # Sum of all non-waived charges
+    
+    # Net disbursal
+    net_disbursal_amount: float  # total_loan_amount - total_charges
+    
+    # Bank reference
+    bank_reference_number: Optional[str] = None
+    bank_sanction_letter_url: Optional[str] = None
+    
+    # Offer status
+    offer_status: str = "PENDING"  # PENDING, NEGOTIATING, ACCEPTED, REJECTED, EXPIRED
+    offer_valid_until: Optional[datetime] = None
+    
+    # Negotiation history
+    negotiation_history: List[dict] = []
+    
+    # Final accepted values (after negotiation)
+    final_charges: Optional[List[LoanOfferCharge]] = None
+    final_net_disbursal: Optional[float] = None
+    
+    # Audit
+    created_at: datetime
+    updated_at: datetime
+    created_by: Optional[str] = None
+
+
+class LoanOfferCreate(BaseModel):
+    """Create a new loan offer"""
+    application_id: str
+    loan_amount_approved: float
+    loan_insurance: float = 0
+    interest_rate: float
+    tenure_months: int
+    bank_reference_number: Optional[str] = None
+    offer_valid_until: Optional[datetime] = None
+    
+    # Initial charges
+    processing_fee_percent: Optional[float] = None  # 0-2%
+    processing_fee_amount: Optional[float] = None  # Fixed amount if not percentage
+    document_handling_fee: Optional[float] = None
+    rto_charges: Optional[float] = None
+    insurance_charges: Optional[float] = None  # If car doesn't have existing insurance
+    other_charges: Optional[List[dict]] = None  # List of {name, amount}
+
+
+class LoanOfferChargeUpdate(BaseModel):
+    """Update a single charge (for negotiation)"""
+    charge_type: str
+    new_amount: Optional[float] = None
+    is_waived: Optional[bool] = None
+    notes: Optional[str] = None
+
+
+class LoanOfferUpdate(BaseModel):
+    """Update loan offer (including negotiation)"""
+    offer_status: Optional[str] = None
+    charges_updates: Optional[List[LoanOfferChargeUpdate]] = None
+    negotiation_notes: Optional[str] = None
 
 
 # Document Models
