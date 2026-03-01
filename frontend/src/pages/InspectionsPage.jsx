@@ -1114,7 +1114,7 @@ export default function InspectionsPage() {
     }
   }, [search, filterCity, filterStatus, activeTab, getDateRange]);
 
-  useEffect(() => { fetchData(); fetchMechanics(); }, [fetchData, fetchMechanics]);
+  useEffect(() => { fetchData(); fetchMechanics(); fetchCityAliases(); }, [fetchData, fetchMechanics, fetchCityAliases]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
