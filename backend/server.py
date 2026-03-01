@@ -11548,7 +11548,7 @@ api_router.include_router(finance_router, tags=["Finance"])
 
 # Import and include HR router (refactored from server.py)
 from routes.hr import router as hr_router, init_hr_routes
-init_hr_routes(db, get_current_user, attendance_service, payroll_service, leave_service, storage_service)
+init_hr_routes(db, get_current_user, attendance_service, payroll_service, leave_service, get_storage_service())
 api_router.include_router(hr_router, tags=["HR"])
 
 # Import and include ESS Mobile API routes
