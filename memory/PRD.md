@@ -42,9 +42,11 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
 
 ### Loans Module - COMPLETED (Feb 28, 2026)
 - **Backend Models:** `/app/backend/models/loan.py`
+- **Backend Routes:** `/app/backend/routes/loans.py` (~1,738 lines, 32 endpoints)
 - **Frontend Page:** `/app/frontend/src/pages/LoansPage.jsx`
 - **Bank Master Page:** `/app/frontend/src/pages/BankMasterPage.jsx`
-- **Status:** ✅ FULLY FUNCTIONAL with multi-vehicle support, document uploads & comprehensive credit scoring
+- **Bank Offers Modal:** `/app/frontend/src/components/loans/BankOffersModal.jsx` ✅ NEW (Mar 1, 2026)
+- **Status:** ✅ FULLY FUNCTIONAL with multi-vehicle support, document uploads, credit scoring & bank offers
 - **Features:**
   - Loan leads from inspection customers (auto-sync from paid inspections)
   - Bank master data management (4 banks: HDFC, ICICI, Axis, Kotak)
