@@ -1239,6 +1239,7 @@ export default function BankOffersModal({ isOpen, onClose, lead, vehicle, applic
                   onToggleExpand={handleToggleExpand}
                   onUpdate={fetchOffers}
                   onAccept={onUpdate}
+                  chargeTypes={chargeTypes}
                 />
               ))}
             </div>
