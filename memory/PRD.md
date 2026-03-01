@@ -583,3 +583,18 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
 - **File Modified:** `/app/backend/server.py` (UpdateScheduleRequest model + endpoint)
 - **Frontend Already Sends:** The frontend was already sending vehicle data (lines 1181-1190 in InspectionsPage.jsx)
 
+
+## Date Filter Enhancement (Mar 1, 2026 - Session 2)
+
+### Added "Last 7 Days" and "Last 14 Days" Filters - ✅ COMPLETED
+- **Scope:** All 4 main data pages (Leads, Customers, Inspections, Loans)
+- **Files Modified:**
+  - `/app/frontend/src/components/ui/DateRangeFilter.jsx` - Updated shared component with new presets
+  - `/app/frontend/src/pages/LeadsPage.jsx` - Added Last 7 Days, Last 14 Days presets
+  - `/app/frontend/src/pages/CustomersPage.jsx` - Added Last 7 Days, Last 14 Days presets
+  - `/app/frontend/src/pages/InspectionsPage.jsx` - Added Last 7 Days, Last 14 Days presets
+  - `/app/frontend/src/pages/LoansPage.jsx` - Added full date filter UI (was missing)
+- **Date Calculation:**
+  - Last 7 Days: Today - 6 days (includes today)
+  - Last 14 Days: Today - 13 days (includes today)
+
