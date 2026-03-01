@@ -33,10 +33,39 @@ class LoanApplicationStatus(str, Enum):
     LOAN_DISBURSED = "LOAN_DISBURSED"
 
 
+# Loan Offer Charge Types - Saved to DB for reuse
+class ChargeType(BaseModel):
+    """Reusable charge type that can be added to any offer"""
+    id: str
+    charge_key: str  # Unique key like 'processing_fee', 'valuation_charges', etc.
+    charge_name: str  # Display name
+    description: Optional[str] = None
+    default_amount: Optional[float] = None
+    is_percentage: bool = False
+    default_percentage: Optional[float] = None
+    is_negotiable: bool = True
+    is_system: bool = False  # True for built-in charges, False for custom
+    is_active: bool = True
+    created_at: datetime
+    updated_at: datetime
+    created_by: Optional[str] = None
+
+
+class ChargeTypeCreate(BaseModel):
+    """Create a new charge type"""
+    charge_key: str
+    charge_name: str
+    description: Optional[str] = None
+    default_amount: Optional[float] = None
+    is_percentage: bool = False
+    default_percentage: Optional[float] = None
+    is_negotiable: bool = True
+
+
 # Loan Offer Charges Model
 class LoanOfferCharge(BaseModel):
     """Individual charge in a loan offer"""
-    charge_type: str  # processing_fee, document_handling, rto_charges, insurance_charges, other
+    charge_type: str  # processing_fee, document_handling, rto_charges, insurance_charges, valuation_charges, stamp_duty, custom
     charge_name: str
     amount: float
     is_percentage: bool = False  # If true, amount is a percentage of loan amount
