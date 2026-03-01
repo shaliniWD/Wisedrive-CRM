@@ -13579,6 +13579,37 @@ async def generate_firebase_upload_url(
         raise HTTPException(status_code=500, detail=f"Failed to generate upload URL: {str(e)}")
 
 
+@api_router.post("/media/upload-direct")
+async def upload_media_direct(
+    key: str = Form(...),
+    content_type: str = Form(...),
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """Direct upload endpoint for local storage (development mode)"""
+    try:
+        # Save file to local storage
+        storage_path = f"/app/storage/{key}"
+        dir_path = os.path.dirname(storage_path)
+        os.makedirs(dir_path, exist_ok=True)
+        
+        # Read and save file
+        file_content = await file.read()
+        with open(storage_path, 'wb') as f:
+            f.write(file_content)
+        
+        logger.info(f"[LOCAL_UPLOAD] File saved to: {storage_path}")
+        
+        return {
+            "success": True,
+            "file_url": storage_path,
+            "key": key
+        }
+    except Exception as e:
+        logger.error(f"[LOCAL_UPLOAD] Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
+
 @api_router.post("/media/get-download-url")
 async def get_firebase_download_url(
     firebase_path: str = Form(...),
