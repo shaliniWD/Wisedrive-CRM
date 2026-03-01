@@ -1306,6 +1306,8 @@ export default function InspectionsPage() {
         <div className="flex items-center gap-1 p-1 bg-gray-100 rounded-lg">
           {[
             { key: 'today', label: 'Today' },
+            { key: 'last_7_days', label: 'Last 7 Days' },
+            { key: 'last_14_days', label: 'Last 14 Days' },
             { key: 'week', label: 'This Week' },
             { key: 'month', label: 'This Month' },
             { key: 'year', label: 'This Year' },
