@@ -1169,8 +1169,13 @@ export default function InspectionsPage() {
   const handleScheduleUnscheduledSubmit = async () => {
     if (!scheduleUnscheduledInspection) return;
     
+    console.log('Schedule Form Data:', scheduleFormData);
+    console.log('Date value:', scheduleFormData.scheduled_date, 'Type:', typeof scheduleFormData.scheduled_date);
+    console.log('Time value:', scheduleFormData.scheduled_time, 'Type:', typeof scheduleFormData.scheduled_time);
+    
     if (!scheduleFormData.scheduled_date || !scheduleFormData.scheduled_time) {
       toast.error('Please select date and time');
+      console.log('Validation failed - date:', scheduleFormData.scheduled_date, 'time:', scheduleFormData.scheduled_time);
       return;
     }
     if (!scheduleFormData.city) {
