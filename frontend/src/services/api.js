@@ -641,6 +641,15 @@ export const loansApi = {
   checkEligibility: (leadId, vehicleId) => axios.post(`${API_URL}/loan-leads/${leadId}/vehicles/${vehicleId}/check-eligibility`),
   createApplication: (leadId, data) => axios.post(`${API_URL}/loan-leads/${leadId}/applications`, data),
   updateApplication: (leadId, appId, data) => axios.put(`${API_URL}/loan-leads/${leadId}/applications/${appId}`, data),
+  
+  // Loan Offers
+  getOffers: (leadId) => axios.get(`${API_URL}/loan-leads/${leadId}/offers`),
+  getOffer: (leadId, offerId) => axios.get(`${API_URL}/loan-leads/${leadId}/offers/${offerId}`),
+  createOffer: (leadId, data) => axios.post(`${API_URL}/loan-leads/${leadId}/offers`, data),
+  updateOffer: (leadId, offerId, data) => axios.put(`${API_URL}/loan-leads/${leadId}/offers/${offerId}`, data),
+  acceptOffer: (leadId, offerId) => axios.post(`${API_URL}/loan-leads/${leadId}/offers/${offerId}/accept`),
+  addChargeToOffer: (leadId, offerId, params) => axios.post(`${API_URL}/loan-leads/${leadId}/offers/${offerId}/add-charge`, null, { params }),
+  createManualOffer: (leadId, params) => axios.post(`${API_URL}/loan-leads/${leadId}/manual-offer`, null, { params }),
 };
 
 // Bank Master API
