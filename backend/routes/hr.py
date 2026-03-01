@@ -548,7 +548,7 @@ async def get_employees_on_leave_today(
     
     leaves = await db.leaves.find(query, {"_id": 0}).to_list(100)
     
-    employee_ids = [l["employee_id"] for l in leaves]
+    employee_ids = [leave_record["employee_id"] for leave_record in leaves]
     employees = await db.users.find(
         {"id": {"$in": employee_ids}},
         {"_id": 0, "id": 1, "name": 1, "email": 1, "role_id": 1}
