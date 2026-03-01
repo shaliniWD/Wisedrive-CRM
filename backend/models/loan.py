@@ -365,6 +365,11 @@ class LoanLeadUpdate(BaseModel):
     next_follow_up_at: Optional[datetime] = None
     credit_score: Optional[int] = None
     assigned_to: Optional[str] = None
+    city_id: Optional[str] = None
+    city_name: Optional[str] = None
+    customer_name: Optional[str] = None
+    customer_phone: Optional[str] = None
+    customer_email: Optional[str] = None
 
 
 class VehicleLoanDetailsCreate(BaseModel):
