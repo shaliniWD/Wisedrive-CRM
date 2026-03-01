@@ -3354,48 +3354,25 @@ async def twilio_whatsapp_webhook(
     elif not city:
         city_lookup_log.append({"strategy": 3, "method": "body content match", "skipped": True, "reason": "City already found or no body"})
     
-    # Strategy 4: Try to extract city from ad_name itself (intelligent parsing)
+    # Strategy 4: Try to extract city from ad_name itself using Cities Master (dynamic)
     if not city and ad_name:
-        # Common city keywords in Indian ad names
-        city_keywords = {
-            "bangalore": "Bangalore",
-            "bengaluru": "Bangalore", 
-            "chennai": "Chennai",
-            "madras": "Chennai",
-            "hyderabad": "Hyderabad",
-            "vizag": "Vizag",
-            "visakhapatnam": "Vizag",
-            "mumbai": "Mumbai",
-            "bombay": "Mumbai",
-            "pune": "Pune",
-            "delhi": "Delhi",
-            "ncr": "Delhi",
-            "gurgaon": "Delhi",
-            "noida": "Delhi",
-            "kolkata": "Kolkata",
-            "calcutta": "Kolkata",
-            "ahmedabad": "Ahmedabad",
-            "kochi": "Kochi",
-            "cochin": "Kochi",
-            "jaipur": "Jaipur",
-            "lucknow": "Lucknow",
-            "chandigarh": "Chandigarh",
-            "indore": "Indore",
-            "coimbatore": "Coimbatore",
-            "mysore": "Mysore",
-            "mysuru": "Mysore",
-            "trivandrum": "Trivandrum",
-            "thiruvananthapuram": "Trivandrum",
-            "mangalore": "Mangalore",
-            "mangaluru": "Mangalore",
-        }
+        # Build city keywords dynamically from Cities Master
+        all_cities = await db.cities.find({"is_active": True}, {"_id": 0, "name": 1, "aliases": 1}).to_list(100)
+        city_keywords = {}
+        for city_doc in all_cities:
+            canonical_name = city_doc["name"]
+            # Add canonical name as keyword
+            city_keywords[canonical_name.lower()] = canonical_name
+            # Add all aliases as keywords
+            for alias in city_doc.get("aliases", []):
+                city_keywords[alias.lower()] = canonical_name
         
         ad_name_lower = ad_name.lower()
         for keyword, city_name in city_keywords.items():
             if keyword in ad_name_lower:
                 city = city_name
-                city_lookup_log.append({"strategy": 4, "method": "ad_name keyword extraction", "found": True, "city": city, "keyword": keyword})
-                logger.info(f"Extracted city '{city}' from ad_name keyword '{keyword}' in '{ad_name}'")
+                city_lookup_log.append({"strategy": 4, "method": "ad_name keyword extraction (Cities Master)", "found": True, "city": city, "keyword": keyword})
+                logger.info(f"Extracted city '{city}' from ad_name keyword '{keyword}' in '{ad_name}' (using Cities Master)")
                 
                 # Auto-create mapping for this ad_name -> city
                 auto_ad_id = f"auto_{ad_name[:30].replace(' ', '_')}_{datetime.now().strftime('%Y%m%d')}"
