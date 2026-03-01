@@ -105,10 +105,11 @@ rbac_service: Optional[RBACService] = None
 round_robin_service: Optional[RoundRobinService] = None
 audit_service: Optional[AuditService] = None
 
-# HR Module services
-attendance_service: Optional[AttendanceService] = None
-payroll_service: Optional[PayrollService] = None
-leave_service: Optional[LeaveService] = None
+# HR Module services - initialized early for router registration
+storage_service = get_storage_service()
+attendance_service = AttendanceService(db)
+payroll_service = PayrollService(db, attendance_service, storage_service)
+leave_service = LeaveService(db)
 
 # Meta Ads scheduler
 meta_ads_scheduler = None
