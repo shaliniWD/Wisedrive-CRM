@@ -182,7 +182,7 @@ class BankStatementAnalyzer:
             if temp_file and os.path.exists(temp_file.name):
                 try:
                     os.unlink(temp_file.name)
-                except:
+                except Exception:
                     pass
 
 

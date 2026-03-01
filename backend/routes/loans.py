@@ -2271,7 +2271,7 @@ def classify_location(city_name: str, pincode: str = None) -> str:
             # Basic heuristic - can be refined with actual pincode data
             if pin_prefix in [11, 40, 56, 60, 50, 70]:  # Delhi, Mumbai, Bangalore, Chennai, Hyderabad, Kolkata
                 return "METRO"
-        except:
+        except Exception:
             pass
     
     # Default to semi-urban for unrecognized cities
