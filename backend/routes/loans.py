@@ -2412,6 +2412,9 @@ async def create_initial_profile(lead_id: str, lead: dict) -> dict:
     # Save to database
     await db.customer_profiles.insert_one(profile)
     
+    # Remove _id before returning (MongoDB adds it during insert)
+    profile.pop("_id", None)
+    
     return profile
 
 
