@@ -657,6 +657,13 @@ export const loansApi = {
   createChargeType: (data) => axios.post(`${API_URL}/charge-types`, data),
   updateChargeType: (id, params) => axios.put(`${API_URL}/charge-types/${id}`, null, { params }),
   deleteChargeType: (id) => axios.delete(`${API_URL}/charge-types/${id}`),
+  
+  // Customer Profile
+  getProfile: (leadId) => axios.get(`${API_URL}/loan-leads/${leadId}/profile`),
+  updateProfile: (leadId, data) => axios.put(`${API_URL}/loan-leads/${leadId}/profile`, data),
+  analyzeBankStatement: (leadId, documentId) => axios.post(`${API_URL}/loan-leads/${leadId}/profile/analyze-bank-statement?document_id=${documentId}`),
+  syncCreditReport: (leadId) => axios.post(`${API_URL}/loan-leads/${leadId}/profile/sync-credit-report`),
+  calculateEligibility: (leadId) => axios.post(`${API_URL}/loan-leads/${leadId}/profile/calculate-eligibility`),
 };
 
 // Bank Master API
