@@ -99,44 +99,91 @@ async def get_customers(
             date_query["$lte"] = date_to + "T23:59:59"
         query["created_at"] = date_query
     
-    # Sales rep filter
-    if sales_rep_id:
-        query["created_by"] = sales_rep_id
+    customers = await db.customers.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     
-    customers = await db.customers.find(query, {"_id": 0}).sort("created_at", -1).to_list(500)
+    # Collect customer IDs and lead IDs for enrichment
+    customer_ids = [c["id"] for c in customers]
+    lead_ids = [c.get("lead_id") for c in customers if c.get("lead_id")]
     
-    # Enrich with payment data
+    # Get inspections count and payment summary per customer using aggregation
+    if customer_ids:
+        pipeline = [
+            {"$match": {"customer_id": {"$in": customer_ids}}},
+            {"$group": {
+                "_id": "$customer_id",
+                "total_packages": {"$sum": 1},
+                "total_paid": {"$sum": "$amount_paid"},
+                "total_pending": {"$sum": "$balance_due"}
+            }}
+        ]
+        payment_stats = await db.inspections.aggregate(pipeline).to_list(1000)
+        payment_map = {p["_id"]: p for p in payment_stats}
+    else:
+        payment_map = {}
+    
+    # Get sales rep info from leads
+    lead_map = {}
+    if lead_ids:
+        leads = await db.leads.find(
+            {"id": {"$in": lead_ids}},
+            {"_id": 0, "id": 1, "assigned_to": 1, "assigned_to_name": 1, "created_by": 1}
+        ).to_list(500)
+        lead_map = {lead["id"]: lead for lead in leads}
+    
+    # Get user names for created_by lookups
+    user_ids = set()
+    for c in customers:
+        if c.get("created_by"):
+            user_ids.add(c["created_by"])
+    for lead_item in lead_map.values():
+        if lead_item.get("created_by"):
+            user_ids.add(lead_item["created_by"])
+        if lead_item.get("assigned_to"):
+            user_ids.add(lead_item["assigned_to"])
+    
+    user_map = {}
+    if user_ids:
+        users = await db.users.find({"id": {"$in": list(user_ids)}}, {"_id": 0, "id": 1, "name": 1}).to_list(100)
+        user_map = {u["id"]: u["name"] for u in users}
+    
+    # Get notes count per customer
+    notes_pipeline = [
+        {"$match": {"customer_id": {"$in": customer_ids}}},
+        {"$group": {"_id": "$customer_id", "count": {"$sum": 1}}}
+    ]
+    notes_counts = await db.customer_notes.aggregate(notes_pipeline).to_list(1000)
+    notes_map = {n["_id"]: n["count"] for n in notes_counts}
+    
+    # Enrich customers
     for customer in customers:
-        # Get all inspections for this customer
-        inspections = await db.inspections.find(
-            {"customer_id": customer["id"]},
-            {"_id": 0, "id": 1, "total_amount": 1, "amount_paid": 1, "balance_due": 1, "payment_status": 1}
-        ).to_list(100)
+        cid = customer["id"]
         
-        total_amount = sum(i.get("total_amount", 0) or 0 for i in inspections)
-        total_paid = sum(i.get("amount_paid", 0) or 0 for i in inspections)
-        total_pending = sum(i.get("balance_due", 0) or 0 for i in inspections)
+        # Payment summary
+        stats = payment_map.get(cid, {})
+        customer["total_packages"] = stats.get("total_packages", 0)
+        customer["total_paid"] = stats.get("total_paid", 0)
+        customer["total_pending"] = stats.get("total_pending", 0)
         
-        customer["total_inspections"] = len(inspections)
-        customer["total_amount"] = total_amount
-        customer["total_paid"] = total_paid
-        customer["total_pending"] = total_pending
-        
-        # Determine payment status
-        if total_pending > 0:
-            customer["payment_status"] = "Pending"
-        elif total_paid > 0:
-            customer["payment_status"] = "Completed"
+        # Sales rep from lead
+        lead_id = customer.get("lead_id")
+        if lead_id and lead_id in lead_map:
+            lead = lead_map[lead_id]
+            rep_id = lead.get("assigned_to") or lead.get("created_by")
+            customer["sales_rep_id"] = rep_id
+            customer["sales_rep_name"] = lead.get("assigned_to_name") or user_map.get(rep_id, "N/A")
+        elif customer.get("created_by"):
+            customer["sales_rep_id"] = customer["created_by"]
+            customer["sales_rep_name"] = user_map.get(customer["created_by"], "N/A")
         else:
-            customer["payment_status"] = "No Payments"
+            customer["sales_rep_id"] = None
+            customer["sales_rep_name"] = "N/A"
         
-        # Get sales rep info
-        if customer.get("created_by"):
-            sales_rep = await db.users.find_one(
-                {"id": customer["created_by"]},
-                {"_id": 0, "id": 1, "name": 1, "email": 1}
-            )
-            customer["sales_rep"] = sales_rep
+        # Notes count
+        customer["notes_count"] = notes_map.get(cid, 0)
+    
+    # Filter by sales_rep_id if specified (post-enrichment filter)
+    if sales_rep_id:
+        customers = [c for c in customers if c.get("sales_rep_id") == sales_rep_id]
     
     return customers
 
