@@ -58,6 +58,8 @@ const SummaryCard = ({ title, value, icon: Icon, color, bgColor }) => (
 // Date range preset buttons
 const DATE_PRESETS = [
   { key: 'today', label: 'Today' },
+  { key: 'last_7_days', label: 'Last 7 Days' },
+  { key: 'last_14_days', label: 'Last 14 Days' },
   { key: 'week', label: 'This Week' },
   { key: 'month', label: 'This Month' },
   { key: 'year', label: 'This Year' },
@@ -71,6 +73,18 @@ const getDateRange = (preset) => {
   switch(preset) {
     case 'today':
       from = to = today.toISOString().split('T')[0];
+      break;
+    case 'last_7_days':
+      const sevenDaysAgo = new Date(today);
+      sevenDaysAgo.setDate(today.getDate() - 6);
+      from = sevenDaysAgo.toISOString().split('T')[0];
+      to = today.toISOString().split('T')[0];
+      break;
+    case 'last_14_days':
+      const fourteenDaysAgo = new Date(today);
+      fourteenDaysAgo.setDate(today.getDate() - 13);
+      from = fourteenDaysAgo.toISOString().split('T')[0];
+      to = today.toISOString().split('T')[0];
       break;
     case 'week':
       const weekStart = new Date(today);
