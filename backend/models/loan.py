@@ -132,13 +132,15 @@ class LoanOfferCreate(BaseModel):
     bank_reference_number: Optional[str] = None
     offer_valid_until: Optional[datetime] = None
     
-    # Initial charges
+    # Initial charges - standard charges
     processing_fee_percent: Optional[float] = None  # 0-2%
     processing_fee_amount: Optional[float] = None  # Fixed amount if not percentage
     document_handling_fee: Optional[float] = None
     rto_charges: Optional[float] = None
     insurance_charges: Optional[float] = None  # If car doesn't have existing insurance
-    other_charges: Optional[List[dict]] = None  # List of {name, amount}
+    valuation_charges: Optional[float] = None  # NEW: Valuation charges
+    stamp_duty: Optional[float] = None  # NEW: Stamp duty amount
+    other_charges: Optional[List[dict]] = None  # List of {charge_type, charge_name, amount, is_percentage, percentage_value}
 
 
 class LoanOfferChargeUpdate(BaseModel):
