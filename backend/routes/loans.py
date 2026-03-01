@@ -263,10 +263,10 @@ async def sync_loan_leads_from_customers(
     now = datetime.now(timezone.utc)
     synced_count = 0
     
-    # Find customers with paid inspections
+    # Find customers with paid inspections (FULLY_PAID or Completed)
     paid_inspections = await db.inspections.find(
-        {"payment_status": "paid"},
-        {"customer_id": 1, "customer_name": 1, "customer_phone": 1, "customer_email": 1, "city_id": 1, "city_name": 1}
+        {"payment_status": {"$in": ["FULLY_PAID", "Completed", "paid", "PAID"]}},
+        {"customer_id": 1, "customer_name": 1, "customer_phone": 1, "customer_email": 1, "city_id": 1, "city_name": 1, "car_number": 1, "car_make": 1, "car_model": 1, "car_year": 1}
     ).to_list(1000)
     
     customer_ids_processed = set()
