@@ -282,6 +282,34 @@ async def sync_loan_leads_from_customers(
         if existing_lead:
             continue
         
+        # Get all paid inspections for this customer to collect vehicle data
+        customer_inspections = await db.inspections.find({
+            "customer_id": customer_id,
+            "payment_status": {"$in": ["FULLY_PAID", "Completed", "paid", "PAID"]}
+        }).to_list(100)
+        
+        # Build vehicles list from inspections
+        vehicles = []
+        for insp in customer_inspections:
+            if insp.get("car_number"):
+                vehicle = {
+                    "vehicle_id": str(uuid.uuid4()),
+                    "car_number": insp.get("car_number", ""),
+                    "car_make": insp.get("car_make", ""),
+                    "car_model": insp.get("car_model", ""),
+                    "car_year": insp.get("car_year"),
+                    "inspection_id": insp.get("id"),
+                    "vehicle_valuation": None,
+                    "expected_loan_amount": None,
+                    "expected_emi": None,
+                    "expected_interest_rate": None,
+                    "expected_tenure_months": 60,
+                    "created_at": now.isoformat()
+                }
+                # Avoid duplicate vehicles by car_number
+                if not any(v.get("car_number") == vehicle["car_number"] for v in vehicles):
+                    vehicles.append(vehicle)
+        
         loan_lead = {
             "id": str(uuid.uuid4()),
             "customer_id": customer_id,
@@ -296,9 +324,10 @@ async def sync_loan_leads_from_customers(
             "next_follow_up_at": None,
             "customer_type": None,
             "documents": [],
-            "vehicles": [],
+            "vehicles": vehicles,
             "applications": [],
             "eligibility_results": [],
+            "loan_offers": [],
             "credit_score": None,
             "credit_score_fetched_at": None,
             "assigned_to": None,
