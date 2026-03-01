@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
+import { toast } from 'sonner';
 
 const AuthContext = createContext(null);
 
@@ -15,6 +16,65 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
   const heartbeatIntervalRef = useRef(null);
+  const logoutCalledRef = useRef(false);
+
+  // Logout function - memoized to prevent recreating on every render
+  const logout = useCallback(async (showMessage = false) => {
+    // Prevent multiple logout calls
+    if (logoutCalledRef.current) return;
+    logoutCalledRef.current = true;
+    
+    // Clear heartbeat
+    if (heartbeatIntervalRef.current) {
+      clearInterval(heartbeatIntervalRef.current);
+      heartbeatIntervalRef.current = null;
+    }
+    
+    // Clear auth state
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    delete axios.defaults.headers.common['Authorization'];
+    setToken(null);
+    setUser(null);
+    setPermissions([]);
+    setVisibleTabs([]);
+    
+    if (showMessage) {
+      toast.error('Session expired. Please log in again.');
+    }
+    
+    // Reset flag after a short delay
+    setTimeout(() => {
+      logoutCalledRef.current = false;
+    }, 1000);
+  }, []);
+
+  // Setup axios interceptor for handling 401 errors globally
+  useEffect(() => {
+    const interceptor = axios.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response?.status === 401) {
+          const errorMsg = error.response?.data?.detail || '';
+          // Check for token expiration messages
+          if (
+            errorMsg.toLowerCase().includes('expired') ||
+            errorMsg.toLowerCase().includes('invalid token') ||
+            errorMsg.toLowerCase().includes('not authenticated')
+          ) {
+            console.log('Token expired, logging out...');
+            logout(true);
+          }
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    // Cleanup interceptor on unmount
+    return () => {
+      axios.interceptors.response.eject(interceptor);
+    };
+  }, [logout]);
 
   useEffect(() => {
     if (token) {
