@@ -94,6 +94,30 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
 
 ## Recent Implementations (Mar 2026)
 
+### Bank Loan Offers Feature - NEW (Mar 1, 2026)
+- **Purpose:** Manage bank loan offers after loan approval, track charges, calculate net disbursal
+- **Status:** ✅ FULLY FUNCTIONAL
+- **Backend APIs:**
+  - `GET /api/loan-leads/{lead_id}/offers` - Get all loan offers for a lead
+  - `POST /api/loan-leads/{lead_id}/offers` - Create offer from application with charges
+  - `POST /api/loan-leads/{lead_id}/manual-offer` - Create manual offer (when eligibility failed)
+  - `POST /api/loan-leads/{lead_id}/offers/{offer_id}/accept` - Accept an offer
+  - `PUT /api/loan-leads/{lead_id}/offers/{offer_id}` - Update charges (negotiation)
+- **Models:** `LoanOffer`, `LoanOfferCharge` in `/app/backend/models/loan.py`
+- **Frontend Components:**
+  - `/app/frontend/src/components/loans/BankOffersModal.jsx` - Full offers management modal
+  - Integrated into `LoanProcessingModal` in `LoansPage.jsx`
+- **Features:**
+  - Track Loan Amount Approved + Loan Insurance = Total Loan Amount
+  - Add charges: Processing Fee (% or fixed), Document Handling Fee, RTO Charges, Insurance Charges
+  - Real-time Net Disbursal calculation (Total Loan - Total Charges)
+  - Mark charges as negotiable, waive charges
+  - Negotiation history tracking with timestamps
+  - Multiple offers from different banks for comparison
+  - Manual offer entry for banker-approved exceptions
+  - Accept offer flow updates application status
+- **Testing:** ✅ 100% (13/13 backend tests, all frontend features verified)
+
 ### Backend Modularization - MAJOR REFACTOR (Mar 1, 2026)
 - **Purpose:** Break down monolithic server.py into smaller, maintainable router modules
 - **Status:** ✅ IN PROGRESS - Phase 1 Complete
