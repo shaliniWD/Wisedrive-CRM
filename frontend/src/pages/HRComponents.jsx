@@ -2932,7 +2932,13 @@ export function InspectionCityManagement() {
       </div>
       
       {/* Mechanics Table */}
-      {filteredMechanics.length === 0 ? (
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-16 bg-slate-50 rounded-lg border">
+          <Loader2 className="h-10 w-10 animate-spin text-blue-600 mb-4" />
+          <p className="text-gray-600 font-medium">Loading mechanics...</p>
+          <p className="text-sm text-gray-400 mt-1">Fetching employees with Mechanic role</p>
+        </div>
+      ) : filteredMechanics.length === 0 ? (
         <div className="text-center py-12 bg-slate-50 rounded-lg border border-dashed">
           <Users className="h-12 w-12 text-gray-300 mx-auto mb-3" />
           <p className="text-gray-500 font-medium">No mechanics found</p>
