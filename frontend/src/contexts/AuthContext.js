@@ -212,7 +212,7 @@ export const AuthProvider = ({ children }) => {
       token, 
       loading, 
       login, 
-      logout, 
+      logout: handleLogout, 
       isAuthenticated: !!user,
       permissions,
       visibleTabs,
