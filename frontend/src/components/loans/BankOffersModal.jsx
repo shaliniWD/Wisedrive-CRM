@@ -1154,8 +1154,8 @@ const ManualOfferForm = ({ lead, vehicle, onClose, onSuccess }) => {
         </div>
       </div>
 
-      {/* Interest & Tenure */}
-      <div className="grid grid-cols-3 gap-4">
+      {/* Interest, Tenure & EMI */}
+      <div className="grid grid-cols-4 gap-4">
         <div>
           <Label className="text-sm">Interest Rate (%) <span className="text-red-500">*</span></Label>
           <div className="relative">
@@ -1179,6 +1179,20 @@ const ManualOfferForm = ({ lead, vehicle, onClose, onSuccess }) => {
             value={formData.tenure_months}
             onChange={(e) => setFormData({...formData, tenure_months: e.target.value})}
           />
+          <p className="text-[10px] text-gray-500 mt-1">Expected: {defaultTenure} months</p>
+        </div>
+        <div>
+          <Label className="text-sm">EMI Amount</Label>
+          <div className="relative">
+            <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              type="number"
+              placeholder={calculatedEMI}
+              value={calculatedEMI}
+              className="pl-9 bg-gray-50 font-medium"
+              readOnly
+            />
+          </div>
         </div>
         <div>
           <Label className="text-sm">Bank Reference #</Label>
