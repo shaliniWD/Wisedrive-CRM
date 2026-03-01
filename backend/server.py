@@ -10052,6 +10052,14 @@ async def auto_map_ads_from_targeting(current_user: dict = Depends(get_current_u
     if role_code not in ["CEO", "HR_MANAGER", "CTO", "COUNTRY_HEAD", "ADMIN"]:
         raise HTTPException(status_code=403, detail="Not authorized")
     
+    # Build region_to_city mapping dynamically from Cities Master
+    all_cities = await db.cities.find({"is_active": True}, {"_id": 0, "name": 1, "state": 1}).to_list(100)
+    region_to_city = {}
+    for city_doc in all_cities:
+        state = city_doc.get("state", "")
+        if state:
+            region_to_city[state] = city_doc["name"]
+    
     # Get all our existing mappings
     existing_mappings = await db.ad_city_mappings.find({}, {"ad_id": 1}).to_list(1000)
     mapped_ids = set(m.get("ad_id") for m in existing_mappings)
@@ -10065,18 +10073,6 @@ async def auto_map_ads_from_targeting(current_user: dict = Depends(get_current_u
             "error": meta_ads.get("error"),
             "auto_mapped_count": 0
         }
-    
-    # Region to city mapping
-    region_to_city = {
-        "Karnataka": "Bangalore",
-        "Tamil Nadu": "Chennai", 
-        "Maharashtra": "Mumbai",
-        "Telangana": "Hyderabad",
-        "Andhra Pradesh": "Vizag",
-        "Delhi": "Delhi",
-        "West Bengal": "Kolkata",
-        "Gujarat": "Ahmedabad",
-    }
     
     auto_mapped = []
     skipped = []
@@ -10095,7 +10091,7 @@ async def auto_map_ads_from_targeting(current_user: dict = Depends(get_current_u
             # Only auto-map if single city targeted (confident mapping)
             city = targeting_cities[0]
         elif targeting_regions and len(targeting_regions) == 1:
-            # Map single region to city
+            # Map single region to city using Cities Master
             region = targeting_regions[0]
             if region in region_to_city:
                 city = region_to_city[region]
