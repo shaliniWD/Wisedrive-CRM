@@ -83,7 +83,7 @@ async def get_customers(
     sales_rep_id: Optional[str] = None,
     date_from: Optional[str] = None,
     date_to: Optional[str] = None,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Get customers - filtered by RBAC, enriched with sales rep and payment info"""
     rbac_filter = await rbac_service.get_data_filter(current_user["id"], "customers.view") if rbac_service else {}
@@ -201,7 +201,7 @@ async def get_customers(
 
 @router.get("/sales-reps-with-counts")
 async def get_sales_reps_with_customer_counts(
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Get all sales reps with their customer counts"""
     # Get all sales role IDs
@@ -248,7 +248,7 @@ async def get_sales_reps_with_customer_counts(
 
 
 @router.get("/{customer_id}")
-async def get_customer(customer_id: str, current_user: dict = Depends(lambda: get_current_user)):
+async def get_customer(customer_id: str, current_user: dict = Depends(get_current_user)):
     """Get a specific customer with all details"""
     customer = await db.customers.find_one({"id": customer_id}, {"_id": 0})
     if not customer:
@@ -259,7 +259,7 @@ async def get_customer(customer_id: str, current_user: dict = Depends(lambda: ge
 @router.post("")
 async def create_customer(
     customer_data: CustomerCreate,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Create a new customer"""
     now = datetime.now(timezone.utc)
@@ -287,7 +287,7 @@ async def create_customer(
 async def update_customer(
     customer_id: str,
     customer_data: CustomerUpdate,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Update a customer"""
     update_dict = {"updated_at": datetime.now(timezone.utc).isoformat()}
@@ -305,7 +305,7 @@ async def update_customer(
 
 
 @router.delete("/{customer_id}")
-async def delete_customer(customer_id: str, current_user: dict = Depends(lambda: get_current_user)):
+async def delete_customer(customer_id: str, current_user: dict = Depends(get_current_user)):
     """Delete a customer"""
     result = await db.customers.delete_one({"id": customer_id})
     if result.deleted_count == 0:
@@ -316,7 +316,7 @@ async def delete_customer(customer_id: str, current_user: dict = Depends(lambda:
 @router.get("/{customer_id}/payment-history")
 async def get_customer_payment_history(
     customer_id: str,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Get payment history for a customer across all inspections"""
     customer = await db.customers.find_one({"id": customer_id}, {"_id": 0})
@@ -364,7 +364,7 @@ async def get_customer_payment_history(
 @router.get("/{customer_id}/detailed-payments")
 async def get_customer_detailed_payments(
     customer_id: str,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Get detailed payment breakdown for a customer"""
     customer = await db.customers.find_one({"id": customer_id}, {"_id": 0})
@@ -427,7 +427,7 @@ async def get_customer_detailed_payments(
 async def add_customer_note(
     customer_id: str,
     note_data: CustomerNote,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Add a note to a customer"""
     customer = await db.customers.find_one({"id": customer_id})
@@ -465,7 +465,7 @@ async def add_customer_note(
 
 
 @router.get("/{customer_id}/notes")
-async def get_customer_notes(customer_id: str, current_user: dict = Depends(lambda: get_current_user)):
+async def get_customer_notes(customer_id: str, current_user: dict = Depends(get_current_user)):
     """Get all notes for a customer"""
     notes = await db.customer_notes.find({"customer_id": customer_id}, {"_id": 0}).sort("created_at", -1).to_list(100)
     return notes
@@ -476,7 +476,7 @@ async def update_customer_note(
     customer_id: str,
     note_id: str,
     note_data: CustomerNote,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Update a customer note"""
     result = await db.customer_notes.update_one(
@@ -495,7 +495,7 @@ async def update_customer_note(
 async def delete_customer_note(
     customer_id: str,
     note_id: str,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Delete a customer note"""
     result = await db.customer_notes.delete_one({"id": note_id, "customer_id": customer_id})
@@ -507,7 +507,7 @@ async def delete_customer_note(
 
 
 @router.get("/{customer_id}/activities")
-async def get_customer_activities(customer_id: str, current_user: dict = Depends(lambda: get_current_user)):
+async def get_customer_activities(customer_id: str, current_user: dict = Depends(get_current_user)):
     """Get all activities for a customer"""
     activities = await db.customer_activities.find({"customer_id": customer_id}, {"_id": 0}).sort("created_at", -1).to_list(100)
     return activities
@@ -515,7 +515,7 @@ async def get_customer_activities(customer_id: str, current_user: dict = Depends
 
 
 @router.post("/seed-sample-data")
-async def seed_sample_customer_data(current_user: dict = Depends(lambda: get_current_user)):
+async def seed_sample_customer_data(current_user: dict = Depends(get_current_user)):
     """Create a sample customer with multiple packages and payment transactions for demo purposes"""
     
     # Get country and a sales rep
