@@ -814,7 +814,9 @@ export default function LeadsPage() {
     // Map preset keys to unified component keys
     const presetMap = {
       'today': 'today',
-      'yesterday': 'yesterday', 
+      'yesterday': 'yesterday',
+      'last_7_days': 'last_7_days',
+      'last_14_days': 'last_14_days',
       'this_week': 'week',
       'last_week': 'last_week',
       'this_month': 'month',
