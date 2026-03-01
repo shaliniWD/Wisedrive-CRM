@@ -280,15 +280,72 @@ async def get_mechanic_inspection(
     current_user: dict = Depends(get_current_user)
 ):
     """Get specific inspection details for mechanic"""
-    inspection = await db.inspections.find_one(
+    insp = await db.inspections.find_one(
         {"id": inspection_id},
         {"_id": 0}
     )
     
-    if not inspection:
+    if not insp:
         raise HTTPException(status_code=404, detail="Inspection not found")
     
-    return inspection
+    # Transform to mechanic app format
+    crm_status = insp.get("inspection_status", "NEW_INSPECTION")
+    if crm_status == "INSPECTION_COMPLETED":
+        app_status = "COMPLETED"
+    elif crm_status in ["MECHANIC_REJECTED", "INSPECTION_CANCELLED_WD", "INSPECTION_CANCELLED_CUS"]:
+        app_status = "REJECTED"
+    elif crm_status == "INSPECTION_STARTED":
+        app_status = "IN_PROGRESS"
+    elif crm_status == "MECHANIC_ACCEPTED":
+        app_status = "ACCEPTED"
+    elif crm_status in ["NEW_INSPECTION", "ASSIGNED_TO_MECHANIC"]:
+        app_status = "NEW"
+    elif crm_status == "RESCHEDULED":
+        app_status = "NEW"
+    else:
+        app_status = "NEW"
+    
+    return {
+        "id": insp.get("id"),
+        "scheduledAt": insp.get("scheduled_date") or insp.get("created_at"),
+        "status": app_status,
+        "crmStatus": crm_status,
+        "vehicleNumber": insp.get("car_number") or "",
+        "makeModelVariant": f"{insp.get('car_make') or insp.get('make', '')} {insp.get('car_model') or insp.get('model', '')} {insp.get('variant', '')}".strip() or "Not Available",
+        "carMake": insp.get("car_make") or insp.get("make", ""),
+        "carModel": insp.get("car_model") or insp.get("model", ""),
+        "fuelType": insp.get("fuel_type", ""),
+        "manufacturingYear": insp.get("car_year") or insp.get("manufacturing_year", ""),
+        "odometerReading": insp.get("odometer_reading", ""),
+        "city": insp.get("city", ""),
+        "customerName": insp.get("customer_name", ""),
+        "customerPhone": insp.get("customer_mobile", ""),
+        "customerAddress": insp.get("address", ""),
+        "latitude": insp.get("latitude") or insp.get("location_lat"),
+        "longitude": insp.get("longitude") or insp.get("location_lng"),
+        "assignedMechanicId": insp.get("mechanic_id"),
+        "partner_id": insp.get("partner_id"),
+        "partner_name": insp.get("partner_name"),
+        "requiredModules": {
+            "photos": True,
+            "sound": False,
+            "obd": False
+        },
+        "progress": insp.get("inspection_progress", {
+            "photosDone": False,
+            "soundDone": False,
+            "obdDone": False,
+            "notesDone": False
+        }),
+        "orderId": insp.get("order_id"),
+        "packageName": insp.get("package_type") or insp.get("inspection_package_name", "Standard Inspection"),
+        # Include additional raw data for the detail view
+        "vaahan_data": insp.get("vaahan_data"),
+        "report_data": insp.get("report_data"),
+        "photos": insp.get("photos", []),
+        "videos": insp.get("videos", []),
+        "notes": insp.get("notes"),
+    }
 
 
 @router.patch("/inspections/{inspection_id}/accept")
