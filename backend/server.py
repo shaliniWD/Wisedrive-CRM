@@ -9967,6 +9967,14 @@ async def get_unmapped_ads(current_user: dict = Depends(get_current_user)):
     if role_code not in ["CEO", "HR_MANAGER", "CTO"]:
         raise HTTPException(status_code=403, detail="Not authorized")
     
+    # Build region_to_city mapping dynamically from Cities Master
+    all_cities = await db.cities.find({"is_active": True}, {"_id": 0, "name": 1, "state": 1}).to_list(100)
+    region_to_city = {}
+    for city_doc in all_cities:
+        state = city_doc.get("state", "")
+        if state:
+            region_to_city[state] = city_doc["name"]
+    
     # Get all our mappings
     existing_mappings = await db.ad_city_mappings.find({}, {"ad_id": 1}).to_list(1000)
     mapped_ids = set(m.get("ad_id") for m in existing_mappings)
@@ -9998,17 +10006,7 @@ async def get_unmapped_ads(current_user: dict = Depends(get_current_user)):
                 suggested_city = targeting_cities[0]  # Use first targeted city
                 has_targeting = True
             elif targeting_regions:
-                # Map common regions to cities
-                region_to_city = {
-                    "Karnataka": "Bangalore",
-                    "Tamil Nadu": "Chennai",
-                    "Maharashtra": "Mumbai",
-                    "Telangana": "Hyderabad",
-                    "Andhra Pradesh": "Vizag",
-                    "Delhi": "Delhi",
-                    "West Bengal": "Kolkata",
-                    "Gujarat": "Ahmedabad",
-                }
+                # Map regions to cities using Cities Master data
                 for region in targeting_regions:
                     if region in region_to_city:
                         suggested_city = region_to_city[region]
