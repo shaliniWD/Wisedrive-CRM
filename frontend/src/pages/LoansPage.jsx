@@ -164,27 +164,27 @@ export default function LoansPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
           <div className="bg-white rounded-xl border p-4">
             <p className="text-xs text-gray-500 uppercase">Total Leads</p>
-            <p className="text-2xl font-bold text-gray-900">{stats.total_leads}</p>
+            <p className="text-2xl font-bold text-gray-900">{stats.total || 0}</p>
           </div>
           <div className="bg-white rounded-xl border p-4">
             <p className="text-xs text-gray-500 uppercase">Interested</p>
-            <p className="text-2xl font-bold text-green-600">{stats.leads_by_status?.INTERESTED || 0}</p>
+            <p className="text-2xl font-bold text-green-600">{stats.by_status?.INTERESTED || 0}</p>
           </div>
           <div className="bg-white rounded-xl border p-4">
             <p className="text-xs text-gray-500 uppercase">Follow Up</p>
-            <p className="text-2xl font-bold text-purple-600">{stats.leads_by_status?.FOLLOW_UP || 0}</p>
+            <p className="text-2xl font-bold text-purple-600">{stats.by_status?.FOLLOW_UP || 0}</p>
           </div>
           <div className="bg-white rounded-xl border p-4">
             <p className="text-xs text-gray-500 uppercase">Call Back</p>
-            <p className="text-2xl font-bold text-blue-600">{stats.leads_by_status?.CALL_BACK || 0}</p>
+            <p className="text-2xl font-bold text-blue-600">{stats.by_status?.CALL_BACK || 0}</p>
           </div>
           <div className="bg-white rounded-xl border p-4">
             <p className="text-xs text-gray-500 uppercase">Not Interested</p>
-            <p className="text-2xl font-bold text-red-600">{stats.leads_by_status?.NOT_INTERESTED || 0}</p>
+            <p className="text-2xl font-bold text-red-600">{stats.by_status?.NOT_INTERESTED || 0}</p>
           </div>
           <div className="bg-white rounded-xl border p-4">
-            <p className="text-xs text-gray-500 uppercase">Active Banks</p>
-            <p className="text-2xl font-bold text-gray-700">{stats.active_banks}</p>
+            <p className="text-xs text-gray-500 uppercase">With Credit Score</p>
+            <p className="text-2xl font-bold text-gray-700">{stats.with_credit_score || 0}</p>
           </div>
         </div>
       )}
