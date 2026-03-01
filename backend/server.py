@@ -12651,6 +12651,7 @@ async def get_mechanic_inspections(
     inspections = await db.inspections.find(query, {"_id": 0}).sort("scheduled_date", -1).to_list(100)
     
     logger.info(f"Found {len(inspections)} inspections for mechanic {mechanic_id}")
+    logger.info(f"DEBUGGING: Starting transformation for {len(inspections)} inspections")
     
     # Transform to mechanic app format
     result = []
