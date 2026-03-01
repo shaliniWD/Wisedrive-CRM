@@ -9854,6 +9854,8 @@ async def get_audit_stats(current_user: dict = Depends(get_current_user)):
 # ==================== COMPREHENSIVE FINANCE MODULE (Moved to routes/finance.py) ====================
 
 
+# ==================== HR MODULE: ATTENDANCE TRACKING (Moved to routes/hr.py) ====================
+
 
 # ==================== HOLIDAY CALENDAR ====================
 
