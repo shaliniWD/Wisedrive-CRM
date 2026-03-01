@@ -4390,17 +4390,22 @@ Thank you for choosing Wisedrive!"""
                 }]
             }
             
-            # Add vehicle details if available
-            if schedule_data.get("vehicle_data"):
-                vd = schedule_data["vehicle_data"]
+            # Add vehicle details if available from schedule or lead
+            vd = schedule_data.get("vehicle_data") or lead.get("vehicle_data") or {}
+            if vd:
                 # Normalize manufacturer name to CRM brand using brand mapper
                 raw_manufacturer = vd.get("manufacturer", "")
-                inspection["car_make"] = brand_mapper.get_brand_with_fallback(raw_manufacturer)
-                inspection["car_make_raw"] = raw_manufacturer  # Keep original for reference
-                inspection["car_model"] = vd.get("model", "")
-                inspection["car_year"] = vd.get("manufacturing_date", "").split("/")[-1] if vd.get("manufacturing_date") else ""
-                inspection["car_color"] = vd.get("color", "")
-                inspection["fuel_type"] = vd.get("fuel_type", "")
+                if raw_manufacturer:
+                    inspection["car_make"] = brand_mapper.get_brand_with_fallback(raw_manufacturer)
+                    inspection["car_make_raw"] = raw_manufacturer  # Keep original for reference
+                if vd.get("model"):
+                    inspection["car_model"] = vd.get("model", "")
+                if vd.get("manufacturing_date"):
+                    inspection["car_year"] = vd.get("manufacturing_date", "").split("/")[-1]
+                if vd.get("color"):
+                    inspection["car_color"] = vd.get("color", "")
+                if vd.get("fuel_type"):
+                    inspection["fuel_type"] = vd.get("fuel_type", "")
             
             await db.inspections.insert_one(inspection)
             created_inspections.append(inspection_id)
