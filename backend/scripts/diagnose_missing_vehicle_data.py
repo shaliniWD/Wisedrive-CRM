@@ -56,9 +56,12 @@ async def diagnose_missing_vehicle_data():
     })
     
     print(f"\n--- Missing Data Summary ---")
-    print(f"Missing car_number: {missing_car_number} ({missing_car_number/total_inspections*100:.1f}%)")
-    print(f"Missing car_make: {missing_car_make} ({missing_car_make/total_inspections*100:.1f}%)")
-    print(f"Missing car_model: {missing_car_model} ({missing_car_model/total_inspections*100:.1f}%)")
+    if total_inspections > 0:
+        print(f"Missing car_number: {missing_car_number} ({missing_car_number/total_inspections*100:.1f}%)")
+        print(f"Missing car_make: {missing_car_make} ({missing_car_make/total_inspections*100:.1f}%)")
+        print(f"Missing car_model: {missing_car_model} ({missing_car_model/total_inspections*100:.1f}%)")
+    else:
+        print("No inspections found in database")
     
     # Get detailed list of inspections with missing vehicle data
     missing_inspections = await db.inspections.find({
