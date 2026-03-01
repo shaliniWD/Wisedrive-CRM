@@ -2313,7 +2313,7 @@ def check_excluded_make(car_make: str) -> dict:
     return {"is_excluded": False, "reason": None}
 
 
-@router.get("/{lead_id}/profile")
+@router.get("/loan-leads/{lead_id}/profile")
 async def get_customer_profile(
     lead_id: str,
     current_user: dict = Depends(get_current_user)
