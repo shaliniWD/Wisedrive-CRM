@@ -69,6 +69,7 @@ async def get_finance_payments(
     current_user: dict = Depends(lambda: get_current_user)
 ):
     """Get all payments - filtered by role access"""
+    logger.info(f"DEBUG: current_user type = {type(current_user)}, value = {current_user}")
     role_code = current_user.get("role_code", "")
     user_country = current_user.get("country_id")
     
