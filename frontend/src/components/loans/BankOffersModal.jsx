@@ -1069,53 +1069,88 @@ const ManualOfferForm = ({ lead, vehicle, onClose, onSuccess }) => {
       </div>
 
       {/* Bank Selection */}
-      <div>
-        <Label className="text-sm">Select Bank <span className="text-red-500">*</span></Label>
-        <Select value={formData.bank_id} onValueChange={(v) => setFormData({...formData, bank_id: v})}>
-          <SelectTrigger>
-            <SelectValue placeholder="Select a bank" />
-          </SelectTrigger>
-          <SelectContent>
-            {banks.map((bank) => (
-              <SelectItem key={bank.id} value={bank.id}>
-                <div className="flex items-center gap-2">
-                  <Building2 className="h-4 w-4" />
-                  {bank.bank_name}
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <Label className="text-sm">Select Bank <span className="text-red-500">*</span></Label>
+          <Select value={formData.bank_id} onValueChange={handleBankChange}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select a bank" />
+            </SelectTrigger>
+            <SelectContent>
+              {banks.map((bank) => (
+                <SelectItem key={bank.id} value={bank.id}>
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4" />
+                    <span>{bank.bank_name}</span>
+                    <span className="text-xs text-gray-500">({bank.interest_rate_min}% • LTV {bank.max_ltv_percent}%)</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="bg-green-50 rounded-lg p-3">
+          <p className="text-xs text-green-700">Car Valuation</p>
+          <p className="font-bold text-green-900 text-lg">{formatCurrency(carValuation)}</p>
+        </div>
       </div>
 
-      {/* Loan Amount Section */}
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label className="text-sm">Loan Amount Approved <span className="text-red-500">*</span></Label>
-          <div className="relative">
-            <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              type="number"
-              placeholder="500000"
-              value={formData.loan_amount_approved}
-              onChange={(e) => setFormData({...formData, loan_amount_approved: e.target.value})}
-              className="pl-9"
-              required
-            />
+      {/* LTV and Loan Amount Calculation */}
+      {formData.bank_id && (
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg p-4 border border-amber-200">
+          <h4 className="text-sm font-medium text-amber-900 mb-3 flex items-center gap-2">
+            <Calculator className="h-4 w-4" />
+            Loan Amount Calculation
+          </h4>
+          <div className="grid grid-cols-3 gap-4 items-end">
+            <div>
+              <Label className="text-sm">LTV %</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  step="1"
+                  min="50"
+                  max="100"
+                  value={formData.ltv_percent}
+                  onChange={(e) => handleLTVChange(e.target.value)}
+                  className="text-center font-medium"
+                />
+                <span className="text-gray-500">%</span>
+              </div>
+              <p className="text-[10px] text-amber-700 mt-1">Bank default: {selectedBank?.max_ltv_percent || 80}%</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl text-amber-600">×</p>
+              <p className="text-xs text-gray-500">{formatCurrency(carValuation)}</p>
+            </div>
+            <div>
+              <Label className="text-sm">= Loan Amount</Label>
+              <div className="relative">
+                <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  type="number"
+                  value={formData.loan_amount_approved}
+                  onChange={(e) => setFormData({...formData, loan_amount_approved: e.target.value})}
+                  className="pl-9 font-semibold"
+                />
+              </div>
+            </div>
           </div>
         </div>
-        <div>
-          <Label className="text-sm">Loan Insurance</Label>
-          <div className="relative">
-            <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              type="number"
-              placeholder="0"
-              value={formData.loan_insurance}
-              onChange={(e) => setFormData({...formData, loan_insurance: e.target.value})}
-              className="pl-9"
-            />
-          </div>
+      )}
+
+      {/* Loan Insurance */}
+      <div>
+        <Label className="text-sm">Loan Insurance (added to loan)</Label>
+        <div className="relative">
+          <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            type="number"
+            placeholder="0"
+            value={formData.loan_insurance}
+            onChange={(e) => setFormData({...formData, loan_insurance: e.target.value})}
+            className="pl-9"
+          />
         </div>
       </div>
 
