@@ -2741,19 +2741,35 @@ export default function InspectionsPage() {
                 <Input 
                   type="date" 
                   value={scheduleFormData.scheduled_date}
-                  onChange={(e) => setScheduleFormData({...scheduleFormData, scheduled_date: e.target.value})}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    console.log('Date selected:', value);
+                    setScheduleFormData({...scheduleFormData, scheduled_date: value});
+                  }}
                   min={new Date().toISOString().split('T')[0]}
+                  className="h-10"
                   data-testid="schedule-date-input"
                 />
+                {scheduleFormData.scheduled_date && (
+                  <p className="text-xs text-green-600">Selected: {scheduleFormData.scheduled_date}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Inspection Time *</Label>
                 <Input 
                   type="time" 
                   value={scheduleFormData.scheduled_time}
-                  onChange={(e) => setScheduleFormData({...scheduleFormData, scheduled_time: e.target.value})}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    console.log('Time selected:', value);
+                    setScheduleFormData({...scheduleFormData, scheduled_time: value});
+                  }}
+                  className="h-10"
                   data-testid="schedule-time-input"
                 />
+                {scheduleFormData.scheduled_time && (
+                  <p className="text-xs text-green-600">Selected: {scheduleFormData.scheduled_time}</p>
+                )}
               </div>
             </div>
             
