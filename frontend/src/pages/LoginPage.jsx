@@ -82,10 +82,13 @@ export default function LoginPage() {
       leads: '/leads',
       customers: '/customers',
       inspections: '/inspections',
+      loans: '/loans',
       hr: '/hr',
       finance: '/finance',
       settings: '/settings',
       dashboard: '/dashboard',
+      reports: '/reports',
+      'ad-analytics': '/ad-analytics',
     };
     const firstTab = visibleTabs?.[0];
     const redirectPath = tabRouteMap[firstTab] || '/leads';
