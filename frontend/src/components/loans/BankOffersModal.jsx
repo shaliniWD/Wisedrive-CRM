@@ -715,39 +715,23 @@ const AddOfferForm = ({ lead, application, vehicle, bank, onClose, onSuccess }) 
         </div>
       </div>
 
-      {/* Loan Amount Section */}
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label className="text-sm">Loan Amount Approved <span className="text-red-500">*</span></Label>
-          <div className="relative">
-            <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              type="number"
-              placeholder="500000"
-              value={formData.loan_amount_approved}
-              onChange={(e) => setFormData({...formData, loan_amount_approved: e.target.value})}
-              className="pl-9"
-              required
-            />
-          </div>
-        </div>
-        <div>
-          <Label className="text-sm">Loan Insurance</Label>
-          <div className="relative">
-            <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              type="number"
-              placeholder="0"
-              value={formData.loan_insurance}
-              onChange={(e) => setFormData({...formData, loan_insurance: e.target.value})}
-              className="pl-9"
-            />
-          </div>
+      {/* Loan Insurance */}
+      <div>
+        <Label className="text-sm">Loan Insurance (added to loan)</Label>
+        <div className="relative">
+          <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            type="number"
+            placeholder="0"
+            value={formData.loan_insurance}
+            onChange={(e) => setFormData({...formData, loan_insurance: e.target.value})}
+            className="pl-9"
+          />
         </div>
       </div>
 
-      {/* Interest & Tenure */}
-      <div className="grid grid-cols-3 gap-4">
+      {/* Interest, Tenure & EMI */}
+      <div className="grid grid-cols-4 gap-4">
         <div>
           <Label className="text-sm">Interest Rate (%) <span className="text-red-500">*</span></Label>
           <div className="relative">
@@ -771,6 +755,19 @@ const AddOfferForm = ({ lead, application, vehicle, bank, onClose, onSuccess }) 
             value={formData.tenure_months}
             onChange={(e) => setFormData({...formData, tenure_months: e.target.value})}
           />
+        </div>
+        <div>
+          <Label className="text-sm">EMI Amount</Label>
+          <div className="relative">
+            <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              type="number"
+              placeholder={calculatedEMI}
+              value={calculatedEMI}
+              className="pl-9 bg-gray-50"
+              readOnly
+            />
+          </div>
         </div>
         <div>
           <Label className="text-sm">Bank Reference #</Label>
