@@ -926,13 +926,19 @@ const AddOfferForm = ({ lead, application, vehicle, bank, onClose, onSuccess }) 
 // Manual Offer Form (for banks where auto eligibility failed)
 const ManualOfferForm = ({ lead, vehicle, onClose, onSuccess }) => {
   const [banks, setBanks] = useState([]);
+  const [selectedBank, setSelectedBank] = useState(null);
   const [loading, setLoading] = useState(false);
+  
+  const carValuation = vehicle?.vehicle_valuation || 0;
+  const defaultTenure = vehicle?.expected_tenure_months || 60;
+  
   const [formData, setFormData] = useState({
     bank_id: '',
+    ltv_percent: 80,
     loan_amount_approved: '',
     loan_insurance: 0,
     interest_rate: '',
-    tenure_months: 60,
+    tenure_months: defaultTenure,
     bank_reference_number: '',
     processing_fee_percent: '',
     processing_fee_amount: '',
@@ -955,6 +961,37 @@ const ManualOfferForm = ({ lead, vehicle, onClose, onSuccess }) => {
     }
   };
 
+  // When bank is selected, update defaults
+  const handleBankChange = (bankId) => {
+    const bank = banks.find(b => b.id === bankId);
+    setSelectedBank(bank);
+    if (bank) {
+      const ltv = bank.max_ltv_percent || 80;
+      const loanAmount = Math.round(carValuation * ltv / 100);
+      setFormData({
+        ...formData,
+        bank_id: bankId,
+        ltv_percent: ltv,
+        loan_amount_approved: loanAmount || '',
+        interest_rate: bank.interest_rate_min || '',
+        processing_fee_percent: bank.processing_fee_percent || ''
+      });
+    } else {
+      setFormData({ ...formData, bank_id: bankId });
+    }
+  };
+
+  // Recalculate loan amount when LTV changes
+  const handleLTVChange = (newLTV) => {
+    const ltv = parseFloat(newLTV) || 0;
+    const newLoanAmount = Math.round(carValuation * ltv / 100);
+    setFormData({
+      ...formData,
+      ltv_percent: newLTV,
+      loan_amount_approved: newLoanAmount
+    });
+  };
+
   // Calculate totals
   const loanAmount = parseFloat(formData.loan_amount_approved) || 0;
   const loanInsurance = parseFloat(formData.loan_insurance) || 0;
@@ -968,6 +1005,21 @@ const ManualOfferForm = ({ lead, vehicle, onClose, onSuccess }) => {
   const insuranceCharges = parseFloat(formData.insurance_charges) || 0;
   const totalCharges = processingFee + docFee + rtoCharges + insuranceCharges;
   const netDisbursal = totalLoan - totalCharges;
+
+  // Calculate EMI
+  const calculateEMI = () => {
+    const principal = loanAmount;
+    const rate = parseFloat(formData.interest_rate) || 0;
+    const tenure = parseInt(formData.tenure_months) || 60;
+    
+    if (principal <= 0 || rate <= 0 || tenure <= 0) return 0;
+    
+    const monthlyRate = rate / 12 / 100;
+    const emi = principal * monthlyRate * Math.pow(1 + monthlyRate, tenure) / (Math.pow(1 + monthlyRate, tenure) - 1);
+    return Math.round(emi);
+  };
+  
+  const calculatedEMI = calculateEMI();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
