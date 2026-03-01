@@ -1,5 +1,46 @@
 # WiseDrive CRM + Mechanic App PRD
 
+---
+## ⚠️ IMPORTANT: Testing & Environment Notes (READ FIRST)
+
+### Preview vs Production Environment
+- **Preview Environment:** Does NOT have master data (banks, roles, sample customers, inspection packages, etc.)
+- **Production Environment (crmdev):** Has full master data setup
+- **Implication:** Many features cannot be fully tested in preview - only basic functionality checks are possible
+
+### Testing Guidelines for Agent
+1. **Backend API Tests:** Can be done in preview using curl with test data
+2. **Frontend UI Tests:** Screenshots can verify UI renders correctly
+3. **End-to-End Flow Tests:** Should be verified by USER in production (crmdev)
+4. **Features Requiring Master Data:** 
+   - Inspection scheduling (needs real customer packages)
+   - Loan processing (needs bank master data)
+   - Credit score checks (needs API keys in prod)
+   - User role-based access (needs seeded roles)
+
+### Critical Flows to Test After Fixes
+1. **Inspection Scheduling:** Unscheduled → Schedule with date/time/vehicle → Verify in Scheduled tab
+2. **Inspection Count:** Verify Available/Total shows correctly (e.g., 3/4 not 2/3)
+3. **Vehicle Data:** Verify car number shows in Vehicle column after scheduling
+4. **Date Filters:** Last 7 Days, Last 14 Days working on all pages
+5. **Loan Lead Stats:** Cards showing correct counts
+
+### What Agent Should Do
+- ✅ Test backend APIs with curl and mock data
+- ✅ Take screenshots to verify UI renders
+- ✅ Create temporary test data for flow verification
+- ✅ Clean up test data after verification
+- ❌ Don't assume features work just because preview shows no errors
+- ❌ Don't skip testing saying "works in preview" - user must verify in prod
+
+### User Will Test in Production
+- Full inspection scheduling flow with real customers
+- Payment flows with actual Razorpay
+- Credit bureau API calls (Experian/Equifax)
+- Role-based access with real users
+
+---
+
 ## Original Problem Statement
 Build and maintain a CRM system for WiseDrive along with a React Native mechanic mobile app. The system includes:
 - CRM for managing inspections, customers, and mechanics
