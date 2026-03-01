@@ -122,15 +122,16 @@ class DocumentCreate(BaseModel):
 
 # ==================== INITIALIZATION ====================
 
-def init_hr_routes(_db, _get_current_user, _attendance_service=None, _payroll_service=None, _leave_service=None, _storage_service=None):
+def init_hr_routes(_db, _get_current_user, _attendance_service=None, _payroll_service=None, _leave_service=None, _storage_service=None, _audit_service=None):
     """Initialize HR routes with dependencies"""
-    global db, _auth_validator, attendance_service, payroll_service, leave_service, storage_service
+    global db, _auth_validator, attendance_service, payroll_service, leave_service, storage_service, audit_service
     db = _db
     _auth_validator = _get_current_user
     attendance_service = _attendance_service
     payroll_service = _payroll_service
     leave_service = _leave_service
     storage_service = _storage_service
+    audit_service = _audit_service
 
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
