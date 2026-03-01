@@ -40,6 +40,7 @@ class RBACService:
         SALES_LEAD: ["leads", "customers", "loans", "hr"],
         INSPECTION_LEAD: ["customers", "inspections", "loans", "reports", "hr"],
         SALES_EXEC: ["leads"],  # Sales executives ONLY see leads tab
+        LOAN_EXEC: ["loans"],  # Loan executives ONLY see loans tab
         INSPECTION_COORD: ["inspections", "hr"],
         REPORT_REVIEWER: ["inspections", "reports", "hr"],
         MECHANIC: ["hr"],  # Mechanics can access HR for leave/attendance
