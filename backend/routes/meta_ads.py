@@ -77,7 +77,7 @@ async def get_meta_ads_status(current_user: dict = Depends(get_current_user)):
             expiry = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
             if datetime.now(timezone.utc) > expiry:
                 return {"connected": False, "message": "Token expired", "expired_at": expires_at}
-        except:
+        except ValueError:
             pass
     
     return {
