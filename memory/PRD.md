@@ -1,6 +1,22 @@
 # WiseDrive CRM + Mechanic App PRD
 
 ---
+## 📅 CHANGELOG
+
+### March 1, 2026 - City Master Bug Fix
+**Problem:** Users could not remove city aliases or create new cities with names that were aliases.
+**Root Cause:** Backend API used query parameters for city updates, which cannot properly handle empty arrays (aliases=[]).
+**Solution:**
+1. Backend: Converted city create/update endpoints to use Pydantic models with JSON body
+2. Frontend: Updated citiesApi to send JSON body instead of query params
+3. Added conflict validation when adding new aliases
+4. Improved error messages to explain WHY city creation fails (e.g., "'Bengaluru' is already an alias of city 'Bangalore'")
+**Files Modified:**
+- `/app/backend/server.py` (lines ~8225-8340)
+- `/app/frontend/src/services/api.js` (citiesApi)
+**Testing:** Verified via curl and UI screenshot that aliases can now be removed and re-added successfully.
+
+---
 ## ⚠️ IMPORTANT: Testing & Environment Notes (READ FIRST)
 
 ### Preview vs Production Environment
