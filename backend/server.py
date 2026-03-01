@@ -8334,7 +8334,7 @@ async def get_cities(country_id: Optional[str] = None, include_inactive: bool = 
     # If no cities in master table, seed with defaults and return
     if len(cities) == 0:
         default_cities = [
-            {"name": "Bangalore", "state": "Karnataka", "aliases": ["Bengaluru", "BLR"]},
+            {"name": "Bengaluru", "state": "Karnataka", "aliases": ["Bangalore", "BLR"]},
             {"name": "Hyderabad", "state": "Telangana", "aliases": ["HYD"]},
             {"name": "Chennai", "state": "Tamil Nadu", "aliases": ["Madras", "CHE"]},
             {"name": "Mumbai", "state": "Maharashtra", "aliases": ["Bombay", "BOM"]},
