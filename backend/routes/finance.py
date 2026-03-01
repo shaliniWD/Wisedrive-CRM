@@ -78,7 +78,7 @@ async def get_finance_payments(
     payment_status: Optional[str] = None,
     month: Optional[int] = None,
     year: Optional[int] = None,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Get all payments - filtered by role access"""
     logger.info(f"DEBUG: current_user type = {type(current_user)}, value = {current_user}")
@@ -126,7 +126,7 @@ async def get_finance_payments(
 @router.get("/payments/{payment_id}")
 async def get_finance_payment(
     payment_id: str,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Get a specific payment"""
     payment = await db.finance_payments.find_one({"id": payment_id}, {"_id": 0})
@@ -146,7 +146,7 @@ async def get_finance_payment(
 @router.post("/payments")
 async def create_finance_payment(
     payment_data: PaymentCreate,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Create a new payment entry"""
     role_code = current_user.get("role_code", "")
@@ -191,7 +191,7 @@ async def create_finance_payment(
 async def update_finance_payment(
     payment_id: str,
     update_data: PaymentUpdate,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Update a payment"""
     payment = await db.finance_payments.find_one({"id": payment_id})
@@ -212,7 +212,7 @@ async def update_finance_payment(
 @router.patch("/payments/{payment_id}/submit")
 async def submit_payment(
     payment_id: str,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Submit payment for approval"""
     payment = await db.finance_payments.find_one({"id": payment_id})
@@ -244,7 +244,7 @@ async def submit_payment(
 async def approve_payment(
     payment_id: str,
     approval_data: PaymentApproval,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Approve a payment"""
     role_code = current_user.get("role_code", "")
@@ -288,7 +288,7 @@ async def approve_payment(
 async def mark_payment_paid(
     payment_id: str,
     payment_details: PaymentUpdate,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Mark payment as paid"""
     role_code = current_user.get("role_code", "")
@@ -336,7 +336,7 @@ async def mark_payment_paid(
 @router.delete("/payments/{payment_id}")
 async def delete_finance_payment(
     payment_id: str,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Delete a payment (only if pending)"""
     payment = await db.finance_payments.find_one({"id": payment_id})
@@ -353,7 +353,7 @@ async def delete_finance_payment(
 @router.get("/payments/{payment_id}/proofs")
 async def get_payment_proofs(
     payment_id: str,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Get payment proofs"""
     payment = await db.finance_payments.find_one({"id": payment_id}, {"_id": 0, "proofs": 1})
@@ -367,7 +367,7 @@ async def add_payment_proof(
     payment_id: str,
     proof_url: str,
     proof_type: str = "receipt",
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Add a proof document to a payment"""
     payment = await db.finance_payments.find_one({"id": payment_id})
@@ -396,7 +396,7 @@ async def add_payment_proof(
 async def delete_payment_proof(
     payment_id: str,
     proof_id: str,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Delete a payment proof"""
     result = await db.finance_payments.update_one(
@@ -415,7 +415,7 @@ async def get_finance_summary(
     country_id: Optional[str] = None,
     month: Optional[int] = None,
     year: Optional[int] = None,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Get finance summary statistics"""
     role_code = current_user.get("role_code", "")
@@ -484,7 +484,7 @@ async def get_finance_summary(
 @router.get("/employees")
 async def get_finance_employees(
     country_id: Optional[str] = None,
-    current_user: dict = Depends(lambda: get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Get employees with payment summary"""
     role_code = current_user.get("role_code", "")
@@ -543,7 +543,7 @@ async def get_payment_modes():
 
 
 @router.get("/payments/{payment_id}/payslip")
-async def generate_payslip(payment_id: str, current_user: dict = Depends(lambda: get_current_user)):
+async def generate_payslip(payment_id: str, current_user: dict = Depends(get_current_user)):
     """Generate payslip data for PDF generation"""
     role_code = current_user.get("role_code", "")
     
