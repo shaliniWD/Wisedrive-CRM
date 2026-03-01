@@ -4407,6 +4407,10 @@ Thank you for choosing Wisedrive!"""
                 if vd.get("fuel_type"):
                     inspection["fuel_type"] = vd.get("fuel_type", "")
             
+            # Log warning if vehicle data is missing
+            if not inspection.get("car_number"):
+                logger.warning(f"Creating inspection without car_number for lead {lead_id}, customer {lead.get('name')}")
+            
             await db.inspections.insert_one(inspection)
             created_inspections.append(inspection_id)
         
