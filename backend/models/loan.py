@@ -191,10 +191,210 @@ class EligibilityRule(BaseModel):
     min_income: Optional[float] = None  # Monthly income
     min_credit_score: Optional[int] = None
     min_vehicle_age: Optional[int] = None  # In years
-    max_vehicle_age: Optional[int] = None  # In years
+    max_vehicle_age: Optional[int] = None  # In years - Some banks 10 years, some 15 years
     min_loan_amount: Optional[float] = None
     max_loan_amount: Optional[float] = None
     employment_types: List[str] = ["SALARIED", "SELF_EMPLOYED"]
+    # Car make restrictions - Banks like HDFC don't fund Chevy/Ford in India
+    excluded_car_makes: List[str] = []  # e.g., ["CHEVROLET", "FORD"]
+    # Min/Max car age per model year
+    min_model_year: Optional[int] = None  # e.g., 2015 means only 2015+ cars
+
+
+class CustomerLocationType(str, Enum):
+    """Customer location classification - affects loan eligibility"""
+    RURAL = "RURAL"
+    SEMI_URBAN = "SEMI_URBAN"
+    URBAN = "URBAN"
+    METRO = "METRO"
+
+
+class BankStatementAnalysis(BaseModel):
+    """AI-analyzed bank statement data"""
+    bank_name: Optional[str] = None
+    account_number_masked: Optional[str] = None  # Last 4 digits only
+    statement_period_from: Optional[str] = None
+    statement_period_to: Optional[str] = None
+    
+    # ABB Analysis
+    average_bank_balance: Optional[float] = None
+    minimum_balance: Optional[float] = None
+    maximum_balance: Optional[float] = None
+    end_of_month_balances: List[dict] = []  # [{month, balance}]
+    
+    # Income Analysis
+    total_credits: Optional[float] = None
+    average_monthly_credits: Optional[float] = None
+    salary_credits_identified: Optional[float] = None
+    regular_income_sources: List[dict] = []  # [{source, amount, frequency}]
+    
+    # Spending Patterns
+    total_debits: Optional[float] = None
+    average_monthly_debits: Optional[float] = None
+    emi_payments_identified: List[dict] = []  # [{lender, amount, frequency}]
+    loan_repayments_total: Optional[float] = None
+    high_value_transactions: List[dict] = []  # [{date, amount, description}]
+    
+    # Risk Indicators
+    bounce_count: int = 0
+    low_balance_days: int = 0  # Days balance < 5000
+    cash_withdrawal_ratio: Optional[float] = None  # % of total debits
+    
+    # Analysis Metadata
+    analyzed_at: Optional[datetime] = None
+    confidence_score: Optional[float] = None  # 0-100
+    analysis_notes: Optional[str] = None
+    raw_analysis: Optional[dict] = None  # Full AI response
+
+
+class CreditProfileAnalysis(BaseModel):
+    """Analyzed credit bureau report summary"""
+    credit_score: Optional[int] = None
+    score_rating: Optional[str] = None  # EXCELLENT, GOOD, FAIR, POOR
+    bureau_source: Optional[str] = None  # equifax, experian, both
+    
+    # Account Summary
+    total_accounts: int = 0
+    active_accounts: int = 0
+    closed_accounts: int = 0
+    delinquent_accounts: int = 0
+    
+    # Outstanding
+    total_outstanding: Optional[float] = None
+    secured_outstanding: Optional[float] = None
+    unsecured_outstanding: Optional[float] = None
+    
+    # Payment History
+    on_time_payment_percent: Optional[float] = None
+    max_dpd_last_12_months: int = 0  # Max Days Past Due
+    
+    # Existing Loans
+    existing_auto_loans: List[dict] = []  # [{lender, amount, emi, status}]
+    existing_personal_loans: List[dict] = []
+    credit_cards: List[dict] = []  # [{bank, limit, utilization}]
+    
+    # Risk Flags
+    has_write_offs: bool = False
+    has_settlements: bool = False
+    has_defaults: bool = False
+    enquiry_count_last_6_months: int = 0
+    
+    analyzed_at: Optional[datetime] = None
+
+
+class CustomerKYC(BaseModel):
+    """Complete KYC details for customer"""
+    # Basic Info
+    full_name: Optional[str] = None
+    date_of_birth: Optional[str] = None
+    gender: Optional[str] = None
+    father_name: Optional[str] = None
+    
+    # Identity
+    pan_number: Optional[str] = None
+    pan_verified: bool = False
+    aadhaar_number_masked: Optional[str] = None  # Last 4 digits
+    aadhaar_verified: bool = False
+    
+    # Contact
+    mobile_primary: Optional[str] = None
+    mobile_alternate: Optional[str] = None
+    email: Optional[str] = None
+    
+    # Address
+    current_address: Optional[str] = None
+    current_city: Optional[str] = None
+    current_state: Optional[str] = None
+    current_pincode: Optional[str] = None
+    address_proof_type: Optional[str] = None  # AADHAAR, UTILITY_BILL, etc.
+    
+    # Employment
+    employment_type: Optional[str] = None  # SALARIED, SELF_EMPLOYED
+    employer_name: Optional[str] = None
+    designation: Optional[str] = None
+    monthly_income: Optional[float] = None
+    work_experience_years: Optional[int] = None
+    
+    # Bank Details
+    bank_name: Optional[str] = None
+    account_number_masked: Optional[str] = None
+    ifsc_code: Optional[str] = None
+    
+    kyc_completed_at: Optional[datetime] = None
+    kyc_verified_by: Optional[str] = None
+
+
+class VehicleEligibilityAnalysis(BaseModel):
+    """Vehicle analysis for loan eligibility"""
+    vehicle_id: str
+    car_number: str
+    car_make: Optional[str] = None
+    car_model: Optional[str] = None
+    car_year: Optional[int] = None
+    
+    # Valuation
+    vehicle_valuation: Optional[float] = None
+    valuation_source: Optional[str] = None  # MANUAL, VAAHAN, INSPECTION
+    
+    # Age Analysis
+    vehicle_age_years: Optional[int] = None
+    is_within_10_years: bool = False
+    is_within_15_years: bool = False
+    
+    # Make Analysis
+    is_excluded_make: bool = False
+    excluded_make_reason: Optional[str] = None  # "Ford/Chevy not funded - no service network"
+    
+    # Eligibility Summary
+    eligible_banks_count: int = 0
+    max_loan_eligible: Optional[float] = None  # Based on LTV
+    recommended_loan_amount: Optional[float] = None
+
+
+class CustomerProfile(BaseModel):
+    """Complete customer profile for loan eligibility"""
+    id: str
+    loan_lead_id: str
+    
+    # Profile Status
+    profile_status: str = "INCOMPLETE"  # INCOMPLETE, PARTIAL, COMPLETE, VERIFIED
+    profile_score: int = 0  # 0-100 based on completeness
+    
+    # 1. Bank Statement Analysis
+    bank_statement_analysis: Optional[BankStatementAnalysis] = None
+    bank_statement_document_id: Optional[str] = None
+    
+    # 2. Credit Bureau Analysis
+    credit_profile: Optional[CreditProfileAnalysis] = None
+    
+    # 3. Location Classification
+    location_type: Optional[CustomerLocationType] = None
+    location_auto_detected: bool = False
+    location_city: Optional[str] = None
+    location_pincode: Optional[str] = None
+    
+    # 4. Vehicle Analysis (per vehicle)
+    vehicle_analyses: List[VehicleEligibilityAnalysis] = []
+    
+    # 5. KYC
+    kyc: Optional[CustomerKYC] = None
+    
+    # Overall Eligibility
+    overall_eligibility_score: Optional[int] = None  # 0-100
+    eligibility_factors: List[dict] = []  # [{factor, score, weight, notes}]
+    recommended_banks: List[str] = []  # Bank IDs in order of preference
+    
+    # Audit
+    created_at: datetime
+    updated_at: datetime
+    analyzed_by: Optional[str] = None
+
+
+class CustomerProfileUpdate(BaseModel):
+    """Update customer profile fields"""
+    location_type: Optional[CustomerLocationType] = None
+    location_pincode: Optional[str] = None
+    kyc: Optional[CustomerKYC] = None
 
 
 class BankMaster(BaseModel):
