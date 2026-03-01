@@ -6942,9 +6942,10 @@ async def update_inspection_report(
 @api_router.get("/mechanics")
 async def get_mechanics(
     country_id: Optional[str] = None,
+    city: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
-    """Get mechanics (users with MECHANIC role)"""
+    """Get mechanics (users with MECHANIC role), optionally filtered by city (with alias resolution)"""
     mechanic_role = await db.roles.find_one({"code": "MECHANIC"}, {"_id": 0, "id": 1})
     if not mechanic_role:
         return []
@@ -6958,6 +6959,51 @@ async def get_mechanics(
         query["country_id"] = country_id
     
     mechanics = await db.users.find(query, {"_id": 0, "hashed_password": 0}).to_list(100)
+    
+    # If city filter is provided, resolve the city to canonical form and filter mechanics
+    if city:
+        # Resolve city using city master (handles aliases)
+        city_lower = city.lower().strip()
+        canonical_city = None
+        
+        # First try exact name match
+        city_doc = await db.cities.find_one(
+            {"name": {"$regex": f"^{city}$", "$options": "i"}, "is_active": True},
+            {"_id": 0, "name": 1, "aliases": 1}
+        )
+        
+        if city_doc:
+            canonical_city = city_doc["name"]
+        else:
+            # Try alias match
+            city_doc = await db.cities.find_one(
+                {"aliases": {"$regex": f"^{city}$", "$options": "i"}, "is_active": True},
+                {"_id": 0, "name": 1, "aliases": 1}
+            )
+            if city_doc:
+                canonical_city = city_doc["name"]
+        
+        # Build list of all valid city names (canonical + aliases)
+        valid_city_names = set()
+        if city_doc:
+            valid_city_names.add(city_doc["name"].lower())
+            for alias in city_doc.get("aliases", []):
+                valid_city_names.add(alias.lower())
+        else:
+            # If city not in master, just use the provided city name
+            valid_city_names.add(city_lower)
+        
+        # Filter mechanics whose inspection_cities include any valid name
+        filtered_mechanics = []
+        for mechanic in mechanics:
+            mechanic_cities = mechanic.get("inspection_cities", [])
+            for mc in mechanic_cities:
+                if mc.lower() in valid_city_names:
+                    filtered_mechanics.append(mechanic)
+                    break
+        
+        return filtered_mechanics
+    
     return mechanics
 
 
