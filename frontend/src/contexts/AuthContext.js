@@ -9,6 +9,27 @@ const API_URL = process.env.REACT_APP_BACKEND_URL + '/api';
 // Heartbeat interval (2 minutes)
 const HEARTBEAT_INTERVAL = 2 * 60 * 1000;
 
+// Token refresh interval (refresh 5 minutes before expiry - check every 2 minutes)
+const TOKEN_CHECK_INTERVAL = 2 * 60 * 1000;
+const TOKEN_REFRESH_THRESHOLD = 5 * 60 * 1000; // 5 minutes before expiry
+
+// Parse JWT token to get expiration time
+const parseJwt = (token) => {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    return null;
+  }
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [permissions, setPermissions] = useState([]);
@@ -16,6 +37,7 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
   const heartbeatIntervalRef = useRef(null);
+  const tokenRefreshIntervalRef = useRef(null);
   const logoutCalledRef = useRef(false);
 
   // Logout function - memoized to prevent recreating on every render
@@ -28,6 +50,12 @@ export const AuthProvider = ({ children }) => {
     if (heartbeatIntervalRef.current) {
       clearInterval(heartbeatIntervalRef.current);
       heartbeatIntervalRef.current = null;
+    }
+    
+    // Clear token refresh interval
+    if (tokenRefreshIntervalRef.current) {
+      clearInterval(tokenRefreshIntervalRef.current);
+      tokenRefreshIntervalRef.current = null;
     }
     
     // Clear auth state
@@ -48,6 +76,68 @@ export const AuthProvider = ({ children }) => {
       logoutCalledRef.current = false;
     }, 1000);
   }, []);
+
+  // Token refresh function
+  const refreshToken = useCallback(async () => {
+    try {
+      const response = await axios.post(`${API_URL}/auth/refresh-token`);
+      const newToken = response.data.access_token;
+      
+      if (newToken) {
+        localStorage.setItem('token', newToken);
+        axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+        setToken(newToken);
+        console.log('Token refreshed successfully');
+        return true;
+      }
+    } catch (error) {
+      console.error('Token refresh failed:', error);
+      // If refresh fails with 401, logout
+      if (error.response?.status === 401) {
+        logout(true);
+      }
+    }
+    return false;
+  }, [logout]);
+
+  // Check if token needs refresh
+  const checkTokenExpiry = useCallback(() => {
+    const currentToken = localStorage.getItem('token');
+    if (!currentToken) return;
+    
+    const payload = parseJwt(currentToken);
+    if (!payload || !payload.exp) return;
+    
+    const expiryTime = payload.exp * 1000; // Convert to milliseconds
+    const currentTime = Date.now();
+    const timeUntilExpiry = expiryTime - currentTime;
+    
+    // If token expires within threshold, refresh it
+    if (timeUntilExpiry <= TOKEN_REFRESH_THRESHOLD && timeUntilExpiry > 0) {
+      console.log(`Token expires in ${Math.round(timeUntilExpiry / 1000 / 60)} minutes, refreshing...`);
+      refreshToken();
+    } else if (timeUntilExpiry <= 0) {
+      console.log('Token already expired');
+      logout(true);
+    }
+  }, [refreshToken, logout]);
+
+  // Setup token refresh interval
+  useEffect(() => {
+    if (token) {
+      // Check token expiry immediately
+      checkTokenExpiry();
+      
+      // Setup interval to check token expiry
+      tokenRefreshIntervalRef.current = setInterval(checkTokenExpiry, TOKEN_CHECK_INTERVAL);
+    }
+    
+    return () => {
+      if (tokenRefreshIntervalRef.current) {
+        clearInterval(tokenRefreshIntervalRef.current);
+      }
+    };
+  }, [token, checkTokenExpiry]);
 
   // Setup axios interceptor for handling 401 errors globally
   useEffect(() => {
