@@ -58,15 +58,10 @@ def init_finance_routes(_db, _get_current_user):
     _get_current_user_func = _get_current_user
 
 
-# The actual dependency - FastAPI will resolve the sub-dependency chain
-async def get_current_user_dep(credentials = Depends(lambda: _get_current_user_func)):
-    """Dependency wrapper - returns the result of calling the injected auth function"""
-    if callable(_get_current_user_func):
-        # This is a bit unusual - we need to handle the case where 
-        # _get_current_user_func is an async function that takes credentials
-        # But Depends should handle this automatically
-        return credentials
-    return credentials
+# Create a wrapper that properly uses Depends to resolve the injected function
+def get_auth_dependency():
+    """Returns the injected auth dependency function for use with Depends()"""
+    return _get_current_user_func
 
 
 @router.get("/payments")
