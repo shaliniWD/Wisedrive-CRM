@@ -4696,39 +4696,68 @@ async def get_inspections(
                     "balance_due": 0,
                     "payment_status": insp.get("payment_status"),
                     "payment_type": insp.get("payment_type"),
-                    "total_inspections": 0,  # Total purchased
+                    "total_inspections": 0,  # Total purchased (will be corrected below)
                     "used_inspections": 0,    # Already scheduled/completed
                     "available_inspections": 0,  # Remaining to schedule
-                    "inspection_ids": [],  # All inspection IDs in this group
+                    "inspection_ids": [],  # All unscheduled inspection IDs in this group
                 }
             
             group = grouped[group_key]
-            group["total_inspections"] += 1
+            # Note: We count unscheduled inspections here, but total will be recalculated below
             group["total_amount"] += insp.get("total_amount", 0)
             group["amount_paid"] += insp.get("amount_paid", 0)
             group["balance_due"] += insp.get("balance_due", 0) or insp.get("pending_amount", 0)
             group["inspection_ids"].append(insp.get("id"))
-            
-            # Count as "used" if it has been scheduled at any point
-            if insp.get("scheduled_date"):
-                group["used_inspections"] += 1
         
-        # Calculate available inspections for each group
-        # Also count scheduled inspections from same order that are not in current query
+        # Calculate TOTAL inspections (scheduled + unscheduled) and available inspections for each group
         for group_key, group in grouped.items():
-            # Query to count scheduled inspections from same order
+            # Count ALL inspections (both scheduled and unscheduled) from same order/lead
+            total_count = 0
             scheduled_count = 0
+            
             if group.get("order_id"):
+                # Count all inspections with this order_id
+                total_count = await db.inspections.count_documents({
+                    "order_id": group["order_id"]
+                })
+                # Count scheduled inspections
                 scheduled_count = await db.inspections.count_documents({
                     "order_id": group["order_id"],
                     "scheduled_date": {"$ne": None}
                 })
             elif group.get("lead_id"):
+                # Count all inspections with this lead_id
+                total_count = await db.inspections.count_documents({
+                    "lead_id": group["lead_id"]
+                })
+                # Count scheduled inspections
                 scheduled_count = await db.inspections.count_documents({
                     "lead_id": group["lead_id"],
                     "scheduled_date": {"$ne": None}
                 })
+            else:
+                # Fallback: use customer_mobile + payment_date for grouping
+                customer_key = group.get("customer_id") or group.get("customer_mobile")
+                payment_date = group.get("payment_date")
+                if customer_key and payment_date:
+                    total_count = await db.inspections.count_documents({
+                        "$or": [
+                            {"customer_id": customer_key},
+                            {"customer_mobile": customer_key}
+                        ],
+                        "payment_date": payment_date
+                    })
+                    scheduled_count = await db.inspections.count_documents({
+                        "$or": [
+                            {"customer_id": customer_key},
+                            {"customer_mobile": customer_key}
+                        ],
+                        "payment_date": payment_date,
+                        "scheduled_date": {"$ne": None}
+                    })
             
+            # Set correct total and available counts
+            group["total_inspections"] = total_count if total_count > 0 else len(group["inspection_ids"])
             group["used_inspections"] = scheduled_count
             group["available_inspections"] = group["total_inspections"] - scheduled_count
             # Alias for frontend compatibility
