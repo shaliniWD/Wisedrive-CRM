@@ -8374,15 +8374,15 @@ async def resolve_city(city_name: str):
 
 @api_router.post("/cities/normalize-all")
 async def normalize_all_cities(current_user: dict = Depends(get_current_user)):
-    """Normalize all city names in leads, inspections, and user inspection_cities to canonical form"""
+    """Normalize all city names to canonical form and clear invalid cities not in City Master"""
     role_code = current_user.get("role_code", "")
-    if role_code not in ["CEO", "ADMIN"]:
-        raise HTTPException(status_code=403, detail="Only CEO/Admin can normalize cities")
+    if role_code not in ["CEO", "ADMIN", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Only CEO/Admin/HR Manager can normalize cities")
     
     # Get all cities with aliases
     cities = await db.cities.find({"is_active": True}, {"_id": 0}).to_list(500)
     
-    # Build alias map
+    # Build alias map: alias/variant -> canonical name
     alias_map = {}
     for city in cities:
         canonical = city["name"]
@@ -8390,48 +8390,74 @@ async def normalize_all_cities(current_user: dict = Depends(get_current_user)):
         for alias in city.get("aliases", []):
             alias_map[alias.lower()] = canonical
     
-    stats = {"leads_updated": 0, "inspections_updated": 0, "users_updated": 0}
+    stats = {
+        "leads_normalized": 0, 
+        "leads_cleared": 0,
+        "inspections_normalized": 0, 
+        "inspections_cleared": 0,
+        "customers_normalized": 0,
+        "customers_cleared": 0,
+        "employees_normalized": 0,
+        "employees_cleared": 0,
+        "ad_mappings_normalized": 0,
+        "ad_mappings_cleared": 0
+    }
     
-    # Normalize leads
-    leads = await db.leads.find({"city": {"$exists": True}}, {"_id": 0, "id": 1, "city": 1}).to_list(10000)
-    for lead in leads:
-        old_city = lead.get("city", "")
-        if old_city and old_city.lower() in alias_map:
-            new_city = alias_map[old_city.lower()]
-            if new_city != old_city:
-                await db.leads.update_one({"id": lead["id"]}, {"$set": {"city": new_city}})
-                stats["leads_updated"] += 1
+    # Helper function to process a collection
+    async def process_collection(collection, field_name, stat_key):
+        docs = await collection.find({field_name: {"$exists": True, "$ne": None, "$ne": ""}}, {"_id": 1, "id": 1, field_name: 1}).to_list(10000)
+        for doc in docs:
+            doc_id = doc.get("id") or str(doc.get("_id"))
+            old_city = doc.get(field_name, "")
+            if old_city:
+                city_lower = old_city.lower()
+                if city_lower in alias_map:
+                    # Normalize to canonical name
+                    new_city = alias_map[city_lower]
+                    if new_city != old_city:
+                        await collection.update_one({"_id": doc["_id"]}, {"$set": {field_name: new_city}})
+                        stats[f"{stat_key}_normalized"] += 1
+                else:
+                    # Invalid city - clear it
+                    await collection.update_one({"_id": doc["_id"]}, {"$set": {field_name: ""}})
+                    stats[f"{stat_key}_cleared"] += 1
     
-    # Normalize inspections
-    inspections = await db.inspections.find({"city": {"$exists": True}}, {"_id": 0, "id": 1, "city": 1}).to_list(10000)
-    for insp in inspections:
-        old_city = insp.get("city", "")
-        if old_city and old_city.lower() in alias_map:
-            new_city = alias_map[old_city.lower()]
-            if new_city != old_city:
-                await db.inspections.update_one({"id": insp["id"]}, {"$set": {"city": new_city}})
-                stats["inspections_updated"] += 1
-    
-    # Normalize user inspection_cities
-    users = await db.users.find({"inspection_cities": {"$exists": True, "$ne": []}}, {"_id": 0, "id": 1, "inspection_cities": 1}).to_list(1000)
-    for user in users:
-        old_cities = user.get("inspection_cities", [])
-        new_cities = []
-        changed = False
-        for city in old_cities:
-            if city.lower() in alias_map:
-                new_city = alias_map[city.lower()]
-                new_cities.append(new_city)
-                if new_city != city:
+    # Helper function to process array fields (inspection_cities, assigned_cities)
+    async def process_array_field(collection, field_name, stat_key):
+        docs = await collection.find({field_name: {"$exists": True, "$ne": []}}, {"_id": 1, "id": 1, field_name: 1}).to_list(10000)
+        for doc in docs:
+            old_cities = doc.get(field_name, [])
+            new_cities = []
+            changed = False
+            for city in old_cities:
+                if city and city.lower() in alias_map:
+                    new_city = alias_map[city.lower()]
+                    if new_city not in new_cities:
+                        new_cities.append(new_city)
+                    if new_city != city:
+                        changed = True
+                elif city:
+                    # City not in master - skip it (don't add to new_cities)
                     changed = True
-            else:
-                new_cities.append(city)
-        
-        if changed:
-            await db.users.update_one({"id": user["id"]}, {"$set": {"inspection_cities": new_cities}})
-            stats["users_updated"] += 1
+            
+            if changed:
+                await collection.update_one({"_id": doc["_id"]}, {"$set": {field_name: new_cities}})
+                if len(new_cities) < len(old_cities):
+                    stats[f"{stat_key}_cleared"] += 1
+                else:
+                    stats[f"{stat_key}_normalized"] += 1
     
-    return {"success": True, "stats": stats}
+    # Process all collections with city fields
+    await process_collection(db.leads, "city", "leads")
+    await process_collection(db.inspections, "city", "inspections")
+    await process_collection(db.customers, "city", "customers")
+    await process_collection(db.ad_city_mappings, "city", "ad_mappings")
+    
+    # Process array fields for employees/users
+    await process_array_field(db.users, "inspection_cities", "employees")
+    await process_array_field(db.users, "assigned_cities", "employees")
+    
+    return {"success": True, "stats": stats, "valid_cities": [c["name"] for c in cities]}
 
 
 @api_router.get("/lead-sources")
