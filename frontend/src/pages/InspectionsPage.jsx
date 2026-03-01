@@ -2283,13 +2283,18 @@ export default function InspectionsPage() {
                   </SelectItem>
                   {mechanics
                     .filter(mechanic => {
-                      // Filter by inspection city
-                      const inspectionCity = mechanicEditInspection?.city;
+                      // Filter by inspection city (case-insensitive)
+                      const inspectionCity = mechanicEditInspection?.city?.toLowerCase()?.trim();
                       if (!inspectionCity) return true; // Show all if no city
-                      // Check if mechanic has this city in their inspection_cities
+                      // Check if mechanic has this city (or alias) in their inspection_cities
                       const mechanicCities = mechanic.inspection_cities || [];
-                      // Only show mechanics who have this specific city assigned (not mechanics with no cities)
-                      return mechanicCities.includes(inspectionCity);
+                      // Case-insensitive match - the backend already filters by alias resolution
+                      // but we also do a local check for any partial matches
+                      return mechanicCities.some(mc => 
+                        mc.toLowerCase().trim() === inspectionCity ||
+                        inspectionCity.includes(mc.toLowerCase().trim()) ||
+                        mc.toLowerCase().trim().includes(inspectionCity)
+                      );
                     })
                     .map((mechanic) => (
                     <SelectItem key={mechanic.id} value={mechanic.id}>
@@ -2307,11 +2312,15 @@ export default function InspectionsPage() {
                 </SelectContent>
               </Select>
               {mechanics.filter(m => {
-                const inspectionCity = mechanicEditInspection?.city;
+                const inspectionCity = mechanicEditInspection?.city?.toLowerCase()?.trim();
                 if (!inspectionCity) return true;
                 const mechanicCities = m.inspection_cities || [];
-                // Only show mechanics who have this specific city assigned
-                return mechanicCities.includes(inspectionCity);
+                // Case-insensitive match with partial matching for aliases
+                return mechanicCities.some(mc => 
+                  mc.toLowerCase().trim() === inspectionCity ||
+                  inspectionCity.includes(mc.toLowerCase().trim()) ||
+                  mc.toLowerCase().trim().includes(inspectionCity)
+                );
               }).length === 0 && (
                 <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded-md">
                   No mechanics available for {mechanicEditInspection?.city || 'this city'}. 
