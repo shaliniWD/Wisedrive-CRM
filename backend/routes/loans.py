@@ -10,6 +10,7 @@ Handles all loan-related endpoints including:
 - Loan applications
 """
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Optional, List
 from datetime import datetime, timezone
 import uuid
@@ -35,9 +36,12 @@ logger = logging.getLogger(__name__)
 # Create router
 router = APIRouter(tags=["Loans"])
 
+# Security scheme
+security = HTTPBearer()
+
 # These will be set by init_loans_routes
 db = None
-get_current_user = None
+_auth_validator = None  # Function to validate and return user from token
 storage_service = None
 
 # API Keys for Credit Score (from environment)
