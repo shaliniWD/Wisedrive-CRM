@@ -2316,18 +2316,21 @@ export default function InspectionsPage() {
                   </SelectItem>
                   {mechanics
                     .filter(mechanic => {
-                      // Filter by inspection city (case-insensitive)
+                      // Filter by inspection city using alias resolution
                       const inspectionCity = mechanicEditInspection?.city?.toLowerCase()?.trim();
                       if (!inspectionCity) return true; // Show all if no city
-                      // Check if mechanic has this city (or alias) in their inspection_cities
+                      
+                      // Resolve the inspection city to its canonical form using alias map
+                      const canonicalInspectionCity = cityAliasMap[inspectionCity] || inspectionCity;
+                      
+                      // Check if mechanic has the canonical city (or any alias) in their inspection_cities
                       const mechanicCities = mechanic.inspection_cities || [];
-                      // Case-insensitive match - the backend already filters by alias resolution
-                      // but we also do a local check for any partial matches
-                      return mechanicCities.some(mc => 
-                        mc.toLowerCase().trim() === inspectionCity ||
-                        inspectionCity.includes(mc.toLowerCase().trim()) ||
-                        mc.toLowerCase().trim().includes(inspectionCity)
-                      );
+                      return mechanicCities.some(mc => {
+                        const mcLower = mc.toLowerCase().trim();
+                        const canonicalMc = cityAliasMap[mcLower] || mcLower;
+                        // Match if canonical cities are the same
+                        return canonicalMc === canonicalInspectionCity;
+                      });
                     })
                     .map((mechanic) => (
                     <SelectItem key={mechanic.id} value={mechanic.id}>
@@ -2347,13 +2350,16 @@ export default function InspectionsPage() {
               {mechanics.filter(m => {
                 const inspectionCity = mechanicEditInspection?.city?.toLowerCase()?.trim();
                 if (!inspectionCity) return true;
+                
+                // Resolve the inspection city to its canonical form
+                const canonicalInspectionCity = cityAliasMap[inspectionCity] || inspectionCity;
+                
                 const mechanicCities = m.inspection_cities || [];
-                // Case-insensitive match with partial matching for aliases
-                return mechanicCities.some(mc => 
-                  mc.toLowerCase().trim() === inspectionCity ||
-                  inspectionCity.includes(mc.toLowerCase().trim()) ||
-                  mc.toLowerCase().trim().includes(inspectionCity)
-                );
+                return mechanicCities.some(mc => {
+                  const mcLower = mc.toLowerCase().trim();
+                  const canonicalMc = cityAliasMap[mcLower] || mcLower;
+                  return canonicalMc === canonicalInspectionCity;
+                });
               }).length === 0 && (
                 <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded-md">
                   No mechanics available for {mechanicEditInspection?.city || 'this city'}. 
