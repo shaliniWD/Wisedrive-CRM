@@ -8,13 +8,51 @@ Handles all mechanic-related endpoints including:
 """
 from fastapi import APIRouter, HTTPException, Depends, Request, UploadFile, File
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from typing import Optional, List
+from typing import Optional, List, Literal
 from datetime import datetime, timezone, timedelta
 from pydantic import BaseModel
 import uuid
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+# ==================== RESPONSE MODELS ====================
+# These enforce the API contract - if response doesn't match, FastAPI will error
+# This prevents accidental regressions during refactoring
+
+class MechanicInspectionResponse(BaseModel):
+    """Response model for mechanic app inspections - ENFORCED CONTRACT"""
+    id: str
+    scheduledAt: Optional[str] = None
+    status: Literal['NEW', 'ACCEPTED', 'IN_PROGRESS', 'COMPLETED', 'REJECTED']
+    crmStatus: str
+    vehicleNumber: str
+    makeModelVariant: str
+    carMake: Optional[str] = ""
+    carModel: Optional[str] = ""
+    fuelType: Optional[str] = ""
+    manufacturingYear: Optional[str] = ""
+    odometerReading: Optional[str] = ""
+    city: Optional[str] = ""
+    customerName: Optional[str] = ""
+    customerPhone: Optional[str] = ""
+    customerAddress: Optional[str] = ""
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    assignedMechanicId: Optional[str] = None
+    partner_id: Optional[str] = None
+    partner_name: Optional[str] = None
+    requiredModules: Optional[dict] = None
+    progress: Optional[dict] = None
+    orderId: Optional[str] = None
+    packageName: Optional[str] = None
+    
+    class Config:
+        extra = "allow"  # Allow additional fields
+
+
+# ==================== ROUTER SETUP ====================
 
 # Create router
 router = APIRouter(prefix="/mechanic", tags=["Mechanic"])
