@@ -7,6 +7,7 @@ Handles all finance-related endpoints including:
 - Finance summary
 """
 from fastapi import APIRouter, HTTPException, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Optional, List
 from datetime import datetime, timezone
 from pydantic import BaseModel
@@ -18,9 +19,12 @@ logger = logging.getLogger(__name__)
 # Create router
 router = APIRouter(prefix="/finance", tags=["Finance"])
 
+# Security scheme
+security = HTTPBearer()
+
 # These will be set by init_finance_routes
 db = None
-get_current_user = None
+_auth_validator = None  # Function to validate and return user from token
 
 # Payment status constants
 PAYMENT_STATUS_PENDING = "pending"
@@ -53,9 +57,17 @@ class PaymentApproval(BaseModel):
 
 def init_finance_routes(_db, _get_current_user):
     """Initialize finance routes with dependencies"""
-    global db, get_current_user
+    global db, _auth_validator
     db = _db
-    get_current_user = _get_current_user
+    _auth_validator = _get_current_user
+
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
+    """Authenticate user using the injected validator"""
+    if _auth_validator is None:
+        raise HTTPException(status_code=500, detail="Auth not initialized")
+    # Call the injected auth validator with credentials
+    return await _auth_validator(credentials)
 
 
 @router.get("/payments")
