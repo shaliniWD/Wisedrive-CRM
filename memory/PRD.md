@@ -3,6 +3,30 @@
 ---
 ## 📅 CHANGELOG
 
+### March 1, 2026 - Comprehensive City Master Integration
+**Problem:** Multiple places in the CRM had hardcoded city lists instead of fetching from the Cities Master table.
+**Solution:** Swept the entire project and updated all city references to use the Cities Master API.
+
+**Files Modified:**
+1. **Frontend:**
+   - `/app/frontend/src/pages/AdAnalyticsPage.jsx` - Now fetches cities from `citiesApi.getAll()`
+   - `/app/frontend/src/pages/AdminPage.jsx` - Now fetches cities from `citiesApi.getAll()`
+   - `/app/frontend/src/pages/HRComponents.jsx` - Already updated in previous fix
+
+2. **Backend:**
+   - `/app/backend/server.py` - Removed fallback hardcoded cities from `/cities/names` endpoint
+   - `/app/backend/server.py` - Enhanced `/cities/normalize-all` endpoint to clear invalid cities
+
+**New Cleanup Features:**
+- `POST /api/cities/normalize-all` - Normalizes aliases AND clears invalid cities from all collections
+- `/app/backend/scripts/cleanup_invalid_cities.py` - Standalone script for database cleanup
+
+**Collections now validated:**
+- leads.city, customers.city, inspections.city, ad_city_mappings.city
+- employees.inspection_cities[], employees.assigned_cities[]
+
+---
+
 ### March 1, 2026 - City Master Bug Fix
 **Problem:** Users could not remove city aliases or create new cities with names that were aliases.
 **Root Cause:** Backend API used query parameters for city updates, which cannot properly handle empty arrays (aliases=[]).
