@@ -20,7 +20,7 @@ router = APIRouter(prefix="/finance", tags=["Finance"])
 
 # These will be set by init_finance_routes
 db = None
-_get_current_user_func = None
+get_current_user = None
 
 # Payment status constants
 PAYMENT_STATUS_PENDING = "pending"
@@ -53,15 +53,9 @@ class PaymentApproval(BaseModel):
 
 def init_finance_routes(_db, _get_current_user):
     """Initialize finance routes with dependencies"""
-    global db, _get_current_user_func
+    global db, get_current_user
     db = _db
-    _get_current_user_func = _get_current_user
-
-
-# Create a wrapper that properly uses Depends to resolve the injected function
-def get_auth_dependency():
-    """Returns the injected auth dependency function for use with Depends()"""
-    return _get_current_user_func
+    get_current_user = _get_current_user
 
 
 @router.get("/payments")
@@ -72,7 +66,7 @@ async def get_finance_payments(
     payment_status: Optional[str] = None,
     month: Optional[int] = None,
     year: Optional[int] = None,
-    current_user: dict = Depends(get_auth_dependency())
+    current_user: dict = Depends(lambda: get_current_user)
 ):
     """Get all payments - filtered by role access"""
     role_code = current_user.get("role_code", "")
