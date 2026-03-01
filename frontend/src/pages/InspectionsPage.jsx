@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { inspectionsApi, utilityApi, vehicleApi, mechanicsApi, smsLogsApi } from '@/services/api';
+import { inspectionsApi, utilityApi, vehicleApi, mechanicsApi, smsLogsApi, citiesApi } from '@/services/api';
 import { formatDate, formatTime, formatDateTime, getToday, formatDateForInput, parseDateFromInput, getStartOfWeek, getEndOfWeek, getStartOfMonth, getEndOfMonth, getStartOfYear, getEndOfYear, formatDateForDisplay } from '@/utils/dateFormat';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
