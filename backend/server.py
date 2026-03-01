@@ -8208,17 +8208,14 @@ async def get_cities(country_id: Optional[str] = None, include_inactive: bool = 
 
 @api_router.get("/cities/names")
 async def get_city_names(country_id: Optional[str] = None):
-    """Get simple list of city names for dropdowns"""
+    """Get simple list of city names for dropdowns - from Cities Master only"""
     query = {"is_active": True}
     if country_id:
         query["country_id"] = country_id
     
     cities = await db.cities.find(query, {"_id": 0, "name": 1}).sort("name", 1).to_list(500)
     
-    # Fallback to defaults if no cities
-    if len(cities) == 0:
-        return ["Bangalore", "Chennai", "Delhi", "Hyderabad", "Kolkata", "Mumbai", "Pune", "Vizag"]
-    
+    # Return empty list if no cities configured - NO fallback to hardcoded values
     return [c["name"] for c in cities]
 
 
