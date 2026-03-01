@@ -673,6 +673,18 @@ async def get_me(current_user: dict = Depends(get_current_user)):
     return current_user
 
 
+@api_router.post("/auth/refresh-token")
+async def refresh_token(current_user: dict = Depends(get_current_user)):
+    """Refresh access token - returns new token with extended expiry"""
+    # Create new token with current user's data
+    access_token = create_access_token({"sub": current_user["id"], "email": current_user["email"]})
+    
+    return {
+        "access_token": access_token,
+        "token_type": "bearer"
+    }
+
+
 # ==================== COUNTRIES ROUTES ====================
 
 @api_router.get("/countries")
