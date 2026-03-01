@@ -563,18 +563,10 @@ export default function LoansPage() {
         </DialogContent>
       </Dialog>
       
-      {/* Documents Modal */}
-      <DocumentsModal
-        isOpen={documentsModalOpen}
-        onClose={() => setDocumentsModalOpen(false)}
-        lead={selectedLead}
-        onUpdate={refreshSelectedLead}
-      />
-      
-      {/* Vehicle Details Modal */}
-      <VehicleDetailsModal
-        isOpen={vehicleModalOpen}
-        onClose={() => setVehicleModalOpen(false)}
+      {/* Customer Details Modal (Vehicles & Documents) */}
+      <CustomerDetailsModal
+        isOpen={customerDetailsModalOpen}
+        onClose={() => setCustomerDetailsModalOpen(false)}
         lead={selectedLead}
         onUpdate={refreshSelectedLead}
       />
