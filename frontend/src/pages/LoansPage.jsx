@@ -1489,6 +1489,19 @@ const LoanProcessingModal = ({ isOpen, onClose, lead, onUpdate }) => {
           )}
         </div>
       </DialogContent>
+      
+      {/* Bank Offers Modal */}
+      <BankOffersModal
+        isOpen={bankOffersModal.open}
+        onClose={() => setBankOffersModal({ open: false, vehicle: null, application: null })}
+        lead={lead}
+        vehicle={bankOffersModal.vehicle}
+        application={bankOffersModal.application}
+        onUpdate={() => {
+          setBankOffersModal({ open: false, vehicle: null, application: null });
+          onUpdate();
+        }}
+      />
     </Dialog>
   );
 };
