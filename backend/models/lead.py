@@ -59,6 +59,14 @@ class LeadBase(BaseModel):
     partner_id: Optional[str] = None  # Links to partners collection
     partner_name: Optional[str] = None  # Denormalized for display
     
+    # Vehicle information (captured for inspection)
+    vehicle_number: Optional[str] = None  # Registration number e.g., KA01AB1234
+    vehicle_make: Optional[str] = None  # Brand/manufacturer e.g., Maruti Suzuki
+    vehicle_model: Optional[str] = None  # Model name e.g., Swift
+    vehicle_year: Optional[str] = None  # Manufacturing year
+    vehicle_fuel_type: Optional[str] = None  # Petrol, Diesel, CNG, Electric
+    vehicle_data: Optional[dict] = None  # Full Vaahan API response
+    
     # Payment fields
     package_id: Optional[str] = None
     package_name: Optional[str] = None
