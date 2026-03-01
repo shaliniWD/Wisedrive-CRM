@@ -341,8 +341,8 @@ const TokenCard = ({ token, onUpdate, onTest }) => {
   );
 };
 
-// City Management Component
-const CityManagement = () => {
+// City Management Component - Also exported for use in HR Module
+export const CityManagement = () => {
   const [cities, setCities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
