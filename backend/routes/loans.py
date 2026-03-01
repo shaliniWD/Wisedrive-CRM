@@ -1748,3 +1748,292 @@ async def create_manual_bank_offer(
     
     return {"message": "Manual bank offer created successfully", "offer": offer}
 
+
+
+# ==================== CHARGE TYPE MANAGEMENT ====================
+
+# Default system charge types
+SYSTEM_CHARGE_TYPES = [
+    {"charge_key": "processing_fee", "charge_name": "Processing Fee", "is_percentage": True, "default_percentage": 1.5, "is_negotiable": True, "is_system": True},
+    {"charge_key": "document_handling", "charge_name": "Document Handling Fee", "is_percentage": False, "default_amount": 1500, "is_negotiable": True, "is_system": True},
+    {"charge_key": "rto_charges", "charge_name": "RTO Charges", "is_percentage": False, "default_amount": 3000, "is_negotiable": True, "is_system": True},
+    {"charge_key": "insurance_charges", "charge_name": "Insurance Charges", "is_percentage": False, "is_negotiable": True, "is_system": True, "description": "If vehicle doesn't have existing insurance"},
+    {"charge_key": "valuation_charges", "charge_name": "Valuation Charges", "is_percentage": False, "default_amount": 2000, "is_negotiable": True, "is_system": True},
+    {"charge_key": "stamp_duty", "charge_name": "Stamp Duty Amount", "is_percentage": False, "is_negotiable": False, "is_system": True, "description": "Government stamp duty"},
+]
+
+
+@router.get("/charge-types")
+async def get_charge_types(
+    include_inactive: bool = False,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all charge types (system + custom)"""
+    query = {} if include_inactive else {"is_active": True}
+    
+    # Check if charge_types collection exists and has data
+    count = await db.charge_types.count_documents({})
+    
+    if count == 0:
+        # Initialize with system charge types
+        now = datetime.now(timezone.utc)
+        for ct in SYSTEM_CHARGE_TYPES:
+            await db.charge_types.insert_one({
+                "id": str(uuid.uuid4()),
+                **ct,
+                "is_active": True,
+                "created_at": now.isoformat(),
+                "updated_at": now.isoformat(),
+                "created_by": "system"
+            })
+    
+    cursor = db.charge_types.find(query, {"_id": 0}).sort("charge_name", 1)
+    charge_types = await cursor.to_list(length=100)
+    
+    return charge_types
+
+
+@router.post("/charge-types")
+async def create_charge_type(
+    data: ChargeTypeCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create a new custom charge type"""
+    # Check if charge_key already exists
+    existing = await db.charge_types.find_one({"charge_key": data.charge_key})
+    if existing:
+        raise HTTPException(status_code=400, detail="Charge type with this key already exists")
+    
+    now = datetime.now(timezone.utc)
+    charge_type = {
+        "id": str(uuid.uuid4()),
+        "charge_key": data.charge_key.lower().replace(" ", "_"),
+        "charge_name": data.charge_name,
+        "description": data.description,
+        "default_amount": data.default_amount,
+        "is_percentage": data.is_percentage,
+        "default_percentage": data.default_percentage,
+        "is_negotiable": data.is_negotiable,
+        "is_system": False,  # Custom charge types are not system
+        "is_active": True,
+        "created_at": now.isoformat(),
+        "updated_at": now.isoformat(),
+        "created_by": current_user.get("email")
+    }
+    
+    await db.charge_types.insert_one(charge_type)
+    del charge_type["_id"] if "_id" in charge_type else None
+    
+    return {"message": "Charge type created successfully", "charge_type": charge_type}
+
+
+@router.put("/charge-types/{charge_type_id}")
+async def update_charge_type(
+    charge_type_id: str,
+    charge_name: Optional[str] = None,
+    description: Optional[str] = None,
+    default_amount: Optional[float] = None,
+    is_percentage: Optional[bool] = None,
+    default_percentage: Optional[float] = None,
+    is_negotiable: Optional[bool] = None,
+    is_active: Optional[bool] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update a charge type"""
+    existing = await db.charge_types.find_one({"id": charge_type_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Charge type not found")
+    
+    update_data = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    
+    if charge_name is not None:
+        update_data["charge_name"] = charge_name
+    if description is not None:
+        update_data["description"] = description
+    if default_amount is not None:
+        update_data["default_amount"] = default_amount
+    if is_percentage is not None:
+        update_data["is_percentage"] = is_percentage
+    if default_percentage is not None:
+        update_data["default_percentage"] = default_percentage
+    if is_negotiable is not None:
+        update_data["is_negotiable"] = is_negotiable
+    if is_active is not None:
+        update_data["is_active"] = is_active
+    
+    await db.charge_types.update_one(
+        {"id": charge_type_id},
+        {"$set": update_data}
+    )
+    
+    updated = await db.charge_types.find_one({"id": charge_type_id}, {"_id": 0})
+    return {"message": "Charge type updated successfully", "charge_type": updated}
+
+
+@router.delete("/charge-types/{charge_type_id}")
+async def delete_charge_type(
+    charge_type_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Delete (deactivate) a custom charge type. System charge types cannot be deleted."""
+    existing = await db.charge_types.find_one({"id": charge_type_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Charge type not found")
+    
+    if existing.get("is_system"):
+        raise HTTPException(status_code=400, detail="System charge types cannot be deleted")
+    
+    # Soft delete by setting is_active to False
+    await db.charge_types.update_one(
+        {"id": charge_type_id},
+        {"$set": {"is_active": False, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    return {"message": "Charge type deleted successfully"}
+
+
+@router.post("/loan-leads/{lead_id}/offers/{offer_id}/add-charge")
+async def add_charge_to_offer(
+    lead_id: str,
+    offer_id: str,
+    charge_type: str,
+    charge_name: str,
+    amount: float,
+    is_percentage: bool = False,
+    percentage_value: Optional[float] = None,
+    is_negotiable: bool = True,
+    notes: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Add a new charge to an existing offer"""
+    lead = await db.loan_leads.find_one({"id": lead_id})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Loan lead not found")
+    
+    # Find the offer
+    offers = lead.get("loan_offers", [])
+    offer_idx = next((i for i, o in enumerate(offers) if o.get("id") == offer_id), None)
+    
+    if offer_idx is None:
+        raise HTTPException(status_code=404, detail="Offer not found")
+    
+    offer = offers[offer_idx]
+    
+    if offer.get("offer_status") not in ["PENDING", "NEGOTIATING"]:
+        raise HTTPException(status_code=400, detail="Cannot add charges to accepted/rejected offers")
+    
+    # Calculate actual amount if percentage
+    actual_amount = amount
+    if is_percentage:
+        actual_amount = offer.get("loan_amount_approved", 0) * (amount / 100)
+    
+    new_charge = {
+        "charge_type": charge_type,
+        "charge_name": charge_name,
+        "amount": actual_amount,
+        "is_percentage": is_percentage,
+        "percentage_value": amount if is_percentage else None,
+        "is_waived": False,
+        "is_negotiable": is_negotiable,
+        "notes": notes
+    }
+    
+    # Add to charges list
+    charges = offer.get("charges", [])
+    charges.append(new_charge)
+    
+    # Recalculate totals
+    total_charges = sum(c.get("amount", 0) for c in charges if not c.get("is_waived"))
+    net_disbursal = offer.get("total_loan_amount", 0) - total_charges
+    
+    now = datetime.now(timezone.utc)
+    
+    # Update the offer
+    await db.loan_leads.update_one(
+        {"id": lead_id, "loan_offers.id": offer_id},
+        {
+            "$set": {
+                f"loan_offers.$.charges": charges,
+                f"loan_offers.$.total_charges": total_charges,
+                f"loan_offers.$.net_disbursal_amount": net_disbursal,
+                f"loan_offers.$.updated_at": now.isoformat()
+            },
+            "$push": {
+                f"loan_offers.$.negotiation_history": {
+                    "action": "add_charge",
+                    "charge_type": charge_type,
+                    "charge_name": charge_name,
+                    "amount": actual_amount,
+                    "timestamp": now.isoformat(),
+                    "user": current_user.get("email")
+                }
+            }
+        }
+    )
+    
+    return {
+        "message": "Charge added successfully",
+        "charge": new_charge,
+        "new_total_charges": total_charges,
+        "new_net_disbursal": net_disbursal
+    }
+
+
+@router.delete("/loan-leads/{lead_id}/offers/{offer_id}/charges/{charge_type}")
+async def remove_charge_from_offer(
+    lead_id: str,
+    offer_id: str,
+    charge_type: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Remove a charge from an offer"""
+    lead = await db.loan_leads.find_one({"id": lead_id})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Loan lead not found")
+    
+    # Find the offer
+    offers = lead.get("loan_offers", [])
+    offer_idx = next((i for i, o in enumerate(offers) if o.get("id") == offer_id), None)
+    
+    if offer_idx is None:
+        raise HTTPException(status_code=404, detail="Offer not found")
+    
+    offer = offers[offer_idx]
+    
+    if offer.get("offer_status") not in ["PENDING", "NEGOTIATING"]:
+        raise HTTPException(status_code=400, detail="Cannot modify charges on accepted/rejected offers")
+    
+    # Remove the charge
+    charges = [c for c in offer.get("charges", []) if c.get("charge_type") != charge_type]
+    
+    # Recalculate totals
+    total_charges = sum(c.get("amount", 0) for c in charges if not c.get("is_waived"))
+    net_disbursal = offer.get("total_loan_amount", 0) - total_charges
+    
+    now = datetime.now(timezone.utc)
+    
+    await db.loan_leads.update_one(
+        {"id": lead_id, "loan_offers.id": offer_id},
+        {
+            "$set": {
+                f"loan_offers.$.charges": charges,
+                f"loan_offers.$.total_charges": total_charges,
+                f"loan_offers.$.net_disbursal_amount": net_disbursal,
+                f"loan_offers.$.updated_at": now.isoformat()
+            },
+            "$push": {
+                f"loan_offers.$.negotiation_history": {
+                    "action": "remove_charge",
+                    "charge_type": charge_type,
+                    "timestamp": now.isoformat(),
+                    "user": current_user.get("email")
+                }
+            }
+        }
+    )
+    
+    return {
+        "message": "Charge removed successfully",
+        "new_total_charges": total_charges,
+        "new_net_disbursal": net_disbursal
+    }
