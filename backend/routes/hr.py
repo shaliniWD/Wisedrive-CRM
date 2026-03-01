@@ -44,6 +44,7 @@ attendance_service = None
 payroll_service = None
 leave_service = None
 storage_service = None
+audit_service = None
 
 
 # ==================== PYDANTIC MODELS ====================
