@@ -424,10 +424,22 @@ export default function InspectionsPage() {
   
   // Calculate date range based on dateRangeType - TIMEZONE AWARE
   const getDateRange = useCallback(() => {
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    
     switch (dateRangeType) {
       case 'today': {
-        const today = getToday();
-        return { from: today, to: today };
+        return { from: getToday(), to: getToday() };
+      }
+      case 'last_7_days': {
+        const sevenDaysAgo = new Date(today);
+        sevenDaysAgo.setDate(today.getDate() - 6);
+        return { from: sevenDaysAgo.toISOString().split('T')[0], to: todayStr };
+      }
+      case 'last_14_days': {
+        const fourteenDaysAgo = new Date(today);
+        fourteenDaysAgo.setDate(today.getDate() - 13);
+        return { from: fourteenDaysAgo.toISOString().split('T')[0], to: todayStr };
       }
       case 'week':
         return { from: getStartOfWeek(), to: getEndOfWeek() };
@@ -438,8 +450,7 @@ export default function InspectionsPage() {
       case 'custom':
         return { from: dateFrom, to: dateTo };
       default: {
-        const today = getToday();
-        return { from: today, to: today };
+        return { from: getToday(), to: getToday() };
       }
     }
   }, [dateRangeType, dateFrom, dateTo]);
