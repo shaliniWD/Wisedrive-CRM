@@ -761,8 +761,8 @@ const AddOfferForm = ({ lead, application, onClose, onSuccess }) => {
               />
             </div>
           </div>
-          <div className="col-span-2">
-            <Label className="text-sm">Insurance Charges (if car not insured)</Label>
+          <div>
+            <Label className="text-sm">Insurance Charges</Label>
             <div className="relative">
               <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
@@ -770,6 +770,32 @@ const AddOfferForm = ({ lead, application, onClose, onSuccess }) => {
                 placeholder="15000"
                 value={formData.insurance_charges}
                 onChange={(e) => setFormData({...formData, insurance_charges: e.target.value})}
+                className="pl-9"
+              />
+            </div>
+          </div>
+          <div>
+            <Label className="text-sm">Valuation Charges</Label>
+            <div className="relative">
+              <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                type="number"
+                placeholder="2000"
+                value={formData.valuation_charges}
+                onChange={(e) => setFormData({...formData, valuation_charges: e.target.value})}
+                className="pl-9"
+              />
+            </div>
+          </div>
+          <div>
+            <Label className="text-sm">Stamp Duty Amount</Label>
+            <div className="relative">
+              <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                type="number"
+                placeholder="500"
+                value={formData.stamp_duty}
+                onChange={(e) => setFormData({...formData, stamp_duty: e.target.value})}
                 className="pl-9"
               />
             </div>
