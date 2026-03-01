@@ -124,9 +124,25 @@ export default function AdAnalyticsPage() {
     setDebugLogs(prev => [...prev, { timestamp, action, status, details }].slice(-20)); // Keep last 20 logs
   };
   
-  const cities = ['Bangalore', 'Chennai', 'Mumbai', 'Delhi', 'Hyderabad', 'Pune', 'Kolkata', 'Ahmedabad', 'Vizag'];
+  // Cities loaded from Cities Master API
+  const [cities, setCities] = useState([]);
   const languages = ['Hindi', 'English', 'Kannada', 'Tamil', 'Telugu', 'Malayalam', 'Marathi', 'Bengali'];
   const sources = ['Instagram', 'Facebook', 'Google', 'YouTube', 'Website', 'Referral'];
+  
+  // Fetch cities from Cities Master on mount
+  useEffect(() => {
+    const fetchCities = async () => {
+      try {
+        const res = await citiesApi.getAll(false); // Only active cities
+        const cityNames = (res.data || []).map(c => c.name).sort();
+        setCities(cityNames);
+      } catch (error) {
+        console.error('Failed to load cities:', error);
+        // Fallback handled by empty array
+      }
+    };
+    fetchCities();
+  }, []);
   
   // Check if user can manage tokens (CEO/CTO only)
   const canManageToken = user?.role_code === 'CEO' || user?.role_code === 'CTO';
