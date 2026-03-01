@@ -41,17 +41,17 @@ export default function HRModulePage() {
     fetchEmployeesOnLeave();
   }, [fetchEmployeesOnLeave]);
 
-  // Main tabs configuration
+  // Main tabs configuration - in requested order
   const tabs = [
     { id: 'employees', label: 'Employees', icon: Users, show: true },
-    { id: 'holidays', label: 'Holiday Calendar', icon: CalendarDays, show: isHR },
+    { id: 'holidays', label: 'Holiday Calendar', icon: CalendarDays, show: isHRHead },
     { id: 'leave', label: 'Leave', icon: Calendar, show: true },
     { id: 'attendance', label: 'Attendance', icon: Clock, show: true },
-    { id: 'payroll', label: 'Payroll', icon: DollarSign, show: isHROrFinance },
-    { id: 'roles', label: 'Roles', icon: Shield, show: isHR },
+    { id: 'payroll', label: 'Payroll', icon: PayrollIcon, show: isHROrFinance },
+    { id: 'roles', label: 'Roles', icon: Shield, show: isHRHead },
     { id: 'countries', label: 'Countries', icon: Globe, show: isCEO },
-    { id: 'city-master', label: 'City Master', icon: MapPin, show: isHR },
-    { id: 'inspection-city', label: 'Inspection City', icon: MapPin, show: isInspectionHead },
+    { id: 'city-master', label: 'City Master', icon: MapPin, show: isHRHead },
+    { id: 'inspection-city', label: 'Inspection City', icon: Building2, show: isInspectionHead },
   ].filter(t => t.show);
 
   return (
