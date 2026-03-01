@@ -28,8 +28,11 @@ from models.loan import (
     LoanDocument, BankEligibilityResult, CustomerType,
     SALARIED_DOCUMENTS, SELF_EMPLOYED_DOCUMENTS, LoanApplicationStatus,
     LoanOffer, LoanOfferCreate, LoanOfferUpdate, LoanOfferCharge, LoanOfferChargeUpdate,
-    ChargeType, ChargeTypeCreate
+    ChargeType, ChargeTypeCreate,
+    CustomerProfile, CustomerProfileUpdate, CustomerLocationType,
+    BankStatementAnalysis, CreditProfileAnalysis, CustomerKYC, VehicleEligibilityAnalysis
 )
+from services.bank_statement_service import analyze_bank_statement_from_url
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
