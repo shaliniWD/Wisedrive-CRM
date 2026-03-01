@@ -404,6 +404,42 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         raise HTTPException(status_code=401, detail="Authentication failed")
 
 
+# ==================== MODULAR ROUTERS (Early registration for route precedence) ====================
+# Import and include notification config router
+from routes.notification_config import router as notification_config_router
+api_router.include_router(notification_config_router, tags=["Notification Configuration"])
+
+# Import and include loans router
+from routes.loans import router as loans_router, init_loans_routes
+init_loans_routes(db, get_current_user, get_storage_service())
+api_router.include_router(loans_router, tags=["Loans"])
+
+# Import and include customers router
+from routes.customers import router as customers_router, init_customers_routes
+init_customers_routes(db, get_current_user, rbac_service)
+api_router.include_router(customers_router, tags=["Customers"])
+
+# Import and include finance router
+from routes.finance import router as finance_router, init_finance_routes
+init_finance_routes(db, get_current_user)
+api_router.include_router(finance_router, tags=["Finance"])
+
+# Import and include HR router
+from routes.hr import router as hr_router, init_hr_routes
+init_hr_routes(db, get_current_user, attendance_service, payroll_service, leave_service, get_storage_service())
+api_router.include_router(hr_router, tags=["HR"])
+
+# Import and include Mechanic router
+from routes.mechanic import router as mechanic_router, init_mechanic_routes
+init_mechanic_routes(db, get_current_user, get_storage_service())
+api_router.include_router(mechanic_router, tags=["Mechanic"])
+
+# Import and include Meta Ads router
+from routes.meta_ads import router as meta_ads_router, init_meta_ads_routes
+init_meta_ads_routes(db, get_current_user)
+api_router.include_router(meta_ads_router, tags=["Meta Ads"])
+
+
 # ==================== AUTH ROUTES ====================
 
 @api_router.get("/auth/countries")
