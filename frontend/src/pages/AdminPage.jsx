@@ -1832,20 +1832,21 @@ function EmployeeModal({ isOpen, onClose, employee, countries, roles, department
   const [payslipsLoading, setPayslipsLoading] = useState(false);
   const [downloadingPayslip, setDownloadingPayslip] = useState(null);
 
-  // Fetch available cities from the employee's country
+  // Fetch available cities from Cities Master API
   useEffect(() => {
-    const fetchCities = () => {
-      // Get cities from employee's country
-      const employeeCountry = countries?.find(c => c.id === employee?.country_id);
-      if (employeeCountry?.cities?.length > 0) {
-        setAvailableCities(employeeCountry.cities);
-      } else {
-        // Fallback to default cities if country has none
-        setAvailableCities(['Bangalore', 'Hyderabad', 'Chennai', 'Mumbai', 'Delhi', 'Pune', 'Kolkata']);
+    const fetchCities = async () => {
+      try {
+        const res = await citiesApi.getAll(false); // Only active cities
+        const cityNames = (res.data || []).map(c => c.name).sort();
+        setAvailableCities(cityNames);
+      } catch (error) {
+        console.error('Failed to load cities from Cities Master:', error);
+        // Keep empty array on error
+        setAvailableCities([]);
       }
     };
     fetchCities();
-  }, [employee?.country_id, countries]);
+  }, []);
 
   // Handle leads assignment toggle
   const handleLeadsToggle = async (active) => {
