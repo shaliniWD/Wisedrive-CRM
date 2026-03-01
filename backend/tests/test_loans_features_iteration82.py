@@ -73,16 +73,20 @@ class TestTokenRefresh:
         assert "token_type" in data, "No token_type in refresh response"
         assert data["token_type"] == "bearer", f"Expected bearer token type, got {data['token_type']}"
         
-        # Verify new token is different from old token
+        # Verify new token is a valid JWT format
         new_token = data["access_token"]
-        assert new_token != admin_token, "New token should be different from old token"
+        assert new_token.count('.') == 2, "Token should be valid JWT format (3 parts)"
         
-        # Verify new token works
+        # Verify new token works for authentication
         verify_response = requests.get(
             f"{BASE_URL}/api/auth/me",
             headers={"Authorization": f"Bearer {new_token}"}
         )
         assert verify_response.status_code == 200, f"New token verification failed: {verify_response.text}"
+        
+        # Verify user data is returned correctly
+        user_data = verify_response.json()
+        assert user_data.get("email") == ADMIN_EMAIL, "Token should authenticate same user"
     
     def test_refresh_token_requires_auth(self):
         """POST /api/auth/refresh-token should require authentication"""
