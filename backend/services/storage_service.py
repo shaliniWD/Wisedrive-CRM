@@ -53,11 +53,10 @@ class LocalStorageService(StorageService):
         dir_path = os.path.dirname(full_path)
         os.makedirs(dir_path, exist_ok=True)
         
-        # Return info for direct upload
-        # In local mode, frontend will upload to /api/media/upload directly
-        backend_url = os.environ.get('REACT_APP_BACKEND_URL', 'http://localhost:8001')
+        # Use the preview URL for external access
+        # This will be set by server.py when initializing
         return {
-            "upload_url": f"{backend_url}/api/media/upload-direct",
+            "upload_url": "/api/media/upload-direct",  # Relative path - frontend will prepend backend URL
             "file_path": full_path,
             "key": key,
             "fields": {
