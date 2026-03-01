@@ -1206,6 +1206,8 @@ const ManualOfferForm = ({ lead, vehicle, onClose, onSuccess }) => {
 export default function BankOffersModal({ isOpen, onClose, lead, vehicle, application, onUpdate }) {
   const [offers, setOffers] = useState([]);
   const [chargeTypes, setChargeTypes] = useState([]);
+  const [banks, setBanks] = useState([]);
+  const [selectedBank, setSelectedBank] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showManualForm, setShowManualForm] = useState(false);
@@ -1215,6 +1217,7 @@ export default function BankOffersModal({ isOpen, onClose, lead, vehicle, applic
     if (isOpen && lead?.id) {
       fetchOffers();
       fetchChargeTypes();
+      fetchBanks();
     }
   }, [isOpen, lead?.id]);
 
@@ -1224,6 +1227,20 @@ export default function BankOffersModal({ isOpen, onClose, lead, vehicle, applic
       setChargeTypes(res.data || []);
     } catch (err) {
       console.error('Failed to fetch charge types:', err);
+    }
+  };
+
+  const fetchBanks = async () => {
+    try {
+      const res = await banksApi.getAll({ is_active: true });
+      setBanks(res.data || []);
+      // If we have an application, find the corresponding bank
+      if (application?.bank_id) {
+        const bank = (res.data || []).find(b => b.id === application.bank_id);
+        setSelectedBank(bank);
+      }
+    } catch (err) {
+      console.error('Failed to fetch banks:', err);
     }
   };
 
