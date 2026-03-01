@@ -8456,6 +8456,245 @@ async def normalize_all_cities(current_user: dict = Depends(get_current_user)):
     return {"success": True, "stats": stats, "valid_cities": [c["name"] for c in cities]}
 
 
+class CityMigrationRequest(BaseModel):
+    old_city_name: str  # e.g., "Bangalore"
+    new_city_name: str  # e.g., "Bengaluru"
+    add_old_as_alias: bool = True  # Add "Bangalore" as alias of "Bengaluru"
+    state: Optional[str] = None  # e.g., "Karnataka"
+
+
+@api_router.post("/cities/migrate")
+async def migrate_city_name(
+    migration: CityMigrationRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Migrate a city from old name to new name across the ENTIRE database.
+    This will:
+    1. Rename the city in Cities Master (or create new if doesn't exist)
+    2. Add old name as alias (optional)
+    3. Update ALL references across: leads, customers, inspections, employees, ad_city_mappings, etc.
+    
+    Use case: Rename "Bangalore" to "Bengaluru" everywhere
+    """
+    role_code = current_user.get("role_code", "")
+    if role_code not in ["CEO", "ADMIN"]:
+        raise HTTPException(status_code=403, detail="Only CEO/Admin can migrate cities")
+    
+    old_name = migration.old_city_name.strip()
+    new_name = migration.new_city_name.strip()
+    
+    if not old_name or not new_name:
+        raise HTTPException(status_code=400, detail="Both old and new city names are required")
+    
+    if old_name.lower() == new_name.lower():
+        raise HTTPException(status_code=400, detail="Old and new city names cannot be the same")
+    
+    logger.info(f"Starting city migration: '{old_name}' -> '{new_name}'")
+    
+    stats = {
+        "city_master_action": None,
+        "leads_updated": 0,
+        "customers_updated": 0,
+        "inspections_updated": 0,
+        "employees_inspection_cities_updated": 0,
+        "employees_assigned_cities_updated": 0,
+        "ad_mappings_updated": 0,
+        "round_robin_counters_updated": 0,
+        "countries_leads_cities_updated": 0,
+        "countries_inspection_cities_updated": 0
+    }
+    
+    # Step 1: Handle Cities Master
+    existing_city = await db.cities.find_one(
+        {"name": {"$regex": f"^{old_name}$", "$options": "i"}},
+        {"_id": 0}
+    )
+    
+    new_city_exists = await db.cities.find_one(
+        {"name": {"$regex": f"^{new_name}$", "$options": "i"}},
+        {"_id": 0}
+    )
+    
+    if existing_city and not new_city_exists:
+        # Rename existing city
+        old_aliases = existing_city.get("aliases", [])
+        new_aliases = [a for a in old_aliases if a.lower() != old_name.lower()]
+        if migration.add_old_as_alias and old_name not in new_aliases:
+            new_aliases.append(old_name)
+        
+        await db.cities.update_one(
+            {"id": existing_city["id"]},
+            {"$set": {
+                "name": new_name,
+                "aliases": new_aliases,
+                "state": migration.state or existing_city.get("state", ""),
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        stats["city_master_action"] = f"Renamed '{old_name}' to '{new_name}'"
+        logger.info(f"Renamed city in master: '{old_name}' -> '{new_name}', aliases: {new_aliases}")
+        
+    elif new_city_exists and not existing_city:
+        # New city already exists, just add old name as alias if requested
+        if migration.add_old_as_alias:
+            current_aliases = new_city_exists.get("aliases", [])
+            if old_name not in current_aliases:
+                current_aliases.append(old_name)
+                await db.cities.update_one(
+                    {"id": new_city_exists["id"]},
+                    {"$set": {"aliases": current_aliases, "updated_at": datetime.now(timezone.utc).isoformat()}}
+                )
+        stats["city_master_action"] = f"'{new_name}' already exists, added '{old_name}' as alias"
+        
+    elif existing_city and new_city_exists:
+        # Both exist - merge: delete old, add old name as alias to new
+        if migration.add_old_as_alias:
+            current_aliases = new_city_exists.get("aliases", [])
+            # Add old name and its aliases to new city
+            if old_name not in current_aliases:
+                current_aliases.append(old_name)
+            for alias in existing_city.get("aliases", []):
+                if alias not in current_aliases and alias.lower() != new_name.lower():
+                    current_aliases.append(alias)
+            await db.cities.update_one(
+                {"id": new_city_exists["id"]},
+                {"$set": {"aliases": current_aliases, "updated_at": datetime.now(timezone.utc).isoformat()}}
+            )
+        # Delete the old city entry
+        await db.cities.delete_one({"id": existing_city["id"]})
+        stats["city_master_action"] = f"Merged '{old_name}' into '{new_name}', deleted old entry"
+        
+    else:
+        # Neither exists - create new city
+        new_city = {
+            "id": str(uuid.uuid4()),
+            "name": new_name,
+            "state": migration.state or "",
+            "aliases": [old_name] if migration.add_old_as_alias else [],
+            "country_id": "",
+            "is_active": True,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_by": current_user["id"]
+        }
+        await db.cities.insert_one(new_city)
+        stats["city_master_action"] = f"Created new city '{new_name}' with alias '{old_name}'"
+    
+    # Step 2: Update all references in other collections (case-insensitive)
+    old_name_regex = {"$regex": f"^{old_name}$", "$options": "i"}
+    
+    # 2a. Update leads.city
+    result = await db.leads.update_many(
+        {"city": old_name_regex},
+        {"$set": {"city": new_name}}
+    )
+    stats["leads_updated"] = result.modified_count
+    
+    # 2b. Update customers.city
+    result = await db.customers.update_many(
+        {"city": old_name_regex},
+        {"$set": {"city": new_name}}
+    )
+    stats["customers_updated"] = result.modified_count
+    
+    # 2c. Update inspections.city
+    result = await db.inspections.update_many(
+        {"city": old_name_regex},
+        {"$set": {"city": new_name}}
+    )
+    stats["inspections_updated"] = result.modified_count
+    
+    # 2d. Update ad_city_mappings.city
+    result = await db.ad_city_mappings.update_many(
+        {"city": old_name_regex},
+        {"$set": {"city": new_name}}
+    )
+    stats["ad_mappings_updated"] = result.modified_count
+    
+    # 2e. Update users.inspection_cities array
+    users_with_old_city = await db.users.find(
+        {"inspection_cities": old_name_regex},
+        {"_id": 1, "id": 1, "inspection_cities": 1}
+    ).to_list(1000)
+    
+    for user in users_with_old_city:
+        old_cities = user.get("inspection_cities", [])
+        new_cities = [new_name if c.lower() == old_name.lower() else c for c in old_cities]
+        # Remove duplicates while preserving order
+        seen = set()
+        unique_cities = []
+        for c in new_cities:
+            if c.lower() not in seen:
+                seen.add(c.lower())
+                unique_cities.append(c)
+        await db.users.update_one({"_id": user["_id"]}, {"$set": {"inspection_cities": unique_cities}})
+        stats["employees_inspection_cities_updated"] += 1
+    
+    # 2f. Update users.assigned_cities array
+    users_with_assigned = await db.users.find(
+        {"assigned_cities": old_name_regex},
+        {"_id": 1, "id": 1, "assigned_cities": 1}
+    ).to_list(1000)
+    
+    for user in users_with_assigned:
+        old_cities = user.get("assigned_cities", [])
+        new_cities = [new_name if c.lower() == old_name.lower() else c for c in old_cities]
+        seen = set()
+        unique_cities = []
+        for c in new_cities:
+            if c.lower() not in seen:
+                seen.add(c.lower())
+                unique_cities.append(c)
+        await db.users.update_one({"_id": user["_id"]}, {"$set": {"assigned_cities": unique_cities}})
+        stats["employees_assigned_cities_updated"] += 1
+    
+    # 2g. Update round_robin_counters.city
+    result = await db.round_robin_counters.update_many(
+        {"city": old_name_regex},
+        {"$set": {"city": new_name}}
+    )
+    stats["round_robin_counters_updated"] = result.modified_count
+    
+    # 2h. Update countries.leads_cities and countries.inspection_cities arrays
+    countries_with_city = await db.countries.find(
+        {"$or": [
+            {"leads_cities": old_name_regex},
+            {"inspection_cities": old_name_regex}
+        ]},
+        {"_id": 1, "id": 1, "leads_cities": 1, "inspection_cities": 1}
+    ).to_list(100)
+    
+    for country in countries_with_city:
+        update_data = {}
+        
+        if "leads_cities" in country:
+            old_leads = country.get("leads_cities", [])
+            new_leads = [new_name if c.lower() == old_name.lower() else c for c in old_leads]
+            seen = set()
+            unique_leads = [c for c in new_leads if not (c.lower() in seen or seen.add(c.lower()))]
+            update_data["leads_cities"] = unique_leads
+            stats["countries_leads_cities_updated"] += 1
+        
+        if "inspection_cities" in country:
+            old_insp = country.get("inspection_cities", [])
+            new_insp = [new_name if c.lower() == old_name.lower() else c for c in old_insp]
+            seen = set()
+            unique_insp = [c for c in new_insp if not (c.lower() in seen or seen.add(c.lower()))]
+            update_data["inspection_cities"] = unique_insp
+            stats["countries_inspection_cities_updated"] += 1
+        
+        if update_data:
+            await db.countries.update_one({"_id": country["_id"]}, {"$set": update_data})
+    
+    logger.info(f"City migration complete: {stats}")
+    
+    return {
+        "success": True,
+        "message": f"Successfully migrated '{old_name}' to '{new_name}'",
+        "stats": stats
+    }
+
+
 @api_router.get("/lead-sources")
 async def get_lead_sources():
     """Get list of lead sources"""
