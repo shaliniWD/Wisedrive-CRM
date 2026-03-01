@@ -10230,17 +10230,8 @@ async def sync_all_ad_mappings(current_user: dict = Depends(get_current_user)):
                     break
         
         if not city:
-            # Try extracting from ad name as fallback
+            # Try extracting from ad name as fallback using city_keywords built from Cities Master
             ad_name_lower = ad_name.lower()
-            city_keywords = {
-                "bangalore": "Bangalore", "bengaluru": "Bangalore",
-                "chennai": "Chennai", "hyderabad": "Hyderabad",
-                "vizag": "Vizag", "visakhapatnam": "Vizag",
-                "mumbai": "Mumbai", "pune": "Pune",
-                "delhi": "Delhi", "ncr": "Delhi", "gurgaon": "Delhi",
-                "kolkata": "Kolkata", "ahmedabad": "Ahmedabad",
-                "kochi": "Kochi", "jaipur": "Jaipur",
-            }
             for keyword, city_name in city_keywords.items():
                 if keyword in ad_name_lower:
                     city = city_name
