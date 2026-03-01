@@ -42,6 +42,18 @@ export const getDateRange = (preset) => {
       yesterday.setDate(yesterday.getDate() - 1);
       from = to = yesterday.toISOString().split('T')[0];
       break;
+    case 'last_7_days':
+      const sevenDaysAgo = new Date(today);
+      sevenDaysAgo.setDate(today.getDate() - 6); // Include today, so -6
+      from = sevenDaysAgo.toISOString().split('T')[0];
+      to = today.toISOString().split('T')[0];
+      break;
+    case 'last_14_days':
+      const fourteenDaysAgo = new Date(today);
+      fourteenDaysAgo.setDate(today.getDate() - 13); // Include today, so -13
+      from = fourteenDaysAgo.toISOString().split('T')[0];
+      to = today.toISOString().split('T')[0];
+      break;
     case 'week':
     case 'this_week':
       const weekStart = new Date(today);
