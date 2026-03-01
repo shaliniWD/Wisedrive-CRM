@@ -11,12 +11,12 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
 ## Current Architecture
 
 ### Backend (FastAPI)
-- **Location:** `/app/backend/server.py` (~16.6k lines - refactored Mar 1, 2026)
+- **Location:** `/app/backend/server.py` (~14.5k lines - refactored Mar 1, 2026)
 - **Modular Routes:** `/app/backend/routes/`
   - `loans.py` - Loan leads, banks, credit score, documents (~1,112 lines, 25 endpoints)
   - `customers.py` - Customer CRUD, payment history, notes, activities (~694 lines, 14 endpoints)
   - `finance.py` - Payments, approvals, payslips, summary (~710 lines, 15 endpoints)
-  - `hr.py` - Employees, attendance, holidays, countries (~1,306 lines, 47 endpoints)
+  - `hr.py` - Employees, attendance, payroll, leave management, holidays (~2,073 lines, 67 endpoints) ✅ EXPANDED
   - `mechanic.py` - Mechanic app, inspections (~448 lines, 11 endpoints)
   - `meta_ads.py` - Meta/Facebook Ads integration (~426 lines, 13 endpoints)
   - `auth.py`, `leads.py`, `partners.py`, `webhooks.py`, `notification_config.py`, `inspections.py`
@@ -29,6 +29,20 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
 - **Key Pages:** 
   - `InspectionsPage.jsx` (~4k lines - needs refactoring)
   - `InspectionReportPage.jsx` (Report viewing with AI insights)
+  - `LoansPage.jsx` (~467 lines - REFACTORED Mar 1, 2026) ✅
+
+### Loans Module Components (Refactored Mar 1, 2026)
+- **Location:** `/app/frontend/src/components/loans/`
+- **Components:**
+  - `BankOffersModal.jsx` (~1,499 lines) - Bank offer management
+  - `CreditScoreModal.jsx` (~973 lines) - Credit score check UI
+  - `DocumentsModal.jsx` (~546 lines) - Document upload/download
+  - `LoanProcessingModal.jsx` (~425 lines) - Loan eligibility & applications
+  - `VehicleDetailsModal.jsx` (~390 lines) - Vehicle management
+  - `VehicleDropdown.jsx` (~123 lines) - Vehicle display dropdown
+  - `StatusBadges.jsx` (~26 lines) - Status badge components
+  - `utils.js` (~34 lines) - Shared utilities
+  - `index.js` - Barrel export
 
 ### Mobile App (React Native/Expo)
 - **Location:** `/app/mechanic-app-native/`
