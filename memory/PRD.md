@@ -411,13 +411,15 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
 - Verify Meta API Key Settings tab in Ads Management
 
 ### P3 (Low Priority - Refactoring) - IN PROGRESS (Mar 1, 2026)
-- ~~Break down `server.py` into modular routers~~ **IN PROGRESS** (~17,100 lines now, was 18,600)
-  - ✅ `loans.py` - Extracted Feb 28
-  - ✅ `customers.py` - Extracted Mar 1 (~700 lines)
-  - ✅ `finance.py` - Extracted Mar 1 (~700 lines)
-  - 🟡 `hr.py` - Next to extract (38 endpoints)
-  - 🟡 `inspections.py` - Needs updating (15 endpoints)
-  - 🟡 `mechanic.py` - To extract (9 endpoints)
+- ~~Break down `server.py` into modular routers~~ **IN PROGRESS** (~17,100 lines, was 18,600)
+  - ✅ `loans.py` - Extracted Feb 28 (25 endpoints)
+  - ✅ `customers.py` - Extracted Mar 1 (14 endpoints)
+  - ✅ `finance.py` - Extracted Mar 1 (15 endpoints)
+  - ✅ `hr.py` - Extracted Mar 1 (47 endpoints) - NEW
+  - ✅ `mechanic.py` - Extracted Mar 1 (11 endpoints) - NEW
+  - ✅ `meta_ads.py` - Extracted Mar 1 (13 endpoints) - NEW
+  - 🟡 `inspections.py` - Needs updating (37 endpoints still in server.py)
+  - 🟡 Remove duplicate code from server.py for extracted modules
 - Refactor `InspectionsPage.jsx` into components (~4,100 lines)
 - Refactor `LoansPage.jsx` into smaller modal components
 - Refactor `scanner.tsx` into smaller components
