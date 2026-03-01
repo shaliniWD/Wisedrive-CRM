@@ -6683,6 +6683,18 @@ async def assign_mechanic_to_inspection(
 class UpdateScheduleRequest(BaseModel):
     scheduled_date: str
     scheduled_time: str
+    # Vehicle details (optional - for scheduling from unscheduled)
+    car_number: Optional[str] = None
+    car_make: Optional[str] = None
+    car_model: Optional[str] = None
+    car_year: Optional[str] = None
+    car_color: Optional[str] = None
+    fuel_type: Optional[str] = None
+    # Location details (optional)
+    address: Optional[str] = None
+    city: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
 
 @api_router.patch("/inspections/{inspection_id}/schedule")
@@ -6691,7 +6703,7 @@ async def update_inspection_schedule(
     request_data: UpdateScheduleRequest,
     current_user: dict = Depends(get_current_user)
 ):
-    """Update inspection schedule (date and time)"""
+    """Update inspection schedule (date, time, vehicle details, and location)"""
     inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
     if not inspection:
         raise HTTPException(status_code=404, detail="Inspection not found")
@@ -6703,9 +6715,35 @@ async def update_inspection_schedule(
         "updated_by": current_user["id"]
     }
     
-    # Update status to SCHEDULED if it was UNSCHEDULED
-    if inspection.get("inspection_status") == "UNSCHEDULED":
-        update_dict["inspection_status"] = "SCHEDULED"
+    # Add vehicle details if provided
+    if request_data.car_number:
+        update_dict["car_number"] = request_data.car_number.upper().replace(" ", "")
+    if request_data.car_make:
+        update_dict["car_make"] = request_data.car_make
+    if request_data.car_model:
+        update_dict["car_model"] = request_data.car_model
+    if request_data.car_year:
+        update_dict["car_year"] = request_data.car_year
+    if request_data.car_color:
+        update_dict["car_color"] = request_data.car_color
+    if request_data.fuel_type:
+        update_dict["fuel_type"] = request_data.fuel_type
+    
+    # Add location details if provided
+    if request_data.address:
+        update_dict["address"] = request_data.address
+    if request_data.city:
+        update_dict["city"] = request_data.city
+    if request_data.latitude is not None:
+        update_dict["latitude"] = request_data.latitude
+        update_dict["location_lat"] = request_data.latitude
+    if request_data.longitude is not None:
+        update_dict["longitude"] = request_data.longitude
+        update_dict["location_lng"] = request_data.longitude
+    
+    # Update status to SCHEDULED if it was UNSCHEDULED or NEW_INSPECTION
+    if inspection.get("inspection_status") in ["UNSCHEDULED", "NEW_INSPECTION", None]:
+        update_dict["inspection_status"] = "NEW_INSPECTION"  # Keep as NEW_INSPECTION until mechanic accepts
     
     await db.inspections.update_one({"id": inspection_id}, {"$set": update_dict})
     
