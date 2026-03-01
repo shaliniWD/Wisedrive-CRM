@@ -11551,6 +11551,16 @@ from routes.hr import router as hr_router, init_hr_routes
 init_hr_routes(db, get_current_user, attendance_service, payroll_service, leave_service, get_storage_service())
 api_router.include_router(hr_router, tags=["HR"])
 
+# Import and include Mechanic router (refactored from server.py)
+from routes.mechanic import router as mechanic_router, init_mechanic_routes
+init_mechanic_routes(db, get_current_user, get_storage_service())
+api_router.include_router(mechanic_router, tags=["Mechanic"])
+
+# Import and include Meta Ads router (refactored from server.py)
+from routes.meta_ads import router as meta_ads_router, init_meta_ads_routes
+init_meta_ads_routes(db, get_current_user)
+api_router.include_router(meta_ads_router, tags=["Meta Ads"])
+
 # Import and include ESS Mobile API routes
 from routes_ess import auth as ess_auth
 from routes_ess import leave as ess_leave
