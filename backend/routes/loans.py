@@ -648,7 +648,7 @@ async def generate_document_upload_url(
     request_data: GenerateUploadUrlRequest,
     current_user: dict = Depends(get_current_user)
 ):
-    """Generate a signed URL for document upload to Firebase"""
+    """Generate a signed URL for document upload"""
     lead = await db.loan_leads.find_one({"id": lead_id})
     if not lead:
         raise HTTPException(status_code=404, detail="Loan lead not found")
@@ -662,20 +662,31 @@ async def generate_document_upload_url(
     
     try:
         # Get signed URL for upload
-        signed_url = await storage_service.get_signed_upload_url(
+        result = await storage_service.get_signed_upload_url(
             storage_path,
             content_type=request_data.content_type,
             expires_in=3600
         )
         
-        # Get public URL
-        public_url = f"https://firebasestorage.googleapis.com/v0/b/{storage_service.bucket_name}/o/{storage_path.replace('/', '%2F')}?alt=media"
-        
-        return {
-            "upload_url": signed_url,
-            "file_url": public_url,
-            "storage_path": storage_path
-        }
+        # Handle different storage service responses
+        if isinstance(result, dict):
+            # Local storage returns dict with upload_url and file_path
+            return {
+                "upload_url": result.get("upload_url"),
+                "file_url": result.get("file_path") or result.get("key"),
+                "storage_path": result.get("key") or storage_path,
+                "fields": result.get("fields", {})
+            }
+        else:
+            # Firebase/S3 returns signed URL string
+            bucket_name = getattr(storage_service, 'bucket_name', 'local')
+            public_url = f"https://firebasestorage.googleapis.com/v0/b/{bucket_name}/o/{storage_path.replace('/', '%2F')}?alt=media"
+            
+            return {
+                "upload_url": result,
+                "file_url": public_url,
+                "storage_path": storage_path
+            }
     except Exception as e:
         logger.error(f"Failed to generate upload URL: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to generate upload URL: {str(e)}")
