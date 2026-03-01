@@ -309,6 +309,21 @@ export default function LoansPage() {
                       />
                     </td>
                     <td className="p-4 text-center">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={async () => {
+                          const fullLead = await openLeadDetails(lead.id);
+                          if (fullLead) setProfileModalOpen(true);
+                        }}
+                        className="text-xs"
+                        data-testid="profile-btn"
+                      >
+                        <UserCircle className="h-3 w-3 mr-1" />
+                        Profile
+                      </Button>
+                    </td>
+                    <td className="p-4 text-center">
                       {lead.credit_score ? (
                         <button
                           onClick={async () => {
