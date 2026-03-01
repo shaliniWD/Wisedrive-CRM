@@ -3,8 +3,8 @@ HR Module Routes - Human Resources Management
 Handles all HR-related endpoints including:
 - Employee management (CRUD, salary, documents)
 - Attendance tracking (sessions, heartbeats)
-- Payroll management
-- Leave management
+- Payroll management (generation, batches, payslips)
+- Leave management (requests, approvals, balances)
 - Holidays
 - Countries management
 """
@@ -13,10 +13,21 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import FileResponse
 from typing import Optional, List
 from datetime import datetime, timezone
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import uuid
 import logging
 import os
+
+# Import payroll and leave models
+from models.payroll import (
+    PayrollRecordCreate, PayrollBulkGenerateRequest, PaymentMarkRequest,
+    PayrollAdjustmentCreate, BulkPaymentMarkRequest,
+    PayrollPreviewRequest, PayrollRecordUpdate, BatchRecordsUpdateRequest,
+    BatchConfirmRequest, BatchMarkPaidRequest, PayrollBatchCreate
+)
+from models.leave import (
+    LeaveRequestCreate, LeaveApprovalRequest, LeaveBalanceCreate
+)
 
 logger = logging.getLogger(__name__)
 
