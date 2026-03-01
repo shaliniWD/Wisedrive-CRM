@@ -2749,55 +2749,42 @@ export default function InspectionsPage() {
               </div>
             )}
             
-            {/* 2. Date & Time */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Inspection Date *</Label>
-                <Input 
-                  type="date" 
-                  value={scheduleFormData.scheduled_date}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setScheduleFormData(prev => ({...prev, scheduled_date: value}));
-                  }}
-                  onBlur={(e) => {
-                    // Fallback for Safari - capture value on blur as well
-                    const value = e.target.value;
-                    if (value && value !== scheduleFormData.scheduled_date) {
-                      setScheduleFormData(prev => ({...prev, scheduled_date: value}));
-                    }
-                  }}
-                  min={new Date().toISOString().split('T')[0]}
-                  className="h-10"
-                  data-testid="schedule-date-input"
-                />
-                {scheduleFormData.scheduled_date && (
-                  <p className="text-xs text-green-600">✓ Date: {scheduleFormData.scheduled_date}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Inspection Time *</Label>
-                <Input 
-                  type="time" 
-                  value={scheduleFormData.scheduled_time}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setScheduleFormData(prev => ({...prev, scheduled_time: value}));
-                  }}
-                  onBlur={(e) => {
-                    // Fallback for Safari - capture value on blur as well
-                    const value = e.target.value;
-                    if (value && value !== scheduleFormData.scheduled_time) {
-                      setScheduleFormData(prev => ({...prev, scheduled_time: value}));
-                    }
-                  }}
-                  className="h-10"
-                  data-testid="schedule-time-input"
-                />
-                {scheduleFormData.scheduled_time && (
-                  <p className="text-xs text-green-600">✓ Time: {scheduleFormData.scheduled_time}</p>
-                )}
-              </div>
+            {/* 2. Date & Time - Combined Picker */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Inspection Date & Time *</Label>
+              <Input 
+                type="datetime-local" 
+                value={scheduleFormData.scheduled_date && scheduleFormData.scheduled_time 
+                  ? `${scheduleFormData.scheduled_date}T${scheduleFormData.scheduled_time}`
+                  : ''}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value) {
+                    const [date, time] = value.split('T');
+                    setScheduleFormData(prev => ({
+                      ...prev, 
+                      scheduled_date: date,
+                      scheduled_time: time
+                    }));
+                  }
+                }}
+                min={new Date().toISOString().slice(0, 16)}
+                className="h-11 text-base"
+                data-testid="schedule-datetime-input"
+              />
+              {scheduleFormData.scheduled_date && scheduleFormData.scheduled_time && (
+                <p className="text-xs text-green-600">
+                  ✓ Scheduled: {new Date(`${scheduleFormData.scheduled_date}T${scheduleFormData.scheduled_time}`).toLocaleString('en-IN', {
+                    weekday: 'short',
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                  })}
+                </p>
+              )}
             </div>
             
             {/* 3. Inspection City */}
