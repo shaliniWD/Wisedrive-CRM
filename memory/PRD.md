@@ -89,6 +89,21 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
 - **OpenAI GPT-5.2** (AI Report Generation via Emergent LLM Key)
 - **Equifax & Experian Credit Score** (via Invincible Ocean API) ✅ DUAL BUREAU SUPPORT
 
+## Recent Implementations (Mar 2026)
+
+### Backend Modularization - MAJOR REFACTOR (Mar 1, 2026)
+- **Purpose:** Break down monolithic server.py into smaller, maintainable router modules
+- **Status:** ✅ IN PROGRESS - Phase 1 Complete
+- **Files Created:**
+  - `/app/backend/routes/loans.py` (1,112 lines, 25 endpoints) - Loan leads, banks, credit score
+  - `/app/backend/routes/customers.py` (694 lines, 14 endpoints) - Customer CRUD, payment history, notes
+  - `/app/backend/routes/finance.py` (710 lines, 15 endpoints) - Payments, approvals, payslips
+  - `/app/backend/routes/hr.py` (1,306 lines, 47 endpoints) - Employees, attendance, holidays, countries
+  - `/app/backend/routes/mechanic.py` (448 lines, 11 endpoints) - Mechanic app, inspections
+  - `/app/backend/routes/meta_ads.py` (426 lines, 13 endpoints) - Meta/Facebook Ads integration
+- **Total Extracted:** 4,696 lines, 125 endpoints
+- **Authentication Pattern:** HTTPBearer with dependency injection for modular auth
+
 ## Recent Implementations (Feb 2026)
 
 ### Brand Mapper Service - NEW (Feb 28, 2026)
