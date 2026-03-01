@@ -12709,6 +12709,10 @@ async def get_mechanic_inspections(
             "packageName": insp.get("package_type") or insp.get("inspection_package_name", "Standard Inspection")
         })
     
+    logger.info(f"DEBUGGING: Transformation complete. Result has {len(result)} items")
+    if result:
+        logger.info(f"DEBUGGING: First result keys: {list(result[0].keys())[:10]}")
+    
     return result
 
 
