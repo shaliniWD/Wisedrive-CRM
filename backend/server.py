@@ -279,6 +279,13 @@ class Token(BaseModel):
     user: dict
 
 
+class AttendanceDayUpdate(BaseModel):
+    employee_id: str
+    date: str  # YYYY-MM-DD
+    status: str  # present, absent, lop, half_day, leave_approved, holiday, overtime
+    notes: Optional[str] = None
+
+
 # ==================== AUTH HELPERS ====================
 
 def hash_password(password: str) -> str:
