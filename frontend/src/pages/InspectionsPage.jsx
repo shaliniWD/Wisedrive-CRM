@@ -299,6 +299,7 @@ export default function InspectionsPage() {
   const [inspections, setInspections] = useState([]);
   const [mechanics, setMechanics] = useState([]);
   const [cities, setCities] = useState([]);
+  const [cityAliasMap, setCityAliasMap] = useState({}); // Maps aliases to canonical city names
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingInspection, setEditingInspection] = useState(null);
