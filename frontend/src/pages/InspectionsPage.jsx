@@ -1123,10 +1123,21 @@ export default function InspectionsPage() {
   // Open Schedule Modal for Unscheduled Inspection
   const openScheduleUnscheduledModal = (inspection) => {
     setScheduleUnscheduledInspection(inspection);
+    
+    // Pre-fill with today's date and current time (rounded to next 30 min)
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+    
+    // Round to next 30 minutes
+    const minutes = now.getMinutes();
+    const roundedMinutes = minutes < 30 ? 30 : 0;
+    const hours = minutes < 30 ? now.getHours() : now.getHours() + 1;
+    const timeStr = `${hours.toString().padStart(2, '0')}:${roundedMinutes.toString().padStart(2, '0')}`;
+    
     setScheduleFormData({
       car_number: inspection.car_number || '',
-      scheduled_date: '',
-      scheduled_time: '',
+      scheduled_date: today,
+      scheduled_time: timeStr,
       city: inspection.city || '',
       address: inspection.address || ''
     });
