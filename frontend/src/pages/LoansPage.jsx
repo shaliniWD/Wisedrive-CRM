@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/popover';
 import { formatDate, formatDateTime } from '@/utils/dateFormat';
 import CreditScoreModal from '@/components/loans/CreditScoreModal';
+import BankOffersModal from '@/components/loans/BankOffersModal';
 
 // Status badge component
 const StatusBadge = ({ status }) => {
