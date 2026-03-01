@@ -10,6 +10,8 @@ import { Input } from '@/components/ui/input';
 export const DATE_PRESETS = [
   { key: 'today', label: 'Today' },
   { key: 'yesterday', label: 'Yesterday' },
+  { key: 'last_7_days', label: 'Last 7 Days' },
+  { key: 'last_14_days', label: 'Last 14 Days' },
   { key: 'week', label: 'This Week' },
   { key: 'month', label: 'This Month' },
   { key: 'year', label: 'This Year' },
@@ -19,6 +21,8 @@ export const DATE_PRESETS = [
 // Shorter presets for compact mode
 export const DATE_PRESETS_SHORT = [
   { key: 'today', label: 'Today' },
+  { key: 'last_7_days', label: 'Last 7 Days' },
+  { key: 'last_14_days', label: 'Last 14 Days' },
   { key: 'week', label: 'This Week' },
   { key: 'month', label: 'This Month' },
   { key: 'custom', label: 'Custom' },
