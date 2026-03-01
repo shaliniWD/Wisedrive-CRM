@@ -4343,7 +4343,12 @@ Thank you for choosing Wisedrive!"""
                 "order_id": f"ORD-{lead_id[:8].upper()}",
                 "customer_name": lead.get("name"),
                 "customer_mobile": lead.get("mobile"),
-                "car_number": schedule_data.get("vehicle_number") or "",
+                # Prioritize: schedule_data > lead > empty
+                "car_number": schedule_data.get("vehicle_number") or lead.get("vehicle_number") or "",
+                "car_make": lead.get("vehicle_make") or "",
+                "car_model": lead.get("vehicle_model") or "",
+                "car_year": lead.get("vehicle_year") or "",
+                "fuel_type": lead.get("vehicle_fuel_type") or "",
                 "city": lead.get("city"),
                 "address": schedule_data.get("address") or "",
                 "location_lat": schedule_data.get("latitude"),
