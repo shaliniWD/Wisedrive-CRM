@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { loansApi } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import {
-  Users, Phone, RefreshCw, Search, Filter,
+  Users, Phone, RefreshCw, Search, Filter, Calendar,
   FileText, CreditCard, Loader2, Eye, UserCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -29,6 +29,53 @@ import {
   AppStatusBadge
 } from '@/components/loans';
 
+// Date presets for filter
+const DATE_PRESETS = [
+  { key: 'today', label: 'Today' },
+  { key: 'last_7_days', label: 'Last 7 Days' },
+  { key: 'last_14_days', label: 'Last 14 Days' },
+  { key: 'week', label: 'This Week' },
+  { key: 'month', label: 'This Month' },
+  { key: 'custom', label: 'Custom' },
+];
+
+const getDateRange = (preset) => {
+  const today = new Date();
+  let from, to;
+  
+  switch(preset) {
+    case 'today':
+      from = to = today.toISOString().split('T')[0];
+      break;
+    case 'last_7_days':
+      const sevenDaysAgo = new Date(today);
+      sevenDaysAgo.setDate(today.getDate() - 6);
+      from = sevenDaysAgo.toISOString().split('T')[0];
+      to = today.toISOString().split('T')[0];
+      break;
+    case 'last_14_days':
+      const fourteenDaysAgo = new Date(today);
+      fourteenDaysAgo.setDate(today.getDate() - 13);
+      from = fourteenDaysAgo.toISOString().split('T')[0];
+      to = today.toISOString().split('T')[0];
+      break;
+    case 'week':
+      const weekStart = new Date(today);
+      weekStart.setDate(today.getDate() - today.getDay());
+      from = weekStart.toISOString().split('T')[0];
+      to = today.toISOString().split('T')[0];
+      break;
+    case 'month':
+      from = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+      to = today.toISOString().split('T')[0];
+      break;
+    default:
+      from = to = '';
+  }
+  
+  return { from, to };
+};
+
 // Main Loans Page Component
 export default function LoansPage() {
   const { user } = useAuth();
@@ -41,6 +88,9 @@ export default function LoansPage() {
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [datePreset, setDatePreset] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [page, setPage] = useState(0);
   const pageSize = 20;
   
