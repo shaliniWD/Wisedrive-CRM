@@ -480,6 +480,14 @@ export default function LoansPage() {
         lead={selectedLead}
         onUpdate={refreshSelectedLead}
       />
+      
+      {/* Customer Profile Modal */}
+      <CustomerProfileModal
+        isOpen={profileModalOpen}
+        onClose={() => setProfileModalOpen(false)}
+        lead={selectedLead}
+        onUpdate={refreshSelectedLead}
+      />
     </div>
   );
 }
