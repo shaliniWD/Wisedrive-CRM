@@ -118,18 +118,15 @@ meta_ads_scheduler = None
 @app.on_event("startup")
 async def startup():
     global rbac_service, round_robin_service, audit_service
-    global attendance_service, payroll_service, leave_service, fcm_service
     global meta_ads_scheduler
     
     rbac_service = RBACService(db)
     round_robin_service = RoundRobinService(db)
     audit_service = AuditService(db)
     
-    # Initialize HR Module services
-    storage_service = get_storage_service()
-    attendance_service = AttendanceService(db)
-    payroll_service = PayrollService(db, attendance_service, storage_service)
-    leave_service = LeaveService(db)
+    # Re-initialize HR routes with audit_service now available
+    from routes.hr import init_hr_routes as reinit_hr
+    reinit_hr(db, get_current_user, attendance_service, payroll_service, leave_service, storage_service, audit_service)
     
     # Initialize FCM Service for push notifications
     from services_ess.fcm_service import FCMService
