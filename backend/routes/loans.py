@@ -2451,7 +2451,7 @@ def get_profile_status(score: int) -> str:
     return "INCOMPLETE"
 
 
-@router.put("/{lead_id}/profile")
+@router.put("/loan-leads/{lead_id}/profile")
 async def update_customer_profile(
     lead_id: str,
     data: CustomerProfileUpdate,
@@ -2497,7 +2497,7 @@ async def update_customer_profile(
     return await db.customer_profiles.find_one({"loan_lead_id": lead_id}, {"_id": 0})
 
 
-@router.post("/{lead_id}/profile/analyze-bank-statement")
+@router.post("/loan-leads/{lead_id}/profile/analyze-bank-statement")
 async def analyze_bank_statement_endpoint(
     lead_id: str,
     document_id: str,
@@ -2610,7 +2610,7 @@ async def analyze_bank_statement_endpoint(
     }
 
 
-@router.post("/{lead_id}/profile/sync-credit-report")
+@router.post("/loan-leads/{lead_id}/profile/sync-credit-report")
 async def sync_credit_report_to_profile(
     lead_id: str,
     current_user: dict = Depends(get_current_user)
@@ -2735,7 +2735,7 @@ def get_score_rating(score: int) -> str:
     return "VERY_POOR"
 
 
-@router.post("/{lead_id}/profile/calculate-eligibility")
+@router.post("/loan-leads/{lead_id}/profile/calculate-eligibility")
 async def calculate_eligibility(
     lead_id: str,
     current_user: dict = Depends(get_current_user)
