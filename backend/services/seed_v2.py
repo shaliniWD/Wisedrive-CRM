@@ -85,6 +85,7 @@ async def seed_v2_data(db: AsyncIOMotorDatabase):
         {"name": "Sales Lead", "code": "SALES_LEAD", "level": 4, "department_code": "SALES", "description": "Sales Team Leader", "sick": 2, "casual": 1},
         {"name": "Inspection Lead", "code": "INSPECTION_LEAD", "level": 4, "department_code": "INSPECTION", "description": "Inspection Team Leader", "sick": 2, "casual": 1},
         {"name": "Sales Executive", "code": "SALES_EXEC", "level": 5, "department_code": "SALES", "description": "Sales Executive", "sick": 2, "casual": 1},
+        {"name": "Loan Executive", "code": "LOAN_EXEC", "level": 5, "department_code": "SALES", "description": "Loan Executive - Loans tab access only", "sick": 2, "casual": 1},
         {"name": "Inspection Coordinator", "code": "INSPECTION_COORD", "level": 5, "department_code": "INSPECTION", "description": "Inspection Coordinator", "sick": 2, "casual": 1},
         {"name": "Report Reviewer", "code": "REPORT_REVIEWER", "level": 5, "department_code": "INSPECTION", "description": "Inspection Report Reviewer", "sick": 2, "casual": 1},
         {"name": "Mechanic", "code": "MECHANIC", "level": 6, "department_code": "INSPECTION", "description": "Field Mechanic / Inspector", "sick": 1, "casual": 1},
