@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Users, Clock, DollarSign, Calendar, Shield, Globe, IndianRupee, CalendarDays, MapPin } from 'lucide-react';
+import { Users, Clock, DollarSign, Calendar, Shield, Globe, IndianRupee, CalendarDays, MapPin, Building2 } from 'lucide-react';
 import { hrApi } from '@/services/api';
 
 // Import the full AdminPage content
@@ -15,12 +15,13 @@ export default function HRModulePage() {
   const [activeTab, setActiveTab] = useState('employees');
   const [employeesOnLeave, setEmployeesOnLeave] = useState([]);
 
-  const roleCode = user?.roles?.[0]?.code || '';
-  const isHR = ['CEO', 'HR_MANAGER'].includes(roleCode);
+  // Get role code - check multiple sources
+  const roleCode = user?.role_code || user?.roles?.[0]?.code || '';
+  const isHRHead = ['CEO', 'COUNTRY_HEAD', 'HR_HEAD', 'HR_MANAGER'].includes(roleCode);
   const isFinance = ['CEO', 'FINANCE_MANAGER'].includes(roleCode);
-  const isHROrFinance = isHR || isFinance || ['COUNTRY_HEAD'].includes(roleCode);
-  const isCEO = roleCode === 'CEO';  // Only CEO can access Countries
-  const isInspectionHead = ['CEO', 'INSPECTION_HEAD', 'HR_MANAGER'].includes(roleCode);
+  const isHROrFinance = isHRHead || isFinance;
+  const isCEO = roleCode === 'CEO' || roleCode === 'COUNTRY_HEAD';
+  const isInspectionHead = ['CEO', 'COUNTRY_HEAD', 'INSPECTION_HEAD', 'HR_HEAD'].includes(roleCode);
   
   // Currency icon based on user country
   const isIndianUser = user?.country_code === 'IN' || user?.country_name?.toLowerCase().includes('india');
