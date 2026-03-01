@@ -20,7 +20,7 @@ router = APIRouter(prefix="/finance", tags=["Finance"])
 
 # These will be set by init_finance_routes
 db = None
-get_current_user = None
+_get_current_user_func = None
 
 # Payment status constants
 PAYMENT_STATUS_PENDING = "pending"
@@ -53,9 +53,14 @@ class PaymentApproval(BaseModel):
 
 def init_finance_routes(_db, _get_current_user):
     """Initialize finance routes with dependencies"""
-    global db, get_current_user
+    global db, _get_current_user_func
     db = _db
-    get_current_user = _get_current_user
+    _get_current_user_func = _get_current_user
+
+
+# Wrapper dependency for getting current user
+def get_current_user():
+    return _get_current_user_func
 
 
 @router.get("/payments")
