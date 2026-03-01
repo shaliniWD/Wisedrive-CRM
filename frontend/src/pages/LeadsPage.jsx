@@ -1105,6 +1105,8 @@ export default function LeadsPage() {
             {[
               { key: 'today', label: 'Today' },
               { key: 'yesterday', label: 'Yesterday' },
+              { key: 'last_7_days', label: 'Last 7 Days' },
+              { key: 'last_14_days', label: 'Last 14 Days' },
               { key: 'this_week', label: 'This Week' },
               { key: 'this_month', label: 'This Month' },
               { key: 'custom', label: 'Custom' },
