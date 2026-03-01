@@ -110,7 +110,7 @@ export default function LoansPage() {
   useEffect(() => {
     fetchLeads();
     fetchStats();
-  }, [statusFilter, page]);
+  }, [statusFilter, page, dateFrom, dateTo]);
   
   const fetchLeads = async () => {
     setLoading(true);
@@ -118,6 +118,8 @@ export default function LoansPage() {
       const params = { skip: page * pageSize, limit: pageSize };
       if (statusFilter !== 'all') params.status = statusFilter;
       if (searchQuery) params.search = searchQuery;
+      if (dateFrom) params.date_from = dateFrom;
+      if (dateTo) params.date_to = dateTo;
       
       const res = await loansApi.getAll(params);
       setLeads(res.data.items || res.data.leads || []);
@@ -127,6 +129,23 @@ export default function LoansPage() {
     } finally {
       setLoading(false);
     }
+  };
+  
+  // Handle date preset change
+  const handleDatePreset = (preset) => {
+    setDatePreset(preset);
+    setPage(0);
+    if (preset === '' || preset === 'all') {
+      setDateFrom('');
+      setDateTo('');
+      return;
+    }
+    if (preset === 'custom') {
+      return;
+    }
+    const { from, to } = getDateRange(preset);
+    setDateFrom(from);
+    setDateTo(to);
   };
   
   const fetchStats = async () => {
