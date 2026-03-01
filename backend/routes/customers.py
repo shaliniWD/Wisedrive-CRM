@@ -376,7 +376,7 @@ async def add_customer_note(
         "user_id": current_user.get("id"),
         "user_name": current_user.get("name", "Unknown"),
         "action": "note_added",
-        "details": f"Added a note",
+        "details": "Added a note",
         "new_value": note_data.note,
         "created_at": now.isoformat()
     }
@@ -439,7 +439,6 @@ async def get_customer_activities(customer_id: str, current_user: dict = Depends
 @router.post("/seed-sample-data")
 async def seed_sample_customer_data(current_user: dict = Depends(lambda: get_current_user)):
     """Create a sample customer with multiple packages and payment transactions for demo purposes"""
-    from datetime import timedelta
     
     # Get country and a sales rep
     country = await db.countries.find_one({"code": "IN"}, {"_id": 0, "id": 1})
