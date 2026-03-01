@@ -2748,15 +2748,23 @@ export default function InspectionsPage() {
                   value={scheduleFormData.scheduled_date}
                   onChange={(e) => {
                     const value = e.target.value;
-                    console.log('Date selected:', value);
-                    setScheduleFormData({...scheduleFormData, scheduled_date: value});
+                    console.log('Date change event:', e.target.value, e.target.valueAsDate);
+                    setScheduleFormData(prev => ({...prev, scheduled_date: value}));
+                  }}
+                  onBlur={(e) => {
+                    // Fallback for Safari - capture value on blur as well
+                    const value = e.target.value;
+                    if (value && value !== scheduleFormData.scheduled_date) {
+                      console.log('Date blur capture:', value);
+                      setScheduleFormData(prev => ({...prev, scheduled_date: value}));
+                    }
                   }}
                   min={new Date().toISOString().split('T')[0]}
                   className="h-10"
                   data-testid="schedule-date-input"
                 />
                 {scheduleFormData.scheduled_date && (
-                  <p className="text-xs text-green-600">Selected: {scheduleFormData.scheduled_date}</p>
+                  <p className="text-xs text-green-600">✓ Date: {scheduleFormData.scheduled_date}</p>
                 )}
               </div>
               <div className="space-y-2">
@@ -2766,14 +2774,22 @@ export default function InspectionsPage() {
                   value={scheduleFormData.scheduled_time}
                   onChange={(e) => {
                     const value = e.target.value;
-                    console.log('Time selected:', value);
-                    setScheduleFormData({...scheduleFormData, scheduled_time: value});
+                    console.log('Time change event:', e.target.value);
+                    setScheduleFormData(prev => ({...prev, scheduled_time: value}));
+                  }}
+                  onBlur={(e) => {
+                    // Fallback for Safari - capture value on blur as well
+                    const value = e.target.value;
+                    if (value && value !== scheduleFormData.scheduled_time) {
+                      console.log('Time blur capture:', value);
+                      setScheduleFormData(prev => ({...prev, scheduled_time: value}));
+                    }
                   }}
                   className="h-10"
                   data-testid="schedule-time-input"
                 />
                 {scheduleFormData.scheduled_time && (
-                  <p className="text-xs text-green-600">Selected: {scheduleFormData.scheduled_time}</p>
+                  <p className="text-xs text-green-600">✓ Time: {scheduleFormData.scheduled_time}</p>
                 )}
               </div>
             </div>
