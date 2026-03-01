@@ -16,6 +16,16 @@
 2. **Backend:**
    - `/app/backend/server.py` - Removed fallback hardcoded cities from `/cities/names` endpoint
    - `/app/backend/server.py` - Enhanced `/cities/normalize-all` endpoint to clear invalid cities
+   - `/app/backend/server.py` - `find_sales_reps_for_city()` now resolves city aliases before searching
+   - `/app/backend/server.py` - Lead creation city extraction (Strategy 4) now uses Cities Master aliases
+   - `/app/backend/server.py` - All Meta Ads sync functions now build `region_to_city` and `city_keywords` dynamically from Cities Master
+
+**Key Functions Updated to Use Cities Master:**
+- `find_sales_reps_for_city()` - Sales rep assignment now works with city aliases
+- `get_unmapped_ads()` - Uses Cities Master for region→city mapping
+- `auto_map_ads_from_targeting()` - Uses Cities Master for region→city mapping
+- `sync_all_ad_mappings()` - Uses Cities Master for both city keywords and region mapping
+- Twilio webhook lead creation - City extraction from ad_name now uses Cities Master aliases
 
 **New Cleanup Features:**
 - `POST /api/cities/normalize-all` - Normalizes aliases AND clears invalid cities from all collections
