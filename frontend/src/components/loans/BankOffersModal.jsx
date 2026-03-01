@@ -553,15 +553,25 @@ const OfferCard = ({ offer, onUpdate, onAccept, lead, expanded, onToggleExpand, 
 };
 
 // Add New Offer Form
-const AddOfferForm = ({ lead, application, onClose, onSuccess }) => {
+const AddOfferForm = ({ lead, application, vehicle, bank, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
+  
+  // Calculate default loan amount from LTV and valuation
+  const carValuation = vehicle?.vehicle_valuation || 0;
+  const defaultLTV = bank?.max_ltv_percent || 80;
+  const defaultLoanAmount = Math.round(carValuation * defaultLTV / 100);
+  const defaultInterestRate = bank?.interest_rate_min || application?.interest_rate || '';
+  const defaultTenure = vehicle?.expected_tenure_months || application?.tenure_months || 60;
+  const defaultProcessingFee = bank?.processing_fee_percent || '';
+  
   const [formData, setFormData] = useState({
-    loan_amount_approved: application?.approved_amount || '',
+    ltv_percent: defaultLTV,
+    loan_amount_approved: application?.approved_amount || defaultLoanAmount || '',
     loan_insurance: 0,
-    interest_rate: application?.interest_rate || '',
-    tenure_months: application?.tenure_months || 60,
+    interest_rate: defaultInterestRate,
+    tenure_months: defaultTenure,
     bank_reference_number: '',
-    processing_fee_percent: '',
+    processing_fee_percent: defaultProcessingFee,
     processing_fee_amount: '',
     document_handling_fee: '',
     rto_charges: '',
@@ -569,6 +579,17 @@ const AddOfferForm = ({ lead, application, onClose, onSuccess }) => {
     valuation_charges: '',
     stamp_duty: '',
   });
+
+  // Recalculate loan amount when LTV changes
+  const handleLTVChange = (newLTV) => {
+    const ltv = parseFloat(newLTV) || 0;
+    const newLoanAmount = Math.round(carValuation * ltv / 100);
+    setFormData({
+      ...formData,
+      ltv_percent: newLTV,
+      loan_amount_approved: newLoanAmount
+    });
+  };
 
   // Calculate totals in real-time
   const loanAmount = parseFloat(formData.loan_amount_approved) || 0;
@@ -585,6 +606,21 @@ const AddOfferForm = ({ lead, application, onClose, onSuccess }) => {
   const stampDuty = parseFloat(formData.stamp_duty) || 0;
   const totalCharges = processingFee + docFee + rtoCharges + insuranceCharges + valuationCharges + stampDuty;
   const netDisbursal = totalLoan - totalCharges;
+
+  // Calculate EMI
+  const calculateEMI = () => {
+    const principal = loanAmount;
+    const rate = parseFloat(formData.interest_rate) || 0;
+    const tenure = parseInt(formData.tenure_months) || 60;
+    
+    if (principal <= 0 || rate <= 0 || tenure <= 0) return 0;
+    
+    const monthlyRate = rate / 12 / 100;
+    const emi = principal * monthlyRate * Math.pow(1 + monthlyRate, tenure) / (Math.pow(1 + monthlyRate, tenure) - 1);
+    return Math.round(emi);
+  };
+  
+  const calculatedEMI = calculateEMI();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -622,12 +658,60 @@ const AddOfferForm = ({ lead, application, onClose, onSuccess }) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Bank Info */}
-      <div className="bg-blue-50 rounded-lg p-3 flex items-center gap-3">
-        <Building2 className="h-5 w-5 text-blue-600" />
-        <div>
-          <p className="font-medium text-blue-900">{application.bank_name}</p>
-          <p className="text-xs text-blue-700">Application ID: {application.id.slice(0, 8)}...</p>
+      {/* Bank & Vehicle Info */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-blue-50 rounded-lg p-3 flex items-center gap-3">
+          <Building2 className="h-5 w-5 text-blue-600" />
+          <div>
+            <p className="font-medium text-blue-900">{application.bank_name}</p>
+            <p className="text-xs text-blue-700">LTV: {bank?.max_ltv_percent || 80}% • Rate: {bank?.interest_rate_min}-{bank?.interest_rate_max}%</p>
+          </div>
+        </div>
+        <div className="bg-green-50 rounded-lg p-3">
+          <p className="text-xs text-green-700">Car Valuation</p>
+          <p className="font-bold text-green-900 text-lg">{formatCurrency(carValuation)}</p>
+        </div>
+      </div>
+
+      {/* LTV and Loan Amount Calculation */}
+      <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg p-4 border border-amber-200">
+        <h4 className="text-sm font-medium text-amber-900 mb-3 flex items-center gap-2">
+          <Calculator className="h-4 w-4" />
+          Loan Amount Calculation
+        </h4>
+        <div className="grid grid-cols-3 gap-4 items-end">
+          <div>
+            <Label className="text-sm">LTV %</Label>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                step="1"
+                min="50"
+                max="100"
+                value={formData.ltv_percent}
+                onChange={(e) => handleLTVChange(e.target.value)}
+                className="text-center font-medium"
+              />
+              <span className="text-gray-500">%</span>
+            </div>
+            <p className="text-[10px] text-amber-700 mt-1">Bank default: {defaultLTV}%</p>
+          </div>
+          <div className="text-center">
+            <p className="text-2xl text-amber-600">×</p>
+            <p className="text-xs text-gray-500">{formatCurrency(carValuation)}</p>
+          </div>
+          <div>
+            <Label className="text-sm">= Loan Amount</Label>
+            <div className="relative">
+              <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                type="number"
+                value={formData.loan_amount_approved}
+                onChange={(e) => setFormData({...formData, loan_amount_approved: e.target.value})}
+                className="pl-9 font-semibold"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
