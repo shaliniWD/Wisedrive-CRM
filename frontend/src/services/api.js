@@ -240,8 +240,8 @@ export const utilityApi = {
 export const citiesApi = {
   getAll: (includeInactive = true) => axios.get(`${API_URL}/cities`, { params: { include_inactive: includeInactive } }),
   getNames: () => axios.get(`${API_URL}/cities/names`),
-  create: (data) => axios.post(`${API_URL}/cities`, null, { params: data }),
-  update: (id, data) => axios.put(`${API_URL}/cities/${id}`, null, { params: data }),
+  create: (data) => axios.post(`${API_URL}/cities`, data),  // JSON body for proper array handling
+  update: (id, data) => axios.put(`${API_URL}/cities/${id}`, data),  // JSON body for proper array handling
   resolve: (cityName) => axios.get(`${API_URL}/cities/resolve/${encodeURIComponent(cityName)}`),
   normalizeAll: () => axios.post(`${API_URL}/cities/normalize-all`),
 };
