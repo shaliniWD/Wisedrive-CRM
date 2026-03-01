@@ -1,13 +1,10 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { loansApi, inspectionsApi } from '@/services/api';
+import React, { useState, useEffect } from 'react';
+import { loansApi } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import {
-  Users, Phone, MapPin, Calendar, RefreshCw, Search, Filter,
-  FileText, Car, CreditCard, Building2, ChevronRight, Plus,
-  CheckCircle, XCircle, Clock, AlertCircle, Upload, Eye,
-  Trash2, ExternalLink, IndianRupee, Percent, X, Loader2,
-  PhoneCall, PhoneOff, ArrowUpRight, ChevronDown, Info
+  Users, Phone, RefreshCw, Search, Filter,
+  FileText, CreditCard, Loader2, Eye
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,14 +15,20 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog';
-import {
-  Popover, PopoverContent, PopoverTrigger,
-} from '@/components/ui/popover';
 import { formatDate, formatDateTime } from '@/utils/dateFormat';
-import CreditScoreModal from '@/components/loans/CreditScoreModal';
-import BankOffersModal from '@/components/loans/BankOffersModal';
 
-// Status badge component
+// Import loan components
+import {
+  CreditScoreModal,
+  DocumentsModal,
+  VehicleDetailsModal,
+  LoanProcessingModal,
+  VehicleDropdown,
+  StatusBadge,
+  AppStatusBadge
+} from '@/components/loans';
+
+// Main Loans Page Component
 const StatusBadge = ({ status }) => {
   const config = {
     NEW: { color: 'bg-gray-100 text-gray-700', icon: Clock },
