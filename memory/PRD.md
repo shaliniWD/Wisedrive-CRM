@@ -524,3 +524,41 @@ Build and maintain a CRM system for WiseDrive along with a React Native mechanic
 - Refactor `LoansPage.jsx` into smaller modal components
 - Refactor `scanner.tsx` into smaller components
 - Clean up old duplicate inspection/customer records in database
+
+## Recent Implementations (Mar 1, 2026 - Session 2)
+
+### Token Refresh Mechanism - ✅ COMPLETED
+- **Endpoint:** `POST /api/auth/refresh-token`
+- **Implementation:** Added to `/app/backend/server.py` lines 676-688
+- **Frontend:** Auto-refresh logic in `/app/frontend/src/contexts/AuthContext.js`
+  - Checks token expiry every 2 minutes
+  - Refreshes token 5 minutes before expiry
+  - Global 401 interceptor handles expired tokens
+
+### Loan Executive (LOAN_EXEC) Role - ✅ COMPLETED
+- **Role Code:** `LOAN_EXEC`
+- **Access:** Only `loans` tab visible
+- **Test User:** `loanexec@wisedrive.com` / `password123`
+- **Files Modified:**
+  - `/app/backend/services/rbac.py` - Added LOAN_EXEC to TAB_VISIBILITY
+  - `/app/backend/services/seed_v2.py` - Added role definition
+  - `/app/frontend/src/pages/LoginPage.jsx` - Added loans to redirect map
+
+### Indian Banks & NBFCs Seeding - ✅ COMPLETED
+- **Endpoint:** `POST /api/banks/seed-indian-banks`
+- **Total Banks:** 23 (Public Banks, Private Banks, NBFCs)
+- **Banks Include:**
+  - **Public:** SBI, BOB, PNB, Canara, Union Bank
+  - **Private:** HDFC, ICICI, Axis, Kotak, IndusInd, Yes Bank, IDFC First, Federal
+  - **NBFCs:** Bajaj Finance, Tata Capital, Mahindra Finance, Shriram Finance, Cholamandalam, Hero FinCorp, L&T Finance, Sundaram, Muthoot, Poonawalla
+- **Each Bank Has:** Interest rates, tenure limits, LTV%, processing fee, eligibility rules (min credit score, max vehicle age, excluded makes)
+
+### Stats Cards Fix - ✅ VERIFIED
+- **Issue:** Frontend was using wrong keys to display stats
+- **Fix:** Frontend correctly uses `stats.total` and `stats.by_status` keys
+- **Stats Displayed:** Total Leads, Interested, Follow Up, Call Back, Not Interested, With Credit Score
+
+### Test Results (Iteration 82)
+- Backend: 100% (18/18 tests passed)
+- Frontend: 100% (all features verified)
+- Test Report: `/app/test_reports/iteration_82.json`
