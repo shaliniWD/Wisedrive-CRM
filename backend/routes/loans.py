@@ -2278,9 +2278,15 @@ def classify_location(city_name: str, pincode: str = None) -> str:
     return "SEMI_URBAN"
 
 
-def calculate_vehicle_age(car_year: int) -> dict:
+def calculate_vehicle_age(car_year) -> dict:
     """Calculate vehicle age and eligibility flags"""
     if not car_year:
+        return {"age_years": None, "is_within_10_years": False, "is_within_15_years": False}
+    
+    # Convert to int if string
+    try:
+        car_year = int(car_year)
+    except (ValueError, TypeError):
         return {"age_years": None, "is_within_10_years": False, "is_within_15_years": False}
     
     current_year = datetime.now().year
