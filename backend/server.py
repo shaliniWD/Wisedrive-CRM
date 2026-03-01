@@ -2372,11 +2372,45 @@ async def fix_assigned_names(current_user: dict = Depends(get_current_user)):
     }
 
 
-# Vaahan API for vehicle details
+# Vaahan API for vehicle details - WITH LOCAL DB CACHING
 @api_router.get("/vehicle/details/{vehicle_number}")
-async def get_vehicle_details(vehicle_number: str, current_user: dict = Depends(get_current_user)):
-    """Fetch vehicle details from Vaahan API (Invincible Ocean)"""
-    result = await vaahan_service.get_vehicle_details(vehicle_number)
+async def get_vehicle_details(
+    vehicle_number: str, 
+    force_refresh: bool = False,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Get vehicle details - FIRST checks local DB, then Vaahan API if not found.
+    Use force_refresh=true to bypass cache and fetch fresh data from Vaahan.
+    
+    Flow:
+    1. Check vehicles collection for existing data
+    2. If found and not force_refresh, return cached data
+    3. If not found or force_refresh, call Vaahan API
+    4. Save Vaahan response to vehicles collection
+    5. Return data
+    """
+    # Clean registration number
+    clean_number = vehicle_number.replace(" ", "").replace("-", "").upper()
+    
+    # Step 1: Check local DB first (unless force_refresh)
+    if not force_refresh:
+        cached_vehicle = await db.vehicles.find_one(
+            {"registration_number": {"$regex": f"^{clean_number}$", "$options": "i"}},
+            {"_id": 0}
+        )
+        if cached_vehicle:
+            logger.info(f"Vehicle {clean_number} found in local DB (cached)")
+            return {
+                "success": True,
+                "data": cached_vehicle,
+                "source": "local_db",
+                "cached_at": cached_vehicle.get("updated_at")
+            }
+    
+    # Step 2: Not in cache or force_refresh - call Vaahan API
+    logger.info(f"Fetching vehicle {clean_number} from Vaahan API")
+    result = await vaahan_service.get_vehicle_details(clean_number)
     
     if not result.get("success"):
         raise HTTPException(
@@ -2384,6 +2418,54 @@ async def get_vehicle_details(vehicle_number: str, current_user: dict = Depends(
             detail=result.get("error", "Failed to fetch vehicle details")
         )
     
+    # Step 3: Save to local DB for future use
+    vaahan_data = result.get("data", {})
+    vehicle_record = {
+        "id": str(uuid.uuid4()),
+        "registration_number": clean_number,
+        "chassis_number": vaahan_data.get("chassis_number", ""),
+        "engine_number": vaahan_data.get("engine_number", ""),
+        "manufacturer": vaahan_data.get("manufacturer", ""),
+        "model": vaahan_data.get("model", ""),
+        "color": vaahan_data.get("color", ""),
+        "fuel_type": vaahan_data.get("fuel_type", ""),
+        "body_type": vaahan_data.get("body_type", ""),
+        "vehicle_class": vaahan_data.get("vehicle_class", ""),
+        "manufacturing_date": vaahan_data.get("manufacturing_date", ""),
+        "registration_date": vaahan_data.get("registration_date", ""),
+        "registration_authority": vaahan_data.get("registration_authority", ""),
+        "rc_expiry_date": vaahan_data.get("rc_expiry_date", ""),
+        "owner_name": vaahan_data.get("owner_name", ""),
+        "owner_count": vaahan_data.get("owner_count", ""),
+        "insurance_company": vaahan_data.get("insurance_company", ""),
+        "insurance_valid_upto": vaahan_data.get("insurance_valid_upto", ""),
+        "insurance_policy_number": vaahan_data.get("insurance_policy_number", ""),
+        "hypothecation_bank": vaahan_data.get("hypothecation_bank", ""),
+        "blacklist_status": vaahan_data.get("blacklist_status", ""),
+        "tax_valid_upto": vaahan_data.get("tax_valid_upto", ""),
+        "fitness_upto": vaahan_data.get("fitness_upto", ""),
+        "cubic_capacity": vaahan_data.get("cubic_capacity", ""),
+        "emission_norms": vaahan_data.get("emission_norms", ""),
+        "seating_capacity": vaahan_data.get("seating_capacity", ""),
+        "vaahan_raw_response": vaahan_data,  # Store full response for reference
+        "country_id": current_user.get("country_id"),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": current_user["id"],
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "updated_by": current_user["id"],
+    }
+    
+    # Upsert - update if exists, insert if not
+    await db.vehicles.update_one(
+        {"registration_number": {"$regex": f"^{clean_number}$", "$options": "i"}},
+        {"$set": vehicle_record},
+        upsert=True
+    )
+    logger.info(f"Vehicle {clean_number} saved to local DB")
+    
+    # Return with source indicator
+    result["source"] = "vaahan_api"
+    result["cached_at"] = vehicle_record["updated_at"]
     return result
 
 
