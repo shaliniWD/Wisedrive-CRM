@@ -2149,13 +2149,13 @@ async def add_charge_to_offer(
         {"id": lead_id, "loan_offers.id": offer_id},
         {
             "$set": {
-                f"loan_offers.$.charges": charges,
-                f"loan_offers.$.total_charges": total_charges,
-                f"loan_offers.$.net_disbursal_amount": net_disbursal,
-                f"loan_offers.$.updated_at": now.isoformat()
+                "loan_offers.$.charges": charges,
+                "loan_offers.$.total_charges": total_charges,
+                "loan_offers.$.net_disbursal_amount": net_disbursal,
+                "loan_offers.$.updated_at": now.isoformat()
             },
             "$push": {
-                f"loan_offers.$.negotiation_history": {
+                "loan_offers.$.negotiation_history": {
                     "action": "add_charge",
                     "charge_type": charge_type,
                     "charge_name": charge_name,
@@ -2212,13 +2212,13 @@ async def remove_charge_from_offer(
         {"id": lead_id, "loan_offers.id": offer_id},
         {
             "$set": {
-                f"loan_offers.$.charges": charges,
-                f"loan_offers.$.total_charges": total_charges,
-                f"loan_offers.$.net_disbursal_amount": net_disbursal,
-                f"loan_offers.$.updated_at": now.isoformat()
+                "loan_offers.$.charges": charges,
+                "loan_offers.$.total_charges": total_charges,
+                "loan_offers.$.net_disbursal_amount": net_disbursal,
+                "loan_offers.$.updated_at": now.isoformat()
             },
             "$push": {
-                f"loan_offers.$.negotiation_history": {
+                "loan_offers.$.negotiation_history": {
                     "action": "remove_charge",
                     "charge_type": charge_type,
                     "timestamp": now.isoformat(),
