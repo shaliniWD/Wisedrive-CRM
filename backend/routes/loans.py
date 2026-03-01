@@ -27,7 +27,8 @@ from models.loan import (
     LoanApplication, LoanApplicationCreate, LoanApplicationUpdate,
     LoanDocument, BankEligibilityResult, CustomerType,
     SALARIED_DOCUMENTS, SELF_EMPLOYED_DOCUMENTS, LoanApplicationStatus,
-    LoanOffer, LoanOfferCreate, LoanOfferUpdate, LoanOfferCharge, LoanOfferChargeUpdate
+    LoanOffer, LoanOfferCreate, LoanOfferUpdate, LoanOfferCharge, LoanOfferChargeUpdate,
+    ChargeType, ChargeTypeCreate
 )
 from pydantic import BaseModel
 
