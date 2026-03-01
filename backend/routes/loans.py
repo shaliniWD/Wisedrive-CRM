@@ -188,6 +188,447 @@ async def delete_bank(bank_id: str, current_user: dict = Depends(get_current_use
     return {"message": "Bank deleted successfully"}
 
 
+@router.post("/banks/seed-indian-banks")
+async def seed_indian_banks(current_user: dict = Depends(get_current_user)):
+    """Seed database with real Indian banks and NBFCs for used car financing"""
+    role_code = current_user.get("role_code", "")
+    if role_code not in ["CEO", "HR_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Only CEO/HR can seed bank data")
+    
+    now = datetime.now(timezone.utc)
+    
+    # Real Indian Banks and NBFCs for used car financing
+    banks_data = [
+        # Public Sector Banks
+        {
+            "bank_name": "State Bank of India",
+            "bank_code": "SBI",
+            "bank_type": "PUBLIC_BANK",
+            "interest_rate_min": 9.25,
+            "interest_rate_max": 13.50,
+            "tenure_min_months": 12,
+            "tenure_max_months": 84,
+            "ltv_percent": 85,
+            "processing_fee_percent": 0.50,
+            "eligibility_rules": {
+                "min_credit_score": 650,
+                "max_vehicle_age": 10,
+                "excluded_car_makes": ["CHEVROLET", "FORD"],
+                "employment_types": ["SALARIED", "SELF_EMPLOYED"]
+            }
+        },
+        {
+            "bank_name": "Bank of Baroda",
+            "bank_code": "BOB",
+            "bank_type": "PUBLIC_BANK",
+            "interest_rate_min": 9.35,
+            "interest_rate_max": 13.75,
+            "tenure_min_months": 12,
+            "tenure_max_months": 84,
+            "ltv_percent": 80,
+            "processing_fee_percent": 0.50,
+            "eligibility_rules": {
+                "min_credit_score": 650,
+                "max_vehicle_age": 10,
+                "excluded_car_makes": ["CHEVROLET", "FORD", "FIAT"],
+                "employment_types": ["SALARIED", "SELF_EMPLOYED"]
+            }
+        },
+        {
+            "bank_name": "Punjab National Bank",
+            "bank_code": "PNB",
+            "bank_type": "PUBLIC_BANK",
+            "interest_rate_min": 9.40,
+            "interest_rate_max": 14.00,
+            "tenure_min_months": 12,
+            "tenure_max_months": 84,
+            "ltv_percent": 80,
+            "processing_fee_percent": 0.50,
+            "eligibility_rules": {
+                "min_credit_score": 650,
+                "max_vehicle_age": 10,
+                "excluded_car_makes": ["CHEVROLET", "FORD"],
+                "employment_types": ["SALARIED", "SELF_EMPLOYED"]
+            }
+        },
+        {
+            "bank_name": "Canara Bank",
+            "bank_code": "CANARA",
+            "bank_type": "PUBLIC_BANK",
+            "interest_rate_min": 9.30,
+            "interest_rate_max": 13.50,
+            "tenure_min_months": 12,
+            "tenure_max_months": 84,
+            "ltv_percent": 80,
+            "processing_fee_percent": 0.50,
+            "eligibility_rules": {
+                "min_credit_score": 650,
+                "max_vehicle_age": 10,
+                "excluded_car_makes": ["CHEVROLET", "FORD"],
+                "employment_types": ["SALARIED", "SELF_EMPLOYED"]
+            }
+        },
+        {
+            "bank_name": "Union Bank of India",
+            "bank_code": "UBI",
+            "bank_type": "PUBLIC_BANK",
+            "interest_rate_min": 9.35,
+            "interest_rate_max": 14.00,
+            "tenure_min_months": 12,
+            "tenure_max_months": 84,
+            "ltv_percent": 80,
+            "processing_fee_percent": 0.50,
+            "eligibility_rules": {
+                "min_credit_score": 650,
+                "max_vehicle_age": 10,
+                "excluded_car_makes": ["CHEVROLET", "FORD"],
+                "employment_types": ["SALARIED", "SELF_EMPLOYED"]
+            }
+        },
+        # Private Sector Banks
+        {
+            "bank_name": "HDFC Bank",
+            "bank_code": "HDFC",
+            "bank_type": "PRIVATE_BANK",
+            "interest_rate_min": 8.75,
+            "interest_rate_max": 12.50,
+            "tenure_min_months": 12,
+            "tenure_max_months": 84,
+            "ltv_percent": 90,
+            "processing_fee_percent": 0.50,
+            "eligibility_rules": {
+                "min_credit_score": 700,
+                "max_vehicle_age": 10,
+                "excluded_car_makes": ["CHEVROLET", "FORD", "FIAT"],
+                "employment_types": ["SALARIED", "SELF_EMPLOYED"]
+            }
+        },
+        {
+            "bank_name": "ICICI Bank",
+            "bank_code": "ICICI",
+            "bank_type": "PRIVATE_BANK",
+            "interest_rate_min": 8.90,
+            "interest_rate_max": 13.00,
+            "tenure_min_months": 12,
+            "tenure_max_months": 84,
+            "ltv_percent": 90,
+            "processing_fee_percent": 0.50,
+            "eligibility_rules": {
+                "min_credit_score": 700,
+                "max_vehicle_age": 10,
+                "excluded_car_makes": ["CHEVROLET", "FORD", "FIAT"],
+                "employment_types": ["SALARIED", "SELF_EMPLOYED"]
+            }
+        },
+        {
+            "bank_name": "Axis Bank",
+            "bank_code": "AXIS",
+            "bank_type": "PRIVATE_BANK",
+            "interest_rate_min": 9.00,
+            "interest_rate_max": 13.50,
+            "tenure_min_months": 12,
+            "tenure_max_months": 84,
+            "ltv_percent": 85,
+            "processing_fee_percent": 0.50,
+            "eligibility_rules": {
+                "min_credit_score": 700,
+                "max_vehicle_age": 10,
+                "excluded_car_makes": ["CHEVROLET", "FORD"],
+                "employment_types": ["SALARIED", "SELF_EMPLOYED"]
+            }
+        },
+        {
+            "bank_name": "Kotak Mahindra Bank",
+            "bank_code": "KOTAK",
+            "bank_type": "PRIVATE_BANK",
+            "interest_rate_min": 9.00,
+            "interest_rate_max": 14.00,
+            "tenure_min_months": 12,
+            "tenure_max_months": 84,
+            "ltv_percent": 85,
+            "processing_fee_percent": 0.50,
+            "eligibility_rules": {
+                "min_credit_score": 700,
+                "max_vehicle_age": 10,
+                "excluded_car_makes": ["CHEVROLET", "FORD"],
+                "employment_types": ["SALARIED", "SELF_EMPLOYED"]
+            }
+        },
+        {
+            "bank_name": "IndusInd Bank",
+            "bank_code": "INDUSIND",
+            "bank_type": "PRIVATE_BANK",
+            "interest_rate_min": 9.50,
+            "interest_rate_max": 14.50,
+            "tenure_min_months": 12,
+            "tenure_max_months": 84,
+            "ltv_percent": 85,
+            "processing_fee_percent": 1.00,
+            "eligibility_rules": {
+                "min_credit_score": 680,
+                "max_vehicle_age": 12,
+                "excluded_car_makes": ["CHEVROLET", "FORD"],
+                "employment_types": ["SALARIED", "SELF_EMPLOYED"]
+            }
+        },
+        {
+            "bank_name": "Yes Bank",
+            "bank_code": "YESBANK",
+            "bank_type": "PRIVATE_BANK",
+            "interest_rate_min": 10.00,
+            "interest_rate_max": 15.00,
+            "tenure_min_months": 12,
+            "tenure_max_months": 72,
+            "ltv_percent": 80,
+            "processing_fee_percent": 1.00,
+            "eligibility_rules": {
+                "min_credit_score": 700,
+                "max_vehicle_age": 10,
+                "excluded_car_makes": ["CHEVROLET", "FORD", "FIAT"],
+                "employment_types": ["SALARIED", "SELF_EMPLOYED"]
+            }
+        },
+        {
+            "bank_name": "IDFC First Bank",
+            "bank_code": "IDFC",
+            "bank_type": "PRIVATE_BANK",
+            "interest_rate_min": 10.50,
+            "interest_rate_max": 15.50,
+            "tenure_min_months": 12,
+            "tenure_max_months": 72,
+            "ltv_percent": 80,
+            "processing_fee_percent": 1.00,
+            "eligibility_rules": {
+                "min_credit_score": 650,
+                "max_vehicle_age": 12,
+                "excluded_car_makes": ["CHEVROLET", "FORD"],
+                "employment_types": ["SALARIED", "SELF_EMPLOYED"]
+            }
+        },
+        {
+            "bank_name": "Federal Bank",
+            "bank_code": "FEDERAL",
+            "bank_type": "PRIVATE_BANK",
+            "interest_rate_min": 9.50,
+            "interest_rate_max": 14.00,
+            "tenure_min_months": 12,
+            "tenure_max_months": 84,
+            "ltv_percent": 80,
+            "processing_fee_percent": 0.75,
+            "eligibility_rules": {
+                "min_credit_score": 680,
+                "max_vehicle_age": 10,
+                "excluded_car_makes": ["CHEVROLET", "FORD"],
+                "employment_types": ["SALARIED", "SELF_EMPLOYED"]
+            }
+        },
+        # NBFCs (Non-Banking Financial Companies)
+        {
+            "bank_name": "Bajaj Finance",
+            "bank_code": "BAJAJ",
+            "bank_type": "NBFC",
+            "interest_rate_min": 11.00,
+            "interest_rate_max": 18.00,
+            "tenure_min_months": 12,
+            "tenure_max_months": 72,
+            "ltv_percent": 90,
+            "processing_fee_percent": 2.00,
+            "eligibility_rules": {
+                "min_credit_score": 600,
+                "max_vehicle_age": 15,
+                "excluded_car_makes": ["CHEVROLET"],
+                "employment_types": ["SALARIED", "SELF_EMPLOYED"]
+            }
+        },
+        {
+            "bank_name": "Tata Capital",
+            "bank_code": "TATACAP",
+            "bank_type": "NBFC",
+            "interest_rate_min": 11.00,
+            "interest_rate_max": 17.00,
+            "tenure_min_months": 12,
+            "tenure_max_months": 60,
+            "ltv_percent": 85,
+            "processing_fee_percent": 1.50,
+            "eligibility_rules": {
+                "min_credit_score": 630,
+                "max_vehicle_age": 12,
+                "excluded_car_makes": ["CHEVROLET", "FORD"],
+                "employment_types": ["SALARIED", "SELF_EMPLOYED"]
+            }
+        },
+        {
+            "bank_name": "Mahindra Finance",
+            "bank_code": "MAHFIN",
+            "bank_type": "NBFC",
+            "interest_rate_min": 12.00,
+            "interest_rate_max": 20.00,
+            "tenure_min_months": 12,
+            "tenure_max_months": 60,
+            "ltv_percent": 90,
+            "processing_fee_percent": 2.00,
+            "eligibility_rules": {
+                "min_credit_score": 550,
+                "max_vehicle_age": 15,
+                "excluded_car_makes": [],
+                "employment_types": ["SALARIED", "SELF_EMPLOYED"]
+            }
+        },
+        {
+            "bank_name": "Shriram Finance",
+            "bank_code": "SHRIRAM",
+            "bank_type": "NBFC",
+            "interest_rate_min": 14.00,
+            "interest_rate_max": 22.00,
+            "tenure_min_months": 12,
+            "tenure_max_months": 60,
+            "ltv_percent": 95,
+            "processing_fee_percent": 2.50,
+            "eligibility_rules": {
+                "min_credit_score": 500,
+                "max_vehicle_age": 15,
+                "excluded_car_makes": [],
+                "employment_types": ["SALARIED", "SELF_EMPLOYED"]
+            }
+        },
+        {
+            "bank_name": "Cholamandalam Finance",
+            "bank_code": "CHOLA",
+            "bank_type": "NBFC",
+            "interest_rate_min": 12.00,
+            "interest_rate_max": 19.00,
+            "tenure_min_months": 12,
+            "tenure_max_months": 60,
+            "ltv_percent": 85,
+            "processing_fee_percent": 2.00,
+            "eligibility_rules": {
+                "min_credit_score": 580,
+                "max_vehicle_age": 12,
+                "excluded_car_makes": ["CHEVROLET"],
+                "employment_types": ["SALARIED", "SELF_EMPLOYED"]
+            }
+        },
+        {
+            "bank_name": "Hero FinCorp",
+            "bank_code": "HEROFIN",
+            "bank_type": "NBFC",
+            "interest_rate_min": 13.00,
+            "interest_rate_max": 20.00,
+            "tenure_min_months": 12,
+            "tenure_max_months": 60,
+            "ltv_percent": 80,
+            "processing_fee_percent": 2.00,
+            "eligibility_rules": {
+                "min_credit_score": 600,
+                "max_vehicle_age": 10,
+                "excluded_car_makes": ["CHEVROLET", "FORD"],
+                "employment_types": ["SALARIED", "SELF_EMPLOYED"]
+            }
+        },
+        {
+            "bank_name": "L&T Finance",
+            "bank_code": "LTFIN",
+            "bank_type": "NBFC",
+            "interest_rate_min": 11.50,
+            "interest_rate_max": 17.00,
+            "tenure_min_months": 12,
+            "tenure_max_months": 60,
+            "ltv_percent": 85,
+            "processing_fee_percent": 1.75,
+            "eligibility_rules": {
+                "min_credit_score": 620,
+                "max_vehicle_age": 12,
+                "excluded_car_makes": ["CHEVROLET", "FORD"],
+                "employment_types": ["SALARIED", "SELF_EMPLOYED"]
+            }
+        },
+        {
+            "bank_name": "Sundaram Finance",
+            "bank_code": "SUNDARAM",
+            "bank_type": "NBFC",
+            "interest_rate_min": 10.50,
+            "interest_rate_max": 16.00,
+            "tenure_min_months": 12,
+            "tenure_max_months": 72,
+            "ltv_percent": 80,
+            "processing_fee_percent": 1.50,
+            "eligibility_rules": {
+                "min_credit_score": 650,
+                "max_vehicle_age": 10,
+                "excluded_car_makes": ["CHEVROLET", "FORD"],
+                "employment_types": ["SALARIED", "SELF_EMPLOYED"]
+            }
+        },
+        {
+            "bank_name": "Muthoot Finance",
+            "bank_code": "MUTHOOT",
+            "bank_type": "NBFC",
+            "interest_rate_min": 14.00,
+            "interest_rate_max": 24.00,
+            "tenure_min_months": 12,
+            "tenure_max_months": 48,
+            "ltv_percent": 95,
+            "processing_fee_percent": 3.00,
+            "eligibility_rules": {
+                "min_credit_score": 450,
+                "max_vehicle_age": 15,
+                "excluded_car_makes": [],
+                "employment_types": ["SALARIED", "SELF_EMPLOYED"]
+            }
+        },
+        {
+            "bank_name": "Poonawalla Fincorp",
+            "bank_code": "POONAWALLA",
+            "bank_type": "NBFC",
+            "interest_rate_min": 10.50,
+            "interest_rate_max": 16.00,
+            "tenure_min_months": 12,
+            "tenure_max_months": 60,
+            "ltv_percent": 85,
+            "processing_fee_percent": 1.50,
+            "eligibility_rules": {
+                "min_credit_score": 650,
+                "max_vehicle_age": 10,
+                "excluded_car_makes": ["CHEVROLET", "FORD"],
+                "employment_types": ["SALARIED", "SELF_EMPLOYED"]
+            }
+        },
+    ]
+    
+    created_count = 0
+    updated_count = 0
+    
+    for bank_info in banks_data:
+        # Check if bank already exists
+        existing = await db.bank_master.find_one({"bank_code": bank_info["bank_code"]})
+        
+        if existing:
+            # Update existing bank
+            await db.bank_master.update_one(
+                {"bank_code": bank_info["bank_code"]},
+                {"$set": {**bank_info, "updated_at": now.isoformat()}}
+            )
+            updated_count += 1
+        else:
+            # Create new bank
+            bank = {
+                "id": str(uuid.uuid4()),
+                **bank_info,
+                "city_pocs": [],
+                "is_active": True,
+                "created_at": now.isoformat(),
+                "updated_at": now.isoformat()
+            }
+            await db.bank_master.insert_one(bank)
+            created_count += 1
+    
+    return {
+        "success": True,
+        "message": f"Seeded {created_count} new banks, updated {updated_count} existing banks",
+        "total_banks": created_count + updated_count
+    }
+
+
 @router.post("/banks/{bank_id}/poc")
 async def add_bank_poc(
     bank_id: str,
