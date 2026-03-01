@@ -392,6 +392,63 @@ async def get_loan_lead_stats(current_user: dict = Depends(get_current_user)):
     }
 
 
+@router.post("/loan-leads/update-cities")
+async def update_loan_lead_cities(current_user: dict = Depends(get_current_user)):
+    """Update city data for existing loan leads from their inspection data"""
+    
+    # Build city lookup cache
+    cities_cursor = await db.cities.find({}, {"_id": 0}).to_list(500)
+    city_lookup = {}
+    for city in cities_cursor:
+        city_name = (city.get("name") or city.get("city_name") or "").lower()
+        if city_name:
+            city_lookup[city_name] = {"id": city.get("id"), "name": city.get("name") or city.get("city_name")}
+    
+    # Find leads without city
+    leads_without_city = await db.loan_leads.find(
+        {"$or": [{"city_name": None}, {"city_name": ""}, {"city_name": {"$exists": False}}]}
+    ).to_list(1000)
+    
+    updated_count = 0
+    
+    for lead in leads_without_city:
+        customer_id = lead.get("customer_id")
+        if not customer_id:
+            continue
+        
+        # Find inspection for this customer
+        inspection = await db.inspections.find_one(
+            {"customer_id": customer_id},
+            {"city": 1, "city_name": 1, "city_id": 1}
+        )
+        
+        if not inspection:
+            continue
+        
+        city_name = inspection.get("city_name") or inspection.get("city") or ""
+        city_id = inspection.get("city_id")
+        
+        # Look up city_id from name if not present
+        if not city_id and city_name:
+            city_match = city_lookup.get(city_name.lower())
+            if city_match:
+                city_id = city_match["id"]
+                city_name = city_match["name"]
+        
+        if city_name:
+            await db.loan_leads.update_one(
+                {"id": lead["id"]},
+                {"$set": {"city_name": city_name, "city_id": city_id}}
+            )
+            updated_count += 1
+    
+    return {
+        "message": f"Updated city data for {updated_count} loan leads",
+        "updated_count": updated_count,
+        "total_without_city": len(leads_without_city)
+    }
+
+
 @router.get("/loan-leads/{lead_id}")
 async def get_loan_lead(lead_id: str, current_user: dict = Depends(get_current_user)):
     """Get a specific loan lead with all details"""
