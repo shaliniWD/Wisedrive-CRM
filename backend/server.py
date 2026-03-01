@@ -8294,33 +8294,61 @@ async def create_city(
 @api_router.put("/cities/{city_id}")
 async def update_city(
     city_id: str,
-    name: Optional[str] = None,
-    state: Optional[str] = None,
-    aliases: Optional[List[str]] = None,
-    is_active: Optional[bool] = None,
+    city_data: CityUpdate,
     current_user: dict = Depends(get_current_user)
 ):
-    """Update a city in master table"""
+    """Update a city in master table. To remove all aliases, send aliases: []"""
     role_code = current_user.get("role_code", "")
     if role_code not in ["CEO", "HR_MANAGER", "COUNTRY_HEAD", "ADMIN"]:
         raise HTTPException(status_code=403, detail="Not authorized to update cities")
     
-    update_data = {"updated_at": datetime.now(timezone.utc).isoformat()}
-    if name is not None:
-        update_data["name"] = name
-    if state is not None:
-        update_data["state"] = state
-    if aliases is not None:
-        update_data["aliases"] = aliases
-    if is_active is not None:
-        update_data["is_active"] = is_active
-    
-    result = await db.cities.update_one({"id": city_id}, {"$set": update_data})
-    
-    if result.matched_count == 0:
+    # Get existing city
+    existing_city = await db.cities.find_one({"id": city_id})
+    if not existing_city:
         raise HTTPException(status_code=404, detail="City not found")
     
-    return {"success": True, "message": "City updated"}
+    update_data = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    
+    # Handle name update - check for conflicts
+    if city_data.name is not None:
+        # Check if new name conflicts with existing city or alias
+        conflict = await db.cities.find_one({
+            "id": {"$ne": city_id},  # Exclude current city
+            "$or": [
+                {"name": {"$regex": f"^{city_data.name}$", "$options": "i"}},
+                {"aliases": {"$regex": f"^{city_data.name}$", "$options": "i"}}
+            ]
+        })
+        if conflict:
+            raise HTTPException(status_code=400, detail=f"Name '{city_data.name}' conflicts with existing city '{conflict['name']}'")
+        update_data["name"] = city_data.name
+    
+    if city_data.state is not None:
+        update_data["state"] = city_data.state
+    
+    # Handle aliases - IMPORTANT: empty list [] is valid and should clear aliases
+    if city_data.aliases is not None:
+        # Validate aliases don't conflict with existing cities/aliases
+        for alias in city_data.aliases:
+            conflict = await db.cities.find_one({
+                "id": {"$ne": city_id},  # Exclude current city
+                "$or": [
+                    {"name": {"$regex": f"^{alias}$", "$options": "i"}},
+                    {"aliases": {"$regex": f"^{alias}$", "$options": "i"}}
+                ]
+            })
+            if conflict:
+                raise HTTPException(status_code=400, detail=f"Alias '{alias}' conflicts with existing city '{conflict['name']}'")
+        update_data["aliases"] = city_data.aliases
+    
+    if city_data.is_active is not None:
+        update_data["is_active"] = city_data.is_active
+    
+    await db.cities.update_one({"id": city_id}, {"$set": update_data})
+    
+    # Return updated city
+    updated_city = await db.cities.find_one({"id": city_id}, {"_id": 0})
+    return {"success": True, "message": "City updated", "city": updated_city}
 
 
 @api_router.get("/cities/resolve/{city_name}")
