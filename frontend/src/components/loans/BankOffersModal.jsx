@@ -1092,6 +1092,7 @@ const ManualOfferForm = ({ lead, vehicle, onClose, onSuccess }) => {
 // Main Bank Offers Modal
 export default function BankOffersModal({ isOpen, onClose, lead, vehicle, application, onUpdate }) {
   const [offers, setOffers] = useState([]);
+  const [chargeTypes, setChargeTypes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showManualForm, setShowManualForm] = useState(false);
@@ -1100,8 +1101,18 @@ export default function BankOffersModal({ isOpen, onClose, lead, vehicle, applic
   useEffect(() => {
     if (isOpen && lead?.id) {
       fetchOffers();
+      fetchChargeTypes();
     }
   }, [isOpen, lead?.id]);
+
+  const fetchChargeTypes = async () => {
+    try {
+      const res = await loansApi.getChargeTypes();
+      setChargeTypes(res.data || []);
+    } catch (err) {
+      console.error('Failed to fetch charge types:', err);
+    }
+  };
 
   const fetchOffers = async () => {
     setLoading(true);
