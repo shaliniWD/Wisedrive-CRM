@@ -1546,7 +1546,7 @@ export default function LoansPage() {
       if (searchQuery) params.search = searchQuery;
       
       const res = await loansApi.getAll(params);
-      setLeads(res.data.items || []);
+      setLeads(res.data.items || res.data.leads || []);
       setTotal(res.data.total || 0);
     } catch (err) {
       toast.error('Failed to fetch loan leads');
