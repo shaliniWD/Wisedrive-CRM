@@ -6706,15 +6706,18 @@ async def update_inspection_vehicle(
 @api_router.post("/inspections/{inspection_id}/fetch-vaahan-data")
 async def fetch_vaahan_data_for_inspection(
     inspection_id: str,
+    force_refresh: bool = False,
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Fetch vehicle data from Vaahan API and update the inspection record.
-    This should be called when:
-    1. The Refresh button is clicked in the Inspection Editor
-    2. When an inspection is scheduled (for pre-populating data)
+    Fetch vehicle data and update the inspection record.
     
-    Returns the updated inspection data with Vaahan-sourced vehicle info.
+    IMPORTANT: This now uses local DB caching!
+    1. First checks local vehicles collection
+    2. Only calls Vaahan API if not found in local DB or force_refresh=true
+    3. Saves to local DB for future use
+    
+    Use force_refresh=true to bypass cache and get fresh data from Vaahan.
     """
     from services.brand_mapper import brand_mapper
     
@@ -6726,17 +6729,74 @@ async def fetch_vaahan_data_for_inspection(
     if not car_number:
         raise HTTPException(status_code=400, detail="No vehicle number found in inspection")
     
-    # Fetch from Vaahan API
-    result = await vaahan_service.get_vehicle_details(car_number)
+    # Clean registration number
+    clean_number = car_number.replace(" ", "").replace("-", "").upper()
     
-    if not result.get("success"):
-        return {
-            "success": False,
-            "error": result.get("error", "Failed to fetch vehicle details"),
-            "inspection": inspection
+    # Step 1: Check local DB first (unless force_refresh)
+    vehicle_data = None
+    source = "local_db"
+    
+    if not force_refresh:
+        cached_vehicle = await db.vehicles.find_one(
+            {"registration_number": {"$regex": f"^{clean_number}$", "$options": "i"}},
+            {"_id": 0}
+        )
+        if cached_vehicle:
+            logger.info(f"Vehicle {clean_number} found in local DB for inspection {inspection_id}")
+            # Use vaahan_raw_response if available, otherwise construct from cached fields
+            vehicle_data = cached_vehicle.get("vaahan_raw_response", cached_vehicle)
+    
+    # Step 2: If not in cache or force_refresh, call Vaahan API
+    if vehicle_data is None:
+        logger.info(f"Fetching vehicle {clean_number} from Vaahan API for inspection {inspection_id}")
+        result = await vaahan_service.get_vehicle_details(clean_number)
+        
+        if not result.get("success"):
+            return {
+                "success": False,
+                "error": result.get("error", "Failed to fetch vehicle details"),
+                "inspection": inspection
+            }
+        
+        vehicle_data = result.get("data", {})
+        source = "vaahan_api"
+        
+        # Save to local DB for future use
+        vehicle_record = {
+            "id": str(uuid.uuid4()),
+            "registration_number": clean_number,
+            "chassis_number": vehicle_data.get("chassis_number", ""),
+            "engine_number": vehicle_data.get("engine_number", ""),
+            "manufacturer": vehicle_data.get("manufacturer", ""),
+            "model": vehicle_data.get("model", ""),
+            "color": vehicle_data.get("color", ""),
+            "fuel_type": vehicle_data.get("fuel_type", ""),
+            "body_type": vehicle_data.get("body_type", ""),
+            "vehicle_class": vehicle_data.get("vehicle_class", ""),
+            "manufacturing_date": vehicle_data.get("manufacturing_date", ""),
+            "registration_date": vehicle_data.get("registration_date", ""),
+            "owner_count": vehicle_data.get("owner_count", ""),
+            "insurance_company": vehicle_data.get("insurance_company", ""),
+            "insurance_valid_upto": vehicle_data.get("insurance_valid_upto", ""),
+            "hypothecation_bank": vehicle_data.get("hypothecation_bank", ""),
+            "blacklist_status": vehicle_data.get("blacklist_status", ""),
+            "vaahan_raw_response": vehicle_data,
+            "country_id": current_user.get("country_id"),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_by": current_user["id"],
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "updated_by": current_user["id"],
         }
+        
+        await db.vehicles.update_one(
+            {"registration_number": {"$regex": f"^{clean_number}$", "$options": "i"}},
+            {"$set": vehicle_record},
+            upsert=True
+        )
+        logger.info(f"Vehicle {clean_number} saved to local DB")
     
-    vaahan_data = result.get("data", {})
+    # Now use vehicle_data to update the inspection
+    vaahan_data = vehicle_data
     now = datetime.now(timezone.utc).isoformat()
     
     # Normalize manufacturer name using brand mapper
