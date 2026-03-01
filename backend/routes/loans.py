@@ -266,8 +266,19 @@ async def sync_loan_leads_from_customers(
     # Find customers with paid inspections (FULLY_PAID or Completed)
     paid_inspections = await db.inspections.find(
         {"payment_status": {"$in": ["FULLY_PAID", "Completed", "paid", "PAID"]}},
-        {"customer_id": 1, "customer_name": 1, "customer_phone": 1, "customer_email": 1, "city_id": 1, "city_name": 1, "car_number": 1, "car_make": 1, "car_model": 1, "car_year": 1}
+        {"customer_id": 1, "customer_name": 1, "customer_phone": 1, "customer_mobile": 1, 
+         "customer_email": 1, "city_id": 1, "city_name": 1, "city": 1, "address": 1,
+         "car_number": 1, "car_make": 1, "car_model": 1, "car_year": 1}
     ).to_list(1000)
+    
+    # Build a city lookup cache from cities collection
+    cities_cursor = await db.cities.find({}, {"_id": 0}).to_list(500)
+    city_lookup = {}
+    for city in cities_cursor:
+        # Index by city name (case insensitive)
+        city_name = (city.get("name") or city.get("city_name") or "").lower()
+        if city_name:
+            city_lookup[city_name] = {"id": city.get("id"), "name": city.get("name") or city.get("city_name")}
     
     customer_ids_processed = set()
     
@@ -287,6 +298,17 @@ async def sync_loan_leads_from_customers(
             "customer_id": customer_id,
             "payment_status": {"$in": ["FULLY_PAID", "Completed", "paid", "PAID"]}
         }).to_list(100)
+        
+        # Get city info - try multiple fields
+        city_name = inspection.get("city_name") or inspection.get("city") or ""
+        city_id = inspection.get("city_id")
+        
+        # If no city_id, try to look it up from city name
+        if not city_id and city_name:
+            city_match = city_lookup.get(city_name.lower())
+            if city_match:
+                city_id = city_match["id"]
+                city_name = city_match["name"]
         
         # Build vehicles list from inspections
         vehicles = []
@@ -310,14 +332,17 @@ async def sync_loan_leads_from_customers(
                 if not any(v.get("car_number") == vehicle["car_number"] for v in vehicles):
                     vehicles.append(vehicle)
         
+        # Get phone - try multiple fields
+        customer_phone = inspection.get("customer_phone") or inspection.get("customer_mobile") or ""
+        
         loan_lead = {
             "id": str(uuid.uuid4()),
             "customer_id": customer_id,
             "customer_name": inspection.get("customer_name", "Unknown"),
-            "customer_phone": inspection.get("customer_phone", ""),
+            "customer_phone": customer_phone,
             "customer_email": inspection.get("customer_email"),
-            "city_id": inspection.get("city_id"),
-            "city_name": inspection.get("city_name"),
+            "city_id": city_id,
+            "city_name": city_name,
             "status": "NEW",
             "status_notes": None,
             "last_contacted_at": None,
