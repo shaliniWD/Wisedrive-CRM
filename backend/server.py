@@ -6884,7 +6884,8 @@ async def fetch_vaahan_data_for_inspection(
     
     return {
         "success": True,
-        "message": "Vehicle data fetched from Vaahan API",
+        "message": f"Vehicle data loaded from {source}",
+        "source": source,
         "vaahan_data": vaahan_data,
         "inspection": updated_inspection
     }
