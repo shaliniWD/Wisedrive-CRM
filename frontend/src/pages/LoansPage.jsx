@@ -24,6 +24,7 @@ import {
   VehicleDetailsModal,
   LoanProcessingModal,
   CustomerProfileModal,
+  CustomerDetailsModal,
   VehicleDropdown,
   StatusBadge,
   AppStatusBadge
