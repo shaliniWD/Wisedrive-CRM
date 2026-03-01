@@ -1243,6 +1243,32 @@ async def create_loan_offer(
         })
         total_charges += offer_data.insurance_charges
     
+    # Valuation Charges
+    if offer_data.valuation_charges:
+        charges.append({
+            "charge_type": "valuation_charges",
+            "charge_name": "Valuation Charges",
+            "amount": offer_data.valuation_charges,
+            "is_percentage": False,
+            "is_waived": False,
+            "is_negotiable": True,
+            "notes": None
+        })
+        total_charges += offer_data.valuation_charges
+    
+    # Stamp Duty
+    if offer_data.stamp_duty:
+        charges.append({
+            "charge_type": "stamp_duty",
+            "charge_name": "Stamp Duty Amount",
+            "amount": offer_data.stamp_duty,
+            "is_percentage": False,
+            "is_waived": False,
+            "is_negotiable": False,
+            "notes": "Government stamp duty"
+        })
+        total_charges += offer_data.stamp_duty
+    
     # Other charges
     if offer_data.other_charges:
         for other in offer_data.other_charges:
