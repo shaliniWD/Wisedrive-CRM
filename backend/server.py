@@ -8222,12 +8222,24 @@ async def get_city_names(country_id: Optional[str] = None):
     return [c["name"] for c in cities]
 
 
+# Pydantic models for City CRUD
+class CityCreate(BaseModel):
+    name: str
+    state: Optional[str] = None
+    country_id: Optional[str] = None
+    aliases: Optional[List[str]] = None
+
+
+class CityUpdate(BaseModel):
+    name: Optional[str] = None
+    state: Optional[str] = None
+    aliases: Optional[List[str]] = None  # Can be empty list [] to clear aliases
+    is_active: Optional[bool] = None
+
+
 @api_router.post("/cities")
 async def create_city(
-    name: str,
-    state: Optional[str] = None,
-    country_id: Optional[str] = None,
-    aliases: Optional[List[str]] = None,
+    city_data: CityCreate,
     current_user: dict = Depends(get_current_user)
 ):
     """Create a new city in master table"""
@@ -8235,7 +8247,9 @@ async def create_city(
     if role_code not in ["CEO", "HR_MANAGER", "COUNTRY_HEAD", "ADMIN"]:
         raise HTTPException(status_code=403, detail="Not authorized to create cities")
     
-    # Check if city already exists
+    name = city_data.name
+    
+    # Check if city already exists (by name or as alias of another city)
     existing = await db.cities.find_one({
         "$or": [
             {"name": {"$regex": f"^{name}$", "$options": "i"}},
@@ -8244,14 +8258,29 @@ async def create_city(
     })
     
     if existing:
-        raise HTTPException(status_code=400, detail=f"City '{name}' or its alias already exists")
+        if existing["name"].lower() == name.lower():
+            raise HTTPException(status_code=400, detail=f"City '{name}' already exists")
+        else:
+            raise HTTPException(status_code=400, detail=f"'{name}' is already an alias of city '{existing['name']}'")
+    
+    # Also check if any of the provided aliases already exist as city names or other aliases
+    if city_data.aliases:
+        for alias in city_data.aliases:
+            alias_exists = await db.cities.find_one({
+                "$or": [
+                    {"name": {"$regex": f"^{alias}$", "$options": "i"}},
+                    {"aliases": {"$regex": f"^{alias}$", "$options": "i"}}
+                ]
+            })
+            if alias_exists:
+                raise HTTPException(status_code=400, detail=f"Alias '{alias}' already exists as a city or alias of '{alias_exists['name']}'")
     
     city = {
         "id": str(uuid.uuid4()),
         "name": name,
-        "state": state or "",
-        "country_id": country_id or "",
-        "aliases": aliases or [],
+        "state": city_data.state or "",
+        "country_id": city_data.country_id or "",
+        "aliases": city_data.aliases or [],
         "is_active": True,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "created_by": current_user["id"]
