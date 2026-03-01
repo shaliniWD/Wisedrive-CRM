@@ -258,6 +258,60 @@ export default function LoansPage() {
         </div>
       )}
       
+      {/* Date Range Filter */}
+      <div className="bg-white rounded-xl border p-4 mb-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <Calendar className="h-4 w-4 text-gray-400" />
+          <span className="text-sm font-medium text-gray-600">Date Range:</span>
+          <div className="flex flex-wrap items-center gap-2">
+            {DATE_PRESETS.map((preset) => (
+              <button
+                key={preset.key}
+                onClick={() => handleDatePreset(preset.key)}
+                className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-colors ${
+                  datePreset === preset.key 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+                data-testid={`date-preset-${preset.key}`}
+              >
+                {preset.label}
+              </button>
+            ))}
+            <button
+              onClick={() => handleDatePreset('')}
+              className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-colors ${
+                datePreset === '' || datePreset === 'all'
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+              data-testid="date-preset-all"
+            >
+              All Time
+            </button>
+          </div>
+          {datePreset === 'custom' && (
+            <div className="flex items-center gap-2 ml-2">
+              <Input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => { setDateFrom(e.target.value); setPage(0); }}
+                className="h-9 w-36"
+                data-testid="date-from-input"
+              />
+              <span className="text-gray-400">to</span>
+              <Input
+                type="date"
+                value={dateTo}
+                onChange={(e) => { setDateTo(e.target.value); setPage(0); }}
+                className="h-9 w-36"
+                data-testid="date-to-input"
+              />
+            </div>
+          )}
+        </div>
+      </div>
+      
       {/* Filters */}
       <div className="bg-white rounded-xl border p-4 mb-6">
         <div className="flex flex-wrap items-center gap-4">
