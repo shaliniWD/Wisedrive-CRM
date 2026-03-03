@@ -809,6 +809,45 @@ async def get_credit_report_history(
     }
 
 
+@router.get("/latest/{pan}")
+async def get_latest_credit_reports(
+    pan: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Get the latest credit report for each bureau for a PAN number
+    Returns one report per bureau (CIBIL, Equifax, Experian, CRIF)
+    """
+    pan = pan.upper().strip()
+    
+    # Get latest report for each provider
+    bureaus = ["CIBIL", "Equifax", "Experian", "CRIF"]
+    latest_reports = {}
+    
+    for bureau in bureaus:
+        report = await _db.credit_reports.find_one(
+            {"pan": pan, "provider": bureau, "type": "json"},
+            {"_id": 0},
+            sort=[("created_at", -1)]
+        )
+        if report:
+            latest_reports[bureau.lower()] = {
+                "report_id": report.get("id"),
+                "credit_score": report.get("credit_score"),
+                "parsed_report": report.get("parsed_report"),
+                "pdf_link": report.get("pdf_link"),
+                "fetched_at": report.get("fetched_at"),
+                "created_at": report.get("created_at")
+            }
+    
+    return {
+        "pan": pan,
+        "reports": latest_reports,
+        "has_cibil": "cibil" in latest_reports,
+        "cibil_score": latest_reports.get("cibil", {}).get("credit_score")
+    }
+
+
 @router.get("/by-loan-lead/{loan_lead_id}")
 async def get_credit_report_by_loan_lead(
     loan_lead_id: str,
