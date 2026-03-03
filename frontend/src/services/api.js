@@ -696,6 +696,9 @@ export const banksApi = {
 export const creditReportApi = {
   checkStatus: () => axios.get(`${API_URL}/credit-report/check-status`),
   
+  // Get latest reports for a PAN (cached data)
+  getLatestReports: (pan) => axios.get(`${API_URL}/credit-report/latest/${pan}`),
+  
   // CIBIL Reports
   fetchCibilReport: (data) => axios.post(`${API_URL}/credit-report/cibil`, data),
   fetchCibilPdf: (data) => axios.post(`${API_URL}/credit-report/cibil/pdf`, data),
