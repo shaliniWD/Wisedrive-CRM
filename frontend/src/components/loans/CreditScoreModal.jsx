@@ -828,142 +828,200 @@ const DualBureauReportView = ({ equifaxReport, experianReport, onRecheck, onClos
 
 // Main Credit Score Modal Component
 const CreditScoreModal = ({ isOpen, onClose, lead, onUpdate }) => {
-  const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [token, setToken] = useState('');
-  const [equifaxReport, setEquifaxReport] = useState(null);
-  const [experianReport, setExperianReport] = useState(null);
-  const [formData, setFormData] = useState({
-    first_name: '', last_name: '', pan_number: '', dob: '',
-    mobile_number: '', email: '', gender: 'male', pin_code: ''
+  const [fetchingProvider, setFetchingProvider] = useState(null);
+  const [reports, setReports] = useState({
+    cibil: null,
+    equifax: null,
+    experian: null,
+    crif: null
   });
+  const [activeReport, setActiveReport] = useState(null);
+  const [error, setError] = useState(null);
   
   useEffect(() => {
     if (isOpen && lead) {
-      const nameParts = (lead.customer_name || '').split(' ');
-      setFormData(prev => ({
-        ...prev,
-        first_name: nameParts[0] || '',
-        last_name: nameParts.slice(1).join(' ') || '',
-        mobile_number: (lead.customer_phone || '').replace('+91', '').replace(/\D/g, ''),
-        email: lead.customer_email || '',
-      }));
-      
-      if (lead.credit_score || lead.credit_score_full_report) {
-        setEquifaxReport(lead.credit_score_full_report || SAMPLE_EQUIFAX_REPORT);
-        setExperianReport(SAMPLE_EXPERIAN_REPORT);
-        setStep(3);
+      // Check if lead has customer info for credit reports
+      if (!lead.pan_number) {
+        setError('Please add PAN number in Customer Details before fetching credit reports');
       } else {
-        setStep(1);
-        setEquifaxReport(null);
-        setExperianReport(null);
+        setError(null);
+      }
+      
+      // Load any existing credit reports
+      if (lead.credit_score_full_report) {
+        setReports(prev => ({ ...prev, cibil: lead.credit_score_full_report }));
+        setActiveReport('cibil');
       }
     }
   }, [isOpen, lead]);
   
-  const validateForm = () => {
-    if (!formData.first_name || !formData.last_name) { toast.error('Please enter full name'); return false; }
-    if (!formData.pan_number || formData.pan_number.length !== 10) { toast.error('Please enter valid 10-digit PAN'); return false; }
-    if (!formData.dob || formData.dob.length !== 8) { toast.error('Please enter DOB in YYYYMMDD format'); return false; }
-    if (!formData.mobile_number || formData.mobile_number.length !== 10) { toast.error('Please enter valid 10-digit mobile'); return false; }
-    if (!formData.email) { toast.error('Please enter email'); return false; }
-    if (!formData.pin_code || formData.pin_code.length !== 6) { toast.error('Please enter valid 6-digit PIN'); return false; }
-    return true;
-  };
-  
-  const handleRequestOTP = async () => {
-    if (!validateForm()) return;
-    setLoading(true);
+  const fetchReport = async (provider) => {
+    if (!lead.pan_number) {
+      toast.error('Please add PAN number in Customer Details first');
+      return;
+    }
+    
+    setFetchingProvider(provider);
+    setError(null);
+    
     try {
-      const res = await loansApi.requestCreditScoreOTP(lead.id, { ...formData, bureau: 'equifax' });
-      if (res.data.success) {
-        setToken(res.data.token);
-        toast.success('OTP sent to customer\'s mobile');
-        setStep(2);
+      const firstName = lead.credit_first_name || lead.customer_name?.split(' ')[0] || '';
+      const lastName = lead.credit_last_name || lead.customer_name?.split(' ').slice(1).join(' ') || '';
+      const mobile = (lead.customer_phone || '').replace('+91', '').replace(/\D/g, '');
+      
+      let result;
+      
+      if (provider === 'cibil') {
+        result = await loansApi.fetchCibilReport({
+          name: `${firstName} ${lastName}`.trim(),
+          pan: lead.pan_number,
+          mobile: mobile,
+          gender: lead.gender || 'male',
+          consent: 'Y'
+        });
+      } else if (provider === 'equifax') {
+        result = await loansApi.fetchEquifaxReport({
+          name: `${firstName} ${lastName}`.trim(),
+          id_number: lead.pan_number,
+          id_type: 'pan',
+          mobile: mobile,
+          consent: 'Y'
+        });
+      } else if (provider === 'experian') {
+        result = await loansApi.fetchExperianReport({
+          name: `${firstName} ${lastName}`.trim(),
+          pan: lead.pan_number,
+          mobile: mobile,
+          consent: 'Y'
+        });
+      } else if (provider === 'crif') {
+        result = await loansApi.fetchCrifReport({
+          business_name: `${firstName} ${lastName}`.trim(),
+          pan: lead.pan_number,
+          mobile: mobile,
+          consent: 'Y'
+        });
+      }
+      
+      if (result?.data?.success) {
+        setReports(prev => ({ ...prev, [provider]: result.data }));
+        setActiveReport(provider);
+        toast.success(`${provider.toUpperCase()} report fetched successfully`);
+        onUpdate();
       } else {
-        toast.error(res.data.message || 'Failed to send OTP');
+        toast.error(result?.data?.error || `Failed to fetch ${provider.toUpperCase()} report`);
       }
     } catch (err) {
-      console.error('OTP request error:', err);
-      if (err.response?.status === 500 || err.response?.status === 400) {
-        toast.info('API temporarily unavailable. Loading sample data for preview.');
-        setEquifaxReport(SAMPLE_EQUIFAX_REPORT);
-        setExperianReport(SAMPLE_EXPERIAN_REPORT);
-        setStep(3);
-      } else {
-        toast.error(err.response?.data?.detail || 'Failed to send OTP');
+      console.error(`${provider} fetch error:`, err);
+      const errorMsg = err.response?.data?.error || err.response?.data?.detail || `Failed to fetch ${provider.toUpperCase()} report`;
+      toast.error(errorMsg);
+      
+      // Use sample data for preview
+      if (provider === 'equifax') {
+        setReports(prev => ({ ...prev, [provider]: { ...SAMPLE_EQUIFAX_REPORT, creditScore: SAMPLE_EQUIFAX_REPORT.creditScore } }));
+        setActiveReport(provider);
+        toast.info('Loaded sample data for preview');
+      } else if (provider === 'experian') {
+        setReports(prev => ({ ...prev, [provider]: { ...SAMPLE_EXPERIAN_REPORT, creditScore: SAMPLE_EXPERIAN_REPORT.creditScore } }));
+        setActiveReport(provider);
+        toast.info('Loaded sample data for preview');
       }
     } finally {
-      setLoading(false);
+      setFetchingProvider(null);
     }
   };
   
-  const handleVerifyOTP = async (otp) => {
-    if (!otp || otp.length < 4) { toast.error('Please enter valid OTP'); return; }
-    setLoading(true);
-    try {
-      const equifaxRes = await loansApi.verifyCreditScoreOTP(lead.id, { token, otp, bureau: 'equifax' });
-      if (equifaxRes.data.success) setEquifaxReport(equifaxRes.data.full_report || equifaxRes.data);
-    } catch (err) {
-      console.error('Equifax error:', err);
-      setEquifaxReport(SAMPLE_EQUIFAX_REPORT);
-    }
-    try {
-      const experianRes = await loansApi.verifyCreditScoreOTP(lead.id, { token, otp, bureau: 'experian' });
-      if (experianRes.data.success) setExperianReport(experianRes.data.full_report || experianRes.data);
-    } catch (err) {
-      console.error('Experian error:', err);
-      setExperianReport(SAMPLE_EXPERIAN_REPORT);
-    }
-    toast.success('Credit reports loaded!');
-    setStep(3);
-    onUpdate();
-    setLoading(false);
+  const handleClose = () => { 
+    setReports({ cibil: null, equifax: null, experian: null, crif: null }); 
+    setActiveReport(null);
+    setError(null);
+    onClose(); 
   };
   
-  const handleClose = () => { setStep(1); setToken(''); setEquifaxReport(null); setExperianReport(null); onClose(); };
-  const handleRecheck = () => { setStep(1); setToken(''); setEquifaxReport(null); setExperianReport(null); };
+  const providers = [
+    { id: 'cibil', name: 'CIBIL', color: 'bg-purple-100 text-purple-700 border-purple-200' },
+    { id: 'equifax', name: 'Equifax', color: 'bg-red-100 text-red-700 border-red-200' },
+    { id: 'experian', name: 'Experian', color: 'bg-blue-100 text-blue-700 border-blue-200' },
+    { id: 'crif', name: 'CRIF', color: 'bg-green-100 text-green-700 border-green-200' }
+  ];
   
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className={`${step === 3 ? 'max-w-5xl' : 'max-w-xl'} max-h-[90vh] overflow-y-auto p-0 bg-slate-50`}>
+      <DialogContent className={`${activeReport ? 'max-w-5xl' : 'max-w-lg'} max-h-[90vh] overflow-y-auto p-0 bg-slate-50`}>
         <div className="sticky top-0 z-10 px-5 py-3 bg-white border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl"><CreditCard className="h-5 w-5 text-white" /></div>
             <div>
-              <h2 className="text-lg font-bold text-slate-900">Credit Score Check</h2>
-              <p className="text-sm text-slate-500">{lead?.customer_name} • {lead?.customer_phone}</p>
+              <h2 className="text-lg font-bold text-slate-900">Credit Reports</h2>
+              <p className="text-sm text-slate-500">{lead?.customer_name} • {lead?.pan_number || 'No PAN'}</p>
             </div>
           </div>
           <button onClick={handleClose} className="p-2 hover:bg-slate-100 rounded-lg"><X className="h-5 w-5 text-slate-500" /></button>
         </div>
         
-        {step < 3 && (
-          <div className="px-5 py-3 bg-white border-b border-slate-100">
-            <div className="flex items-center justify-center gap-2">
-              {[1, 2, 3].map((s) => (
-                <React.Fragment key={s}>
-                  <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
-                    step === s ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg' : step > s ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-400'
-                  }`}>{step > s ? <CheckCircle className="h-5 w-5" /> : s}</div>
-                  {s < 3 && <div className={`w-14 h-1 rounded-full ${step > s ? 'bg-emerald-400' : 'bg-slate-200'}`} />}
-                </React.Fragment>
-              ))}
-            </div>
-            <div className="flex justify-center gap-8 text-xs text-slate-500 mt-2">
-              <span className={step === 1 ? 'font-semibold text-blue-600' : ''}>Customer Info</span>
-              <span className={step === 2 ? 'font-semibold text-blue-600' : ''}>Verify OTP</span>
-              <span className={step === 3 ? 'font-semibold text-blue-600' : ''}>Credit Reports</span>
-            </div>
-          </div>
-        )}
-        
         <div className="p-5">
-          <AnimatePresence mode="wait">
-            {step === 1 && <CustomerInfoForm key="form" formData={formData} setFormData={setFormData} onSubmit={handleRequestOTP} loading={loading} />}
-            {step === 2 && <OTPVerification key="otp" mobile={formData.mobile_number} onVerify={handleVerifyOTP} onBack={handleRecheck} loading={loading} />}
-            {step === 3 && <DualBureauReportView key="report" equifaxReport={equifaxReport || SAMPLE_EQUIFAX_REPORT} experianReport={experianReport || SAMPLE_EXPERIAN_REPORT} onRecheck={handleRecheck} onClose={handleClose} />}
-          </AnimatePresence>
+          {error ? (
+            <div className="p-4 bg-amber-50 rounded-lg border border-amber-200 mb-4">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-amber-800">{error}</p>
+                  <p className="text-xs text-amber-700 mt-1">Go to Customer Details → Customer Info tab to add required information.</p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Provider Buttons */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                {providers.map(provider => (
+                  <button
+                    key={provider.id}
+                    onClick={() => fetchReport(provider.id)}
+                    disabled={fetchingProvider !== null}
+                    className={`p-4 rounded-xl border-2 text-center transition-all ${
+                      reports[provider.id] 
+                        ? `${provider.color} border-current` 
+                        : 'bg-white border-slate-200 hover:border-slate-300'
+                    } ${activeReport === provider.id ? 'ring-2 ring-blue-500' : ''}`}
+                  >
+                    {fetchingProvider === provider.id ? (
+                      <Loader2 className="h-5 w-5 animate-spin mx-auto" />
+                    ) : (
+                      <>
+                        <p className="font-semibold">{provider.name}</p>
+                        {reports[provider.id]?.credit_score && (
+                          <p className="text-2xl font-bold mt-1">{reports[provider.id].credit_score}</p>
+                        )}
+                        {!reports[provider.id] && <p className="text-xs text-slate-500 mt-1">Click to fetch</p>}
+                      </>
+                    )}
+                  </button>
+                ))}
+              </div>
+              
+              {/* Active Report Display */}
+              {activeReport && reports[activeReport] && (
+                <div className="border-t border-slate-200 pt-4">
+                  <BureauReportView 
+                    report={reports[activeReport].parsed_report || reports[activeReport]} 
+                    bureauName={providers.find(p => p.id === activeReport)?.name || ''} 
+                    bureauColor={providers.find(p => p.id === activeReport)?.color || ''} 
+                  />
+                </div>
+              )}
+              
+              {/* No reports message */}
+              {!activeReport && (
+                <div className="text-center py-8 text-slate-500">
+                  <CreditCard className="h-12 w-12 mx-auto mb-3 text-slate-300" />
+                  <p className="font-medium">Select a credit bureau to fetch report</p>
+                  <p className="text-sm mt-1">Reports from CIBIL, Equifax, Experian & CRIF available</p>
+                </div>
+              )}
+            </>
+          )}
         </div>
       </DialogContent>
     </Dialog>
