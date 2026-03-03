@@ -642,11 +642,11 @@ const DocumentsTab = ({ lead, onUpdate }) => {
 
 // ==================== MAIN MODAL ====================
 const CustomerDetailsModal = ({ isOpen, onClose, lead, onUpdate }) => {
-  const [activeTab, setActiveTab] = useState('vehicles');
+  const [activeTab, setActiveTab] = useState('info');
   
   useEffect(() => {
     if (isOpen) {
-      setActiveTab('vehicles');
+      setActiveTab('info');
     }
   }, [isOpen]);
 
@@ -665,12 +665,25 @@ const CustomerDetailsModal = ({ isOpen, onClose, lead, onUpdate }) => {
         {/* Tabs */}
         <div className="flex border-b">
           <button
+            onClick={() => setActiveTab('info')}
+            className={`flex-1 py-2 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === 'info'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+            data-testid="tab-customer-info"
+          >
+            <User className="h-4 w-4 inline mr-1" />
+            Customer Info
+          </button>
+          <button
             onClick={() => setActiveTab('vehicles')}
             className={`flex-1 py-2 text-sm font-medium border-b-2 transition-colors ${
               activeTab === 'vehicles'
                 ? 'border-blue-500 text-blue-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
+            data-testid="tab-vehicles"
           >
             <Car className="h-4 w-4 inline mr-1" />
             Vehicles ({lead.vehicles?.length || 0})
@@ -682,6 +695,7 @@ const CustomerDetailsModal = ({ isOpen, onClose, lead, onUpdate }) => {
                 ? 'border-blue-500 text-blue-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
+            data-testid="tab-documents"
           >
             <FileText className="h-4 w-4 inline mr-1" />
             Documents ({lead.documents?.length || 0})
@@ -690,7 +704,9 @@ const CustomerDetailsModal = ({ isOpen, onClose, lead, onUpdate }) => {
         
         {/* Tab Content */}
         <div className="py-2">
-          {activeTab === 'vehicles' ? (
+          {activeTab === 'info' ? (
+            <CustomerInfoTab lead={lead} onUpdate={onUpdate} />
+          ) : activeTab === 'vehicles' ? (
             <VehiclesTab lead={lead} onUpdate={onUpdate} />
           ) : (
             <DocumentsTab lead={lead} onUpdate={onUpdate} />
