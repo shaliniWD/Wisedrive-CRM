@@ -4,14 +4,188 @@ import { loansApi } from '@/services/api';
 import { toast } from 'sonner';
 import {
   Car, FileText, CheckCircle, Plus, Trash2, RefreshCw, Upload, 
-  Loader2, Info, Users, Building2, AlertCircle, ExternalLink, Eye
+  Loader2, Info, Users, Building2, AlertCircle, ExternalLink, Eye,
+  User, CreditCard, Phone, Mail, MapPin, Calendar
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
+import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog';
+
+// ==================== CUSTOMER INFO TAB ====================
+const CustomerInfoTab = ({ lead, onUpdate }) => {
+  const [formData, setFormData] = useState({
+    first_name: '',
+    last_name: '',
+    pan_number: '',
+    dob: '',
+    mobile_number: '',
+    email: '',
+    gender: 'male',
+    pin_code: ''
+  });
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (lead) {
+      const nameParts = (lead.customer_name || '').split(' ');
+      setFormData({
+        first_name: lead.credit_first_name || nameParts[0] || '',
+        last_name: lead.credit_last_name || nameParts.slice(1).join(' ') || '',
+        pan_number: lead.pan_number || '',
+        dob: lead.dob || '',
+        mobile_number: (lead.customer_phone || '').replace('+91', '').replace(/\D/g, ''),
+        email: lead.customer_email || lead.email || '',
+        gender: lead.gender || 'male',
+        pin_code: lead.pin_code || ''
+      });
+    }
+  }, [lead]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await loansApi.update(lead.id, {
+        credit_first_name: formData.first_name,
+        credit_last_name: formData.last_name,
+        pan_number: formData.pan_number,
+        dob: formData.dob,
+        email: formData.email,
+        gender: formData.gender,
+        pin_code: formData.pin_code
+      });
+      toast.success('Customer info saved');
+      onUpdate();
+    } catch (err) {
+      toast.error('Failed to save customer info');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
+        <p className="text-xs text-blue-700">
+          <Info className="h-3 w-3 inline mr-1" />
+          This information is used to fetch credit reports from bureaus
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1">
+          <Label className="text-xs text-gray-500">First Name *</Label>
+          <Input
+            value={formData.first_name}
+            onChange={(e) => setFormData({...formData, first_name: e.target.value})}
+            placeholder="First name"
+            className="h-9"
+            data-testid="customer-first-name"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs text-gray-500">Last Name *</Label>
+          <Input
+            value={formData.last_name}
+            onChange={(e) => setFormData({...formData, last_name: e.target.value})}
+            placeholder="Last name"
+            className="h-9"
+            data-testid="customer-last-name"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs text-gray-500">PAN Number *</Label>
+          <Input
+            value={formData.pan_number}
+            onChange={(e) => setFormData({...formData, pan_number: e.target.value.toUpperCase()})}
+            placeholder="ABCDE1234F"
+            maxLength={10}
+            className="h-9 uppercase font-mono"
+            data-testid="customer-pan"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs text-gray-500">Date of Birth *</Label>
+          <Input
+            value={formData.dob}
+            onChange={(e) => setFormData({...formData, dob: e.target.value.replace(/\D/g, '')})}
+            placeholder="YYYYMMDD"
+            maxLength={8}
+            className="h-9 font-mono"
+            data-testid="customer-dob"
+          />
+          <p className="text-[10px] text-gray-400">Format: YYYYMMDD</p>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs text-gray-500">Mobile Number *</Label>
+          <div className="flex">
+            <span className="inline-flex items-center px-2 bg-gray-100 border border-r-0 border-gray-200 rounded-l text-gray-500 text-xs">+91</span>
+            <Input
+              value={formData.mobile_number}
+              onChange={(e) => setFormData({...formData, mobile_number: e.target.value.replace(/\D/g, '')})}
+              placeholder="9876543210"
+              maxLength={10}
+              className="h-9 rounded-l-none font-mono"
+              data-testid="customer-mobile"
+            />
+          </div>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs text-gray-500">Email *</Label>
+          <Input
+            type="email"
+            value={formData.email}
+            onChange={(e) => setFormData({...formData, email: e.target.value})}
+            placeholder="email@example.com"
+            className="h-9"
+            data-testid="customer-email"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs text-gray-500">Gender *</Label>
+          <Select value={formData.gender} onValueChange={(val) => setFormData({...formData, gender: val})}>
+            <SelectTrigger className="h-9" data-testid="customer-gender">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="male">Male</SelectItem>
+              <SelectItem value="female">Female</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs text-gray-500">PIN Code *</Label>
+          <Input
+            value={formData.pin_code}
+            onChange={(e) => setFormData({...formData, pin_code: e.target.value.replace(/\D/g, '')})}
+            placeholder="560001"
+            maxLength={6}
+            className="h-9 font-mono"
+            data-testid="customer-pincode"
+          />
+        </div>
+      </div>
+
+      <Button
+        onClick={handleSave}
+        disabled={saving}
+        className="w-full"
+        data-testid="save-customer-info-btn"
+      >
+        {saving ? (
+          <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Saving...</>
+        ) : (
+          'Save Customer Info'
+        )}
+      </Button>
+    </div>
+  );
+};
 
 // ==================== VEHICLES TAB ====================
 const VehiclesTab = ({ lead, onUpdate }) => {
