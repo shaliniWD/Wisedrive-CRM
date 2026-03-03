@@ -3,6 +3,43 @@
 ---
 ## 📅 CHANGELOG
 
+### March 3, 2026 - Surepass CIBIL Credit Report Integration
+
+**Feature:** Integrated Surepass API for soft-pull CIBIL credit reports (no OTP required)
+
+**Implementation:**
+- Created `SurepassService` in `/app/backend/services/surepass_service.py`
+- Created credit report routes in `/app/backend/routes/credit_report.py`
+- Added frontend API service `creditReportApi` in `/app/frontend/src/services/api.js`
+
+**API Endpoints:**
+- `GET /api/credit-report/check-status` - Check service configuration
+- `POST /api/credit-report/cibil` - Fetch CIBIL JSON report
+- `POST /api/credit-report/cibil/pdf` - Fetch CIBIL PDF report
+- `GET /api/credit-report/{report_id}` - Get stored report
+- `GET /api/credit-report/history/{pan}` - Get report history by PAN
+- `GET /api/credit-report/by-loan-lead/{loan_lead_id}` - Get report for loan lead
+
+**Request Format:**
+```json
+{
+  "mobile": "9988776655",
+  "pan": "EKRPR1234F",
+  "name": "Customer Name",
+  "gender": "male",
+  "consent": "Y",
+  "loan_lead_id": "optional-uuid"
+}
+```
+
+**Tested:** Sandbox API working, returns credit score and parsed report data
+
+**Next Steps:**
+- Build UI component to display credit report in Loans page
+- Add other providers: Equifax, Experian, CRIF
+
+---
+
 ### March 3, 2026 - Lead City Mapping & Reassignment Fixes
 
 **Issue 1: Leads Landing in Wrong City (Vizag instead of correct city)**
