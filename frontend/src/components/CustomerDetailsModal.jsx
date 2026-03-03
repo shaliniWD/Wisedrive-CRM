@@ -454,6 +454,7 @@ export function CustomerDetailsModal({ isOpen, onClose, customerId, onCustomerUp
                 <div>
                   <div className="font-semibold text-gray-900">{isEditing ? editForm.name : customer.name}</div>
                   <div className="text-sm text-gray-500 font-mono">{isEditing ? editForm.mobile : customer.mobile}</div>
+                  <div className="text-xs text-gray-400 font-mono mt-0.5">ID: {customer.id?.slice(0, 8)}...</div>
                 </div>
               </div>
               <div className="flex items-center gap-4 text-sm">
