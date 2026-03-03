@@ -28,19 +28,22 @@
   3. Fixed reassignment validation to also check `leads_cities` with case-insensitive alias matching
 - **Files Modified:** `/app/backend/server.py` (find_sales_reps_for_city function, reassign_lead endpoint)
 
-**Issue 3: Customer Data Repair - Test-5 Issue**
-- **Problem:** Customer Test-5 (7411891010) shows "no issues found" when clicking repair, but no payment/inspection data visible in modal
-- **Root Cause:** 
-  1. **Frontend bug**: `CustomerDetailsModal.jsx` was looking for `paymentData.total_paid` and `paymentData.packages` but API returned `paymentData.summary.total_paid` and `paymentData.inspections`
-  2. Data structure mismatch between API response and frontend expectations
-- **Fix:**
-  1. Added data transformation in `fetchCustomerDetails()` to flatten the API response structure
-  2. Maps `summary.total_paid` → `total_paid`, `inspections` → `packages` for backward compatibility
-  3. Also enhanced backend repair function with additional search strategies
+**Issue 3: Customer Data Repair - Test-5 Issue (FULLY RESOLVED)**
+- **Problem:** Customer Test-5 (7411891010) had 2 payments but only showed data for 1st payment. 2nd payment (Standard 1-package) was missing from customer modal and Inspections page.
+- **Root Causes Found:** 
+  1. **Frontend bug**: `CustomerDetailsModal.jsx` data structure mismatch between API and UI
+  2. **Missing inspection**: The 2nd payment (1-package Standard) never had an inspection created
+  3. **Missing additional_purchases**: Customer record didn't have the 2nd payment in `additional_purchases`
+- **Fixes Applied:**
+  1. Fixed frontend data transformation in `fetchCustomerDetails()`
+  2. Manually repaired Test-5 data: added `additional_purchases` and created missing inspection
+  3. Enhanced repair function to detect and fix "additional purchase" scenarios where lead has different payment_id than customer
 - **Files Modified:** 
-  - `/app/frontend/src/components/CustomerDetailsModal.jsx` (data transformation fix)
-  - `/app/backend/routes/customers.py` (enhanced repair function, new diagnose endpoint)
-- **Verified in Preview:** Test-5 now shows 3 packages, ₹1 total paid ✅
+  - `/app/frontend/src/components/CustomerDetailsModal.jsx`
+  - `/app/backend/routes/customers.py` (enhanced repair function)
+- **Verified in Preview:** 
+  - Customer modal shows 4 packages, ₹2 total paid ✅
+  - Unscheduled tab shows both "Standard" and "Discover Prime - 3 Cars" packages ✅
 
 ---
 
