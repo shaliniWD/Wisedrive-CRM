@@ -874,8 +874,8 @@ def get_ltv_for_vehicle_age(rules: dict, vehicle_age: int) -> float:
         return rules.get("ltv_10_plus_years", 60)
 
 
-async def check_bank_eligibility(bank: dict, req: EligibilityCheckRequest) -> EligibilityResult:
-    """Check eligibility for a single bank"""
+async def evaluate_bank_eligibility(bank: dict, req: EligibilityCheckRequest) -> EligibilityResult:
+    """Evaluate eligibility for a single bank based on rules and customer data"""
     rules = bank.get("eligibility_rules", {})
     result = EligibilityResult(
         bank_id=bank["id"],
