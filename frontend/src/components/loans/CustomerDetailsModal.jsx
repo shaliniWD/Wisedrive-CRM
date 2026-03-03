@@ -473,10 +473,35 @@ const DocumentsTab = ({ lead, onUpdate }) => {
     
     setUploadingDoc(docType);
     try {
-      await loansApi.uploadDocument(lead.id, docType, file);
+      // Step 1: Generate a signed upload URL
+      const uploadUrlRes = await loansApi.generateUploadUrl(lead.id, {
+        document_type: docType,
+        filename: file.name,
+        content_type: file.type
+      });
+      
+      const { upload_url, file_url } = uploadUrlRes.data;
+      
+      // Step 2: Upload file to storage
+      await fetch(upload_url, {
+        method: 'PUT',
+        body: file,
+        headers: {
+          'Content-Type': file.type
+        }
+      });
+      
+      // Step 3: Save document metadata
+      await loansApi.uploadDocument(lead.id, {
+        document_type: docType,
+        file_url: file_url,
+        file_name: file.name
+      });
+      
       toast.success('Document uploaded successfully');
       onUpdate();
     } catch (err) {
+      console.error('Upload error:', err);
       toast.error(err.response?.data?.detail || 'Failed to upload document');
     } finally {
       setUploadingDoc(null);
