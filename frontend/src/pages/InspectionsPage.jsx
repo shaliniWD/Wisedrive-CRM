@@ -2596,8 +2596,13 @@ export default function InspectionsPage() {
                   onPlaceSelect={(place) => {
                     let city = '';
                     if (place.address_components) {
+                      // Try multiple component types to find city
                       const cityComponent = place.address_components.find(
-                        c => c.types.includes('locality') || c.types.includes('administrative_area_level_2')
+                        c => c.types.includes('locality')
+                      ) || place.address_components.find(
+                        c => c.types.includes('administrative_area_level_2')
+                      ) || place.address_components.find(
+                        c => c.types.includes('administrative_area_level_1')
                       );
                       if (cityComponent) city = cityComponent.long_name;
                     }
@@ -2612,14 +2617,23 @@ export default function InspectionsPage() {
                   placeholder="Search new address..."
                   className="w-full"
                 />
-                {editInspectionFormData.city && (
-                  <div className="flex items-center gap-2 mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
-                    <MapPin className="h-4 w-4 text-blue-600" />
-                    <span className="text-sm text-blue-700">
-                      City: <span className="font-semibold">{editInspectionFormData.city}</span>
-                      {editInspectionFormData.city !== editInspectionData?.city && (
-                        <span className="text-green-600 ml-2">(Updated)</span>
-                      )}
+                
+                {/* Manual City Override */}
+                <div className="mt-2">
+                  <Label className="text-xs text-gray-500">City (auto-detected or manual override)</Label>
+                  <Input
+                    value={editInspectionFormData.city}
+                    onChange={(e) => setEditInspectionFormData(prev => ({ ...prev, city: e.target.value }))}
+                    placeholder="Enter city name"
+                    className="mt-1"
+                  />
+                </div>
+                
+                {editInspectionFormData.city && editInspectionFormData.city !== editInspectionData?.city && (
+                  <div className="flex items-center gap-2 mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
+                    <MapPin className="h-4 w-4 text-green-600" />
+                    <span className="text-sm text-green-700">
+                      City will be updated to: <span className="font-semibold">{editInspectionFormData.city}</span>
                     </span>
                   </div>
                 )}
