@@ -2226,7 +2226,7 @@ async def fetch_vaahan_for_loan_vehicle(
                 car_year = mfg_date.split("/")[-1]
             else:
                 car_year = mfg_date[:4] if len(mfg_date) >= 4 else car_year
-        except:
+        except (ValueError, TypeError, AttributeError):
             pass
     
     update_data = {
