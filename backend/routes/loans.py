@@ -566,17 +566,57 @@ async def seed_indian_banks(current_user: dict = Depends(get_current_user)):
             "bank_name": "Mahindra Finance",
             "bank_code": "MAHFIN",
             "bank_type": "NBFC",
-            "interest_rate_min": 12.00,
-            "interest_rate_max": 20.00,
+            "interest_rate_min": 16.00,
+            "interest_rate_max": 18.50,
             "tenure_min_months": 12,
             "tenure_max_months": 60,
-            "ltv_percent": 90,
-            "processing_fee_percent": 2.00,
+            "ltv_percent": 190,
+            "processing_fee_percent": 1.00,
             "eligibility_rules": {
-                "min_credit_score": 550,
-                "max_vehicle_age": 15,
-                "excluded_car_makes": [],
-                "employment_types": ["SALARIED", "SELF_EMPLOYED"]
+                # Customer criteria
+                "min_age_salaried": 21,
+                "min_age_self_employed": 21,
+                "max_age_at_maturity": 65,
+                "employment_types": ["SALARIED", "SELF_EMPLOYED"],
+                "min_work_experience_years": 1,
+                # Income
+                "min_income_salaried": 15000,
+                "min_income_self_employed": 50000,
+                "income_multiplier_salaried": 30,
+                # Credit
+                "min_credit_score": 700,
+                "preferred_credit_score": 725,
+                "max_bounces_3_months": 0,
+                "max_bounces_6_months": 1,
+                "max_bounces_12_months": 3,
+                "max_dpd_30_plus": 0,
+                "max_dpd_60_plus": 0,
+                "max_foir_percent": 70,
+                # Vehicle
+                "max_vehicle_age_years": 10,
+                "max_vehicle_age_at_maturity": 10,  # EOT = 10 years
+                "max_ownership_count": 3,
+                "excluded_car_makes": [],  # No exclusions
+                "supported_vehicle_categories": ["CAT_1", "CAT_2", "PREMIUM", "MUV"],
+                # LTV by vehicle age - Mahindra offers highest LTV
+                "ltv_0_3_years": 190,
+                "ltv_3_5_years": 170,
+                "ltv_5_7_years": 150,
+                "ltv_7_10_years": 135,
+                "max_ltv_percent": 190,
+                # Loan params
+                "min_loan_amount": 50000,
+                "max_loan_amount": 2500000,
+                "max_tenure_months": 60,
+                "base_interest_rate": 16.0,
+                "processing_fee_percent": 0.5,
+                "min_processing_fee": 1500,
+                "max_processing_fee": 10000,
+                # Banking
+                "min_aqb_metro": 5000,
+                "min_aqb_non_metro": 3000,
+                # Special flags
+                "requires_property_proof": False
             }
         },
         {
