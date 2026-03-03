@@ -3742,17 +3742,26 @@ async def twilio_whatsapp_webhook(
     elif not city:
         city_lookup_log.append({"strategy": 4, "method": "ad_name keyword extraction", "skipped": True, "reason": "No ad_name available"})
     
-    # Strategy 5: Fallback to default mapping (if exists)
+    # Strategy 5: Fallback to default mapping (if exists) - DO NOT default to hardcoded city
     if not city:
         default_mapping = await db.ad_city_mappings.find_one({"ad_id": "default"}, {"_id": 0})
         if default_mapping:
-            city = default_mapping.get("city", "Vizag")
+            city = default_mapping.get("city")
             city_lookup_log.append({"strategy": 5, "method": "default mapping", "found": True, "city": city})
             logger.info(f"Using default city mapping: {city}")
         else:
-            city = "Vizag"  # Ultimate fallback
-            city_lookup_log.append({"strategy": 5, "method": "hardcoded fallback", "city": "Vizag", "reason": "No default mapping configured"})
-            logger.warning(f"No ad mapping found for ad_id={ad_id}, ad_name={ad_name}. Using fallback city: Vizag")
+            # Instead of hardcoding Vizag, leave city as None/Unknown to force manual mapping
+            # This makes unmapped leads visible and requires explicit action
+            city = None  # Will show as "Unknown" in UI, prompting admin to fix
+            city_lookup_log.append({
+                "strategy": 5, 
+                "method": "no default", 
+                "found": False, 
+                "city": None, 
+                "reason": "No default mapping configured. Lead will need manual city assignment.",
+                "action_required": "Create a default mapping or map this ad_id in Settings -> Ad City Mappings"
+            })
+            logger.warning(f"No ad mapping found for ad_id={ad_id}, ad_name={ad_name}. City left as None - requires manual assignment.")
         
         # AUTO-CREATE UNMAPPED AD ENTRY for later mapping
         # This helps track ads that need city mapping
