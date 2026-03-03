@@ -4414,6 +4414,20 @@ Thank you for choosing Wisedrive!"""
             logger.info(f"Duplicate webhook: Inspection already exists for payment {payment_id}")
             return {"status": "inspection_exists", "lead_id": lead_id, "payment_id": payment_id}
         
+        # Check 5: Time-based duplicate check - if inspection created for this lead within last 30 seconds, skip
+        # This catches race conditions when payment.captured and payment_link.paid fire nearly simultaneously
+        thirty_seconds_ago = (datetime.now(timezone.utc) - timedelta(seconds=30)).isoformat()
+        recent_inspection_for_lead = await db.inspections.find_one(
+            {
+                "lead_id": lead_id,
+                "created_at": {"$gte": thirty_seconds_ago}
+            },
+            {"_id": 0, "id": 1, "razorpay_payment_id": 1}
+        )
+        if recent_inspection_for_lead:
+            logger.info(f"Duplicate webhook: Inspection recently created for lead {lead_id} (within 30s). Existing payment_id: {recent_inspection_for_lead.get('razorpay_payment_id')}, Current: {payment_id}")
+            return {"status": "recent_inspection_exists", "lead_id": lead_id, "payment_id": payment_id}
+        
         # Update lead as paid
         update_dict = {
             "status": "PAID",
