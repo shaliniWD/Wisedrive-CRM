@@ -657,7 +657,7 @@ class LoanLeadUpdate(BaseModel):
 
 
 class VehicleLoanDetailsCreate(BaseModel):
-    car_number: str
+    car_number: Optional[str] = None
     car_make: Optional[str] = None
     car_model: Optional[str] = None
     car_year: Optional[int] = None
