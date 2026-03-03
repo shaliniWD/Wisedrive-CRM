@@ -4883,6 +4883,7 @@ async def get_inspections(
     country_id: Optional[str] = None,
     date_from: Optional[str] = None,
     date_to: Optional[str] = None,
+    timezone_offset: Optional[int] = 330,  # User's timezone offset in minutes (default IST = 330)
     current_user: dict = Depends(get_current_user)
 ):
     """Get inspections - filtered by RBAC"""
