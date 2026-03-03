@@ -4450,7 +4450,7 @@ Thank you for choosing Wisedrive!"""
                 "country_id": lead.get("country_id", ""),
                 "customer_id": customer_id,
                 "lead_id": lead_id,
-                "order_id": f"ORD-{lead_id[:8].upper()}",
+                "order_id": f"ORD-{payment_id[-8:].upper()}" if payment_id else f"ORD-{lead_id[:8].upper()}",
                 "customer_name": lead.get("name"),
                 "customer_mobile": lead.get("mobile"),
                 # Prioritize: schedule_data > lead > empty
