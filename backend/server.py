@@ -4241,14 +4241,20 @@ Thank you for choosing Wisedrive!"""
         # Check 3: Customer already exists for this lead
         existing_customer = await db.customers.find_one({"lead_id": lead_id}, {"_id": 0, "id": 1})
         if existing_customer:
-            logger.info(f"Duplicate webhook: Customer already exists for lead {lead_id}")
-            return {"status": "customer_exists", "lead_id": lead_id, "customer_id": existing_customer.get("id")}
+            logger.info(f"Lead {lead_id} already has customer {existing_customer.get('id')} - will add new inspections to existing customer")
+            # Don't return - we want to add new inspections to the existing customer
+            customer_id = existing_customer.get("id")
+        else:
+            customer_id = None  # Will be created below
         
-        # Check 4: Inspections already exist for this lead
-        existing_inspection = await db.inspections.find_one({"lead_id": lead_id}, {"_id": 0, "id": 1})
-        if existing_inspection:
-            logger.info(f"Duplicate webhook: Inspection already exists for lead {lead_id}")
-            return {"status": "inspection_exists", "lead_id": lead_id, "inspection_id": existing_inspection.get("id")}
+        # Check 4: Inspections with THIS SPECIFIC payment_id already exist (true duplicate)
+        existing_inspection_with_payment = await db.inspections.find_one(
+            {"razorpay_payment_id": payment_id}, 
+            {"_id": 0, "id": 1}
+        )
+        if existing_inspection_with_payment:
+            logger.info(f"Duplicate webhook: Inspection already exists for payment {payment_id}")
+            return {"status": "inspection_exists", "lead_id": lead_id, "payment_id": payment_id}
         
         # Update lead as paid
         update_dict = {
