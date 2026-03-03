@@ -28,6 +28,20 @@
   3. Fixed reassignment validation to also check `leads_cities` with case-insensitive alias matching
 - **Files Modified:** `/app/backend/server.py` (find_sales_reps_for_city function, reassign_lead endpoint)
 
+**Issue 3: Customer Data Repair - Test-5 Issue**
+- **Problem:** Customer Test-5 (7411891010) shows "no issues found" when clicking repair, but no payment/inspection data visible
+- **Root Cause:** 
+  1. Repair function only looked at customer's stored payment data
+  2. Didn't recover payment data from lead record
+  3. Didn't link inspections by lead's payment ID
+- **Fix:**
+  1. Added comprehensive data recovery from lead record (payment_id, package_name, etc.)
+  2. Added inspection linking by lead's `razorpay_payment_id`
+  3. Added search by customer name and email as fallbacks
+  4. Created new `/api/customers/diagnose/{mobile}` endpoint for comprehensive data search
+  5. Improved diagnostic info to show exactly what was searched and what issues exist
+- **Files Modified:** `/app/backend/routes/customers.py` (repair function, new diagnose endpoint)
+
 ---
 
 ### March 3, 2026 - City Auto-Detection Fix for Inspection Edit Modal
