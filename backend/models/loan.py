@@ -187,18 +187,96 @@ class BankPOC(BaseModel):
 
 
 class EligibilityRule(BaseModel):
-    """Eligibility rules for a bank"""
-    min_income: Optional[float] = None  # Monthly income
-    min_credit_score: Optional[int] = None
-    min_vehicle_age: Optional[int] = None  # In years
-    max_vehicle_age: Optional[int] = None  # In years - Some banks 10 years, some 15 years
-    min_loan_amount: Optional[float] = None
-    max_loan_amount: Optional[float] = None
+    """Comprehensive eligibility rules for a bank based on actual bank policies"""
+    
+    # === CUSTOMER CRITERIA ===
+    # Age Requirements
+    min_age_salaried: Optional[int] = 23  # Minimum age for salaried
+    min_age_self_employed: Optional[int] = 25  # Minimum age for self-employed
+    max_age_at_maturity: Optional[int] = 65  # Age at loan maturity
+    
+    # Employment Requirements
     employment_types: List[str] = ["SALARIED", "SELF_EMPLOYED"]
-    # Car make restrictions - Banks like HDFC don't fund Chevy/Ford in India
-    excluded_car_makes: List[str] = []  # e.g., ["CHEVROLET", "FORD"]
-    # Min/Max car age per model year
+    min_work_experience_years: Optional[int] = 2  # Minimum years of experience
+    min_current_job_months: Optional[int] = 6  # Minimum months in current job
+    
+    # Income Requirements (Monthly)
+    min_income_salaried: Optional[float] = 25000  # Min monthly salary
+    min_income_self_employed: Optional[float] = 50000  # Min monthly income (ITR based)
+    income_multiplier_salaried: Optional[float] = 20  # Loan = Salary * multiplier
+    income_multiplier_self_employed: Optional[float] = 5  # Loan = Annual profit * multiplier
+    
+    # === CREDIT CRITERIA ===
+    # CIBIL Score
+    min_credit_score: Optional[int] = 700  # Minimum CIBIL score
+    preferred_credit_score: Optional[int] = 750  # Score for best rates
+    
+    # Credit History
+    max_bounces_3_months: Optional[int] = 0  # Max bounces in last 3 months
+    max_bounces_6_months: Optional[int] = 1  # Max bounces in last 6 months
+    max_bounces_12_months: Optional[int] = 2  # Max bounces in last 12 months
+    max_dpd_30_plus: Optional[int] = 0  # Max DPD 30+ instances in last 12 months
+    max_dpd_60_plus: Optional[int] = 0  # Max DPD 60+ instances in last 24 months
+    max_dpd_90_plus: Optional[int] = 0  # Max DPD 90+ instances ever
+    max_unsecured_loans_3_months: Optional[int] = 1  # Max new unsecured loans
+    max_credit_enquiries_6_months: Optional[int] = 5  # Max enquiries
+    
+    # Existing Obligations
+    max_foir_percent: Optional[float] = 65  # Fixed Obligations to Income Ratio
+    max_emi_to_aqb_ratio: Optional[float] = 50  # EMI to Avg Quarterly Balance ratio
+    
+    # === VEHICLE CRITERIA ===
+    # Vehicle Age
+    min_vehicle_age_years: Optional[int] = 0  # Minimum vehicle age
+    max_vehicle_age_years: Optional[int] = 10  # Maximum vehicle age at purchase
+    max_vehicle_age_at_maturity: Optional[int] = 15  # Max age at loan end (EOT)
+    
+    # Vehicle Categories (Cat 1 = Premium SUV/Sedan, Cat 2 = Hatchback/Budget)
+    supported_vehicle_categories: List[str] = ["CAT_1", "CAT_2", "PREMIUM", "MUV"]
+    
+    # Ownership
+    max_ownership_count: Optional[int] = 3  # 1st, 2nd, 3rd owner
+    
+    # Excluded Makes (Banks like HDFC don't fund certain brands)
+    excluded_car_makes: List[str] = []  # e.g., ["CHEVROLET", "FORD", "FIAT"]
     min_model_year: Optional[int] = None  # e.g., 2015 means only 2015+ cars
+    
+    # === LOAN PARAMETERS ===
+    # Loan Amount
+    min_loan_amount: Optional[float] = 100000  # Minimum loan amount
+    max_loan_amount: Optional[float] = 2500000  # Maximum loan amount
+    
+    # LTV (Loan to Value) - varies by vehicle age
+    ltv_0_3_years: Optional[float] = 85  # LTV for 0-3 year old cars
+    ltv_3_5_years: Optional[float] = 80  # LTV for 3-5 year old cars
+    ltv_5_7_years: Optional[float] = 75  # LTV for 5-7 year old cars
+    ltv_7_10_years: Optional[float] = 70  # LTV for 7-10 year old cars
+    ltv_10_plus_years: Optional[float] = 60  # LTV for 10+ year old cars
+    max_ltv_percent: Optional[float] = 80  # Overall max LTV
+    
+    # Tenure
+    min_tenure_months: Optional[int] = 12  # Minimum tenure
+    max_tenure_months: Optional[int] = 60  # Maximum tenure (some banks 84)
+    
+    # Interest Rate (indicative)
+    base_interest_rate: Optional[float] = 14.0  # Base rate
+    max_interest_rate: Optional[float] = 18.0  # Max rate for risky profiles
+    
+    # Fees
+    processing_fee_percent: Optional[float] = 1.0  # Processing fee %
+    min_processing_fee: Optional[float] = 2500  # Minimum processing fee
+    max_processing_fee: Optional[float] = 25000  # Maximum processing fee
+    
+    # === LOCATION CRITERIA ===
+    # Some banks have different rules for rural/urban
+    min_aqb_metro: Optional[float] = 10000  # Min AQB for metro customers
+    min_aqb_non_metro: Optional[float] = 5000  # Min AQB for non-metro
+    restricted_locations: List[str] = []  # Pincodes or cities not served
+    
+    # === ADDITIONAL FLAGS ===
+    requires_guarantor: bool = False  # If guarantor is mandatory
+    requires_property_proof: bool = False  # If property proof needed
+    allows_top_up: bool = True  # If top-up loans allowed
 
 
 class CustomerLocationType(str, Enum):
