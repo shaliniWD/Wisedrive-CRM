@@ -802,6 +802,325 @@ class SurepassService:
         
         return parsed
     
+    async def fetch_crif_report(
+        self,
+        business_name: str,
+        pan: str,
+        mobile: str,
+        consent: str = "Y"
+    ) -> Dict[str, Any]:
+        """
+        Fetch CRIF Commercial credit report (JSON format)
+        
+        Args:
+            business_name: Business/Company name
+            pan: Business PAN number
+            mobile: Business mobile number
+            consent: 'Y' for consent given
+            
+        Returns:
+            Dict with credit score, report data, and status
+        """
+        if not self.is_configured():
+            return {
+                "success": False,
+                "error": "Surepass API not configured",
+                "error_code": "NOT_CONFIGURED"
+            }
+        
+        # Normalize mobile
+        mobile_clean = mobile.replace("+91", "").replace(" ", "").replace("-", "")
+        if mobile_clean.startswith("91") and len(mobile_clean) == 12:
+            mobile_clean = mobile_clean[2:]
+        
+        payload = {
+            "business_name": business_name.strip(),
+            "pan": pan.upper().strip(),
+            "mobile": mobile_clean,
+            "consent": consent
+        }
+        
+        logger.info(f"Fetching CRIF Commercial report for PAN: {pan[:4]}****")
+        
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.post(
+                    f"{self.BASE_URL}{self.ENDPOINTS['crif_json']}",
+                    headers=self._get_headers(),
+                    json=payload
+                )
+                
+                result = response.json()
+                
+                if response.status_code == 200 and result.get("success"):
+                    data = result.get("data", {})
+                    # CRIF has nested credit_report structure
+                    credit_report_data = data.get("credit_report", {})
+                    inner_report = credit_report_data.get("credit_report", {})
+                    
+                    return {
+                        "success": True,
+                        "provider": "CRIF",
+                        "client_id": data.get("client_id"),
+                        "credit_score": data.get("credit_score") or credit_report_data.get("credit_score", ""),
+                        "credit_report": inner_report,
+                        "raw_response": result,
+                        "fetched_at": datetime.now(timezone.utc).isoformat()
+                    }
+                else:
+                    logger.error(f"CRIF API error: {result.get('message')}")
+                    return {
+                        "success": False,
+                        "error": result.get("message", "Failed to fetch credit report"),
+                        "error_code": result.get("message_code", "UNKNOWN"),
+                        "status_code": response.status_code
+                    }
+                    
+        except httpx.TimeoutException:
+            logger.error("CRIF API timeout")
+            return {
+                "success": False,
+                "error": "Request timed out. Please try again.",
+                "error_code": "TIMEOUT"
+            }
+        except Exception as e:
+            logger.error(f"CRIF API exception: {str(e)}")
+            return {
+                "success": False,
+                "error": str(e),
+                "error_code": "EXCEPTION"
+            }
+    
+    async def fetch_crif_pdf(
+        self,
+        business_name: str,
+        pan: str,
+        mobile: str,
+        consent: str = "Y"
+    ) -> Dict[str, Any]:
+        """
+        Fetch CRIF Commercial credit report (PDF format)
+        
+        Returns:
+            Dict with credit score and PDF download link
+        """
+        if not self.is_configured():
+            return {
+                "success": False,
+                "error": "Surepass API not configured",
+                "error_code": "NOT_CONFIGURED"
+            }
+        
+        # Normalize mobile
+        mobile_clean = mobile.replace("+91", "").replace(" ", "").replace("-", "")
+        if mobile_clean.startswith("91") and len(mobile_clean) == 12:
+            mobile_clean = mobile_clean[2:]
+        
+        payload = {
+            "business_name": business_name.strip(),
+            "pan": pan.upper().strip(),
+            "mobile": mobile_clean,
+            "consent": consent
+        }
+        
+        logger.info(f"Fetching CRIF Commercial PDF report for PAN: {pan[:4]}****")
+        
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.post(
+                    f"{self.BASE_URL}{self.ENDPOINTS['crif_pdf']}",
+                    headers=self._get_headers(),
+                    json=payload
+                )
+                
+                result = response.json()
+                
+                if response.status_code == 200 and result.get("success"):
+                    data = result.get("data", {})
+                    return {
+                        "success": True,
+                        "provider": "CRIF",
+                        "client_id": data.get("client_id"),
+                        "credit_score": data.get("credit_score"),
+                        "pdf_link": data.get("credit_report_link"),
+                        "fetched_at": datetime.now(timezone.utc).isoformat()
+                    }
+                else:
+                    logger.error(f"CRIF PDF API error: {result.get('message')}")
+                    return {
+                        "success": False,
+                        "error": result.get("message", "Failed to fetch PDF report"),
+                        "error_code": result.get("message_code", "UNKNOWN"),
+                        "status_code": response.status_code
+                    }
+                    
+        except httpx.TimeoutException:
+            logger.error("CRIF PDF API timeout")
+            return {
+                "success": False,
+                "error": "Request timed out. Please try again.",
+                "error_code": "TIMEOUT"
+            }
+        except Exception as e:
+            logger.error(f"CRIF PDF API exception: {str(e)}")
+            return {
+                "success": False,
+                "error": str(e),
+                "error_code": "EXCEPTION"
+            }
+    
+    def parse_crif_report(self, credit_report: dict) -> Dict[str, Any]:
+        """
+        Parse CRIF Commercial credit report into a structured format for UI display
+        
+        Args:
+            credit_report: Raw credit report dict from API
+            
+        Returns:
+            Structured dict with parsed data
+        """
+        if not credit_report:
+            return {}
+        
+        parsed = {
+            "business_info": {},
+            "id_info": [],
+            "phone_info": [],
+            "address_info": [],
+            "score_info": {},
+            "credit_facilities": [],
+            "enquiries": [],
+            "summary": {}
+        }
+        
+        try:
+            # Get CCR Response
+            ccr_response = credit_report.get("CCRResponse", {})
+            commercial_bureau = ccr_response.get("CommercialBureauResponse", {})
+            response_details = commercial_bureau.get("CommercialBureauResponseDetails", {})
+            
+            # ID and Contact Info
+            id_contact = response_details.get("IDAndContactInfo", {})
+            
+            # Business Info
+            personal_info = id_contact.get("CommercialPersonalInfo", {})
+            parsed["business_info"] = {
+                "business_name": personal_info.get("BusinessName"),
+                "legal_constitution": personal_info.get("BusinessLegalConstitution"),
+                "business_category": personal_info.get("BusinessCategory"),
+                "industry_type": personal_info.get("BusinessIndustryType"),
+                "class_activity": personal_info.get("ClassActivity")
+            }
+            
+            # Identity Info
+            identity_info = id_contact.get("CommercialIdentityInfo", {})
+            if identity_info.get("PANId"):
+                for pan in identity_info["PANId"]:
+                    parsed["id_info"].append({
+                        "type": "PAN",
+                        "number": pan.get("IdNumber")
+                    })
+            if identity_info.get("Dunsnbr"):
+                for duns in identity_info["Dunsnbr"]:
+                    parsed["id_info"].append({
+                        "type": "DUNS",
+                        "number": duns.get("IdNumber")
+                    })
+            
+            # Address Info
+            address_info = id_contact.get("CommercialAddressInfo", [])
+            for addr in address_info:
+                parsed["address_info"].append({
+                    "address": addr.get("Address"),
+                    "city": addr.get("City"),
+                    "district": addr.get("District"),
+                    "state": addr.get("State"),
+                    "postal": addr.get("Postal"),
+                    "country": addr.get("Country"),
+                    "type": addr.get("Type"),
+                    "reported_date": addr.get("ReportedDate")
+                })
+            
+            # Phone Info
+            phone_info = id_contact.get("CommercialPhoneInfo", [])
+            phone_type_map = {"M": "Mobile", "L": "Landline", "O": "Office"}
+            for phone in phone_info:
+                parsed["phone_info"].append({
+                    "number": phone.get("Number"),
+                    "type": phone_type_map.get(phone.get("typeCode"), phone.get("typeCode"))
+                })
+            
+            # CIR Summary
+            cir_summary = response_details.get("CommercialCIRSummary", {})
+            
+            # Score Info
+            equifax_scores = cir_summary.get("EquifaxScoresCommercial", {})
+            score_list = equifax_scores.get("CommercialScoreDetailsLst", [])
+            if score_list:
+                score = score_list[0]
+                parsed["score_info"] = {
+                    "score_name": score.get("ScoreName"),
+                    "score_value": score.get("ScoreValue"),
+                    "scored_entity": score.get("ScoredEntity"),
+                    "relationship": score.get("Relationship")
+                }
+            
+            # Credit Summary
+            overall_summary = cir_summary.get("OverallCreditSummary", {})
+            as_borrower = overall_summary.get("AsBorrower", {})
+            latest_year = as_borrower.get("2024-2025", {}) or as_borrower.get("2023-2024", {})
+            
+            parsed["summary"] = {
+                "total_credit_facilities": latest_year.get("CF_Count", 0),
+                "open_credit_facilities": latest_year.get("OpenCF_Count", 0),
+                "lenders_count": latest_year.get("Lenders_Count", 0),
+                "sanctioned_amount": latest_year.get("SanctionedAmtOpenCF_Sum", 0),
+                "current_balance": latest_year.get("CurrentBalanceOpenCF_Sum", 0),
+                "hit_as_borrower": commercial_bureau.get("hit_as_borrower", "0"),
+                "hit_as_guarantor": commercial_bureau.get("hit_as_guarantor", "0")
+            }
+            
+            # Credit Facility Details
+            credit_facilities = response_details.get("CreditFacilityDetails", [])
+            for cf in credit_facilities[:20]:  # Limit to 20
+                parsed["credit_facilities"].append({
+                    "account_number": cf.get("account_number"),
+                    "credit_type": cf.get("credit_type"),
+                    "sanctioned_amount": cf.get("sanctioned_amount_notional_amountofcontract", 0),
+                    "current_balance": cf.get("current_balance_limit_utilized_marktomarket", 0),
+                    "amount_overdue": cf.get("amount_overdue_limit_overdue", 0),
+                    "sanction_date": cf.get("sanctiondate_loanactivation"),
+                    "maturity_date": cf.get("loan_expiry_maturity_date"),
+                    "account_status": cf.get("account_status"),
+                    "dpd_status": cf.get("assetclassification_dayspastdue"),
+                    "member_type": cf.get("member_type"),
+                    "sector_type": cf.get("sector_type")
+                })
+            
+            # Enquiry Summary
+            enquiry_summary = response_details.get("EnquirySummary", {})
+            parsed["enquiry_summary"] = {
+                "total": enquiry_summary.get("Total", 0),
+                "past_30_days": enquiry_summary.get("Past30Days", 0),
+                "past_12_months": enquiry_summary.get("Past12Months", 0),
+                "past_24_months": enquiry_summary.get("Past24Months", 0)
+            }
+            
+            # Recent Enquiries
+            recent_enquiries = response_details.get("RecentEnquiries", [])
+            for enq in recent_enquiries[:10]:  # Limit to 10
+                parsed["enquiries"].append({
+                    "institution": enq.get("Institution"),
+                    "date": enq.get("Date"),
+                    "time": enq.get("Time"),
+                    "amount": enq.get("Amount")
+                })
+            
+        except Exception as e:
+            logger.error(f"Error parsing CRIF report: {str(e)}")
+        
+        return parsed
+    
     def parse_credit_report(self, credit_report: list) -> Dict[str, Any]:
         """
         Parse CIBIL credit report into a structured format for UI display
