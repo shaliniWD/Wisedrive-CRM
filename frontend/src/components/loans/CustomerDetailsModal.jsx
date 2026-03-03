@@ -445,12 +445,8 @@ const DocumentsTab = ({ lead, onUpdate }) => {
   
   const getDocList = () => {
     if (!requirements) return [];
-    if (customerType === 'SALARIED') {
-      return requirements.requirements?.SALARIED || requirements.requirements || [];
-    } else if (customerType === 'SELF_EMPLOYED') {
-      return requirements.requirements?.SELF_EMPLOYED || requirements.requirements || [];
-    }
-    return [];
+    // API returns requirements array directly with document_type and display_name
+    return requirements.requirements || [];
   };
   
   const uploadedDocs = lead?.documents || [];
