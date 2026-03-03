@@ -654,6 +654,434 @@ async def add_bank_poc(
 
 
 # ========================
+# ELIGIBILITY ENGINE
+# ========================
+
+class EligibilityCheckRequest(BaseModel):
+    """Request model for checking eligibility against all banks"""
+    # Customer Info
+    customer_type: str  # SALARIED or SELF_EMPLOYED
+    age: Optional[int] = None
+    monthly_income: Optional[float] = None
+    work_experience_years: Optional[int] = None
+    
+    # Credit Info
+    credit_score: Optional[int] = None
+    bounces_3_months: Optional[int] = 0
+    bounces_6_months: Optional[int] = 0
+    bounces_12_months: Optional[int] = 0
+    dpd_30_plus_count: Optional[int] = 0
+    dpd_60_plus_count: Optional[int] = 0
+    existing_emi_total: Optional[float] = 0
+    
+    # Vehicle Info
+    vehicle_age_years: Optional[int] = None
+    vehicle_make: Optional[str] = None
+    vehicle_valuation: Optional[float] = None
+    ownership_count: Optional[int] = 1
+    
+    # Banking Info
+    average_bank_balance: Optional[float] = None
+    
+    # Location
+    location_type: Optional[str] = "METRO"  # METRO, URBAN, SEMI_URBAN, RURAL
+
+
+class EligibilityResult(BaseModel):
+    """Result for a single bank eligibility check"""
+    bank_id: str
+    bank_name: str
+    bank_code: str
+    is_eligible: bool
+    eligibility_score: int = 0  # 0-100 score
+    rejection_reasons: List[str] = []
+    warnings: List[str] = []  # Things that might affect approval
+    
+    # If eligible, these are calculated
+    max_loan_amount: Optional[float] = None
+    ltv_applicable: Optional[float] = None
+    interest_rate_indicative: Optional[float] = None
+    max_tenure_months: Optional[int] = None
+    estimated_emi: Optional[float] = None
+    processing_fee: Optional[float] = None
+
+
+def calculate_emi(principal: float, annual_rate: float, tenure_months: int) -> float:
+    """Calculate EMI using standard formula"""
+    if annual_rate == 0:
+        return principal / tenure_months
+    monthly_rate = annual_rate / (12 * 100)
+    emi = principal * monthly_rate * ((1 + monthly_rate) ** tenure_months) / (((1 + monthly_rate) ** tenure_months) - 1)
+    return round(emi, 2)
+
+
+def get_ltv_for_vehicle_age(rules: dict, vehicle_age: int) -> float:
+    """Get applicable LTV based on vehicle age"""
+    if vehicle_age <= 3:
+        return rules.get("ltv_0_3_years", 85)
+    elif vehicle_age <= 5:
+        return rules.get("ltv_3_5_years", 80)
+    elif vehicle_age <= 7:
+        return rules.get("ltv_5_7_years", 75)
+    elif vehicle_age <= 10:
+        return rules.get("ltv_7_10_years", 70)
+    else:
+        return rules.get("ltv_10_plus_years", 60)
+
+
+async def check_bank_eligibility(bank: dict, req: EligibilityCheckRequest) -> EligibilityResult:
+    """Check eligibility for a single bank"""
+    rules = bank.get("eligibility_rules", {})
+    result = EligibilityResult(
+        bank_id=bank["id"],
+        bank_name=bank["bank_name"],
+        bank_code=bank["bank_code"],
+        is_eligible=True,
+        eligibility_score=100
+    )
+    
+    score_deductions = 0
+    
+    # === CHECK 1: Customer Type ===
+    allowed_types = rules.get("employment_types", ["SALARIED", "SELF_EMPLOYED"])
+    if req.customer_type not in allowed_types:
+        result.is_eligible = False
+        result.rejection_reasons.append(f"Customer type {req.customer_type} not supported")
+        return result
+    
+    # === CHECK 2: Age ===
+    if req.age:
+        min_age = rules.get("min_age_salaried" if req.customer_type == "SALARIED" else "min_age_self_employed", 21)
+        if req.age < min_age:
+            result.is_eligible = False
+            result.rejection_reasons.append(f"Age {req.age} below minimum {min_age}")
+            return result
+        
+        max_age = rules.get("max_age_at_maturity", 65)
+        max_tenure = rules.get("max_tenure_months", 60)
+        age_at_maturity = req.age + (max_tenure / 12)
+        if age_at_maturity > max_age:
+            # Reduce tenure to fit age limit
+            max_allowed_tenure = int((max_age - req.age) * 12)
+            if max_allowed_tenure < 12:
+                result.is_eligible = False
+                result.rejection_reasons.append(f"Age {req.age} exceeds limit for loan tenure")
+                return result
+            result.warnings.append(f"Tenure limited to {max_allowed_tenure} months due to age")
+            result.max_tenure_months = max_allowed_tenure
+    
+    # === CHECK 3: Credit Score ===
+    if req.credit_score:
+        min_score = rules.get("min_credit_score", 700)
+        if req.credit_score < min_score:
+            result.is_eligible = False
+            result.rejection_reasons.append(f"Credit score {req.credit_score} below minimum {min_score}")
+            return result
+        
+        preferred_score = rules.get("preferred_credit_score", 750)
+        if req.credit_score < preferred_score:
+            score_deductions += 10
+            result.warnings.append(f"Credit score {req.credit_score} below preferred {preferred_score}")
+    else:
+        result.warnings.append("Credit score not provided - verification required")
+        score_deductions += 15
+    
+    # === CHECK 4: Bounces/DPD ===
+    if req.bounces_3_months > rules.get("max_bounces_3_months", 0):
+        result.is_eligible = False
+        result.rejection_reasons.append(f"Bounces in last 3 months ({req.bounces_3_months}) exceed limit")
+        return result
+    
+    if req.bounces_6_months > rules.get("max_bounces_6_months", 1):
+        result.is_eligible = False
+        result.rejection_reasons.append(f"Bounces in last 6 months ({req.bounces_6_months}) exceed limit")
+        return result
+    
+    if req.dpd_30_plus_count > rules.get("max_dpd_30_plus", 0):
+        result.is_eligible = False
+        result.rejection_reasons.append(f"DPD 30+ instances ({req.dpd_30_plus_count}) exceed limit")
+        return result
+    
+    # === CHECK 5: Income ===
+    if req.monthly_income:
+        min_income = rules.get("min_income_salaried" if req.customer_type == "SALARIED" else "min_income_self_employed", 25000)
+        if req.monthly_income < min_income:
+            result.is_eligible = False
+            result.rejection_reasons.append(f"Monthly income ₹{req.monthly_income:,.0f} below minimum ₹{min_income:,.0f}")
+            return result
+        
+        # Check FOIR
+        max_foir = rules.get("max_foir_percent", 65)
+        if req.existing_emi_total:
+            current_foir = (req.existing_emi_total / req.monthly_income) * 100
+            if current_foir > max_foir:
+                result.is_eligible = False
+                result.rejection_reasons.append(f"FOIR {current_foir:.1f}% exceeds maximum {max_foir}%")
+                return result
+    else:
+        result.warnings.append("Income not provided - verification required")
+        score_deductions += 20
+    
+    # === CHECK 6: Work Experience ===
+    if req.work_experience_years:
+        min_exp = rules.get("min_work_experience_years", 2)
+        if req.work_experience_years < min_exp:
+            result.is_eligible = False
+            result.rejection_reasons.append(f"Work experience {req.work_experience_years} years below minimum {min_exp}")
+            return result
+    
+    # === CHECK 7: Vehicle Age ===
+    if req.vehicle_age_years is not None:
+        max_vehicle_age = rules.get("max_vehicle_age_years", 10)
+        if req.vehicle_age_years > max_vehicle_age:
+            result.is_eligible = False
+            result.rejection_reasons.append(f"Vehicle age {req.vehicle_age_years} years exceeds maximum {max_vehicle_age}")
+            return result
+        
+        # Check vehicle age at maturity
+        max_age_at_maturity = rules.get("max_vehicle_age_at_maturity", 15)
+        max_tenure = result.max_tenure_months or rules.get("max_tenure_months", 60)
+        vehicle_age_at_maturity = req.vehicle_age_years + (max_tenure / 12)
+        if vehicle_age_at_maturity > max_age_at_maturity:
+            # Reduce tenure
+            max_allowed_tenure = int((max_age_at_maturity - req.vehicle_age_years) * 12)
+            if max_allowed_tenure < 12:
+                result.is_eligible = False
+                result.rejection_reasons.append(f"Vehicle too old for loan - would be {vehicle_age_at_maturity:.0f} years at maturity")
+                return result
+            result.max_tenure_months = min(result.max_tenure_months or 999, max_allowed_tenure)
+            result.warnings.append(f"Tenure limited to {result.max_tenure_months} months due to vehicle age")
+    
+    # === CHECK 8: Vehicle Make ===
+    if req.vehicle_make:
+        excluded_makes = rules.get("excluded_car_makes", [])
+        if req.vehicle_make.upper() in [m.upper() for m in excluded_makes]:
+            result.is_eligible = False
+            result.rejection_reasons.append(f"Vehicle make {req.vehicle_make} not funded by this bank")
+            return result
+    
+    # === CHECK 9: Average Bank Balance ===
+    if req.average_bank_balance:
+        min_aqb = rules.get("min_aqb_metro" if req.location_type == "METRO" else "min_aqb_non_metro", 5000)
+        if req.average_bank_balance < min_aqb:
+            score_deductions += 10
+            result.warnings.append(f"Average bank balance ₹{req.average_bank_balance:,.0f} below preferred ₹{min_aqb:,.0f}")
+    
+    # === CALCULATE LOAN PARAMETERS (if eligible) ===
+    if result.is_eligible:
+        # Get applicable LTV
+        ltv = get_ltv_for_vehicle_age(rules, req.vehicle_age_years or 5)
+        result.ltv_applicable = ltv
+        
+        # Calculate max loan amount
+        if req.vehicle_valuation:
+            max_by_ltv = req.vehicle_valuation * (ltv / 100)
+        else:
+            max_by_ltv = rules.get("max_loan_amount", 2500000)
+        
+        # Also limit by income multiplier
+        if req.monthly_income:
+            multiplier = rules.get("income_multiplier_salaried" if req.customer_type == "SALARIED" else "income_multiplier_self_employed", 20)
+            max_by_income = req.monthly_income * multiplier
+            result.max_loan_amount = min(max_by_ltv, max_by_income, rules.get("max_loan_amount", 2500000))
+        else:
+            result.max_loan_amount = min(max_by_ltv, rules.get("max_loan_amount", 2500000))
+        
+        result.max_loan_amount = max(result.max_loan_amount, rules.get("min_loan_amount", 100000))
+        
+        # Set tenure
+        if not result.max_tenure_months:
+            result.max_tenure_months = rules.get("max_tenure_months", 60)
+        
+        # Calculate interest rate (indicative)
+        base_rate = rules.get("base_interest_rate", 14.0)
+        if req.credit_score and req.credit_score >= 750:
+            result.interest_rate_indicative = base_rate
+        elif req.credit_score and req.credit_score >= 700:
+            result.interest_rate_indicative = base_rate + 1.0
+        else:
+            result.interest_rate_indicative = base_rate + 2.0
+        
+        # Calculate EMI
+        result.estimated_emi = calculate_emi(
+            result.max_loan_amount,
+            result.interest_rate_indicative,
+            result.max_tenure_months
+        )
+        
+        # Calculate processing fee
+        pf_percent = rules.get("processing_fee_percent", 1.0)
+        min_pf = rules.get("min_processing_fee", 2500)
+        max_pf = rules.get("max_processing_fee", 25000)
+        calculated_pf = result.max_loan_amount * (pf_percent / 100)
+        result.processing_fee = max(min_pf, min(max_pf, calculated_pf))
+    
+    # Final score calculation
+    result.eligibility_score = max(0, 100 - score_deductions)
+    
+    return result
+
+
+@router.post("/eligibility/check")
+async def check_eligibility_all_banks(
+    request: EligibilityCheckRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Check customer eligibility against all active banks.
+    Returns a list of banks sorted by eligibility score.
+    """
+    # Get all active banks
+    banks = await db.bank_master.find({"is_active": True}, {"_id": 0}).to_list(100)
+    
+    if not banks:
+        return {
+            "success": False,
+            "message": "No active banks found",
+            "eligible_banks": [],
+            "ineligible_banks": []
+        }
+    
+    eligible_results = []
+    ineligible_results = []
+    
+    for bank in banks:
+        result = await check_bank_eligibility(bank, request)
+        if result.is_eligible:
+            eligible_results.append(result.model_dump())
+        else:
+            ineligible_results.append(result.model_dump())
+    
+    # Sort eligible banks by score (descending)
+    eligible_results.sort(key=lambda x: x["eligibility_score"], reverse=True)
+    
+    return {
+        "success": True,
+        "total_banks_checked": len(banks),
+        "eligible_count": len(eligible_results),
+        "ineligible_count": len(ineligible_results),
+        "eligible_banks": eligible_results,
+        "ineligible_banks": ineligible_results
+    }
+
+
+@router.post("/loan-leads/{lead_id}/check-eligibility")
+async def check_lead_eligibility(
+    lead_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Check eligibility for a loan lead against all banks.
+    Uses the lead's customer profile and vehicle data.
+    """
+    # Get the loan lead with all related data
+    lead = await db.loan_leads.find_one({"id": lead_id}, {"_id": 0})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Loan lead not found")
+    
+    # Get customer profile if exists
+    profile = await db.customer_profiles.find_one({"loan_lead_id": lead_id}, {"_id": 0})
+    
+    # Build eligibility request from lead data
+    req = EligibilityCheckRequest(
+        customer_type=lead.get("customer_type", "SALARIED"),
+        age=None,  # TODO: Calculate from DOB if available
+        monthly_income=lead.get("monthly_income"),
+        work_experience_years=lead.get("work_experience_years"),
+        credit_score=lead.get("credit_score"),
+        bounces_3_months=0,
+        bounces_6_months=0,
+        bounces_12_months=0,
+        dpd_30_plus_count=0,
+        dpd_60_plus_count=0,
+        existing_emi_total=lead.get("existing_emi_total", 0),
+        location_type=lead.get("location_type", "METRO")
+    )
+    
+    # Add credit profile data if available
+    if profile and profile.get("credit_profile"):
+        cp = profile["credit_profile"]
+        req.credit_score = cp.get("credit_score") or req.credit_score
+        req.bounces_3_months = cp.get("bounces_3_months", 0)
+        req.bounces_6_months = cp.get("bounces_6_months", 0)
+        req.bounces_12_months = cp.get("bounces_12_months", 0)
+        req.dpd_30_plus_count = cp.get("dpd_30_plus", 0)
+        req.dpd_60_plus_count = cp.get("dpd_60_plus", 0)
+    
+    # Add bank statement data if available
+    if profile and profile.get("bank_statement_analysis"):
+        bsa = profile["bank_statement_analysis"]
+        req.average_bank_balance = bsa.get("average_bank_balance")
+        req.monthly_income = bsa.get("average_monthly_credits") or req.monthly_income
+        
+        # Calculate existing EMI from identified EMI payments
+        if bsa.get("emi_payments_identified"):
+            total_emi = sum(e.get("amount", 0) for e in bsa["emi_payments_identified"])
+            req.existing_emi_total = total_emi
+    
+    # Get primary vehicle data
+    vehicles = lead.get("vehicles", [])
+    primary_vehicle = next((v for v in vehicles if v.get("is_primary")), vehicles[0] if vehicles else None)
+    
+    if primary_vehicle:
+        req.vehicle_make = primary_vehicle.get("car_make")
+        req.vehicle_valuation = primary_vehicle.get("vehicle_valuation")
+        
+        # Calculate vehicle age
+        car_year = primary_vehicle.get("car_year")
+        if car_year:
+            try:
+                req.vehicle_age_years = datetime.now().year - int(car_year)
+            except:
+                pass
+    
+    # Check eligibility against all banks
+    banks = await db.bank_master.find({"is_active": True}, {"_id": 0}).to_list(100)
+    
+    eligible_results = []
+    ineligible_results = []
+    
+    for bank in banks:
+        result = await check_bank_eligibility(bank, req)
+        if result.is_eligible:
+            eligible_results.append(result.model_dump())
+        else:
+            ineligible_results.append(result.model_dump())
+    
+    # Sort by eligibility score
+    eligible_results.sort(key=lambda x: x["eligibility_score"], reverse=True)
+    
+    # Save eligibility results to lead
+    await db.loan_leads.update_one(
+        {"id": lead_id},
+        {
+            "$set": {
+                "eligibility_checked_at": datetime.now(timezone.utc).isoformat(),
+                "eligible_banks": [r["bank_id"] for r in eligible_results],
+                "eligibility_results": eligible_results[:5],  # Top 5 results
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }
+        }
+    )
+    
+    return {
+        "success": True,
+        "lead_id": lead_id,
+        "customer_type": req.customer_type,
+        "credit_score": req.credit_score,
+        "monthly_income": req.monthly_income,
+        "vehicle_age": req.vehicle_age_years,
+        "vehicle_valuation": req.vehicle_valuation,
+        "total_banks_checked": len(banks),
+        "eligible_count": len(eligible_results),
+        "ineligible_count": len(ineligible_results),
+        "eligible_banks": eligible_results,
+        "ineligible_banks": ineligible_results,
+        "recommended_bank": eligible_results[0] if eligible_results else None
+    }
+
+
+# ========================
 # LOAN LEADS ENDPOINTS
 # ========================
 
