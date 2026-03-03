@@ -80,6 +80,19 @@ class ExperianReportRequest(BaseModel):
     loan_lead_id: Optional[str] = None
 
 
+class CRIFReportRequest(BaseModel):
+    """Request model for fetching CRIF Commercial credit report"""
+    business_name: str = Field(..., description="Business/Company name")
+    pan: str = Field(..., description="Business PAN number")
+    mobile: str = Field(..., description="Business mobile number")
+    consent: str = Field(default="Y", description="Customer consent")
+    
+    # Optional: Link to existing records
+    customer_id: Optional[str] = None
+    lead_id: Optional[str] = None
+    loan_lead_id: Optional[str] = None
+
+
 class CreditReportResponse(BaseModel):
     """Response model for credit report"""
     success: bool
