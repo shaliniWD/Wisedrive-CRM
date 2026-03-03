@@ -1122,9 +1122,11 @@ async def check_lead_eligibility(
     Check eligibility for a loan lead against all banks.
     Uses the lead's customer profile and vehicle data.
     """
+    logger.info(f"[LEAD ELIGIBILITY] Checking eligibility for lead_id: {lead_id}")
     # Get the loan lead with all related data
     lead = await db.loan_leads.find_one({"id": lead_id}, {"_id": 0})
     if not lead:
+        logger.warning(f"[LEAD ELIGIBILITY] Lead not found: {lead_id}")
         raise HTTPException(status_code=404, detail="Loan lead not found")
     
     # Get customer profile if exists
