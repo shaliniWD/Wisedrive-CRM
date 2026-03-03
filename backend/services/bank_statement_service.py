@@ -19,59 +19,36 @@ logger = logging.getLogger(__name__)
 # Emergent LLM Key for AI services
 EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY', '')
 
-# Bank statement analysis prompt
-BANK_STATEMENT_ANALYSIS_PROMPT = """You are a financial analyst AI specialized in analyzing Indian bank statements. 
-Analyze the uploaded bank statement PDF and extract the following information in JSON format:
+# Bank statement analysis prompt - keep it concise for faster processing
+BANK_STATEMENT_ANALYSIS_PROMPT = """Analyze this Indian bank statement PDF and extract information in JSON format:
 
 {
-  "bank_name": "Name of the bank (e.g., HDFC Bank, ICICI Bank, SBI)",
-  "account_number_masked": "Last 4 digits only (e.g., XXXX1234)",
-  "statement_period_from": "Start date in YYYY-MM-DD format",
-  "statement_period_to": "End date in YYYY-MM-DD format",
-  
-  "average_bank_balance": "Average of all daily/monthly balances as a number",
-  "minimum_balance": "Lowest balance in the period as a number",
-  "maximum_balance": "Highest balance in the period as a number",
-  "end_of_month_balances": [{"month": "YYYY-MM", "balance": 50000}],
-  
-  "total_credits": "Sum of all credit transactions as a number",
-  "average_monthly_credits": "Total credits divided by number of months as a number",
-  "salary_credits_identified": "Monthly salary/income credits if identifiable as a number",
-  "regular_income_sources": [{"source": "Company Name/UPI ID", "amount": 50000, "frequency": "monthly"}],
-  
-  "total_debits": "Sum of all debit transactions as a number",
-  "average_monthly_debits": "Total debits divided by number of months as a number",
-  "emi_payments_identified": [{"lender": "Bank/NBFC name", "amount": 15000, "frequency": "monthly"}],
-  "loan_repayments_total": "Total identified loan EMI payments as a number",
-  "high_value_transactions": [{"date": "YYYY-MM-DD", "amount": 100000, "description": "Transfer to XYZ", "type": "credit/debit"}],
-  
-  "bounce_count": "Number of returned cheques/failed transactions as a number",
-  "low_balance_days": "Approximate days when balance was below 5000 as a number",
-  "cash_withdrawal_ratio": "Percentage of debits that are ATM/cash withdrawals as a number",
-  
-  "spending_pattern": {
-    "utilities": "Total spending on utilities/bills",
-    "food_dining": "Total spending on food and dining",
-    "shopping": "Total spending on shopping/retail",
-    "transfers": "Total transfers to other accounts",
-    "emi_loans": "Total EMI/loan payments",
-    "others": "Other miscellaneous spending"
-  },
-  
-  "analysis_notes": "Any important observations about the account including spending behavior, savings pattern, red flags",
-  "confidence_score": "0-100 confidence in the analysis accuracy"
+  "bank_name": "Bank name",
+  "account_number_masked": "XXXX + last 4 digits",
+  "statement_period_from": "YYYY-MM-DD",
+  "statement_period_to": "YYYY-MM-DD",
+  "average_bank_balance": number,
+  "minimum_balance": number,
+  "maximum_balance": number,
+  "total_credits": number,
+  "average_monthly_credits": number,
+  "salary_credits_identified": number or null,
+  "total_debits": number,
+  "average_monthly_debits": number,
+  "loan_repayments_total": number or null,
+  "bounce_count": number,
+  "analysis_notes": "Brief observations about account behavior",
+  "confidence_score": number 0-100
 }
 
-Important guidelines:
-1. All amounts should be numbers without currency symbols or commas
-2. Look for patterns in salary credits (usually same date, same amount each month)
-3. Identify EMI payments (regular fixed debits to banks/NBFCs)
-4. Flag bounced transactions or insufficient fund incidents
-5. Calculate average bank balance as the mean of all closing balances
-6. If any field cannot be determined, use null
-7. Be thorough in analyzing spending patterns and categorize transactions
+Guidelines:
+- All amounts as numbers without currency symbols
+- Look for salary patterns (same amount, same date monthly)
+- Identify EMI/loan payments
+- Note any bounced transactions
+- Use null for fields that cannot be determined
 
-Analyze the statement thoroughly and provide accurate financial insights."""
+Return ONLY valid JSON, no markdown."""
 
 
 def unlock_pdf(input_path: str, password: str, output_path: str, max_pages: int = 5) -> bool:
