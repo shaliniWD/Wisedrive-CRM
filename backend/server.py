@@ -1697,7 +1697,8 @@ async def get_sales_role_ids():
 async def find_sales_reps_for_city(city: str):
     """
     Find all active sales reps assigned to a specific city.
-    Checks assigned_cities array AND is_available_for_leads flag.
+    Checks BOTH assigned_cities AND leads_cities arrays.
+    Also checks is_available_for_leads flag.
     Now resolves city aliases using Cities Master.
     """
     # First, resolve the city to its canonical name using Cities Master
@@ -1728,11 +1729,15 @@ async def find_sales_reps_for_city(city: str):
     
     logger.info(f"Looking for sales reps for city: '{city}' (canonical: '{canonical_city}') with role_ids: {sales_role_ids}")
     
-    # City filter - check assigned_cities array for canonical name OR any alias (case-insensitive)
+    # City filter - check BOTH assigned_cities AND leads_cities arrays (case-insensitive)
     city_conditions = []
     for variant in city_variants:
+        # Check assigned_cities (used for inspections and general assignment)
         city_conditions.append({"assigned_cities": variant})
         city_conditions.append({"assigned_cities": {"$regex": f"^{variant}$", "$options": "i"}})
+        # Check leads_cities (specifically for lead assignment)
+        city_conditions.append({"leads_cities": variant})
+        city_conditions.append({"leads_cities": {"$regex": f"^{variant}$", "$options": "i"}})
     
     # Full query with role, active status, and city
     full_query = {
@@ -1760,7 +1765,7 @@ async def find_sales_reps_for_city(city: str):
     
     sales_reps = await db.users.find(
         full_query,
-        {"_id": 0, "id": 1, "name": 1, "email": 1, "assigned_cities": 1, "role_id": 1, "is_available_for_leads": 1}
+        {"_id": 0, "id": 1, "name": 1, "email": 1, "assigned_cities": 1, "leads_cities": 1, "role_id": 1, "is_available_for_leads": 1}
     ).to_list(100)
     
     logger.info(f"Found {len(sales_reps)} sales reps for city '{city}' (canonical: '{canonical_city}'): {[r.get('name') for r in sales_reps]}")
