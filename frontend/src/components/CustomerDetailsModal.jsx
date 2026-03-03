@@ -530,6 +530,8 @@ export function CustomerDetailsModal({ isOpen, onClose, customerId, onCustomerUp
         total_pending: rawPaymentData?.summary?.total_pending || 0,
         total_amount: rawPaymentData?.summary?.total_amount || 0,
         total_inspections: rawPaymentData?.summary?.total_inspections || 0,
+        // New transactions array
+        transactions: rawPaymentData?.transactions || [],
         // Map inspections to packages for backward compatibility
         packages: rawPaymentData?.inspections || [],
       };
