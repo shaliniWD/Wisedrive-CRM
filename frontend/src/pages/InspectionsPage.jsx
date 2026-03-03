@@ -2596,25 +2596,15 @@ export default function InspectionsPage() {
                 <PlacesAutocomplete
                   value={editInspectionFormData.address}
                   onChange={(value) => setEditInspectionFormData(prev => ({ ...prev, address: value }))}
-                  onPlaceSelect={(place) => {
-                    let city = '';
-                    if (place.address_components) {
-                      // Try multiple component types to find city
-                      const cityComponent = place.address_components.find(
-                        c => c.types.includes('locality')
-                      ) || place.address_components.find(
-                        c => c.types.includes('administrative_area_level_2')
-                      ) || place.address_components.find(
-                        c => c.types.includes('administrative_area_level_1')
-                      );
-                      if (cityComponent) city = cityComponent.long_name;
-                    }
+                  onSelect={(placeData) => {
+                    // placeData contains { address, latitude, longitude, city }
+                    console.log('Place selected:', placeData);
                     setEditInspectionFormData(prev => ({
                       ...prev,
-                      address: place.formatted_address || place.name,
-                      city: city || prev.city,
-                      latitude: place.geometry?.location?.lat() || null,
-                      longitude: place.geometry?.location?.lng() || null
+                      address: placeData.address || prev.address,
+                      city: placeData.city || prev.city,
+                      latitude: placeData.latitude || null,
+                      longitude: placeData.longitude || null
                     }));
                   }}
                   placeholder="Search new address..."
