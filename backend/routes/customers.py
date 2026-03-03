@@ -711,3 +711,169 @@ async def seed_sample_customer_data(current_user: dict = Depends(get_current_use
         "total_paid": 4498,
         "total_pending": 499
     }
+
+
+
+# ==================== CUSTOMER DATA REPAIR ====================
+
+class CustomerRepairRequest(BaseModel):
+    """Request model for customer repair"""
+    create_missing_inspections: bool = True
+    link_orphaned_inspections: bool = True
+
+@router.post("/{customer_id}/repair")
+async def repair_customer_data(
+    customer_id: str,
+    request: CustomerRepairRequest = CustomerRepairRequest(),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Repair customer data issues:
+    - Link orphaned inspections (by lead_id or mobile) to customer
+    - Create missing inspections for payments that don't have them
+    
+    Returns a summary of what was fixed.
+    """
+    import uuid
+    
+    # Only CEO/HR_MANAGER can repair data
+    role_code = current_user.get("role_code", "")
+    if role_code not in ["CEO", "HR_MANAGER", "COUNTRY_HEAD", "ADMIN"]:
+        raise HTTPException(status_code=403, detail="Not authorized to repair customer data")
+    
+    customer = await db.customers.find_one({"id": customer_id}, {"_id": 0})
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    
+    lead_id = customer.get("lead_id")
+    mobile = customer.get("mobile")
+    
+    repairs = {
+        "inspections_linked": 0,
+        "inspections_created": 0,
+        "details": []
+    }
+    
+    # 1. Link orphaned inspections by lead_id
+    if request.link_orphaned_inspections and lead_id:
+        result = await db.inspections.update_many(
+            {"lead_id": lead_id, "customer_id": {"$ne": customer_id}},
+            {"$set": {
+                "customer_id": customer_id,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        if result.modified_count > 0:
+            repairs["inspections_linked"] += result.modified_count
+            repairs["details"].append(f"Linked {result.modified_count} orphaned inspection(s) by lead_id")
+    
+    # 2. Link orphaned inspections by mobile
+    if request.link_orphaned_inspections and mobile:
+        result = await db.inspections.update_many(
+            {"customer_mobile": mobile, "customer_id": {"$nin": [customer_id, None, ""]}},
+            {"$set": {
+                "customer_id": customer_id,
+                "lead_id": lead_id,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        if result.modified_count > 0:
+            repairs["inspections_linked"] += result.modified_count
+            repairs["details"].append(f"Linked {result.modified_count} orphaned inspection(s) by mobile")
+    
+    # 3. Create missing inspections for payments
+    if request.create_missing_inspections:
+        # Collect all payment IDs for this customer
+        all_payment_ids = set()
+        if customer.get('razorpay_payment_id'):
+            all_payment_ids.add(customer.get('razorpay_payment_id'))
+        for p in customer.get('additional_purchases', []):
+            if p.get('razorpay_payment_id'):
+                all_payment_ids.add(p.get('razorpay_payment_id'))
+        
+        # Find which payment IDs already have inspections
+        existing = await db.inspections.find(
+            {"razorpay_payment_id": {"$in": list(all_payment_ids)}},
+            {"razorpay_payment_id": 1}
+        ).to_list(100)
+        existing_payment_ids = set(i.get('razorpay_payment_id') for i in existing)
+        
+        missing_payment_ids = all_payment_ids - existing_payment_ids
+        
+        # Build payment info map
+        payment_info = {}
+        if customer.get('razorpay_payment_id'):
+            payment_info[customer['razorpay_payment_id']] = {
+                'package_name': customer.get('package_name', 'Standard Inspection'),
+                'no_of_inspections': customer.get('no_of_inspections', 1),
+                'amount': customer.get('payment_amount', 0)
+            }
+        for p in customer.get('additional_purchases', []):
+            if p.get('razorpay_payment_id'):
+                payment_info[p['razorpay_payment_id']] = {
+                    'package_name': p.get('package_name', 'Standard Inspection'),
+                    'no_of_inspections': p.get('no_of_inspections', 1),
+                    'amount': p.get('payment_amount', 0)
+                }
+        
+        # Create missing inspections
+        for payment_id in missing_payment_ids:
+            pkg = payment_info.get(payment_id, {})
+            no_of_inspections = pkg.get('no_of_inspections', 1)
+            package_name = pkg.get('package_name', 'Standard Inspection')
+            amount = pkg.get('amount', 0)
+            
+            for i in range(no_of_inspections):
+                inspection_id = str(uuid.uuid4())
+                inspection = {
+                    "id": inspection_id,
+                    "customer_id": customer_id,
+                    "lead_id": lead_id,
+                    "order_id": f"ORD-{payment_id[-8:].upper()}",
+                    "customer_name": customer.get("name"),
+                    "customer_mobile": mobile,
+                    "customer_email": customer.get("email"),
+                    "city": customer.get("city"),
+                    "city_id": customer.get("city_id"),
+                    "car_number": "",
+                    "package_type": package_name,
+                    "total_amount": amount / no_of_inspections if no_of_inspections > 0 else amount,
+                    "amount_paid": amount / no_of_inspections if no_of_inspections > 0 else amount,
+                    "balance_due": 0,
+                    "payment_status": "FULLY_PAID",
+                    "payment_date": datetime.now(timezone.utc).isoformat(),
+                    "razorpay_payment_id": payment_id,
+                    "inspection_status": "NEW_INSPECTION",
+                    "scheduled_date": None,
+                    "scheduled_time": None,
+                    "slot_number": i + 1,
+                    "inspections_available": 1,
+                    "report_status": "pending",
+                    "notes": f"Inspection {i+1}/{no_of_inspections} - Created by repair tool",
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                    "created_by": current_user.get("id", "system")
+                }
+                await db.inspections.insert_one(inspection)
+                repairs["inspections_created"] += 1
+            
+            repairs["details"].append(f"Created {no_of_inspections} inspection(s) for payment {payment_id[-8:]}")
+    
+    # Refresh customer inspection stats
+    pipeline = [
+        {"$match": {"customer_id": customer_id}},
+        {"$group": {
+            "_id": None,
+            "total_packages": {"$sum": 1},
+            "total_paid": {"$sum": "$amount_paid"},
+            "total_pending": {"$sum": "$balance_due"}
+        }}
+    ]
+    stats = await db.inspections.aggregate(pipeline).to_list(1)
+    if stats:
+        repairs["updated_stats"] = {
+            "total_packages": stats[0].get("total_packages", 0),
+            "total_paid": stats[0].get("total_paid", 0),
+            "total_pending": stats[0].get("total_pending", 0)
+        }
+    
+    return repairs
