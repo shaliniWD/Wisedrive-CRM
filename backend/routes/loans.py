@@ -494,17 +494,55 @@ async def seed_indian_banks(current_user: dict = Depends(get_current_user)):
             "bank_name": "Bajaj Finance",
             "bank_code": "BAJAJ",
             "bank_type": "NBFC",
-            "interest_rate_min": 11.00,
-            "interest_rate_max": 18.00,
+            "interest_rate_min": 14.00,
+            "interest_rate_max": 20.00,
             "tenure_min_months": 12,
-            "tenure_max_months": 72,
-            "ltv_percent": 90,
+            "tenure_max_months": 84,
+            "ltv_percent": 150,
             "processing_fee_percent": 2.00,
             "eligibility_rules": {
-                "min_credit_score": 600,
-                "max_vehicle_age": 15,
+                # Customer criteria
+                "min_age_salaried": 23,
+                "min_age_self_employed": 25,
+                "max_age_at_maturity": 70,
+                "employment_types": ["SALARIED", "SELF_EMPLOYED"],
+                "min_work_experience_years": 2,
+                "min_current_job_months": 6,
+                # Income
+                "min_income_salaried": 20000,
+                "min_income_self_employed": 60000,
+                "income_multiplier_salaried": 25,
+                # Credit
+                "min_credit_score": 700,
+                "preferred_credit_score": 750,
+                "max_bounces_3_months": 0,
+                "max_bounces_6_months": 1,
+                "max_bounces_12_months": 2,
+                "max_dpd_30_plus": 0,
+                "max_foir_percent": 70,
+                "max_unsecured_loans_3_months": 1,
+                # Vehicle
+                "max_vehicle_age_years": 12,
+                "max_vehicle_age_at_maturity": 15,
+                "max_ownership_count": 3,
                 "excluded_car_makes": ["CHEVROLET"],
-                "employment_types": ["SALARIED", "SELF_EMPLOYED"]
+                # LTV by vehicle age - Bajaj offers higher LTV
+                "ltv_0_3_years": 150,
+                "ltv_3_5_years": 130,
+                "ltv_5_7_years": 110,
+                "ltv_7_10_years": 90,
+                "ltv_10_plus_years": 70,
+                "max_ltv_percent": 150,
+                # Loan params
+                "min_loan_amount": 50000,
+                "max_loan_amount": 2000000,
+                "max_tenure_months": 84,
+                "base_interest_rate": 14.0,
+                "processing_fee_percent": 2.0,
+                "min_processing_fee": 2500,
+                # Banking
+                "min_aqb_metro": 5000,
+                "min_aqb_non_metro": 3000
             }
         },
         {
