@@ -269,7 +269,21 @@ export function CustomerDetailsModal({ isOpen, onClose, customerId, onCustomerUp
       ]);
       
       setCustomer(customerRes.data);
-      setPaymentData(paymentsRes.data);
+      
+      // Transform payment data to expected format
+      const rawPaymentData = paymentsRes.data;
+      const transformedPaymentData = {
+        ...rawPaymentData,
+        // Flatten summary fields to root level for easier access
+        total_paid: rawPaymentData?.summary?.total_paid || 0,
+        total_pending: rawPaymentData?.summary?.total_pending || 0,
+        total_amount: rawPaymentData?.summary?.total_amount || 0,
+        total_inspections: rawPaymentData?.summary?.total_inspections || 0,
+        // Map inspections to packages for backward compatibility
+        packages: rawPaymentData?.inspections || [],
+      };
+      setPaymentData(transformedPaymentData);
+      
       setNotes(notesRes.data || []);
       setActivities(activitiesRes.data || []);
       setEditForm({
