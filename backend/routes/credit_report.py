@@ -218,6 +218,22 @@ async def fetch_cibil_pdf_report(
     }
 
 
+@router.get("/check-status")
+async def check_credit_service_status(
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Check if credit report service is configured and available
+    """
+    surepass = get_surepass_service()
+    
+    return {
+        "configured": surepass.is_configured(),
+        "providers": ["CIBIL", "Equifax", "Experian", "CRIF"],
+        "active_providers": ["CIBIL"] if surepass.is_configured() else []
+    }
+
+
 @router.get("/history/{pan}")
 async def get_credit_report_history(
     pan: str,
@@ -238,25 +254,6 @@ async def get_credit_report_history(
         "total_reports": len(reports),
         "reports": reports
     }
-
-
-@router.get("/{report_id}")
-async def get_credit_report(
-    report_id: str,
-    current_user: dict = Depends(get_current_user)
-):
-    """
-    Get a specific credit report by ID
-    """
-    report = await _db.credit_reports.find_one(
-        {"id": report_id},
-        {"_id": 0}
-    )
-    
-    if not report:
-        raise HTTPException(status_code=404, detail="Credit report not found")
-    
-    return report
 
 
 @router.get("/by-loan-lead/{loan_lead_id}")
@@ -297,17 +294,20 @@ async def get_credit_report_by_loan_lead(
     return {"found": False, "report": None}
 
 
-@router.get("/check-status")
-async def check_credit_service_status(
+@router.get("/{report_id}")
+async def get_credit_report(
+    report_id: str,
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Check if credit report service is configured and available
+    Get a specific credit report by ID
     """
-    surepass = get_surepass_service()
+    report = await _db.credit_reports.find_one(
+        {"id": report_id},
+        {"_id": 0}
+    )
     
-    return {
-        "configured": surepass.is_configured(),
-        "providers": ["CIBIL", "Equifax", "Experian", "CRIF"],
-        "active_providers": ["CIBIL"] if surepass.is_configured() else []
-    }
+    if not report:
+        raise HTTPException(status_code=404, detail="Credit report not found")
+    
+    return report
