@@ -29,18 +29,18 @@
 - **Files Modified:** `/app/backend/server.py` (find_sales_reps_for_city function, reassign_lead endpoint)
 
 **Issue 3: Customer Data Repair - Test-5 Issue**
-- **Problem:** Customer Test-5 (7411891010) shows "no issues found" when clicking repair, but no payment/inspection data visible
+- **Problem:** Customer Test-5 (7411891010) shows "no issues found" when clicking repair, but no payment/inspection data visible in modal
 - **Root Cause:** 
-  1. Repair function only looked at customer's stored payment data
-  2. Didn't recover payment data from lead record
-  3. Didn't link inspections by lead's payment ID
+  1. **Frontend bug**: `CustomerDetailsModal.jsx` was looking for `paymentData.total_paid` and `paymentData.packages` but API returned `paymentData.summary.total_paid` and `paymentData.inspections`
+  2. Data structure mismatch between API response and frontend expectations
 - **Fix:**
-  1. Added comprehensive data recovery from lead record (payment_id, package_name, etc.)
-  2. Added inspection linking by lead's `razorpay_payment_id`
-  3. Added search by customer name and email as fallbacks
-  4. Created new `/api/customers/diagnose/{mobile}` endpoint for comprehensive data search
-  5. Improved diagnostic info to show exactly what was searched and what issues exist
-- **Files Modified:** `/app/backend/routes/customers.py` (repair function, new diagnose endpoint)
+  1. Added data transformation in `fetchCustomerDetails()` to flatten the API response structure
+  2. Maps `summary.total_paid` → `total_paid`, `inspections` → `packages` for backward compatibility
+  3. Also enhanced backend repair function with additional search strategies
+- **Files Modified:** 
+  - `/app/frontend/src/components/CustomerDetailsModal.jsx` (data transformation fix)
+  - `/app/backend/routes/customers.py` (enhanced repair function, new diagnose endpoint)
+- **Verified in Preview:** Test-5 now shows 3 packages, ₹1 total paid ✅
 
 ---
 
