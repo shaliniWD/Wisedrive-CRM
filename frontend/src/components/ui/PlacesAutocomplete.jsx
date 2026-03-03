@@ -230,12 +230,31 @@ export function PlacesAutocomplete({
                 lat = place.geometry?.location?.lat();
                 lng = place.geometry?.location?.lng();
                 
-                // Extract city from address components
+                // Extract city from address components - try multiple types
                 if (place.address_components) {
+                  // Try locality first
                   for (const component of place.address_components) {
-                    if (component.types?.includes('locality') || component.types?.includes('administrative_area_level_2')) {
+                    if (component.types?.includes('locality')) {
                       city = component.long_name || component.short_name;
                       break;
+                    }
+                  }
+                  // If no locality, try administrative_area_level_2
+                  if (!city) {
+                    for (const component of place.address_components) {
+                      if (component.types?.includes('administrative_area_level_2')) {
+                        city = component.long_name || component.short_name;
+                        break;
+                      }
+                    }
+                  }
+                  // If still no city, try administrative_area_level_1
+                  if (!city) {
+                    for (const component of place.address_components) {
+                      if (component.types?.includes('administrative_area_level_1')) {
+                        city = component.long_name || component.short_name;
+                        break;
+                      }
                     }
                   }
                 }
