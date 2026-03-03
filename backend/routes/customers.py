@@ -748,6 +748,148 @@ async def repair_customer_data(
     return await _repair_customer(db, customer, current_user)
 
 
+@router.get("/diagnose/{mobile}")
+async def diagnose_customer_data(
+    mobile: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Comprehensive diagnostic endpoint to find ALL data related to a mobile number.
+    Searches across: customers, leads, inspections to identify data linkage issues.
+    """
+    import re
+    
+    # Normalize mobile - extract just digits
+    digits = re.sub(r'\D', '', mobile)
+    if len(digits) == 12 and digits.startswith('91'):
+        normalized = digits[2:]
+    else:
+        normalized = digits
+    
+    # Build all possible mobile patterns
+    mobile_patterns = [
+        mobile,  # Original
+        normalized,  # Just digits
+        f"+91{normalized}",
+        f"91{normalized}",
+        f"+91-{normalized}",
+        f"+91 {normalized}",
+    ]
+    
+    result = {
+        "search_mobile": mobile,
+        "normalized_mobile": normalized,
+        "patterns_searched": mobile_patterns,
+        "customers": [],
+        "leads": [],
+        "inspections": [],
+        "summary": {}
+    }
+    
+    # Search customers
+    customers = await db.customers.find(
+        {"mobile": {"$in": mobile_patterns}},
+        {"_id": 0}
+    ).to_list(10)
+    result["customers"] = [{
+        "id": c.get("id"),
+        "name": c.get("name"),
+        "mobile": c.get("mobile"),
+        "lead_id": c.get("lead_id"),
+        "razorpay_payment_id": c.get("razorpay_payment_id"),
+        "package_name": c.get("package_name"),
+        "no_of_inspections": c.get("no_of_inspections"),
+        "additional_purchases": len(c.get("additional_purchases", [])),
+        "created_at": c.get("created_at")
+    } for c in customers]
+    
+    # Search leads
+    leads = await db.leads.find(
+        {"mobile": {"$in": mobile_patterns}},
+        {"_id": 0}
+    ).to_list(20)
+    result["leads"] = [{
+        "id": l.get("id"),
+        "name": l.get("name"),
+        "mobile": l.get("mobile"),
+        "status": l.get("status"),
+        "payment_status": l.get("payment_status"),
+        "razorpay_payment_id": l.get("razorpay_payment_id"),
+        "customer_id": l.get("customer_id"),
+        "package_name": l.get("package_name"),
+        "no_of_inspections": l.get("no_of_inspections"),
+        "created_at": l.get("created_at")
+    } for l in leads]
+    
+    # Search inspections by mobile
+    inspections = await db.inspections.find(
+        {"customer_mobile": {"$in": mobile_patterns}},
+        {"_id": 0, "id": 1, "customer_id": 1, "lead_id": 1, "customer_name": 1, 
+         "customer_mobile": 1, "inspection_status": 1, "razorpay_payment_id": 1,
+         "package_type": 1, "created_at": 1}
+    ).to_list(30)
+    result["inspections"] = inspections
+    
+    # Also search inspections by lead_ids found
+    if leads:
+        lead_ids = [l.get("id") for l in leads if l.get("id")]
+        if lead_ids:
+            insp_by_lead = await db.inspections.find(
+                {"lead_id": {"$in": lead_ids}},
+                {"_id": 0, "id": 1, "customer_id": 1, "lead_id": 1, "customer_name": 1,
+                 "customer_mobile": 1, "inspection_status": 1, "razorpay_payment_id": 1,
+                 "package_type": 1, "created_at": 1}
+            ).to_list(30)
+            # Add any new inspections not already found
+            existing_ids = {i["id"] for i in result["inspections"]}
+            for insp in insp_by_lead:
+                if insp["id"] not in existing_ids:
+                    result["inspections"].append(insp)
+    
+    # Also search by customer_id if customers found
+    if customers:
+        customer_ids = [c.get("id") for c in customers if c.get("id")]
+        if customer_ids:
+            insp_by_customer = await db.inspections.find(
+                {"customer_id": {"$in": customer_ids}},
+                {"_id": 0, "id": 1, "customer_id": 1, "lead_id": 1, "customer_name": 1,
+                 "customer_mobile": 1, "inspection_status": 1, "razorpay_payment_id": 1,
+                 "package_type": 1, "created_at": 1}
+            ).to_list(30)
+            existing_ids = {i["id"] for i in result["inspections"]}
+            for insp in insp_by_customer:
+                if insp["id"] not in existing_ids:
+                    result["inspections"].append(insp)
+    
+    # Summary
+    result["summary"] = {
+        "total_customers": len(result["customers"]),
+        "total_leads": len(result["leads"]),
+        "total_inspections": len(result["inspections"]),
+        "paid_leads": len([l for l in leads if l.get("payment_status") == "paid"]),
+        "leads_with_payment_id": len([l for l in leads if l.get("razorpay_payment_id")]),
+        "customers_with_payment_id": len([c for c in customers if c.get("razorpay_payment_id")]),
+        "orphaned_inspections": len([i for i in result["inspections"] if not i.get("customer_id")]),
+        "linked_inspections": len([i for i in result["inspections"] if i.get("customer_id")]),
+    }
+    
+    # Issues detected
+    issues = []
+    if len(leads) > 0 and len(customers) == 0:
+        issues.append("Lead(s) exist but no customer record - payment may not have been completed")
+    if any(l.get("razorpay_payment_id") for l in leads) and not any(c.get("razorpay_payment_id") for c in customers):
+        issues.append("Lead has payment but customer doesn't have payment data - repair needed")
+    if len(result["inspections"]) == 0 and any(l.get("payment_status") == "paid" for l in leads):
+        issues.append("Paid lead exists but no inspections created - repair needed")
+    if result["summary"]["orphaned_inspections"] > 0:
+        issues.append(f"{result['summary']['orphaned_inspections']} orphaned inspection(s) need linking")
+    
+    result["issues"] = issues
+    result["recommendation"] = "Run repair-by-mobile endpoint to fix issues" if issues else "No issues detected"
+    
+    return result
+
+
 @router.post("/repair-by-mobile/{mobile}")
 async def repair_customer_by_mobile(
     mobile: str,
