@@ -277,7 +277,7 @@ const VehiclesTab = ({ lead, onUpdate }) => {
   
   const handleSetPrimary = async (vehicleId) => {
     try {
-      await loansApi.setPrimaryVehicle(lead.id, vehicleId);
+      await loansApi.updateVehicle(lead.id, vehicleId, { is_primary: true });
       toast.success('Primary vehicle updated');
       onUpdate();
     } catch (err) {
