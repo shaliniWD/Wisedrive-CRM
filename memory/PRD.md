@@ -3,6 +3,40 @@
 ---
 ## 📅 CHANGELOG
 
+### March 3, 2026 - Comprehensive Timezone Fix for Date Filtering
+
+**Problem:** Date filtering across all modules was timezone-unaware. A lead created at "3 Mar 12:30 AM IST" was stored as "2026-03-02T19:00:00Z" (UTC), causing it to incorrectly appear under "Yesterday" instead of "Today" when filtering.
+
+**Root Cause:** 
+- Backend stored dates in UTC (correct)
+- Frontend sent local dates like "2026-03-03" 
+- Backend compared UTC timestamps against local dates without timezone conversion
+- A lead created at midnight IST would have a UTC timestamp from the previous day
+
+**Solution:**
+1. Created `convert_local_date_to_utc_range()` helper function that converts local dates to proper UTC ranges
+2. Added `timezone_offset` parameter (default 330 for IST = UTC+5:30) to all date-filtered endpoints
+3. Frontend API service now automatically sends `timezone_offset` with all list requests
+4. Date comparison now happens entirely in UTC with proper boundaries
+
+**Technical Details:**
+- For "Today" (March 3rd IST), the UTC range is: 2026-03-02T18:30:00Z to 2026-03-03T18:29:59Z
+- This correctly includes leads created from midnight IST to 11:59 PM IST
+
+**Files Modified:**
+- `/app/backend/server.py` - Added helper function, updated `/leads` and `/inspections` endpoints
+- `/app/backend/routes/loans.py` - Added helper function, updated `/loan-leads` endpoint
+- `/app/backend/routes/customers.py` - Added helper function, updated `/customers` endpoint
+- `/app/frontend/src/services/api.js` - Added `getTimezoneOffset()` utility, updated all list API calls
+
+**Modules Fixed:**
+- Leads page date filter
+- Inspections page date filter
+- Customers page date filter
+- Loans page date filter
+
+---
+
 ### March 3, 2026 - Loan Eligibility Engine Fix
 **Problem:** The `/api/eligibility/check` endpoint was returning "Loan lead not found" error even though it should work independently without a lead ID.
 **Root Cause:** Python name shadowing - two functions with the same name `check_bank_eligibility`:
