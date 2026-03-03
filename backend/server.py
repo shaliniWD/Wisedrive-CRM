@@ -1423,13 +1423,19 @@ async def reassign_lead(
     # Get new agent details and validate - IMPORTANT: fetch ALL city-related fields
     new_agent = await db.users.find_one(
         {"id": reassign_data.new_agent_id}, 
-        {"_id": 0, "name": 1, "role_code": 1, "leads_cities": 1, "assigned_cities": 1, "city": 1}
+        {"_id": 0, "name": 1, "role_code": 1, "role_id": 1, "leads_cities": 1, "assigned_cities": 1, "city": 1}
     )
     if not new_agent:
         raise HTTPException(status_code=404, detail="Agent not found")
     
     new_agent_name = new_agent.get("name", "Unknown")
+    
+    # Get role code - first from user record, then lookup from roles table if empty
     agent_role = new_agent.get("role_code", "").upper()
+    if not agent_role and new_agent.get("role_id"):
+        role = await db.roles.find_one({"id": new_agent.get("role_id")}, {"_id": 0, "code": 1})
+        if role:
+            agent_role = role.get("code", "").upper()
     
     # Validate the agent is a sales role (flexible matching)
     if "SALES" not in agent_role:
