@@ -124,12 +124,12 @@ async def fetch_cibil_report(
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     
-    await db.credit_reports.insert_one(report_record)
+    await _db.credit_reports.insert_one(report_record)
     logger.info(f"Stored CIBIL report {report_id} for PAN {pan[:4]}****")
     
     # Update loan_lead with credit score if loan_lead_id provided
     if request.loan_lead_id:
-        await db.loan_leads.update_one(
+        await _db.loan_leads.update_one(
             {"id": request.loan_lead_id},
             {"$set": {
                 "credit_score": result.get("credit_score"),
@@ -205,7 +205,7 @@ async def fetch_cibil_pdf_report(
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     
-    await db.credit_reports.insert_one(report_record)
+    await _db.credit_reports.insert_one(report_record)
     logger.info(f"Stored CIBIL PDF report {report_id} for PAN {pan[:4]}****")
     
     return {
@@ -228,7 +228,7 @@ async def get_credit_report_history(
     """
     pan = pan.upper().strip()
     
-    reports = await db.credit_reports.find(
+    reports = await _db.credit_reports.find(
         {"pan": pan},
         {"_id": 0}
     ).sort("created_at", -1).to_list(20)
@@ -248,7 +248,7 @@ async def get_credit_report(
     """
     Get a specific credit report by ID
     """
-    report = await db.credit_reports.find_one(
+    report = await _db.credit_reports.find_one(
         {"id": report_id},
         {"_id": 0}
     )
@@ -268,7 +268,7 @@ async def get_credit_report_by_loan_lead(
     Get credit report for a loan lead
     """
     # First check if loan lead has a credit report
-    loan_lead = await db.loan_leads.find_one(
+    loan_lead = await _db.loan_leads.find_one(
         {"id": loan_lead_id},
         {"_id": 0, "credit_report_id": 1, "pan_number": 1}
     )
@@ -278,7 +278,7 @@ async def get_credit_report_by_loan_lead(
     
     # If credit report ID exists, fetch it
     if loan_lead.get("credit_report_id"):
-        report = await db.credit_reports.find_one(
+        report = await _db.credit_reports.find_one(
             {"id": loan_lead["credit_report_id"]},
             {"_id": 0}
         )
@@ -287,7 +287,7 @@ async def get_credit_report_by_loan_lead(
     
     # Otherwise, check if there's any report for this PAN
     if loan_lead.get("pan_number"):
-        report = await db.credit_reports.find_one(
+        report = await _db.credit_reports.find_one(
             {"pan": loan_lead["pan_number"]},
             {"_id": 0}
         )
