@@ -702,6 +702,10 @@ export const creditReportApi = {
   fetchExperianReport: (data) => axios.post(`${API_URL}/credit-report/experian`, data),
   fetchExperianPdf: (data) => axios.post(`${API_URL}/credit-report/experian/pdf`, data),
   
+  // CRIF Commercial Reports
+  fetchCrifReport: (data) => axios.post(`${API_URL}/credit-report/crif`, data),
+  fetchCrifPdf: (data) => axios.post(`${API_URL}/credit-report/crif/pdf`, data),
+  
   // Get Reports
   getReport: (reportId) => axios.get(`${API_URL}/credit-report/${reportId}`),
   getReportHistory: (pan) => axios.get(`${API_URL}/credit-report/history/${pan}`),
