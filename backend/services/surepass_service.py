@@ -1242,11 +1242,20 @@ class SurepassService:
                 "amount": enq.get("enquiryAmount", 0)
             })
         
+        # Helper function for safe numeric conversion
+        def safe_int(value, default=0):
+            if value is None:
+                return default
+            try:
+                return int(float(str(value).replace(',', '')))
+            except (ValueError, TypeError):
+                return default
+        
         # Calculate summary stats
         total_accounts = len(account_info)
-        active_accounts = len([a for a in account_info if a.get("current_balance", 0) > 0])
-        total_balance = sum(a.get("current_balance", 0) for a in account_info)
-        total_overdue = sum(a.get("amount_overdue", 0) for a in account_info)
+        active_accounts = len([a for a in account_info if safe_int(a.get("current_balance", 0)) > 0])
+        total_balance = sum(safe_int(a.get("current_balance", 0)) for a in account_info)
+        total_overdue = sum(safe_int(a.get("amount_overdue", 0)) for a in account_info)
         enquiries_last_6_months = len([e for e in enquiry_info if e.get("date")])  # Simplified
         
         return {
