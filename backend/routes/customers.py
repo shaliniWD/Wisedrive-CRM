@@ -385,7 +385,7 @@ async def get_customer_detailed_payments(
     customer_id: str,
     current_user: dict = Depends(get_current_user)
 ):
-    """Get detailed payment breakdown for a customer"""
+    """Get detailed payment breakdown for a customer with transaction details"""
     customer = await db.customers.find_one({"id": customer_id}, {"_id": 0})
     if not customer:
         raise HTTPException(status_code=404, detail="Customer not found")
@@ -396,33 +396,120 @@ async def get_customer_detailed_payments(
         {"_id": 0}
     ).sort("created_at", -1).to_list(100)
     
-    payment_breakdown = []
+    # Group inspections by order_id or razorpay_payment_id (for package-level view)
+    from collections import defaultdict
+    packages_map = defaultdict(list)
     
     for inspection in inspections:
-        inspection_data = {
-            "inspection_id": inspection["id"],
-            "car_number": inspection.get("car_number"),
-            "car_make": inspection.get("car_make"),
-            "car_model": inspection.get("car_model"),
-            "car_year": inspection.get("car_year"),
-            "package_name": inspection.get("package_name"),
-            "package_type": inspection.get("package_type"),
-            "inspection_status": inspection.get("inspection_status"),
-            "created_at": inspection.get("created_at"),
-            "pricing": {
-                "total_amount": inspection.get("total_amount", 0),
-                "amount_paid": inspection.get("amount_paid", 0),
-                "balance_due": inspection.get("balance_due", 0),
-                "payment_status": inspection.get("payment_status", "PENDING")
-            },
-            "transactions": inspection.get("payment_transactions", [])
-        }
-        payment_breakdown.append(inspection_data)
+        # Group by order_id first, fallback to payment_id
+        group_key = inspection.get("order_id") or inspection.get("razorpay_payment_id") or inspection["id"]
+        packages_map[group_key].append(inspection)
     
-    # Calculate summary
-    total_amount = sum(p["pricing"]["total_amount"] or 0 for p in payment_breakdown)
-    total_paid = sum(p["pricing"]["amount_paid"] or 0 for p in payment_breakdown)
-    total_pending = sum(p["pricing"]["balance_due"] or 0 for p in payment_breakdown)
+    # Get lead details for payment links and discounts
+    lead_ids = list(set([insp.get("lead_id") for insp in inspections if insp.get("lead_id")]))
+    leads_map = {}
+    if lead_ids:
+        leads = await db.leads.find(
+            {"id": {"$in": lead_ids}},
+            {"_id": 0, "id": 1, "payment_link_id": 1, "payment_link_url": 1, 
+             "discount_amount": 1, "discount_code": 1, "discount_percentage": 1,
+             "original_amount": 1, "total_amount": 1, "no_of_inspections": 1,
+             "package_name": 1, "package_id": 1, "razorpay_payment_id": 1,
+             "assigned_to_name": 1, "source": 1}
+        ).to_list(100)
+        leads_map = {lead["id"]: lead for lead in leads}
+    
+    # Get package details
+    package_ids = list(set([insp.get("package_id") for insp in inspections if insp.get("package_id")]))
+    packages_details = {}
+    if package_ids:
+        pkgs = await db.inspection_packages.find(
+            {"id": {"$in": package_ids}},
+            {"_id": 0, "id": 1, "name": 1, "base_price": 1, "discount_price": 1, 
+             "no_of_inspections": 1, "description": 1, "validity_days": 1}
+        ).to_list(50)
+        packages_details = {p["id"]: p for p in pkgs}
+    
+    # Build transaction-level breakdown
+    transactions = []
+    
+    for group_key, group_inspections in packages_map.items():
+        first_insp = group_inspections[0]
+        lead = leads_map.get(first_insp.get("lead_id"), {})
+        pkg_details = packages_details.get(first_insp.get("package_id"), {})
+        
+        # Calculate totals for this transaction
+        total_amount = sum(insp.get("total_amount", 0) for insp in group_inspections)
+        amount_paid = sum(insp.get("amount_paid", 0) for insp in group_inspections)
+        balance_due = sum(insp.get("balance_due", 0) for insp in group_inspections)
+        
+        # Get the payment link URL - construct it if we have payment_link_id
+        payment_link_id = lead.get("payment_link_id") or first_insp.get("razorpay_payment_id", "")
+        payment_link_url = lead.get("payment_link_url")
+        if not payment_link_url and payment_link_id and payment_link_id.startswith("plink_"):
+            payment_link_url = f"https://rzp.io/i/{payment_link_id.replace('plink_', '')}"
+        
+        transaction = {
+            "transaction_id": group_key,
+            "order_id": first_insp.get("order_id"),
+            "razorpay_payment_id": first_insp.get("razorpay_payment_id"),
+            "payment_link_id": payment_link_id,
+            "payment_link_url": payment_link_url,
+            "payment_date": first_insp.get("payment_date") or first_insp.get("created_at"),
+            
+            # Package details
+            "package_id": first_insp.get("package_id"),
+            "package_name": first_insp.get("package_type") or pkg_details.get("name", "Unknown"),
+            "package_description": pkg_details.get("description"),
+            "package_validity_days": pkg_details.get("validity_days"),
+            
+            # Inspection counts
+            "inspections_purchased": len(group_inspections),
+            "inspections_used": len([i for i in group_inspections if i.get("scheduled_date") or i.get("inspection_status") in ["INSPECTION_COMPLETED", "INSPECTION_IN_PROGRESS"]]),
+            "inspections_available": len([i for i in group_inspections if not i.get("scheduled_date") and i.get("inspection_status") not in ["INSPECTION_COMPLETED", "INSPECTION_IN_PROGRESS"]]),
+            
+            # Pricing details
+            "original_amount": lead.get("original_amount") or pkg_details.get("base_price") or total_amount,
+            "discount_code": lead.get("discount_code"),
+            "discount_percentage": lead.get("discount_percentage"),
+            "discount_amount": lead.get("discount_amount", 0),
+            "total_amount": total_amount,
+            "amount_paid": amount_paid,
+            "balance_due": balance_due,
+            "payment_status": first_insp.get("payment_status"),
+            "payment_type": first_insp.get("payment_type"),
+            
+            # Sales info
+            "sales_rep_name": lead.get("assigned_to_name") or first_insp.get("created_by"),
+            "source": lead.get("source"),
+            
+            # Individual inspections in this transaction
+            "inspections": [{
+                "id": insp["id"],
+                "slot_number": insp.get("slot_number"),
+                "car_number": insp.get("car_number"),
+                "car_make": insp.get("car_make"),
+                "car_model": insp.get("car_model"),
+                "car_year": insp.get("car_year"),
+                "inspection_status": insp.get("inspection_status"),
+                "scheduled_date": insp.get("scheduled_date"),
+                "scheduled_time": insp.get("scheduled_time"),
+                "mechanic_name": insp.get("mechanic_name"),
+                "report_status": insp.get("report_status"),
+                "has_report": insp.get("report_status") == "submitted"
+            } for insp in sorted(group_inspections, key=lambda x: x.get("slot_number", 0))]
+        }
+        transactions.append(transaction)
+    
+    # Sort transactions by payment date (most recent first)
+    transactions.sort(key=lambda x: x.get("payment_date") or "", reverse=True)
+    
+    # Calculate overall summary
+    total_amount = sum(t["total_amount"] for t in transactions)
+    total_paid = sum(t["amount_paid"] for t in transactions)
+    total_pending = sum(t["balance_due"] for t in transactions)
+    total_inspections = sum(t["inspections_purchased"] for t in transactions)
+    total_discount = sum(t["discount_amount"] or 0 for t in transactions)
     
     return {
         "customer": {
@@ -432,13 +519,33 @@ async def get_customer_detailed_payments(
             "email": customer.get("email")
         },
         "summary": {
-            "total_inspections": len(payment_breakdown),
+            "total_transactions": len(transactions),
+            "total_inspections": total_inspections,
             "total_amount": total_amount,
             "total_paid": total_paid,
             "total_pending": total_pending,
+            "total_discount": total_discount,
             "payment_completion": round((total_paid / total_amount * 100) if total_amount > 0 else 0, 1)
         },
-        "inspections": payment_breakdown
+        "transactions": transactions,
+        # Keep inspections for backward compatibility
+        "inspections": [insp for t in transactions for insp in [{
+            "inspection_id": t["transaction_id"],
+            "car_number": t["inspections"][0]["car_number"] if t["inspections"] else None,
+            "car_make": t["inspections"][0]["car_make"] if t["inspections"] else None,
+            "car_model": t["inspections"][0]["car_model"] if t["inspections"] else None,
+            "package_name": t["package_name"],
+            "package_type": t["package_name"],
+            "inspection_status": t["inspections"][0]["inspection_status"] if t["inspections"] else None,
+            "created_at": t["payment_date"],
+            "pricing": {
+                "total_amount": t["total_amount"],
+                "amount_paid": t["amount_paid"],
+                "balance_due": t["balance_due"],
+                "payment_status": t["payment_status"]
+            },
+            "transactions": []
+        }]]
     }
 
 
