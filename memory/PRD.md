@@ -3,6 +3,28 @@
 ---
 ## 📅 CHANGELOG
 
+### March 3, 2026 - City Auto-Detection Fix for Inspection Edit Modal
+
+**Problem:** When editing an inspection and selecting a new address from Google Places (e.g., "Pune Railway Station"), the city field was not being correctly auto-populated. The city was appearing in Devanagari script (पुणे) instead of English (Pune).
+
+**Root Cause:** 
+1. The `onSelect` prop on `PlacesAutocomplete` was correctly wired in `InspectionsPage.jsx`
+2. The Google Places API was returning city names in the local language (Hindi/Devanagari) for Indian places
+3. No normalization was being done to convert Devanagari city names to English
+
+**Solution:**
+1. Added `language: 'en'` parameter to Google Places API requests (both new and legacy APIs)
+2. Created a `cityNameMap` dictionary mapping Devanagari city names to English equivalents (50+ major Indian cities)
+3. Added `normalizeCityName()` helper function to convert Devanagari city names to English
+4. The helper falls back to the original name if no mapping exists
+
+**Files Modified:**
+- `/app/frontend/src/components/ui/PlacesAutocomplete.jsx` - Added language parameter and city name normalization
+
+**Testing:** Verified that selecting "Pune Railway Station" now correctly sets the city field to "Pune" (English) instead of "पुणे" (Devanagari).
+
+---
+
 ### March 3, 2026 - Comprehensive Timezone Fix for Date Filtering
 
 **Problem:** Date filtering across all modules was timezone-unaware. A lead created at "3 Mar 12:30 AM IST" was stored as "2026-03-02T19:00:00Z" (UTC), causing it to incorrectly appear under "Yesterday" instead of "Today" when filtering.
