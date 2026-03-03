@@ -1430,12 +1430,22 @@ async def reassign_lead(
     
     new_agent_name = new_agent.get("name", "Unknown")
     
-    # Get role code - first from user record, then lookup from roles table if empty
-    agent_role = new_agent.get("role_code", "").upper()
-    if not agent_role and new_agent.get("role_id"):
+    # Get role code - MUST lookup from roles table since role_code field is unreliable
+    # (it may be stored as string "None" or empty)
+    agent_role = ""
+    role_code_raw = new_agent.get("role_code")
+    
+    # Check if role_code is valid (not None, not "None", not empty)
+    if role_code_raw and str(role_code_raw).lower() not in ["none", ""]:
+        agent_role = str(role_code_raw).upper()
+    
+    # Always try to lookup from roles table as the authoritative source
+    if new_agent.get("role_id"):
         role = await db.roles.find_one({"id": new_agent.get("role_id")}, {"_id": 0, "code": 1})
-        if role:
+        if role and role.get("code"):
             agent_role = role.get("code", "").upper()
+    
+    logger.info(f"Reassign validation: agent={new_agent_name}, role_code_raw='{role_code_raw}', resolved_role='{agent_role}'")
     
     # Validate the agent is a sales role (flexible matching)
     if "SALES" not in agent_role:
