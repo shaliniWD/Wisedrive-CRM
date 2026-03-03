@@ -1,135 +1,111 @@
 {
   "design_system": {
-    "typography": {
-      "font_family": {
-        "primary": "Inter, sans-serif",
-        "headings": "Manrope, Inter, sans-serif",
-        "mono": "JetBrains Mono, monospace"
-      },
-      "scale": {
-        "h1": "text-3xl font-bold tracking-tight",
-        "h2": "text-2xl font-semibold tracking-tight",
-        "h3": "text-xl font-semibold tracking-tight",
-        "body": "text-sm leading-relaxed text-slate-600",
-        "caption": "text-xs font-medium text-slate-500 uppercase tracking-wider",
-        "score_large": "text-5xl font-bold tracking-tighter"
-      }
+    "identity": {
+      "persona": "E1",
+      "tone": "Professional, Trustworthy, Efficient, Modern",
+      "theme": "Light",
+      "primary_font": "Inter",
+      "secondary_font": "Inter"
     },
     "colors": {
-      "primary": {
-        "DEFAULT": "#2E3192",
-        "foreground": "#FFFFFF",
-        "hover": "#1e2060"
+      "primary": "#2E3192",
+      "secondary": "#6366F1",
+      "accent": "#FFD700",
+      "background": "#FFFFFF",
+      "surface": "#F8FAFC",
+      "text": {
+        "primary": "#0F172A",
+        "secondary": "#64748B",
+        "muted": "#94A3B8"
       },
-      "secondary": {
-        "DEFAULT": "#FFD700",
-        "foreground": "#1a1a1a",
-        "hover": "#e5c100"
-      },
-      "success": {
-        "DEFAULT": "#10B981",
-        "bg": "#ECFDF5",
-        "text": "#047857"
-      },
-      "warning": {
-        "DEFAULT": "#F59E0B",
-        "bg": "#FFFBEB",
-        "text": "#B45309"
-      },
-      "danger": {
-        "DEFAULT": "#EF4444",
-        "bg": "#FEF2F2",
-        "text": "#B91C1C"
-      },
-      "neutral": {
-        "surface": "#F8FAFC",
-        "border": "#E2E8F0",
-        "text_primary": "#0F172A",
-        "text_secondary": "#64748B"
-      }
+      "border": "#E2E8F0",
+      "success": "#10B981",
+      "warning": "#F59E0B",
+      "error": "#EF4444"
+    },
+    "typography": {
+      "headings": "font-sans font-semibold tracking-tight text-slate-900",
+      "body": "font-sans text-sm text-slate-600 leading-relaxed",
+      "labels": "text-xs font-medium text-slate-500 uppercase tracking-wider"
+    },
+    "spacing": {
+      "container_padding": "p-6 md:p-8",
+      "element_gap": "gap-4 md:gap-6",
+      "section_gap": "space-y-6"
     },
     "shadows": {
-      "card": "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)",
-      "floating": "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
-      "glow": "0 0 15px rgba(46, 49, 146, 0.15)"
+      "card": "shadow-sm hover:shadow-md transition-shadow duration-200",
+      "modal": "shadow-2xl",
+      "dropdown": "shadow-lg ring-1 ring-black/5"
     },
-    "radius": {
-      "card": "0.75rem",
-      "button": "0.5rem",
-      "input": "0.375rem"
+    "border_radius": {
+      "base": "rounded-lg",
+      "card": "rounded-xl",
+      "button": "rounded-md"
     }
   },
   "components": {
     "Modal": {
-      "wrapper": "fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm",
-      "content": "relative w-full max-w-5xl bg-white rounded-xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col",
-      "header": "px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-10",
-      "body": "p-8 overflow-y-auto bg-slate-50/50 flex-1"
+      "wrapper": "DialogContent max-w-4xl p-0 overflow-hidden bg-white gap-0",
+      "header": "px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-10",
+      "title": "text-lg font-semibold text-slate-900",
+      "body": "p-6 bg-slate-50/50 min-h-[400px] max-h-[80vh] overflow-y-auto"
     },
-    "ScoreGauge": {
-      "container": "relative flex flex-col items-center justify-center p-6 bg-white rounded-xl border border-slate-100 shadow-sm",
-      "circle_bg": "stroke-slate-100",
-      "circle_fg": "transition-all duration-1000 ease-out",
-      "value_text": "text-4xl font-bold text-slate-900 mt-4",
-      "label_text": "text-sm font-medium text-slate-500 uppercase tracking-wide"
+    "Tabs": {
+      "list": "w-full justify-start border-b border-slate-200 bg-transparent p-0 h-auto rounded-none",
+      "trigger": "data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none border-b-2 border-transparent rounded-none px-4 py-3 text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors bg-transparent"
     },
-    "StatusBadge": {
-      "base": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
-      "active": "bg-green-100 text-green-800",
-      "closed": "bg-slate-100 text-slate-800",
-      "default": "bg-red-100 text-red-800"
+    "Card": {
+      "base": "bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden",
+      "header": "px-5 py-3 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center",
+      "content": "p-5"
     },
-    "DataCard": {
-      "wrapper": "bg-white p-5 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow duration-200",
-      "label": "text-xs font-medium text-slate-500 uppercase tracking-wider mb-1",
-      "value": "text-2xl font-bold text-slate-900"
+    "Input": {
+      "base": "flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200"
+    },
+    "Button": {
+      "primary": "bg-[#2E3192] text-white hover:bg-[#2E3192]/90 shadow-sm",
+      "secondary": "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 shadow-sm",
+      "ghost": "hover:bg-slate-100 text-slate-600",
+      "destructive": "bg-red-50 text-red-600 hover:bg-red-100 border border-red-200"
     }
   },
-  "layout_strategy": {
-    "step_1_form": {
+  "layout_rules": {
+    "CustomerInfo": {
       "grid": "grid grid-cols-1 md:grid-cols-2 gap-6",
-      "full_width": "col-span-1 md:col-span-2"
+      "section": "space-y-4"
     },
-    "step_3_report": {
-      "header_grid": "grid grid-cols-1 md:grid-cols-12 gap-6 mb-8",
-      "score_section": "col-span-1 md:col-span-12 lg:col-span-4 space-y-6",
-      "details_section": "col-span-1 md:col-span-12 lg:col-span-8 space-y-6",
-      "bento_grid": "grid grid-cols-2 md:grid-cols-4 gap-4"
-    }
-  },
-  "motion": {
-    "page_transition": {
-      "initial": { "opacity": 0, "y": 20 },
-      "animate": { "opacity": 1, "y": 0 },
-      "exit": { "opacity": 0, "y": -20 },
-      "transition": { "duration": 0.3, "ease": "easeOut" }
+    "Vehicles": {
+      "list_layout": "flex flex-col gap-4",
+      "card_grid": "grid grid-cols-2 md:grid-cols-4 gap-4 text-sm"
     },
-    "gauge_animation": {
-      "initial": { "strokeDashoffset": 100 },
-      "animate": { "strokeDashoffset": 0 },
-      "transition": { "duration": 1.5, "ease": "easeOut", "delay": 0.2 }
+    "Documents": {
+      "list_item": "flex items-center justify-between p-4 bg-white border border-slate-200 rounded-lg hover:border-primary/50 transition-colors group"
     }
   },
   "assets": {
-    "icons": "Use Lucide React icons (ShieldCheck, AlertCircle, CreditCard, History, TrendingUp, User, Calendar, Mail, Phone)",
-    "logos": "Use text labels 'Experian' and 'Equifax' with distinct brand colors (Blue #004691 for Experian, Red #D40000 for Equifax) if logos are unavailable."
+    "icons": "lucide-react",
+    "image_urls": []
   },
   "instructions_to_main_agent": [
-    "1. Create a new component `CreditCheckModal.js` in `/app/frontend/src/components/loans/` (create directory if needed).",
-    "2. Use `framer-motion` for smooth transitions between steps (Form -> OTP -> Report).",
-    "3. Implement a custom SVG Gauge for the credit score. Do not use a heavy charting library just for this.",
-    "4. Ensure the 'Report' view is dense but readable. Use the 'Bento' grid layout for summary metrics.",
-    "5. Use `lucide-react` for all icons.",
-    "6. Mock the API calls with `setTimeout` to simulate loading states (Form submission -> 2s -> OTP sent).",
-    "7. For the Credit Report data, create a robust mock JSON object that includes both Experian and Equifax data structures.",
-    "8. The 'Account List' should be a clean table with status badges (Active, Closed, Default).",
-    "9. Add a 'Download PDF' button in the report header (mock functionality).",
-    "10. Ensure all inputs have `data-testid` attributes for testing."
+    "Use .js and .jsx extensions for files, NOT .ts or .tsx.",
+    "Implement the 'Customer Details Modal' using the Shadcn Dialog component.",
+    "Use the 'Tabs' component for switching between Customer Info, Vehicles, and Documents.",
+    "Ensure all inputs have labels and proper spacing.",
+    "For the Vehicles tab, use a Card-based layout for each vehicle instead of a wide table if possible, or a very clean table if data is dense.",
+    "For the Documents tab, create a clean list view with upload buttons.",
+    "Use the defined color palette: Primary #2E3192, Secondary #6366F1.",
+    "Ensure the modal is responsive and fits within the viewport (max-h-[80vh] with overflow-y-auto).",
+    "Add 'data-testid' to all interactive elements.",
+    "Do NOT use gradients for backgrounds; stick to clean white and slate surfaces.",
+    "Preserve all existing functionality: Edit/Save for customer, Add/Delete/Refresh for vehicles, Upload/View/Delete for documents."
   ],
   "universal_guidelines": [
-    "Avoid generic 'Bootstrap' looks. Use custom padding and shadows.",
-    "Use 'Inter' font with 'tnum' (tabular nums) for all financial data.",
-    "Ensure high contrast for all text (WCAG AA compliance).",
-    "Do not use pure black (#000000). Use Slate-900 (#0F172A) instead."
+    "Avoid 'AI slop' aesthetics; focus on professional, high-trust design.",
+    "Use generous padding (p-6, p-8) to reduce congestion.",
+    "Use specific transitions (e.g., transition-colors duration-200) instead of 'transition-all'.",
+    "Do not center-align text in forms; keep it left-aligned for readability.",
+    "Use 'sonner' for toast notifications if needed.",
+    "Ensure high contrast for text against backgrounds."
   ]
 }
