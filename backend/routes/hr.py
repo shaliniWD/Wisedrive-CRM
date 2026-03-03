@@ -1286,10 +1286,14 @@ async def get_assigned_cities(
     return {"cities": employee.get("assigned_cities", []) if employee else []}
 
 
+class InspectionCitiesRequest(BaseModel):
+    """Request model for updating inspection cities"""
+    cities: List[str]
+
 @router.put("/employees/{employee_id}/inspection-cities")
 async def update_inspection_cities(
     employee_id: str,
-    cities: List[str],
+    request: InspectionCitiesRequest,
     current_user: dict = Depends(get_current_user)
 ):
     """Update inspection cities for a mechanic"""
@@ -1301,12 +1305,12 @@ async def update_inspection_cities(
     await db.users.update_one(
         {"id": employee_id},
         {"$set": {
-            "inspection_cities": cities,
+            "inspection_cities": request.cities,
             "updated_at": datetime.now(timezone.utc).isoformat()
         }}
     )
     
-    return {"cities": cities}
+    return {"cities": request.cities}
 
 
 @router.get("/employees/{employee_id}/inspection-cities")
