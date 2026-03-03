@@ -698,6 +698,10 @@ export const creditReportApi = {
   fetchEquifaxReport: (data) => axios.post(`${API_URL}/credit-report/equifax`, data),
   fetchEquifaxPdf: (data) => axios.post(`${API_URL}/credit-report/equifax/pdf`, data),
   
+  // Experian Reports
+  fetchExperianReport: (data) => axios.post(`${API_URL}/credit-report/experian`, data),
+  fetchExperianPdf: (data) => axios.post(`${API_URL}/credit-report/experian/pdf`, data),
+  
   // Get Reports
   getReport: (reportId) => axios.get(`${API_URL}/credit-report/${reportId}`),
   getReportHistory: (pan) => axios.get(`${API_URL}/credit-report/history/${pan}`),
