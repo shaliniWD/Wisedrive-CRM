@@ -775,15 +775,30 @@ async def repair_customer_by_mobile(
 async def _repair_customer(db, customer: dict, current_user: dict):
     """Internal function to repair customer data"""
     import uuid
+    import re
     
     customer_id = customer.get("id")
     lead_id = customer.get("lead_id")
     mobile = customer.get("mobile")
     
+    # Normalize mobile number - extract just digits, handle +91 prefix
+    def normalize_mobile(m):
+        if not m:
+            return None
+        # Remove all non-digits
+        digits = re.sub(r'\D', '', m)
+        # If starts with 91 and has 12 digits, remove the 91 prefix
+        if len(digits) == 12 and digits.startswith('91'):
+            return digits[2:]
+        return digits
+    
+    normalized_mobile = normalize_mobile(mobile)
+    
     repairs = {
         "customer_id": customer_id,
         "customer_name": customer.get("name"),
         "mobile": mobile,
+        "normalized_mobile": normalized_mobile,
         "inspections_linked": 0,
         "inspections_created": 0,
         "details": []
@@ -802,10 +817,33 @@ async def _repair_customer(db, customer: dict, current_user: dict):
             repairs["inspections_linked"] += result.modified_count
             repairs["details"].append(f"Linked {result.modified_count} orphaned inspection(s) by lead_id")
     
-    # 2. Link orphaned inspections by mobile
-    if mobile:
+    # 2. Link orphaned inspections by mobile (with normalization)
+    # We need to find inspections where the normalized mobile matches
+    if normalized_mobile:
+        # Build a regex to match various phone formats:
+        # - 7411891010
+        # - +917411891010
+        # - 917411891010
+        # - +91-7411891010
+        # - +91 7411891010
+        mobile_patterns = [
+            normalized_mobile,  # Just the digits
+            f"+91{normalized_mobile}",  # With +91
+            f"91{normalized_mobile}",  # With 91
+            f"+91-{normalized_mobile}",  # With +91-
+            f"+91 {normalized_mobile}",  # With +91 space
+        ]
+        
         result = await db.inspections.update_many(
-            {"customer_mobile": mobile, "customer_id": {"$nin": [customer_id, None, ""]}},
+            {
+                "customer_mobile": {"$in": mobile_patterns},
+                "$or": [
+                    {"customer_id": {"$exists": False}},
+                    {"customer_id": None},
+                    {"customer_id": ""},
+                    {"customer_id": {"$ne": customer_id}}
+                ]
+            },
             {"$set": {
                 "customer_id": customer_id,
                 "lead_id": lead_id,
@@ -814,7 +852,7 @@ async def _repair_customer(db, customer: dict, current_user: dict):
         )
         if result.modified_count > 0:
             repairs["inspections_linked"] += result.modified_count
-            repairs["details"].append(f"Linked {result.modified_count} orphaned inspection(s) by mobile")
+            repairs["details"].append(f"Linked {result.modified_count} orphaned inspection(s) by mobile (normalized)")
     
     # 3. Create missing inspections for payments
     # Collect all payment IDs for this customer
