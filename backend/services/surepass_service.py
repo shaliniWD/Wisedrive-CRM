@@ -215,6 +215,292 @@ class SurepassService:
                 "error_code": "EXCEPTION"
             }
     
+    async def fetch_equifax_report(
+        self,
+        name: str,
+        id_number: str,
+        id_type: str = "aadhaar",
+        mobile: str = "",
+        consent: str = "Y"
+    ) -> Dict[str, Any]:
+        """
+        Fetch Equifax credit report (JSON format)
+        
+        Args:
+            name: Customer full name
+            id_number: ID number (Aadhaar, PAN, etc.)
+            id_type: Type of ID - 'aadhaar', 'pan', 'voter', 'passport', 'driving_license'
+            mobile: Customer mobile number
+            consent: 'Y' for consent given
+            
+        Returns:
+            Dict with credit score, report data, and status
+        """
+        if not self.is_configured():
+            return {
+                "success": False,
+                "error": "Surepass API not configured",
+                "error_code": "NOT_CONFIGURED"
+            }
+        
+        # Normalize mobile
+        mobile_clean = ""
+        if mobile:
+            mobile_clean = mobile.replace("+91", "").replace(" ", "").replace("-", "")
+            if mobile_clean.startswith("91") and len(mobile_clean) == 12:
+                mobile_clean = mobile_clean[2:]
+        
+        payload = {
+            "name": name.strip(),
+            "id_number": id_number.strip(),
+            "id_type": id_type.lower(),
+            "mobile": mobile_clean,
+            "consent": consent
+        }
+        
+        logger.info(f"Fetching Equifax report for {id_type}: {id_number[:4]}****")
+        
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.post(
+                    f"{self.BASE_URL}{self.ENDPOINTS['equifax_json']}",
+                    headers=self._get_headers(),
+                    json=payload
+                )
+                
+                result = response.json()
+                
+                if response.status_code == 200 and result.get("success"):
+                    data = result.get("data", {})
+                    return {
+                        "success": True,
+                        "provider": "Equifax",
+                        "client_id": data.get("client_id"),
+                        "credit_score": data.get("credit_score"),
+                        "credit_report": data.get("credit_report", {}),
+                        "raw_response": result,
+                        "fetched_at": datetime.now(timezone.utc).isoformat()
+                    }
+                else:
+                    logger.error(f"Equifax API error: {result.get('message')}")
+                    return {
+                        "success": False,
+                        "error": result.get("message", "Failed to fetch credit report"),
+                        "error_code": result.get("message_code", "UNKNOWN"),
+                        "status_code": response.status_code
+                    }
+                    
+        except httpx.TimeoutException:
+            logger.error("Equifax API timeout")
+            return {
+                "success": False,
+                "error": "Request timed out. Please try again.",
+                "error_code": "TIMEOUT"
+            }
+        except Exception as e:
+            logger.error(f"Equifax API exception: {str(e)}")
+            return {
+                "success": False,
+                "error": str(e),
+                "error_code": "EXCEPTION"
+            }
+    
+    async def fetch_equifax_pdf(
+        self,
+        name: str,
+        id_number: str,
+        id_type: str = "aadhaar",
+        mobile: str = "",
+        consent: str = "Y"
+    ) -> Dict[str, Any]:
+        """
+        Fetch Equifax credit report (PDF format)
+        
+        Returns:
+            Dict with credit score and PDF download link
+        """
+        if not self.is_configured():
+            return {
+                "success": False,
+                "error": "Surepass API not configured",
+                "error_code": "NOT_CONFIGURED"
+            }
+        
+        # Normalize mobile
+        mobile_clean = ""
+        if mobile:
+            mobile_clean = mobile.replace("+91", "").replace(" ", "").replace("-", "")
+            if mobile_clean.startswith("91") and len(mobile_clean) == 12:
+                mobile_clean = mobile_clean[2:]
+        
+        payload = {
+            "name": name.strip(),
+            "id_number": id_number.strip(),
+            "id_type": id_type.lower(),
+            "mobile": mobile_clean,
+            "consent": consent
+        }
+        
+        logger.info(f"Fetching Equifax PDF report for {id_type}: {id_number[:4]}****")
+        
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.post(
+                    f"{self.BASE_URL}{self.ENDPOINTS['equifax_pdf']}",
+                    headers=self._get_headers(),
+                    json=payload
+                )
+                
+                result = response.json()
+                
+                if response.status_code == 200 and result.get("success"):
+                    data = result.get("data", {})
+                    return {
+                        "success": True,
+                        "provider": "Equifax",
+                        "client_id": data.get("client_id"),
+                        "credit_score": data.get("credit_score"),
+                        "pdf_link": data.get("credit_report_link"),
+                        "fetched_at": datetime.now(timezone.utc).isoformat()
+                    }
+                else:
+                    logger.error(f"Equifax PDF API error: {result.get('message')}")
+                    return {
+                        "success": False,
+                        "error": result.get("message", "Failed to fetch PDF report"),
+                        "error_code": result.get("message_code", "UNKNOWN"),
+                        "status_code": response.status_code
+                    }
+                    
+        except httpx.TimeoutException:
+            logger.error("Equifax PDF API timeout")
+            return {
+                "success": False,
+                "error": "Request timed out. Please try again.",
+                "error_code": "TIMEOUT"
+            }
+        except Exception as e:
+            logger.error(f"Equifax PDF API exception: {str(e)}")
+            return {
+                "success": False,
+                "error": str(e),
+                "error_code": "EXCEPTION"
+            }
+    
+    def parse_equifax_report(self, credit_report: dict) -> Dict[str, Any]:
+        """
+        Parse Equifax credit report into a structured format for UI display
+        
+        Args:
+            credit_report: Raw credit report dict from API
+            
+        Returns:
+            Structured dict with parsed data
+        """
+        if not credit_report:
+            return {}
+        
+        parsed = {
+            "personal_info": {},
+            "id_info": [],
+            "phone_info": [],
+            "address_info": [],
+            "email_info": [],
+            "score_info": {},
+            "accounts": [],
+            "enquiries": [],
+            "summary": {}
+        }
+        
+        try:
+            # Get CCR Response data
+            ccr_response = credit_report.get("CCRResponse", {})
+            cir_report_list = ccr_response.get("CIRReportDataLst", [])
+            
+            if cir_report_list:
+                first_report = cir_report_list[0]
+                cir_data = first_report.get("CIRReportData", {})
+                id_contact_info = cir_data.get("IDAndContactInfo", {})
+                
+                # Personal Info
+                personal_info = id_contact_info.get("PersonalInfo", {})
+                name_info = personal_info.get("Name", {})
+                parsed["personal_info"] = {
+                    "name": name_info.get("FullName"),
+                    "first_name": name_info.get("FirstName"),
+                    "last_name": name_info.get("LastName"),
+                    "birth_date": personal_info.get("DateOfBirth"),
+                    "gender": personal_info.get("Gender"),
+                    "age": personal_info.get("Age", {}).get("Age")
+                }
+                
+                # Identity Info
+                identity_info = id_contact_info.get("IdentityInfo", {})
+                if identity_info.get("PANId"):
+                    for pan in identity_info["PANId"]:
+                        parsed["id_info"].append({
+                            "type": "PAN",
+                            "number": pan.get("IdNumber"),
+                            "reported_date": pan.get("ReportedDate")
+                        })
+                if identity_info.get("Passport"):
+                    for passport in identity_info["Passport"]:
+                        parsed["id_info"].append({
+                            "type": "Passport",
+                            "number": passport.get("IdNumber"),
+                            "reported_date": passport.get("ReportedDate")
+                        })
+                
+                # Address Info
+                address_info = id_contact_info.get("AddressInfo", [])
+                for addr in address_info:
+                    parsed["address_info"].append({
+                        "address": addr.get("Address"),
+                        "state": addr.get("State"),
+                        "postal": addr.get("Postal"),
+                        "type": addr.get("Type"),
+                        "reported_date": addr.get("ReportedDate")
+                    })
+                
+                # Phone Info
+                phone_info = id_contact_info.get("PhoneInfo", [])
+                phone_type_map = {"H": "Home", "M": "Mobile", "O": "Office"}
+                for phone in phone_info:
+                    parsed["phone_info"].append({
+                        "number": phone.get("Number"),
+                        "type": phone_type_map.get(phone.get("typeCode"), phone.get("typeCode")),
+                        "reported_date": phone.get("ReportedDate")
+                    })
+                
+                # Email Info
+                email_info = id_contact_info.get("EmailAddressInfo", [])
+                for email in email_info:
+                    parsed["email_info"].append({
+                        "email": email.get("Email"),
+                        "reported_date": email.get("ReportedDate")
+                    })
+            
+            # Score Info from root
+            scores = credit_report.get("Score", [])
+            if scores:
+                parsed["score_info"] = {
+                    "type": scores[0].get("Type"),
+                    "version": scores[0].get("Version")
+                }
+            
+            # Summary
+            parsed["summary"] = {
+                "total_reports": len(cir_report_list),
+                "total_addresses": len(parsed["address_info"]),
+                "total_phones": len(parsed["phone_info"]),
+                "total_ids": len(parsed["id_info"])
+            }
+            
+        except Exception as e:
+            logger.error(f"Error parsing Equifax report: {str(e)}")
+        
+        return parsed
+    
     def parse_credit_report(self, credit_report: list) -> Dict[str, Any]:
         """
         Parse CIBIL credit report into a structured format for UI display
