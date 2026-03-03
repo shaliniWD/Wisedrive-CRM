@@ -1245,10 +1245,14 @@ async def update_employee_weekly_off(
 
 # ==================== ASSIGNED CITIES ====================
 
+class AssignedCitiesRequest(BaseModel):
+    """Request model for updating assigned cities"""
+    cities: List[str]
+
 @router.put("/employees/{employee_id}/assigned-cities")
 async def update_assigned_cities(
     employee_id: str,
-    cities: List[str],
+    request: AssignedCitiesRequest,
     current_user: dict = Depends(get_current_user)
 ):
     """Update assigned cities for an employee"""
@@ -1260,12 +1264,12 @@ async def update_assigned_cities(
     await db.users.update_one(
         {"id": employee_id},
         {"$set": {
-            "assigned_cities": cities,
+            "assigned_cities": request.cities,
             "updated_at": datetime.now(timezone.utc).isoformat()
         }}
     )
     
-    return {"cities": cities}
+    return {"cities": request.cities}
 
 
 @router.get("/employees/{employee_id}/assigned-cities")
