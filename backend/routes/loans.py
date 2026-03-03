@@ -1352,6 +1352,24 @@ async def sync_loan_leads_from_customers(
                 city_id = city_match["id"]
                 city_name = city_match["name"]
         
+        # If still no city, try to get from customer record
+        if not city_name or not city_id:
+            customer_record = await db.customers.find_one(
+                {"id": customer_id},
+                {"_id": 0, "city": 1, "city_id": 1, "city_name": 1, "address": 1}
+            )
+            if customer_record:
+                if not city_name:
+                    city_name = customer_record.get("city_name") or customer_record.get("city") or ""
+                if not city_id:
+                    city_id = customer_record.get("city_id")
+                # Try to look up again from customer city
+                if city_name and not city_id:
+                    city_match = city_lookup.get(city_name.lower())
+                    if city_match:
+                        city_id = city_match["id"]
+                        city_name = city_match["name"]
+        
         # Build vehicles list from inspections
         vehicles = []
         for insp in customer_inspections:
