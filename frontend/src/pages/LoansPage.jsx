@@ -368,7 +368,7 @@ export default function LoansPage() {
                   <th className="text-left p-4 font-medium text-gray-600">City</th>
                   <th className="text-left p-4 font-medium text-gray-600">Status</th>
                   <th className="text-center p-4 font-medium text-gray-600">Customer Details</th>
-                  <th className="text-center p-4 font-medium text-gray-600">Credit Score</th>
+                  <th className="text-center p-4 font-medium text-gray-600">Credit Reports</th>
                   <th className="text-center p-4 font-medium text-gray-600">Profile</th>
                   <th className="text-center p-4 font-medium text-gray-600">Loan Processing</th>
                   <th className="text-center p-4 font-medium text-gray-600">Loan Status</th>
