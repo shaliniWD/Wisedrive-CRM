@@ -184,59 +184,6 @@ const CustomerInfoTab = ({ lead, onUpdate }) => {
     </div>
   );
 };
-          </div>
-        </div>
-        <div className="space-y-1">
-          <Label className="text-xs text-gray-500">Email *</Label>
-          <Input
-            type="email"
-            value={formData.email}
-            onChange={(e) => setFormData({...formData, email: e.target.value})}
-            placeholder="email@example.com"
-            className="h-9"
-            data-testid="customer-email"
-          />
-        </div>
-        <div className="space-y-1">
-          <Label className="text-xs text-gray-500">Gender *</Label>
-          <Select value={formData.gender} onValueChange={(val) => setFormData({...formData, gender: val})}>
-            <SelectTrigger className="h-9" data-testid="customer-gender">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="male">Male</SelectItem>
-              <SelectItem value="female">Female</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1">
-          <Label className="text-xs text-gray-500">PIN Code *</Label>
-          <Input
-            value={formData.pin_code}
-            onChange={(e) => setFormData({...formData, pin_code: e.target.value.replace(/\D/g, '')})}
-            placeholder="560001"
-            maxLength={6}
-            className="h-9 font-mono"
-            data-testid="customer-pincode"
-          />
-        </div>
-      </div>
-
-      <Button
-        onClick={handleSave}
-        disabled={saving}
-        className="w-full"
-        data-testid="save-customer-info-btn"
-      >
-        {saving ? (
-          <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Saving...</>
-        ) : (
-          'Save Customer Info'
-        )}
-      </Button>
-    </div>
-  );
-};
 
 // ==================== VEHICLES TAB ====================
 const VehiclesTab = ({ lead, onUpdate }) => {
