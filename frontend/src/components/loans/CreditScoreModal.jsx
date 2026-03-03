@@ -399,14 +399,14 @@ const BureauReportView = ({ report, bureauName, bureauColor }) => {
         {/* Summary Cards */}
         <div className="lg:col-span-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
-            <DataCard label="Total Accounts" value={creditAccount.CreditAccountTotal || 0} icon={Building2} />
-            <DataCard label="Active" value={creditAccount.CreditAccountActive || 0} icon={CheckCircle} />
-            <DataCard label="Closed" value={creditAccount.CreditAccountClosed || 0} icon={Lock} />
+            <DataCard label="Total Accounts" value={totalAccounts} icon={Building2} />
+            <DataCard label="Active" value={activeAccounts} icon={CheckCircle} />
+            <DataCard label="Closed" value={closedAccounts} icon={Lock} />
             <DataCard 
               label="Defaults" 
-              value={creditAccount.CreditAccountDefault || 0} 
+              value={problemAccounts.length} 
               icon={AlertTriangle}
-              alert={(creditAccount.CreditAccountDefault || 0) > 0}
+              alert={problemAccounts.length > 0}
             />
           </div>
           
@@ -414,15 +414,15 @@ const BureauReportView = ({ report, bureauName, bureauColor }) => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-4 text-white">
               <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Total Outstanding</p>
-              <p className="text-2xl font-bold mt-1">{formatINR(outstanding.Outstanding_Balance_All)}</p>
+              <p className="text-2xl font-bold mt-1">{formatINR(totalBalance)}</p>
             </div>
             <div className="bg-white rounded-xl p-4 border border-slate-100">
               <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Secured</p>
-              <p className="text-xl font-bold text-slate-900 mt-1">{formatINR(outstanding.Outstanding_Balance_Secured)}</p>
+              <p className="text-xl font-bold text-slate-900 mt-1">{formatINR(outstanding.Outstanding_Balance_Secured || 0)}</p>
             </div>
             <div className="bg-white rounded-xl p-4 border border-slate-100">
               <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Unsecured</p>
-              <p className="text-xl font-bold text-slate-900 mt-1">{formatINR(outstanding.Outstanding_Balance_UnSecured)}</p>
+              <p className="text-xl font-bold text-slate-900 mt-1">{formatINR(outstanding.Outstanding_Balance_UnSecured || 0)}</p>
             </div>
           </div>
           
