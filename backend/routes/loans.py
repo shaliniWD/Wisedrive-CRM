@@ -1374,8 +1374,28 @@ async def sync_loan_leads_from_customers(
                 if not any(v.get("car_number") == vehicle["car_number"] for v in vehicles):
                     vehicles.append(vehicle)
         
-        # Get phone - try multiple fields
+        # Get phone - try multiple fields from inspection and customer
         customer_phone = inspection.get("customer_phone") or inspection.get("customer_mobile") or ""
+        
+        # If no phone from inspection, try to get from customer record
+        if not customer_phone:
+            customer_record = await db.customers.find_one(
+                {"id": customer_id},
+                {"_id": 0, "mobile": 1, "phone": 1}
+            )
+            if customer_record:
+                customer_phone = customer_record.get("mobile") or customer_record.get("phone") or ""
+        
+        # Clean up phone number format
+        if customer_phone:
+            customer_phone = str(customer_phone).replace(" ", "").replace("-", "")
+            # Ensure it has country code
+            if not customer_phone.startswith("+"):
+                # Remove leading 91 if present without +
+                if customer_phone.startswith("91") and len(customer_phone) > 10:
+                    customer_phone = "+" + customer_phone
+                elif len(customer_phone) == 10:
+                    customer_phone = "+91" + customer_phone
         
         loan_lead = {
             "id": str(uuid.uuid4()),
