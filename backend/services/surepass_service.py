@@ -23,8 +23,8 @@ class SurepassService:
     ENDPOINTS = {
         "cibil_json": "/credit-report-cibil/fetch-report",
         "cibil_pdf": "/credit-report-cibil/fetch-report-pdf",
-        "equifax_json": "/credit-report-equifax/fetch-report",
-        "equifax_pdf": "/credit-report-equifax/fetch-report-pdf",
+        "equifax_json": "/credit-report-v2/fetch-report",
+        "equifax_pdf": "/credit-report-v2/fetch-pdf-report",
         "experian_json": "/credit-report-experian/fetch-report",
         "experian_pdf": "/credit-report-experian/fetch-report-pdf",
         "crif_json": "/credit-report-crif/fetch-report",
