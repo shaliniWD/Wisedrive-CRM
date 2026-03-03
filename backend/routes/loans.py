@@ -1177,7 +1177,7 @@ async def check_lead_eligibility(
         if car_year:
             try:
                 req.vehicle_age_years = datetime.now().year - int(car_year)
-            except:
+            except (ValueError, TypeError):
                 pass
     
     # Check eligibility against all banks
