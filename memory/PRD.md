@@ -3,6 +3,36 @@
 ---
 ## 📅 CHANGELOG
 
+### March 3, 2026 - Loan Eligibility Engine Fix
+**Problem:** The `/api/eligibility/check` endpoint was returning "Loan lead not found" error even though it should work independently without a lead ID.
+**Root Cause:** Python name shadowing - two functions with the same name `check_bank_eligibility`:
+1. Helper function at line 877 for actual eligibility calculations
+2. API route at line 2273 for vehicle-specific eligibility checking
+
+When the helper function was called, Python resolved it to the API route function instead, which expected a `lead_id` parameter.
+
+**Solution:**
+1. Renamed helper function from `check_bank_eligibility` to `evaluate_bank_eligibility`
+2. Updated all callers to use the new function name
+3. Removed duplicate `add_charge_to_offer` route (kept the more feature-rich version)
+4. Fixed bare `except` statements with specific exception types
+
+**Files Modified:**
+- `/app/backend/routes/loans.py` - Function rename, duplicate route removal, lint fixes
+
+**Cleanup:**
+- Deleted obsolete `/app/frontend/src/components/loans/DocumentsModal.jsx`
+- Deleted obsolete `/app/frontend/src/components/loans/VehicleDetailsModal.jsx`
+- Updated `/app/frontend/src/components/loans/index.js` - Removed obsolete exports
+- Updated `/app/frontend/src/pages/LoansPage.jsx` - Removed unused imports
+
+**Testing:** Verified via curl:
+- POST `/api/eligibility/check` now returns proper eligibility results
+- 23 banks checked with scores, max loan amounts, EMIs calculated correctly
+- Banks correctly rejected based on credit score thresholds
+
+---
+
 ### March 1, 2026 - Comprehensive City Master Integration
 **Problem:** Multiple places in the CRM had hardcoded city lists instead of fetching from the Cities Master table.
 **Solution:** Swept the entire project and updated all city references to use the Cities Master API.
