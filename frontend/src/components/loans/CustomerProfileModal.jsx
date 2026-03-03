@@ -131,6 +131,8 @@ const CustomerProfileModal = ({ isOpen, onClose, lead, onUpdate }) => {
   const [calculating, setCalculating] = useState(false);
   const [editingKyc, setEditingKyc] = useState(false);
   const [kycForm, setKycForm] = useState({});
+  const [pdfPassword, setPdfPassword] = useState('');
+  const [showPasswordInput, setShowPasswordInput] = useState(false);
   
   useEffect(() => {
     if (isOpen && lead?.id) {
@@ -163,13 +165,22 @@ const CustomerProfileModal = ({ isOpen, onClose, lead, onUpdate }) => {
     
     setAnalyzing(true);
     try {
-      const res = await loansApi.analyzeBankStatement(lead.id, bankStatementDoc.id);
+      const res = await loansApi.analyzeBankStatement(lead.id, bankStatementDoc.id, pdfPassword || null);
       toast.success('Bank statement analyzed successfully');
       fetchProfile();
       onUpdate();
+      setShowPasswordInput(false);
+      setPdfPassword('');
     } catch (err) {
       console.error('Analysis failed:', err);
-      toast.error(err.response?.data?.detail || 'Failed to analyze bank statement');
+      const errorMsg = err.response?.data?.detail || 'Failed to analyze bank statement';
+      // Check if it's a password-related error
+      if (errorMsg.toLowerCase().includes('password') || errorMsg.toLowerCase().includes('unlock') || errorMsg.toLowerCase().includes('encrypted')) {
+        setShowPasswordInput(true);
+        toast.error('PDF is password protected. Please enter the password.');
+      } else {
+        toast.error(errorMsg);
+      }
     } finally {
       setAnalyzing(false);
     }
