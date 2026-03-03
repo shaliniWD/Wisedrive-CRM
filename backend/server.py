@@ -5100,7 +5100,17 @@ async def get_inspections(
                     ]
                 }]
     
-    inspections = await db.inspections.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    # Determine sort field based on filter
+    # For scheduled inspections: sort by scheduled_date (with time) descending
+    # For unscheduled: will be sorted by payment_date after grouping
+    # For all: sort by created_at descending
+    if is_scheduled is True:
+        # Sort by scheduled_date and scheduled_time combined, most recent first
+        sort_field = [("scheduled_date", -1), ("scheduled_time", -1), ("created_at", -1)]
+    else:
+        sort_field = [("created_at", -1)]
+    
+    inspections = await db.inspections.find(query, {"_id": 0}).sort(sort_field).to_list(1000)
     
     # For UNSCHEDULED inspections, group by customer/order to show package-based view
     if is_scheduled is False:
