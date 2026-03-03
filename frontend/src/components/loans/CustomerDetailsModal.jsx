@@ -1,11 +1,11 @@
-// Customer Details Modal Component - Combined Vehicles & Documents
+// Customer Details Modal Component - Clean, Modern UI Design
 import React, { useState, useEffect, useRef } from 'react';
 import { loansApi } from '@/services/api';
 import { toast } from 'sonner';
 import {
   Car, FileText, CheckCircle, Plus, Trash2, RefreshCw, Upload, 
-  Loader2, Info, Users, Building2, AlertCircle, ExternalLink, Eye,
-  User, CreditCard, Phone, Mail, MapPin, Calendar, Edit, Save, X
+  Loader2, AlertCircle, Eye, User, Phone, Mail, Edit, Save, X,
+  Banknote, Calendar, Shield, ChevronRight, Sparkles
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,8 +14,9 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+  Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // ==================== CUSTOMER INFO TAB ====================
 const CustomerInfoTab = ({ lead, onUpdate }) => {
@@ -28,11 +29,11 @@ const CustomerInfoTab = ({ lead, onUpdate }) => {
     gender: 'male'
   });
   const [saving, setSaving] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     if (lead) {
       const nameParts = (lead.customer_name || '').split(' ');
-      // Get mobile from customer_phone, clean it up
       let mobile = lead.customer_phone || '';
       mobile = mobile.replace('+91', '').replace('91', '').replace(/\D/g, '');
       if (mobile.length > 10) mobile = mobile.slice(-10);
@@ -49,150 +50,205 @@ const CustomerInfoTab = ({ lead, onUpdate }) => {
   }, [lead]);
 
   const handleSave = async () => {
+    if (!formData.pan_number || formData.pan_number.length !== 10) {
+      toast.error('Please enter a valid 10-character PAN number');
+      return;
+    }
+    
     setSaving(true);
     try {
-      await loansApi.update(lead.id, {
+      await loansApi.updateLead(lead.id, {
         credit_first_name: formData.first_name,
         credit_last_name: formData.last_name,
-        pan_number: formData.pan_number,
-        customer_phone: formData.mobile_number ? `+91${formData.mobile_number}` : '',
-        email: formData.email,
+        pan_number: formData.pan_number.toUpperCase(),
+        customer_phone: '+91' + formData.mobile_number,
+        customer_email: formData.email,
         gender: formData.gender
       });
-      toast.success('Customer info saved');
+      toast.success('Customer details saved');
+      setIsEditing(false);
       onUpdate();
     } catch (err) {
-      toast.error('Failed to save customer info');
+      toast.error(err.response?.data?.detail || 'Failed to save');
     } finally {
       setSaving(false);
     }
   };
 
-  // Check if PAN is missing (required for credit reports)
-  const isPanMissing = !formData.pan_number || formData.pan_number.length !== 10;
+  const InfoField = ({ icon: Icon, label, value, className = "" }) => (
+    <div className={`flex items-start gap-3 ${className}`}>
+      <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
+        <Icon className="h-4 w-4 text-slate-500" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">{label}</p>
+        <p className="text-sm font-medium text-slate-800 truncate">{value || '—'}</p>
+      </div>
+    </div>
+  );
 
-  return (
-    <div className="space-y-4">
-      {/* Customer Name & Phone - Read Only Info */}
-      <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
-        <div className="flex justify-between items-center">
+  if (!isEditing) {
+    return (
+      <div className="space-y-6">
+        {/* Header with Edit Button */}
+        <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs text-slate-500">Lead Customer</p>
-            <p className="font-semibold text-slate-900">{lead?.customer_name || 'Unknown'}</p>
-            <p className="text-sm text-slate-600">{lead?.customer_phone || 'No phone'}</p>
+            <h3 className="text-lg font-semibold text-slate-900">Customer Information</h3>
+            <p className="text-sm text-slate-500">Personal and contact details</p>
           </div>
-          {lead?.city_name && (
-            <div className="text-right">
-              <p className="text-xs text-slate-500">City</p>
-              <p className="text-sm font-medium text-slate-700">{lead.city_name}</p>
-            </div>
-          )}
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setIsEditing(true)}
+            className="gap-2"
+            data-testid="edit-customer-info-btn"
+          >
+            <Edit className="h-4 w-4" />
+            Edit
+          </Button>
+        </div>
+
+        {/* Info Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-white rounded-xl border border-slate-200">
+          <InfoField icon={User} label="First Name" value={formData.first_name} />
+          <InfoField icon={User} label="Last Name" value={formData.last_name} />
+          <InfoField icon={Shield} label="PAN Number" value={formData.pan_number} />
+          <InfoField icon={User} label="Gender" value={formData.gender === 'male' ? 'Male' : 'Female'} />
+          <InfoField icon={Phone} label="Mobile" value={formData.mobile_number ? `+91 ${formData.mobile_number}` : null} />
+          <InfoField icon={Mail} label="Email" value={formData.email} />
+        </div>
+
+        {/* Quick Stats */}
+        <div className="grid grid-cols-3 gap-4">
+          <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
+            <p className="text-xs font-medium text-blue-600 uppercase">Vehicles</p>
+            <p className="text-2xl font-bold text-blue-700">{lead?.vehicles?.length || 0}</p>
+          </div>
+          <div className="p-4 bg-green-50 rounded-xl border border-green-100">
+            <p className="text-xs font-medium text-green-600 uppercase">Documents</p>
+            <p className="text-2xl font-bold text-green-700">{lead?.documents?.length || 0}</p>
+          </div>
+          <div className="p-4 bg-purple-50 rounded-xl border border-purple-100">
+            <p className="text-xs font-medium text-purple-600 uppercase">Credit Score</p>
+            <p className="text-2xl font-bold text-purple-700">{lead?.credit_score || '—'}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Edit Mode
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold text-slate-900">Edit Customer Information</h3>
+          <p className="text-sm text-slate-500">Update personal and contact details</p>
+        </div>
+        <div className="flex gap-2">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => setIsEditing(false)}
+            data-testid="cancel-edit-btn"
+          >
+            <X className="h-4 w-4 mr-1" />
+            Cancel
+          </Button>
+          <Button 
+            size="sm" 
+            onClick={handleSave}
+            disabled={saving}
+            className="bg-[#2E3192] hover:bg-[#2E3192]/90"
+            data-testid="save-customer-info-btn"
+          >
+            {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />}
+            Save Changes
+          </Button>
         </div>
       </div>
 
-      <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
-        <p className="text-xs text-blue-700">
-          <Info className="h-3 w-3 inline mr-1" />
-          Add PAN number to fetch credit reports from CIBIL, Equifax, Experian & CRIF
-        </p>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <Label className="text-xs text-gray-500">First Name *</Label>
-          <Input
-            value={formData.first_name}
-            onChange={(e) => setFormData({...formData, first_name: e.target.value})}
-            placeholder="First name"
-            className="h-9"
-            data-testid="customer-first-name"
-          />
-        </div>
-        <div className="space-y-1">
-          <Label className="text-xs text-gray-500">Last Name</Label>
-          <Input
-            value={formData.last_name}
-            onChange={(e) => setFormData({...formData, last_name: e.target.value})}
-            placeholder="Last name"
-            className="h-9"
-            data-testid="customer-last-name"
-          />
-        </div>
-        <div className="space-y-1">
-          <Label className="text-xs text-gray-500">PAN Number *</Label>
-          <Input
-            value={formData.pan_number}
-            onChange={(e) => setFormData({...formData, pan_number: e.target.value.toUpperCase()})}
-            placeholder="ABCDE1234F"
-            maxLength={10}
-            className={`h-9 uppercase font-mono ${isPanMissing ? 'border-amber-400' : 'border-green-400'}`}
-            data-testid="customer-pan"
-          />
-          {isPanMissing && <p className="text-[10px] text-amber-600">Required for credit reports</p>}
-        </div>
-        <div className="space-y-1">
-          <Label className="text-xs text-gray-500">Gender *</Label>
-          <Select value={formData.gender} onValueChange={(val) => setFormData({...formData, gender: val})}>
-            <SelectTrigger className="h-9" data-testid="customer-gender">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="male">Male</SelectItem>
-              <SelectItem value="female">Female</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1">
-          <Label className="text-xs text-gray-500">Mobile Number *</Label>
-          <div className="flex">
-            <span className="inline-flex items-center px-2 bg-gray-100 border border-r-0 border-gray-200 rounded-l text-gray-500 text-xs">+91</span>
+      <div className="p-6 bg-white rounded-xl border border-slate-200">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <Label className="text-xs font-medium text-slate-500">First Name</Label>
             <Input
-              value={formData.mobile_number}
-              onChange={(e) => setFormData({...formData, mobile_number: e.target.value.replace(/\D/g, '')})}
-              placeholder="9876543210"
+              value={formData.first_name}
+              onChange={(e) => setFormData({...formData, first_name: e.target.value})}
+              placeholder="Enter first name"
+              data-testid="first-name-input"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-xs font-medium text-slate-500">Last Name</Label>
+            <Input
+              value={formData.last_name}
+              onChange={(e) => setFormData({...formData, last_name: e.target.value})}
+              placeholder="Enter last name"
+              data-testid="last-name-input"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-xs font-medium text-slate-500">PAN Number *</Label>
+            <Input
+              value={formData.pan_number}
+              onChange={(e) => setFormData({...formData, pan_number: e.target.value.toUpperCase()})}
+              placeholder="ABCDE1234F"
               maxLength={10}
-              className="h-9 rounded-l-none font-mono"
-              data-testid="customer-mobile"
+              className="font-mono uppercase"
+              data-testid="pan-input"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-xs font-medium text-slate-500">Gender</Label>
+            <Select value={formData.gender} onValueChange={(v) => setFormData({...formData, gender: v})}>
+              <SelectTrigger data-testid="gender-select">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="male">Male</SelectItem>
+                <SelectItem value="female">Female</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label className="text-xs font-medium text-slate-500">Mobile Number</Label>
+            <div className="flex">
+              <span className="inline-flex items-center px-3 text-sm text-slate-500 bg-slate-100 border border-r-0 border-slate-200 rounded-l-md">
+                +91
+              </span>
+              <Input
+                value={formData.mobile_number}
+                onChange={(e) => setFormData({...formData, mobile_number: e.target.value.replace(/\D/g, '').slice(0, 10)})}
+                placeholder="9876543210"
+                className="rounded-l-none"
+                data-testid="mobile-input"
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label className="text-xs font-medium text-slate-500">Email</Label>
+            <Input
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({...formData, email: e.target.value})}
+              placeholder="email@example.com"
+              data-testid="email-input"
             />
           </div>
         </div>
-        <div className="space-y-1">
-          <Label className="text-xs text-gray-500">Email</Label>
-          <Input
-            type="email"
-            value={formData.email}
-            onChange={(e) => setFormData({...formData, email: e.target.value})}
-            placeholder="email@example.com"
-            className="h-9"
-            data-testid="customer-email"
-          />
-        </div>
       </div>
-
-      <Button
-        onClick={handleSave}
-        disabled={saving}
-        className="w-full"
-        data-testid="save-customer-info-btn"
-      >
-        {saving ? (
-          <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Saving...</>
-        ) : (
-          'Save Customer Info'
-        )}
-      </Button>
     </div>
   );
 };
 
 // ==================== VEHICLES TAB ====================
 const VehiclesTab = ({ lead, onUpdate }) => {
-  const [vehicles, setVehicles] = useState(lead?.vehicles || []);
+  const vehicles = lead?.vehicles || [];
   const [newCarNumber, setNewCarNumber] = useState('');
-  const [adding, setAdding] = useState(false);
+  const [addingVehicle, setAddingVehicle] = useState(false);
   const [fetchingVaahan, setFetchingVaahan] = useState(null);
-  const [addingWithVaahan, setAddingWithVaahan] = useState(false);
-  const [editingLoanDetails, setEditingLoanDetails] = useState(null);
+  const [editingVehicle, setEditingVehicle] = useState(null);
   const [loanForm, setLoanForm] = useState({
     vehicle_valuation: '',
     required_loan_amount: '',
@@ -200,53 +256,22 @@ const VehiclesTab = ({ lead, onUpdate }) => {
     expected_tenure_months: ''
   });
   
-  useEffect(() => {
-    if (lead) {
-      setVehicles(lead.vehicles || []);
-    }
-  }, [lead]);
-  
-  const handleCarNumberChange = (value) => {
-    setNewCarNumber(value.toUpperCase());
-  };
-  
-  const handleFetchVaahanForNew = async () => {
-    if (!newCarNumber || newCarNumber.length < 8) {
-      toast.error('Please enter a valid vehicle number');
-      return;
-    }
-    
-    setAddingWithVaahan(true);
-    try {
-      const res = await loansApi.addVehicle(lead.id, { car_number: newCarNumber });
-      if (res.data?.vehicle) {
-        toast.success('Vehicle added with Vaahan data');
-        setNewCarNumber('');
-        onUpdate();
-      }
-    } catch (err) {
-      toast.error(err.response?.data?.detail || 'Failed to add vehicle');
-    } finally {
-      setAddingWithVaahan(false);
-    }
-  };
-  
   const handleAddVehicle = async () => {
     if (!newCarNumber.trim()) {
       toast.error('Please enter a vehicle number');
       return;
     }
     
-    setAdding(true);
+    setAddingVehicle(true);
     try {
-      await loansApi.addVehicle(lead.id, { car_number: newCarNumber });
-      toast.success('Vehicle added');
+      await loansApi.addVehicle(lead.id, { car_number: newCarNumber.trim().toUpperCase() });
+      toast.success('Vehicle added successfully');
       setNewCarNumber('');
       onUpdate();
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Failed to add vehicle');
     } finally {
-      setAdding(false);
+      setAddingVehicle(false);
     }
   };
   
@@ -254,39 +279,28 @@ const VehiclesTab = ({ lead, onUpdate }) => {
     setFetchingVaahan(vehicleId);
     try {
       await loansApi.fetchVaahanForVehicle(lead.id, vehicleId);
-      toast.success('Vehicle data updated from Vaahan');
+      toast.success('Vehicle data refreshed');
       onUpdate();
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Failed to fetch Vaahan data');
+      toast.error(err.response?.data?.detail || 'Failed to fetch data');
     } finally {
       setFetchingVaahan(null);
     }
   };
   
   const handleDeleteVehicle = async (vehicleId) => {
-    if (!confirm('Are you sure you want to remove this vehicle?')) return;
-    
+    if (!window.confirm('Remove this vehicle?')) return;
     try {
-      await loansApi.removeVehicle(lead.id, vehicleId);
+      await loansApi.deleteVehicle(lead.id, vehicleId);
       toast.success('Vehicle removed');
       onUpdate();
     } catch (err) {
-      toast.error('Failed to remove vehicle');
+      toast.error(err.response?.data?.detail || 'Failed to remove');
     }
   };
   
-  const handleSetPrimary = async (vehicleId) => {
-    try {
-      await loansApi.updateVehicle(lead.id, vehicleId, { is_primary: true });
-      toast.success('Primary vehicle updated');
-      onUpdate();
-    } catch (err) {
-      toast.error('Failed to set primary vehicle');
-    }
-  };
-  
-  const handleEditLoanDetails = (vehicle) => {
-    setEditingLoanDetails(vehicle.vehicle_id);
+  const handleEditLoan = (vehicle) => {
+    setEditingVehicle(vehicle.vehicle_id);
     setLoanForm({
       vehicle_valuation: vehicle.vehicle_valuation || '',
       required_loan_amount: vehicle.required_loan_amount || '',
@@ -295,7 +309,7 @@ const VehiclesTab = ({ lead, onUpdate }) => {
     });
   };
   
-  const handleSaveLoanDetails = async (vehicleId) => {
+  const handleSaveLoan = async (vehicleId) => {
     try {
       await loansApi.updateVehicle(lead.id, vehicleId, {
         vehicle_valuation: parseFloat(loanForm.vehicle_valuation) || null,
@@ -304,329 +318,215 @@ const VehiclesTab = ({ lead, onUpdate }) => {
         expected_tenure_months: parseInt(loanForm.expected_tenure_months) || null
       });
       toast.success('Loan details updated');
-      setEditingLoanDetails(null);
+      setEditingVehicle(null);
       onUpdate();
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Failed to update loan details');
+      toast.error(err.response?.data?.detail || 'Failed to update');
     }
   };
-  
-  const formatCurrency = (val) => {
-    if (!val) return '—';
-    return `₹${parseFloat(val).toLocaleString()}`;
-  };
+
+  const formatCurrency = (val) => val ? `₹${parseFloat(val).toLocaleString()}` : '—';
 
   return (
-    <div className="space-y-4">
-      {/* Add Vehicle */}
-      <div className="flex gap-2 items-end">
-        <div className="flex-1">
-          <Label className="text-xs text-gray-500">Vehicle Number</Label>
-          <Input
-            placeholder="e.g., KA01AB1234"
-            value={newCarNumber}
-            onChange={(e) => handleCarNumberChange(e.target.value)}
-            className="mt-1"
-          />
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold text-slate-900">Vehicles</h3>
+          <p className="text-sm text-slate-500">{vehicles.length} vehicle{vehicles.length !== 1 ? 's' : ''} added</p>
         </div>
-        <Button
-          onClick={handleFetchVaahanForNew}
-          disabled={addingWithVaahan || !newCarNumber}
-          size="sm"
-        >
-          {addingWithVaahan ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <>
-              <Plus className="h-4 w-4 mr-1" />
-              Add & Fetch
-            </>
-          )}
-        </Button>
       </div>
-      
-      {/* Vehicles List */}
-      <div className="space-y-3 max-h-[350px] overflow-y-auto">
+
+      {/* Add Vehicle */}
+      <div className="p-4 bg-white rounded-xl border border-slate-200">
+        <Label className="text-xs font-medium text-slate-500 mb-2 block">Add New Vehicle</Label>
+        <div className="flex gap-2">
+          <Input
+            value={newCarNumber}
+            onChange={(e) => setNewCarNumber(e.target.value.toUpperCase())}
+            placeholder="Enter vehicle number (e.g., KA01AB1234)"
+            className="flex-1 font-mono"
+            data-testid="new-vehicle-input"
+          />
+          <Button 
+            onClick={handleAddVehicle}
+            disabled={addingVehicle}
+            className="bg-[#2E3192] hover:bg-[#2E3192]/90"
+            data-testid="add-vehicle-btn"
+          >
+            {addingVehicle ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4 mr-1" />}
+            Add
+          </Button>
+        </div>
+      </div>
+
+      {/* Vehicle Cards */}
+      <div className="space-y-4">
         {vehicles.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            <Car className="h-10 w-10 mx-auto mb-2 opacity-50" />
-            <p>No vehicles added yet</p>
+          <div className="p-12 text-center bg-slate-50 rounded-xl border border-dashed border-slate-300">
+            <Car className="h-12 w-12 text-slate-300 mx-auto mb-3" />
+            <p className="text-slate-500 font-medium">No vehicles added yet</p>
+            <p className="text-sm text-slate-400">Add a vehicle number above to get started</p>
           </div>
         ) : (
           vehicles.map((vehicle) => (
-            <div
-              key={vehicle.vehicle_id}
-              className={`p-3 rounded-lg border ${
-                vehicle.is_primary ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
-              }`}
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono font-bold text-sm">{vehicle.car_number}</span>
-                    {vehicle.is_primary && (
-                      <span className="text-[10px] bg-blue-500 text-white px-1.5 py-0.5 rounded">PRIMARY</span>
-                    )}
+            <div key={vehicle.vehicle_id} className="bg-white rounded-xl border border-slate-200 overflow-hidden" data-testid={`vehicle-card-${vehicle.vehicle_id}`}>
+              {/* Vehicle Header */}
+              <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                    <Car className="h-5 w-5 text-blue-600" />
                   </div>
-                  {vehicle.car_make && (
-                    <p className="text-sm text-gray-600 mt-1">
-                      {vehicle.car_make} {vehicle.car_model} {vehicle.car_year ? `(${vehicle.car_year})` : ''}
+                  <div>
+                    <p className="font-semibold text-slate-900 font-mono">{vehicle.car_number}</p>
+                    <p className="text-sm text-slate-500">
+                      {[vehicle.car_make, vehicle.car_model].filter(Boolean).join(' ') || 'Vehicle details pending'}
                     </p>
-                  )}
-                  {vehicle.fuel_type && (
-                    <p className="text-xs text-gray-500">{vehicle.fuel_type}</p>
-                  )}
+                  </div>
                 </div>
                 <div className="flex items-center gap-1">
-                  {!vehicle.is_primary && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleSetPrimary(vehicle.vehicle_id)}
-                      className="text-xs h-7"
-                    >
-                      Set Primary
-                    </Button>
-                  )}
                   <Button
                     size="icon"
                     variant="ghost"
                     onClick={() => handleFetchVaahan(vehicle.vehicle_id)}
                     disabled={fetchingVaahan === vehicle.vehicle_id}
-                    className="h-7 w-7"
-                    title="Refresh Vaahan Data"
+                    className="h-8 w-8"
+                    title="Refresh Vaahan data"
+                    data-testid={`refresh-vaahan-${vehicle.vehicle_id}`}
                   >
-                    {fetchingVaahan === vehicle.vehicle_id ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      <RefreshCw className="h-3 w-3" />
-                    )}
+                    <RefreshCw className={`h-4 w-4 ${fetchingVaahan === vehicle.vehicle_id ? 'animate-spin' : ''}`} />
                   </Button>
                   <Button
                     size="icon"
                     variant="ghost"
                     onClick={() => handleDeleteVehicle(vehicle.vehicle_id)}
-                    className="h-7 w-7 text-red-500 hover:text-red-700"
-                    title="Remove Vehicle"
+                    className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50"
+                    title="Remove vehicle"
+                    data-testid={`delete-vehicle-${vehicle.vehicle_id}`}
                   >
-                    <Trash2 className="h-3 w-3" />
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
-              
-              {/* Vaahan Data */}
-              {vehicle.vaahan_data && (
-                <div className="mt-2 pt-2 border-t border-gray-100 grid grid-cols-2 gap-1 text-xs text-gray-500">
-                  {vehicle.vaahan_data.owner_name && (
-                    <span>Owner: {vehicle.vaahan_data.owner_name}</span>
-                  )}
-                  {vehicle.vaahan_data.registration_date && (
-                    <span>Reg: {vehicle.vaahan_data.registration_date}</span>
-                  )}
-                  {vehicle.vaahan_data.insurance_valid_upto && (
-                    <span>Insurance: {vehicle.vaahan_data.insurance_valid_upto}</span>
-                  )}
-                  {vehicle.vaahan_data.hypothecation_bank && (
-                    <span className="text-orange-600">HP: {vehicle.vaahan_data.hypothecation_bank}</span>
-                  )}
-                </div>
-              )}
-              
-              {/* Loan Details Section */}
-              <div className="mt-2 pt-2 border-t border-gray-100">
-                {editingLoanDetails === vehicle.vehicle_id ? (
-                  // Edit Mode
-                  <div className="space-y-2">
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <Label className="text-[10px] text-gray-500">Vehicle Valuation (₹)</Label>
-                        <Input
-                          type="number"
-                          placeholder="e.g., 500000"
-                          value={loanForm.vehicle_valuation}
-                          onChange={(e) => setLoanForm({...loanForm, vehicle_valuation: e.target.value})}
-                          className="h-8 text-sm"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-[10px] text-gray-500">Required Loan (₹)</Label>
-                        <Input
-                          type="number"
-                          placeholder="e.g., 400000"
-                          value={loanForm.required_loan_amount}
-                          onChange={(e) => setLoanForm({...loanForm, required_loan_amount: e.target.value})}
-                          className="h-8 text-sm"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-[10px] text-gray-500">Expected EMI (₹)</Label>
-                        <Input
-                          type="number"
-                          placeholder="e.g., 12000"
-                          value={loanForm.expected_emi}
-                          onChange={(e) => setLoanForm({...loanForm, expected_emi: e.target.value})}
-                          className="h-8 text-sm"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-[10px] text-gray-500">Tenure (months)</Label>
-                        <Input
-                          type="number"
-                          placeholder="e.g., 36"
-                          value={loanForm.expected_tenure_months}
-                          onChange={(e) => setLoanForm({...loanForm, expected_tenure_months: e.target.value})}
-                          className="h-8 text-sm"
-                        />
-                      </div>
+
+              {/* Vehicle Content */}
+              <div className="p-5 space-y-4">
+                {/* Vaahan Data */}
+                {vehicle.vaahan_data && (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                      <p className="text-xs text-slate-400 uppercase">Owner</p>
+                      <p className="text-sm font-medium text-slate-700 truncate">{vehicle.vaahan_data.owner_name || '—'}</p>
                     </div>
-                    <div className="flex justify-end gap-1">
-                      <Button size="sm" variant="ghost" onClick={() => setEditingLoanDetails(null)} className="h-7 text-xs">
-                        Cancel
-                      </Button>
-                      <Button size="sm" onClick={() => handleSaveLoanDetails(vehicle.vehicle_id)} className="h-7 text-xs">
-                        Save
-                      </Button>
+                    <div>
+                      <p className="text-xs text-slate-400 uppercase">Registration</p>
+                      <p className="text-sm font-medium text-slate-700">{vehicle.vaahan_data.registration_date || '—'}</p>
                     </div>
-                  </div>
-                ) : (
-                  // Display Mode
-                  <div className="flex items-start justify-between">
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                      <div>
-                        <span className="text-gray-400">Valuation:</span>{' '}
-                        <span className="font-medium text-gray-700">{formatCurrency(vehicle.vehicle_valuation)}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-400">Loan Required:</span>{' '}
-                        <span className="font-medium text-gray-700">{formatCurrency(vehicle.required_loan_amount)}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-400">Expected EMI:</span>{' '}
-                        <span className="font-medium text-gray-700">{formatCurrency(vehicle.expected_emi)}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-400">Tenure:</span>{' '}
-                        <span className="font-medium text-gray-700">
-                          {vehicle.expected_tenure_months ? `${vehicle.expected_tenure_months} months` : '—'}
-                        </span>
-                      </div>
+                    <div>
+                      <p className="text-xs text-slate-400 uppercase">Insurance Until</p>
+                      <p className="text-sm font-medium text-slate-700">{vehicle.vaahan_data.insurance_valid_upto || '—'}</p>
                     </div>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleEditLoanDetails(vehicle)}
-                      className="h-6 text-xs text-blue-600"
-                    >
-                      <Edit className="h-3 w-3 mr-1" />
-                      Edit
-                    </Button>
+                    <div>
+                      <p className="text-xs text-slate-400 uppercase">Hypothecation</p>
+                      <p className={`text-sm font-medium ${vehicle.vaahan_data.hypothecation_bank ? 'text-orange-600' : 'text-green-600'}`}>
+                        {vehicle.vaahan_data.hypothecation_bank || 'None'}
+                      </p>
+                    </div>
                   </div>
                 )}
-              </div>
-              
-              {/* Loan Details Section */}
-              <div className="mt-3 pt-3 border-t border-gray-100">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="text-xs font-medium text-gray-700">Loan Details</h4>
-                  {editingLoanDetails === vehicle.vehicle_id ? (
-                    <div className="flex gap-1">
+
+                {/* Loan Details */}
+                <div className="pt-4 border-t border-slate-100">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Loan Requirements</p>
+                    {editingVehicle !== vehicle.vehicle_id && (
                       <Button
-                        size="icon"
+                        size="sm"
                         variant="ghost"
-                        onClick={() => handleSaveLoanDetails(vehicle.vehicle_id)}
-                        className="h-6 w-6 text-green-600"
-                        title="Save"
+                        onClick={() => handleEditLoan(vehicle)}
+                        className="h-7 text-xs text-blue-600"
+                        data-testid={`edit-loan-${vehicle.vehicle_id}`}
                       >
-                        <Save className="h-3 w-3" />
+                        <Edit className="h-3 w-3 mr-1" />
+                        Edit
                       </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => setEditingLoanDetails(null)}
-                        className="h-6 w-6 text-gray-500"
-                        title="Cancel"
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
+                    )}
+                  </div>
+
+                  {editingVehicle === vehicle.vehicle_id ? (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-xs text-slate-500">Vehicle Valuation (₹)</Label>
+                          <Input
+                            type="number"
+                            value={loanForm.vehicle_valuation}
+                            onChange={(e) => setLoanForm({...loanForm, vehicle_valuation: e.target.value})}
+                            placeholder="500000"
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-slate-500">Loan Required (₹)</Label>
+                          <Input
+                            type="number"
+                            value={loanForm.required_loan_amount}
+                            onChange={(e) => setLoanForm({...loanForm, required_loan_amount: e.target.value})}
+                            placeholder="400000"
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-slate-500">Expected EMI (₹)</Label>
+                          <Input
+                            type="number"
+                            value={loanForm.expected_emi}
+                            onChange={(e) => setLoanForm({...loanForm, expected_emi: e.target.value})}
+                            placeholder="12000"
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-slate-500">Tenure (months)</Label>
+                          <Input
+                            type="number"
+                            value={loanForm.expected_tenure_months}
+                            onChange={(e) => setLoanForm({...loanForm, expected_tenure_months: e.target.value})}
+                            placeholder="36"
+                            className="mt-1"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button size="sm" variant="ghost" onClick={() => setEditingVehicle(null)}>
+                          Cancel
+                        </Button>
+                        <Button size="sm" onClick={() => handleSaveLoan(vehicle.vehicle_id)} className="bg-[#2E3192] hover:bg-[#2E3192]/90">
+                          Save
+                        </Button>
+                      </div>
                     </div>
                   ) : (
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => handleEditLoanDetails(vehicle)}
-                      className="h-6 w-6 text-blue-600"
-                      title="Edit Loan Details"
-                    >
-                      <Edit className="h-3 w-3" />
-                    </Button>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="p-3 bg-slate-50 rounded-lg">
+                        <p className="text-xs text-slate-400">Valuation</p>
+                        <p className="text-sm font-semibold text-slate-800">{formatCurrency(vehicle.vehicle_valuation)}</p>
+                      </div>
+                      <div className="p-3 bg-slate-50 rounded-lg">
+                        <p className="text-xs text-slate-400">Loan Required</p>
+                        <p className="text-sm font-semibold text-slate-800">{formatCurrency(vehicle.required_loan_amount)}</p>
+                      </div>
+                      <div className="p-3 bg-slate-50 rounded-lg">
+                        <p className="text-xs text-slate-400">Expected EMI</p>
+                        <p className="text-sm font-semibold text-slate-800">{formatCurrency(vehicle.expected_emi)}</p>
+                      </div>
+                      <div className="p-3 bg-slate-50 rounded-lg">
+                        <p className="text-xs text-slate-400">Tenure</p>
+                        <p className="text-sm font-semibold text-slate-800">{vehicle.expected_tenure_months ? `${vehicle.expected_tenure_months} months` : '—'}</p>
+                      </div>
+                    </div>
                   )}
                 </div>
-                
-                {editingLoanDetails === vehicle.vehicle_id ? (
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <Label className="text-[10px] text-gray-500">Vehicle Valuation</Label>
-                      <Input
-                        type="number"
-                        placeholder="0"
-                        value={loanForm.vehicle_valuation}
-                        onChange={(e) => setLoanForm({...loanForm, vehicle_valuation: e.target.value})}
-                        className="h-7 text-xs"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-[10px] text-gray-500">Required Loan</Label>
-                      <Input
-                        type="number"
-                        placeholder="0"
-                        value={loanForm.required_loan_amount}
-                        onChange={(e) => setLoanForm({...loanForm, required_loan_amount: e.target.value})}
-                        className="h-7 text-xs"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-[10px] text-gray-500">Expected EMI</Label>
-                      <Input
-                        type="number"
-                        placeholder="0"
-                        value={loanForm.expected_emi}
-                        onChange={(e) => setLoanForm({...loanForm, expected_emi: e.target.value})}
-                        className="h-7 text-xs"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-[10px] text-gray-500">Tenure (months)</Label>
-                      <Input
-                        type="number"
-                        placeholder="0"
-                        value={loanForm.expected_tenure_months}
-                        onChange={(e) => setLoanForm({...loanForm, expected_tenure_months: e.target.value})}
-                        className="h-7 text-xs"
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div>
-                      <span className="text-gray-500">Valuation:</span>
-                      <span className="ml-1 font-medium">{formatCurrency(vehicle.vehicle_valuation)}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">Loan Amount:</span>
-                      <span className="ml-1 font-medium">{formatCurrency(vehicle.required_loan_amount)}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">Expected EMI:</span>
-                      <span className="ml-1 font-medium">{formatCurrency(vehicle.expected_emi)}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">Tenure:</span>
-                      <span className="ml-1 font-medium">
-                        {vehicle.expected_tenure_months ? `${vehicle.expected_tenure_months} months` : '—'}
-                      </span>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           ))
@@ -638,261 +538,239 @@ const VehiclesTab = ({ lead, onUpdate }) => {
 
 // ==================== DOCUMENTS TAB ====================
 const DocumentsTab = ({ lead, onUpdate }) => {
-  const [customerType, setCustomerType] = useState(lead?.customer_type || '');
   const [requirements, setRequirements] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [uploadingDoc, setUploadingDoc] = useState(null);
   const [deletingDoc, setDeletingDoc] = useState(null);
   const fileInputRef = useRef(null);
-  const [selectedDocType, setSelectedDocType] = useState(null);
-  
+  const [currentDocType, setCurrentDocType] = useState(null);
+
   useEffect(() => {
-    if (lead?.id) {
-      setCustomerType(lead?.customer_type || '');
-      fetchRequirements();
-    }
-  }, [lead?.id]);
-  
-  useEffect(() => {
-    if (customerType) {
-      fetchRequirements();
-    }
-  }, [customerType]);
-  
+    fetchRequirements();
+  }, [lead?.id, lead?.customer_type]);
+
   const fetchRequirements = async () => {
+    if (!lead?.id) return;
+    setLoading(true);
     try {
       const res = await loansApi.getDocumentRequirements(lead.id);
       setRequirements(res.data);
     } catch (err) {
-      console.error('Error fetching requirements:', err);
+      console.error('Failed to fetch requirements:', err);
+    } finally {
+      setLoading(false);
     }
   };
-  
-  const handleCustomerTypeChange = async (type) => {
-    setCustomerType(type);
-    try {
-      await loansApi.update(lead.id, { customer_type: type });
-      toast.success('Customer type updated');
-      onUpdate();
-    } catch (err) {
-      toast.error('Failed to update customer type');
-    }
+
+  const handleFileInputClick = (docType) => {
+    setCurrentDocType(docType);
+    fileInputRef.current?.click();
   };
-  
-  const getDocList = () => {
-    if (!requirements) return [];
-    // API returns requirements array directly with document_type and display_name
-    return requirements.requirements || [];
-  };
-  
-  const uploadedDocs = lead?.documents || [];
-  const getUploadedDoc = (docType) => uploadedDocs.find(d => d.document_type === docType);
-  const isDocUploaded = (docType) => uploadedDocs.some(d => d.document_type === docType);
-  
-  const handleFileSelect = async (docType, file) => {
-    if (!file) return;
-    
+
+  const handleFileSelect = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !currentDocType) return;
+
     const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
     if (!allowedTypes.includes(file.type)) {
       toast.error('Please upload PDF, JPG, or PNG files only');
       return;
     }
-    
+
     if (file.size > 10 * 1024 * 1024) {
       toast.error('File size must be less than 10MB');
       return;
     }
-    
-    setUploadingDoc(docType);
+
+    setUploadingDoc(currentDocType);
     try {
-      // Step 1: Generate a signed upload URL
       const uploadUrlRes = await loansApi.generateUploadUrl(lead.id, {
-        document_type: docType,
+        document_type: currentDocType,
         filename: file.name,
         content_type: file.type
       });
-      
+
       const { upload_url, file_url } = uploadUrlRes.data;
-      
-      // Step 2: Upload file to storage
+
       await fetch(upload_url, {
         method: 'PUT',
         body: file,
-        headers: {
-          'Content-Type': file.type
-        }
+        headers: { 'Content-Type': file.type }
       });
-      
-      // Step 3: Save document metadata
+
       await loansApi.uploadDocument(lead.id, {
-        document_type: docType,
+        document_type: currentDocType,
         file_url: file_url,
         file_name: file.name
       });
-      
-      toast.success('Document uploaded successfully');
+
+      toast.success('Document uploaded');
       onUpdate();
     } catch (err) {
       console.error('Upload error:', err);
-      toast.error(err.response?.data?.detail || 'Failed to upload document');
+      toast.error(err.response?.data?.detail || 'Failed to upload');
     } finally {
       setUploadingDoc(null);
+      setCurrentDocType(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
-  
+
   const handleDelete = async (docId) => {
-    if (!confirm('Are you sure you want to delete this document?')) return;
-    
+    if (!window.confirm('Delete this document?')) return;
     setDeletingDoc(docId);
     try {
       await loansApi.deleteDocument(lead.id, docId);
       toast.success('Document deleted');
       onUpdate();
     } catch (err) {
-      toast.error('Failed to delete document');
+      toast.error(err.response?.data?.detail || 'Failed to delete');
     } finally {
       setDeletingDoc(null);
     }
   };
-  
-  const handleFileInputClick = (docType) => {
-    setSelectedDocType(docType);
-    fileInputRef.current?.click();
-  };
-  
-  const handleFileInputChange = (e) => {
-    const file = e.target.files?.[0];
-    if (file && selectedDocType) {
-      handleFileSelect(selectedDocType, file);
-    }
-    e.target.value = '';
-    setSelectedDocType(null);
-  };
+
+  const docList = requirements?.requirements || [];
+  const uploadedDocs = lead?.documents || [];
+  const getUploadedDoc = (docType) => uploadedDocs.find(d => d.document_type === docType);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-4">
-      {/* Hidden file input */}
+    <div className="space-y-6">
       <input
         type="file"
         ref={fileInputRef}
+        onChange={handleFileSelect}
         className="hidden"
         accept=".pdf,.jpg,.jpeg,.png"
-        onChange={handleFileInputChange}
       />
-      
-      {/* Customer Type Selection */}
+
+      {/* Header */}
       <div>
-        <Label className="text-xs text-gray-500 mb-2 block">Customer Type</Label>
-        <div className="flex gap-2">
-          <Button
-            variant={customerType === 'SALARIED' ? 'default' : 'outline'}
-            onClick={() => handleCustomerTypeChange('SALARIED')}
-            size="sm"
-            className="flex-1"
-          >
-            <Users className="h-4 w-4 mr-1" />
-            Salaried
-          </Button>
-          <Button
-            variant={customerType === 'SELF_EMPLOYED' ? 'default' : 'outline'}
-            onClick={() => handleCustomerTypeChange('SELF_EMPLOYED')}
-            size="sm"
-            className="flex-1"
-          >
-            <Building2 className="h-4 w-4 mr-1" />
-            Self Employed
-          </Button>
+        <h3 className="text-lg font-semibold text-slate-900">Documents</h3>
+        <p className="text-sm text-slate-500">
+          {uploadedDocs.length} of {docList.length} documents uploaded
+        </p>
+      </div>
+
+      {/* Progress Bar */}
+      <div className="bg-white rounded-xl border border-slate-200 p-4">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-medium text-slate-600">Upload Progress</span>
+          <span className="text-sm font-semibold text-[#2E3192]">
+            {Math.round((uploadedDocs.length / Math.max(docList.length, 1)) * 100)}%
+          </span>
+        </div>
+        <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+          <div 
+            className="h-full bg-[#2E3192] rounded-full transition-all duration-500"
+            style={{ width: `${(uploadedDocs.length / Math.max(docList.length, 1)) * 100}%` }}
+          />
         </div>
       </div>
-      
+
       {/* Document List */}
-      {!customerType ? (
-        <div className="text-center py-6 text-gray-500">
-          <FileText className="h-10 w-10 mx-auto mb-2 opacity-50" />
-          <p>Select customer type to see required documents</p>
-        </div>
-      ) : (
-        <div className="space-y-2 max-h-[320px] overflow-y-auto">
-          {getDocList().map((doc) => {
-            const uploaded = getUploadedDoc(doc.document_type);
-            const isUploading = uploadingDoc === doc.document_type;
-            
-            return (
-              <div
-                key={doc.document_type}
-                className={`p-3 rounded-lg border ${
-                  uploaded ? 'border-green-200 bg-green-50' : 'border-gray-200'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
+      <div className="space-y-2">
+        {docList.map((doc) => {
+          const uploaded = getUploadedDoc(doc.document_type);
+          const isUploading = uploadingDoc === doc.document_type;
+
+          return (
+            <div
+              key={doc.document_type}
+              className={`p-4 bg-white rounded-xl border transition-all duration-200 ${
+                uploaded 
+                  ? 'border-green-200 bg-green-50/30' 
+                  : 'border-slate-200 hover:border-slate-300'
+              }`}
+              data-testid={`doc-item-${doc.document_type}`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                    uploaded ? 'bg-green-100' : 'bg-slate-100'
+                  }`}>
                     {uploaded ? (
-                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <CheckCircle className="h-5 w-5 text-green-600" />
                     ) : (
-                      <AlertCircle className="h-4 w-4 text-gray-400" />
+                      <FileText className="h-5 w-5 text-slate-400" />
                     )}
-                    <div>
-                      <p className="text-sm font-medium">{doc.display_name || doc.name}</p>
-                      {doc.description && (
-                        <p className="text-[10px] text-gray-500">{doc.description}</p>
-                      )}
-                      {doc.required && (
-                        <span className="text-[10px] text-red-500">Required</span>
-                      )}
-                    </div>
                   </div>
-                  
-                  <div className="flex items-center gap-1">
-                    {uploaded ? (
-                      <>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => window.open(uploaded.file_url, '_blank')}
-                          className="h-7 w-7"
-                          title="View"
-                        >
-                          <Eye className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => handleDelete(uploaded.id)}
-                          disabled={deletingDoc === uploaded.id}
-                          className="h-7 w-7 text-red-500"
-                          title="Delete"
-                        >
-                          {deletingDoc === uploaded.id ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-3 w-3" />
-                          )}
-                        </Button>
-                      </>
-                    ) : (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleFileInputClick(doc.document_type)}
-                        disabled={isUploading}
-                        className="h-7 text-xs"
-                      >
-                        {isUploading ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : (
-                          <>
-                            <Upload className="h-3 w-3 mr-1" />
-                            Upload
-                          </>
-                        )}
-                      </Button>
-                    )}
+                  <div>
+                    <p className="font-medium text-slate-800">{doc.display_name || doc.name}</p>
+                    <p className="text-xs text-slate-500">
+                      {doc.description || (doc.required ? 'Required document' : 'Optional document')}
+                    </p>
                   </div>
                 </div>
+
+                <div className="flex items-center gap-2">
+                  {uploaded ? (
+                    <>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => window.open(uploaded.file_url, '_blank')}
+                        className="text-blue-600 hover:text-blue-700"
+                        data-testid={`view-doc-${doc.document_type}`}
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        View
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleDelete(uploaded.id)}
+                        disabled={deletingDoc === uploaded.id}
+                        className="text-red-500 hover:text-red-600"
+                        data-testid={`delete-doc-${doc.document_type}`}
+                      >
+                        {deletingDoc === uploaded.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      size="sm"
+                      onClick={() => handleFileInputClick(doc.document_type)}
+                      disabled={isUploading}
+                      className="bg-[#2E3192] hover:bg-[#2E3192]/90"
+                      data-testid={`upload-doc-${doc.document_type}`}
+                    >
+                      {isUploading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Upload className="h-4 w-4 mr-1" />
+                          Upload
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
               </div>
-            );
-          })}
-        </div>
-      )}
+            </div>
+          );
+        })}
+
+        {docList.length === 0 && (
+          <div className="p-12 text-center bg-slate-50 rounded-xl border border-dashed border-slate-300">
+            <FileText className="h-12 w-12 text-slate-300 mx-auto mb-3" />
+            <p className="text-slate-500 font-medium">No document requirements</p>
+            <p className="text-sm text-slate-400">Select a customer type to see required documents</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
@@ -900,7 +778,7 @@ const DocumentsTab = ({ lead, onUpdate }) => {
 // ==================== MAIN MODAL ====================
 const CustomerDetailsModal = ({ isOpen, onClose, lead, onUpdate }) => {
   const [activeTab, setActiveTab] = useState('info');
-  
+
   useEffect(() => {
     if (isOpen) {
       setActiveTab('info');
@@ -911,64 +789,82 @@ const CustomerDetailsModal = ({ isOpen, onClose, lead, onUpdate }) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[90vh]">
-        <DialogHeader>
-          <DialogTitle>Customer Details</DialogTitle>
-          <DialogDescription>
-            {lead.customer_name} - {lead.customer_phone}
-          </DialogDescription>
+      <DialogContent className="max-w-4xl p-0 gap-0 overflow-hidden bg-white" data-testid="customer-details-modal">
+        {/* Header */}
+        <DialogHeader className="px-6 py-4 border-b border-slate-100 bg-white">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#2E3192] to-[#6366F1] flex items-center justify-center">
+                <User className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <DialogTitle className="text-lg font-semibold text-slate-900">
+                  {lead.customer_name || 'Customer Details'}
+                </DialogTitle>
+                <p className="text-sm text-slate-500">{lead.customer_phone}</p>
+              </div>
+            </div>
+            {lead.credit_score && (
+              <div className="px-4 py-2 bg-emerald-50 rounded-lg border border-emerald-200">
+                <p className="text-xs text-emerald-600 font-medium">Credit Score</p>
+                <p className="text-xl font-bold text-emerald-700">{lead.credit_score}</p>
+              </div>
+            )}
+          </div>
         </DialogHeader>
-        
+
         {/* Tabs */}
-        <div className="flex border-b">
-          <button
-            onClick={() => setActiveTab('info')}
-            className={`flex-1 py-2 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === 'info'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-            data-testid="tab-customer-info"
-          >
-            <User className="h-4 w-4 inline mr-1" />
-            Customer Info
-          </button>
-          <button
-            onClick={() => setActiveTab('vehicles')}
-            className={`flex-1 py-2 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === 'vehicles'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-            data-testid="tab-vehicles"
-          >
-            <Car className="h-4 w-4 inline mr-1" />
-            Vehicles ({lead.vehicles?.length || 0})
-          </button>
-          <button
-            onClick={() => setActiveTab('documents')}
-            className={`flex-1 py-2 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === 'documents'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-            data-testid="tab-documents"
-          >
-            <FileText className="h-4 w-4 inline mr-1" />
-            Documents ({lead.documents?.length || 0})
-          </button>
-        </div>
-        
-        {/* Tab Content */}
-        <div className="py-2">
-          {activeTab === 'info' ? (
-            <CustomerInfoTab lead={lead} onUpdate={onUpdate} />
-          ) : activeTab === 'vehicles' ? (
-            <VehiclesTab lead={lead} onUpdate={onUpdate} />
-          ) : (
-            <DocumentsTab lead={lead} onUpdate={onUpdate} />
-          )}
-        </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+          <TabsList className="w-full justify-start border-b border-slate-200 bg-transparent p-0 h-auto rounded-none px-6">
+            <TabsTrigger 
+              value="info" 
+              className="data-[state=active]:border-[#2E3192] data-[state=active]:text-[#2E3192] data-[state=active]:shadow-none border-b-2 border-transparent rounded-none px-4 py-3 text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors bg-transparent"
+              data-testid="tab-info"
+            >
+              <User className="h-4 w-4 mr-2" />
+              Customer Info
+            </TabsTrigger>
+            <TabsTrigger 
+              value="vehicles" 
+              className="data-[state=active]:border-[#2E3192] data-[state=active]:text-[#2E3192] data-[state=active]:shadow-none border-b-2 border-transparent rounded-none px-4 py-3 text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors bg-transparent"
+              data-testid="tab-vehicles"
+            >
+              <Car className="h-4 w-4 mr-2" />
+              Vehicles
+              {lead.vehicles?.length > 0 && (
+                <span className="ml-2 px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded-full">
+                  {lead.vehicles.length}
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger 
+              value="documents" 
+              className="data-[state=active]:border-[#2E3192] data-[state=active]:text-[#2E3192] data-[state=active]:shadow-none border-b-2 border-transparent rounded-none px-4 py-3 text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors bg-transparent"
+              data-testid="tab-documents"
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              Documents
+              {lead.documents?.length > 0 && (
+                <span className="ml-2 px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded-full">
+                  {lead.documents.length}
+                </span>
+              )}
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Tab Content */}
+          <div className="flex-1 overflow-y-auto p-6 bg-slate-50/50 min-h-[400px] max-h-[60vh]">
+            <TabsContent value="info" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
+              <CustomerInfoTab lead={lead} onUpdate={onUpdate} />
+            </TabsContent>
+            <TabsContent value="vehicles" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
+              <VehiclesTab lead={lead} onUpdate={onUpdate} />
+            </TabsContent>
+            <TabsContent value="documents" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
+              <DocumentsTab lead={lead} onUpdate={onUpdate} />
+            </TabsContent>
+          </div>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
