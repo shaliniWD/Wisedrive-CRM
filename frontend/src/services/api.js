@@ -117,6 +117,9 @@ export const customersApi = {
   getSalesRepsWithCounts: () => axios.get(`${API_URL}/customers/sales-reps-with-counts`),
   // Seed sample data
   seedSampleData: () => axios.post(`${API_URL}/customers/seed-sample-data`),
+  // Repair data - link orphaned inspections, create missing inspections
+  repair: (id) => axios.post(`${API_URL}/customers/${id}/repair`),
+  repairByMobile: (mobile) => axios.post(`${API_URL}/customers/repair-by-mobile/${encodeURIComponent(mobile)}`),
 };
 
 // Transactions API
