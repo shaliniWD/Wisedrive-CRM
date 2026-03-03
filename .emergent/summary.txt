@@ -1,110 +1,141 @@
 <analysis>**original_problem_statement:**
-The user initially requested a Loans module, backend refactoring, and solutions for several production issues. The focus then shifted to fixing a series of critical production bugs, including data migration failures, UI regressions, incorrect city detection, and broken data linkages for customers. After resolving these, the user requested a new feature: integration with the Surepass API for pulling credit reports from four major Indian bureaus (CIBIL, Equifax, Experian, and CRIF). The user has provided production credentials for this integration.
+The user initially requested a Loans module, backend refactoring, and solutions for several production issues. The focus shifted to fixing critical bugs, including data migration failures, UI regressions, and broken data linkages. The user then requested integration with the Surepass API for credit reports (CIBIL, Equifax, Experian, CRIF).
+
+After completing the initial credit report integration, the user reported a bug where second payments for a customer did not create new inspections. This was fixed. The user then requested a significant UI overhaul for the credit report feature to remove the old OTP flow, display detailed report data, add PDF viewing, cache results, and add a Fetch Again mechanism.
+
+Most recently, the user requested a new Bank Statement Analysis module, providing a sample PDF statement to be analyzed for ABB, spending patterns, and salary credits using an AI service.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The application is a full-stack CRM for vehicle loans and inspections, running on a restored dump of the user's production database. Several critical production bugs have been resolved, including timezone inconsistencies, city auto-detection, and customer data integrity issues. The backend has been integrated with the Surepass API for fetching CIBIL, Equifax, and Experian credit reports. The agent was in the process of adding the CRIF report integration. All integrations now use the user's provided production API keys.
+The application is a full-stack CRM for vehicle loans. Several critical production bugs have been resolved, including the lead reassignment bug and the second payment/inspection creation bug.
+
+The Surepass credit report integration is functionally complete for CIBIL, Equifax, and Experian on both the backend and frontend. The backend saves each fetched report to a  collection in MongoDB. The frontend UI on the  has been extensively built out to:
+- Display the last CIBIL score directly in the leads table.
+- Open a detailed modal that loads cached reports from the database.
+- Display comprehensive report data across multiple tabs (Overview, Accounts, Enquiries, Profile).
+- Provide a View PDF button that opens the report in a new tab.
+- Include a Fetch Again dropdown to refresh reports individually or all at once.
+
+The agent was beginning work on the bank statement analysis feature and discovered the provided PDF is password-protected, blocking standard parsing methods. An attempt to use an AI vision model (Gemini) was initiated.
 
 **Last working item**:
--   **Last item agent was working:** Integrating the CRIF commercial credit report via the Surepass API. The agent created the necessary service methods in  and API routes in .
--   **Status:** IN PROGRESS
+-   **Last item agent was working:** Implementing the Bank Statement Analysis module. The agent was attempting to analyze a user-provided PDF statement. After discovering the PDF was encrypted/corrupted and could not be parsed by standard libraries (usage: pdfplumber [-h] [--structure | --structure-text]
+                  [--format {csv,json,text}] [--types TYPES [TYPES ...]]
+                  [--include-attrs INCLUDE_ATTRS [INCLUDE_ATTRS ...]]
+                  [--exclude-attrs EXCLUDE_ATTRS [EXCLUDE_ATTRS ...]]
+                  [--laparams LAPARAMS] [--precision PRECISION]
+                  [--pages PAGES [PAGES ...]] [--indent INDENT]
+                  [infile]
+
+positional arguments:
+  infile
+
+options:
+  -h, --help            show this help message and exit
+  --structure           Write the structure tree as JSON. All other arguments
+                        except --pages, --laparams, and --indent will be
+                        ignored
+  --structure-text      Write the structure tree as JSON including text
+                        contents. All other arguments except --pages,
+                        --laparams, and --indent will be ignored
+  --format {csv,json,text}
+  --types TYPES [TYPES ...]
+  --include-attrs INCLUDE_ATTRS [INCLUDE_ATTRS ...]
+                        Include *only* these object attributes in output.
+  --exclude-attrs EXCLUDE_ATTRS [EXCLUDE_ATTRS ...]
+                        Exclude these object attributes from output.
+  --laparams LAPARAMS
+  --precision PRECISION
+  --pages PAGES [PAGES ...]
+  --indent INDENT       Indent level for JSON pretty-printing., ), the agent decided to use an AI Vision API (Gemini via ). The agent found that a basic backend service () and frontend components () for this feature already exist and was about to test the analysis endpoint with the protected PDF URL.
+-   **Status:** BLOCKED
 -   **Agent Testing Done:** N
--   **Which testing method agent to use?** Backend testing. The agent needs to restart the backend service and use  to test the new CRIF API endpoint ().
+-   **Which testing method agent to use?** Backend testing. The agent needs to call the  endpoint, passing the URL of the user-provided PDF to see if the Gemini vision model can bypass the encryption.
 -   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
--   **Issue 1: Lead reassignment not working in production (P0)**
--   **Issue 2: Loan Eligibility Engine Frontend Integration (P1)**
--   **Issue 3: Bengaluru Migration Failure in Production (P1)**
--   **Issue 4: Data quality in production DB (inspections with missing vehicle data) (P1)**
--   **Issue 5: Surepass Equifax API Scope (P2)**
--   **Issue 6: Cleanup of old duplicate customer/inspection records (P2)**
--   **Issue 7: Critical Video Upload Failure (P2)**
+-   **Issue 1: Loan Eligibility Engine Frontend Integration (P1)**
+-   **Issue 2: Bengaluru Migration Failure in Production (P1)**
+-   **Issue 3: Data quality in production DB (inspections with missing vehicle data) (P1)**
+-   **Issue 4: Surepass CRIF API Scope (P2)**
+-   **Issue 5: Cleanup of old duplicate customer/inspection records (P2)**
+-   **Issue 6: Critical Video Upload Failure (P2)**
 
 **Issues Detail:**
--   **Issue 1: Lead reassignment not working in production (P0)**
-    -   **Attempted fixes:** The agent implemented a fix to look up the agent's role via  from the  collection because the  on the user record was empty. However, the user reported the issue persists.
-    -   **Next debug checklist:**
-        1.  Analyze the user's screenshot which shows the error: Lead can only be assigned to sales executives. Current role: . This confirms the  is still resolving to an empty string.
-        2.  Inspect the code in  around line 1423 again. The logic  is the likely culprit.
-        3.  Verify the database query for  correctly joins or looks up the role information. The previous fix might have been incomplete. The agent fetches the user but the role lookup from  might be failing.
-    -   **Why fix this issue and what will be achieved with the fix?** This is a core business function, blocking the user from managing their sales pipeline.
-    -   **Status:** IN PROGRESS
-    -   **Is recurring issue?** Y
-    -   **Should Test frontend/backend/both after fix?** Backend.
-    -   **Blocked on other issue:** None.
-
--   **Issue 2: Loan Eligibility Engine Frontend Integration (P1)**
-    -   **Attempted fixes:** Backend API is fixed and functional.
+-   **Issue 1: Loan Eligibility Engine Frontend Integration (P1)**
+    -   **Attempted fixes:** Backend API is functional.
     -   **Next debug checklist:** This is a feature implementation task. Build the UI in  to call  and display the results.
     -   **Why fix this issue and what will be achieved with the fix?** This is a core feature to automate the loan qualification process.
     -   **Status:** NOT STARTED
     -   **Is recurring issue?** N
     -   **Should Test frontend/backend/both after fix?** Both.
+    -   **Blocked on other issue:** None.
 
--   **Issue 3: Bengaluru Migration Failure in Production (P1)**
-    -   **Attempted fixes:** Agent provided code and deployment instructions.
+-   **Issue 2: Bengaluru Migration Failure in Production (P1)**
+    -   **Attempted fixes:** Agent provided code and deployment instructions in a previous session.
     -   **Next debug checklist:** Awaiting user confirmation on whether the latest deployment to  resolved it.
     -   **Why fix this issue and what will be achieved with the fix?** Resolves a critical data integrity issue blocking city management.
     -   **Status:** USER VERIFICATION PENDING
     -   **Is recurring issue?** Y
     -   **Should Test frontend/backend/both after fix?** Backend.
+    -   **Blocked on other issue:** None.
 
--   **Issue 4: Data quality in production DB (inspections with missing vehicle data) (P1)**
-    -   **Attempted fixes:** The root cause for new data was fixed, and the  endpoint was enhanced significantly to find and link orphaned data from  and handle multiple payments.
-    -   **Next debug checklist:** Consider creating a batch script to run the enhanced repair logic across all customers with potential data integrity problems.
+-   **Issue 3: Data quality in production DB (inspections with missing vehicle data) (P1)**
+    -   **Attempted fixes:** The root cause for new data being missed (second payment bug) was fixed. The webhook in  now correctly handles multiple payments for the same lead.
+    -   **Next debug checklist:** Consider creating a batch script to run the enhanced repair logic () across all customers with potential historical data integrity problems.
     -   **Why fix this issue and what will be achieved with the fix?** Ensures data accuracy and that all customer purchases are correctly reflected.
     -   **Status:** IN PROGRESS
     -   **Is recurring issue?** Y
-    -   **Should Test frontend/backend/both after fix?** Both.
+    -   **Should Test frontend/backend/both after fix?** Backend.
+    -   **Blocked on other issue:** None.
 
--   **Issue 5: Surepass Equifax API Scope (P2)**
-    -   **Attempted fixes:** The agent integrated the Equifax API. When testing with the production token, the API returned a Verification Failed error, which is different from the sandbox scope not enabled error.
-    -   **Next debug checklist:** The integration code is in place. This may be an issue with the test data provided or a configuration on the Surepass side. The user should be informed that the API is integrated but failing on the provider's end with test data.
-    -   **Why fix this issue and what will be achieved with the fix?** Enables a key credit report provider.
+-   **Issue 4: Surepass CRIF API Scope (P2)**
+    -   **Attempted fixes:** The backend integration is complete. However, API calls return an access token is not valid for this API/Scope error.
+    -   **Next debug checklist:** The code is correct. The user must contact Surepass support and ask them to enable the CRIF Commercial Credit Report scope for their production API key.
+    -   **Why fix this issue and what will be achieved with the fix?** Enables the final credit report provider.
     -   **Status:** BLOCKED
     -   **Is recurring issue?** N
     -   **Should Test frontend/backend/both after fix?** Backend.
     -   **Blocked on other issue:** External API Provider (Surepass).
 
--   **Issue 6: Cleanup of old duplicate customer/inspection records (P2)**
+-   **Issue 5: Cleanup of old duplicate customer/inspection records (P2)**
     -   **Attempted fixes:** None.
-    -   **Next debug checklist:** Write a one-time script to find and merge/remove duplicate records.
-    -   **Why fix this issue and what will be achieved with the fix?** Improves data integrity.
+    -   **Next debug checklist:** Write a one-time script to find and merge/remove duplicate records based on mobile number or other identifiers.
+    -   **Why fix this issue and what will be achieved with the fix?** Improves data integrity and system performance.
     -   **Status:** NOT STARTED
     -   **Is recurring issue?** N
     -   **Should Test frontend/backend/both after fix?** Backend.
+    -   **Blocked on other issue:** None.
 
--   **Issue 7: Critical Video Upload Failure (P2)**
+-   **Issue 6: Critical Video Upload Failure (P2)**
     -   **Attempted fixes:** None in this session.
-    -   **Next debug checklist:** Investigate the video upload flow.
-    -   **Why fix this issue and what will be achieved with the fix?** A critical feature for inspections is completely broken.
+    -   **Next debug checklist:** Investigate the video upload flow from the frontend through the backend to Firebase storage.
+    -   **Why fix this issue and what will be achieved with the fix?** A critical feature for vehicle inspections is completely broken.
     -   **Status:** NOT STARTED
     -   **Is recurring issue?** Y
     -   **Should Test frontend/backend/both after fix?** Both.
+    -   **Blocked on other issue:** None.
 
 **In progress Task List**:
--   **Task 1: Complete Surepass credit report integration (P0)**
-    -   **Where to resume:**
-        1.  Restart the backend service.
-        2.  Test the newly added CRIF API endpoints using .
-        3.  Once all backend APIs are confirmed working, proceed to build the frontend UI component in the Loans/Customer page to fetch and display the credit reports.
-    -   **What will be achieved with this?** A core new feature for credit analysis will be available to users.
-    -   **Status:** IN PROGRESS
+-   **Task 1: Bank Statement Analysis Module (P0)**
+    -   **Where to resume:** The agent is blocked by a password-protected/corrupted PDF. The next step is to test the existing Gemini Vision integration by calling the  endpoint with the PDF's public URL to see if it can extract the text. If successful, update the service to parse the required fields (ABB, spending pattern, salary info) and display them in .
+    -   **What will be achieved with this?** A new AI-powered feature for automated bank statement analysis.
+    -   **Status:** BLOCKED
     -   **Should Test frontend/backend/both after fix?** Both.
+    -   **Blocked on something:** The user-provided PDF artifact is encrypted/corrupted.
 
 -   **Task 2: Complete  refactoring (P1)**
-    -   **Where to resume:** Migrate the remaining  and other webhook endpoints from  into their own dedicated router files.
+    -   **Where to resume:** Migrate the remaining webhook endpoints (, ) from  into their own dedicated router files in .
     -   **What will be achieved with this?** Reduces technical debt and improves backend code maintainability.
-    -   **Status:** IN PROGRESS
+    -   **Status:** NOT STARTED
     -   **Should Test frontend/backend/both after fix?** Backend.
+    -   **Blocked on something:** None.
 
 **Upcoming and Future Tasks**
 **Upcoming Tasks:**
-*   **(P1) Build Credit Report Frontend UI:** Create components to trigger the API calls and display the JSON/PDF reports for CIBIL, Equifax, Experian, and CRIF.
-*   **(P1) PDF Export for Credit Report:** The Surepass API provides a link for PDFs. The UI needs a button to open/download this link.
-*   **(P1) Refactor Large Components:** Break down  and .
+*   **(P1) PDF Export for Credit Report:** The user might request an explicit Download button in addition to the View button.
+*   **(P1) Refactor Large Components:** Break down  (3000+ lines),  (now larger), and  (now 1200+ lines).
 *   **(P2) Create Charge Types Master Page:** Build a dedicated UI for managing loan charge types.
 *   **(P2) Share Report Button:** Implement share functionality on .
 *   **(P2) Data Migration Scripts:** Create scripts to help the user migrate essential data from staging to production.
@@ -118,15 +149,18 @@ The application is a full-stack CRM for vehicle loans and inspections, running o
 *   Support Balance Transfer (BT) loans.
 
 **Completed work in this session**
--   **Test-5 Customer Data Issue Fully Resolved:** Fixed a frontend bug in  that was incorrectly displaying package and payment info. Manually repaired data for the Test-5 user in the preview environment and enhanced the  API to automatically handle additional purchases for existing customers.
--   **Lead Management Bugs Fixed:**
-    -   Corrected the lead assignment logic that defaulted the city to Vizag by making the AD ID lookup case-insensitive and improving fallback logic in .
-    -   Addressed a lead reassignment failure by modifying the backend to correctly fetch the agent's assigned cities in .
--   **Inspection City Auto-Detection Fixed:** Resolved a bug in  where the city was returned in Devanagari script; the component now requests the English language from the Google Places API.
--   **Surepass Credit Report Backend Integration:**
-    -   Created a new service () and new routes ().
-    -   Successfully integrated **CIBIL**, **Equifax**, and **Experian** JSON and PDF APIs.
-    -   Switched from sandbox to **production** credentials provided by the user.
+-   **P0 Lead Reassignment Bug Fixed:** Resolved the recurring bug where lead reassignment failed. The root cause was the  field being stored as a string , which was misinterpreted. The logic in  was updated to correctly handle this data anomaly and was thoroughly tested.
+-   **P0 Second Payment Bug Fixed:** Fixed the critical bug where a second payment for a customer did not create a new inspection. The idempotency check in the Razorpay webhook handler in  was modified to allow new inspections for existing customers/leads.
+-   **Credit Report Backend Complete:** Finished the CRIF integration by adding the missing API routes to . Enhanced all credit report fetch endpoints to retrieve the PDF link in parallel with the JSON data. Added a  endpoint to fetch cached reports from the database.
+-   **Credit Report Frontend Overhaul:**
+    -   Redesigned the entire credit report flow on the , replacing the old OTP modal.
+    -   The  table now shows the CIBIL score directly.
+    -   The  now loads cached reports from the DB, displays comprehensive data (accounts, enquiries, profile) for all bureaus, includes a View PDF button, and has a Fetch Again dropdown.
+    -   Fixed data parsing issues in  and data normalization issues in  to correctly display scores and details from different bureaus.
+-   **Customer Data Flow Bugs Fixed:**
+    -   Removed non-essential fields (DOB, PIN code) from the .
+    -   Fixed data synchronization in  to correctly pull  and  from inspection records into loan leads.
+    -   Updated  to show a Pending status for customers missing details.
 
 **Earlier issues found/mentioned but not fixed**
 -   The Critical Video Upload Failure issue from the previous fork remains unaddressed.
@@ -140,20 +174,23 @@ The application is a full-stack CRM for vehicle loans and inspections, running o
 
 
 **Key Technical Concepts**
--   **3rd Party API Integration:** Integrating with the Surepass REST API for credit reports, managing production tokens, and handling different API endpoints for different providers (CIBIL, Equifax, Experian, CRIF).
--   **Data Discrepancy Debugging:** Diagnosing and fixing issues where the frontend UI did not match the backend data (e.g., Test-5 customer modal).
--   **Robust Data Repair:** Enhancing a simple repair script into a comprehensive API that can find and link orphaned data across multiple collections (, , ) based on various identifiers.
--   **Role-Based Access Control (RBAC):** Debugging a recurring issue with lead reassignment where the user's role was not being correctly identified, requiring a fix to look up roles by  instead of an empty .
+-   **AI-Powered Document Analysis:** Attempting to use Gemini Vision API via  to parse a password-protected/corrupted PDF bank statement.
+-   **Webhook Idempotency:** Debugging and fixing flawed idempotency logic in the Razorpay webhook that incorrectly blocked legitimate subsequent transactions.
+-   **Robust Data Handling:** Fixing data integrity issues caused by inconsistent field names ( vs ) and unexpected data types (string ).
+-   **Complex Frontend State Management:** Implementing a caching layer in a React component () to manage fetched vs. non-fetched data, loading states, and providing manual refresh options.
+-   **Parallel API Calls:** Backend routes were updated to fetch JSON data and PDF links concurrently to improve performance.
 
 **key DB schema**
--   **credit_reports:** (new collection) 
+-   **credit_reports:**  (This collection is now actively being written to and read from).
+-   **loan_leads:**  (A  field was added to the document to display in the UI).
 
 **changes in tech stack**
--   None.
+-   None, but initiated use of  for Gemini Vision.
 
 **All files of reference**
--    (New)
--    (New)
+-   
+-   
+-   
 -   
 -   
 -   
@@ -162,51 +199,51 @@ The application is a full-stack CRM for vehicle loans and inspections, running o
 -   
 
 **Areas that need refactoring**:
--   : Still extremely large. The webhook logic (, ) should be extracted into separate service files.
--   : Over 3,000 lines, needs to be broken down.
--   : Over 4,000 lines, needs significant refactoring.
+-   : Still contains webhook logic that should be extracted.
+-   : Over 3,000 lines.
+-   : Has grown to over 1,200 lines and contains complex data normalization and state logic. It should be broken down into smaller sub-components for each report tab (Accounts, Enquiries, Profile).
 
 **key api endpoints**
--    (New)
--    (New)
--    (New)
--    (Enhanced)
--    (Modified)
+-    (Modified to also return )
+-    (New endpoint to fetch all cached reports for a PAN)
+-    (Fixed)
+-    (in , logic fixed)
+-    (Fixed)
+-    (To be tested)
 
 **Critical Info for New Agent**
-1.  **Production Credentials in Use:** The application is configured with the user's **production** Surepass API token and URL in . API calls to Surepass are live. Test data will result in Not Found errors, which is expected behavior.
-2.  **Recurring Reassignment Bug:** The user has reported that lead reassignment is still failing in production. This is a top-priority (P0) recurring bug. The last fix attempted to resolve an empty  on user records by looking up the role via . This fix was likely incomplete.
-3.  **Credit Report Feature is Backend-Only:** The entire Surepass integration (CIBIL, Equifax, Experian, CRIF) has been implemented on the backend. The next major step is to build the frontend UI to allow users to fetch and view these reports.
-4.  **Data Repair Logic:** The  endpoint is now very powerful. Use this API to diagnose and fix customer data issues before attempting manual scripts.
+1.  **Bank Statement Analysis is Blocked:** The immediate task is to unblock the bank statement analysis. The provided PDF artifact is encrypted. The next logical step is to test the  API endpoint, which uses Gemini Vision, to see if it can process the document from its public URL. Do not attempt to parse it with standard libraries again.
+2.  **Credit Report Feature is Advanced:** The credit report system is now stateful. It fetches reports, saves them to the  collection in MongoDB, and the frontend loads this cached data by default. The UI is complex but functional.
+3.  **Two Major Bugs Fixed:** The P0 lead reassignment bug and the critical second-payment bug have been resolved and tested. You should not need to revisit this logic unless the user reports a new regression.
+4.  **CRIF is Blocked by Surepass:** The backend code for the CRIF credit report is complete, but the user's Surepass account does not have the necessary permissions. Do not attempt to fix this in the code; the user must contact Surepass support.
 
 **documents and test reports created in this job**
--   None.
+-   User-provided artifact:  (Public URL: ). Note: This file is password-protected/corrupted.
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **LATEST:** User asked to integrate the CRIF credit report and provided a document with API details. (Status: **IN PROGRESS**)
-2.  User asked to integrate the Experian credit report and provided a document with API details. (Status: **RESOLVED**)
-3.  User provided the **production** Surepass token and URL and asked to switch the integration from sandbox to production. (Status: **RESOLVED**)
-4.  User asked to add the Equifax credit report and provided API details. (Status: **RESOLVED**)
-5.  User reported that lead reassignment is still not working for a specific user (Bhavya) and provided a screenshot of the error. (Status: **ATTEMPTED FIX, RECURRING**)
-6.  User asked to start integrating the Surepass CIBIL credit report and provided API details. (Status: **RESOLVED**)
-7.  User confirmed the Test-5 customer issue is not fully resolved, stating that payment transaction data and a second inspection are missing. (Status: **RESOLVED**)
-8.  User asked why the Test-5 issue can't be fixed in the preview environment since the data exists there. (Status: **RESOLVED**, agent found and fixed a frontend bug)
-9.  User reported the Test-5 customer repair API shows no issues found but the data is still missing in the UI. (Status: **RESOLVED**)
-10. User reported two new issues on the leads page: incorrect city mapping for a lead and lead reassignment failing. (Status: **RESOLVED**)
+1.  **LATEST:** User requested to build a bank statement analysis module and provided a PDF. (Status: **IN PROGRESS, BLOCKED**)
+2.  User specified requirements for the analysis: ABB, Bank Name, Spending pattern, Salary info. (Status: **IN PROGRESS**)
+3.  User provided a list of 5 new requirements/bugs related to the Customer Details UI and data syncing. (Status: **RESOLVED**)
+4.  User prioritized fixing the Lead Reassignment Bug. (Status: **RESOLVED**)
+5.  User requested multiple enhancements for the credit report UI: show CIBIL score by default, cache results, don't re-fetch, open PDF in a new tab, and add a Fetch Again button. (Status: **RESOLVED**)
+6.  User requested to map all fields from the credit report API to the UI and add a PDF view option. (Status: **RESOLVED**)
+7.  User requested to plot the fetched credit scores for the first customer in the frontend UI. (Status: **RESOLVED**)
+8.  User provided real customer data (Name, PAN, Mobile) for testing. (Status: **RESOLVED**)
+9.  User asked what data is needed to fetch all 4 reports. (Status: **RESOLVED**)
+10. User confirmed the credit report UI redesign was complete and asked to proceed with testing using real data. (Status: **RESOLVED**)
 
 **Project Health Check:**
 -   **Broken:**
-    -   Lead Reassignment feature is functionally broken in production.
     -   Video upload for inspections.
 -   **Mocked:**
-    -   Core AI analysis logic in the Customer Profile feature.
+    -   Core AI analysis logic in the Customer Profile feature (partially implemented but not fully functional/tested).
 -   **Blocked:**
-    -   Surepass Equifax API integration is coded but blocked by a provider-side verification error with test data.
+    -   Bank Statement Analysis (due to encrypted PDF).
+    -   Surepass CRIF API integration (blocked by provider-side scope).
 
 **3rd Party Integrations**
 -   **Surepass:** For CIBIL, Equifax, Experian, and CRIF credit reports. Uses a production User API Key.
--   **OpenAI/Gemini (via Emergent LLM Key):** Skeleton service for bank statement analysis.
--   **Invincible Ocean API:** For Vaahan (cached). Experian/Equifax from this provider are disabled/blocked.
+-   **Gemini (via Emergent LLM Key):** Being used for AI vision to analyze the protected bank statement PDF.
 -   **Firebase:** For media storage.
 -   **Expo Application Services (EAS):** Used to build the React Native app.
 
@@ -214,7 +251,7 @@ The application is a full-stack CRM for vehicle loans and inspections, running o
 -   **Testing agent used after significant changes:** NO
 -   **Troubleshoot agent used after agent stuck in loop:** NO
 -   **Test files created:** []
--   **Known regressions:** The lead reassignment feature has regressed or was not fully fixed.
+-   **Known regressions:** None identified in this session.
 
 **Credentials to test flow:**
 -   **CRM Admin Login:**  / 
@@ -222,6 +259,6 @@ The application is a full-stack CRM for vehicle loans and inspections, running o
 -   **Surepass API Token:** Stored in  as . It is a **production** key.
 
 **What agent forgot to execute**
--   The agent has not yet tested the CRIF integration after adding the code.
--   The agent did not create a comprehensive test plan for the recurring lead reassignment issue.
--   The agent did not start any work on the frontend UI for the credit report feature.</analysis>
+-   The agent has not started work on the Loan Eligibility Engine Frontend Integration.
+-   The agent has not addressed the Critical Video Upload Failure.
+-   The backend refactoring of  remains pending.</analysis>

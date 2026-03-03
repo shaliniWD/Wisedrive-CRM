@@ -4,7 +4,7 @@ from datetime import datetime
 import json
 
 class WiseDriveCRMTester:
-    def __init__(self, base_url="https://wisedrive-credit.preview.emergentagent.com"):
+    def __init__(self, base_url="https://wisedrive-loans.preview.emergentagent.com"):
         self.base_url = base_url
         self.token = None
         self.tests_run = 0
