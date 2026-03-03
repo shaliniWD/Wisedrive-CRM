@@ -49,6 +49,10 @@ The application is a full-stack CRM for vehicle loans and inspections. Key featu
 - ✅ Lead reassignment bug fixed (role_code handling)
 - ✅ Second payment/inspection creation bug fixed (webhook idempotency)
 - ✅ Customer data sync (phone, city) fixed
+- ✅ **Duplicate inspection bug fixed** - Webhook now handles both `payment.captured` and `payment_link.paid` events without creating duplicates
+- ✅ **Multi-slot package restoration** - Fixed cleanup script to preserve legitimate multi-inspection packages
+- ✅ **Inspections sorting fixed** - Scheduled inspections now sorted by `scheduled_date` + `scheduled_time` descending
+- ✅ **Data cleanup for +919830035928** - Fixed from 10 incorrect inspections to 5 correct ones
 
 ### Bug Fixes (Dec 2025)
 - ✅ Lead city auto-detection (case-insensitive AD ID lookup)
