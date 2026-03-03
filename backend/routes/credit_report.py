@@ -568,6 +568,159 @@ async def fetch_experian_pdf_report(
     }
 
 
+@router.post("/crif")
+async def fetch_crif_report(
+    request: CRIFReportRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Fetch CRIF Commercial credit report (JSON format)
+    For business/company credit reports
+    """
+    surepass = get_surepass_service()
+    
+    if not surepass.is_configured():
+        raise HTTPException(status_code=503, detail="Credit report service not configured")
+    
+    # Validate PAN format
+    pan = request.pan.upper().strip()
+    if len(pan) != 10:
+        raise HTTPException(status_code=400, detail="Invalid PAN format. Must be 10 characters.")
+    
+    # Fetch report from Surepass
+    result = await surepass.fetch_crif_report(
+        business_name=request.business_name,
+        pan=pan,
+        mobile=request.mobile,
+        consent=request.consent
+    )
+    
+    if not result.get("success"):
+        return {
+            "success": False,
+            "error": result.get("error"),
+            "error_code": result.get("error_code")
+        }
+    
+    # Parse the report for better UI display
+    parsed_report = surepass.parse_crif_report(result.get("credit_report", {}))
+    
+    # Store report in database
+    report_id = str(uuid.uuid4())
+    report_record = {
+        "id": report_id,
+        "provider": "CRIF",
+        "type": "json",
+        "pan": pan,
+        "mobile": request.mobile,
+        "business_name": request.business_name,
+        "credit_score": result.get("credit_score"),
+        "client_id": result.get("client_id"),
+        "parsed_report": parsed_report,
+        "raw_report": result.get("credit_report"),
+        "customer_id": request.customer_id,
+        "lead_id": request.lead_id,
+        "loan_lead_id": request.loan_lead_id,
+        "fetched_by": current_user.get("id"),
+        "fetched_by_name": current_user.get("name"),
+        "fetched_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await _db.credit_reports.insert_one(report_record)
+    logger.info(f"Stored CRIF Commercial report {report_id} for PAN {pan[:4]}****")
+    
+    # Update loan_lead with credit score if loan_lead_id provided
+    if request.loan_lead_id:
+        await _db.loan_leads.update_one(
+            {"id": request.loan_lead_id},
+            {"$set": {
+                "credit_score": result.get("credit_score"),
+                "credit_report_id": report_id,
+                "credit_report_provider": "CRIF",
+                "credit_report_fetched_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+    
+    return {
+        "success": True,
+        "report_id": report_id,
+        "provider": "CRIF",
+        "credit_score": result.get("credit_score"),
+        "parsed_report": parsed_report,
+        "fetched_at": result.get("fetched_at")
+    }
+
+
+@router.post("/crif/pdf")
+async def fetch_crif_pdf_report(
+    request: CRIFReportRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Fetch CRIF Commercial credit report (PDF format)
+    Returns a downloadable PDF link
+    """
+    surepass = get_surepass_service()
+    
+    if not surepass.is_configured():
+        raise HTTPException(status_code=503, detail="Credit report service not configured")
+    
+    # Validate PAN format
+    pan = request.pan.upper().strip()
+    if len(pan) != 10:
+        raise HTTPException(status_code=400, detail="Invalid PAN format. Must be 10 characters.")
+    
+    # Fetch PDF report from Surepass
+    result = await surepass.fetch_crif_pdf(
+        business_name=request.business_name,
+        pan=pan,
+        mobile=request.mobile,
+        consent=request.consent
+    )
+    
+    if not result.get("success"):
+        return {
+            "success": False,
+            "error": result.get("error"),
+            "error_code": result.get("error_code")
+        }
+    
+    # Store PDF report record
+    report_id = str(uuid.uuid4())
+    report_record = {
+        "id": report_id,
+        "provider": "CRIF",
+        "type": "pdf",
+        "pan": pan,
+        "mobile": request.mobile,
+        "business_name": request.business_name,
+        "credit_score": result.get("credit_score"),
+        "client_id": result.get("client_id"),
+        "pdf_link": result.get("pdf_link"),
+        "customer_id": request.customer_id,
+        "lead_id": request.lead_id,
+        "loan_lead_id": request.loan_lead_id,
+        "fetched_by": current_user.get("id"),
+        "fetched_by_name": current_user.get("name"),
+        "fetched_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await _db.credit_reports.insert_one(report_record)
+    logger.info(f"Stored CRIF Commercial PDF report {report_id} for PAN {pan[:4]}****")
+    
+    return {
+        "success": True,
+        "report_id": report_id,
+        "provider": "CRIF",
+        "credit_score": result.get("credit_score"),
+        "pdf_link": result.get("pdf_link"),
+        "fetched_at": result.get("fetched_at")
+    }
+
+
 @router.get("/check-status")
 async def check_credit_service_status(
     current_user: dict = Depends(get_current_user)
@@ -580,7 +733,7 @@ async def check_credit_service_status(
     return {
         "configured": surepass.is_configured(),
         "providers": ["CIBIL", "Equifax", "Experian", "CRIF"],
-        "active_providers": ["CIBIL", "Equifax", "Experian"] if surepass.is_configured() else []
+        "active_providers": ["CIBIL", "Equifax", "Experian", "CRIF"] if surepass.is_configured() else []
     }
 
 
