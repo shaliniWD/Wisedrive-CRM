@@ -290,9 +290,31 @@ const BureauReportView = ({ report, bureauName, bureauColor }) => {
   const [expandedAccounts, setExpandedAccounts] = useState({});
   const [accountFilter, setAccountFilter] = useState('all'); // all, active, closed, problem
   
-  const score = report?.SCORE?.FCIREXScore || report?.SCORE?.BureauScore || report?.creditScore || 0;
+  // Normalize data across different bureau formats
+  // CIBIL uses: score_info, accounts, enquiries, summary
+  // Equifax uses: SCORE, CAIS_Account, CAPS
+  // Experian uses: similar to Equifax
+  
+  // Extract score - handle all formats
+  const score = report?.score_info?.score 
+    || report?.SCORE?.FCIREXScore 
+    || report?.SCORE?.BureauScore 
+    || report?.creditScore 
+    || 0;
+  
+  // Extract accounts - handle all formats
+  const accounts = report?.accounts 
+    || report?.CAIS_Account?.CAIS_Account_DETAILS 
+    || [];
+  
+  // Extract enquiries
+  const enquiries = report?.enquiries 
+    || report?.CAPS?.CAPS_Application_Details 
+    || [];
+  
+  // Extract summary data
+  const summary = report?.summary || {};
   const caisSummary = report?.CAIS_Account?.CAIS_Summary || {};
-  const accounts = report?.CAIS_Account?.CAIS_Account_DETAILS || [];
   const creditAccount = caisSummary?.Credit_Account || {};
   const outstanding = caisSummary?.Total_Outstanding_Balance || {};
   const capsData = report?.CAPS || {};
@@ -300,21 +322,48 @@ const BureauReportView = ({ report, bureauName, bureauColor }) => {
   const totalCaps = report?.TotalCAPS_Summary || {};
   const currentApp = report?.Current_Application?.Current_Application_Details || {};
   const profileHeader = report?.CreditProfileHeader || {};
-  const scoreData = report?.SCORE || {};
+  const scoreData = report?.SCORE || report?.score_info || {};
+  
+  // Extract personal info - handle all formats
+  const personalInfo = report?.personal_info || {};
+  const idInfo = report?.id_info || [];
+  const phoneInfo = report?.phone_info || [];
+  const addressInfo = report?.address_info || [];
+  
+  // Calculate summary from accounts if not provided
+  const totalAccounts = summary?.total_accounts || creditAccount?.CreditAccountTotal || accounts.length;
+  const activeAccounts = summary?.active_accounts || creditAccount?.CreditAccountActive || 0;
+  const closedAccounts = totalAccounts - activeAccounts;
+  const totalBalance = summary?.total_balance || outstanding?.Outstanding_Balance_All || 0;
+  const totalOverdueAmt = summary?.total_overdue || outstanding?.Outstanding_Balance_All_Overdue || 0;
   
   // Calculate problem accounts (defaults, write-offs, overdue)
   const problemAccounts = accounts.filter(acc => {
+    // Handle CIBIL format
+    if (acc.credit_status === 'Written-off' || acc.amount_overdue > 0) return true;
+    // Handle Equifax format
     const status = getAccountStatus(acc.Account_Status, acc);
     return status.severity === 'critical' || status.severity === 'warning';
   });
   
   // Calculate total overdue amount
-  const totalOverdue = accounts.reduce((sum, acc) => sum + (acc.Amount_Past_Due || 0), 0);
-  const totalWrittenOff = accounts.reduce((sum, acc) => sum + (acc.Written_Off_Amt_Total || 0), 0);
+  const totalOverdue = accounts.reduce((sum, acc) => {
+    return sum + (parseInt(acc.amount_overdue) || acc.Amount_Past_Due || 0);
+  }, 0);
+  const totalWrittenOff = accounts.reduce((sum, acc) => {
+    return sum + (parseInt(acc.written_off_amount) || acc.Written_Off_Amt_Total || 0);
+  }, 0);
   
   // Filter accounts
   const filteredAccounts = accounts.filter(acc => {
     if (accountFilter === 'all') return true;
+    // Handle CIBIL format
+    if (acc.credit_status) {
+      if (accountFilter === 'active') return !acc.credit_status || acc.credit_status === 'Active';
+      if (accountFilter === 'closed') return acc.credit_status === 'Closed' || acc.credit_status === 'Settled';
+      if (accountFilter === 'problem') return acc.credit_status === 'Written-off' || parseInt(acc.amount_overdue) > 0;
+    }
+    // Handle Equifax format
     const status = getAccountStatus(acc.Account_Status, acc);
     if (accountFilter === 'active') return status.label === 'Active' || status.label === 'Overdue';
     if (accountFilter === 'closed') return status.label === 'Closed' || status.label === 'Settled';
@@ -325,7 +374,7 @@ const BureauReportView = ({ report, bureauName, bureauColor }) => {
   const tabs = [
     { id: 'overview', label: 'Overview', icon: Eye },
     { id: 'accounts', label: 'Accounts', icon: Building2, count: accounts.length },
-    { id: 'enquiries', label: 'Enquiries', icon: Search },
+    { id: 'enquiries', label: 'Enquiries', icon: Search, count: enquiries.length },
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'raw', label: 'Raw Data', icon: FileText },
   ];
