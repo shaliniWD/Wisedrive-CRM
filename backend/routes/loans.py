@@ -3663,13 +3663,55 @@ async def update_customer_profile(
     return await db.customer_profiles.find_one({"loan_lead_id": lead_id}, {"_id": 0})
 
 
+class BankStatementAnalyzeRequest(BaseModel):
+    """Request model for direct URL bank statement analysis"""
+    file_url: str
+    password: Optional[str] = None
+
+
+@router.post("/loan-leads/analyze-bank-statement-url")
+async def analyze_bank_statement_from_url_endpoint(
+    request: BankStatementAnalyzeRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Analyze a bank statement directly from URL (useful for testing).
+    Supports password-protected PDFs.
+    """
+    try:
+        analysis_result = await analyze_bank_statement_from_url(
+            request.file_url, 
+            storage_service,
+            password=request.password
+        )
+        
+        if not analysis_result.get("success"):
+            raise HTTPException(
+                status_code=500,
+                detail=analysis_result.get("error", "Analysis failed")
+            )
+        
+        return {
+            "success": True,
+            "message": "Bank statement analyzed successfully",
+            "analysis": analysis_result
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Bank statement URL analysis failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
+
+
 @router.post("/loan-leads/{lead_id}/profile/analyze-bank-statement")
 async def analyze_bank_statement_endpoint(
     lead_id: str,
     document_id: str,
+    password: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
-    """Analyze bank statement document using AI"""
+    """Analyze bank statement document using AI. Supports password-protected PDFs."""
     # Get the lead
     lead = await db.loan_leads.find_one({"id": lead_id})
     if not lead:
