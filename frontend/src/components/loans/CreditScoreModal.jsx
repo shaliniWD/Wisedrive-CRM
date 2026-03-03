@@ -655,10 +655,16 @@ const BureauReportView = ({ report, bureauName, bureauColor }) => {
         {/* Enquiries Tab */}
         {activeTab === 'enquiries' && (
           <div className="space-y-3">
+            {/* Enquiries Summary */}
             <div className="bg-white rounded-xl p-4 border border-slate-100">
-              <h4 className="font-semibold text-slate-900 mb-3 flex items-center gap-2"><Search className="h-5 w-5 text-slate-600" />Hard Enquiries</h4>
+              <h4 className="font-semibold text-slate-900 mb-3 flex items-center gap-2"><Search className="h-5 w-5 text-slate-600" />Credit Enquiries Timeline</h4>
               <div className="grid grid-cols-4 gap-3">
-                {[{ label: '7 Days', value: capsData?.CAPS_Summary?.CAPSLast7Days ?? totalCaps.TotalCAPSLast7Days ?? 0 }, { label: '30 Days', value: capsData?.CAPS_Summary?.CAPSLast30Days ?? totalCaps.TotalCAPSLast30Days ?? 0 }, { label: '90 Days', value: capsData?.CAPS_Summary?.CAPSLast90Days ?? totalCaps.TotalCAPSLast90Days ?? 0 }, { label: '180 Days', value: capsData?.CAPS_Summary?.CAPSLast180Days ?? totalCaps.TotalCAPSLast180Days ?? 0 }].map((item, i) => (
+                {[
+                  { label: '7 Days', value: capsData?.CAPS_Summary?.CAPSLast7Days ?? totalCaps.TotalCAPSLast7Days ?? 0 }, 
+                  { label: '30 Days', value: capsData?.CAPS_Summary?.CAPSLast30Days ?? totalCaps.TotalCAPSLast30Days ?? 0 }, 
+                  { label: '90 Days', value: capsData?.CAPS_Summary?.CAPSLast90Days ?? totalCaps.TotalCAPSLast90Days ?? 0 }, 
+                  { label: '180 Days', value: capsData?.CAPS_Summary?.CAPSLast180Days ?? totalCaps.TotalCAPSLast180Days ?? summary.total_enquiries ?? enquiries.length ?? 0 }
+                ].map((item, i) => (
                   <div key={i} className="text-center p-3 bg-slate-50 rounded-xl">
                     <p className={`text-2xl font-bold ${item.value > 3 ? 'text-orange-600' : 'text-slate-900'}`}>{item.value}</p>
                     <p className="text-xs text-slate-500 mt-1">{item.label}</p>
@@ -666,6 +672,31 @@ const BureauReportView = ({ report, bureauName, bureauColor }) => {
                 ))}
               </div>
             </div>
+            
+            {/* Enquiries List - handles CIBIL format */}
+            {enquiries.length > 0 && (
+              <div className="bg-white rounded-xl p-4 border border-slate-100">
+                <h4 className="font-semibold text-slate-900 mb-3 flex items-center gap-2"><Eye className="h-5 w-5 text-blue-600" />Enquiry Details ({enquiries.length})</h4>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {enquiries.map((enq, idx) => (
+                    <div key={idx} className="p-3 bg-slate-50 rounded-lg flex justify-between items-center">
+                      <div>
+                        <p className="font-semibold text-slate-900 text-sm">{enq.member || enq.Subscriber_Name || 'Unknown'}</p>
+                        <p className="text-xs text-slate-500">{enq.purpose || enq.Purpose || 'Credit Application'}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-medium text-slate-700">{enq.date || enq.Date_of_Request || '-'}</p>
+                        {(enq.amount || enq.Amount) && (
+                          <p className="text-xs text-slate-500">{formatINR(enq.amount || enq.Amount)}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Non-Credit CAPS - Equifax specific */}
             {nonCreditCaps?.NonCreditCAPS_Summary && (
               <div className="bg-white rounded-xl p-4 border border-slate-100">
                 <h4 className="font-semibold text-slate-900 mb-3 flex items-center gap-2"><Eye className="h-5 w-5 text-blue-600" />Soft Enquiries</h4>
