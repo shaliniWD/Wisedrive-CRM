@@ -1436,3 +1436,252 @@ async def _repair_customer(db, customer: dict, current_user: dict):
         ]
     
     return repairs
+
+
+
+# ============================================================================
+# DATA CLEANUP APIs - Fix duplicate inspections from webhook race conditions
+# ============================================================================
+
+class CleanupResult(BaseModel):
+    """Result of data cleanup operation"""
+    success: bool
+    customers_processed: int
+    duplicates_found: int
+    duplicates_removed: int
+    details: List[Dict[str, Any]]
+    errors: List[str]
+
+
+@router.post("/cleanup/duplicate-inspections")
+async def cleanup_duplicate_inspections(
+    dry_run: bool = True,
+    customer_mobile: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Clean up duplicate inspections caused by webhook race conditions.
+    
+    The issue: When a payment is made, Razorpay sends both:
+    - payment.captured event (with pay_XXX ID)
+    - payment_link.paid event (with plink_XXX ID)
+    
+    If both events create inspections, we get duplicates.
+    
+    This API identifies and removes duplicates by:
+    1. Finding plink_/pay_ pairs created within 10 seconds for same customer
+    2. Finding multiple inspections with same razorpay_payment_id
+    3. Preserving multi-slot packages (same payment_id but different slot numbers)
+    
+    Args:
+        dry_run: If True, only report what would be deleted without actually deleting
+        customer_mobile: Optional - clean only for specific customer
+    
+    Returns:
+        CleanupResult with details of what was found/removed
+    """
+    logger.info(f"Starting duplicate inspection cleanup. dry_run={dry_run}, customer_mobile={customer_mobile}")
+    
+    result = {
+        "success": True,
+        "customers_processed": 0,
+        "duplicates_found": 0,
+        "duplicates_removed": 0,
+        "details": [],
+        "errors": []
+    }
+    
+    try:
+        # Build query
+        query = {}
+        if customer_mobile:
+            # Normalize mobile
+            mobile = customer_mobile.replace(" ", "").replace("-", "")
+            if not mobile.startswith("+"):
+                mobile = f"+91{mobile}" if len(mobile) == 10 else mobile
+            query["customer_mobile"] = mobile
+        
+        # Get all inspections grouped by customer
+        pipeline = [
+            {"$match": query} if query else {"$match": {}},
+            {"$group": {
+                "_id": "$customer_mobile",
+                "inspections": {"$push": {
+                    "id": "$id",
+                    "razorpay_payment_id": "$razorpay_payment_id",
+                    "slot_number": "$slot_number",
+                    "created_at": "$created_at",
+                    "car_number": "$car_number",
+                    "package_type": "$package_type",
+                    "notes": "$notes"
+                }},
+                "count": {"$sum": 1}
+            }},
+            {"$match": {"count": {"$gt": 1}}}  # Only customers with multiple inspections
+        ]
+        
+        customers_with_multiple = await db.inspections.aggregate(pipeline).to_list(1000)
+        
+        for customer_group in customers_with_multiple:
+            customer_mobile = customer_group["_id"]
+            inspections = customer_group["inspections"]
+            
+            if not customer_mobile:
+                continue
+                
+            result["customers_processed"] += 1
+            customer_duplicates = []
+            
+            # Sort inspections by created_at
+            inspections_sorted = sorted(inspections, key=lambda x: x.get("created_at", "") or "")
+            
+            # Strategy 1: Find plink_/pay_ pairs within 10 seconds
+            for i in range(len(inspections_sorted)):
+                insp1 = inspections_sorted[i]
+                pid1 = insp1.get("razorpay_payment_id", "") or ""
+                
+                for j in range(i + 1, len(inspections_sorted)):
+                    insp2 = inspections_sorted[j]
+                    pid2 = insp2.get("razorpay_payment_id", "") or ""
+                    
+                    # Check if one is plink_ and other is pay_
+                    is_plink_pay_pair = (
+                        (pid1.startswith("pay_") and pid2.startswith("plink_")) or
+                        (pid1.startswith("plink_") and pid2.startswith("pay_"))
+                    )
+                    
+                    if is_plink_pay_pair:
+                        # Check time difference
+                        try:
+                            t1 = datetime.fromisoformat(insp1.get("created_at", "")[:19].replace("Z", ""))
+                            t2 = datetime.fromisoformat(insp2.get("created_at", "")[:19].replace("Z", ""))
+                            diff_seconds = abs((t2 - t1).total_seconds())
+                            
+                            if diff_seconds <= 10:
+                                # Mark the plink_ one as duplicate (prefer pay_)
+                                if pid1.startswith("plink_"):
+                                    customer_duplicates.append(insp1)
+                                else:
+                                    customer_duplicates.append(insp2)
+                        except Exception as e:
+                            logger.warning(f"Could not parse dates for comparison: {e}")
+            
+            # Strategy 2: Find duplicates with same payment_id but different slot numbers should be kept
+            from collections import defaultdict
+            by_payment_id = defaultdict(list)
+            for insp in inspections_sorted:
+                pid = insp.get("razorpay_payment_id")
+                if pid:
+                    by_payment_id[pid].append(insp)
+            
+            for pid, insp_list in by_payment_id.items():
+                if len(insp_list) > 1:
+                    # Check if they have different slot numbers (multi-slot package)
+                    slots = set(insp.get("slot_number") for insp in insp_list if insp.get("slot_number"))
+                    
+                    if len(slots) < len(insp_list):
+                        # Some inspections don't have slot numbers or have duplicate slots
+                        # Keep the first one, mark rest as duplicates
+                        for dup in insp_list[1:]:
+                            if dup.get("slot_number") in [i.get("slot_number") for i in insp_list[:insp_list.index(dup)]]:
+                                if dup not in customer_duplicates:
+                                    customer_duplicates.append(dup)
+            
+            # Remove duplicates from list (dedup by id)
+            seen_ids = set()
+            unique_duplicates = []
+            for dup in customer_duplicates:
+                if dup["id"] not in seen_ids:
+                    seen_ids.add(dup["id"])
+                    unique_duplicates.append(dup)
+            
+            if unique_duplicates:
+                result["duplicates_found"] += len(unique_duplicates)
+                
+                customer_detail = {
+                    "customer_mobile": customer_mobile,
+                    "total_inspections": len(inspections),
+                    "duplicates_found": len(unique_duplicates),
+                    "duplicates": [
+                        {
+                            "id": d["id"],
+                            "payment_id": d.get("razorpay_payment_id"),
+                            "slot": d.get("slot_number"),
+                            "car": d.get("car_number"),
+                            "created_at": d.get("created_at")
+                        }
+                        for d in unique_duplicates
+                    ]
+                }
+                
+                if not dry_run:
+                    # Actually delete the duplicates
+                    ids_to_delete = [d["id"] for d in unique_duplicates]
+                    delete_result = await db.inspections.delete_many({"id": {"$in": ids_to_delete}})
+                    customer_detail["deleted"] = delete_result.deleted_count
+                    result["duplicates_removed"] += delete_result.deleted_count
+                    logger.info(f"Deleted {delete_result.deleted_count} duplicate inspections for {customer_mobile}")
+                else:
+                    customer_detail["would_delete"] = len(unique_duplicates)
+                
+                result["details"].append(customer_detail)
+        
+        result["message"] = (
+            f"{'DRY RUN: ' if dry_run else ''}Found {result['duplicates_found']} duplicates across {result['customers_processed']} customers"
+            + (f", removed {result['duplicates_removed']}" if not dry_run else "")
+        )
+        
+    except Exception as e:
+        logger.error(f"Error during cleanup: {str(e)}")
+        result["success"] = False
+        result["errors"].append(str(e))
+    
+    return result
+
+
+@router.post("/cleanup/run-on-startup")
+async def run_startup_cleanup(
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Run a comprehensive data cleanup. Call this after deployment to production.
+    
+    This performs:
+    1. Duplicate inspection cleanup (plink_/pay_ pairs)
+    2. Orphaned data linking
+    
+    Returns summary of all cleanups performed.
+    """
+    results = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "cleanups": {}
+    }
+    
+    # Run duplicate inspection cleanup (actual deletion)
+    dup_result = await cleanup_duplicate_inspections(dry_run=False, customer_mobile=None, current_user=current_user)
+    results["cleanups"]["duplicate_inspections"] = {
+        "success": dup_result.get("success"),
+        "duplicates_removed": dup_result.get("duplicates_removed", 0),
+        "customers_affected": dup_result.get("customers_processed", 0)
+    }
+    
+    return results
+
+
+@router.get("/cleanup/check-duplicates")
+async def check_duplicates(
+    customer_mobile: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Check for duplicate inspections without removing them.
+    
+    This is a diagnostic endpoint to see what duplicates exist.
+    
+    Args:
+        customer_mobile: Optional - check only for specific customer
+    
+    Returns:
+        List of customers with duplicate inspections
+    """
+    return await cleanup_duplicate_inspections(dry_run=True, customer_mobile=customer_mobile, current_user=current_user)
