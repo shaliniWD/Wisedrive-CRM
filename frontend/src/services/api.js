@@ -99,7 +99,7 @@ export const metaAdsApi = {
 
 // Customers API
 export const customersApi = {
-  getAll: (params) => axios.get(`${API_URL}/customers`, { params }),
+  getAll: (params) => axios.get(`${API_URL}/customers`, { params: { ...params, timezone_offset: getTimezoneOffset() } }),
   getById: (id) => axios.get(`${API_URL}/customers/${id}`),
   create: (data) => axios.post(`${API_URL}/customers`, data),
   update: (id, data) => axios.put(`${API_URL}/customers/${id}`, data),
@@ -127,7 +127,7 @@ export const transactionsApi = {
 
 // Inspections API
 export const inspectionsApi = {
-  getAll: (params) => axios.get(`${API_URL}/inspections`, { params }),
+  getAll: (params) => axios.get(`${API_URL}/inspections`, { params: { ...params, timezone_offset: getTimezoneOffset() } }),
   getById: (id) => axios.get(`${API_URL}/inspections/${id}`),
   create: (data) => axios.post(`${API_URL}/inspections`, data),
   update: (id, data) => axios.put(`${API_URL}/inspections/${id}`, data),
