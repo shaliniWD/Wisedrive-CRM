@@ -685,27 +685,77 @@ const BureauReportView = ({ report, bureauName, bureauColor }) => {
         {/* Profile Tab */}
         {activeTab === 'profile' && (
           <div className="space-y-3">
-            {currentApp.Current_Applicant_Details && (
+            {/* Personal Information - handles both formats */}
+            {(personalInfo.name || currentApp.Current_Applicant_Details) && (
               <div className="bg-white rounded-xl p-4 border border-slate-100">
                 <h4 className="font-semibold text-slate-900 mb-3 flex items-center gap-2"><User className="h-5 w-5 text-slate-600" />Personal Information</h4>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-                  <div><p className="text-slate-500">Full Name</p><p className="font-semibold text-slate-900">{currentApp.Current_Applicant_Details.First_Name} {currentApp.Current_Applicant_Details.Last_Name}</p></div>
-                  <div><p className="text-slate-500">Date of Birth</p><p className="font-semibold text-slate-900">{formatDateFromNum(currentApp.Current_Applicant_Details.Date_Of_Birth_Applicant)}</p></div>
-                  <div><p className="text-slate-500">Gender</p><p className="font-semibold text-slate-900">{currentApp.Current_Applicant_Details.Gender_Code === 1 ? 'Male' : 'Female'}</p></div>
-                  <div><p className="text-slate-500">PAN</p><p className="font-semibold text-slate-900 font-mono">{currentApp.Current_Applicant_Details.IncomeTaxPan || '-'}</p></div>
-                  <div><p className="text-slate-500">Mobile</p><p className="font-semibold text-slate-900">{currentApp.Current_Applicant_Details.MobilePhoneNumber || '-'}</p></div>
-                  <div><p className="text-slate-500">Email</p><p className="font-semibold text-slate-900">{currentApp.Current_Applicant_Details.EMailId || '-'}</p></div>
+                  <div><p className="text-slate-500">Full Name</p><p className="font-semibold text-slate-900">{personalInfo.name || `${currentApp.Current_Applicant_Details?.First_Name || ''} ${currentApp.Current_Applicant_Details?.Last_Name || ''}`.trim() || '-'}</p></div>
+                  <div><p className="text-slate-500">Date of Birth</p><p className="font-semibold text-slate-900">{personalInfo.birth_date || formatDateFromNum(currentApp.Current_Applicant_Details?.Date_Of_Birth_Applicant) || '-'}</p></div>
+                  <div><p className="text-slate-500">Gender</p><p className="font-semibold text-slate-900">{personalInfo.gender || (currentApp.Current_Applicant_Details?.Gender_Code === 1 ? 'Male' : 'Female') || '-'}</p></div>
                 </div>
               </div>
             )}
-            {currentApp.Current_Applicant_Address_Details && (
+            
+            {/* ID Documents - handles CIBIL format */}
+            {idInfo.length > 0 && (
               <div className="bg-white rounded-xl p-4 border border-slate-100">
-                <h4 className="font-semibold text-slate-900 mb-3 flex items-center gap-2"><MapPin className="h-5 w-5 text-slate-600" />Address</h4>
-                <p className="text-sm text-slate-700">{currentApp.Current_Applicant_Address_Details.FlatNoPlotNoHouseNo}, {currentApp.Current_Applicant_Address_Details.BldgNoSocietyName}</p>
-                <p className="text-sm text-slate-700">{currentApp.Current_Applicant_Address_Details.RoadNoNameAreaLocality}</p>
-                <p className="text-sm text-slate-700">{currentApp.Current_Applicant_Address_Details.City}, PIN: {currentApp.Current_Applicant_Address_Details.PINCode}</p>
+                <h4 className="font-semibold text-slate-900 mb-3 flex items-center gap-2"><CreditCard className="h-5 w-5 text-slate-600" />ID Documents</h4>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                  {idInfo.map((id, idx) => (
+                    <div key={idx} className="p-2 bg-slate-50 rounded-lg">
+                      <p className="text-slate-500 text-xs">{id.type || 'ID'}</p>
+                      <p className="font-mono font-semibold text-slate-900">{id.number}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
+            
+            {/* Phone Numbers - handles CIBIL format */}
+            {phoneInfo.length > 0 && (
+              <div className="bg-white rounded-xl p-4 border border-slate-100">
+                <h4 className="font-semibold text-slate-900 mb-3 flex items-center gap-2"><Phone className="h-5 w-5 text-slate-600" />Phone Numbers</h4>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                  {phoneInfo.map((phone, idx) => (
+                    <div key={idx} className="p-2 bg-slate-50 rounded-lg">
+                      <p className="text-slate-500 text-xs">{phone.type || 'Phone'}</p>
+                      <p className="font-mono font-semibold text-slate-900">{phone.number}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Addresses - handles both formats */}
+            {(addressInfo.length > 0 || currentApp.Current_Applicant_Address_Details) && (
+              <div className="bg-white rounded-xl p-4 border border-slate-100">
+                <h4 className="font-semibold text-slate-900 mb-3 flex items-center gap-2"><MapPin className="h-5 w-5 text-slate-600" />Addresses</h4>
+                {addressInfo.length > 0 ? (
+                  <div className="space-y-3">
+                    {addressInfo.map((addr, idx) => (
+                      <div key={idx} className="p-3 bg-slate-50 rounded-lg">
+                        <div className="flex justify-between items-start mb-1">
+                          <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded">{addr.category || 'Address'}</span>
+                          <span className="text-xs text-slate-500">{addr.date_reported}</span>
+                        </div>
+                        <p className="text-sm text-slate-700">{addr.line1}</p>
+                        {addr.line2 && <p className="text-sm text-slate-700">{addr.line2}</p>}
+                        <p className="text-sm text-slate-700">PIN: {addr.pin_code}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : currentApp.Current_Applicant_Address_Details && (
+                  <div>
+                    <p className="text-sm text-slate-700">{currentApp.Current_Applicant_Address_Details.FlatNoPlotNoHouseNo}, {currentApp.Current_Applicant_Address_Details.BldgNoSocietyName}</p>
+                    <p className="text-sm text-slate-700">{currentApp.Current_Applicant_Address_Details.RoadNoNameAreaLocality}</p>
+                    <p className="text-sm text-slate-700">{currentApp.Current_Applicant_Address_Details.City}, PIN: {currentApp.Current_Applicant_Address_Details.PINCode}</p>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* Score Analysis */}
             {scoreData && (
               <div className="bg-white rounded-xl p-4 border border-slate-100">
                 <h4 className="font-semibold text-slate-900 mb-3 flex items-center gap-2"><Activity className="h-5 w-5 text-slate-600" />Score Analysis</h4>
@@ -713,6 +763,18 @@ const BureauReportView = ({ report, bureauName, bureauColor }) => {
                   <span className="text-slate-600">Credit Score</span>
                   <span className={`text-2xl font-bold ${score >= 700 ? 'text-emerald-600' : score >= 600 ? 'text-amber-600' : 'text-red-600'}`}>{score}</span>
                 </div>
+                {scoreData.score_name && (
+                  <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg mt-2">
+                    <span className="text-slate-600">Score Type</span>
+                    <span className="font-semibold text-slate-900">{scoreData.score_name}</span>
+                  </div>
+                )}
+                {scoreData.score_date && (
+                  <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg mt-2">
+                    <span className="text-slate-600">Score Date</span>
+                    <span className="font-semibold text-slate-900">{scoreData.score_date}</span>
+                  </div>
+                )}
                 {scoreData.FCIREXScoreConfidLevel && (
                   <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg mt-2">
                     <span className="text-slate-600">Confidence</span>
