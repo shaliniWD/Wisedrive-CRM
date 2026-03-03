@@ -291,7 +291,7 @@ const VehiclesTab = ({ lead, onUpdate }) => {
   const handleDeleteVehicle = async (vehicleId) => {
     if (!window.confirm('Remove this vehicle?')) return;
     try {
-      await loansApi.deleteVehicle(lead.id, vehicleId);
+      await loansApi.removeVehicle(lead.id, vehicleId);
       toast.success('Vehicle removed');
       onUpdate();
     } catch (err) {
