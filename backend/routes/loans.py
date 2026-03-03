@@ -3741,9 +3741,9 @@ async def analyze_bank_statement_endpoint(
         logger.error(f"Failed to get download URL: {e}")
         raise HTTPException(status_code=500, detail="Failed to access document")
     
-    # Analyze using AI
+    # Analyze using AI (with optional password for encrypted PDFs)
     try:
-        analysis_result = await analyze_bank_statement_from_url(download_url, storage_service)
+        analysis_result = await analyze_bank_statement_from_url(download_url, storage_service, password=password)
     except Exception as e:
         logger.error(f"Bank statement analysis failed: {e}")
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
