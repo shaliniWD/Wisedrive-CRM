@@ -878,9 +878,53 @@ export function CustomerDetailsModal({ isOpen, onClose, customerId, onCustomerUp
                 </div>
               </TabsContent>
               
-              {/* Packages Tab (renamed from Payments) */}
+              {/* Packages Tab (renamed from Payments) - Now shows Transactions */}
               <TabsContent value="packages" className="flex-1 overflow-y-auto p-6 mt-0">
-                {paymentData?.packages && paymentData.packages.length > 0 ? (
+                {paymentData?.transactions && paymentData.transactions.length > 0 ? (
+                  <div className="space-y-4">
+                    {/* Summary Section */}
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-100 mb-6">
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                        <div>
+                          <div className="text-xs text-gray-500 uppercase">Transactions</div>
+                          <div className="text-lg font-bold text-gray-900">{paymentData.summary?.total_transactions || 0}</div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-gray-500 uppercase">Total Inspections</div>
+                          <div className="text-lg font-bold text-gray-900">{paymentData.summary?.total_inspections || 0}</div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-gray-500 uppercase">Total Paid</div>
+                          <div className="text-lg font-bold text-emerald-600">₹{(paymentData.summary?.total_paid || 0).toLocaleString()}</div>
+                        </div>
+                        {paymentData.summary?.total_discount > 0 && (
+                          <div>
+                            <div className="text-xs text-gray-500 uppercase">Total Discount</div>
+                            <div className="text-lg font-bold text-green-600">₹{paymentData.summary.total_discount.toLocaleString()}</div>
+                          </div>
+                        )}
+                        {paymentData.summary?.total_pending > 0 && (
+                          <div>
+                            <div className="text-xs text-gray-500 uppercase">Balance Due</div>
+                            <div className="text-lg font-bold text-red-600">₹{paymentData.summary.total_pending.toLocaleString()}</div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Transaction Cards */}
+                    {paymentData.transactions.map((transaction) => (
+                      <TransactionCard 
+                        key={transaction.transaction_id}
+                        transaction={transaction}
+                        isExpanded={expandedPackages[transaction.transaction_id]}
+                        onToggle={() => togglePackageExpand(transaction.transaction_id)}
+                        onViewReport={handleViewReport}
+                      />
+                    ))}
+                  </div>
+                ) : paymentData?.packages && paymentData.packages.length > 0 ? (
+                  // Fallback to old package display for backward compatibility
                   <div className="space-y-4">
                     {paymentData.packages.map((pkg) => (
                       <PackageCard 
