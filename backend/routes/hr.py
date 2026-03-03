@@ -1194,27 +1194,43 @@ async def get_employee_leave_summary(
     }
 
 
+class LeadAssignmentRequest(BaseModel):
+    """Request model for updating lead assignment"""
+    is_available_for_leads: Optional[bool] = None
+    can_receive_leads: Optional[bool] = None  # Alias
+    assigned_cities: Optional[List[str]] = None
+
+
 @router.patch("/employees/{employee_id}/lead-assignment")
 async def update_employee_lead_assignment(
     employee_id: str,
-    can_receive_leads: bool,
+    request: LeadAssignmentRequest,
     current_user: dict = Depends(get_current_user)
 ):
-    """Update employee lead assignment setting"""
+    """Update employee lead assignment setting and assigned cities"""
     role_code = current_user.get("role_code", "")
     
     if role_code not in ["CEO", "HR_MANAGER", "COUNTRY_HEAD"]:
         raise HTTPException(status_code=403, detail="Not authorized")
     
+    update_data = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    
+    # Handle both field names (is_available_for_leads and can_receive_leads)
+    if request.is_available_for_leads is not None:
+        update_data["can_receive_leads"] = request.is_available_for_leads
+    if request.can_receive_leads is not None:
+        update_data["can_receive_leads"] = request.can_receive_leads
+    
+    # Update assigned cities if provided
+    if request.assigned_cities is not None:
+        update_data["assigned_cities"] = request.assigned_cities
+    
     await db.users.update_one(
         {"id": employee_id},
-        {"$set": {
-            "can_receive_leads": can_receive_leads,
-            "updated_at": datetime.now(timezone.utc).isoformat()
-        }}
+        {"$set": update_data}
     )
     
-    return {"message": "Lead assignment updated"}
+    return {"message": "Lead assignment updated", "updated": update_data}
 
 
 @router.patch("/employees/{employee_id}/weekly-off")
