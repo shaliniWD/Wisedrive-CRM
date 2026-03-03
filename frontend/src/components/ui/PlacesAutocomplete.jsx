@@ -97,6 +97,7 @@ export function PlacesAutocomplete({
         const request = {
           input: query,
           includedRegionCodes: [country.toUpperCase()],
+          language: 'en', // Request English language responses
         };
 
         const { suggestions: results } = await AutocompleteSuggestion.fetchAutocompleteSuggestions(request);
@@ -120,7 +121,8 @@ export function PlacesAutocomplete({
           {
             input: query,
             componentRestrictions: { country: country },
-            types: ['address', 'establishment']
+            types: ['address', 'establishment'],
+            language: 'en' // Request English language responses
           },
           (predictions, status) => {
             if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions) {
