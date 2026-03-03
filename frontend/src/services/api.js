@@ -680,6 +680,7 @@ export const loansApi = {
   fetchEquifaxReport: (data) => axios.post(`${API_URL}/credit-report/equifax`, data),
   fetchExperianReport: (data) => axios.post(`${API_URL}/credit-report/experian`, data),
   fetchCrifReport: (data) => axios.post(`${API_URL}/credit-report/crif`, data),
+  getLatestReports: (pan) => axios.get(`${API_URL}/credit-report/latest/${pan}`),
 };
 
 // Bank Master API
