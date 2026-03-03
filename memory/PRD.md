@@ -16,6 +16,13 @@ The application is a full-stack CRM for vehicle loans and inspections. Key featu
 
 ## What's Been Implemented
 
+### Credit Report UI (Dec 2025)
+- ✅ Customer Details modal: 3 tabs (Customer Info, Vehicles, Documents)
+- ✅ Customer Info tab: First Name, Last Name, PAN, DOB, Mobile, Email, Gender, PIN Code
+- ✅ Credit Reports column: "Get Report" button + score badge
+- ✅ Removed OTP flow - direct bureau fetch via Surepass API
+- ✅ 4 bureau support: CIBIL, Equifax, Experian, CRIF
+
 ### Credit Report Integration (Dec 2025)
 - ✅ CIBIL JSON & PDF endpoints
 - ✅ Equifax JSON & PDF endpoints  
