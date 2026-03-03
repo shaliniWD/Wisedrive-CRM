@@ -3,6 +3,23 @@
 ---
 ## 📅 CHANGELOG
 
+### March 3, 2026 - Lead Reassignment Role Lookup Fix
+
+**Issue:** Lead reassignment failing with error "Lead can only be assigned to sales executives. Current role: " (empty role)
+
+**Root Cause:** 
+- User records have empty `role_code` field
+- Role information is stored in `role_id` which references the `roles` collection
+- Reassignment code was only checking `role_code` which was always empty
+
+**Fix:**
+- Updated reassignment logic to lookup role code from `roles` collection using `role_id` when `role_code` is empty
+- Now correctly identifies SALES_EXEC, SALES_LEAD, SALES_HEAD roles
+
+**Files Modified:** `/app/backend/server.py` (reassign_lead endpoint)
+
+---
+
 ### March 3, 2026 - Surepass CIBIL Credit Report Integration
 
 **Feature:** Integrated Surepass API for soft-pull CIBIL credit reports (no OTP required)
