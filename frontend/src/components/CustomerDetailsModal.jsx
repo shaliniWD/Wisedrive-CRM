@@ -252,6 +252,9 @@ export function CustomerDetailsModal({ isOpen, onClose, customerId, onCustomerUp
   
   // Package expansion state
   const [expandedPackages, setExpandedPackages] = useState({});
+  
+  // Repair state
+  const [repairing, setRepairing] = useState(false);
 
   const fetchCustomerDetails = useCallback(async () => {
     if (!customerId) return;
