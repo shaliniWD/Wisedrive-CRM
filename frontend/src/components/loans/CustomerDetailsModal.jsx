@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import {
   Car, FileText, CheckCircle, Plus, Trash2, RefreshCw, Upload, 
   Loader2, Info, Users, Building2, AlertCircle, ExternalLink, Eye,
-  User, CreditCard, Phone, Mail, MapPin, Calendar
+  User, CreditCard, Phone, Mail, MapPin, Calendar, Edit, Save, X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
