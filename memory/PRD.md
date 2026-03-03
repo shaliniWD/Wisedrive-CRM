@@ -45,6 +45,14 @@ The application is a full-stack CRM for vehicle loans and inspections. Key featu
 - ✅ History lookup by PAN
 - ✅ Loan lead credit score linking
 
+### CustomerDetailsModal Redesign (Dec 2025)
+- ✅ Complete UI redesign with modern Shadcn components
+- ✅ Customer Info tab: View/Edit mode with First Name, Last Name, PAN, Gender, Mobile, Email
+- ✅ Vehicles tab: Add vehicle, Edit loan requirements (valuation, loan amount, EMI, tenure), Vaahan refresh, Delete vehicle
+- ✅ Documents tab: Shows 13 document requirements with Upload/View/Delete buttons
+- ✅ Quick stats cards showing vehicle count, document count, credit score
+- ✅ Fixed API calls: `loansApi.update`, `loansApi.removeVehicle`
+
 ### Bug Fixes (Mar 2026)
 - ✅ Lead reassignment bug fixed (role_code handling)
 - ✅ Second payment/inspection creation bug fixed (webhook idempotency)
