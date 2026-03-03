@@ -1076,8 +1076,11 @@ async def check_eligibility_all_banks(
     Check customer eligibility against all active banks.
     Returns a list of banks sorted by eligibility score.
     """
+    logger.info(f"[ELIGIBILITY ENGINE] Received eligibility check request: {request.model_dump()}")
+    
     # Get all active banks
     banks = await db.bank_master.find({"is_active": True}, {"_id": 0}).to_list(100)
+    logger.info(f"[ELIGIBILITY ENGINE] Found {len(banks)} active banks")
     
     if not banks:
         return {
