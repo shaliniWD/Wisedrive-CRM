@@ -40,11 +40,25 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 
 # Pydantic models
 class CreditReportRequest(BaseModel):
-    """Request model for fetching credit report"""
+    """Request model for fetching CIBIL credit report"""
     mobile: str = Field(..., description="Customer mobile number")
     pan: str = Field(..., description="Customer PAN number")
     name: str = Field(..., description="Customer full name")
     gender: str = Field(default="male", description="Gender: male or female")
+    consent: str = Field(default="Y", description="Customer consent")
+    
+    # Optional: Link to existing records
+    customer_id: Optional[str] = None
+    lead_id: Optional[str] = None
+    loan_lead_id: Optional[str] = None
+
+
+class EquifaxReportRequest(BaseModel):
+    """Request model for fetching Equifax credit report"""
+    name: str = Field(..., description="Customer full name")
+    id_number: str = Field(..., description="ID number (Aadhaar, PAN, etc.)")
+    id_type: str = Field(default="aadhaar", description="ID type: aadhaar, pan, voter, passport, driving_license")
+    mobile: str = Field(default="", description="Customer mobile number (optional)")
     consent: str = Field(default="Y", description="Customer consent")
     
     # Optional: Link to existing records
