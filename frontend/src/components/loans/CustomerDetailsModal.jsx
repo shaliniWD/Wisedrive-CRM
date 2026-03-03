@@ -57,7 +57,7 @@ const CustomerInfoTab = ({ lead, onUpdate }) => {
     
     setSaving(true);
     try {
-      await loansApi.updateLead(lead.id, {
+      await loansApi.update(lead.id, {
         credit_first_name: formData.first_name,
         credit_last_name: formData.last_name,
         pan_number: formData.pan_number.toUpperCase(),
