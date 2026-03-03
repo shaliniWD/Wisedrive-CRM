@@ -2,9 +2,16 @@ import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL + '/api';
 
+// Get user's timezone offset in minutes (positive for IST, negative for western timezones)
+export const getTimezoneOffset = () => {
+  // JavaScript's getTimezoneOffset returns the opposite sign, so we negate it
+  // IST (UTC+5:30) returns -330 from getTimezoneOffset(), we need +330 for the backend
+  return -new Date().getTimezoneOffset();
+};
+
 // Leads API
 export const leadsApi = {
-  getAll: (params) => axios.get(`${API_URL}/leads`, { params }),
+  getAll: (params) => axios.get(`${API_URL}/leads`, { params: { ...params, timezone_offset: getTimezoneOffset() } }),
   getById: (id) => axios.get(`${API_URL}/leads/${id}`),
   getStatuses: () => axios.get(`${API_URL}/leads/statuses`),
   create: (data) => axios.post(`${API_URL}/leads`, data),
