@@ -409,15 +409,25 @@ export default function LoansPage() {
                     <td className="p-4 text-center">
                       <Button
                         size="sm"
-                        variant="outline"
+                        variant={lead.pan_number ? "outline" : "ghost"}
                         onClick={async () => {
                           const fullLead = await openLeadDetails(lead.id);
                           if (fullLead) setCustomerDetailsModalOpen(true);
                         }}
+                        className={!lead.pan_number ? "border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100" : ""}
                         data-testid="customer-details-btn"
                       >
-                        <FileText className="h-3 w-3 mr-1" />
-                        {(lead.vehicles?.length || 0) + (lead.documents?.length || 0)}
+                        {lead.pan_number ? (
+                          <>
+                            <FileText className="h-3 w-3 mr-1" />
+                            {(lead.vehicles?.length || 0) + (lead.documents?.length || 0)}
+                          </>
+                        ) : (
+                          <>
+                            <AlertCircle className="h-3 w-3 mr-1" />
+                            Pending
+                          </>
+                        )}
                       </Button>
                     </td>
                     <td className="p-4 text-center">
