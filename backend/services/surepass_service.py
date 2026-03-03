@@ -14,8 +14,10 @@ logger = logging.getLogger(__name__)
 class SurepassService:
     """Service for interacting with Surepass KYC APIs"""
     
-    # Sandbox URL - change to production when ready
-    BASE_URL = "https://kyc-api.surepass.io/api/v1"
+    # Use sandbox URL for development, change to production when ready
+    # Production: https://kyc-api.surepass.io/api/v1
+    # Sandbox: https://sandbox.surepass.io/api/v1
+    BASE_URL = os.environ.get("SUREPASS_BASE_URL", "https://sandbox.surepass.io/api/v1")
     
     # Credit report endpoints
     ENDPOINTS = {
