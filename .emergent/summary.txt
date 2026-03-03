@@ -1,80 +1,72 @@
 <analysis>**original_problem_statement:**
-The user initially requested a Loans module, backend refactoring, and solutions for several production issues including data migration failures and UI regressions. During this session, the focus shifted to a series of new, critical production bugs reported by the user. These bugs included issues with creating inspections for second packages, errors in the HR module, timezone inconsistencies in date filters causing data to appear on the wrong day, incorrect customer data linkages due to inconsistent phone number formats, and a failure in the auto-detection of a city when an address was updated. The user also provided a production database dump to facilitate more accurate debugging.
+The user initially requested a Loans module, backend refactoring, and solutions for several production issues. The focus then shifted to fixing a series of critical production bugs, including data migration failures, UI regressions, incorrect city detection, and broken data linkages for customers. After resolving these, the user requested a new feature: integration with the Surepass API for pulling credit reports from four major Indian bureaus (CIBIL, Equifax, Experian, and CRIF). The user has provided production credentials for this integration.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The application is a full-stack CRM for vehicle loans and inspections. The current environment is running on a restored dump of the user's production database, allowing for highly accurate testing.
-
-Several critical production bugs have been addressed:
--   **Loan Eligibility Engine:** A backend bug caused by Python function name shadowing was fixed. The  endpoint is now functional.
--   **Multi-Package Inspections:** A webhook idempotency check was fixed, allowing customers to purchase multiple inspection packages.
--   **HR Module API:** The API for updating employee cities was fixed to correctly handle data sent from the frontend.
--   **Timezone-Aware Date Filtering:** A comprehensive fix was implemented across the backend (Leads, Inspections, Loans, Customers) and frontend to ensure date filters work correctly for users in different timezones (specifically IST vs. UTC).
--   **Customer Data Integrity:** A new API endpoint () was created to fix orphaned inspections by normalizing inconsistent phone number formats (with/without ). The UI was updated with a Repair button in the customer modal.
--   **Inspection City Auto-Detection:** A bug preventing the city from updating automatically when an address was selected from Google Places has been fixed. The root cause was an incorrect prop name ( instead of ) in the frontend code. The city extraction logic was also made more robust.
--   Obsolete frontend components (, ) have been removed.
+The application is a full-stack CRM for vehicle loans and inspections, running on a restored dump of the user's production database. Several critical production bugs have been resolved, including timezone inconsistencies, city auto-detection, and customer data integrity issues. The backend has been integrated with the Surepass API for fetching CIBIL, Equifax, and Experian credit reports. The agent was in the process of adding the CRIF report integration. All integrations now use the user's provided production API keys.
 
 **Last working item**:
--   **Last item agent was working:** Fixing the inspection city auto-detection bug. The user reported that after selecting a new address (e.g., Pune Railway Station), the city field was not automatically updating to Pune.
+-   **Last item agent was working:** Integrating the CRIF commercial credit report via the Surepass API. The agent created the necessary service methods in  and API routes in .
 -   **Status:** IN PROGRESS
--   **Agent Testing Done:** N (The agent implemented a fix for the root cause - a prop name mismatch - but did not perform a final test to verify the fix for the user's specific scenario).
--   **Which testing method agent to use?** Frontend testing agent. The test should verify that selecting an address from the Google Places autocomplete in the inspection edit modal correctly updates the city field in the UI.
+-   **Agent Testing Done:** N
+-   **Which testing method agent to use?** Backend testing. The agent needs to restart the backend service and use  to test the new CRIF API endpoint ().
 -   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
--   **Issue 1: Loan Eligibility Engine Frontend Integration (P0)**
--   **Issue 2: Bengaluru Migration Failure in Production (P1)**
--   **Issue 3: Data quality in production DB (inspections with missing vehicle data) (P1)**
--   **Issue 4: Production DB Sync (P1)**
--   **Issue 5: Experian/Equifax API Integration Activation (P1)**
+-   **Issue 1: Lead reassignment not working in production (P0)**
+-   **Issue 2: Loan Eligibility Engine Frontend Integration (P1)**
+-   **Issue 3: Bengaluru Migration Failure in Production (P1)**
+-   **Issue 4: Data quality in production DB (inspections with missing vehicle data) (P1)**
+-   **Issue 5: Surepass Equifax API Scope (P2)**
 -   **Issue 6: Cleanup of old duplicate customer/inspection records (P2)**
+-   **Issue 7: Critical Video Upload Failure (P2)**
 
 **Issues Detail:**
--   **Issue 1: Loan Eligibility Engine Frontend Integration (P0)**
-    -   **Attempted fixes:** The backend API () has been fixed and is fully functional.
-    -   **Next debug checklist:** This is now a feature implementation task. The agent needs to build the UI on the frontend ( or a new component) to call this endpoint and display the eligibility results (eligible banks, max loan amount, rejection reasons).
-    -   **Why fix this issue and what will be achieved with the fix?** This is a core feature requested by the user to automate the loan qualification process, saving significant manual effort.
+-   **Issue 1: Lead reassignment not working in production (P0)**
+    -   **Attempted fixes:** The agent implemented a fix to look up the agent's role via  from the  collection because the  on the user record was empty. However, the user reported the issue persists.
+    -   **Next debug checklist:**
+        1.  Analyze the user's screenshot which shows the error: Lead can only be assigned to sales executives. Current role: . This confirms the  is still resolving to an empty string.
+        2.  Inspect the code in  around line 1423 again. The logic  is the likely culprit.
+        3.  Verify the database query for  correctly joins or looks up the role information. The previous fix might have been incomplete. The agent fetches the user but the role lookup from  might be failing.
+    -   **Why fix this issue and what will be achieved with the fix?** This is a core business function, blocking the user from managing their sales pipeline.
+    -   **Status:** IN PROGRESS
+    -   **Is recurring issue?** Y
+    -   **Should Test frontend/backend/both after fix?** Backend.
+    -   **Blocked on other issue:** None.
+
+-   **Issue 2: Loan Eligibility Engine Frontend Integration (P1)**
+    -   **Attempted fixes:** Backend API is fixed and functional.
+    -   **Next debug checklist:** This is a feature implementation task. Build the UI in  to call  and display the results.
+    -   **Why fix this issue and what will be achieved with the fix?** This is a core feature to automate the loan qualification process.
     -   **Status:** NOT STARTED
     -   **Is recurring issue?** N
     -   **Should Test frontend/backend/both after fix?** Both.
-    -   **Blocked on other issue:** None.
 
--   **Issue 2: Bengaluru Migration Failure in Production (P1)**
-    -   **Attempted fixes:** Agent provided robust code and instructions for the user to deploy.
-    -   **Next debug checklist:** Awaiting user confirmation on whether the latest deployment to  resolved the issue.
+-   **Issue 3: Bengaluru Migration Failure in Production (P1)**
+    -   **Attempted fixes:** Agent provided code and deployment instructions.
+    -   **Next debug checklist:** Awaiting user confirmation on whether the latest deployment to  resolved it.
     -   **Why fix this issue and what will be achieved with the fix?** Resolves a critical data integrity issue blocking city management.
     -   **Status:** USER VERIFICATION PENDING
     -   **Is recurring issue?** Y
     -   **Should Test frontend/backend/both after fix?** Backend.
-    -   **Blocked on other issue:** User action.
 
--   **Issue 3: Data quality in production DB (inspections with missing vehicle data) (P1)**
-    -   **Attempted fixes:** Root cause for *new* inspections was fixed. The new  API helps fix existing data on a case-by-case basis.
-    -   **Next debug checklist:** The  API should be used to fix the  customer. The agent should also consider creating a batch script to identify and fix all customers with similar data integrity problems.
-    -   **Why fix this issue and what will be achieved with the fix?** Ensures data accuracy and that all customer purchases are correctly reflected in the CRM.
+-   **Issue 4: Data quality in production DB (inspections with missing vehicle data) (P1)**
+    -   **Attempted fixes:** The root cause for new data was fixed, and the  endpoint was enhanced significantly to find and link orphaned data from  and handle multiple payments.
+    -   **Next debug checklist:** Consider creating a batch script to run the enhanced repair logic across all customers with potential data integrity problems.
+    -   **Why fix this issue and what will be achieved with the fix?** Ensures data accuracy and that all customer purchases are correctly reflected.
     -   **Status:** IN PROGRESS
     -   **Is recurring issue?** Y
     -   **Should Test frontend/backend/both after fix?** Both.
-    -   **Blocked on other issue:** None.
 
--   **Issue 4: Production DB Sync (P1)**
-    -   **Attempted fixes:** Direct connection is blocked by the user's firewall.
-    -   **Next debug checklist:** This is no longer a high priority since the user has provided a DB dump. Continue using the local restored DB.
-    -   **Why fix this issue and what will be achieved with the fix?** Enables direct debugging of production data.
+-   **Issue 5: Surepass Equifax API Scope (P2)**
+    -   **Attempted fixes:** The agent integrated the Equifax API. When testing with the production token, the API returned a Verification Failed error, which is different from the sandbox scope not enabled error.
+    -   **Next debug checklist:** The integration code is in place. This may be an issue with the test data provided or a configuration on the Surepass side. The user should be informed that the API is integrated but failing on the provider's end with test data.
+    -   **Why fix this issue and what will be achieved with the fix?** Enables a key credit report provider.
     -   **Status:** BLOCKED
-    -   **Is recurring issue?** Y
+    -   **Is recurring issue?** N
     -   **Should Test frontend/backend/both after fix?** Backend.
-    -   **Blocked on other issue:** Network access.
-
--   **Issue 5: Experian/Equifax API Integration Activation (P1)**
-    -   **Attempted fixes:** None.
-    -   **Next debug checklist:** Await a fix from the external API provider.
-    -   **Why fix this issue and what will be achieved with the fix?** Enables a core part of the customer profile analysis.
-    -   **Status:** BLOCKED
-    -   **Is recurring issue?** Y
-    -   **Should Test frontend/backend/both after fix?** Both.
-    -   **Blocked on other issue:** External API Provider.
+    -   **Blocked on other issue:** External API Provider (Surepass).
 
 -   **Issue 6: Cleanup of old duplicate customer/inspection records (P2)**
     -   **Attempted fixes:** None.
@@ -84,19 +76,37 @@ Several critical production bugs have been addressed:
     -   **Is recurring issue?** N
     -   **Should Test frontend/backend/both after fix?** Backend.
 
+-   **Issue 7: Critical Video Upload Failure (P2)**
+    -   **Attempted fixes:** None in this session.
+    -   **Next debug checklist:** Investigate the video upload flow.
+    -   **Why fix this issue and what will be achieved with the fix?** A critical feature for inspections is completely broken.
+    -   **Status:** NOT STARTED
+    -   **Is recurring issue?** Y
+    -   **Should Test frontend/backend/both after fix?** Both.
+
 **In progress Task List**:
--   **Task 1: Complete  refactoring (P1)**
-    -   **Where to resume:** Migrate the remaining  endpoints from  into their own dedicated router file.
+-   **Task 1: Complete Surepass credit report integration (P0)**
+    -   **Where to resume:**
+        1.  Restart the backend service.
+        2.  Test the newly added CRIF API endpoints using .
+        3.  Once all backend APIs are confirmed working, proceed to build the frontend UI component in the Loans/Customer page to fetch and display the credit reports.
+    -   **What will be achieved with this?** A core new feature for credit analysis will be available to users.
+    -   **Status:** IN PROGRESS
+    -   **Should Test frontend/backend/both after fix?** Both.
+
+-   **Task 2: Complete  refactoring (P1)**
+    -   **Where to resume:** Migrate the remaining  and other webhook endpoints from  into their own dedicated router files.
     -   **What will be achieved with this?** Reduces technical debt and improves backend code maintainability.
     -   **Status:** IN PROGRESS
     -   **Should Test frontend/backend/both after fix?** Backend.
 
 **Upcoming and Future Tasks**
 **Upcoming Tasks:**
-*   **(P1) PDF Export for Credit Report:** Add a button to download the credit report as a PDF.
-*   **(P1) Refactor Large Components:** Break down .
+*   **(P1) Build Credit Report Frontend UI:** Create components to trigger the API calls and display the JSON/PDF reports for CIBIL, Equifax, Experian, and CRIF.
+*   **(P1) PDF Export for Credit Report:** The Surepass API provides a link for PDFs. The UI needs a button to open/download this link.
+*   **(P1) Refactor Large Components:** Break down  and .
 *   **(P2) Create Charge Types Master Page:** Build a dedicated UI for managing loan charge types.
-*   **(P2) Share Report Button:** Implement the share functionality on .
+*   **(P2) Share Report Button:** Implement share functionality on .
 *   **(P2) Data Migration Scripts:** Create scripts to help the user migrate essential data from staging to production.
 
 **Future Tasks:**
@@ -108,17 +118,18 @@ Several critical production bugs have been addressed:
 *   Support Balance Transfer (BT) loans.
 
 **Completed work in this session**
--   **Loan Eligibility Engine Backend Fixed:** Resolved a critical Python name-shadowing bug in , making the  endpoint fully functional.
--   **Comprehensive Timezone Fix Implemented:** Fixed date filtering inconsistencies across the application by making the backend timezone-aware and passing the user's timezone offset from the frontend.
--   **Customer Data Repair Tools Created:** Implemented a new API () to fix orphaned inspections caused by inconsistent phone number formats and added a Repair button to the customer UI.
--   **Production Bug Fix (Multiple Packages):** Fixed a webhook idempotency issue in  to allow multiple inspection packages for the same lead.
--   **Production Bug Fix (HR Module):** Fixed the API in  to correctly handle updates to employee-assigned cities.
--   **Inspection City Auto-Detection Fixed:** Resolved a frontend bug in  where the city field failed to auto-update. The fix involved correcting a component prop name from  to .
--   **Production DB Restored:** Successfully restored a user-provided database dump into the preview environment.
--   **Code Cleanup:** Removed obsolete frontend modals (, ) and fixed various linting errors.
+-   **Test-5 Customer Data Issue Fully Resolved:** Fixed a frontend bug in  that was incorrectly displaying package and payment info. Manually repaired data for the Test-5 user in the preview environment and enhanced the  API to automatically handle additional purchases for existing customers.
+-   **Lead Management Bugs Fixed:**
+    -   Corrected the lead assignment logic that defaulted the city to Vizag by making the AD ID lookup case-insensitive and improving fallback logic in .
+    -   Addressed a lead reassignment failure by modifying the backend to correctly fetch the agent's assigned cities in .
+-   **Inspection City Auto-Detection Fixed:** Resolved a bug in  where the city was returned in Devanagari script; the component now requests the English language from the Google Places API.
+-   **Surepass Credit Report Backend Integration:**
+    -   Created a new service () and new routes ().
+    -   Successfully integrated **CIBIL**, **Equifax**, and **Experian** JSON and PDF APIs.
+    -   Switched from sandbox to **production** credentials provided by the user.
 
 **Earlier issues found/mentioned but not fixed**
--   The pending issues list covers all known unfixed issues.
+-   The Critical Video Upload Failure issue from the previous fork remains unaddressed.
 
 **Known issue recurrence from previous fork**
 -   **Issue recurrence in previous fork:** Critical Video Upload Failure.
@@ -129,18 +140,20 @@ Several critical production bugs have been addressed:
 
 
 **Key Technical Concepts**
--   **Timezone-Aware Date Handling:** Using  on the backend and  on the frontend to correctly handle date queries across different timezones.
--   **Data Normalization & Repair:** Implementing logic to handle data inconsistencies (e.g.,  phone prefix) and creating APIs to repair existing corrupted data.
--   **React Prop Debugging:** Identifying and fixing bugs caused by incorrect prop names being passed between React components ( vs. ).
--   **Python Name Shadowing:** Debugging issues where a function is unintentionally overridden by another function with the same name in the same scope.
--   **FastAPI Request Body Handling:** Refactoring endpoints to accept structured data via Pydantic models in the request body instead of simple query parameters.
+-   **3rd Party API Integration:** Integrating with the Surepass REST API for credit reports, managing production tokens, and handling different API endpoints for different providers (CIBIL, Equifax, Experian, CRIF).
+-   **Data Discrepancy Debugging:** Diagnosing and fixing issues where the frontend UI did not match the backend data (e.g., Test-5 customer modal).
+-   **Robust Data Repair:** Enhancing a simple repair script into a comprehensive API that can find and link orphaned data across multiple collections (, , ) based on various identifiers.
+-   **Role-Based Access Control (RBAC):** Debugging a recurring issue with lead reassignment where the user's role was not being correctly identified, requiring a fix to look up roles by  instead of an empty .
 
 **key DB schema**
--   No database schema changes were made in this session.
+-   **credit_reports:** (new collection) 
+
+**changes in tech stack**
+-   None.
 
 **All files of reference**
--   
--   
+-    (New)
+-    (New)
 -   
 -   
 -   
@@ -149,63 +162,66 @@ Several critical production bugs have been addressed:
 -   
 
 **Areas that need refactoring**:
--   **:** Still over 4,000 lines. The eligibility engine and other logic should be extracted.
--   **:** Still over 3,000 lines and needs to be broken into smaller components.
+-   : Still extremely large. The webhook logic (, ) should be extracted into separate service files.
+-   : Over 3,000 lines, needs to be broken down.
+-   : Over 4,000 lines, needs significant refactoring.
 
 **key api endpoints**
--    (FIXED)
--    (CREATED)
--    (FIXED)
--    (MODIFIED - timezone-aware)
--    (MODIFIED - timezone-aware)
--    (MODIFIED - timezone-aware)
--    (Frontend logic FIXED)
+-    (New)
+-    (New)
+-    (New)
+-    (Enhanced)
+-    (Modified)
 
 **Critical Info for New Agent**
-1.  **Test with Production Data:** The preview environment is running on a restored dump of the user's production database. All testing should be done against this data to ensure fixes are comprehensive.
-2.  **User Reports Are Priority:** The user is actively testing in their staging environment () and reporting critical bugs with screenshots. These reports should be prioritized over previously planned tasks.
-3.  **Timezone Fix is Core Logic:** A major fix was implemented for timezone handling. All date-filtered API calls now depend on a  parameter sent from the frontend. Be aware of this when working with any date-related features.
-4.  **Data Repair via API:** A robust API endpoint () is now the standard way to fix customer data linkage issues. It is more reliable than running one-off scripts in the user's environment.
+1.  **Production Credentials in Use:** The application is configured with the user's **production** Surepass API token and URL in . API calls to Surepass are live. Test data will result in Not Found errors, which is expected behavior.
+2.  **Recurring Reassignment Bug:** The user has reported that lead reassignment is still failing in production. This is a top-priority (P0) recurring bug. The last fix attempted to resolve an empty  on user records by looking up the role via . This fix was likely incomplete.
+3.  **Credit Report Feature is Backend-Only:** The entire Surepass integration (CIBIL, Equifax, Experian, CRIF) has been implemented on the backend. The next major step is to build the frontend UI to allow users to fetch and view these reports.
+4.  **Data Repair Logic:** The  endpoint is now very powerful. Use this API to diagnose and fix customer data issues before attempting manual scripts.
 
 **documents and test reports created in this job**
--   
--   
+-   None.
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **LATEST:** User reports that even after a fix, changing an inspection's address to Pune Railway Station does not correctly auto-update the city to Pune in the UI. (Status: **IN PROGRESS**)
-2.  User reports two issues: 1) Inspection edit modal city doesn't update, and 2) HR module city change fails. (Status: **PARTIALLY RESOLVED**, HR module fixed, city update still in progress)
-3.  User asks to investigate phone number format () as a potential cause for the  customer issue. (Status: **RESOLVED**)
-4.  User reports that the  customer issue is not fixed after deploying the code and running the provided script, which failed. (Status: **RESOLVED**, a new API-based fix was provided)
-5.  User reports a customer () was created without inspection or payment data. (Status: **RESOLVED**, repair tools created)
-6.  User reports a widespread date inconsistency issue where leads appear under the wrong day's filter (e.g., Yesterday instead of Today). (Status: **RESOLVED**)
-7.  User provides three new production issues to investigate related to packages, HR module, and missing fields in the inspection edit modal. (Status: **RESOLVED**)
-8.  User provides approval to prioritize fixing the eligibility engine. (Status: **RESOLVED**)
+1.  **LATEST:** User asked to integrate the CRIF credit report and provided a document with API details. (Status: **IN PROGRESS**)
+2.  User asked to integrate the Experian credit report and provided a document with API details. (Status: **RESOLVED**)
+3.  User provided the **production** Surepass token and URL and asked to switch the integration from sandbox to production. (Status: **RESOLVED**)
+4.  User asked to add the Equifax credit report and provided API details. (Status: **RESOLVED**)
+5.  User reported that lead reassignment is still not working for a specific user (Bhavya) and provided a screenshot of the error. (Status: **ATTEMPTED FIX, RECURRING**)
+6.  User asked to start integrating the Surepass CIBIL credit report and provided API details. (Status: **RESOLVED**)
+7.  User confirmed the Test-5 customer issue is not fully resolved, stating that payment transaction data and a second inspection are missing. (Status: **RESOLVED**)
+8.  User asked why the Test-5 issue can't be fixed in the preview environment since the data exists there. (Status: **RESOLVED**, agent found and fixed a frontend bug)
+9.  User reported the Test-5 customer repair API shows no issues found but the data is still missing in the UI. (Status: **RESOLVED**)
+10. User reported two new issues on the leads page: incorrect city mapping for a lead and lead reassignment failing. (Status: **RESOLVED**)
 
 **Project Health Check:**
 -   **Broken:**
-    -   Credit score check feature (blocked by external API provider).
+    -   Lead Reassignment feature is functionally broken in production.
+    -   Video upload for inspections.
 -   **Mocked:**
     -   Core AI analysis logic in the Customer Profile feature.
 -   **Blocked:**
-    -   Experian/Equifax API Integration (awaiting external provider).
+    -   Surepass Equifax API integration is coded but blocked by a provider-side verification error with test data.
 
 **3rd Party Integrations**
+-   **Surepass:** For CIBIL, Equifax, Experian, and CRIF credit reports. Uses a production User API Key.
 -   **OpenAI/Gemini (via Emergent LLM Key):** Skeleton service for bank statement analysis.
--   **Invincible Ocean API:** For Vaahan (cached), Experian (blocked), and Equifax (blocked).
+-   **Invincible Ocean API:** For Vaahan (cached). Experian/Equifax from this provider are disabled/blocked.
 -   **Firebase:** For media storage.
 -   **Expo Application Services (EAS):** Used to build the React Native app.
 
 **Testing status**
 -   **Testing agent used after significant changes:** NO
 -   **Troubleshoot agent used after agent stuck in loop:** NO
--   **Test files created:** [, ]
--   **Known regressions:** None in this session.
+-   **Test files created:** []
+-   **Known regressions:** The lead reassignment feature has regressed or was not fully fixed.
 
 **Credentials to test flow:**
 -   **CRM Admin Login:**  / 
 -   **Loan Executive Login:**  / 
+-   **Surepass API Token:** Stored in  as . It is a **production** key.
 
 **What agent forgot to execute**
--   After the final fix for the city auto-detection issue (correcting the prop name), the agent did not run a conclusive test to confirm that selecting Pune Railway Station would now correctly set the city to Pune.
--   The agent did not progress on the original list of upcoming tasks (e.g., PDF export,  refactoring) due to the high priority of user-reported production bugs.
--   The Critical Video Upload Failure issue from the previous fork remains unaddressed.</analysis>
+-   The agent has not yet tested the CRIF integration after adding the code.
+-   The agent did not create a comprehensive test plan for the recurring lead reassignment issue.
+-   The agent did not start any work on the frontend UI for the credit report feature.</analysis>
