@@ -431,6 +431,121 @@ async def auto_migrate_bangalore_to_bengaluru():
         logger.info(f"City migration complete: {stats}")
 
 
+async def auto_cleanup_duplicate_inspections():
+    """
+    Automatically clean up duplicate inspections on startup.
+    
+    This fixes a bug where both payment.captured and payment_link.paid webhook events
+    created separate inspections for the same payment, resulting in 2x inspections.
+    
+    The cleanup:
+    1. Finds plink_/pay_ pairs created within 10 seconds for same customer
+    2. Removes the plink_ inspection (keeps pay_ as it's the actual payment ID)
+    3. Preserves legitimate multi-slot packages (same payment_id, different slots)
+    
+    This runs on every startup but only makes changes if duplicates exist.
+    """
+    from collections import defaultdict
+    
+    logger.info("Starting duplicate inspection cleanup check...")
+    
+    total_removed = 0
+    customers_fixed = 0
+    
+    try:
+        # Get all inspections grouped by customer
+        pipeline = [
+            {"$match": {"customer_mobile": {"$exists": True, "$ne": None}}},
+            {"$group": {
+                "_id": "$customer_mobile",
+                "inspections": {"$push": {
+                    "id": "$id",
+                    "razorpay_payment_id": "$razorpay_payment_id",
+                    "slot_number": "$slot_number",
+                    "created_at": "$created_at"
+                }},
+                "count": {"$sum": 1}
+            }},
+            {"$match": {"count": {"$gt": 1}}}
+        ]
+        
+        customers_with_multiple = await db.inspections.aggregate(pipeline).to_list(1000)
+        
+        for customer_group in customers_with_multiple:
+            customer_mobile = customer_group["_id"]
+            inspections = customer_group["inspections"]
+            
+            if not customer_mobile:
+                continue
+            
+            # Sort by created_at
+            inspections_sorted = sorted(inspections, key=lambda x: x.get("created_at", "") or "")
+            
+            ids_to_delete = []
+            
+            # Find plink_/pay_ pairs within 10 seconds
+            for i in range(len(inspections_sorted)):
+                insp1 = inspections_sorted[i]
+                pid1 = insp1.get("razorpay_payment_id", "") or ""
+                
+                for j in range(i + 1, len(inspections_sorted)):
+                    insp2 = inspections_sorted[j]
+                    pid2 = insp2.get("razorpay_payment_id", "") or ""
+                    
+                    is_plink_pay_pair = (
+                        (pid1.startswith("pay_") and pid2.startswith("plink_")) or
+                        (pid1.startswith("plink_") and pid2.startswith("pay_"))
+                    )
+                    
+                    if is_plink_pay_pair:
+                        try:
+                            t1 = datetime.fromisoformat(insp1.get("created_at", "")[:19].replace("Z", ""))
+                            t2 = datetime.fromisoformat(insp2.get("created_at", "")[:19].replace("Z", ""))
+                            diff_seconds = abs((t2 - t1).total_seconds())
+                            
+                            if diff_seconds <= 10:
+                                # Delete the plink_ one
+                                dup_insp = insp1 if pid1.startswith("plink_") else insp2
+                                if dup_insp["id"] not in ids_to_delete:
+                                    ids_to_delete.append(dup_insp["id"])
+                        except Exception:
+                            pass
+            
+            # Also check for same payment_id duplicates (keeping different slots)
+            by_payment_id = defaultdict(list)
+            for insp in inspections_sorted:
+                pid = insp.get("razorpay_payment_id")
+                if pid:
+                    by_payment_id[pid].append(insp)
+            
+            for pid, insp_list in by_payment_id.items():
+                if len(insp_list) > 1:
+                    # Check slots
+                    slots_seen = {}
+                    for insp in insp_list:
+                        slot = insp.get("slot_number") or 0
+                        if slot in slots_seen:
+                            # Duplicate slot - mark for deletion
+                            if insp["id"] not in ids_to_delete:
+                                ids_to_delete.append(insp["id"])
+                        else:
+                            slots_seen[slot] = insp["id"]
+            
+            # Delete duplicates
+            if ids_to_delete:
+                result = await db.inspections.delete_many({"id": {"$in": ids_to_delete}})
+                total_removed += result.deleted_count
+                customers_fixed += 1
+        
+        if total_removed > 0:
+            logger.info(f"Duplicate inspection cleanup: Removed {total_removed} duplicates across {customers_fixed} customers")
+        else:
+            logger.info("Duplicate inspection cleanup: No duplicates found")
+            
+    except Exception as e:
+        logger.error(f"Error during duplicate inspection cleanup: {e}")
+
+
 # ==================== AUTH MODELS ====================
 
 class UserLogin(BaseModel):
