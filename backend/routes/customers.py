@@ -801,8 +801,56 @@ async def _repair_customer(db, customer: dict, current_user: dict):
         "normalized_mobile": normalized_mobile,
         "inspections_linked": 0,
         "inspections_created": 0,
+        "payment_data_recovered": False,
         "details": []
     }
+    
+    # 0. NEW: Try to find the lead and recover payment data if missing from customer
+    lead = None
+    if lead_id:
+        lead = await db.leads.find_one({"id": lead_id}, {"_id": 0})
+    
+    # If no lead found by lead_id, try by mobile
+    if not lead and normalized_mobile:
+        mobile_patterns = [
+            normalized_mobile,
+            f"+91{normalized_mobile}",
+            f"91{normalized_mobile}",
+        ]
+        lead = await db.leads.find_one(
+            {"mobile": {"$in": mobile_patterns}, "payment_status": "paid"},
+            {"_id": 0}
+        )
+        if lead:
+            repairs["details"].append(f"Found lead by mobile match: {lead.get('id')}")
+            # Update customer with lead_id if missing
+            if not lead_id:
+                await db.customers.update_one(
+                    {"id": customer_id},
+                    {"$set": {"lead_id": lead.get("id")}}
+                )
+                lead_id = lead.get("id")
+                repairs["details"].append(f"Linked customer to lead {lead_id}")
+    
+    # Check if customer has payment data, if not try to recover from lead
+    if lead and not customer.get("razorpay_payment_id"):
+        lead_payment_id = lead.get("razorpay_payment_id")
+        if lead_payment_id:
+            update_data = {
+                "razorpay_payment_id": lead_payment_id,
+                "payment_amount": lead.get("package_price") or lead.get("amount", 0),
+                "package_name": lead.get("package_name"),
+                "package_id": lead.get("package_id"),
+                "no_of_inspections": lead.get("no_of_inspections", 1),
+            }
+            await db.customers.update_one(
+                {"id": customer_id},
+                {"$set": update_data}
+            )
+            # Update local customer dict for further processing
+            customer.update(update_data)
+            repairs["payment_data_recovered"] = True
+            repairs["details"].append(f"Recovered payment data from lead: payment_id={lead_payment_id[-8:]}")
     
     # 1. Link orphaned inspections by lead_id
     if lead_id:
