@@ -110,7 +110,7 @@ async def fetch_cibil_report(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Fetch CIBIL credit report (JSON format)
+    Fetch CIBIL credit report (JSON format) with PDF link
     Soft pull - no OTP required
     """
     surepass = get_surepass_service()
@@ -123,7 +123,7 @@ async def fetch_cibil_report(
     if len(pan) != 10:
         raise HTTPException(status_code=400, detail="Invalid PAN format. Must be 10 characters.")
     
-    # Fetch report from Surepass
+    # Fetch JSON report from Surepass
     result = await surepass.fetch_cibil_report(
         mobile=request.mobile,
         pan=pan,
@@ -138,6 +138,21 @@ async def fetch_cibil_report(
             "error": result.get("error"),
             "error_code": result.get("error_code")
         }
+    
+    # Also fetch PDF link
+    pdf_link = None
+    try:
+        pdf_result = await surepass.fetch_cibil_pdf(
+            mobile=request.mobile,
+            pan=pan,
+            name=request.name,
+            gender=request.gender,
+            consent=request.consent
+        )
+        if pdf_result.get("success"):
+            pdf_link = pdf_result.get("pdf_link")
+    except Exception as e:
+        logger.warning(f"Failed to fetch CIBIL PDF: {e}")
     
     # Parse the report for better UI display
     parsed_report = surepass.parse_credit_report(result.get("credit_report", []))
@@ -155,6 +170,7 @@ async def fetch_cibil_report(
         "client_id": result.get("client_id"),
         "parsed_report": parsed_report,
         "raw_report": result.get("credit_report"),
+        "pdf_link": pdf_link,
         "customer_id": request.customer_id,
         "lead_id": request.lead_id,
         "loan_lead_id": request.loan_lead_id,
@@ -185,6 +201,7 @@ async def fetch_cibil_report(
         "provider": "CIBIL",
         "credit_score": result.get("credit_score"),
         "parsed_report": parsed_report,
+        "pdf_link": pdf_link,
         "fetched_at": result.get("fetched_at")
     }
 
