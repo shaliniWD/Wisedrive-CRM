@@ -2440,22 +2440,33 @@ export default function InspectionsPage() {
               <PlacesAutocomplete
                 value={locationFormData.address}
                 onChange={(value) => setLocationFormData(prev => ({ ...prev, address: value }))}
-                onPlaceSelect={(place) => {
+                onPlaceSelect={async (place) => {
                   // Extract city from address components
                   let city = '';
+                  let state = '';
                   if (place.address_components) {
                     const cityComponent = place.address_components.find(
                       c => c.types.includes('locality') || c.types.includes('administrative_area_level_2')
                     );
+                    const stateComponent = place.address_components.find(
+                      c => c.types.includes('administrative_area_level_1')
+                    );
                     if (cityComponent) city = cityComponent.long_name;
+                    if (stateComponent) state = stateComponent.long_name;
                   }
                   
                   setLocationFormData({
                     address: place.formatted_address || place.name,
                     city: city || locationFormData.city,
+                    state: state,
                     latitude: place.geometry?.location?.lat() || null,
                     longitude: place.geometry?.location?.lng() || null
                   });
+                  
+                  // Show info that city will be auto-mapped
+                  if (city) {
+                    toast.info(`City detected: ${city} - Will be mapped to City Master on save`);
+                  }
                 }}
                 placeholder="Search for inspection address..."
                 className="w-full"
