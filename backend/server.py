@@ -4354,6 +4354,7 @@ Thank you for choosing Wisedrive!"""
                         "additional_purchases": {
                             "package_id": lead.get("package_id"),
                             "package_name": lead.get("package_name"),
+                            "no_of_inspections": lead.get("no_of_inspections", 1),
                             "payment_amount": amount,
                             "razorpay_payment_id": payment_id,
                             "purchased_at": datetime.now(timezone.utc).isoformat()
