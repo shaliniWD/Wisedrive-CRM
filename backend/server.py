@@ -7147,9 +7147,15 @@ async def assign_mechanic_to_inspection(
         except Exception as e:
             logger.warning(f"Failed to send assignment notification: {e}")
     else:
-        # Unassign mechanic
+        # Unassign mechanic - clear mechanic fields and reset status
         update_dict["mechanic_id"] = None
         update_dict["mechanic_name"] = None
+        
+        # Reset status to allow reassignment if it was in assigned/accepted state
+        current_status = inspection.get("inspection_status")
+        if current_status in ["ASSIGNED_TO_MECHANIC", "MECHANIC_ACCEPTED", "MECHANIC_REJECTED"]:
+            update_dict["inspection_status"] = "NEW_INSPECTION"
+            logger.info(f"Resetting inspection {inspection_id} status from {current_status} to NEW_INSPECTION after mechanic unassignment")
     
     await db.inspections.update_one({"id": inspection_id}, {"$set": update_dict})
     
