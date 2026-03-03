@@ -2443,32 +2443,21 @@ export default function InspectionsPage() {
               <PlacesAutocomplete
                 value={locationFormData.address}
                 onChange={(value) => setLocationFormData(prev => ({ ...prev, address: value }))}
-                onPlaceSelect={async (place) => {
-                  // Extract city from address components
-                  let city = '';
-                  let state = '';
-                  if (place.address_components) {
-                    const cityComponent = place.address_components.find(
-                      c => c.types.includes('locality') || c.types.includes('administrative_area_level_2')
-                    );
-                    const stateComponent = place.address_components.find(
-                      c => c.types.includes('administrative_area_level_1')
-                    );
-                    if (cityComponent) city = cityComponent.long_name;
-                    if (stateComponent) state = stateComponent.long_name;
-                  }
+                onSelect={(placeData) => {
+                  // placeData contains { address, latitude, longitude, city }
+                  console.log('Location place selected:', placeData);
                   
-                  setLocationFormData({
-                    address: place.formatted_address || place.name,
-                    city: city || locationFormData.city,
-                    state: state,
-                    latitude: place.geometry?.location?.lat() || null,
-                    longitude: place.geometry?.location?.lng() || null
-                  });
+                  setLocationFormData(prev => ({
+                    ...prev,
+                    address: placeData.address || prev.address,
+                    city: placeData.city || prev.city,
+                    latitude: placeData.latitude || null,
+                    longitude: placeData.longitude || null
+                  }));
                   
                   // Show info that city will be auto-mapped
-                  if (city) {
-                    toast.info(`City detected: ${city} - Will be mapped to City Master on save`);
+                  if (placeData.city) {
+                    toast.info(`City detected: ${placeData.city} - Will be mapped to City Master on save`);
                   }
                 }}
                 placeholder="Search for inspection address..."
