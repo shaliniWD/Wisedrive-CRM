@@ -674,6 +674,12 @@ export const loansApi = {
   analyzeBankStatement: (leadId, documentId) => axios.post(`${API_URL}/loan-leads/${leadId}/profile/analyze-bank-statement?document_id=${documentId}`),
   syncCreditReport: (leadId) => axios.post(`${API_URL}/loan-leads/${leadId}/profile/sync-credit-report`),
   calculateEligibility: (leadId) => axios.post(`${API_URL}/loan-leads/${leadId}/profile/calculate-eligibility`),
+  
+  // Credit Reports (Surepass)
+  fetchCibilReport: (data) => axios.post(`${API_URL}/credit-report/cibil`, data),
+  fetchEquifaxReport: (data) => axios.post(`${API_URL}/credit-report/equifax`, data),
+  fetchExperianReport: (data) => axios.post(`${API_URL}/credit-report/experian`, data),
+  fetchCrifReport: (data) => axios.post(`${API_URL}/credit-report/crif`, data),
 };
 
 // Bank Master API
