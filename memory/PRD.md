@@ -33,6 +33,34 @@ When the helper function was called, Python resolved it to the API route functio
 
 ---
 
+### March 3, 2026 - Production Bug Fixes (3 issues)
+
+**Issue 1: Second Package Inspections Not Showing**
+**Problem:** Lead "Test-5" (7411891010) purchased 2 packages, but second package's inspection wasn't appearing.
+**Root Cause:** Idempotency check in Razorpay webhook was too aggressive - blocked creating new inspections if ANY inspection existed for the lead (even from a different package).
+**Fix:** 
+- Changed check from "any inspection for lead_id" to "inspection with this specific payment_id"
+- Modified customer creation to update existing customer instead of blocking
+- Order ID now uses payment_id to differentiate packages
+**Files Modified:** `/app/backend/server.py` (lines ~4240-4310)
+**Script:** `/app/backend/scripts/fix_missing_second_package.py` - Diagnostic and fix script for existing data
+
+**Issue 2: HR Module City Assignment Error**
+**Problem:** "Failed to update assigned cities" error when changing cities for Sales Executive/Sales Lead roles.
+**Root Cause:** Frontend sent JSON body `{cities: [...]}` but backend expected query parameter `cities: List[str]`.
+**Fix:** Added `AssignedCitiesRequest` and `InspectionCitiesRequest` Pydantic models to accept JSON body.
+**Files Modified:** `/app/backend/routes/hr.py` (lines ~1248-1310)
+
+**Issue 3: Edit Modal Address/Vehicle Fields**
+**Status:** Code review shows fields ARE present in the codebase:
+- Current Address: Lines 2580-2588 in InspectionsPage.jsx
+- New Address with Google Places: Lines 2591-2618
+- Current Vehicle: Lines 2629-2649
+- New Vehicle with Vaahan API: Lines 2652-2691
+**Action Required:** User to verify they have deployed the latest code. If still missing, may need screenshot to understand the specific flow.
+
+---
+
 ### March 1, 2026 - Comprehensive City Master Integration
 **Problem:** Multiple places in the CRM had hardcoded city lists instead of fetching from the Cities Master table.
 **Solution:** Swept the entire project and updated all city references to use the Cities Master API.
