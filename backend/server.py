@@ -4360,6 +4360,26 @@ Thank you for choosing Wisedrive!"""
                 customer_id = existing_customer.get("id")
                 logger.info(f"Found existing customer {customer_id} by lead_id lookup - will add new inspections")
         
+        # Also check by mobile number (for returning customers with new leads)
+        if not customer_id and lead.get("mobile"):
+            # Normalize mobile for lookup
+            mobile_for_lookup = lead.get("mobile", "").replace("+91", "").replace(" ", "").replace("-", "")
+            if mobile_for_lookup.startswith("91") and len(mobile_for_lookup) == 12:
+                mobile_for_lookup = mobile_for_lookup[2:]
+            
+            existing_by_mobile = await db.customers.find_one(
+                {"$or": [
+                    {"mobile": lead.get("mobile")},
+                    {"mobile": mobile_for_lookup},
+                    {"mobile": f"+91{mobile_for_lookup}"},
+                    {"mobile": f"91{mobile_for_lookup}"}
+                ]},
+                {"_id": 0, "id": 1}
+            )
+            if existing_by_mobile:
+                customer_id = existing_by_mobile.get("id")
+                logger.info(f"Found existing customer {customer_id} by mobile lookup - will add new inspections")
+        
         # Check 4: Inspections with THIS SPECIFIC payment_id already exist (true duplicate)
         existing_inspection_with_payment = await db.inspections.find_one(
             {"razorpay_payment_id": payment_id}, 
