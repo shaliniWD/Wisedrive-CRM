@@ -23,26 +23,27 @@ const CustomerInfoTab = ({ lead, onUpdate }) => {
     first_name: '',
     last_name: '',
     pan_number: '',
-    dob: '',
     mobile_number: '',
     email: '',
-    gender: 'male',
-    pin_code: ''
+    gender: 'male'
   });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (lead) {
       const nameParts = (lead.customer_name || '').split(' ');
+      // Get mobile from customer_phone, clean it up
+      let mobile = lead.customer_phone || '';
+      mobile = mobile.replace('+91', '').replace('91', '').replace(/\D/g, '');
+      if (mobile.length > 10) mobile = mobile.slice(-10);
+      
       setFormData({
         first_name: lead.credit_first_name || nameParts[0] || '',
         last_name: lead.credit_last_name || nameParts.slice(1).join(' ') || '',
         pan_number: lead.pan_number || '',
-        dob: lead.dob || '',
-        mobile_number: (lead.customer_phone || '').replace('+91', '').replace(/\D/g, ''),
+        mobile_number: mobile,
         email: lead.customer_email || lead.email || '',
-        gender: lead.gender || 'male',
-        pin_code: lead.pin_code || ''
+        gender: lead.gender || 'male'
       });
     }
   }, [lead]);
@@ -54,10 +55,9 @@ const CustomerInfoTab = ({ lead, onUpdate }) => {
         credit_first_name: formData.first_name,
         credit_last_name: formData.last_name,
         pan_number: formData.pan_number,
-        dob: formData.dob,
+        customer_phone: formData.mobile_number ? `+91${formData.mobile_number}` : '',
         email: formData.email,
-        gender: formData.gender,
-        pin_code: formData.pin_code
+        gender: formData.gender
       });
       toast.success('Customer info saved');
       onUpdate();
@@ -68,12 +68,32 @@ const CustomerInfoTab = ({ lead, onUpdate }) => {
     }
   };
 
+  // Check if PAN is missing (required for credit reports)
+  const isPanMissing = !formData.pan_number || formData.pan_number.length !== 10;
+
   return (
     <div className="space-y-4">
+      {/* Customer Name & Phone - Read Only Info */}
+      <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
+        <div className="flex justify-between items-center">
+          <div>
+            <p className="text-xs text-slate-500">Lead Customer</p>
+            <p className="font-semibold text-slate-900">{lead?.customer_name || 'Unknown'}</p>
+            <p className="text-sm text-slate-600">{lead?.customer_phone || 'No phone'}</p>
+          </div>
+          {lead?.city_name && (
+            <div className="text-right">
+              <p className="text-xs text-slate-500">City</p>
+              <p className="text-sm font-medium text-slate-700">{lead.city_name}</p>
+            </div>
+          )}
+        </div>
+      </div>
+
       <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
         <p className="text-xs text-blue-700">
           <Info className="h-3 w-3 inline mr-1" />
-          This information is used to fetch credit reports from bureaus
+          Add PAN number to fetch credit reports from CIBIL, Equifax, Experian & CRIF
         </p>
       </div>
 
@@ -89,7 +109,7 @@ const CustomerInfoTab = ({ lead, onUpdate }) => {
           />
         </div>
         <div className="space-y-1">
-          <Label className="text-xs text-gray-500">Last Name *</Label>
+          <Label className="text-xs text-gray-500">Last Name</Label>
           <Input
             value={formData.last_name}
             onChange={(e) => setFormData({...formData, last_name: e.target.value})}
@@ -105,21 +125,22 @@ const CustomerInfoTab = ({ lead, onUpdate }) => {
             onChange={(e) => setFormData({...formData, pan_number: e.target.value.toUpperCase()})}
             placeholder="ABCDE1234F"
             maxLength={10}
-            className="h-9 uppercase font-mono"
+            className={`h-9 uppercase font-mono ${isPanMissing ? 'border-amber-400' : 'border-green-400'}`}
             data-testid="customer-pan"
           />
+          {isPanMissing && <p className="text-[10px] text-amber-600">Required for credit reports</p>}
         </div>
         <div className="space-y-1">
-          <Label className="text-xs text-gray-500">Date of Birth *</Label>
-          <Input
-            value={formData.dob}
-            onChange={(e) => setFormData({...formData, dob: e.target.value.replace(/\D/g, '')})}
-            placeholder="YYYYMMDD"
-            maxLength={8}
-            className="h-9 font-mono"
-            data-testid="customer-dob"
-          />
-          <p className="text-[10px] text-gray-400">Format: YYYYMMDD</p>
+          <Label className="text-xs text-gray-500">Gender *</Label>
+          <Select value={formData.gender} onValueChange={(val) => setFormData({...formData, gender: val})}>
+            <SelectTrigger className="h-9" data-testid="customer-gender">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="male">Male</SelectItem>
+              <SelectItem value="female">Female</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div className="space-y-1">
           <Label className="text-xs text-gray-500">Mobile Number *</Label>
@@ -133,6 +154,36 @@ const CustomerInfoTab = ({ lead, onUpdate }) => {
               className="h-9 rounded-l-none font-mono"
               data-testid="customer-mobile"
             />
+          </div>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs text-gray-500">Email</Label>
+          <Input
+            type="email"
+            value={formData.email}
+            onChange={(e) => setFormData({...formData, email: e.target.value})}
+            placeholder="email@example.com"
+            className="h-9"
+            data-testid="customer-email"
+          />
+        </div>
+      </div>
+
+      <Button
+        onClick={handleSave}
+        disabled={saving}
+        className="w-full"
+        data-testid="save-customer-info-btn"
+      >
+        {saving ? (
+          <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Saving...</>
+        ) : (
+          'Save Customer Info'
+        )}
+      </Button>
+    </div>
+  );
+};
           </div>
         </div>
         <div className="space-y-1">
