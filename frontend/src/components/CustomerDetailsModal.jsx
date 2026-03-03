@@ -48,7 +48,258 @@ const StatusBadge = ({ status, type = 'payment' }) => {
   );
 };
 
-// Package Card Component with enhanced details
+// Transaction Card Component - Shows payment/package transaction with full details
+const TransactionCard = ({ transaction, isExpanded, onToggle, onViewReport }) => {
+  const hasDiscount = transaction.discount_amount > 0;
+  
+  return (
+    <div className="border rounded-lg overflow-hidden bg-white" data-testid={`transaction-card-${transaction.transaction_id}`}>
+      {/* Header - Always visible */}
+      <div className="p-4 cursor-pointer hover:bg-gray-50 transition-colors" onClick={onToggle}>
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <Package className="h-4 w-4 text-blue-600" />
+              <span className="font-semibold text-gray-900">{transaction.package_name}</span>
+              <StatusBadge status={transaction.payment_status} />
+              {transaction.inspections_purchased > 1 && (
+                <span className="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full">
+                  {transaction.inspections_purchased} Inspections
+                </span>
+              )}
+            </div>
+            
+            {/* Order ID and Payment ID */}
+            <div className="mt-1.5 flex items-center gap-3 text-xs text-gray-500 flex-wrap">
+              {transaction.order_id && (
+                <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded">
+                  {transaction.order_id}
+                </span>
+              )}
+              {transaction.razorpay_payment_id && (
+                <span className="font-mono text-gray-400">
+                  TXN: {transaction.razorpay_payment_id}
+                </span>
+              )}
+            </div>
+          </div>
+          
+          <div className="text-right flex items-center gap-3">
+            {/* Payment Amount with Discount */}
+            <div className="text-right">
+              {hasDiscount && (
+                <div className="text-xs text-gray-400 line-through">
+                  ₹{transaction.original_amount?.toLocaleString()}
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                <span className="text-emerald-600 font-bold">₹{transaction.amount_paid?.toLocaleString()}</span>
+                {transaction.balance_due > 0 && (
+                  <span className="text-red-500 text-xs">+ ₹{transaction.balance_due?.toLocaleString()} due</span>
+                )}
+              </div>
+              {hasDiscount && transaction.discount_code && (
+                <div className="text-xs text-green-600">
+                  {transaction.discount_code} ({transaction.discount_percentage || Math.round((transaction.discount_amount / transaction.original_amount) * 100)}% off)
+                </div>
+              )}
+            </div>
+            
+            {/* View Report if available */}
+            {transaction.inspections?.some(i => i.has_report) && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={(e) => { 
+                  e.stopPropagation(); 
+                  const inspWithReport = transaction.inspections.find(i => i.has_report);
+                  if (inspWithReport) onViewReport(inspWithReport.id);
+                }}
+                className="text-blue-600 border-blue-200 hover:bg-blue-50"
+              >
+                <Eye className="h-3.5 w-3.5 mr-1" /> Report
+              </Button>
+            )}
+            
+            <button className="p-1 hover:bg-gray-100 rounded">
+              {isExpanded ? <ChevronUp className="h-5 w-5 text-gray-400" /> : <ChevronDown className="h-5 w-5 text-gray-400" />}
+            </button>
+          </div>
+        </div>
+        
+        {/* Quick Info Row */}
+        <div className="flex items-center gap-4 mt-3 pt-3 border-t text-xs text-gray-500 flex-wrap">
+          <div className="flex items-center gap-1">
+            <Clock className="h-3.5 w-3.5" />
+            <span>{formatDateTime(transaction.payment_date)}</span>
+          </div>
+          {transaction.sales_rep_name && (
+            <div className="flex items-center gap-1">
+              <User className="h-3.5 w-3.5" />
+              <span>{transaction.sales_rep_name}</span>
+            </div>
+          )}
+          <div className="flex items-center gap-1">
+            <CheckCircle className="h-3.5 w-3.5" />
+            <span>Used: {transaction.inspections_used}/{transaction.inspections_purchased}</span>
+          </div>
+          {transaction.source && (
+            <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-xs">
+              {transaction.source}
+            </span>
+          )}
+        </div>
+      </div>
+      
+      {/* Expanded Details */}
+      {isExpanded && (
+        <div className="border-t bg-slate-50 p-4 space-y-4">
+          {/* Transaction Details Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <div className="text-xs font-medium text-gray-500 uppercase">Payment Link</div>
+              {transaction.payment_link_url ? (
+                <a 
+                  href={transaction.payment_link_url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  View Link
+                </a>
+              ) : (
+                <div className="text-sm text-gray-400">N/A</div>
+              )}
+            </div>
+            <div>
+              <div className="text-xs font-medium text-gray-500 uppercase">Transaction ID</div>
+              <div className="text-sm font-mono text-gray-700 break-all">
+                {transaction.razorpay_payment_id || 'N/A'}
+              </div>
+            </div>
+            <div>
+              <div className="text-xs font-medium text-gray-500 uppercase">Package</div>
+              <div className="text-sm text-gray-700">{transaction.package_name}</div>
+              {transaction.package_validity_days && (
+                <div className="text-xs text-gray-500">Valid for {transaction.package_validity_days} days</div>
+              )}
+            </div>
+            <div>
+              <div className="text-xs font-medium text-gray-500 uppercase">Inspections</div>
+              <div className="text-sm text-gray-700">
+                {transaction.inspections_purchased} purchased
+              </div>
+              <div className="text-xs text-gray-500">
+                {transaction.inspections_used} used • {transaction.inspections_available} available
+              </div>
+            </div>
+          </div>
+          
+          {/* Pricing Breakdown */}
+          <div className="bg-white rounded-lg p-3 border">
+            <div className="text-xs font-semibold text-gray-600 uppercase mb-2">Pricing Breakdown</div>
+            <div className="space-y-1 text-sm">
+              {hasDiscount && (
+                <>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Original Price</span>
+                    <span className="text-gray-700">₹{transaction.original_amount?.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-green-600">
+                    <span>Discount {transaction.discount_code && `(${transaction.discount_code})`}</span>
+                    <span>-₹{transaction.discount_amount?.toLocaleString()}</span>
+                  </div>
+                </>
+              )}
+              <div className="flex justify-between font-medium">
+                <span className="text-gray-700">Total Amount</span>
+                <span className="text-gray-900">₹{transaction.total_amount?.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-emerald-600">
+                <span>Amount Paid</span>
+                <span>₹{transaction.amount_paid?.toLocaleString()}</span>
+              </div>
+              {transaction.balance_due > 0 && (
+                <div className="flex justify-between text-red-600">
+                  <span>Balance Due</span>
+                  <span>₹{transaction.balance_due?.toLocaleString()}</span>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {/* Individual Inspections List */}
+          {transaction.inspections && transaction.inspections.length > 0 && (
+            <div>
+              <div className="text-xs font-semibold text-gray-600 uppercase mb-2">
+                Inspections ({transaction.inspections.length})
+              </div>
+              <div className="space-y-2">
+                {transaction.inspections.map((insp, idx) => (
+                  <div key={insp.id} className="bg-white rounded-lg p-3 border flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-gray-100 text-gray-600 w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium">
+                        {insp.slot_number || idx + 1}
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-gray-700">
+                          {insp.car_number || 'Vehicle not assigned'}
+                        </div>
+                        {(insp.car_make || insp.car_model) && (
+                          <div className="text-xs text-gray-500">
+                            {[insp.car_make, insp.car_model, insp.car_year].filter(Boolean).join(' ')}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <StatusBadge status={insp.inspection_status} type="inspection" />
+                      {insp.scheduled_date && (
+                        <span className="text-xs text-gray-500">
+                          {insp.scheduled_date} {insp.scheduled_time}
+                        </span>
+                      )}
+                      {insp.has_report && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={(e) => { e.stopPropagation(); onViewReport(insp.id); }}
+                          className="text-blue-600 h-7"
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Usage Progress */}
+          <div className="pt-2">
+            <div className="flex justify-between text-xs text-gray-600 mb-1">
+              <span>Inspection Usage</span>
+              <span>{transaction.inspections_used} of {transaction.inspections_purchased} used</span>
+            </div>
+            <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+              <div 
+                className={`h-full rounded-full transition-all ${
+                  transaction.inspections_used >= transaction.inspections_purchased ? 'bg-emerald-500' : 'bg-blue-500'
+                }`}
+                style={{ width: `${(transaction.inspections_used / transaction.inspections_purchased) * 100}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Legacy PackageCard - kept for backward compatibility
 const PackageCard = ({ pkg, isExpanded, onToggle, onViewReport }) => {
   return (
     <div className="border rounded-lg overflow-hidden bg-white" data-testid={`package-card-${pkg.inspection_id}`}>
