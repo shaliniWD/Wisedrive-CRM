@@ -4344,19 +4344,21 @@ Thank you for choosing Wisedrive!"""
             logger.info(f"Duplicate webhook: Payment {payment_id} already processed for lead {lead_id}")
             return {"status": "already_processed", "lead_id": lead_id}
         
-        # Check 2: Lead already converted to customer
-        if lead.get("customer_id"):
-            logger.info(f"Duplicate webhook: Lead {lead_id} already converted to customer {lead.get('customer_id')}")
-            return {"status": "already_converted", "lead_id": lead_id, "customer_id": lead.get("customer_id")}
+        # Check 2 & 3: Find existing customer for this lead
+        # We DON'T return early if customer exists - we want to add new inspections for additional purchases
+        customer_id = None
         
-        # Check 3: Customer already exists for this lead
-        existing_customer = await db.customers.find_one({"lead_id": lead_id}, {"_id": 0, "id": 1})
-        if existing_customer:
-            logger.info(f"Lead {lead_id} already has customer {existing_customer.get('id')} - will add new inspections to existing customer")
-            # Don't return - we want to add new inspections to the existing customer
-            customer_id = existing_customer.get("id")
-        else:
-            customer_id = None  # Will be created below
+        # First check if lead has customer_id set
+        if lead.get("customer_id"):
+            customer_id = lead.get("customer_id")
+            logger.info(f"Lead {lead_id} already has customer_id {customer_id} - will add new inspections")
+        
+        # Also check by lead_id in customers collection (safety check)
+        if not customer_id:
+            existing_customer = await db.customers.find_one({"lead_id": lead_id}, {"_id": 0, "id": 1})
+            if existing_customer:
+                customer_id = existing_customer.get("id")
+                logger.info(f"Found existing customer {customer_id} by lead_id lookup - will add new inspections")
         
         # Check 4: Inspections with THIS SPECIFIC payment_id already exist (true duplicate)
         existing_inspection_with_payment = await db.inspections.find_one(
