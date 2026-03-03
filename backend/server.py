@@ -1252,17 +1252,20 @@ async def get_leads(
     if team_id:
         query["team_id"] = team_id
     
-    # Handle date filtering (support both parameter naming conventions)
+    # Handle date filtering with timezone awareness
     actual_start_date = start_date or date_from
     actual_end_date = end_date or date_to
     
     if actual_start_date or actual_end_date:
         date_query = {}
         if actual_start_date:
-            date_query["$gte"] = actual_start_date
+            # Convert local date to UTC start time
+            utc_start, _ = convert_local_date_to_utc_range(actual_start_date, timezone_offset)
+            date_query["$gte"] = utc_start
         if actual_end_date:
-            # Include the entire end date by adding time component
-            date_query["$lte"] = actual_end_date + "T23:59:59"
+            # Convert local date to UTC end time
+            _, utc_end = convert_local_date_to_utc_range(actual_end_date, timezone_offset)
+            date_query["$lte"] = utc_end
         query["created_at"] = date_query
     
     leads = await db.leads.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
