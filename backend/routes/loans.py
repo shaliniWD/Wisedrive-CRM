@@ -2272,7 +2272,7 @@ async def fetch_vaahan_for_loan_vehicle(
     
     # Normalize manufacturer
     raw_manufacturer = vehicle_data.get("manufacturer", "")
-    normalized_make = brand_mapper.normalize_brand(raw_manufacturer) if raw_manufacturer else vehicle.get("car_make", "")
+    normalized_make = brand_mapper.get_brand_with_fallback(raw_manufacturer) if raw_manufacturer else vehicle.get("car_make", "")
     
     # Extract year from manufacturing date
     car_year = vehicle.get("car_year", "")
