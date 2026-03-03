@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import {
   Users, Phone, RefreshCw, Search, Filter, Calendar,
-  FileText, CreditCard, Loader2, Eye, UserCircle
+  FileText, CreditCard, Loader2, Eye, UserCircle, AlertCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
