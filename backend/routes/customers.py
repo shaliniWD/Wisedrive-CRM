@@ -997,4 +997,89 @@ async def _repair_customer(db, customer: dict, current_user: dict):
             "total_pending": stats[0].get("total_pending", 0)
         }
     
+    # 4. NEW: Additional search strategies if still no inspections found
+    if repairs["inspections_linked"] == 0 and repairs["inspections_created"] == 0:
+        # 4a. Search by customer name (exact match) and city
+        customer_name = customer.get("name")
+        customer_city = customer.get("city")
+        customer_email = customer.get("email")
+        
+        if customer_name:
+            # Try to find inspections by name match
+            orphan_by_name = await db.inspections.find(
+                {
+                    "customer_name": {"$regex": f"^{re.escape(customer_name)}$", "$options": "i"},
+                    "$or": [
+                        {"customer_id": {"$exists": False}},
+                        {"customer_id": None},
+                        {"customer_id": ""}
+                    ]
+                },
+                {"_id": 0, "id": 1, "customer_name": 1, "customer_mobile": 1}
+            ).to_list(20)
+            
+            if orphan_by_name:
+                for insp in orphan_by_name:
+                    await db.inspections.update_one(
+                        {"id": insp["id"]},
+                        {"$set": {
+                            "customer_id": customer_id,
+                            "lead_id": lead_id,
+                            "updated_at": datetime.now(timezone.utc).isoformat()
+                        }}
+                    )
+                repairs["inspections_linked"] += len(orphan_by_name)
+                repairs["details"].append(f"Linked {len(orphan_by_name)} orphaned inspection(s) by customer name match")
+        
+        # 4b. Search by email if available
+        if customer_email and repairs["inspections_linked"] == 0:
+            orphan_by_email = await db.inspections.find(
+                {
+                    "customer_email": {"$regex": f"^{re.escape(customer_email)}$", "$options": "i"},
+                    "$or": [
+                        {"customer_id": {"$exists": False}},
+                        {"customer_id": None},
+                        {"customer_id": ""}
+                    ]
+                },
+                {"_id": 0, "id": 1}
+            ).to_list(20)
+            
+            if orphan_by_email:
+                for insp in orphan_by_email:
+                    await db.inspections.update_one(
+                        {"id": insp["id"]},
+                        {"$set": {
+                            "customer_id": customer_id,
+                            "lead_id": lead_id,
+                            "updated_at": datetime.now(timezone.utc).isoformat()
+                        }}
+                    )
+                repairs["inspections_linked"] += len(orphan_by_email)
+                repairs["details"].append(f"Linked {len(orphan_by_email)} orphaned inspection(s) by email match")
+    
+    # 5. Diagnostic info - show what was searched
+    repairs["diagnostic"] = {
+        "customer_has_payment_id": bool(customer.get("razorpay_payment_id")),
+        "customer_has_lead_id": bool(lead_id),
+        "lead_found": bool(lead) if 'lead' in dir() else False,
+        "lead_has_payment": bool(lead.get("razorpay_payment_id")) if lead else False,
+        "search_criteria_used": [
+            "lead_id" if lead_id else None,
+            "mobile_normalized" if normalized_mobile else None,
+            "customer_name" if customer.get("name") else None,
+            "customer_email" if customer.get("email") else None
+        ]
+    }
+    
+    # Final message if nothing was repaired
+    if repairs["inspections_linked"] == 0 and repairs["inspections_created"] == 0 and not repairs.get("payment_data_recovered"):
+        repairs["message"] = "No issues found to repair. This could mean: (1) Customer data is correct, (2) No matching inspections/payments exist in the system, or (3) Data was created outside the normal flow."
+        repairs["suggestions"] = [
+            "Check if a payment was actually made for this customer",
+            "Verify the mobile number format matches across leads and customers",
+            f"Search inspections manually by name: {customer.get('name')}",
+            f"Search leads by mobile: {mobile}"
+        ]
+    
     return repairs
