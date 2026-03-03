@@ -745,17 +745,52 @@ async def repair_customer_data(
     if not customer:
         raise HTTPException(status_code=404, detail="Customer not found")
     
+    return await _repair_customer(db, customer, current_user)
+
+
+@router.post("/repair-by-mobile/{mobile}")
+async def repair_customer_by_mobile(
+    mobile: str,
+    request: CustomerRepairRequest = CustomerRepairRequest(),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Repair customer data by mobile number.
+    Finds the customer and repairs inspection linkage issues.
+    """
+    import uuid
+    
+    # Only CEO/HR_MANAGER can repair data
+    role_code = current_user.get("role_code", "")
+    if role_code not in ["CEO", "HR_MANAGER", "COUNTRY_HEAD", "ADMIN"]:
+        raise HTTPException(status_code=403, detail="Not authorized to repair customer data")
+    
+    customer = await db.customers.find_one({"mobile": mobile}, {"_id": 0})
+    if not customer:
+        raise HTTPException(status_code=404, detail=f"Customer not found with mobile {mobile}")
+    
+    return await _repair_customer(db, customer, current_user)
+
+
+async def _repair_customer(db, customer: dict, current_user: dict):
+    """Internal function to repair customer data"""
+    import uuid
+    
+    customer_id = customer.get("id")
     lead_id = customer.get("lead_id")
     mobile = customer.get("mobile")
     
     repairs = {
+        "customer_id": customer_id,
+        "customer_name": customer.get("name"),
+        "mobile": mobile,
         "inspections_linked": 0,
         "inspections_created": 0,
         "details": []
     }
     
     # 1. Link orphaned inspections by lead_id
-    if request.link_orphaned_inspections and lead_id:
+    if lead_id:
         result = await db.inspections.update_many(
             {"lead_id": lead_id, "customer_id": {"$ne": customer_id}},
             {"$set": {
@@ -768,7 +803,7 @@ async def repair_customer_data(
             repairs["details"].append(f"Linked {result.modified_count} orphaned inspection(s) by lead_id")
     
     # 2. Link orphaned inspections by mobile
-    if request.link_orphaned_inspections and mobile:
+    if mobile:
         result = await db.inspections.update_many(
             {"customer_mobile": mobile, "customer_id": {"$nin": [customer_id, None, ""]}},
             {"$set": {
@@ -782,15 +817,15 @@ async def repair_customer_data(
             repairs["details"].append(f"Linked {result.modified_count} orphaned inspection(s) by mobile")
     
     # 3. Create missing inspections for payments
-    if request.create_missing_inspections:
-        # Collect all payment IDs for this customer
-        all_payment_ids = set()
-        if customer.get('razorpay_payment_id'):
-            all_payment_ids.add(customer.get('razorpay_payment_id'))
-        for p in customer.get('additional_purchases', []):
-            if p.get('razorpay_payment_id'):
-                all_payment_ids.add(p.get('razorpay_payment_id'))
-        
+    # Collect all payment IDs for this customer
+    all_payment_ids = set()
+    if customer.get('razorpay_payment_id'):
+        all_payment_ids.add(customer.get('razorpay_payment_id'))
+    for p in customer.get('additional_purchases', []):
+        if p.get('razorpay_payment_id'):
+            all_payment_ids.add(p.get('razorpay_payment_id'))
+    
+    if all_payment_ids:
         # Find which payment IDs already have inspections
         existing = await db.inspections.find(
             {"razorpay_payment_id": {"$in": list(all_payment_ids)}},
