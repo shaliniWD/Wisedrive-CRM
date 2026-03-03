@@ -2612,8 +2612,16 @@ export default function InspectionsPage() {
                   placeholder="Search new address..."
                   className="w-full"
                 />
-                {editInspectionFormData.city && editInspectionFormData.city !== editInspectionData?.city && (
-                  <p className="text-xs text-green-600">New City: <span className="font-medium">{editInspectionFormData.city}</span></p>
+                {editInspectionFormData.city && (
+                  <div className="flex items-center gap-2 mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                    <MapPin className="h-4 w-4 text-blue-600" />
+                    <span className="text-sm text-blue-700">
+                      City: <span className="font-semibold">{editInspectionFormData.city}</span>
+                      {editInspectionFormData.city !== editInspectionData?.city && (
+                        <span className="text-green-600 ml-2">(Updated)</span>
+                      )}
+                    </span>
+                  </div>
                 )}
               </div>
             </div>
