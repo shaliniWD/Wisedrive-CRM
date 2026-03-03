@@ -7,14 +7,24 @@ The application is a full-stack CRM for vehicle loans and inspections. Key featu
 - Loan application processing
 - Customer management
 - Credit report integration (CIBIL, Equifax, Experian, CRIF via Surepass)
+- Bank statement analysis for loan eligibility
 
 ## Core Architecture
 - **Frontend:** React with Shadcn/UI components
 - **Backend:** FastAPI with MongoDB
 - **Database:** MongoDB (production dump restored)
-- **External APIs:** Surepass (credit reports), Meta Ads, Razorpay, Firebase
+- **External APIs:** Surepass (credit reports), Meta Ads, Razorpay, Firebase, Gemini AI (bank statement analysis)
 
 ## What's Been Implemented
+
+### Bank Statement Analysis (Mar 2026)
+- ✅ AI-powered bank statement analysis using Gemini 2.5 Flash
+- ✅ Support for password-protected PDFs (via pikepdf library)
+- ✅ Extracts: Bank name, Account number, ABB, Min/Max balance, Credits/Debits, Salary patterns, Bounces
+- ✅ Backend endpoint: POST `/api/loan-leads/analyze-bank-statement-url`
+- ✅ Lead-specific endpoint: POST `/api/loan-leads/{lead_id}/profile/analyze-bank-statement`
+- ✅ Frontend: Password input field for encrypted PDFs in CustomerProfileModal
+- ✅ Results stored in customer_profiles collection
 
 ### Credit Report UI (Dec 2025)
 - ✅ Customer Details modal: 3 tabs (Customer Info, Vehicles, Documents)
@@ -22,6 +32,9 @@ The application is a full-stack CRM for vehicle loans and inspections. Key featu
 - ✅ Credit Reports column: "Get Report" button + score badge
 - ✅ Removed OTP flow - direct bureau fetch via Surepass API
 - ✅ 4 bureau support: CIBIL, Equifax, Experian, CRIF
+- ✅ Cached reports loading from database
+- ✅ "Fetch Again" dropdown for manual refresh
+- ✅ PDF view button
 
 ### Credit Report Integration (Dec 2025)
 - ✅ CIBIL JSON & PDF endpoints
@@ -31,6 +44,11 @@ The application is a full-stack CRM for vehicle loans and inspections. Key featu
 - ✅ Report storage in `credit_reports` collection
 - ✅ History lookup by PAN
 - ✅ Loan lead credit score linking
+
+### Bug Fixes (Mar 2026)
+- ✅ Lead reassignment bug fixed (role_code handling)
+- ✅ Second payment/inspection creation bug fixed (webhook idempotency)
+- ✅ Customer data sync (phone, city) fixed
 
 ### Bug Fixes (Dec 2025)
 - ✅ Lead city auto-detection (case-insensitive AD ID lookup)
