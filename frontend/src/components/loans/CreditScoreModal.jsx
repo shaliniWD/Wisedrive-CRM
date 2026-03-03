@@ -1190,9 +1190,36 @@ const CreditScoreModal = ({ isOpen, onClose, lead, onUpdate }) => {
           </div>
           
           <div className="flex items-center gap-2">
+            {/* Fetch All Reports Button - Always visible when no reports yet */}
+            {!hasAnyReport && !error && (
+              <Button
+                variant="default"
+                size="sm"
+                onClick={fetchAllReports}
+                className="text-xs bg-gradient-to-r from-blue-600 to-indigo-600"
+                disabled={fetchingProvider !== null}
+              >
+                <RefreshCw className={`h-3.5 w-3.5 mr-1 ${fetchingProvider ? 'animate-spin' : ''}`} />
+                Fetch All Reports
+              </Button>
+            )}
+            
             {/* Fetch Again Button with Dropdown */}
             {hasAnyReport && !error && (
               <div className="relative">
+                {/* Fetch All button - prominent */}
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={fetchAllReports}
+                  className="text-xs mr-2 bg-gradient-to-r from-blue-600 to-indigo-600"
+                  disabled={fetchingProvider !== null}
+                >
+                  <RefreshCw className={`h-3.5 w-3.5 mr-1 ${fetchingProvider ? 'animate-spin' : ''}`} />
+                  Fetch All
+                </Button>
+                
+                {/* Individual reports dropdown */}
                 <Button
                   variant="outline"
                   size="sm"
@@ -1200,22 +1227,13 @@ const CreditScoreModal = ({ isOpen, onClose, lead, onUpdate }) => {
                   className="text-xs"
                   disabled={fetchingProvider !== null}
                 >
-                  <RefreshCw className={`h-3.5 w-3.5 mr-1 ${fetchingProvider ? 'animate-spin' : ''}`} />
-                  Fetch Again
-                  <ChevronDown className="h-3 w-3 ml-1" />
+                  <ChevronDown className="h-3 w-3" />
                 </Button>
                 
                 {showFetchMenu && (
                   <div className="absolute right-0 mt-1 w-48 bg-white border border-slate-200 rounded-lg shadow-lg z-20">
                     <div className="p-1">
-                      <button
-                        onClick={fetchAllReports}
-                        className="w-full px-3 py-2 text-left text-sm hover:bg-slate-100 rounded flex items-center gap-2"
-                      >
-                        <RefreshCw className="h-4 w-4" />
-                        Fetch All Reports
-                      </button>
-                      <div className="border-t border-slate-100 my-1" />
+                      <div className="px-3 py-1.5 text-xs text-slate-400 font-medium">Fetch Individual Report</div>
                       {providers.map(provider => (
                         <button
                           key={provider.id}
@@ -1223,7 +1241,8 @@ const CreditScoreModal = ({ isOpen, onClose, lead, onUpdate }) => {
                           className="w-full px-3 py-2 text-left text-sm hover:bg-slate-100 rounded flex items-center gap-2"
                         >
                           <span className={`w-2 h-2 rounded-full ${provider.color.split(' ')[0]}`} />
-                          Fetch {provider.name}
+                          {provider.name}
+                          {reports[provider.id] && <CheckCircle className="h-3 w-3 text-green-500 ml-auto" />}
                         </button>
                       ))}
                     </div>
