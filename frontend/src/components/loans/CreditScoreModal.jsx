@@ -519,13 +519,19 @@ const BureauReportView = ({ report, bureauName, bureauColor }) => {
         {activeTab === 'accounts' && (
           <div className="space-y-3">
             {/* Account Filters */}
-            <div className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg">
+            <div className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg flex-wrap">
               <Filter className="h-4 w-4 text-slate-500" />
               <span className="text-xs text-slate-500 mr-2">Filter:</span>
               {[
                 { id: 'all', label: 'All', count: accounts.length },
-                { id: 'active', label: 'Active', count: accounts.filter(a => ['11', '21', '31'].includes(a.Account_Status) && !a.Written_Off_Amt_Total).length },
-                { id: 'closed', label: 'Closed', count: accounts.filter(a => ['13', '14', '15'].includes(a.Account_Status) || a.Date_Closed).length },
+                { id: 'active', label: 'Active', count: accounts.filter(a => 
+                  (!a.credit_status || a.credit_status === 'Active') && 
+                  (['11', '21', '31'].includes(a.Account_Status) || !a.Account_Status)
+                ).length },
+                { id: 'closed', label: 'Closed', count: accounts.filter(a => 
+                  a.credit_status === 'Closed' || a.credit_status === 'Settled' ||
+                  ['13', '14', '15'].includes(a.Account_Status)
+                ).length },
                 { id: 'problem', label: 'Problem', count: problemAccounts.length, alert: problemAccounts.length > 0 },
               ].map(filter => (
                 <button
@@ -545,10 +551,30 @@ const BureauReportView = ({ report, bureauName, bureauColor }) => {
             {/* Account List */}
             {filteredAccounts.length > 0 ? filteredAccounts.map((account, idx) => {
               const isExpanded = expandedAccounts[idx];
-              const typeConfig = getAccountTypeConfig(account.Account_Type);
-              const status = getAccountStatus(account.Account_Status, account);
-              const hasOverdue = (account.Amount_Past_Due || 0) > 0;
-              const hasWriteOff = (account.Written_Off_Amt_Total || 0) > 0;
+              
+              // Handle both CIBIL and Equifax formats
+              const accountType = account.type || account.Account_Type || 'Unknown';
+              const memberName = account.member || account.Subscriber_Name || 'Unknown';
+              const accountNumber = account.account_number || account.Account_Number || '';
+              const currentBalance = parseInt(account.current_balance) || account.Current_Balance || 0;
+              const amountOverdue = parseInt(account.amount_overdue) || account.Amount_Past_Due || 0;
+              const writtenOffAmt = parseInt(account.written_off_amount) || account.Written_Off_Amt_Total || 0;
+              const highCredit = parseInt(account.high_credit) || account.Highest_Credit_or_Original_Loan_Amount || 0;
+              const dateOpened = account.date_opened || account.Open_Date;
+              const dateReported = account.date_reported || account.Date_Reported;
+              const lastPaymentDate = account.last_payment_date || account.Payment_Date;
+              const creditStatus = account.credit_status || '';
+              const paymentHistory = account.payment_history || '';
+              
+              // Determine status
+              const hasOverdue = amountOverdue > 0;
+              const hasWriteOff = writtenOffAmt > 0 || creditStatus === 'Written-off';
+              const isClosed = creditStatus === 'Closed' || creditStatus === 'Settled' || ['13', '14', '15'].includes(account.Account_Status);
+              
+              const status = hasWriteOff ? { label: 'Written-off', color: 'bg-red-100 text-red-700', severity: 'critical' }
+                : hasOverdue ? { label: 'Overdue', color: 'bg-orange-100 text-orange-700', severity: 'warning' }
+                : isClosed ? { label: 'Closed', color: 'bg-slate-100 text-slate-700', severity: 'normal' }
+                : { label: 'Active', color: 'bg-green-100 text-green-700', severity: 'normal' };
               
               return (
                 <div key={idx} className={`bg-white rounded-xl border overflow-hidden ${
@@ -557,27 +583,126 @@ const BureauReportView = ({ report, bureauName, bureauColor }) => {
                 }`}>
                   <button onClick={() => toggleAccount(idx)} className="w-full p-3 flex items-center justify-between hover:bg-slate-50 transition-colors">
                     <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl ${
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
                         status.severity === 'critical' ? 'bg-red-100' : 
                         status.severity === 'warning' ? 'bg-orange-100' : 'bg-slate-100'
                       }`}>
                         {status.severity === 'critical' ? <XCircle className="h-5 w-5 text-red-500" /> : 
-                         status.severity === 'warning' ? <AlertTriangle className="h-5 w-5 text-orange-500" /> : typeConfig.icon}
+                         status.severity === 'warning' ? <AlertTriangle className="h-5 w-5 text-orange-500" /> : 
+                         <Building2 className="h-5 w-5 text-slate-500" />}
                       </div>
                       <div className="text-left">
-                        <p className="font-semibold text-slate-900 text-sm">{account.Subscriber_Name || 'Unknown'}</p>
-                        <p className="text-xs text-slate-500">{typeConfig.name} • ****{account.Account_Number?.slice(-4)}</p>
+                        <p className="font-semibold text-slate-900 text-sm">{memberName}</p>
+                        <p className="text-xs text-slate-500">{accountType} {accountNumber && `• ****${accountNumber.slice(-4)}`}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="text-right">
                         <p className={`font-bold text-sm ${hasOverdue || hasWriteOff ? 'text-red-600' : 'text-slate-900'}`}>
-                          {formatINR(account.Current_Balance)}
+                          {formatINR(currentBalance)}
                         </p>
                         <span className={`text-xs px-2 py-0.5 rounded-full ${status.color}`}>{status.label}</span>
                       </div>
                       <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                     </div>
+                  </button>
+                  
+                  {isExpanded && (
+                    <div className="p-4 bg-slate-50 border-t border-slate-100">
+                      {/* Account Details */}
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                        <div>
+                          <p className="text-slate-500">High Credit / Sanctioned</p>
+                          <p className="font-semibold">{formatINR(highCredit)}</p>
+                        </div>
+                        <div>
+                          <p className="text-slate-500">Current Balance</p>
+                          <p className="font-semibold">{formatINR(currentBalance)}</p>
+                        </div>
+                        <div>
+                          <p className="text-slate-500">Date Opened</p>
+                          <p className="font-semibold">{dateOpened || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-slate-500">Last Reported</p>
+                          <p className="font-semibold">{dateReported || '-'}</p>
+                        </div>
+                      </div>
+                      
+                      {/* Overdue/Write-off Alert */}
+                      {(hasOverdue || hasWriteOff) && (
+                        <div className="mt-3 p-3 bg-red-100 rounded-lg border border-red-200">
+                          <div className="flex items-center gap-2 text-red-800 font-semibold text-sm mb-2">
+                            <AlertTriangle className="h-4 w-4" />
+                            {hasWriteOff ? 'Account Written Off' : 'Payment Overdue'}
+                          </div>
+                          <div className="grid grid-cols-2 gap-3 text-sm">
+                            {hasOverdue && (
+                              <div>
+                                <p className="text-red-700">Amount Overdue</p>
+                                <p className="font-bold text-red-800">{formatINR(amountOverdue)}</p>
+                              </div>
+                            )}
+                            {hasWriteOff && (
+                              <div>
+                                <p className="text-red-700">Written Off Amount</p>
+                                <p className="font-bold text-red-800">{formatINR(writtenOffAmt)}</p>
+                              </div>
+                            )}
+                            {lastPaymentDate && (
+                              <div>
+                                <p className="text-red-700">Last Payment</p>
+                                <p className="font-bold text-red-800">{lastPaymentDate}</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Payment History - CIBIL format */}
+                      {paymentHistory && (
+                        <div className="mt-3">
+                          <p className="text-sm font-semibold text-slate-700 mb-2">Payment History (Last 36 months)</p>
+                          <div className="flex flex-wrap gap-1">
+                            {paymentHistory.match(/.{1,3}/g)?.slice(0, 36).map((code, i) => {
+                              const dpd = parseInt(code) || 0;
+                              let color = 'bg-green-400';
+                              if (dpd >= 180) color = 'bg-red-600';
+                              else if (dpd >= 90) color = 'bg-red-400';
+                              else if (dpd >= 60) color = 'bg-orange-500';
+                              else if (dpd >= 30) color = 'bg-orange-400';
+                              else if (dpd > 0) color = 'bg-yellow-400';
+                              return (
+                                <div key={i} className={`w-5 h-5 rounded ${color}`} title={`Month ${i+1}: ${dpd} DPD`} />
+                              );
+                            })}
+                          </div>
+                          <div className="flex gap-3 mt-2 text-xs text-slate-500">
+                            <span className="flex items-center gap-1"><span className="w-3 h-3 bg-green-400 rounded" /> On-time</span>
+                            <span className="flex items-center gap-1"><span className="w-3 h-3 bg-yellow-400 rounded" /> 1-29 DPD</span>
+                            <span className="flex items-center gap-1"><span className="w-3 h-3 bg-orange-400 rounded" /> 30-59 DPD</span>
+                            <span className="flex items-center gap-1"><span className="w-3 h-3 bg-red-400 rounded" /> 60-89 DPD</span>
+                            <span className="flex items-center gap-1"><span className="w-3 h-3 bg-red-600 rounded" /> 90+ DPD</span>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Equifax Payment History */}
+                      {account.CAIS_Account_History && (
+                        <PaymentHistoryBar history={account.CAIS_Account_History} />
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            }) : (
+              <div className="text-center py-8 text-slate-500">
+                <Building2 className="h-10 w-10 mx-auto mb-2 text-slate-300" />
+                <p>No accounts match this filter</p>
+              </div>
+            )}
+          </div>
+        )}
                   </button>
                   
                   {isExpanded && (
