@@ -59,32 +59,41 @@ The application is a full-stack CRM for vehicle loans and inspections. Key featu
 ## Pending Issues (Priority Order)
 
 ### P0 - Critical
-1. **Lead Reassignment Bug** - Role lookup failing, shows empty `role_code`
-2. ~~**Second Payment Not Creating Inspections**~~ - FIXED (Dec 2025) - Webhook now handles multiple payments correctly
+1. ~~**Lead Reassignment Bug**~~ - FIXED (Mar 2026)
+2. ~~**Second Payment Not Creating Inspections**~~ - FIXED (Dec 2025)
 
 ### P1 - High  
-2. **Credit Report Frontend UI** - No UI to trigger/view reports
-3. **Loan Eligibility Frontend** - Backend ready, no UI
-4. **Bengaluru Migration** - Awaiting user verification
+1. **Loan Eligibility Frontend** - Backend API ready, need UI integration
+2. **Bengaluru Migration** - Awaiting user verification on production
+3. **Data Quality Repair** - Need batch repair scripts for historical records
 
 ### P2 - Medium
-5. **Equifax Scope** - Blocked by Surepass verification
-6. **CRIF Scope** - Blocked by Surepass (needs scope enabled)
-7. **Video Upload** - Critical inspection feature broken
-8. **Duplicate Record Cleanup** - Data quality
+4. **CRIF Scope** - Blocked by Surepass (needs scope enabled by provider)
+5. **Video Upload** - Critical inspection feature broken
+6. **Duplicate Record Cleanup** - Data quality improvement
 
 ## Upcoming Tasks
-1. Build Credit Report UI in Loans/Customer page
-2. PDF export/download for credit reports
-3. Refactor large components
+1. Build Loan Eligibility UI in LoansPage
+2. PDF export/download button for credit reports
+3. Refactor large components (InspectionsPage, LoansPage, CreditScoreModal)
 4. Create Charge Types Master page
+5. Server.py webhook refactoring
 
 ## Technical Debt
-- `server.py` - Still very large, needs webhook extraction
+- `server.py` - Still contains webhook logic, needs extraction to routes
 - `InspectionsPage.jsx` - Over 3,000 lines
 - `LoansPage.jsx` - Over 4,000 lines
+- `CreditScoreModal.jsx` - Over 1,200 lines
 
-## API Endpoints (Credit Reports)
+## API Endpoints
+
+### Bank Statement Analysis
+```
+POST /api/loan-leads/analyze-bank-statement-url  - Analyze PDF from URL (with password support)
+POST /api/loan-leads/{lead_id}/profile/analyze-bank-statement - Analyze uploaded document
+```
+
+### Credit Reports
 ```
 POST /api/credit-report/cibil        - CIBIL JSON
 POST /api/credit-report/cibil/pdf    - CIBIL PDF
@@ -97,10 +106,12 @@ POST /api/credit-report/crif/pdf     - CRIF Commercial PDF
 GET  /api/credit-report/check-status - Service status
 GET  /api/credit-report/history/{pan} - PAN history
 GET  /api/credit-report/{report_id}  - Get specific report
+GET  /api/credit-report/latest/{pan} - Get all cached reports for PAN
 ```
 
 ## 3rd Party Integrations
 - **Surepass:** Credit reports (production token)
+- **Gemini AI:** Bank statement analysis (via Emergent LLM Key)
 - **Firebase:** Media storage
 - **Meta Ads:** Lead sync
 - **Razorpay:** Payments
