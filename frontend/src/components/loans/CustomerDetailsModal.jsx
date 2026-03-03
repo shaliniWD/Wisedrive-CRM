@@ -192,6 +192,13 @@ const VehiclesTab = ({ lead, onUpdate }) => {
   const [adding, setAdding] = useState(false);
   const [fetchingVaahan, setFetchingVaahan] = useState(null);
   const [addingWithVaahan, setAddingWithVaahan] = useState(false);
+  const [editingLoanDetails, setEditingLoanDetails] = useState(null);
+  const [loanForm, setLoanForm] = useState({
+    vehicle_valuation: '',
+    required_loan_amount: '',
+    expected_emi: '',
+    expected_tenure_months: ''
+  });
   
   useEffect(() => {
     if (lead) {
@@ -276,6 +283,37 @@ const VehiclesTab = ({ lead, onUpdate }) => {
     } catch (err) {
       toast.error('Failed to set primary vehicle');
     }
+  };
+  
+  const handleEditLoanDetails = (vehicle) => {
+    setEditingLoanDetails(vehicle.vehicle_id);
+    setLoanForm({
+      vehicle_valuation: vehicle.vehicle_valuation || '',
+      required_loan_amount: vehicle.required_loan_amount || '',
+      expected_emi: vehicle.expected_emi || '',
+      expected_tenure_months: vehicle.expected_tenure_months || ''
+    });
+  };
+  
+  const handleSaveLoanDetails = async (vehicleId) => {
+    try {
+      await loansApi.updateVehicle(lead.id, vehicleId, {
+        vehicle_valuation: parseFloat(loanForm.vehicle_valuation) || null,
+        required_loan_amount: parseFloat(loanForm.required_loan_amount) || null,
+        expected_emi: parseFloat(loanForm.expected_emi) || null,
+        expected_tenure_months: parseInt(loanForm.expected_tenure_months) || null
+      });
+      toast.success('Loan details updated');
+      setEditingLoanDetails(null);
+      onUpdate();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to update loan details');
+    }
+  };
+  
+  const formatCurrency = (val) => {
+    if (!val) return '—';
+    return `₹${parseFloat(val).toLocaleString()}`;
   };
 
   return (
