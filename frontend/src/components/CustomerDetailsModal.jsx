@@ -373,6 +373,30 @@ export function CustomerDetailsModal({ isOpen, onClose, customerId, onCustomerUp
     onClose();
   };
 
+  const handleRepairData = async () => {
+    if (!customer?.id) return;
+    
+    setRepairing(true);
+    try {
+      const response = await customersApi.repair(customer.id);
+      const result = response.data;
+      
+      if (result.inspections_linked > 0 || result.inspections_created > 0) {
+        toast.success(`Repaired: ${result.inspections_linked} linked, ${result.inspections_created} created`);
+        // Refresh customer data
+        fetchCustomerDetails();
+        if (onCustomerUpdated) onCustomerUpdated();
+      } else {
+        toast.info('No issues found to repair');
+      }
+    } catch (error) {
+      console.error('Failed to repair customer data:', error);
+      toast.error(error.response?.data?.detail || 'Failed to repair customer data');
+    } finally {
+      setRepairing(false);
+    }
+  };
+
   const togglePackageExpand = (inspectionId) => {
     setExpandedPackages(prev => ({ ...prev, [inspectionId]: !prev[inspectionId] }));
   };
