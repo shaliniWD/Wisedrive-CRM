@@ -98,6 +98,7 @@ async def get_customers(
     sales_rep_id: Optional[str] = None,
     date_from: Optional[str] = None,
     date_to: Optional[str] = None,
+    timezone_offset: Optional[int] = 330,  # User's timezone offset in minutes (default IST)
     current_user: dict = Depends(get_current_user)
 ):
     """Get customers - filtered by RBAC, enriched with sales rep and payment info"""
@@ -116,14 +117,17 @@ async def get_customers(
     if country_id:
         query["country_id"] = country_id
     
-    # Date range filter
+    # Timezone-aware date range filter
     if date_from or date_to:
         date_query = {}
         if date_from:
-            date_query["$gte"] = date_from
+            utc_from, _ = convert_local_date_to_utc_range_customers(date_from, timezone_offset)
+            date_query["$gte"] = utc_from
         if date_to:
-            date_query["$lte"] = date_to + "T23:59:59"
-        query["created_at"] = date_query
+            _, utc_to = convert_local_date_to_utc_range_customers(date_to, timezone_offset)
+            date_query["$lte"] = utc_to
+        if date_query:
+            query["created_at"] = date_query
     
     customers = await db.customers.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     
