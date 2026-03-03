@@ -866,8 +866,8 @@ async def diagnose_customer_data(
         "total_customers": len(result["customers"]),
         "total_leads": len(result["leads"]),
         "total_inspections": len(result["inspections"]),
-        "paid_leads": len([l for l in leads if l.get("payment_status") == "paid"]),
-        "leads_with_payment_id": len([l for l in leads if l.get("razorpay_payment_id")]),
+        "paid_leads": len([ld for ld in leads if ld.get("payment_status") == "paid"]),
+        "leads_with_payment_id": len([ld for ld in leads if ld.get("razorpay_payment_id")]),
         "customers_with_payment_id": len([c for c in customers if c.get("razorpay_payment_id")]),
         "orphaned_inspections": len([i for i in result["inspections"] if not i.get("customer_id")]),
         "linked_inspections": len([i for i in result["inspections"] if i.get("customer_id")]),
@@ -877,9 +877,9 @@ async def diagnose_customer_data(
     issues = []
     if len(leads) > 0 and len(customers) == 0:
         issues.append("Lead(s) exist but no customer record - payment may not have been completed")
-    if any(l.get("razorpay_payment_id") for l in leads) and not any(c.get("razorpay_payment_id") for c in customers):
+    if any(ld.get("razorpay_payment_id") for ld in leads) and not any(c.get("razorpay_payment_id") for c in customers):
         issues.append("Lead has payment but customer doesn't have payment data - repair needed")
-    if len(result["inspections"]) == 0 and any(l.get("payment_status") == "paid" for l in leads):
+    if len(result["inspections"]) == 0 and any(ld.get("payment_status") == "paid" for ld in leads):
         issues.append("Paid lead exists but no inspections created - repair needed")
     if result["summary"]["orphaned_inspections"] > 0:
         issues.append(f"{result['summary']['orphaned_inspections']} orphaned inspection(s) need linking")
