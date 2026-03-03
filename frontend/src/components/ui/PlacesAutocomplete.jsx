@@ -170,6 +170,91 @@ export function PlacesAutocomplete({
     }, 300);
   };
 
+  // Map of common Indian city names in Devanagari to English
+  const cityNameMap = {
+    'पुणे': 'Pune',
+    'मुंबई': 'Mumbai',
+    'बेंगलुरु': 'Bengaluru',
+    'बेंगळूरु': 'Bengaluru',
+    'बेंगलूरू': 'Bengaluru',
+    'दिल्ली': 'Delhi',
+    'नई दिल्ली': 'New Delhi',
+    'चेन्नई': 'Chennai',
+    'हैदराबाद': 'Hyderabad',
+    'कोलकाता': 'Kolkata',
+    'अहमदाबाद': 'Ahmedabad',
+    'जयपुर': 'Jaipur',
+    'लखनऊ': 'Lucknow',
+    'कानपुर': 'Kanpur',
+    'नागपुर': 'Nagpur',
+    'इंदौर': 'Indore',
+    'थाने': 'Thane',
+    'भोपाल': 'Bhopal',
+    'विशाखापट्टनम': 'Visakhapatnam',
+    'पटना': 'Patna',
+    'वडोदरा': 'Vadodara',
+    'गाज़ियाबाद': 'Ghaziabad',
+    'लुधियाना': 'Ludhiana',
+    'आगरा': 'Agra',
+    'नाशिक': 'Nashik',
+    'फ़रीदाबाद': 'Faridabad',
+    'मेरठ': 'Meerut',
+    'राजकोट': 'Rajkot',
+    'वाराणसी': 'Varanasi',
+    'श्रीनगर': 'Srinagar',
+    'औरंगाबाद': 'Aurangabad',
+    'धनबाद': 'Dhanbad',
+    'अमृतसर': 'Amritsar',
+    'नवी मुंबई': 'Navi Mumbai',
+    'इलाहाबाद': 'Allahabad',
+    'प्रयागराज': 'Prayagraj',
+    'हावड़ा': 'Howrah',
+    'रांची': 'Ranchi',
+    'कोयंबटूर': 'Coimbatore',
+    'जबलपुर': 'Jabalpur',
+    'ग्वालियर': 'Gwalior',
+    'विजयवाड़ा': 'Vijayawada',
+    'जोधपुर': 'Jodhpur',
+    'मदुरै': 'Madurai',
+    'रायपुर': 'Raipur',
+    'कोटा': 'Kota',
+    'गुवाहाटी': 'Guwahati',
+    'चंडीगढ़': 'Chandigarh',
+    'सोलापुर': 'Solapur',
+    'हुबली': 'Hubli',
+    'महाराष्ट्र': 'Maharashtra',
+    'कर्नाटक': 'Karnataka',
+    'तमिलनाडु': 'Tamil Nadu',
+    'उत्तर प्रदेश': 'Uttar Pradesh',
+    'गुजरात': 'Gujarat',
+    'राजस्थान': 'Rajasthan',
+  };
+  
+  // Helper function to normalize city name to English
+  const normalizeCityName = (cityName) => {
+    if (!cityName) return null;
+    
+    // Check if it's in the mapping
+    if (cityNameMap[cityName]) {
+      return cityNameMap[cityName];
+    }
+    
+    // Check if it's already in English (ASCII characters)
+    if (/^[A-Za-z\s]+$/.test(cityName)) {
+      return cityName;
+    }
+    
+    // Try to find a partial match
+    for (const [devanagari, english] of Object.entries(cityNameMap)) {
+      if (cityName.includes(devanagari) || devanagari.includes(cityName)) {
+        return english;
+      }
+    }
+    
+    // Return original if no match found
+    return cityName;
+  };
+
   // Handle suggestion selection
   const handleSelect = async (suggestion) => {
     setLoading(true);
@@ -218,6 +303,9 @@ export function PlacesAutocomplete({
             }
           }
         }
+        
+        // Normalize city name to English
+        city = normalizeCityName(city);
       } else if (suggestion.placeId && window.google?.maps?.places?.PlacesService) {
         // Legacy API - use PlacesService
         const dummyDiv = document.createElement('div');
@@ -225,7 +313,7 @@ export function PlacesAutocomplete({
         
         await new Promise((resolve) => {
           service.getDetails(
-            { placeId: suggestion.placeId, fields: ['formatted_address', 'geometry', 'address_components'] },
+            { placeId: suggestion.placeId, fields: ['formatted_address', 'geometry', 'address_components'], language: 'en' },
             (place, status) => {
               if (status === window.google.maps.places.PlacesServiceStatus.OK && place) {
                 address = place.formatted_address || suggestion.description;
@@ -260,6 +348,9 @@ export function PlacesAutocomplete({
                     }
                   }
                 }
+                
+                // Normalize city name to English
+                city = normalizeCityName(city);
               }
               resolve();
             }
