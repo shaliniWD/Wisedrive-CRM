@@ -1159,6 +1159,44 @@ async def toggle_assignment_availability(user_id: str, current_user: dict = Depe
 
 # ==================== LEADS ROUTES ====================
 
+def convert_local_date_to_utc_range(local_date: str, timezone_offset_minutes: int = 330) -> tuple:
+    """
+    Convert a local date string to UTC datetime range.
+    
+    Args:
+        local_date: Date string in YYYY-MM-DD format (in user's local timezone)
+        timezone_offset_minutes: Offset from UTC in minutes (default 330 = IST = UTC+5:30)
+    
+    Returns:
+        Tuple of (utc_start, utc_end) ISO strings
+    
+    Example: 
+        For IST (UTC+5:30), local_date="2026-03-03" means:
+        - Local start: 2026-03-03 00:00:00 IST
+        - UTC start: 2026-03-02 18:30:00 UTC
+        - Local end: 2026-03-03 23:59:59 IST  
+        - UTC end: 2026-03-03 18:29:59 UTC
+    """
+    from datetime import datetime, timedelta, timezone as tz
+    
+    # Parse the local date
+    local_date_obj = datetime.strptime(local_date, "%Y-%m-%d")
+    
+    # Create timezone offset
+    offset = timedelta(minutes=timezone_offset_minutes)
+    local_tz = tz(offset)
+    
+    # Create start of day in local timezone, then convert to UTC
+    local_start = local_date_obj.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=local_tz)
+    utc_start = local_start.astimezone(tz.utc)
+    
+    # Create end of day in local timezone, then convert to UTC
+    local_end = local_date_obj.replace(hour=23, minute=59, second=59, microsecond=999999, tzinfo=local_tz)
+    utc_end = local_end.astimezone(tz.utc)
+    
+    return utc_start.isoformat().replace('+00:00', 'Z'), utc_end.isoformat().replace('+00:00', 'Z')
+
+
 @api_router.get("/leads")
 async def get_leads(
     search: Optional[str] = None,
@@ -1172,6 +1210,7 @@ async def get_leads(
     end_date: Optional[str] = None,
     date_from: Optional[str] = None,  # Alias for start_date
     date_to: Optional[str] = None,    # Alias for end_date
+    timezone_offset: Optional[int] = 330,  # User's timezone offset in minutes (default IST = 330)
     current_user: dict = Depends(get_current_user)
 ):
     """Get leads - filtered by RBAC"""
