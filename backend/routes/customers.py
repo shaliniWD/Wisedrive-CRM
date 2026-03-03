@@ -809,17 +809,17 @@ async def diagnose_customer_data(
         {"_id": 0}
     ).to_list(20)
     result["leads"] = [{
-        "id": l.get("id"),
-        "name": l.get("name"),
-        "mobile": l.get("mobile"),
-        "status": l.get("status"),
-        "payment_status": l.get("payment_status"),
-        "razorpay_payment_id": l.get("razorpay_payment_id"),
-        "customer_id": l.get("customer_id"),
-        "package_name": l.get("package_name"),
-        "no_of_inspections": l.get("no_of_inspections"),
-        "created_at": l.get("created_at")
-    } for l in leads]
+        "id": lead.get("id"),
+        "name": lead.get("name"),
+        "mobile": lead.get("mobile"),
+        "status": lead.get("status"),
+        "payment_status": lead.get("payment_status"),
+        "razorpay_payment_id": lead.get("razorpay_payment_id"),
+        "customer_id": lead.get("customer_id"),
+        "package_name": lead.get("package_name"),
+        "no_of_inspections": lead.get("no_of_inspections"),
+        "created_at": lead.get("created_at")
+    } for lead in leads]
     
     # Search inspections by mobile
     inspections = await db.inspections.find(
