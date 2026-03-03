@@ -196,6 +196,14 @@ async def startup():
     fast2sms.set_db(db)
     logger.info("Fast2SMS service initialized with SMS logging")
     
+    # ==================== AUTO-CLEANUP DUPLICATE INSPECTIONS ====================
+    # This fixes duplicate inspections caused by webhook race conditions
+    # (Both payment.captured and payment_link.paid events creating inspections)
+    try:
+        await auto_cleanup_duplicate_inspections()
+    except Exception as e:
+        logger.warning(f"Duplicate inspection cleanup completed with warning: {e}")
+    
     logger.info("WiseDrive CRM V2 started with HR Module, ESS Mobile API, and FCM Push Notifications")
 
 
