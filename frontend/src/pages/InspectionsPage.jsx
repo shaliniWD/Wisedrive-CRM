@@ -983,11 +983,14 @@ export default function InspectionsPage() {
         });
       }
       
-      // Update location if changed
-      if (editInspectionFormData.address !== editInspectionData.address || 
-          editInspectionFormData.city !== editInspectionData.city) {
+      // Update location if address or city changed
+      const addressChanged = editInspectionFormData.address !== editInspectionData.address;
+      const cityChanged = editInspectionFormData.city !== editInspectionData.city;
+      
+      if (addressChanged || cityChanged) {
+        // Always send both address and city to ensure proper update
         await inspectionsApi.updateLocation(editInspectionData.id, {
-          address: editInspectionFormData.address,
+          address: editInspectionFormData.address || editInspectionData.address,
           city: editInspectionFormData.city,
           latitude: editInspectionFormData.latitude,
           longitude: editInspectionFormData.longitude
