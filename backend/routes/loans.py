@@ -290,17 +290,50 @@ async def seed_indian_banks(current_user: dict = Depends(get_current_user)):
             "bank_name": "HDFC Bank",
             "bank_code": "HDFC",
             "bank_type": "PRIVATE_BANK",
-            "interest_rate_min": 8.75,
-            "interest_rate_max": 12.50,
+            "interest_rate_min": 15.00,
+            "interest_rate_max": 18.00,
             "tenure_min_months": 12,
-            "tenure_max_months": 84,
-            "ltv_percent": 90,
-            "processing_fee_percent": 0.50,
+            "tenure_max_months": 60,
+            "ltv_percent": 80,
+            "processing_fee_percent": 1.00,
             "eligibility_rules": {
+                # Customer criteria
+                "min_age_salaried": 23,
+                "min_age_self_employed": 25,
+                "max_age_at_maturity": 65,
+                "employment_types": ["SALARIED", "SELF_EMPLOYED"],
+                "min_work_experience_years": 2,
+                # Income
+                "min_income_salaried": 25000,
+                "min_income_self_employed": 100000,
+                "income_multiplier_salaried": 20,
+                # Credit
                 "min_credit_score": 700,
-                "max_vehicle_age": 10,
-                "excluded_car_makes": ["CHEVROLET", "FORD", "FIAT"],
-                "employment_types": ["SALARIED", "SELF_EMPLOYED"]
+                "preferred_credit_score": 730,
+                "max_bounces_3_months": 0,
+                "max_bounces_6_months": 1,
+                "max_dpd_30_plus": 0,
+                "max_foir_percent": 65,
+                # Vehicle
+                "max_vehicle_age_years": 10,
+                "max_vehicle_age_at_maturity": 15,
+                "max_ownership_count": 2,
+                "excluded_car_makes": ["CHEVROLET", "FORD", "FIAT", "OPEL"],
+                # LTV by vehicle age
+                "ltv_0_3_years": 80,
+                "ltv_3_5_years": 75,
+                "ltv_5_7_years": 70,
+                "ltv_7_10_years": 65,
+                # Loan params
+                "min_loan_amount": 100000,
+                "max_loan_amount": 2500000,
+                "max_tenure_months": 60,
+                "base_interest_rate": 15.0,
+                "processing_fee_percent": 1.0,
+                "min_processing_fee": 3000,
+                # Banking
+                "min_aqb_metro": 10000,
+                "min_aqb_non_metro": 5000
             }
         },
         {
