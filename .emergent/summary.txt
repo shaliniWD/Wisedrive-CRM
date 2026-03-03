@@ -1,53 +1,74 @@
 <analysis>**original_problem_statement:**
-The user's initial goal was to build a Loans module and refactor the backend. This session addressed a series of critical issues and new feature requests:
-1.  **Bengaluru Migration Failure:** The automatic Bangalore to Bengaluru data migration, implemented in a previous session, failed to run in the user's production environment (), causing data integrity errors.
-2.  **Mechanic App UI Regression:** A major regression caused the mechanic app to display placeholder data (KA01AB1234, Vehicle Model) instead of real inspection details, rendering it unusable.
-3.  **Production DB Access:** The user requested help investigating production data issues, providing DB credentials. However, direct connection from the agent's environment was blocked.
-4.  **Mechanic App Build:** The user requested a new APK for the mechanic app pointing to their production URL.
-5.  **Loans Tab Enhancements:** The user requested several UI/UX changes to the Loans page, including merging modals, reordering columns, and fixing a broken date filter.
-6.  **Environment Management:** The user asked for comprehensive guidance on setting up and managing separate staging () and production () environments.
-7.  **Auto City Mapping:** A feature to automatically detect a city from an address during an inspection edit, and add it to the City Master if it's new.
-8.  **Loan Eligibility Engine:** The user provided policy documents for four major banks and requested the implementation of a comprehensive eligibility engine to automatically determine which banks a customer is eligible for.
+The user initially requested a Loans module, backend refactoring, and solutions for several production issues including data migration failures and UI regressions. During this session, the focus shifted to a series of new, critical production bugs reported by the user. These bugs included issues with creating inspections for second packages, errors in the HR module, timezone inconsistencies in date filters causing data to appear on the wrong day, incorrect customer data linkages due to inconsistent phone number formats, and a failure in the auto-detection of a city when an address was updated. The user also provided a production database dump to facilitate more accurate debugging.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The application is a full-stack CRM for vehicle loans and inspections.
-- The mechanic app UI regression has been fixed. The root cause was an incomplete refactoring ( was missing data transformation logic). Safeguards, including Pydantic response models and a basic API contract test, have been added to prevent this from recurring.
-- A new mechanic app APK (v1.9.1) pointing to  has been built and provided to the user.
-- A new feature has been implemented to automatically detect and map cities from addresses during inspection edits, adding new cities to the City Master on the fly.
-- The Loans tab UI has been enhanced: Documents and Vehicles modals are merged into a Customer Details tabbed modal, columns are reordered, and a backend date-filtering bug has been fixed.
-- A highly efficient vehicle data caching layer has been implemented. The system now checks a local MongoDB  collection before calling the external Vaahan API, saving the results for future use.
-- The root cause of inspections being created with missing vehicle data was fixed by adding vehicle-related fields to the  model and ensuring this data is passed during inspection creation.
-- The user has been provided with a detailed guide on how to manage separate staging and production environments using multiple Emergent jobs and syncing code via GitHub.
-- The foundation for a comprehensive loan eligibility engine has been laid. The database models (, document lists) have been significantly expanded, and eligibility criteria for four major banks have been seeded into the backend.
+The application is a full-stack CRM for vehicle loans and inspections. The current environment is running on a restored dump of the user's production database, allowing for highly accurate testing.
+
+Several critical production bugs have been addressed:
+-   **Loan Eligibility Engine:** A backend bug caused by Python function name shadowing was fixed. The  endpoint is now functional.
+-   **Multi-Package Inspections:** A webhook idempotency check was fixed, allowing customers to purchase multiple inspection packages.
+-   **HR Module API:** The API for updating employee cities was fixed to correctly handle data sent from the frontend.
+-   **Timezone-Aware Date Filtering:** A comprehensive fix was implemented across the backend (Leads, Inspections, Loans, Customers) and frontend to ensure date filters work correctly for users in different timezones (specifically IST vs. UTC).
+-   **Customer Data Integrity:** A new API endpoint () was created to fix orphaned inspections by normalizing inconsistent phone number formats (with/without ). The UI was updated with a Repair button in the customer modal.
+-   **Inspection City Auto-Detection:** A bug preventing the city from updating automatically when an address was selected from Google Places has been fixed. The root cause was an incorrect prop name ( instead of ) in the frontend code. The city extraction logic was also made more robust.
+-   Obsolete frontend components (, ) have been removed.
 
 **Last working item**:
--   **Last item agent was working:** Implementing the comprehensive loan eligibility engine. The agent created the models and seeded the data, but got stuck debugging the primary API endpoint (). The endpoint was returning a  error with a Loan lead not found message, suggesting a route matching conflict within FastAPI.
+-   **Last item agent was working:** Fixing the inspection city auto-detection bug. The user reported that after selecting a new address (e.g., Pune Railway Station), the city field was not automatically updating to Pune.
 -   **Status:** IN PROGRESS
--   **Agent Testing Done:** N (Testing was failing due to the routing error).
--   **Which testing method agent to use?** backend testing agent. The immediate next step is to use  with verbose logging to diagnose the routing issue. After the endpoint is reachable, the backend testing agent should be used to write tests that validate the complex eligibility logic against various customer profiles and the seeded bank rules.
+-   **Agent Testing Done:** N (The agent implemented a fix for the root cause - a prop name mismatch - but did not perform a final test to verify the fix for the user's specific scenario).
+-   **Which testing method agent to use?** Frontend testing agent. The test should verify that selecting an address from the Google Places autocomplete in the inspection edit modal correctly updates the city field in the UI.
 -   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
--   **Issue 1: Production DB Sync (P1)**
--   **Issue 2: Experian/Equifax API Integration Activation (P1)**
--   **Issue 3: Bengaluru Migration Failure in Production (P1)**
--   **Issue 4: Data quality in production DB (inspections with missing vehicle data) (P1)**
--   **Issue 5: Cleanup of old duplicate customer/inspection records (P2)**
+-   **Issue 1: Loan Eligibility Engine Frontend Integration (P0)**
+-   **Issue 2: Bengaluru Migration Failure in Production (P1)**
+-   **Issue 3: Data quality in production DB (inspections with missing vehicle data) (P1)**
+-   **Issue 4: Production DB Sync (P1)**
+-   **Issue 5: Experian/Equifax API Integration Activation (P1)**
+-   **Issue 6: Cleanup of old duplicate customer/inspection records (P2)**
 
 **Issues Detail:**
--   **Issue 1: Production DB Sync (P1)**
-    -   **Attempted fixes:** Agent tried connecting to the user's MongoDB Atlas string () but failed due to . This indicates a network block, likely an IP whitelist on the user's Atlas cluster, despite Emergent support's advice.
-    -   **Next debug checklist:** Since direct connection is blocked, the agent must guide the user to run diagnostic queries/scripts in their own MongoDB interface to investigate and fix data-related issues.
-    -   **Why fix this issue and what will be achieved with the fix?** Will enable the agent to directly debug and resolve production data problems, significantly speeding up issue resolution.
+-   **Issue 1: Loan Eligibility Engine Frontend Integration (P0)**
+    -   **Attempted fixes:** The backend API () has been fixed and is fully functional.
+    -   **Next debug checklist:** This is now a feature implementation task. The agent needs to build the UI on the frontend ( or a new component) to call this endpoint and display the eligibility results (eligible banks, max loan amount, rejection reasons).
+    -   **Why fix this issue and what will be achieved with the fix?** This is a core feature requested by the user to automate the loan qualification process, saving significant manual effort.
+    -   **Status:** NOT STARTED
+    -   **Is recurring issue?** N
+    -   **Should Test frontend/backend/both after fix?** Both.
+    -   **Blocked on other issue:** None.
+
+-   **Issue 2: Bengaluru Migration Failure in Production (P1)**
+    -   **Attempted fixes:** Agent provided robust code and instructions for the user to deploy.
+    -   **Next debug checklist:** Awaiting user confirmation on whether the latest deployment to  resolved the issue.
+    -   **Why fix this issue and what will be achieved with the fix?** Resolves a critical data integrity issue blocking city management.
+    -   **Status:** USER VERIFICATION PENDING
+    -   **Is recurring issue?** Y
+    -   **Should Test frontend/backend/both after fix?** Backend.
+    -   **Blocked on other issue:** User action.
+
+-   **Issue 3: Data quality in production DB (inspections with missing vehicle data) (P1)**
+    -   **Attempted fixes:** Root cause for *new* inspections was fixed. The new  API helps fix existing data on a case-by-case basis.
+    -   **Next debug checklist:** The  API should be used to fix the  customer. The agent should also consider creating a batch script to identify and fix all customers with similar data integrity problems.
+    -   **Why fix this issue and what will be achieved with the fix?** Ensures data accuracy and that all customer purchases are correctly reflected in the CRM.
+    -   **Status:** IN PROGRESS
+    -   **Is recurring issue?** Y
+    -   **Should Test frontend/backend/both after fix?** Both.
+    -   **Blocked on other issue:** None.
+
+-   **Issue 4: Production DB Sync (P1)**
+    -   **Attempted fixes:** Direct connection is blocked by the user's firewall.
+    -   **Next debug checklist:** This is no longer a high priority since the user has provided a DB dump. Continue using the local restored DB.
+    -   **Why fix this issue and what will be achieved with the fix?** Enables direct debugging of production data.
     -   **Status:** BLOCKED
     -   **Is recurring issue?** Y
     -   **Should Test frontend/backend/both after fix?** Backend.
-    -   **Blocked on other issue:** Network access to the user's production MongoDB.
+    -   **Blocked on other issue:** Network access.
 
--   **Issue 2: Experian/Equifax API Integration Activation (P1)**
-    -   **Attempted fixes:** None. Feature exists but is non-functional.
+-   **Issue 5: Experian/Equifax API Integration Activation (P1)**
+    -   **Attempted fixes:** None.
     -   **Next debug checklist:** Await a fix from the external API provider.
     -   **Why fix this issue and what will be achieved with the fix?** Enables a core part of the customer profile analysis.
     -   **Status:** BLOCKED
@@ -55,42 +76,17 @@ The application is a full-stack CRM for vehicle loans and inspections.
     -   **Should Test frontend/backend/both after fix?** Both.
     -   **Blocked on other issue:** External API Provider.
 
--   **Issue 3: Bengaluru Migration Failure in Production (P1)**
-    -   **Attempted fixes:** Agent fixed the underlying code to be more robust and added better logging. User was instructed to deploy the code, which includes an automatic migration that runs on server startup.
-    -   **Next debug checklist:** User needs to confirm if deploying the latest code to  solved the problem. If not, the agent must provide the user with specific MongoDB queries to run manually to resolve the data conflict.
-    -   **Why fix this issue and what will be achieved with the fix?** Resolves a critical data integrity issue blocking city management in production.
-    -   **Status:** USER VERIFICATION PENDING
-    -   **Is recurring issue?** Y
-    -   **Should Test frontend/backend/both after fix?** Backend.
-    -   **Blocked on other issue:** User action (deployment and verification).
-
--   **Issue 4: Data quality in production DB (inspections with missing vehicle data) (P1)**
-    -   **Attempted fixes:** The root cause was fixed by updating the  model and inspection creation logic to prevent *new* inspections from having missing data. A diagnostic script was created at .
-    -   **Next debug checklist:** Guide the user to run the diagnostic script on their production DB to identify affected records. Then, create a new script to backfill the missing data for existing inspections, likely by re-triggering the (now cached) Vaahan API lookup.
-    -   **Why fix this issue and what will be achieved with the fix?** Fixes the UI of the mechanic app for existing inspections and improves overall data quality.
-    -   **Status:** IN PROGRESS
-    -   **Is recurring issue?** Y
-    -   **Should Test frontend/backend/both after fix?** Backend (for the script), Frontend (to verify mechanic app UI).
-    -   **Blocked on other issue:** None.
-
--   **Issue 5: Cleanup of old duplicate customer/inspection records (P2)**
+-   **Issue 6: Cleanup of old duplicate customer/inspection records (P2)**
     -   **Attempted fixes:** None.
-    -   **Next debug checklist:** Write a one-time script to find and merge/remove duplicate customer and inspection records from the database.
-    -   **Why fix this issue and what will be achieved with the fix?** Improves data integrity and analytics accuracy.
+    -   **Next debug checklist:** Write a one-time script to find and merge/remove duplicate records.
+    -   **Why fix this issue and what will be achieved with the fix?** Improves data integrity.
     -   **Status:** NOT STARTED
     -   **Is recurring issue?** N
     -   **Should Test frontend/backend/both after fix?** Backend.
 
 **In progress Task List**:
--   **Task 1: Complete and test the Loan Eligibility Engine (P0)**
-    -   **Where to resume:** Resolve the routing issue for the  endpoint in . The endpoint is being intercepted by another route. After fixing the routing, thoroughly test the complex eligibility logic.
-    -   **What will be achieved with this?** A fully functional eligibility engine that automatically matches customers to suitable loan providers based on a comprehensive set of rules.
-    -   **Status:** IN PROGRESS
-    -   **Should Test frontend/backend/both after fix?** Backend.
-    -   **Blocked on something:** The FastAPI routing conflict.
-
--   **Task 2: Complete  refactoring (P1)**
-    -   **Where to resume:** Migrate the remaining  endpoints from  into their own dedicated router file in the  directory.
+-   **Task 1: Complete  refactoring (P1)**
+    -   **Where to resume:** Migrate the remaining  endpoints from  into their own dedicated router file.
     -   **What will be achieved with this?** Reduces technical debt and improves backend code maintainability.
     -   **Status:** IN PROGRESS
     -   **Should Test frontend/backend/both after fix?** Backend.
@@ -98,10 +94,10 @@ The application is a full-stack CRM for vehicle loans and inspections.
 **Upcoming and Future Tasks**
 **Upcoming Tasks:**
 *   **(P1) PDF Export for Credit Report:** Add a button to download the credit report as a PDF.
-*   **(P1) Refactor Large Components:** Break down  and the new .
+*   **(P1) Refactor Large Components:** Break down .
 *   **(P2) Create Charge Types Master Page:** Build a dedicated UI for managing loan charge types.
 *   **(P2) Share Report Button:** Implement the share functionality on .
-*   **(P2) Data Migration Scripts:** Create scripts to help the user migrate essential data from their staging DB to their new production DB.
+*   **(P2) Data Migration Scripts:** Create scripts to help the user migrate essential data from staging to production.
 
 **Future Tasks:**
 *   Integrate with real bank APIs for loan processing.
@@ -112,14 +108,14 @@ The application is a full-stack CRM for vehicle loans and inspections.
 *   Support Balance Transfer (BT) loans.
 
 **Completed work in this session**
--   **Mechanic App Regression Fixed:** Resolved a critical bug where the mechanic app UI was broken due to an incomplete route refactoring. The data transformation logic was restored in .
--   **Refactoring Safeguards Implemented:** Added a Pydantic  to the mechanic inspections API and created a new API contract test file () to prevent future regressions.
--   **Vaahan API Caching Layer:** Implemented a robust caching mechanism for vehicle data, reducing external API calls by storing results in a local  MongoDB collection.
--   **Loans Page UI/UX Overhaul:** Merged two modals into a single  with tabs, reordered columns for better workflow, and fixed a broken date filter in the backend ().
--   **Data Model Integrity Fixes:** Added missing vehicle fields to the  model () to stop data loss during lead creation.
--   **Auto City Mapping Feature:** Implemented logic in the  endpoint to automatically parse a city from an address, check it against the City Master, and create a new entry if needed.
--   **Environment Management Guidance:** Provided the user with a detailed walkthrough on setting up and managing separate staging and production environments on the Emergent platform.
--   **Loan Eligibility Engine (Initiated):** Analyzed bank PDFs, greatly expanded the  model (), and seeded detailed rules for four banks into .
+-   **Loan Eligibility Engine Backend Fixed:** Resolved a critical Python name-shadowing bug in , making the  endpoint fully functional.
+-   **Comprehensive Timezone Fix Implemented:** Fixed date filtering inconsistencies across the application by making the backend timezone-aware and passing the user's timezone offset from the frontend.
+-   **Customer Data Repair Tools Created:** Implemented a new API () to fix orphaned inspections caused by inconsistent phone number formats and added a Repair button to the customer UI.
+-   **Production Bug Fix (Multiple Packages):** Fixed a webhook idempotency issue in  to allow multiple inspection packages for the same lead.
+-   **Production Bug Fix (HR Module):** Fixed the API in  to correctly handle updates to employee-assigned cities.
+-   **Inspection City Auto-Detection Fixed:** Resolved a frontend bug in  where the city field failed to auto-update. The fix involved correcting a component prop name from  to .
+-   **Production DB Restored:** Successfully restored a user-provided database dump into the preview environment.
+-   **Code Cleanup:** Removed obsolete frontend modals (, ) and fixed various linting errors.
 
 **Earlier issues found/mentioned but not fixed**
 -   The pending issues list covers all known unfixed issues.
@@ -127,101 +123,89 @@ The application is a full-stack CRM for vehicle loans and inspections.
 **Known issue recurrence from previous fork**
 -   **Issue recurrence in previous fork:** Critical Video Upload Failure.
 -   **Recurrence count:** High.
--   **Status:** NOT STARTED. This issue was not addressed in this session.
+-   **Status:** NOT STARTED.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **FastAPI Routing & Regressions:** Debugging how  includes and route ordering can lead to unintended overrides, causing regressions.
--   **API Contract Enforcement:** Using Pydantic  as a safeguard to ensure backend API responses adhere to a strict structure, preventing silent failures in the frontend.
--   **API Caching Strategy:** Implementing a database-first caching layer ( collection) to reduce latency and costs associated with external API calls (Vaahan).
--   **Complex Data Modeling:** Translating business rules from PDF documents into a structured, hierarchical Pydantic model () for a calculation engine.
--   **Environment Management Strategy:** Architecting a development workflow using separate platform jobs for staging and production, with GitHub as the bridge for code promotion.
--   **React UI Refactoring:** Merging multiple components/modals into a single, more user-friendly tabbed interface ().
+-   **Timezone-Aware Date Handling:** Using  on the backend and  on the frontend to correctly handle date queries across different timezones.
+-   **Data Normalization & Repair:** Implementing logic to handle data inconsistencies (e.g.,  phone prefix) and creating APIs to repair existing corrupted data.
+-   **React Prop Debugging:** Identifying and fixing bugs caused by incorrect prop names being passed between React components ( vs. ).
+-   **Python Name Shadowing:** Debugging issues where a function is unintentionally overridden by another function with the same name in the same scope.
+-   **FastAPI Request Body Handling:** Refactoring endpoints to accept structured data via Pydantic models in the request body instead of simple query parameters.
 
 **key DB schema**
--   **leads**: Added , , .
--   **vehicles**: New collection to cache Vaahan API responses. Schema mirrors the Vaahan API output.
--   **cities**: Added  to flag cities created automatically from addresses.
--   **bank_master**:  field is now a deeply nested object containing dozens of new criteria like , , , , , , etc.
+-   No database schema changes were made in this session.
 
 **All files of reference**
--    (Heavily modified for eligibility engine and bug fixes)
--    (Fixed the critical regression here)
--    (Heavily modified for eligibility engine models)
--    (Modified for caching and city mapping)
--    (Modified to fix a data loss bug)
--    (Heavily modified for UI/UX changes)
--    (New file for merged modal)
--    (Modified for city mapping feature)
--    (New test file)
+-   
+-   
+-   
+-   
+-   
+-   
+-   
+-   
 
 **Areas that need refactoring**:
--   **:** This file has grown to over 4,000 lines and is now a monolith. The eligibility engine, bank seeding, and loan CRUD operations should be extracted into separate service files or sub-routers to improve maintainability.
--   **:** This component is over 3,300 lines and is extremely difficult to maintain. It should be broken down into smaller, focused child components.
--   **Obsolete Components:**  and  in  are now unused and should be deleted.
+-   **:** Still over 4,000 lines. The eligibility engine and other logic should be extracted.
+-   **:** Still over 3,000 lines and needs to be broken into smaller components.
 
 **key api endpoints**
 -    (FIXED)
--    (MODIFIED for auto city mapping)
--    (FIXED date filtering)
--    (MODIFIED to use caching)
--    (NEW, IN-PROGRESS, route is broken)
--    (NEW, uses caching)
+-    (CREATED)
+-    (FIXED)
+-    (MODIFIED - timezone-aware)
+-    (MODIFIED - timezone-aware)
+-    (MODIFIED - timezone-aware)
+-    (Frontend logic FIXED)
 
 **Critical Info for New Agent**
-1.  **Priority 1 is the Loan Eligibility Engine:** The immediate task is to debug the  endpoint. It's currently throwing a  because of a routing conflict in FastAPI. Investigate the route registration order in  and .
-2.  **Production DB is Inaccessible:** You cannot connect to the user's production DB directly. All production data issues must be resolved by providing the user with scripts or manual instructions to execute on their end.
-3.  **Refactoring requires extreme caution:** A major regression was caused by an incomplete refactoring of  routes. When refactoring other parts of the app (like the planned  routes), ensure all transformation logic is moved correctly and use the new API contract test () as a template for new tests.
-4.  **User has separate environments:** The user is aware of how to create separate staging and production jobs. The current job is the **staging** environment. All deployments from this job go to .
+1.  **Test with Production Data:** The preview environment is running on a restored dump of the user's production database. All testing should be done against this data to ensure fixes are comprehensive.
+2.  **User Reports Are Priority:** The user is actively testing in their staging environment () and reporting critical bugs with screenshots. These reports should be prioritized over previously planned tasks.
+3.  **Timezone Fix is Core Logic:** A major fix was implemented for timezone handling. All date-filtered API calls now depend on a  parameter sent from the frontend. Be aware of this when working with any date-related features.
+4.  **Data Repair via API:** A robust API endpoint () is now the standard way to fix customer data linkage issues. It is more reliable than running one-off scripts in the user's environment.
 
 **documents and test reports created in this job**
 -   
 -   
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **LATEST:** User asks for guidance on creating a new production environment () and how to manage deployments between staging and production. (Status: **RESOLVED**, agent provided detailed instructions).
-2.  User requests a feature to auto-detect and map cities to the City Master when an inspection address is updated. (Status: **RESOLVED**, feature implemented).
-3.  User asks how to prevent the mechanic app regression from happening again during future refactoring. (Status: **RESOLVED**, agent implemented safeguards).
-4.  User asks why the mechanic app broke when no changes were made to its code. (Status: **RESOLVED**, agent explained the backend refactoring regression).
-5.  User confirms the new APK () fixed the mechanic app UI. (Status: **RESOLVED**).
-6.  User asks for the latest APK and confirms the backend is ready for deployment. (Status: **RESOLVED**).
-7.  User provides a crucial suggestion to cache Vaahan API data in the local DB to avoid repeated calls. (Status: **RESOLVED**, feature implemented).
-8.  User asks for a script to identify inspections with missing data and to make vehicle details mandatory. (Status: **RESOLVED**, root cause fixed and diagnostic script created).
-9.  User provides screenshot of broken mechanic app UI, showing placeholder data. (Status: **RESOLVED**).
-10. User requests UI changes for the Loans tab: merge modals, reorder columns, and fix the date filter. (Status: **RESOLVED**).
-
-- **Pending Human Message:** User has provided bank eligibility PDFs and given approval to build the full eligibility engine (the current ).
+1.  **LATEST:** User reports that even after a fix, changing an inspection's address to Pune Railway Station does not correctly auto-update the city to Pune in the UI. (Status: **IN PROGRESS**)
+2.  User reports two issues: 1) Inspection edit modal city doesn't update, and 2) HR module city change fails. (Status: **PARTIALLY RESOLVED**, HR module fixed, city update still in progress)
+3.  User asks to investigate phone number format () as a potential cause for the  customer issue. (Status: **RESOLVED**)
+4.  User reports that the  customer issue is not fixed after deploying the code and running the provided script, which failed. (Status: **RESOLVED**, a new API-based fix was provided)
+5.  User reports a customer () was created without inspection or payment data. (Status: **RESOLVED**, repair tools created)
+6.  User reports a widespread date inconsistency issue where leads appear under the wrong day's filter (e.g., Yesterday instead of Today). (Status: **RESOLVED**)
+7.  User provides three new production issues to investigate related to packages, HR module, and missing fields in the inspection edit modal. (Status: **RESOLVED**)
+8.  User provides approval to prioritize fixing the eligibility engine. (Status: **RESOLVED**)
 
 **Project Health Check:**
 -   **Broken:**
     -   Credit score check feature (blocked by external API provider).
-    -   Agent's connection to the user's production database.
 -   **Mocked:**
     -   Core AI analysis logic in the Customer Profile feature.
 -   **Blocked:**
-    -   Production DB to Preview sync (awaiting network access).
     -   Experian/Equifax API Integration (awaiting external provider).
 
 **3rd Party Integrations**
--   **OpenAI/Gemini (via Emergent LLM Key):** Skeleton service exists for bank statement analysis.
--   **Invincible Ocean API:** For Vaahan (now cached), Experian (blocked), and Equifax (blocked).
+-   **OpenAI/Gemini (via Emergent LLM Key):** Skeleton service for bank statement analysis.
+-   **Invincible Ocean API:** For Vaahan (cached), Experian (blocked), and Equifax (blocked).
 -   **Firebase:** For media storage.
--   **Expo Application Services (EAS):** Used via CLI to build the React Native app. Agent is logged in as .
+-   **Expo Application Services (EAS):** Used to build the React Native app.
 
 **Testing status**
 -   **Testing agent used after significant changes:** NO
 -   **Troubleshoot agent used after agent stuck in loop:** NO
--   **Test files created:** []
--   **Known regressions:** A major regression in the mechanic API was introduced and fixed in this session.
+-   **Test files created:** [, ]
+-   **Known regressions:** None in this session.
 
 **Credentials to test flow:**
 -   **CRM Admin Login:**  / 
 -   **Loan Executive Login:**  / 
--   **EAS CLI:** Logged in as  (Password: )
 
 **What agent forgot to execute**
--   The agent did not create a script to fix the *existing* inspections in the production database that have missing vehicle data, although the root cause for *new* inspections was fixed.
--   The agent did not address the Critical Video Upload Failure issue mentioned in the previous handoff summary.
--   The agent did not clean up the now-obsolete  and  files after creating the new .</analysis>
+-   After the final fix for the city auto-detection issue (correcting the prop name), the agent did not run a conclusive test to confirm that selecting Pune Railway Station would now correctly set the city to Pune.
+-   The agent did not progress on the original list of upcoming tasks (e.g., PDF export,  refactoring) due to the high priority of user-reported production bugs.
+-   The Critical Video Upload Failure issue from the previous fork remains unaddressed.</analysis>
