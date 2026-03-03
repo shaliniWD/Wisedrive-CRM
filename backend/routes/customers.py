@@ -994,6 +994,28 @@ async def _repair_customer(db, customer: dict, current_user: dict):
             repairs["payment_data_recovered"] = True
             repairs["details"].append(f"Recovered payment data from lead: payment_id={lead_payment_id[-8:]}")
     
+    # 0b. NEW: Link inspections by lead's razorpay_payment_id
+    if lead and lead.get("razorpay_payment_id"):
+        result = await db.inspections.update_many(
+            {
+                "razorpay_payment_id": lead.get("razorpay_payment_id"),
+                "$or": [
+                    {"customer_id": {"$exists": False}},
+                    {"customer_id": None},
+                    {"customer_id": ""},
+                    {"customer_id": {"$ne": customer_id}}
+                ]
+            },
+            {"$set": {
+                "customer_id": customer_id,
+                "lead_id": lead_id,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        if result.modified_count > 0:
+            repairs["inspections_linked"] += result.modified_count
+            repairs["details"].append(f"Linked {result.modified_count} inspection(s) by lead's payment_id")
+    
     # 1. Link orphaned inspections by lead_id
     if lead_id:
         result = await db.inspections.update_many(
