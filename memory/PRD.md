@@ -53,6 +53,8 @@ The application is a full-stack CRM for vehicle loans and inspections. Key featu
 - ✅ **Multi-slot package restoration** - Fixed cleanup script to preserve legitimate multi-inspection packages
 - ✅ **Inspections sorting fixed** - Scheduled inspections now sorted by `scheduled_date` + `scheduled_time` descending
 - ✅ **Data cleanup for +919830035928** - Fixed from 10 incorrect inspections to 5 correct ones
+- ✅ **CRM-Mechanic App Integration Fixed** - Mechanics now only see inspections assigned to them. Unassigned inspections no longer appear in mechanic app.
+- ✅ **Unassignment Logic Enhanced** - When mechanic is unassigned, status resets to NEW_INSPECTION (if was ASSIGNED/ACCEPTED/REJECTED) and inspection returns to CRM pool
 
 ### Bug Fixes (Dec 2025)
 - ✅ Lead city auto-detection (case-insensitive AD ID lookup)
