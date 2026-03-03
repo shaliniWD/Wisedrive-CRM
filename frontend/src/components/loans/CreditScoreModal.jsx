@@ -1032,32 +1032,70 @@ const CreditScoreModal = ({ isOpen, onClose, lead, onUpdate }) => {
   });
   const [activeReport, setActiveReport] = useState(null);
   const [error, setError] = useState(null);
+  const [showFetchMenu, setShowFetchMenu] = useState(false);
+  const [loadingCached, setLoadingCached] = useState(false);
   
+  // Load cached reports on modal open
   useEffect(() => {
-    if (isOpen && lead) {
-      // Check if lead has customer info for credit reports
-      if (!lead.pan_number) {
-        setError('Please add PAN number in Customer Details before fetching credit reports');
-      } else {
+    const loadCachedReports = async () => {
+      if (isOpen && lead?.pan_number) {
+        setLoadingCached(true);
         setError(null);
+        
+        try {
+          const { data } = await loansApi.getLatestReports(lead.pan_number);
+          
+          if (data.reports) {
+            const cachedReports = {};
+            let firstProvider = null;
+            
+            ['cibil', 'equifax', 'experian', 'crif'].forEach(provider => {
+              if (data.reports[provider]) {
+                cachedReports[provider] = {
+                  success: true,
+                  credit_score: data.reports[provider].credit_score,
+                  parsed_report: data.reports[provider].parsed_report,
+                  pdf_link: data.reports[provider].pdf_link,
+                  fetched_at: data.reports[provider].fetched_at,
+                  cached: true
+                };
+                if (!firstProvider) firstProvider = provider;
+              }
+            });
+            
+            setReports(prev => ({ ...prev, ...cachedReports }));
+            if (firstProvider) setActiveReport(firstProvider);
+          }
+        } catch (err) {
+          console.log('No cached reports found');
+        } finally {
+          setLoadingCached(false);
+        }
+      } else if (isOpen && !lead?.pan_number) {
+        setError('Please add PAN number in Customer Details before fetching credit reports');
       }
-      
-      // Load any existing credit reports
-      if (lead.credit_score_full_report) {
-        setReports(prev => ({ ...prev, cibil: lead.credit_score_full_report }));
-        setActiveReport('cibil');
-      }
+    };
+    
+    if (isOpen) {
+      loadCachedReports();
     }
-  }, [isOpen, lead]);
+  }, [isOpen, lead?.pan_number]);
   
-  const fetchReport = async (provider) => {
+  const fetchReport = async (provider, forceFetch = false) => {
     if (!lead.pan_number) {
       toast.error('Please add PAN number in Customer Details first');
       return;
     }
     
+    // If already have cached data and not force fetching, just show it
+    if (reports[provider] && !forceFetch) {
+      setActiveReport(provider);
+      return;
+    }
+    
     setFetchingProvider(provider);
     setError(null);
+    setShowFetchMenu(false);
     
     try {
       const firstName = lead.credit_first_name || lead.customer_name?.split(' ')[0] || '';
@@ -1099,7 +1137,7 @@ const CreditScoreModal = ({ isOpen, onClose, lead, onUpdate }) => {
       }
       
       if (result?.data?.success) {
-        setReports(prev => ({ ...prev, [provider]: result.data }));
+        setReports(prev => ({ ...prev, [provider]: { ...result.data, cached: false } }));
         setActiveReport(provider);
         toast.success(`${provider.toUpperCase()} report fetched successfully`);
         onUpdate();
@@ -1110,19 +1148,15 @@ const CreditScoreModal = ({ isOpen, onClose, lead, onUpdate }) => {
       console.error(`${provider} fetch error:`, err);
       const errorMsg = err.response?.data?.error || err.response?.data?.detail || `Failed to fetch ${provider.toUpperCase()} report`;
       toast.error(errorMsg);
-      
-      // Use sample data for preview
-      if (provider === 'equifax') {
-        setReports(prev => ({ ...prev, [provider]: { ...SAMPLE_EQUIFAX_REPORT, creditScore: SAMPLE_EQUIFAX_REPORT.creditScore } }));
-        setActiveReport(provider);
-        toast.info('Loaded sample data for preview');
-      } else if (provider === 'experian') {
-        setReports(prev => ({ ...prev, [provider]: { ...SAMPLE_EXPERIAN_REPORT, creditScore: SAMPLE_EXPERIAN_REPORT.creditScore } }));
-        setActiveReport(provider);
-        toast.info('Loaded sample data for preview');
-      }
     } finally {
       setFetchingProvider(null);
+    }
+  };
+  
+  const fetchAllReports = async () => {
+    setShowFetchMenu(false);
+    for (const provider of ['cibil', 'equifax', 'experian', 'crif']) {
+      await fetchReport(provider, true);
     }
   };
   
@@ -1130,6 +1164,7 @@ const CreditScoreModal = ({ isOpen, onClose, lead, onUpdate }) => {
     setReports({ cibil: null, equifax: null, experian: null, crif: null }); 
     setActiveReport(null);
     setError(null);
+    setShowFetchMenu(false);
     onClose(); 
   };
   
@@ -1139,6 +1174,8 @@ const CreditScoreModal = ({ isOpen, onClose, lead, onUpdate }) => {
     { id: 'experian', name: 'Experian', color: 'bg-blue-100 text-blue-700 border-blue-200' },
     { id: 'crif', name: 'CRIF', color: 'bg-green-100 text-green-700 border-green-200' }
   ];
+  
+  const hasAnyReport = Object.values(reports).some(r => r !== null);
   
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -1151,11 +1188,61 @@ const CreditScoreModal = ({ isOpen, onClose, lead, onUpdate }) => {
               <p className="text-sm text-slate-500">{lead?.customer_name} • {lead?.pan_number || 'No PAN'}</p>
             </div>
           </div>
-          <button onClick={handleClose} className="p-2 hover:bg-slate-100 rounded-lg"><X className="h-5 w-5 text-slate-500" /></button>
+          
+          <div className="flex items-center gap-2">
+            {/* Fetch Again Button with Dropdown */}
+            {hasAnyReport && !error && (
+              <div className="relative">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowFetchMenu(!showFetchMenu)}
+                  className="text-xs"
+                  disabled={fetchingProvider !== null}
+                >
+                  <RefreshCw className={`h-3.5 w-3.5 mr-1 ${fetchingProvider ? 'animate-spin' : ''}`} />
+                  Fetch Again
+                  <ChevronDown className="h-3 w-3 ml-1" />
+                </Button>
+                
+                {showFetchMenu && (
+                  <div className="absolute right-0 mt-1 w-48 bg-white border border-slate-200 rounded-lg shadow-lg z-20">
+                    <div className="p-1">
+                      <button
+                        onClick={fetchAllReports}
+                        className="w-full px-3 py-2 text-left text-sm hover:bg-slate-100 rounded flex items-center gap-2"
+                      >
+                        <RefreshCw className="h-4 w-4" />
+                        Fetch All Reports
+                      </button>
+                      <div className="border-t border-slate-100 my-1" />
+                      {providers.map(provider => (
+                        <button
+                          key={provider.id}
+                          onClick={() => fetchReport(provider.id, true)}
+                          className="w-full px-3 py-2 text-left text-sm hover:bg-slate-100 rounded flex items-center gap-2"
+                        >
+                          <span className={`w-2 h-2 rounded-full ${provider.color.split(' ')[0]}`} />
+                          Fetch {provider.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            <button onClick={handleClose} className="p-2 hover:bg-slate-100 rounded-lg"><X className="h-5 w-5 text-slate-500" /></button>
+          </div>
         </div>
         
         <div className="p-5">
-          {error ? (
+          {loadingCached ? (
+            <div className="text-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-500" />
+              <p className="text-sm text-slate-500 mt-2">Loading saved reports...</p>
+            </div>
+          ) : error ? (
             <div className="p-4 bg-amber-50 rounded-lg border border-amber-200 mb-4">
               <div className="flex items-start gap-2">
                 <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
@@ -1186,16 +1273,24 @@ const CreditScoreModal = ({ isOpen, onClose, lead, onUpdate }) => {
                         <>
                           <p className="font-semibold">{provider.name}</p>
                           {reports[provider.id]?.credit_score && (
-                            <p className="text-2xl font-bold mt-1">{reports[provider.id].credit_score}</p>
+                            <>
+                              <p className="text-2xl font-bold mt-1">{reports[provider.id].credit_score}</p>
+                              {reports[provider.id]?.cached && (
+                                <p className="text-[10px] text-slate-500 mt-0.5">Saved</p>
+                              )}
+                            </>
                           )}
                           {!reports[provider.id] && <p className="text-xs text-slate-500 mt-1">Click to fetch</p>}
                         </>
                       )}
                     </button>
-                    {/* PDF Button */}
+                    {/* PDF Button - opens in new tab */}
                     {reports[provider.id]?.pdf_link && (
                       <button
-                        onClick={() => window.open(reports[provider.id].pdf_link, '_blank')}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.open(reports[provider.id].pdf_link, '_blank', 'noopener,noreferrer');
+                        }}
                         className="absolute -top-2 -right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 shadow-lg"
                         title="View PDF Report"
                       >
