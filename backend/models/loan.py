@@ -648,6 +648,12 @@ class LoanLeadUpdate(BaseModel):
     customer_name: Optional[str] = None
     customer_phone: Optional[str] = None
     customer_email: Optional[str] = None
+    # Credit report fields
+    pan_number: Optional[str] = None
+    credit_first_name: Optional[str] = None
+    credit_last_name: Optional[str] = None
+    gender: Optional[str] = None
+    email: Optional[str] = None
 
 
 class VehicleLoanDetailsCreate(BaseModel):
