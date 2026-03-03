@@ -501,6 +501,307 @@ class SurepassService:
         
         return parsed
     
+    async def fetch_experian_report(
+        self,
+        name: str,
+        pan: str,
+        mobile: str,
+        consent: str = "Y"
+    ) -> Dict[str, Any]:
+        """
+        Fetch Experian credit report (JSON format)
+        
+        Args:
+            name: Customer full name
+            pan: Customer PAN number
+            mobile: Customer mobile number
+            consent: 'Y' for consent given
+            
+        Returns:
+            Dict with credit score, report data, and status
+        """
+        if not self.is_configured():
+            return {
+                "success": False,
+                "error": "Surepass API not configured",
+                "error_code": "NOT_CONFIGURED"
+            }
+        
+        # Normalize mobile
+        mobile_clean = mobile.replace("+91", "").replace(" ", "").replace("-", "")
+        if mobile_clean.startswith("91") and len(mobile_clean) == 12:
+            mobile_clean = mobile_clean[2:]
+        
+        payload = {
+            "name": name.strip(),
+            "pan": pan.upper().strip(),
+            "mobile": mobile_clean,
+            "consent": consent
+        }
+        
+        logger.info(f"Fetching Experian report for PAN: {pan[:4]}****")
+        
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.post(
+                    f"{self.BASE_URL}{self.ENDPOINTS['experian_json']}",
+                    headers=self._get_headers(),
+                    json=payload
+                )
+                
+                result = response.json()
+                
+                if response.status_code == 200 and result.get("success"):
+                    data = result.get("data", {})
+                    return {
+                        "success": True,
+                        "provider": "Experian",
+                        "client_id": data.get("client_id"),
+                        "credit_score": data.get("credit_score"),
+                        "credit_report": data.get("credit_report", {}),
+                        "raw_response": result,
+                        "fetched_at": datetime.now(timezone.utc).isoformat()
+                    }
+                else:
+                    logger.error(f"Experian API error: {result.get('message')}")
+                    return {
+                        "success": False,
+                        "error": result.get("message", "Failed to fetch credit report"),
+                        "error_code": result.get("message_code", "UNKNOWN"),
+                        "status_code": response.status_code
+                    }
+                    
+        except httpx.TimeoutException:
+            logger.error("Experian API timeout")
+            return {
+                "success": False,
+                "error": "Request timed out. Please try again.",
+                "error_code": "TIMEOUT"
+            }
+        except Exception as e:
+            logger.error(f"Experian API exception: {str(e)}")
+            return {
+                "success": False,
+                "error": str(e),
+                "error_code": "EXCEPTION"
+            }
+    
+    async def fetch_experian_pdf(
+        self,
+        name: str,
+        pan: str,
+        mobile: str,
+        consent: str = "Y"
+    ) -> Dict[str, Any]:
+        """
+        Fetch Experian credit report (PDF format)
+        
+        Returns:
+            Dict with credit score and PDF download link
+        """
+        if not self.is_configured():
+            return {
+                "success": False,
+                "error": "Surepass API not configured",
+                "error_code": "NOT_CONFIGURED"
+            }
+        
+        # Normalize mobile
+        mobile_clean = mobile.replace("+91", "").replace(" ", "").replace("-", "")
+        if mobile_clean.startswith("91") and len(mobile_clean) == 12:
+            mobile_clean = mobile_clean[2:]
+        
+        payload = {
+            "name": name.strip(),
+            "pan": pan.upper().strip(),
+            "mobile": mobile_clean,
+            "consent": consent
+        }
+        
+        logger.info(f"Fetching Experian PDF report for PAN: {pan[:4]}****")
+        
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.post(
+                    f"{self.BASE_URL}{self.ENDPOINTS['experian_pdf']}",
+                    headers=self._get_headers(),
+                    json=payload
+                )
+                
+                result = response.json()
+                
+                if response.status_code == 200 and result.get("success"):
+                    data = result.get("data", {})
+                    return {
+                        "success": True,
+                        "provider": "Experian",
+                        "client_id": data.get("client_id"),
+                        "credit_score": data.get("credit_score"),
+                        "pdf_link": data.get("credit_report_link"),
+                        "fetched_at": datetime.now(timezone.utc).isoformat()
+                    }
+                else:
+                    logger.error(f"Experian PDF API error: {result.get('message')}")
+                    return {
+                        "success": False,
+                        "error": result.get("message", "Failed to fetch PDF report"),
+                        "error_code": result.get("message_code", "UNKNOWN"),
+                        "status_code": response.status_code
+                    }
+                    
+        except httpx.TimeoutException:
+            logger.error("Experian PDF API timeout")
+            return {
+                "success": False,
+                "error": "Request timed out. Please try again.",
+                "error_code": "TIMEOUT"
+            }
+        except Exception as e:
+            logger.error(f"Experian PDF API exception: {str(e)}")
+            return {
+                "success": False,
+                "error": str(e),
+                "error_code": "EXCEPTION"
+            }
+    
+    def parse_experian_report(self, credit_report: dict) -> Dict[str, Any]:
+        """
+        Parse Experian credit report into a structured format for UI display
+        
+        Args:
+            credit_report: Raw credit report dict from API
+            
+        Returns:
+            Structured dict with parsed data
+        """
+        if not credit_report:
+            return {}
+        
+        parsed = {
+            "personal_info": {},
+            "id_info": [],
+            "phone_info": [],
+            "address_info": [],
+            "score_info": {},
+            "accounts": [],
+            "enquiries": [],
+            "summary": {}
+        }
+        
+        try:
+            # Credit Profile Header
+            header = credit_report.get("CreditProfileHeader", {})
+            parsed["report_info"] = {
+                "report_date": str(header.get("ReportDate", "")),
+                "report_number": header.get("ReportNumber"),
+                "version": header.get("Version")
+            }
+            
+            # Current Application Details
+            current_app = credit_report.get("Current_Application", {})
+            app_details = current_app.get("Current_Application_Details", {})
+            applicant = app_details.get("Current_Applicant_Details", {})
+            
+            # Personal Info
+            parsed["personal_info"] = {
+                "first_name": applicant.get("First_Name"),
+                "last_name": applicant.get("Last_Name"),
+                "name": f"{applicant.get('First_Name', '')} {applicant.get('Last_Name', '')}".strip(),
+                "gender": "Male" if applicant.get("Gender_Code") == 1 else "Female" if applicant.get("Gender_Code") == 2 else "Unknown",
+                "pan": applicant.get("IncomeTaxPan"),
+                "birth_date": str(applicant.get("Date_Of_Birth_Applicant", ""))
+            }
+            
+            # Phone Info
+            if applicant.get("MobilePhoneNumber"):
+                parsed["phone_info"].append({
+                    "number": str(applicant.get("MobilePhoneNumber")),
+                    "type": "Mobile"
+                })
+            if applicant.get("Telephone_Number_Applicant_1st"):
+                parsed["phone_info"].append({
+                    "number": applicant.get("Telephone_Number_Applicant_1st"),
+                    "type": applicant.get("Telephone_Type", "Unknown")
+                })
+            
+            # Address Info
+            address_details = app_details.get("Current_Applicant_Address_Details", {})
+            if address_details:
+                address_parts = [
+                    address_details.get("FlatNoPlotNoHouseNo"),
+                    address_details.get("BldgNoSocietyName"),
+                    address_details.get("RoadNoNameAreaLocality"),
+                    address_details.get("Landmark")
+                ]
+                full_address = ", ".join([p for p in address_parts if p])
+                parsed["address_info"].append({
+                    "address": full_address,
+                    "city": address_details.get("City"),
+                    "state": address_details.get("State"),
+                    "pin_code": address_details.get("PINCode"),
+                    "country": address_details.get("Country_Code")
+                })
+            
+            # ID Info
+            if applicant.get("IncomeTaxPan"):
+                parsed["id_info"].append({
+                    "type": "PAN",
+                    "number": applicant.get("IncomeTaxPan")
+                })
+            
+            # Score Info
+            score_data = credit_report.get("SCORE", {})
+            parsed["score_info"] = {
+                "score": score_data.get("FCIREXScore"),
+                "confidence_level": score_data.get("FCIREXScoreConfidLevel")
+            }
+            
+            # CAIS Account Summary
+            cais_account = credit_report.get("CAIS_Account", {})
+            cais_summary = cais_account.get("CAIS_Summary", {})
+            credit_account = cais_summary.get("Credit_Account", {})
+            outstanding = cais_summary.get("Total_Outstanding_Balance", {})
+            
+            parsed["summary"] = {
+                "total_accounts": credit_account.get("CreditAccountTotal", 0),
+                "active_accounts": credit_account.get("CreditAccountActive", 0),
+                "closed_accounts": credit_account.get("CreditAccountClosed", 0),
+                "default_accounts": credit_account.get("CreditAccountDefault", 0),
+                "outstanding_balance_secured": outstanding.get("Outstanding_Balance_Secured", 0),
+                "outstanding_balance_unsecured": outstanding.get("Outstanding_Balance_UnSecured", 0),
+                "outstanding_balance_total": outstanding.get("Outstanding_Balance_All", 0)
+            }
+            
+            # CAPS Summary (Credit Applications)
+            caps = credit_report.get("TotalCAPS_Summary", {})
+            parsed["caps_summary"] = {
+                "last_7_days": caps.get("TotalCAPSLast7Days", 0),
+                "last_30_days": caps.get("TotalCAPSLast30Days", 0),
+                "last_90_days": caps.get("TotalCAPSLast90Days", 0),
+                "last_180_days": caps.get("TotalCAPSLast180Days", 0)
+            }
+            
+            # Parse Account Details
+            account_details = cais_account.get("CAIS_Account_DETAILS", [])
+            for acc in account_details[:20]:  # Limit to 20 for performance
+                parsed["accounts"].append({
+                    "member": acc.get("Subscriber_Name", "Not Disclosed"),
+                    "account_type": acc.get("Account_Type"),
+                    "ownership": acc.get("Ownership_Indicator"),
+                    "date_opened": str(acc.get("Open_Date", "")),
+                    "date_closed": str(acc.get("Date_Closed", "")),
+                    "highest_credit": acc.get("Highest_Credit_or_Original_Loan_Amount", 0),
+                    "current_balance": acc.get("Current_Balance", 0),
+                    "amount_overdue": acc.get("Amount_Past_Due", 0),
+                    "payment_status": acc.get("Payment_History_Profile"),
+                    "account_status": acc.get("Account_Status")
+                })
+            
+        except Exception as e:
+            logger.error(f"Error parsing Experian report: {str(e)}")
+        
+        return parsed
+    
     def parse_credit_report(self, credit_report: list) -> Dict[str, Any]:
         """
         Parse CIBIL credit report into a structured format for UI display
