@@ -16,16 +16,17 @@
   3. Improved logging to show why mapping failed
 - **Files Modified:** `/app/backend/server.py` (WhatsApp webhook city lookup logic)
 
-**Issue 2: Lead Reassignment Not Working**
-- **Problem:** Cannot reassign leads from one sales executive to another
+**Issue 2: Lead Reassignment Not Working (Priyadarshini not showing in dropdown)**
+- **Problem:** Sales executive with cities assigned in "Leads Management" not appearing in reassignment dropdown
 - **Root Cause:** 
-  1. Database query didn't fetch `assigned_cities` field from user record
-  2. City comparison was case-sensitive and didn't handle aliases
+  1. `find_sales_reps_for_city()` only checked `assigned_cities` field
+  2. "Leads Management" section saves cities to `leads_cities` field instead
+  3. Database query didn't fetch `assigned_cities` in reassignment validation
 - **Fix:**
-  1. Added `assigned_cities` and `city` to user query projection
-  2. Implemented case-insensitive city comparison
-  3. Added alias matching using Cities Master table
-- **Files Modified:** `/app/backend/server.py` (reassign_lead endpoint)
+  1. Updated `find_sales_reps_for_city()` to check BOTH `assigned_cities` AND `leads_cities` fields
+  2. Added `leads_cities` to the query projection for sales reps
+  3. Fixed reassignment validation to also check `leads_cities` with case-insensitive alias matching
+- **Files Modified:** `/app/backend/server.py` (find_sales_reps_for_city function, reassign_lead endpoint)
 
 ---
 
