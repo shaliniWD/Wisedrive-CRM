@@ -671,7 +671,14 @@ export const loansApi = {
   // Customer Profile
   getProfile: (leadId) => axios.get(`${API_URL}/loan-leads/${leadId}/profile`),
   updateProfile: (leadId, data) => axios.put(`${API_URL}/loan-leads/${leadId}/profile`, data),
-  analyzeBankStatement: (leadId, documentId) => axios.post(`${API_URL}/loan-leads/${leadId}/profile/analyze-bank-statement?document_id=${documentId}`),
+  analyzeBankStatement: (leadId, documentId, password = null) => {
+    let url = `${API_URL}/loan-leads/${leadId}/profile/analyze-bank-statement?document_id=${documentId}`;
+    if (password) {
+      url += `&password=${encodeURIComponent(password)}`;
+    }
+    return axios.post(url);
+  },
+  analyzeBankStatementUrl: (fileUrl, password = null) => axios.post(`${API_URL}/loan-leads/analyze-bank-statement-url`, { file_url: fileUrl, password }),
   syncCreditReport: (leadId) => axios.post(`${API_URL}/loan-leads/${leadId}/profile/sync-credit-report`),
   calculateEligibility: (leadId) => axios.post(`${API_URL}/loan-leads/${leadId}/profile/calculate-eligibility`),
   
