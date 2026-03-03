@@ -74,7 +74,7 @@ Important guidelines:
 Analyze the statement thoroughly and provide accurate financial insights."""
 
 
-def unlock_pdf(input_path: str, password: str, output_path: str) -> bool:
+def unlock_pdf(input_path: str, password: str, output_path: str, max_pages: int = 20) -> bool:
     """
     Unlock a password-protected PDF using pikepdf
     
@@ -82,6 +82,7 @@ def unlock_pdf(input_path: str, password: str, output_path: str) -> bool:
         input_path: Path to the encrypted PDF
         password: Password to unlock the PDF
         output_path: Path to save the unlocked PDF
+        max_pages: Maximum number of pages to keep (to reduce processing time)
         
     Returns:
         True if successful, False otherwise
@@ -90,8 +91,21 @@ def unlock_pdf(input_path: str, password: str, output_path: str) -> bool:
         import pikepdf
         
         with pikepdf.open(input_path, password=password) as pdf:
-            # Save without encryption
-            pdf.save(output_path)
+            # If PDF has too many pages, only keep the first N pages
+            # Bank statement summaries are usually in the first few pages
+            total_pages = len(pdf.pages)
+            logger.info(f"PDF has {total_pages} pages")
+            
+            if total_pages > max_pages:
+                logger.info(f"Trimming PDF from {total_pages} to {max_pages} pages for faster analysis")
+                # Create a new PDF with only first N pages
+                new_pdf = pikepdf.Pdf.new()
+                for i in range(min(max_pages, total_pages)):
+                    new_pdf.pages.append(pdf.pages[i])
+                new_pdf.save(output_path)
+            else:
+                # Save without encryption
+                pdf.save(output_path)
         
         logger.info(f"Successfully unlocked PDF")
         return True
