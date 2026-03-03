@@ -7076,7 +7076,13 @@ async def update_inspection_location(
     request_data: UpdateLocationRequest,
     current_user: dict = Depends(get_current_user)
 ):
-    """Update inspection location (address, city, lat/lng for navigation)"""
+    """Update inspection location (address, city, lat/lng for navigation)
+    
+    Automatically maps city to City Master:
+    1. Checks if city exists in City Master (by name or alias)
+    2. If found, uses the master city name
+    3. If not found, automatically adds city to City Master
+    """
     inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
     if not inspection:
         raise HTTPException(status_code=404, detail="Inspection not found")
@@ -7090,8 +7096,73 @@ async def update_inspection_location(
         "updated_by": current_user["id"]
     }
     
+    # Auto-map city to City Master
     if request_data.city:
-        update_dict["city"] = request_data.city
+        extracted_city = request_data.city.strip()
+        mapped_city = extracted_city  # Default to extracted city
+        city_id = None
+        
+        # Step 1: Check if city exists in City Master (by name or alias)
+        city_record = await db.cities.find_one({
+            "$or": [
+                {"name": {"$regex": f"^{extracted_city}$", "$options": "i"}},
+                {"aliases": {"$regex": f"^{extracted_city}$", "$options": "i"}}
+            ],
+            "is_active": True
+        }, {"_id": 0})
+        
+        if city_record:
+            # City found - use the master city name
+            mapped_city = city_record["name"]
+            city_id = city_record.get("id")
+            logger.info(f"City '{extracted_city}' mapped to City Master: '{mapped_city}'")
+        else:
+            # Step 2: City not found - auto-add to City Master
+            logger.info(f"City '{extracted_city}' not found in City Master - adding automatically")
+            
+            # Try to determine state from address (basic heuristic)
+            state = ""
+            address_lower = (request_data.address or "").lower()
+            state_keywords = {
+                "karnataka": ["karnataka", "bengaluru", "bangalore", "mysore", "mangalore"],
+                "tamil nadu": ["tamil nadu", "chennai", "coimbatore", "madurai"],
+                "andhra pradesh": ["andhra pradesh", "hyderabad", "visakhapatnam", "vizag", "vijayawada"],
+                "telangana": ["telangana", "hyderabad", "secunderabad"],
+                "maharashtra": ["maharashtra", "mumbai", "pune", "nagpur"],
+                "gujarat": ["gujarat", "ahmedabad", "surat", "vadodara"],
+                "delhi": ["delhi", "new delhi"],
+                "kerala": ["kerala", "kochi", "thiruvananthapuram", "kozhikode"],
+                "west bengal": ["west bengal", "kolkata", "howrah"],
+                "rajasthan": ["rajasthan", "jaipur", "udaipur", "jodhpur"],
+            }
+            
+            for state_name, keywords in state_keywords.items():
+                if any(kw in address_lower or kw in extracted_city.lower() for kw in keywords):
+                    state = state_name.title()
+                    break
+            
+            # Create new city in City Master
+            new_city_id = str(uuid.uuid4())
+            new_city = {
+                "id": new_city_id,
+                "name": extracted_city,
+                "state": state,
+                "aliases": [],
+                "is_active": True,
+                "country_id": current_user.get("country_id"),
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "created_by": current_user["id"],
+                "auto_created": True,  # Flag to indicate auto-creation
+                "auto_created_from": "inspection_location_update"
+            }
+            
+            await db.cities.insert_one(new_city)
+            city_id = new_city_id
+            logger.info(f"Auto-created city '{extracted_city}' in City Master with ID: {new_city_id}")
+        
+        update_dict["city"] = mapped_city
+        if city_id:
+            update_dict["city_id"] = city_id
     
     if request_data.latitude is not None:
         update_dict["latitude"] = request_data.latitude
@@ -7114,7 +7185,7 @@ async def update_inspection_location(
         "action_label": "Location Updated",
         "details": f"Location changed from '{old_address}' to '{request_data.address}'",
         "old_value": f"{old_city} - {old_address}",
-        "new_value": f"{request_data.city or old_city} - {request_data.address}",
+        "new_value": f"{update_dict.get('city', old_city)} - {request_data.address}",
         "source": "CRM",
         "created_at": datetime.now(timezone.utc).isoformat()
     }
