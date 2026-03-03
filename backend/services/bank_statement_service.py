@@ -74,7 +74,7 @@ Important guidelines:
 Analyze the statement thoroughly and provide accurate financial insights."""
 
 
-def unlock_pdf(input_path: str, password: str, output_path: str, max_pages: int = 20) -> bool:
+def unlock_pdf(input_path: str, password: str, output_path: str, max_pages: int = 5) -> bool:
     """
     Unlock a password-protected PDF using pikepdf
     
