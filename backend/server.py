@@ -4255,6 +4255,18 @@ async def razorpay_payment_webhook(request: Request):
     
     logger.info(f"Razorpay webhook: event={event}")
     
+    # For payment_link.paid, get the actual payment_id from nested payments array
+    # This ensures we use the same ID regardless of which event (payment.captured or payment_link.paid) arrives first
+    actual_payment_id = None
+    if event == "payment_link.paid":
+        payments = payment_entity.get("payments", [])
+        if payments and isinstance(payments, list) and len(payments) > 0:
+            # Get the last payment (most recent)
+            last_payment = payments[-1]
+            if isinstance(last_payment, dict):
+                actual_payment_id = last_payment.get("payment_id")
+        logger.info(f"payment_link.paid: extracted actual payment_id={actual_payment_id} from payments array")
+    
     # Get payment_link_id to check if this is a balance payment
     payment_link_id = payment_entity.get("id")
     
