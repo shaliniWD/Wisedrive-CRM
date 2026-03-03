@@ -4279,28 +4279,50 @@ Thank you for choosing Wisedrive!"""
         }
         await db.lead_activities.insert_one(activity)
         
-        # Create customer from lead
-        customer_id = str(uuid.uuid4())
-        customer = {
-            "id": customer_id,
-            "name": lead.get("name"),
-            "mobile": lead.get("mobile"),
-            "email": lead.get("email"),
-            "city": lead.get("city"),
-            "city_id": lead.get("city_id"),
-            "lead_id": lead_id,
-            "package_id": lead.get("package_id"),
-            "package_name": lead.get("package_name"),
-            "payment_amount": amount,
-            "razorpay_payment_id": payment_id,
-            "status": "active",
-            # Partner info carried forward from lead
-            "partner_id": lead.get("partner_id"),
-            "partner_name": lead.get("partner_name"),
-            "created_at": datetime.now(timezone.utc).isoformat()
-        }
-        
-        await db.customers.insert_one(customer)
+        # Create customer from lead (or use existing customer if this is a repeat purchase)
+        if not customer_id:
+            customer_id = str(uuid.uuid4())
+            customer = {
+                "id": customer_id,
+                "name": lead.get("name"),
+                "mobile": lead.get("mobile"),
+                "email": lead.get("email"),
+                "city": lead.get("city"),
+                "city_id": lead.get("city_id"),
+                "lead_id": lead_id,
+                "package_id": lead.get("package_id"),
+                "package_name": lead.get("package_name"),
+                "payment_amount": amount,
+                "razorpay_payment_id": payment_id,
+                "status": "active",
+                # Partner info carried forward from lead
+                "partner_id": lead.get("partner_id"),
+                "partner_name": lead.get("partner_name"),
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            
+            await db.customers.insert_one(customer)
+            logger.info(f"Created new customer {customer_id} for lead {lead_id}")
+        else:
+            # Update existing customer with new package info (add to payment history)
+            await db.customers.update_one(
+                {"id": customer_id},
+                {
+                    "$push": {
+                        "additional_purchases": {
+                            "package_id": lead.get("package_id"),
+                            "package_name": lead.get("package_name"),
+                            "payment_amount": amount,
+                            "razorpay_payment_id": payment_id,
+                            "purchased_at": datetime.now(timezone.utc).isoformat()
+                        }
+                    },
+                    "$set": {
+                        "updated_at": datetime.now(timezone.utc).isoformat()
+                    }
+                }
+            )
+            logger.info(f"Added new package to existing customer {customer_id}")
         
         # Get report template for this partner using Option B logic:
         # 1. First check Partner.default_report_template_id (explicit assignment)
