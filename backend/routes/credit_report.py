@@ -483,6 +483,20 @@ async def fetch_experian_report(
             "error_code": result.get("error_code")
         }
     
+    # Also fetch PDF link
+    pdf_link = None
+    try:
+        pdf_result = await surepass.fetch_experian_pdf(
+            name=request.name,
+            pan=pan,
+            mobile=request.mobile,
+            consent=request.consent
+        )
+        if pdf_result.get("success"):
+            pdf_link = pdf_result.get("pdf_link")
+    except Exception as e:
+        logger.warning(f"Failed to fetch Experian PDF: {e}")
+    
     # Parse the report for better UI display
     parsed_report = surepass.parse_experian_report(result.get("credit_report", {}))
     
@@ -499,6 +513,7 @@ async def fetch_experian_report(
         "client_id": result.get("client_id"),
         "parsed_report": parsed_report,
         "raw_report": result.get("credit_report"),
+        "pdf_link": pdf_link,
         "customer_id": request.customer_id,
         "lead_id": request.lead_id,
         "loan_lead_id": request.loan_lead_id,
@@ -530,6 +545,7 @@ async def fetch_experian_report(
         "provider": "Experian",
         "credit_score": result.get("credit_score"),
         "parsed_report": parsed_report,
+        "pdf_link": pdf_link,
         "fetched_at": result.get("fetched_at")
     }
 
