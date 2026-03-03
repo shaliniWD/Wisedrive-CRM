@@ -1230,6 +1230,25 @@ async def check_lead_eligibility(
 # LOAN LEADS ENDPOINTS
 # ========================
 
+def convert_local_date_to_utc_range_loans(local_date: str, timezone_offset_minutes: int = 330) -> tuple:
+    """
+    Convert a local date string to UTC datetime range.
+    """
+    from datetime import datetime as dt, timedelta, timezone as tz
+    
+    local_date_obj = dt.strptime(local_date, "%Y-%m-%d")
+    offset = timedelta(minutes=timezone_offset_minutes)
+    local_tz = tz(offset)
+    
+    local_start = local_date_obj.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=local_tz)
+    utc_start = local_start.astimezone(tz.utc)
+    
+    local_end = local_date_obj.replace(hour=23, minute=59, second=59, microsecond=999999, tzinfo=local_tz)
+    utc_end = local_end.astimezone(tz.utc)
+    
+    return utc_start.isoformat().replace('+00:00', 'Z'), utc_end.isoformat().replace('+00:00', 'Z')
+
+
 @router.get("/loan-leads")
 async def get_loan_leads(
     status: Optional[str] = None,
@@ -1237,6 +1256,7 @@ async def get_loan_leads(
     search: Optional[str] = None,
     date_from: Optional[str] = None,
     date_to: Optional[str] = None,
+    timezone_offset: Optional[int] = 330,  # User's timezone offset in minutes (default IST)
     skip: int = 0,
     limit: int = 50,
     current_user: dict = Depends(get_current_user)
@@ -1254,18 +1274,17 @@ async def get_loan_leads(
             {"customer_phone": {"$regex": search, "$options": "i"}}
         ]
     
-    # Fix date filtering - append time components for proper ISO string comparison
-    if date_from:
-        # Start of day: append T00:00:00
-        date_from_iso = f"{date_from}T00:00:00" if "T" not in date_from else date_from
-        query["created_at"] = {"$gte": date_from_iso}
-    if date_to:
-        # End of day: append T23:59:59
-        date_to_iso = f"{date_to}T23:59:59" if "T" not in date_to else date_to
-        if "created_at" in query:
-            query["created_at"]["$lte"] = date_to_iso
-        else:
-            query["created_at"] = {"$lte": date_to_iso}
+    # Timezone-aware date filtering
+    if date_from or date_to:
+        date_query = {}
+        if date_from:
+            utc_from, _ = convert_local_date_to_utc_range_loans(date_from, timezone_offset)
+            date_query["$gte"] = utc_from
+        if date_to:
+            _, utc_to = convert_local_date_to_utc_range_loans(date_to, timezone_offset)
+            date_query["$lte"] = utc_to
+        if date_query:
+            query["created_at"] = date_query
     
     total = await db.loan_leads.count_documents(query)
     leads = await db.loan_leads.find(query, {"_id": 0}).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
