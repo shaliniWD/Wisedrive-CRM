@@ -28,6 +28,21 @@ _auth_validator = None
 rbac_service = None
 
 
+def convert_local_date_to_utc_range_customers(local_date: str, timezone_offset_minutes: int = 330) -> tuple:
+    """Convert a local date string to UTC datetime range."""
+    local_date_obj = datetime.strptime(local_date, "%Y-%m-%d")
+    offset = timedelta(minutes=timezone_offset_minutes)
+    local_tz = timezone(offset)
+    
+    local_start = local_date_obj.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=local_tz)
+    utc_start = local_start.astimezone(timezone.utc)
+    
+    local_end = local_date_obj.replace(hour=23, minute=59, second=59, microsecond=999999, tzinfo=local_tz)
+    utc_end = local_end.astimezone(timezone.utc)
+    
+    return utc_start.isoformat().replace('+00:00', 'Z'), utc_end.isoformat().replace('+00:00', 'Z')
+
+
 class CustomerCreate(BaseModel):
     name: str
     mobile: str
