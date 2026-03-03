@@ -4913,81 +4913,60 @@ async def get_inspections(
     if country_id:
         query["country_id"] = country_id
     
-    # Date range filtering
+    # Date range filtering with timezone awareness
     # For scheduled inspections: filter by scheduled_date
     # For unscheduled inspections: filter by payment_date, fallback to created_at
     if date_from or date_to:
-        # Handle both date-only ("2026-02-28") and datetime ("2026-02-28T10:00:00") formats
-        if date_from and date_to and date_from == date_to:
-            # Same day filter - use regex to match strings starting with this date
-            date_regex = {"$regex": f"^{date_from}"}
-            
-            if is_scheduled is False:
-                # For unscheduled, filter by payment_date OR created_at
+        # Convert local dates to UTC datetime ranges
+        utc_date_from = None
+        utc_date_to = None
+        
+        if date_from:
+            utc_date_from, _ = convert_local_date_to_utc_range(date_from, timezone_offset)
+        if date_to:
+            _, utc_date_to = convert_local_date_to_utc_range(date_to, timezone_offset)
+        
+        # Build the date query
+        if is_scheduled is False:
+            # For unscheduled, filter by payment_date OR created_at
+            payment_query = {}
+            if utc_date_from:
+                payment_query["$gte"] = utc_date_from
+            if utc_date_to:
+                payment_query["$lte"] = utc_date_to
+            if payment_query:
                 query["$and"] = query.get("$and", []) + [{
                     "$or": [
-                        {"payment_date": date_regex},
+                        {"payment_date": payment_query},
                         {"$and": [
                             {"$or": [{"payment_date": None}, {"payment_date": ""}]},
-                            {"created_at": date_regex}
+                            {"created_at": payment_query}
                         ]}
                     ]
                 }]
-            elif is_scheduled is True:
-                query["scheduled_date"] = date_regex
-            else:
+        elif is_scheduled is True:
+            scheduled_date_query = {}
+            if utc_date_from:
+                scheduled_date_query["$gte"] = utc_date_from
+            if utc_date_to:
+                scheduled_date_query["$lte"] = utc_date_to
+            if scheduled_date_query:
+                query["scheduled_date"] = {**query.get("scheduled_date", {}), **scheduled_date_query}
+        else:
+            # Both scheduled and unscheduled
+            date_query = {}
+            if utc_date_from:
+                date_query["$gte"] = utc_date_from
+            if utc_date_to:
+                date_query["$lte"] = utc_date_to
+            if date_query:
                 query["$and"] = query.get("$and", []) + [{
                     "$or": [
-                        {"scheduled_date": date_regex},
-                        {"$and": [{"scheduled_date": None}, {"payment_date": date_regex}]},
-                        {"$and": [{"scheduled_date": None}, {"$or": [{"payment_date": None}, {"payment_date": ""}]}, {"created_at": date_regex}]}
+                        {"scheduled_date": date_query},
+                        {"$and": [{"scheduled_date": None}, {"payment_date": date_query}]},
+                        {"$and": [{"scheduled_date": None}, {"$or": [{"payment_date": None}, {"payment_date": ""}]}, {"created_at": date_query}]}
                     ]
                 }]
-        else:
-            # Date range filter
-            date_query_gte = date_from if date_from else None
-            date_query_lte = date_to + "T23:59:59.999999" if date_to else None
-            
-            if is_scheduled is False:
-                # For unscheduled, filter by payment_date, fallback to created_at
-                payment_query = {}
-                if date_query_gte:
-                    payment_query["$gte"] = date_query_gte
-                if date_query_lte:
-                    payment_query["$lte"] = date_query_lte
-                if payment_query:
-                    query["$and"] = query.get("$and", []) + [{
-                        "$or": [
-                            {"payment_date": payment_query},
-                            {"$and": [
-                                {"$or": [{"payment_date": None}, {"payment_date": ""}]},
-                                {"created_at": payment_query}
-                            ]}
-                        ]
-                    }]
-            elif is_scheduled is True:
-                scheduled_date_query = {}
-                if date_query_gte:
-                    scheduled_date_query["$gte"] = date_query_gte
-                if date_query_lte:
-                    scheduled_date_query["$lte"] = date_query_lte
-                if scheduled_date_query:
-                    query["scheduled_date"] = {**query.get("scheduled_date", {}), **scheduled_date_query}
-            else:
-                # Both scheduled and unscheduled
-                date_query = {}
-                if date_query_gte:
-                    date_query["$gte"] = date_query_gte
-                if date_query_lte:
-                    date_query["$lte"] = date_query_lte
-                if date_query:
-                    query["$and"] = query.get("$and", []) + [{
-                        "$or": [
-                            {"scheduled_date": date_query},
-                            {"$and": [{"scheduled_date": None}, {"payment_date": date_query}]},
-                            {"$and": [{"scheduled_date": None}, {"$or": [{"payment_date": None}, {"payment_date": ""}]}, {"created_at": date_query}]}
-                        ]
-                    }]
     
     inspections = await db.inspections.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     
