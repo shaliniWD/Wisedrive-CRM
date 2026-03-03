@@ -421,28 +421,37 @@ export default function LoansPage() {
                       </Button>
                     </td>
                     <td className="p-4 text-center">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={async () => {
-                          const fullLead = await openLeadDetails(lead.id);
-                          if (fullLead) setCreditScoreModalOpen(true);
-                        }}
-                        className="text-xs"
-                        data-testid="get-report-btn"
-                      >
-                        <CreditCard className="h-3 w-3 mr-1" />
-                        Get Report
-                      </Button>
-                      {lead.credit_score && (
-                        <span className={`ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold ${
-                          lead.credit_score >= 750 ? 'bg-green-100 text-green-700' :
-                          lead.credit_score >= 650 ? 'bg-yellow-100 text-yellow-700' :
-                          lead.credit_score >= 550 ? 'bg-orange-100 text-orange-700' :
-                          'bg-red-100 text-red-700'
-                        }`}>
+                      {lead.credit_score ? (
+                        <button
+                          onClick={async () => {
+                            const fullLead = await openLeadDetails(lead.id);
+                            if (fullLead) setCreditScoreModalOpen(true);
+                          }}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold transition-all hover:shadow-md ${
+                            lead.credit_score >= 750 ? 'bg-green-100 text-green-700 hover:bg-green-200' :
+                            lead.credit_score >= 650 ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' :
+                            lead.credit_score >= 550 ? 'bg-orange-100 text-orange-700 hover:bg-orange-200' :
+                            'bg-red-100 text-red-700 hover:bg-red-200'
+                          }`}
+                          data-testid="credit-score-btn"
+                        >
+                          <CreditCard className="h-3.5 w-3.5" />
                           {lead.credit_score}
-                        </span>
+                        </button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={async () => {
+                            const fullLead = await openLeadDetails(lead.id);
+                            if (fullLead) setCreditScoreModalOpen(true);
+                          }}
+                          className="text-xs"
+                          data-testid="get-report-btn"
+                        >
+                          <CreditCard className="h-3 w-3 mr-1" />
+                          Get Report
+                        </Button>
                       )}
                     </td>
                     <td className="p-4 text-center">
