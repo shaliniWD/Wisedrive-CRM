@@ -3,6 +3,32 @@
 ---
 ## 📅 CHANGELOG
 
+### March 3, 2026 - Lead City Mapping & Reassignment Fixes
+
+**Issue 1: Leads Landing in Wrong City (Vizag instead of correct city)**
+- **Problem:** Lead with AD ID mapped to Bangalore landed in Vizag instead
+- **Root Cause:** 
+  1. AD ID lookup was exact-match only, case-sensitive
+  2. Fallback logic hardcoded "Vizag" when no mapping found
+- **Fix:**
+  1. Made Strategy 1 (ad_id lookup) case-insensitive with trimmed whitespace
+  2. Removed hardcoded "Vizag" fallback - city now left as `null` for unmapped ads, forcing manual assignment
+  3. Improved logging to show why mapping failed
+- **Files Modified:** `/app/backend/server.py` (WhatsApp webhook city lookup logic)
+
+**Issue 2: Lead Reassignment Not Working**
+- **Problem:** Cannot reassign leads from one sales executive to another
+- **Root Cause:** 
+  1. Database query didn't fetch `assigned_cities` field from user record
+  2. City comparison was case-sensitive and didn't handle aliases
+- **Fix:**
+  1. Added `assigned_cities` and `city` to user query projection
+  2. Implemented case-insensitive city comparison
+  3. Added alias matching using Cities Master table
+- **Files Modified:** `/app/backend/server.py` (reassign_lead endpoint)
+
+---
+
 ### March 3, 2026 - City Auto-Detection Fix for Inspection Edit Modal
 
 **Problem:** When editing an inspection and selecting a new address from Google Places (e.g., "Pune Railway Station"), the city field was not being correctly auto-populated. The city was appearing in Devanagari script (पुणे) instead of English (Pune).
