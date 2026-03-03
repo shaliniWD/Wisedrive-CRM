@@ -4,18 +4,38 @@ Integrates with Surepass API for CIBIL, Equifax, Experian, and CRIF reports
 """
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
-from typing import Optional, List
+from typing import Optional
 from datetime import datetime, timezone
 import uuid
 import logging
 
-from auth import get_current_user
-from database import db
 from services.surepass_service import get_surepass_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/credit-report", tags=["Credit Reports"])
+
+# Security
+security = HTTPBearer()
+
+# Module-level variables for dependency injection
+_db = None
+_auth_validator = None
+
+
+def init_credit_report_routes(_database, _get_current_user):
+    """Initialize routes with database and auth dependencies"""
+    global _db, _auth_validator
+    _db = _database
+    _auth_validator = _get_current_user
+
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
+    """Wrapper for auth validation"""
+    if _auth_validator is None:
+        raise HTTPException(status_code=500, detail="Auth not initialized")
+    return await _auth_validator(credentials)
 
 
 # Pydantic models
