@@ -203,27 +203,31 @@ async def get_mechanic_inspections(
     status: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
-    """Get inspections for mechanic - assigned to or available in their cities"""
+    """
+    Get inspections for mechanic.
+    
+    A mechanic should ONLY see inspections that are:
+    1. Currently assigned to them (mechanic_id matches)
+    2. They accepted (mechanic_id matches + MECHANIC_ACCEPTED)
+    3. They started (mechanic_id matches + INSPECTION_STARTED)
+    4. They rejected (mechanic_id matches + MECHANIC_REJECTED)
+    5. They completed (mechanic_id matches + INSPECTION_COMPLETED)
+    
+    Unassigned inspections should NOT be shown - they go back to the CRM pool.
+    """
     mechanic_id = current_user["id"]
-    mechanic_cities = current_user.get("inspection_cities", [])
     mechanic_name = current_user.get("name", "")
     
-    # Build city variants for case-insensitive matching
-    all_city_variants = []
-    for mc in mechanic_cities:
-        all_city_variants.extend([mc, mc.lower(), mc.upper(), mc.title()])
-    all_city_variants = list(set(all_city_variants))
+    logger.info(f"Fetching inspections for mechanic: {mechanic_id} ({mechanic_name})")
     
-    # Query: assigned to mechanic OR available in their cities
+    # Query: ONLY inspections assigned to THIS mechanic
+    # When unassigned, mechanic_id becomes null/empty, so they won't see it anymore
     query = {
         "$or": [
+            # Match by mechanic_id (primary)
             {"mechanic_id": mechanic_id},
-            {"mechanic_name": {"$regex": f"^{mechanic_name}$", "$options": "i"}} if mechanic_name else {"mechanic_id": mechanic_id},
-            {
-                "mechanic_id": {"$in": [None, ""]},
-                "city": {"$in": all_city_variants} if all_city_variants else {"$exists": True},
-                "inspection_status": {"$in": ["NEW_INSPECTION", "ASSIGNED_TO_MECHANIC"]}
-            }
+            # Also match by mechanic_name for backward compatibility
+            {"mechanic_name": {"$regex": f"^{mechanic_name}$", "$options": "i"}} if mechanic_name else {"_never_match_": True}
         ]
     }
     
@@ -252,6 +256,8 @@ async def get_mechanic_inspections(
         query,
         {"_id": 0}
     ).sort("scheduled_date", -1).to_list(100)
+    
+    logger.info(f"Found {len(inspections)} inspections for mechanic {mechanic_id}")
     
     # Transform to mechanic app format
     result = []
