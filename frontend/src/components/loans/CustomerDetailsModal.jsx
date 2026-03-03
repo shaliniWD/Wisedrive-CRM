@@ -431,6 +431,111 @@ const VehiclesTab = ({ lead, onUpdate }) => {
                   )}
                 </div>
               )}
+              
+              {/* Loan Details Section */}
+              <div className="mt-3 pt-3 border-t border-gray-100">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-xs font-medium text-gray-700">Loan Details</h4>
+                  {editingLoanDetails === vehicle.vehicle_id ? (
+                    <div className="flex gap-1">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleSaveLoanDetails(vehicle.vehicle_id)}
+                        className="h-6 w-6 text-green-600"
+                        title="Save"
+                      >
+                        <Save className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => setEditingLoanDetails(null)}
+                        className="h-6 w-6 text-gray-500"
+                        title="Cancel"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => handleEditLoanDetails(vehicle)}
+                      className="h-6 w-6 text-blue-600"
+                      title="Edit Loan Details"
+                    >
+                      <Edit className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
+                
+                {editingLoanDetails === vehicle.vehicle_id ? (
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-[10px] text-gray-500">Vehicle Valuation</Label>
+                      <Input
+                        type="number"
+                        placeholder="0"
+                        value={loanForm.vehicle_valuation}
+                        onChange={(e) => setLoanForm({...loanForm, vehicle_valuation: e.target.value})}
+                        className="h-7 text-xs"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-[10px] text-gray-500">Required Loan</Label>
+                      <Input
+                        type="number"
+                        placeholder="0"
+                        value={loanForm.required_loan_amount}
+                        onChange={(e) => setLoanForm({...loanForm, required_loan_amount: e.target.value})}
+                        className="h-7 text-xs"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-[10px] text-gray-500">Expected EMI</Label>
+                      <Input
+                        type="number"
+                        placeholder="0"
+                        value={loanForm.expected_emi}
+                        onChange={(e) => setLoanForm({...loanForm, expected_emi: e.target.value})}
+                        className="h-7 text-xs"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-[10px] text-gray-500">Tenure (months)</Label>
+                      <Input
+                        type="number"
+                        placeholder="0"
+                        value={loanForm.expected_tenure_months}
+                        onChange={(e) => setLoanForm({...loanForm, expected_tenure_months: e.target.value})}
+                        className="h-7 text-xs"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <span className="text-gray-500">Valuation:</span>
+                      <span className="ml-1 font-medium">{formatCurrency(vehicle.vehicle_valuation)}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Loan Amount:</span>
+                      <span className="ml-1 font-medium">{formatCurrency(vehicle.required_loan_amount)}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Expected EMI:</span>
+                      <span className="ml-1 font-medium">{formatCurrency(vehicle.expected_emi)}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Tenure:</span>
+                      <span className="ml-1 font-medium">
+                        {vehicle.expected_tenure_months ? `${vehicle.expected_tenure_months} months` : '—'}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           ))
         )}
