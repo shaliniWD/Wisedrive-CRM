@@ -686,3 +686,17 @@ export const banksApi = {
   addPOC: (bankId, data) => axios.post(`${API_URL}/banks/${bankId}/poc`, data),
 };
 
+// Credit Report API (Surepass Integration)
+export const creditReportApi = {
+  checkStatus: () => axios.get(`${API_URL}/credit-report/check-status`),
+  
+  // CIBIL Reports
+  fetchCibilReport: (data) => axios.post(`${API_URL}/credit-report/cibil`, data),
+  fetchCibilPdf: (data) => axios.post(`${API_URL}/credit-report/cibil/pdf`, data),
+  
+  // Get Reports
+  getReport: (reportId) => axios.get(`${API_URL}/credit-report/${reportId}`),
+  getReportHistory: (pan) => axios.get(`${API_URL}/credit-report/history/${pan}`),
+  getByLoanLead: (loanLeadId) => axios.get(`${API_URL}/credit-report/by-loan-lead/${loanLeadId}`),
+};
+
