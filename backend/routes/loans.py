@@ -1091,15 +1091,11 @@ async def check_eligibility_all_banks(
     ineligible_results = []
     
     for bank in banks:
-        try:
-            result = await evaluate_bank_eligibility(bank, request)
-            if result.is_eligible:
-                eligible_results.append(result.model_dump())
-            else:
-                ineligible_results.append(result.model_dump())
-        except Exception as e:
-            logger.error(f"[ELIGIBILITY ENGINE] Error checking bank {bank.get('bank_name', 'unknown')}: {str(e)}")
-            raise
+        result = await evaluate_bank_eligibility(bank, request)
+        if result.is_eligible:
+            eligible_results.append(result.model_dump())
+        else:
+            ineligible_results.append(result.model_dump())
     
     # Sort eligible banks by score (descending)
     eligible_results.sort(key=lambda x: x["eligibility_score"], reverse=True)
