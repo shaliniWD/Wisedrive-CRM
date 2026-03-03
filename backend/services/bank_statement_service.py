@@ -139,12 +139,12 @@ class BankStatementAnalyzer:
             from emergentintegrations.llm.chat import LlmChat, UserMessage, FileContentWithMimeType
             
             # Initialize Gemini chat (supports file attachments)
-            # Using gemini-2.5-pro for better accuracy with complex PDF analysis
+            # Using gemini-2.5-flash for speed with document analysis
             chat = LlmChat(
                 api_key=self.api_key,
                 session_id=f"bank_statement_{datetime.now(timezone.utc).timestamp()}",
-                system_message="You are a financial analyst AI. Always respond with valid JSON only, no markdown formatting."
-            ).with_model("gemini", "gemini-2.5-pro")
+                system_message="You are a financial analyst AI. Always respond with valid JSON only, no markdown formatting or code blocks."
+            ).with_model("gemini", "gemini-2.5-flash")
             
             # Create file attachment
             pdf_file = FileContentWithMimeType(
