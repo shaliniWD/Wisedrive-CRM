@@ -1415,8 +1415,11 @@ async def reassign_lead(
     if not can_reassign:
         raise HTTPException(status_code=403, detail="Not authorized to reassign leads")
     
-    # Get new agent details and validate
-    new_agent = await db.users.find_one({"id": reassign_data.new_agent_id}, {"_id": 0, "name": 1, "role_code": 1, "leads_cities": 1})
+    # Get new agent details and validate - IMPORTANT: fetch ALL city-related fields
+    new_agent = await db.users.find_one(
+        {"id": reassign_data.new_agent_id}, 
+        {"_id": 0, "name": 1, "role_code": 1, "leads_cities": 1, "assigned_cities": 1, "city": 1}
+    )
     if not new_agent:
         raise HTTPException(status_code=404, detail="Agent not found")
     
@@ -1432,11 +1435,39 @@ async def reassign_lead(
     agent_assigned_cities = new_agent.get("assigned_cities", []) or []
     agent_city = new_agent.get("city", "")
     
-    # Combine all city sources
-    all_agent_cities = list(set(agent_leads_cities + agent_assigned_cities + ([agent_city] if agent_city else [])))
+    # Combine all city sources and normalize to lowercase for comparison
+    all_agent_cities_raw = agent_leads_cities + agent_assigned_cities + ([agent_city] if agent_city else [])
+    all_agent_cities = list(set([c.strip() for c in all_agent_cities_raw if c]))
+    all_agent_cities_lower = [c.lower() for c in all_agent_cities]
     
-    # Only validate if agent has any city restrictions
-    if all_agent_cities and lead_city and lead_city not in all_agent_cities:
+    # Build city alias map for flexible matching
+    lead_city_lower = lead_city.lower() if lead_city else ""
+    city_match_found = False
+    
+    if lead_city_lower and all_agent_cities_lower:
+        # Direct match
+        if lead_city_lower in all_agent_cities_lower:
+            city_match_found = True
+        else:
+            # Check if lead_city matches any alias of agent's cities
+            for agent_city_name in all_agent_cities:
+                city_doc = await db.cities.find_one(
+                    {"$or": [
+                        {"name": {"$regex": f"^{re.escape(agent_city_name)}$", "$options": "i"}},
+                        {"aliases": {"$regex": f"^{re.escape(agent_city_name)}$", "$options": "i"}}
+                    ]},
+                    {"_id": 0, "name": 1, "aliases": 1}
+                )
+                if city_doc:
+                    canonical_name = city_doc.get("name", "").lower()
+                    aliases = [a.lower() for a in city_doc.get("aliases", [])]
+                    all_variants = [canonical_name] + aliases
+                    if lead_city_lower in all_variants:
+                        city_match_found = True
+                        break
+    
+    # Only validate if agent has city restrictions AND lead has a city
+    if all_agent_cities and lead_city and not city_match_found:
         raise HTTPException(status_code=400, detail=f"Agent is not assigned to city: {lead_city}. Agent's cities: {all_agent_cities}")
     
     # Perform direct reassignment (simple update, not round-robin)
