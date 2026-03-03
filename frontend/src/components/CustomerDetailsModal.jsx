@@ -605,6 +605,18 @@ export function CustomerDetailsModal({ isOpen, onClose, customerId, onCustomerUp
                     <Package className="h-12 w-12 text-gray-300 mx-auto mb-3" />
                     <p className="text-gray-500">No packages found</p>
                     <p className="text-sm text-gray-400 mt-1">Packages will appear here after payment</p>
+                    {/* Repair button for admins */}
+                    <Button 
+                      variant="outline" 
+                      className="mt-4 text-orange-600 border-orange-300 hover:bg-orange-50"
+                      onClick={handleRepairData}
+                      disabled={repairing}
+                      data-testid="repair-customer-btn"
+                    >
+                      {repairing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Wrench className="h-4 w-4 mr-2" />}
+                      Repair Missing Data
+                    </Button>
+                    <p className="text-xs text-gray-400 mt-2">Links orphaned inspections & creates missing ones</p>
                   </div>
                 )}
               </TabsContent>
