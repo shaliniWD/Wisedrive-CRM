@@ -20,8 +20,6 @@ import { formatDate, formatDateTime } from '@/utils/dateFormat';
 // Import loan components
 import {
   CreditScoreModal,
-  DocumentsModal,
-  VehicleDetailsModal,
   LoanProcessingModal,
   CustomerProfileModal,
   CustomerDetailsModal,
