@@ -4357,8 +4357,11 @@ Thank you for choosing Wisedrive!"""
     
     # Handle different events
     if event in ["payment_link.paid", "payment.captured"]:
-        payment_id = payment_entity.get("id")
+        # Use actual_payment_id if available (from payment_link.paid), otherwise use entity id
+        payment_id = actual_payment_id or payment_entity.get("id")
         amount = payment_entity.get("amount", 0) / 100  # Convert from paise
+        
+        logger.info(f"Processing payment event={event}, payment_id={payment_id}, amount={amount}")
         
         # IDEMPOTENCY CHECK: Skip if this payment was already processed
         # Check 1: Lead already has this payment_id recorded
