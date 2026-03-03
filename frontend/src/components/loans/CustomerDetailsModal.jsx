@@ -578,12 +578,12 @@ const DocumentsTab = ({ lead, onUpdate }) => {
       ) : (
         <div className="space-y-2 max-h-[320px] overflow-y-auto">
           {getDocList().map((doc) => {
-            const uploaded = getUploadedDoc(doc.id);
-            const isUploading = uploadingDoc === doc.id;
+            const uploaded = getUploadedDoc(doc.document_type);
+            const isUploading = uploadingDoc === doc.document_type;
             
             return (
               <div
-                key={doc.id}
+                key={doc.document_type}
                 className={`p-3 rounded-lg border ${
                   uploaded ? 'border-green-200 bg-green-50' : 'border-gray-200'
                 }`}
@@ -596,7 +596,10 @@ const DocumentsTab = ({ lead, onUpdate }) => {
                       <AlertCircle className="h-4 w-4 text-gray-400" />
                     )}
                     <div>
-                      <p className="text-sm font-medium">{doc.name}</p>
+                      <p className="text-sm font-medium">{doc.display_name || doc.name}</p>
+                      {doc.description && (
+                        <p className="text-[10px] text-gray-500">{doc.description}</p>
+                      )}
                       {doc.required && (
                         <span className="text-[10px] text-red-500">Required</span>
                       )}
@@ -634,7 +637,7 @@ const DocumentsTab = ({ lead, onUpdate }) => {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => handleFileInputClick(doc.id)}
+                        onClick={() => handleFileInputClick(doc.document_type)}
                         disabled={isUploading}
                         className="h-7 text-xs"
                       >
