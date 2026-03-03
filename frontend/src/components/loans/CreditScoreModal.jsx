@@ -976,28 +976,39 @@ const CreditScoreModal = ({ isOpen, onClose, lead, onUpdate }) => {
               {/* Provider Buttons */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                 {providers.map(provider => (
-                  <button
-                    key={provider.id}
-                    onClick={() => fetchReport(provider.id)}
-                    disabled={fetchingProvider !== null}
-                    className={`p-4 rounded-xl border-2 text-center transition-all ${
-                      reports[provider.id] 
-                        ? `${provider.color} border-current` 
-                        : 'bg-white border-slate-200 hover:border-slate-300'
-                    } ${activeReport === provider.id ? 'ring-2 ring-blue-500' : ''}`}
-                  >
-                    {fetchingProvider === provider.id ? (
-                      <Loader2 className="h-5 w-5 animate-spin mx-auto" />
-                    ) : (
-                      <>
-                        <p className="font-semibold">{provider.name}</p>
-                        {reports[provider.id]?.credit_score && (
-                          <p className="text-2xl font-bold mt-1">{reports[provider.id].credit_score}</p>
-                        )}
-                        {!reports[provider.id] && <p className="text-xs text-slate-500 mt-1">Click to fetch</p>}
-                      </>
+                  <div key={provider.id} className="relative">
+                    <button
+                      onClick={() => fetchReport(provider.id)}
+                      disabled={fetchingProvider !== null}
+                      className={`w-full p-4 rounded-xl border-2 text-center transition-all ${
+                        reports[provider.id] 
+                          ? `${provider.color} border-current` 
+                          : 'bg-white border-slate-200 hover:border-slate-300'
+                      } ${activeReport === provider.id ? 'ring-2 ring-blue-500' : ''}`}
+                    >
+                      {fetchingProvider === provider.id ? (
+                        <Loader2 className="h-5 w-5 animate-spin mx-auto" />
+                      ) : (
+                        <>
+                          <p className="font-semibold">{provider.name}</p>
+                          {reports[provider.id]?.credit_score && (
+                            <p className="text-2xl font-bold mt-1">{reports[provider.id].credit_score}</p>
+                          )}
+                          {!reports[provider.id] && <p className="text-xs text-slate-500 mt-1">Click to fetch</p>}
+                        </>
+                      )}
+                    </button>
+                    {/* PDF Button */}
+                    {reports[provider.id]?.pdf_link && (
+                      <button
+                        onClick={() => window.open(reports[provider.id].pdf_link, '_blank')}
+                        className="absolute -top-2 -right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 shadow-lg"
+                        title="View PDF Report"
+                      >
+                        <FileText className="h-3 w-3" />
+                      </button>
                     )}
-                  </button>
+                  </div>
                 ))}
               </div>
               
