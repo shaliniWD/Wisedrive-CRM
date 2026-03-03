@@ -980,7 +980,7 @@ async def _repair_customer(db, customer: dict, current_user: dict):
         if lead_payment_id:
             update_data = {
                 "razorpay_payment_id": lead_payment_id,
-                "payment_amount": lead.get("package_price") or lead.get("amount", 0),
+                "payment_amount": lead.get("package_price") or lead.get("payment_amount") or lead.get("amount", 0),
                 "package_name": lead.get("package_name"),
                 "package_id": lead.get("package_id"),
                 "no_of_inspections": lead.get("no_of_inspections", 1),
@@ -994,7 +994,90 @@ async def _repair_customer(db, customer: dict, current_user: dict):
             repairs["payment_data_recovered"] = True
             repairs["details"].append(f"Recovered payment data from lead: payment_id={lead_payment_id[-8:]}")
     
-    # 0b. NEW: Link inspections by lead's razorpay_payment_id
+    # 0b. Check if lead has a DIFFERENT payment than customer (additional purchase scenario)
+    # This happens when customer made 2 payments but only 1st was recorded on customer
+    if lead and lead.get("razorpay_payment_id") and customer.get("razorpay_payment_id"):
+        lead_payment_id = lead.get("razorpay_payment_id")
+        customer_payment_id = customer.get("razorpay_payment_id")
+        
+        if lead_payment_id != customer_payment_id:
+            # Check if this payment is already in additional_purchases
+            existing_additional = customer.get("additional_purchases", []) or []
+            existing_payment_ids = [p.get("razorpay_payment_id") for p in existing_additional]
+            
+            if lead_payment_id not in existing_payment_ids:
+                # Add this as additional purchase
+                additional_purchase = {
+                    "package_id": lead.get("package_id"),
+                    "package_name": lead.get("package_name"),
+                    "no_of_inspections": lead.get("no_of_inspections", 1),
+                    "payment_amount": lead.get("payment_amount") or lead.get("package_price") or 0,
+                    "razorpay_payment_id": lead_payment_id,
+                    "purchased_at": lead.get("updated_at") or datetime.now(timezone.utc).isoformat()
+                }
+                
+                await db.customers.update_one(
+                    {"id": customer_id},
+                    {"$push": {"additional_purchases": additional_purchase}}
+                )
+                customer["additional_purchases"] = existing_additional + [additional_purchase]
+                repairs["details"].append(f"Added missing additional purchase: {lead.get('package_name')} (payment={lead_payment_id[-8:]})")
+                
+                # Check if inspection exists for this payment
+                existing_insp = await db.inspections.find_one(
+                    {"razorpay_payment_id": lead_payment_id},
+                    {"_id": 0, "id": 1}
+                )
+                
+                if not existing_insp:
+                    # Create missing inspection for this additional purchase
+                    no_of_inspections = lead.get("no_of_inspections", 1)
+                    for i in range(no_of_inspections):
+                        inspection_id = str(uuid.uuid4())
+                        inspection = {
+                            "id": inspection_id,
+                            "customer_id": customer_id,
+                            "lead_id": lead_id,
+                            "order_id": f"ORD-{lead_payment_id[-8:].upper()}",
+                            "customer_name": customer.get("name"),
+                            "customer_mobile": mobile,
+                            "customer_email": customer.get("email"),
+                            "city": customer.get("city"),
+                            "city_id": customer.get("city_id"),
+                            "car_number": "",
+                            "package_type": lead.get("package_name"),
+                            "package_name": lead.get("package_name"),
+                            "total_amount": (lead.get("payment_amount") or 0) / no_of_inspections if no_of_inspections > 0 else 0,
+                            "amount_paid": (lead.get("payment_amount") or 0) / no_of_inspections if no_of_inspections > 0 else 0,
+                            "balance_due": 0,
+                            "payment_status": "FULLY_PAID",
+                            "payment_date": datetime.now(timezone.utc).isoformat(),
+                            "razorpay_payment_id": lead_payment_id,
+                            "inspection_status": "NEW_INSPECTION",
+                            "scheduled_date": None,
+                            "scheduled_time": None,
+                            "slot_number": i + 1,
+                            "inspections_available": 1,
+                            "report_status": "pending",
+                            "notes": f"Inspection {i+1}/{no_of_inspections} - Created by repair tool (additional purchase)",
+                            "payment_transactions": [{
+                                "id": str(uuid.uuid4()),
+                                "amount": (lead.get("payment_amount") or 0) / no_of_inspections if no_of_inspections > 0 else 0,
+                                "payment_type": "full",
+                                "payment_method": "razorpay",
+                                "razorpay_payment_id": lead_payment_id,
+                                "status": "completed",
+                                "created_at": datetime.now(timezone.utc).isoformat()
+                            }],
+                            "created_at": datetime.now(timezone.utc).isoformat(),
+                            "created_by": current_user.get("id", "repair_tool")
+                        }
+                        await db.inspections.insert_one(inspection)
+                        repairs["inspections_created"] += 1
+                    
+                    repairs["details"].append(f"Created {no_of_inspections} inspection(s) for additional purchase {lead.get('package_name')}")
+    
+    # 0c. Link inspections by lead's razorpay_payment_id
     if lead and lead.get("razorpay_payment_id"):
         result = await db.inspections.update_many(
             {
