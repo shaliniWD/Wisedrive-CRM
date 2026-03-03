@@ -3615,18 +3615,31 @@ async def twilio_whatsapp_webhook(
     ad_mapping = None
     city_lookup_log = []
     
-    # Strategy 1: Lookup by ad_id (exact match)
+    # Strategy 1: Lookup by ad_id (case-insensitive, trimmed)
     if ad_id:
-        ad_mapping = await db.ad_city_mappings.find_one({"ad_id": ad_id, "is_active": True}, {"_id": 0})
+        ad_id_cleaned = ad_id.strip()
+        # First try exact match
+        ad_mapping = await db.ad_city_mappings.find_one({"ad_id": ad_id_cleaned, "is_active": True}, {"_id": 0})
+        
+        # If not found, try case-insensitive regex match
+        if not ad_mapping:
+            ad_mapping = await db.ad_city_mappings.find_one({
+                "ad_id": {"$regex": f"^{re.escape(ad_id_cleaned)}$", "$options": "i"},
+                "is_active": True
+            }, {"_id": 0})
+            if ad_mapping:
+                city_lookup_log.append({"strategy": 1, "method": "ad_id case-insensitive match", "found": True, "searched_ad_id": ad_id_cleaned, "matched_ad_id": ad_mapping.get("ad_id")})
+        
         if ad_mapping:
             city = ad_mapping.get("city")
             city_id = ad_mapping.get("city_id")
-            city_lookup_log.append({"strategy": 1, "method": "ad_id exact match", "found": True, "city": city})
-            logger.info(f"Found city mapping by ad_id '{ad_id}': {city}")
+            if not any(log.get("strategy") == 1 for log in city_lookup_log):
+                city_lookup_log.append({"strategy": 1, "method": "ad_id exact match", "found": True, "city": city, "ad_id": ad_id_cleaned})
+            logger.info(f"Found city mapping by ad_id '{ad_id_cleaned}': {city}")
         else:
-            city_lookup_log.append({"strategy": 1, "method": "ad_id exact match", "found": False, "ad_id": ad_id})
+            city_lookup_log.append({"strategy": 1, "method": "ad_id match", "found": False, "ad_id": ad_id_cleaned, "note": "Check if ad_id exists in ad_city_mappings and is_active=True"})
     else:
-        city_lookup_log.append({"strategy": 1, "method": "ad_id exact match", "skipped": True, "reason": "No ad_id available"})
+        city_lookup_log.append({"strategy": 1, "method": "ad_id match", "skipped": True, "reason": "No ad_id available"})
     
     # Strategy 2: Lookup by ad_name (partial match on ad_name field)
     if not city and ad_name:
