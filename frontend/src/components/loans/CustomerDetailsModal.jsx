@@ -433,6 +433,98 @@ const VehiclesTab = ({ lead, onUpdate }) => {
               )}
               
               {/* Loan Details Section */}
+              <div className="mt-2 pt-2 border-t border-gray-100">
+                {editingLoanDetails === vehicle.vehicle_id ? (
+                  // Edit Mode
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <Label className="text-[10px] text-gray-500">Vehicle Valuation (₹)</Label>
+                        <Input
+                          type="number"
+                          placeholder="e.g., 500000"
+                          value={loanForm.vehicle_valuation}
+                          onChange={(e) => setLoanForm({...loanForm, vehicle_valuation: e.target.value})}
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-[10px] text-gray-500">Required Loan (₹)</Label>
+                        <Input
+                          type="number"
+                          placeholder="e.g., 400000"
+                          value={loanForm.required_loan_amount}
+                          onChange={(e) => setLoanForm({...loanForm, required_loan_amount: e.target.value})}
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-[10px] text-gray-500">Expected EMI (₹)</Label>
+                        <Input
+                          type="number"
+                          placeholder="e.g., 12000"
+                          value={loanForm.expected_emi}
+                          onChange={(e) => setLoanForm({...loanForm, expected_emi: e.target.value})}
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-[10px] text-gray-500">Tenure (months)</Label>
+                        <Input
+                          type="number"
+                          placeholder="e.g., 36"
+                          value={loanForm.expected_tenure_months}
+                          onChange={(e) => setLoanForm({...loanForm, expected_tenure_months: e.target.value})}
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-1">
+                      <Button size="sm" variant="ghost" onClick={() => setEditingLoanDetails(null)} className="h-7 text-xs">
+                        Cancel
+                      </Button>
+                      <Button size="sm" onClick={() => handleSaveLoanDetails(vehicle.vehicle_id)} className="h-7 text-xs">
+                        Save
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  // Display Mode
+                  <div className="flex items-start justify-between">
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                      <div>
+                        <span className="text-gray-400">Valuation:</span>{' '}
+                        <span className="font-medium text-gray-700">{formatCurrency(vehicle.vehicle_valuation)}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">Loan Required:</span>{' '}
+                        <span className="font-medium text-gray-700">{formatCurrency(vehicle.required_loan_amount)}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">Expected EMI:</span>{' '}
+                        <span className="font-medium text-gray-700">{formatCurrency(vehicle.expected_emi)}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">Tenure:</span>{' '}
+                        <span className="font-medium text-gray-700">
+                          {vehicle.expected_tenure_months ? `${vehicle.expected_tenure_months} months` : '—'}
+                        </span>
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleEditLoanDetails(vehicle)}
+                      className="h-6 text-xs text-blue-600"
+                    >
+                      <Edit className="h-3 w-3 mr-1" />
+                      Edit
+                    </Button>
+                  </div>
+                )}
+              </div>
+              
+              {/* Loan Details Section */}
               <div className="mt-3 pt-3 border-t border-gray-100">
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="text-xs font-medium text-gray-700">Loan Details</h4>
