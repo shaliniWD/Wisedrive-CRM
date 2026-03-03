@@ -1141,9 +1141,8 @@ async def _repair_customer(db, customer: dict, current_user: dict):
     
     # 4. NEW: Additional search strategies if still no inspections found
     if repairs["inspections_linked"] == 0 and repairs["inspections_created"] == 0:
-        # 4a. Search by customer name (exact match) and city
+        # 4a. Search by customer name (exact match)
         customer_name = customer.get("name")
-        customer_city = customer.get("city")
         customer_email = customer.get("email")
         
         if customer_name:
