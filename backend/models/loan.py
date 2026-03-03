@@ -684,23 +684,91 @@ class LoanApplicationUpdate(BaseModel):
 
 
 # Document type definitions
+# Document requirement definitions based on bank policies
 SALARIED_DOCUMENTS = [
-    DocumentRequirement(document_type="salary_slip_1", display_name="Salary Slip (Month 1)", required=True),
-    DocumentRequirement(document_type="salary_slip_2", display_name="Salary Slip (Month 2)", required=True),
-    DocumentRequirement(document_type="salary_slip_3", display_name="Salary Slip (Month 3)", required=True),
-    DocumentRequirement(document_type="bank_statement", display_name="Bank Statement (6 months)", required=True),
-    DocumentRequirement(document_type="id_proof", display_name="ID Proof (Aadhaar/PAN)", required=True),
-    DocumentRequirement(document_type="address_proof", display_name="Address Proof", required=True),
-    DocumentRequirement(document_type="photo", display_name="Passport Photo", required=False),
+    # KYC Documents
+    DocumentRequirement(document_type="pan_card", display_name="PAN Card", required=True, description="For identity verification and tax records"),
+    DocumentRequirement(document_type="aadhaar_card", display_name="Aadhaar Card", required=True, description="Government ID proof with address"),
+    DocumentRequirement(document_type="photo", display_name="Passport Size Photo", required=True, description="Recent photograph"),
+    
+    # Income Documents
+    DocumentRequirement(document_type="salary_slip_1", display_name="Salary Slip (Month 1)", required=True, description="Latest month salary slip"),
+    DocumentRequirement(document_type="salary_slip_2", display_name="Salary Slip (Month 2)", required=True, description="Previous month salary slip"),
+    DocumentRequirement(document_type="salary_slip_3", display_name="Salary Slip (Month 3)", required=True, description="2 months ago salary slip"),
+    DocumentRequirement(document_type="bank_statement", display_name="Bank Statement (6 months)", required=True, description="Salary account statement showing credits"),
+    
+    # Employment Documents
+    DocumentRequirement(document_type="employment_id", display_name="Employment ID Card", required=False, description="Company ID or offer letter"),
+    DocumentRequirement(document_type="form_16", display_name="Form 16", required=False, description="Tax deduction certificate from employer"),
+    
+    # Address Documents
+    DocumentRequirement(document_type="address_proof", display_name="Address Proof", required=True, description="Utility bill, rent agreement, or Aadhaar"),
+    DocumentRequirement(document_type="rent_agreement", display_name="Rent Agreement", required=False, description="Required if renting - min 2 years"),
+    
+    # Vehicle Documents (for loan processing)
+    DocumentRequirement(document_type="vehicle_rc", display_name="Vehicle RC Book", required=True, description="Registration Certificate of the vehicle"),
+    DocumentRequirement(document_type="vehicle_insurance", display_name="Vehicle Insurance", required=True, description="Valid insurance - min 60 days remaining"),
 ]
 
 SELF_EMPLOYED_DOCUMENTS = [
-    DocumentRequirement(document_type="itr_1", display_name="ITR (Year 1)", required=True),
-    DocumentRequirement(document_type="itr_2", display_name="ITR (Year 2)", required=True),
-    DocumentRequirement(document_type="bank_statement", display_name="Bank Statement (12 months)", required=True),
-    DocumentRequirement(document_type="business_registration", display_name="Business Registration", required=True),
-    DocumentRequirement(document_type="gst_returns", display_name="GST Returns (Last 6 months)", required=False),
-    DocumentRequirement(document_type="id_proof", display_name="ID Proof (Aadhaar/PAN)", required=True),
-    DocumentRequirement(document_type="address_proof", display_name="Address Proof", required=True),
-    DocumentRequirement(document_type="photo", display_name="Passport Photo", required=False),
+    # KYC Documents
+    DocumentRequirement(document_type="pan_card", display_name="PAN Card", required=True, description="For identity verification and tax records"),
+    DocumentRequirement(document_type="aadhaar_card", display_name="Aadhaar Card", required=True, description="Government ID proof with address"),
+    DocumentRequirement(document_type="photo", display_name="Passport Size Photo", required=True, description="Recent photograph"),
+    
+    # Income Documents
+    DocumentRequirement(document_type="itr_1", display_name="ITR (Year 1 - Latest)", required=True, description="Income Tax Return - Latest year"),
+    DocumentRequirement(document_type="itr_2", display_name="ITR (Year 2)", required=True, description="Income Tax Return - Previous year"),
+    DocumentRequirement(document_type="bank_statement", display_name="Bank Statement (12 months)", required=True, description="Business account statement"),
+    DocumentRequirement(document_type="computation_of_income", display_name="Computation of Income", required=False, description="CA certified if available"),
+    
+    # Business Documents
+    DocumentRequirement(document_type="business_registration", display_name="Business Registration", required=True, description="Shop Act / Udyam / Company Registration"),
+    DocumentRequirement(document_type="gst_certificate", display_name="GST Certificate", required=False, description="GST registration certificate"),
+    DocumentRequirement(document_type="gst_returns", display_name="GST Returns (6 months)", required=False, description="Monthly GST filings"),
+    
+    # Address Documents
+    DocumentRequirement(document_type="address_proof", display_name="Address Proof", required=True, description="Utility bill, rent agreement, or Aadhaar"),
+    DocumentRequirement(document_type="business_address_proof", display_name="Business Address Proof", required=False, description="Shop/office address proof"),
+    
+    # Vehicle Documents (for loan processing)
+    DocumentRequirement(document_type="vehicle_rc", display_name="Vehicle RC Book", required=True, description="Registration Certificate of the vehicle"),
+    DocumentRequirement(document_type="vehicle_insurance", display_name="Vehicle Insurance", required=True, description="Valid insurance - min 60 days remaining"),
 ]
+
+# All available document types for reference
+ALL_DOCUMENT_TYPES = {
+    # KYC
+    "pan_card": "PAN Card",
+    "aadhaar_card": "Aadhaar Card",
+    "photo": "Passport Size Photo",
+    
+    # Income - Salaried
+    "salary_slip_1": "Salary Slip (Month 1)",
+    "salary_slip_2": "Salary Slip (Month 2)",
+    "salary_slip_3": "Salary Slip (Month 3)",
+    "form_16": "Form 16",
+    "employment_id": "Employment ID Card",
+    
+    # Income - Self Employed
+    "itr_1": "ITR (Year 1)",
+    "itr_2": "ITR (Year 2)",
+    "computation_of_income": "Computation of Income",
+    "gst_certificate": "GST Certificate",
+    "gst_returns": "GST Returns",
+    "business_registration": "Business Registration",
+    
+    # Bank & Financial
+    "bank_statement": "Bank Statement",
+    
+    # Address
+    "address_proof": "Address Proof",
+    "rent_agreement": "Rent Agreement",
+    "business_address_proof": "Business Address Proof",
+    
+    # Vehicle
+    "vehicle_rc": "Vehicle RC Book",
+    "vehicle_insurance": "Vehicle Insurance",
+    "vehicle_photos": "Vehicle Photos",
+}
+
