@@ -1095,7 +1095,7 @@ async def check_eligibility_all_banks(
     
     for bank in banks:
         try:
-            result = await check_bank_eligibility(bank, request)
+            result = await evaluate_bank_eligibility(bank, request)
             if result.is_eligible:
                 eligible_results.append(result.model_dump())
             else:
@@ -1196,7 +1196,7 @@ async def check_lead_eligibility(
     ineligible_results = []
     
     for bank in banks:
-        result = await check_bank_eligibility(bank, req)
+        result = await evaluate_bank_eligibility(bank, req)
         if result.is_eligible:
             eligible_results.append(result.model_dump())
         else:
