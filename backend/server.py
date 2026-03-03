@@ -764,70 +764,44 @@ async def test_auth(current_user: dict = Depends(get_current_user)):
 
 @api_router.get("/debug/mechanic-query")
 async def debug_mechanic_query(current_user: dict = Depends(get_current_user)):
-    """Debug endpoint to see what the mechanic inspection query would return"""
+    """Debug endpoint to see what the mechanic inspection query would return.
+    
+    NOTE: The mechanic app query now ONLY shows inspections assigned to the mechanic.
+    Unassigned inspections are NOT shown - they stay in the CRM pool.
+    """
     mechanic_id = current_user["id"]
-    mechanic_cities = current_user.get("inspection_cities", [])
     mechanic_name = current_user.get("name", "")
+    mechanic_cities = current_user.get("inspection_cities", [])
     
-    # Resolve mechanic cities to include aliases
-    all_city_variants = []
-    for mc in mechanic_cities:
-        all_city_variants.append(mc)
-        all_city_variants.append(mc.lower())
-        all_city_variants.append(mc.upper())
-        all_city_variants.append(mc.title())
-        
-        # Check if this city has aliases in the master table
-        city_doc = await db.cities.find_one({
-            "$or": [
-                {"name": {"$regex": f"^{mc}$", "$options": "i"}},
-                {"aliases": {"$regex": f"^{mc}$", "$options": "i"}}
-            ]
-        })
-        if city_doc:
-            all_city_variants.append(city_doc["name"])
-            all_city_variants.extend(city_doc.get("aliases", []))
-    
-    all_city_variants = list(dict.fromkeys(all_city_variants))
-    
-    # Build the same query as the mechanic inspections endpoint
-    query = {
-        "$or": [
-            {"mechanic_id": mechanic_id},
-            {"mechanic_name": {"$regex": f"^{mechanic_name}$", "$options": "i"}} if mechanic_name else {"mechanic_id": mechanic_id},
-            {
-                "mechanic_id": {"$in": [None, ""]},
-                "city": {"$regex": f"^({'|'.join(all_city_variants)})$", "$options": "i"} if all_city_variants else {"$exists": True},
-                "inspection_status": {"$in": ["NEW_INSPECTION", "ASSIGNED_TO_MECHANIC"]}
-            }
-        ]
-    }
-    
-    # Count how many inspections match each condition
+    # Count inspections assigned to this mechanic
     count_by_mechanic_id = await db.inspections.count_documents({"mechanic_id": mechanic_id})
     count_by_mechanic_name = await db.inspections.count_documents({"mechanic_name": {"$regex": f"^{mechanic_name}$", "$options": "i"}}) if mechanic_name else 0
-    count_unassigned_in_cities = await db.inspections.count_documents({
-        "mechanic_id": {"$in": [None, ""]},
-        "city": {"$regex": f"^({'|'.join(all_city_variants)})$", "$options": "i"} if all_city_variants else {"$exists": True},
-        "inspection_status": {"$in": ["NEW_INSPECTION", "ASSIGNED_TO_MECHANIC"]}
-    })
     
-    # Get sample city values in the database
-    sample_cities = await db.inspections.distinct("city")
+    # Get breakdown by status for assigned inspections
+    assigned_inspections = await db.inspections.find(
+        {"$or": [
+            {"mechanic_id": mechanic_id},
+            {"mechanic_name": {"$regex": f"^{mechanic_name}$", "$options": "i"}} if mechanic_name else {"_never_match_": True}
+        ]},
+        {"_id": 0, "id": 1, "inspection_status": 1, "city": 1}
+    ).to_list(100)
+    
+    status_breakdown = {}
+    for insp in assigned_inspections:
+        status = insp.get("inspection_status", "UNKNOWN")
+        status_breakdown[status] = status_breakdown.get(status, 0) + 1
     
     return {
         "mechanic_id": mechanic_id,
         "mechanic_name": mechanic_name,
         "mechanic_cities_from_profile": mechanic_cities,
-        "resolved_city_variants": all_city_variants,
         "query_summary": {
             "inspections_assigned_by_id": count_by_mechanic_id,
             "inspections_assigned_by_name": count_by_mechanic_name,
-            "unassigned_in_mechanic_cities": count_unassigned_in_cities,
-            "total_would_return": count_by_mechanic_id + count_by_mechanic_name + count_unassigned_in_cities
+            "total_would_return": count_by_mechanic_id + count_by_mechanic_name
         },
-        "sample_cities_in_db": sample_cities[:20],
-        "debug_tip": "If 'total_would_return' is 0 but inspections exist, check if city names match between inspections and mechanic's inspection_cities"
+        "status_breakdown": status_breakdown,
+        "note": "Mechanic app now ONLY shows inspections assigned to this mechanic. Unassigned inspections stay in CRM pool."
     }
 
 
