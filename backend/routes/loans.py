@@ -2126,20 +2126,31 @@ async def update_vehicle_in_loan_lead(
     
     now = datetime.now(timezone.utc)
     
+    # Build update document dynamically to only set provided fields
+    update_fields = {"updated_at": now.isoformat()}
+    
+    if vehicle_data.car_number:
+        update_fields["vehicles.$.car_number"] = vehicle_data.car_number.upper().replace(" ", "")
+    if vehicle_data.car_make:
+        update_fields["vehicles.$.car_make"] = vehicle_data.car_make
+    if vehicle_data.car_model:
+        update_fields["vehicles.$.car_model"] = vehicle_data.car_model
+    if vehicle_data.car_year:
+        update_fields["vehicles.$.car_year"] = vehicle_data.car_year
+    if vehicle_data.car_variant:
+        update_fields["vehicles.$.car_variant"] = vehicle_data.car_variant
+    if vehicle_data.vehicle_valuation is not None:
+        update_fields["vehicles.$.vehicle_valuation"] = vehicle_data.vehicle_valuation
+    if vehicle_data.required_loan_amount is not None:
+        update_fields["vehicles.$.required_loan_amount"] = vehicle_data.required_loan_amount
+    if vehicle_data.expected_emi is not None:
+        update_fields["vehicles.$.expected_emi"] = vehicle_data.expected_emi
+    if vehicle_data.expected_tenure_months is not None:
+        update_fields["vehicles.$.expected_tenure_months"] = vehicle_data.expected_tenure_months
+    
     result = await db.loan_leads.update_one(
         {"id": lead_id, "vehicles.vehicle_id": vehicle_id},
-        {
-            "$set": {
-                "vehicles.$.car_number": vehicle_data.car_number.upper().replace(" ", ""),
-                "vehicles.$.car_make": vehicle_data.car_make,
-                "vehicles.$.car_model": vehicle_data.car_model,
-                "vehicles.$.car_year": vehicle_data.car_year,
-                "vehicles.$.car_variant": vehicle_data.car_variant,
-                "vehicles.$.vehicle_valuation": vehicle_data.vehicle_valuation,
-                "vehicles.$.required_loan_amount": vehicle_data.required_loan_amount,
-                "updated_at": now.isoformat()
-            }
-        }
+        {"$set": update_fields}
     )
     
     if result.modified_count == 0:
