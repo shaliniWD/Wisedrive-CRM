@@ -832,7 +832,7 @@ async def diagnose_customer_data(
     
     # Also search inspections by lead_ids found
     if leads:
-        lead_ids = [l.get("id") for l in leads if l.get("id")]
+        lead_ids = [ld.get("id") for ld in leads if ld.get("id")]
         if lead_ids:
             insp_by_lead = await db.inspections.find(
                 {"lead_id": {"$in": lead_ids}},
