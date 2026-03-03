@@ -608,7 +608,7 @@ export const settingsApi = {
 // Loans API
 export const loansApi = {
   // Loan Leads
-  getAll: (params) => axios.get(`${API_URL}/loan-leads`, { params }),
+  getAll: (params) => axios.get(`${API_URL}/loan-leads`, { params: { ...params, timezone_offset: getTimezoneOffset() } }),
   getById: (id) => axios.get(`${API_URL}/loan-leads/${id}`),
   update: (id, data) => axios.put(`${API_URL}/loan-leads/${id}`, data),
   syncCustomers: () => axios.get(`${API_URL}/loan-leads/sync-customers`),
