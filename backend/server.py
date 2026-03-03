@@ -604,7 +604,8 @@ init_meta_ads_routes(db, get_current_user)
 api_router.include_router(meta_ads_router, tags=["Meta Ads"])
 
 # Import and include Credit Report router
-from routes.credit_report import router as credit_report_router
+from routes.credit_report import router as credit_report_router, init_credit_report_routes
+init_credit_report_routes(db, get_current_user)
 api_router.include_router(credit_report_router, tags=["Credit Reports"])
 
 
