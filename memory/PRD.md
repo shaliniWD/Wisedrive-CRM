@@ -35,6 +35,7 @@ The application is a full-stack CRM for vehicle loans and inspections. Key featu
 
 ### P0 - Critical
 1. **Lead Reassignment Bug** - Role lookup failing, shows empty `role_code`
+2. ~~**Second Payment Not Creating Inspections**~~ - FIXED (Dec 2025) - Webhook now handles multiple payments correctly
 
 ### P1 - High  
 2. **Credit Report Frontend UI** - No UI to trigger/view reports
