@@ -6,7 +6,7 @@ The application is a full-stack CRM for vehicle loans and inspections. Key featu
 - Vehicle inspection scheduling and reporting
 - Loan application processing
 - Customer management
-- Credit report integration (CIBIL, Equifax, Experian, CRIF via Surepass)
+- Credit report integration (CIBIL, Equifax, Experian via Surepass)
 - Bank statement analysis for loan eligibility
 
 ## Core Architecture
@@ -31,7 +31,7 @@ The application is a full-stack CRM for vehicle loans and inspections. Key featu
 - ✅ Customer Info tab: First Name, Last Name, PAN, DOB, Mobile, Email, Gender, PIN Code
 - ✅ Credit Reports column: "Get Report" button + score badge
 - ✅ Removed OTP flow - direct bureau fetch via Surepass API
-- ✅ 4 bureau support: CIBIL, Equifax, Experian, CRIF
+- ✅ 3 bureau support: CIBIL, Equifax, Experian
 - ✅ Cached reports loading from database
 - ✅ "Fetch Again" dropdown for manual refresh
 - ✅ PDF view button
@@ -40,10 +40,10 @@ The application is a full-stack CRM for vehicle loans and inspections. Key featu
 - ✅ CIBIL JSON & PDF endpoints
 - ✅ Equifax JSON & PDF endpoints  
 - ✅ Experian JSON & PDF endpoints
-- ✅ CRIF Commercial JSON & PDF endpoints (scope blocked by Surepass)
 - ✅ Report storage in `credit_reports` collection
 - ✅ History lookup by PAN
 - ✅ Loan lead credit score linking
+- ✅ **CRIF Integration Removed** (Dec 2025) - Removed at user request
 
 ### CustomerDetailsModal Redesign (Dec 2025)
 - ✅ Complete UI redesign with modern Shadcn components
@@ -82,9 +82,8 @@ The application is a full-stack CRM for vehicle loans and inspections. Key featu
 3. **Data Quality Repair** - Need batch repair scripts for historical records
 
 ### P2 - Medium
-4. **CRIF Scope** - Blocked by Surepass (needs scope enabled by provider)
-5. **Video Upload** - Critical inspection feature broken
-6. **Duplicate Record Cleanup** - Data quality improvement
+4. **Video Upload** - Critical inspection feature broken
+5. **Duplicate Record Cleanup** - Data quality improvement
 
 ## Upcoming Tasks
 1. Build Loan Eligibility UI in LoansPage
