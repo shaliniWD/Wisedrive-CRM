@@ -591,7 +591,16 @@ class SurepassService:
                 total_written_off_amount = 0
                 
                 if isinstance(retail_accounts, list):
-                    for acc in retail_accounts:
+                    for idx, acc in enumerate(retail_accounts):
+                        # Log first account structure for debugging
+                        if idx == 0:
+                            logger.info(f"First account keys: {list(acc.keys())}")
+                            # Log potential payment history fields
+                            for key in ['PaymentHistory', 'Payment_History', 'PaymentHistoryProfile', 'History48Months', 
+                                       'PaymentHistoryList', 'AccountHistory', 'CAISAccountHistoryList', 'HistoryDetails']:
+                                if acc.get(key):
+                                    logger.info(f"Payment history found in '{key}': {str(acc.get(key))[:200]}")
+                        
                         account_status = acc.get("AccountStatus") or acc.get("Account_Status") or acc.get("Status") or ""
                         is_active = str(account_status).lower() in ["active", "open", "current", "01", "02", "21", "22", "23"]
                         current_balance = float(acc.get("CurrentBalance") or acc.get("Balance") or acc.get("Current_Balance") or 0)
