@@ -135,62 +135,83 @@ class BankStatementAnalyzer:
             logger.error("EMERGENT_LLM_KEY not configured")
             return {"error": "AI service not configured", "success": False}
         
-        try:
-            from emergentintegrations.llm.chat import LlmChat, UserMessage, FileContentWithMimeType
-            
-            # Initialize Gemini chat (supports file attachments)
-            # Using gemini-2.5-flash for speed with document analysis
-            chat = LlmChat(
-                api_key=self.api_key,
-                session_id=f"bank_statement_{datetime.now(timezone.utc).timestamp()}",
-                system_message="You are a financial analyst AI. Always respond with valid JSON only, no markdown formatting or code blocks."
-            ).with_model("gemini", "gemini-2.5-flash")
-            
-            # Create file attachment
-            pdf_file = FileContentWithMimeType(
-                file_path=file_path,
-                mime_type="application/pdf"
-            )
-            
-            # Send analysis request
-            user_message = UserMessage(
-                text=BANK_STATEMENT_ANALYSIS_PROMPT,
-                file_contents=[pdf_file]
-            )
-            
-            response = await chat.send_message(user_message)
-            
-            # Parse JSON response
+        # Retry logic for transient API errors
+        max_retries = 3
+        retry_delay = 2  # seconds
+        
+        for attempt in range(max_retries):
             try:
-                # Clean response - remove markdown code blocks if present
-                response_text = response.strip()
-                if response_text.startswith("```json"):
-                    response_text = response_text[7:]
-                if response_text.startswith("```"):
-                    response_text = response_text[3:]
-                if response_text.endswith("```"):
-                    response_text = response_text[:-3]
+                from emergentintegrations.llm.chat import LlmChat, UserMessage, FileContentWithMimeType
+                import asyncio
                 
-                analysis = json.loads(response_text.strip())
-                analysis["success"] = True
-                analysis["analyzed_at"] = datetime.now(timezone.utc).isoformat()
-                return analysis
+                # Initialize Gemini chat (supports file attachments)
+                # Using gemini-2.5-flash for speed with document analysis
+                chat = LlmChat(
+                    api_key=self.api_key,
+                    session_id=f"bank_statement_{datetime.now(timezone.utc).timestamp()}",
+                    system_message="You are a financial analyst AI. Always respond with valid JSON only, no markdown formatting or code blocks."
+                ).with_model("gemini", "gemini-2.5-flash")
                 
-            except json.JSONDecodeError as e:
-                logger.error(f"Failed to parse AI response as JSON: {e}")
-                logger.error(f"Raw response: {response[:1000] if response else 'None'}")
+                # Create file attachment
+                pdf_file = FileContentWithMimeType(
+                    file_path=file_path,
+                    mime_type="application/pdf"
+                )
+                
+                # Send analysis request
+                user_message = UserMessage(
+                    text=BANK_STATEMENT_ANALYSIS_PROMPT,
+                    file_contents=[pdf_file]
+                )
+                
+                response = await chat.send_message(user_message)
+                
+                # Parse JSON response
+                try:
+                    # Clean response - remove markdown code blocks if present
+                    response_text = response.strip()
+                    if response_text.startswith("```json"):
+                        response_text = response_text[7:]
+                    if response_text.startswith("```"):
+                        response_text = response_text[3:]
+                    if response_text.endswith("```"):
+                        response_text = response_text[:-3]
+                    
+                    analysis = json.loads(response_text.strip())
+                    analysis["success"] = True
+                    analysis["analyzed_at"] = datetime.now(timezone.utc).isoformat()
+                    return analysis
+                    
+                except json.JSONDecodeError as e:
+                    logger.error(f"Failed to parse AI response as JSON: {e}")
+                    logger.error(f"Raw response: {response[:1000] if response else 'None'}")
+                    return {
+                        "success": False,
+                        "error": "Failed to parse analysis response",
+                        "raw_response": response[:500] if response else None
+                    }
+                    
+            except Exception as e:
+                error_str = str(e)
+                # Check for transient errors that should be retried
+                is_transient = any(err in error_str.lower() for err in ['502', '503', '504', 'bad gateway', 'service unavailable', 'timeout', 'connection'])
+                
+                if is_transient and attempt < max_retries - 1:
+                    logger.warning(f"Bank statement analysis attempt {attempt + 1} failed with transient error: {error_str}. Retrying in {retry_delay}s...")
+                    await asyncio.sleep(retry_delay)
+                    retry_delay *= 2  # Exponential backoff
+                    continue
+                
+                logger.error(f"Bank statement analysis failed: {error_str}")
                 return {
                     "success": False,
-                    "error": "Failed to parse analysis response",
-                    "raw_response": response[:500] if response else None
+                    "error": error_str
                 }
-                
-        except Exception as e:
-            logger.error(f"Bank statement analysis failed: {str(e)}")
-            return {
-                "success": False,
-                "error": str(e)
-            }
+        
+        return {
+            "success": False,
+            "error": "Analysis failed after all retry attempts"
+        }
     
     async def analyze_from_url(
         self, 
