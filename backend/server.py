@@ -7228,10 +7228,36 @@ async def assign_mechanic_to_inspection(
         inspection_city = inspection.get("city", "")
         mechanic_cities = mechanic.get("inspection_cities", []) or []
         
+        # City alias mapping for common variations
+        city_aliases = {
+            "bengaluru": ["bangalore", "blr"],
+            "bangalore": ["bengaluru", "blr"],
+            "mumbai": ["bombay"],
+            "bombay": ["mumbai"],
+            "chennai": ["madras"],
+            "madras": ["chennai"],
+            "kolkata": ["calcutta"],
+            "calcutta": ["kolkata"],
+        }
+        
         if mechanic_cities and inspection_city:
-            # Case-insensitive city matching
+            # Case-insensitive city matching with aliases
+            inspection_city_lower = inspection_city.lower()
             mechanic_cities_lower = [c.lower() for c in mechanic_cities]
-            if inspection_city.lower() not in mechanic_cities_lower:
+            
+            # Check direct match first
+            city_matched = inspection_city_lower in mechanic_cities_lower
+            
+            # If no direct match, check aliases
+            if not city_matched:
+                # Get aliases for the inspection city
+                aliases_to_check = city_aliases.get(inspection_city_lower, [])
+                for alias in aliases_to_check:
+                    if alias in mechanic_cities_lower:
+                        city_matched = True
+                        break
+            
+            if not city_matched:
                 raise HTTPException(
                     status_code=400, 
                     detail=f"Mechanic is not assigned to city: {inspection_city}. Mechanic's inspection cities: {', '.join(mechanic_cities)}"
