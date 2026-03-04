@@ -89,9 +89,10 @@ The application is a full-stack CRM for vehicle loans and inspections. Key featu
 ## Upcoming Tasks
 1. Build Loan Eligibility UI in LoansPage
 2. PDF export/download button for credit reports
-3. Refactor large components (InspectionsPage, LoansPage, CreditScoreModal)
+3. Refactor large components (InspectionsPage, LoansPage)
 4. Create Charge Types Master page
 5. Server.py webhook refactoring
+6. Delete old CreditScoreModal.jsx (superseded by CreditRiskDashboard.jsx)
 
 ## Technical Debt
 - `server.py` - Still contains webhook logic, needs extraction to routes
