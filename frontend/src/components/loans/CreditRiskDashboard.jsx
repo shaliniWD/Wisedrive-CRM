@@ -1111,7 +1111,7 @@ export const CreditRiskDashboard = ({ isOpen, onClose, lead, pan: initialPan }) 
                           e.stopPropagation();
                           handleFetchReport(bureau.id);
                         }}
-                        disabled={isFetching || !lead?.pan}
+                        disabled={isFetching || !(lead?.pan_number || lead?.pan)}
                       >
                         {isFetching ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
