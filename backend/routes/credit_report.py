@@ -1,6 +1,6 @@
 """
 Credit Report API Routes
-Integrates with Surepass API for CIBIL, Equifax, Experian, and CRIF reports
+Integrates with Surepass API for CIBIL, Equifax, and Experian reports
 """
 
 from fastapi import APIRouter, Depends, HTTPException
