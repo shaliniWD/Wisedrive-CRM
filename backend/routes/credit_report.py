@@ -647,8 +647,8 @@ async def check_credit_service_status(
     
     return {
         "configured": surepass.is_configured(),
-        "providers": ["CIBIL", "Equifax", "Experian", "CRIF"],
-        "active_providers": ["CIBIL", "Equifax", "Experian", "CRIF"] if surepass.is_configured() else []
+        "providers": ["CIBIL", "Equifax", "Experian"],
+        "active_providers": ["CIBIL", "Equifax", "Experian"] if surepass.is_configured() else []
     }
 
 
