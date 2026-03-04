@@ -32,20 +32,43 @@ BANK_STATEMENT_ANALYSIS_PROMPT = """Analyze this Indian bank statement PDF and e
   "maximum_balance": number,
   "total_credits": number,
   "average_monthly_credits": number,
-  "salary_credits_identified": number or null,
+  "salary_credits_total": number or null,
+  "salary_credits_count": number,
+  "salary_source_company": "Company name paying salary" or null,
+  "other_income_total": number,
+  "other_income_count": number,
   "total_debits": number,
   "average_monthly_debits": number,
   "loan_repayments_total": number or null,
+  "emi_payments_total": number or null,
   "bounce_count": number,
+  "bounced_cheque_count": number,
+  "bounced_cheque_details": ["list of bounce descriptions"] or [],
+  "return_count": number,
   "analysis_notes": "Brief observations about account behavior",
   "confidence_score": number 0-100
 }
 
+SALARY IDENTIFICATION RULES (IMPORTANT):
+- NEFT/IMPS/RTGS credits from companies with keywords like "PVT LTD", "PRIVATE LIMITED", "LLP", "TECHNOLOGIES", "SOLUTIONS" are likely SALARY
+- Look for patterns: "NEFT CR-", "IMPS CR-", "RTGS CR-" followed by company names
+- Example salary pattern: "NEFT CR-UTIB0003362-WISEDRIVE TECHNOLOGIES PRIVATE LIMITED-KALYANDHARREDDY" = SALARY from WISEDRIVE
+- Regular monthly credits of same/similar amounts from same source = SALARY
+- Add ALL such credits to salary_credits_total, NOT to other_income
+
+BOUNCE/RETURN IDENTIFICATION:
+- Look for: "CHQ RTN", "CHEQUE RETURN", "BOUNCE", "RETURN UNPAID", "INSUFFICIENT FUNDS", "ECS RETURN", "NACH RETURN"
+- Count each unique bounced cheque in bounced_cheque_count
+- Include description in bounced_cheque_details array
+
+OTHER INCOME (non-salary credits):
+- UPI receipts, cash deposits, refunds, interest credited
+- Credits NOT from employer/company salary transfers
+
 Guidelines:
 - All amounts as numbers without currency symbols
-- Look for salary patterns (same amount, same date monthly)
-- Identify EMI/loan payments
-- Note any bounced transactions
+- Carefully separate SALARY from OTHER INCOME
+- Report ALL bounces and returns found in statement
 - Use null for fields that cannot be determined
 
 Return ONLY valid JSON, no markdown."""
