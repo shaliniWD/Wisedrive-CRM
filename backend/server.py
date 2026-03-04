@@ -14026,8 +14026,8 @@ async def upload_media_direct(
             blob = bucket.blob(key)
             blob.upload_from_string(file_content, content_type=content_type)
             
-            # Generate public URL
-            expiration_time = datetime.now(timezone.utc) + timedelta(days=365)
+            # Generate public URL (max 7 days for signed URLs)
+            expiration_time = datetime.now(timezone.utc) + timedelta(days=7)
             firebase_url = blob.generate_signed_url(
                 version="v4",
                 expiration=expiration_time,
