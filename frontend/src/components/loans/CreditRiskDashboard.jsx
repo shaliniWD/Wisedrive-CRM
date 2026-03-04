@@ -950,8 +950,7 @@ export const CreditRiskDashboard = ({ isOpen, onClose, lead, pan: initialPan }) 
             const bureauIdMap = {
               'cibil': 'CIBIL',
               'equifax': 'Equifax',
-              'experian': 'Experian',
-              'crif': 'CRIF'
+              'experian': 'Experian'
             };
             const bureauId = bureauIdMap[bureau.toLowerCase()] || bureau;
             
