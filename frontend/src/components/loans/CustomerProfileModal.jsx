@@ -431,9 +431,29 @@ const CustomerProfileModal = ({ isOpen, onClose, lead, onUpdate }) => {
                           <span className="text-gray-500">Avg Monthly:</span>
                           <span className="font-medium">{formatCurrency(bankAnalysis.average_monthly_credits)}</span>
                         </div>
+                        <div className="flex justify-between border-t pt-1 mt-1">
+                          <span className="text-gray-500">Salary Income:</span>
+                          <span className="font-medium text-green-600">
+                            {formatCurrency(bankAnalysis.salary_credits_total || bankAnalysis.salary_credits_identified)}
+                            {bankAnalysis.salary_credits_count > 0 && (
+                              <span className="text-xs text-gray-400 ml-1">({bankAnalysis.salary_credits_count}x)</span>
+                            )}
+                          </span>
+                        </div>
+                        {bankAnalysis.salary_source_company && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">Salary From:</span>
+                            <span className="font-medium text-green-700 text-xs">{bankAnalysis.salary_source_company}</span>
+                          </div>
+                        )}
                         <div className="flex justify-between">
-                          <span className="text-gray-500">Salary Identified:</span>
-                          <span className="font-medium text-green-600">{formatCurrency(bankAnalysis.salary_credits_identified)}</span>
+                          <span className="text-gray-500">Other Income:</span>
+                          <span className="font-medium text-blue-600">
+                            {formatCurrency(bankAnalysis.other_income_total || 0)}
+                            {bankAnalysis.other_income_count > 0 && (
+                              <span className="text-xs text-gray-400 ml-1">({bankAnalysis.other_income_count}x)</span>
+                            )}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -453,12 +473,39 @@ const CustomerProfileModal = ({ isOpen, onClose, lead, onUpdate }) => {
                           <span className="font-medium">{formatCurrency(bankAnalysis.average_monthly_debits)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-gray-500">EMI Payments:</span>
-                          <span className="font-medium text-red-600">{formatCurrency(bankAnalysis.loan_repayments_total)}</span>
+                          <span className="text-gray-500">EMI/Loan Payments:</span>
+                          <span className="font-medium text-red-600">{formatCurrency(bankAnalysis.emi_payments_total || bankAnalysis.loan_repayments_total)}</span>
                         </div>
                       </div>
                     </div>
                   </div>
+
+                  {/* Cheque Bounce/Return Details */}
+                  {(bankAnalysis.bounced_cheque_count > 0 || bankAnalysis.return_count > 0 || (bankAnalysis.bounced_cheque_details && bankAnalysis.bounced_cheque_details.length > 0)) && (
+                    <div className="bg-red-50 rounded-lg p-3 border border-red-200">
+                      <p className="text-xs font-medium text-red-700 mb-2">⚠️ Cheque Bounces / Returns Detected</p>
+                      <div className="grid grid-cols-2 gap-2 text-sm mb-2">
+                        <div className="flex justify-between">
+                          <span className="text-red-600">Cheque Bounces:</span>
+                          <span className="font-bold text-red-700">{bankAnalysis.bounced_cheque_count || 0}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-red-600">Returns:</span>
+                          <span className="font-bold text-red-700">{bankAnalysis.return_count || 0}</span>
+                        </div>
+                      </div>
+                      {bankAnalysis.bounced_cheque_details && bankAnalysis.bounced_cheque_details.length > 0 && (
+                        <div className="mt-2 text-xs text-red-700">
+                          <p className="font-medium mb-1">Bounce Details:</p>
+                          <ul className="list-disc pl-4 space-y-1">
+                            {bankAnalysis.bounced_cheque_details.map((detail, idx) => (
+                              <li key={idx}>{detail}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
                   
                   {/* Analysis Notes */}
                   {bankAnalysis.analysis_notes && (
