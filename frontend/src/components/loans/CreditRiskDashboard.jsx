@@ -1021,8 +1021,16 @@ export const CreditRiskDashboard = ({ isOpen, onClose, lead, pan: initialPan }) 
           });
           break;
         case 'CRIF':
+          // Split name into first and last name for CRIF API
+          const nameParts = (lead.credit_first_name && lead.credit_last_name) 
+            ? [lead.credit_first_name, lead.credit_last_name]
+            : (lead.customer_name || '').trim().split(/\s+/);
+          const firstName = nameParts[0] || '';
+          const lastName = nameParts.slice(1).join(' ') || nameParts[0] || '';
+          
           response = await loansApi.fetchCrifReport({
-            business_name: lead.customer_name,
+            first_name: firstName,
+            last_name: lastName,
             pan: pan,
             mobile: mobile,
             consent: 'Y',
