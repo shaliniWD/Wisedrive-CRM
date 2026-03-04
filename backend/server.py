@@ -7609,6 +7609,41 @@ async def update_inspection_report(
         }}
     )
     
+    # Sync report to inspection_reports collection for mechanic app compatibility
+    # Transform CRM report format to mechanic app format
+    sections = []
+    for category_name, category_data in request_data.report_data.items():
+        if isinstance(category_data, dict):
+            questions = []
+            for q_name, q_data in category_data.items():
+                if isinstance(q_data, dict):
+                    questions.append({
+                        "name": q_name,
+                        "answer": q_data.get("answer") or q_data.get("value"),
+                        "rating": q_data.get("rating"),
+                        "condition": q_data.get("condition"),
+                        "notes": q_data.get("notes"),
+                        "photos": q_data.get("photos", [])
+                    })
+            if questions:
+                sections.append({
+                    "name": category_name,
+                    "questions": questions
+                })
+    
+    # Upsert to inspection_reports collection
+    await db.inspection_reports.update_one(
+        {"inspection_id": inspection_id},
+        {"$set": {
+            "inspection_id": inspection_id,
+            "sections": sections,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "updated_by": current_user["id"],
+            "source": "crm"
+        }},
+        upsert=True
+    )
+    
     return {"success": True, "message": "Report updated"}
 
 
