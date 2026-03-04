@@ -547,21 +547,59 @@ async def get_inspection_report(
     current_user: dict = Depends(get_current_user)
 ):
     """Get inspection report data"""
+    # First check if report exists in inspection_reports collection (mechanic app saves here)
     report = await db.inspection_reports.find_one(
         {"inspection_id": inspection_id},
         {"_id": 0}
     )
     
-    if not report:
-        # Return empty template if no report exists
+    if report:
+        return report
+    
+    # Fall back to checking report_data in the inspections collection (CRM saves here)
+    inspection = await db.inspections.find_one(
+        {"id": inspection_id},
+        {"_id": 0, "report_data": 1}
+    )
+    
+    if inspection and inspection.get("report_data"):
+        crm_report_data = inspection.get("report_data", {})
+        # Transform CRM report format to mechanic app format
+        sections = []
+        for category_name, category_data in crm_report_data.items():
+            if isinstance(category_data, dict):
+                questions = []
+                for q_name, q_data in category_data.items():
+                    if isinstance(q_data, dict):
+                        questions.append({
+                            "name": q_name,
+                            "answer": q_data.get("answer") or q_data.get("value"),
+                            "rating": q_data.get("rating"),
+                            "condition": q_data.get("condition"),
+                            "notes": q_data.get("notes"),
+                            "photos": q_data.get("photos", [])
+                        })
+                if questions:
+                    sections.append({
+                        "name": category_name,
+                        "questions": questions
+                    })
+        
         return {
             "inspection_id": inspection_id,
-            "sections": [],
+            "sections": sections,
             "overall_score": None,
-            "recommendation": None
+            "recommendation": None,
+            "source": "crm"
         }
     
-    return report
+    # Return empty template if no report exists in either location
+    return {
+        "inspection_id": inspection_id,
+        "sections": [],
+        "overall_score": None,
+        "recommendation": None
+    }
 
 
 @router.post("/inspections/{inspection_id}/report")
