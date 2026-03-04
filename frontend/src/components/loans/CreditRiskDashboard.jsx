@@ -928,13 +928,13 @@ export const CreditRiskDashboard = ({ isOpen, onClose, lead, pan: initialPan }) 
   
   // Load existing reports
   useEffect(() => {
-    if (isOpen && (initialPan || lead?.pan)) {
+    if (isOpen && (initialPan || lead?.pan_number || lead?.pan)) {
       loadExistingReports();
     }
   }, [isOpen, initialPan, lead]);
   
   const loadExistingReports = async () => {
-    const pan = initialPan || lead?.pan;
+    const pan = initialPan || lead?.pan_number || lead?.pan;
     if (!pan) return;
     
     setLoading(true);
