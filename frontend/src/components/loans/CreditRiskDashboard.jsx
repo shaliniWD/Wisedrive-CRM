@@ -1045,7 +1045,7 @@ export const CreditRiskDashboard = ({ isOpen, onClose, lead, pan: initialPan }) 
             <div>
               <h2 className="text-xl font-bold text-slate-900">Credit Risk Assessment</h2>
               <p className="text-sm text-slate-500">
-                {lead?.customer_name} • PAN: {lead?.pan || 'Not provided'}
+                {lead?.customer_name} • PAN: {lead?.pan_number || lead?.pan || 'Not provided'}
               </p>
             </div>
           </div>
