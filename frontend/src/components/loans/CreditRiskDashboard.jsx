@@ -982,7 +982,7 @@ export const CreditRiskDashboard = ({ isOpen, onClose, lead, pan: initialPan }) 
       
       switch (bureauId) {
         case 'CIBIL':
-          response = await loansApi.fetchCIBILReport({
+          response = await loansApi.fetchCibilReport({
             name: lead.customer_name,
             pan: pan,
             mobile: mobile,
@@ -1011,7 +1011,7 @@ export const CreditRiskDashboard = ({ isOpen, onClose, lead, pan: initialPan }) 
           });
           break;
         case 'CRIF':
-          response = await loansApi.fetchCRIFReport({
+          response = await loansApi.fetchCrifReport({
             business_name: lead.customer_name,
             pan: pan,
             mobile: mobile,
