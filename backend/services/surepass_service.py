@@ -407,9 +407,13 @@ class SurepassService:
             "address_info": [],
             "email_info": [],
             "score_info": {},
+            "SCORE": {},  # Equifax score format for frontend compatibility
             "accounts": [],
+            "CAIS_Account": {},  # Equifax accounts format for frontend compatibility
             "enquiries": [],
-            "summary": {}
+            "CAPS": {},  # Equifax enquiries format for frontend compatibility
+            "summary": {},
+            "CreditProfileHeader": {}  # Report metadata
         }
         
         try:
@@ -417,10 +421,40 @@ class SurepassService:
             ccr_response = credit_report.get("CCRResponse", {})
             cir_report_list = ccr_response.get("CIRReportDataLst", [])
             
+            # Extract Score from root level
+            scores = credit_report.get("Score", [])
+            if scores and len(scores) > 0:
+                first_score = scores[0]
+                score_value = first_score.get("Value")
+                parsed["SCORE"] = {
+                    "FCIREXScore": score_value,
+                    "BureauScore": score_value,
+                    "FCIREXScoreConfidLevel": first_score.get("Confidence", ""),
+                    "Type": first_score.get("Type"),
+                    "Version": first_score.get("Version")
+                }
+                parsed["score_info"] = {
+                    "score": score_value,
+                    "score_name": first_score.get("Type"),
+                    "score_version": first_score.get("Version"),
+                    "confidence": first_score.get("Confidence")
+                }
+            
             if cir_report_list:
                 first_report = cir_report_list[0]
                 cir_data = first_report.get("CIRReportData", {})
                 id_contact_info = cir_data.get("IDAndContactInfo", {})
+                
+                # Report Header
+                profile_header = cir_data.get("ProfileHeader", {})
+                if profile_header:
+                    parsed["CreditProfileHeader"] = {
+                        "ReportDate": profile_header.get("ReportDate"),
+                        "ReportNumber": profile_header.get("ReportNumber"),
+                        "Subscriber": profile_header.get("Subscriber"),
+                        "Version": profile_header.get("Version"),
+                        "ReportType": profile_header.get("ReportType")
+                    }
                 
                 # Personal Info
                 personal_info = id_contact_info.get("PersonalInfo", {})
@@ -449,6 +483,20 @@ class SurepassService:
                             "type": "Passport",
                             "number": passport.get("IdNumber"),
                             "reported_date": passport.get("ReportedDate")
+                        })
+                if identity_info.get("VoterID"):
+                    for voter in identity_info["VoterID"]:
+                        parsed["id_info"].append({
+                            "type": "Voter ID",
+                            "number": voter.get("IdNumber"),
+                            "reported_date": voter.get("ReportedDate")
+                        })
+                if identity_info.get("DriverLicence"):
+                    for dl in identity_info["DriverLicence"]:
+                        parsed["id_info"].append({
+                            "type": "Driving License",
+                            "number": dl.get("IdNumber"),
+                            "reported_date": dl.get("ReportedDate")
                         })
                 
                 # Address Info
@@ -479,13 +527,100 @@ class SurepassService:
                         "email": email.get("Email"),
                         "reported_date": email.get("ReportedDate")
                     })
-            
-            # Score Info from root
-            scores = credit_report.get("Score", [])
-            if scores:
-                parsed["score_info"] = {
-                    "type": scores[0].get("Type"),
-                    "version": scores[0].get("Version")
+                
+                # Account Information (Credit Accounts)
+                retail_accounts = cir_data.get("RetailAccountDetails", [])
+                account_details_list = []
+                total_outstanding = 0
+                total_overdue = 0
+                active_count = 0
+                closed_count = 0
+                
+                for acc in retail_accounts:
+                    account_status = acc.get("AccountStatus", "")
+                    is_active = account_status in ["Active", "Open", "Current"]
+                    current_balance = acc.get("CurrentBalance") or acc.get("Balance") or 0
+                    amount_overdue = acc.get("AmountPastDue") or acc.get("AmountOverdue") or 0
+                    
+                    account_entry = {
+                        # Fields for both CIBIL and Equifax formats
+                        "account_number": acc.get("AccountNumber", ""),
+                        "institution": acc.get("Institution") or acc.get("Subscriber") or acc.get("CreditorName", ""),
+                        "account_type": acc.get("AccountType") or acc.get("Type", ""),
+                        "ownership_type": acc.get("OwnershipType") or acc.get("Ownership", ""),
+                        "open_date": acc.get("DateOpened") or acc.get("OpenDate", ""),
+                        "close_date": acc.get("DateClosed") or acc.get("CloseDate", ""),
+                        "credit_limit": acc.get("CreditLimit") or acc.get("HighCreditAmount") or 0,
+                        "current_balance": current_balance,
+                        "amount_overdue": amount_overdue,
+                        "credit_status": "Active" if is_active else "Closed",
+                        "payment_history": acc.get("PaymentHistory", ""),
+                        "last_payment_date": acc.get("LastPaymentDate") or acc.get("DateLastPayment", ""),
+                        "written_off_amount": acc.get("WrittenOffAmount") or acc.get("WriteOffAmount") or 0,
+                        "settlement_amount": acc.get("SettlementAmount") or 0,
+                        # Equifax specific fields for frontend compatibility
+                        "Account_Status": account_status,
+                        "Balance": current_balance,
+                        "Amount_Past_Due": amount_overdue,
+                        "Written_Off_Amt_Total": acc.get("WrittenOffAmount") or 0,
+                        "Date_Opened": acc.get("DateOpened") or acc.get("OpenDate", ""),
+                        "Date_Closed": acc.get("DateClosed") or acc.get("CloseDate", ""),
+                        "Subscriber_Name": acc.get("Institution") or acc.get("Subscriber", ""),
+                        "Account_Type": acc.get("AccountType") or acc.get("Type", ""),
+                        "Credit_Limit_Amount": acc.get("CreditLimit") or acc.get("HighCreditAmount") or 0,
+                    }
+                    
+                    account_details_list.append(account_entry)
+                    total_outstanding += current_balance
+                    total_overdue += amount_overdue
+                    if is_active:
+                        active_count += 1
+                    else:
+                        closed_count += 1
+                
+                parsed["accounts"] = account_details_list
+                parsed["CAIS_Account"] = {
+                    "CAIS_Account_DETAILS": account_details_list,
+                    "CAIS_Summary": {
+                        "Credit_Account": {
+                            "CreditAccountTotal": len(account_details_list),
+                            "CreditAccountActive": active_count,
+                            "CreditAccountClosed": closed_count
+                        },
+                        "Total_Outstanding_Balance": {
+                            "Outstanding_Balance_All": total_outstanding,
+                            "Outstanding_Balance_All_Overdue": total_overdue
+                        }
+                    }
+                }
+                
+                # Enquiries (Credit Applications / CAPS)
+                enquiry_list = cir_data.get("EnquiryDetails", []) or cir_data.get("Enquiries", [])
+                enquiry_details_list = []
+                
+                for enq in enquiry_list:
+                    enquiry_entry = {
+                        "institution": enq.get("Institution") or enq.get("Subscriber") or enq.get("EnquiryMemberName", ""),
+                        "date": enq.get("EnquiryDate") or enq.get("Date", ""),
+                        "purpose": enq.get("EnquiryPurpose") or enq.get("Purpose") or enq.get("Reason", ""),
+                        "amount": enq.get("EnquiryAmount") or enq.get("Amount") or 0,
+                        # Equifax specific fields for frontend
+                        "Subscriber_Name": enq.get("Institution") or enq.get("Subscriber", ""),
+                        "Date_of_Request": enq.get("EnquiryDate") or enq.get("Date", ""),
+                        "Enquiry_Purpose": enq.get("EnquiryPurpose") or enq.get("Purpose", ""),
+                        "Enquiry_Amount": enq.get("EnquiryAmount") or enq.get("Amount") or 0,
+                    }
+                    enquiry_details_list.append(enquiry_entry)
+                
+                parsed["enquiries"] = enquiry_details_list
+                parsed["CAPS"] = {
+                    "CAPS_Application_Details": enquiry_details_list,
+                    "CAPS_Summary": {
+                        "TotalCAPSLast7Days": 0,
+                        "TotalCAPSLast30Days": 0,
+                        "TotalCAPSLast90Days": 0,
+                        "TotalCAPSLast180Days": len(enquiry_details_list)
+                    }
                 }
             
             # Summary
@@ -493,11 +628,18 @@ class SurepassService:
                 "total_reports": len(cir_report_list),
                 "total_addresses": len(parsed["address_info"]),
                 "total_phones": len(parsed["phone_info"]),
-                "total_ids": len(parsed["id_info"])
+                "total_ids": len(parsed["id_info"]),
+                "total_accounts": len(parsed["accounts"]),
+                "active_accounts": parsed.get("CAIS_Account", {}).get("CAIS_Summary", {}).get("Credit_Account", {}).get("CreditAccountActive", 0),
+                "total_enquiries": len(parsed["enquiries"]),
+                "total_balance": parsed.get("CAIS_Account", {}).get("CAIS_Summary", {}).get("Total_Outstanding_Balance", {}).get("Outstanding_Balance_All", 0),
+                "total_overdue": parsed.get("CAIS_Account", {}).get("CAIS_Summary", {}).get("Total_Outstanding_Balance", {}).get("Outstanding_Balance_All_Overdue", 0)
             }
             
         except Exception as e:
             logger.error(f"Error parsing Equifax report: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
         
         return parsed
     
