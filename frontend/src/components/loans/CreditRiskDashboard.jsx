@@ -969,7 +969,8 @@ export const CreditRiskDashboard = ({ isOpen, onClose, lead, pan: initialPan }) 
   };
   
   const handleFetchReport = async (bureauId) => {
-    if (!lead?.pan) {
+    const pan = lead?.pan_number || lead?.pan;
+    if (!pan) {
       toast.error('PAN number is required');
       return;
     }
@@ -979,7 +980,7 @@ export const CreditRiskDashboard = ({ isOpen, onClose, lead, pan: initialPan }) 
       let response;
       const requestData = {
         name: lead.customer_name,
-        id_number: lead.pan,
+        id_number: pan,
         id_type: 'pan',
         mobile: lead.customer_phone?.replace('+91', ''),
         consent: 'Y',
