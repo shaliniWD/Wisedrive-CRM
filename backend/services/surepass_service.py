@@ -462,6 +462,29 @@ class SurepassService:
                 
                 id_contact_info = cir_data.get("IDAndContactInfo", {})
                 
+                # Extract score from ScoreDetails (inside CIRReportData)
+                score_details = cir_data.get("ScoreDetails", [])
+                if score_details:
+                    logger.info(f"ScoreDetails found: {score_details}")
+                    for sd in score_details:
+                        score_value = sd.get("Value") or sd.get("Score") or sd.get("ScoreValue")
+                        if score_value:
+                            parsed["SCORE"] = {
+                                "FCIREXScore": score_value,
+                                "BureauScore": score_value,
+                                "FCIREXScoreConfidLevel": sd.get("Confidence", sd.get("ConfidenceLevel", "")),
+                                "Type": sd.get("Type", sd.get("ScoreType", "")),
+                                "Version": sd.get("Version", "")
+                            }
+                            parsed["score_info"] = {
+                                "score": score_value,
+                                "score_name": sd.get("Type", sd.get("ScoreType", "")),
+                                "score_version": sd.get("Version", ""),
+                                "confidence": sd.get("Confidence", sd.get("ConfidenceLevel", ""))
+                            }
+                            logger.info(f"Score extracted from ScoreDetails: {score_value}")
+                            break
+                
                 # Report Header
                 profile_header = cir_data.get("ProfileHeader", {})
                 if profile_header:
