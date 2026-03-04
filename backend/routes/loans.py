@@ -3913,14 +3913,27 @@ async def analyze_bank_statement_endpoint(
         "end_of_month_balances": analysis_result.get("end_of_month_balances", []),
         "total_credits": analysis_result.get("total_credits"),
         "average_monthly_credits": analysis_result.get("average_monthly_credits"),
-        "salary_credits_identified": analysis_result.get("salary_credits_identified"),
+        # Salary income (separate from other income)
+        "salary_credits_total": analysis_result.get("salary_credits_total"),
+        "salary_credits_count": analysis_result.get("salary_credits_count", 0),
+        "salary_source_company": analysis_result.get("salary_source_company"),
+        # Other income (non-salary)
+        "other_income_total": analysis_result.get("other_income_total"),
+        "other_income_count": analysis_result.get("other_income_count", 0),
+        # Legacy field for backward compatibility
+        "salary_credits_identified": analysis_result.get("salary_credits_total") or analysis_result.get("salary_credits_identified"),
         "regular_income_sources": analysis_result.get("regular_income_sources", []),
         "total_debits": analysis_result.get("total_debits"),
         "average_monthly_debits": analysis_result.get("average_monthly_debits"),
         "emi_payments_identified": analysis_result.get("emi_payments_identified", []),
+        "emi_payments_total": analysis_result.get("emi_payments_total"),
         "loan_repayments_total": analysis_result.get("loan_repayments_total"),
         "high_value_transactions": analysis_result.get("high_value_transactions", []),
+        # Bounce/Return details
         "bounce_count": analysis_result.get("bounce_count", 0),
+        "bounced_cheque_count": analysis_result.get("bounced_cheque_count", 0),
+        "bounced_cheque_details": analysis_result.get("bounced_cheque_details", []),
+        "return_count": analysis_result.get("return_count", 0),
         "low_balance_days": analysis_result.get("low_balance_days", 0),
         "cash_withdrawal_ratio": analysis_result.get("cash_withdrawal_ratio"),
         "analyzed_at": now.isoformat(),
