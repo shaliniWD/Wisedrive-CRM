@@ -12582,6 +12582,19 @@ async def get_inspection_questionnaire(inspection_id: str, current_user: dict = 
         if cat_id and cat_id in category_map:
             q["category_name"] = category_map[cat_id].get("name", "")
     
+    # Get existing answers from inspection
+    existing_answers = inspection.get("inspection_answers", {})
+    
+    # Calculate category progress
+    category_progress = {}
+    for q in questions:
+        cat_id = q.get("category_id", "general")
+        if cat_id not in category_progress:
+            category_progress[cat_id] = {"total": 0, "answered": 0}
+        category_progress[cat_id]["total"] += 1
+        if q.get("id") in existing_answers:
+            category_progress[cat_id]["answered"] += 1
+    
     return {
         "inspection_id": inspection_id,
         "inspection_template_id": inspection_template_id,
@@ -12592,7 +12605,10 @@ async def get_inspection_questionnaire(inspection_id: str, current_user: dict = 
         "questions": questions,
         "total_questions": len(questions),
         "category_order": insp_template.get("category_order", []),
-        "categories": list(category_map.values())
+        "categories": list(category_map.values()),
+        "existing_answers": existing_answers,
+        "category_progress": category_progress,
+        "total_answered": len(existing_answers)
     }
 
 
