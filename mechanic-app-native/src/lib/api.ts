@@ -4,7 +4,7 @@ import { diagLogger } from './diagLogger';
 
 // API Base URL - PREVIEW environment for debugging
 // Change back to 'https://crmdev.wisedrive.com/api' for production
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://auto-loan-platform.preview.emergentagent.com/api';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://mechanic-app-test.preview.emergentagent.com/api';
 
 // Export the base URL (without /api suffix) for direct fetch calls
 export const API_BASE = API_BASE_URL.replace(/\/api$/, '');
