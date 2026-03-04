@@ -1162,18 +1162,20 @@ class SurepassService:
     
     async def fetch_crif_report(
         self,
-        business_name: str,
+        first_name: str,
+        last_name: str,
         pan: str,
         mobile: str,
         consent: str = "Y"
     ) -> Dict[str, Any]:
         """
-        Fetch CRIF Commercial credit report (JSON format)
+        Fetch CRIF Consumer credit report (JSON format)
         
         Args:
-            business_name: Business/Company name
-            pan: Business PAN number
-            mobile: Business mobile number
+            first_name: Customer first name
+            last_name: Customer last name
+            pan: Customer PAN number
+            mobile: Customer mobile number
             consent: 'Y' for consent given
             
         Returns:
@@ -1192,13 +1194,14 @@ class SurepassService:
             mobile_clean = mobile_clean[2:]
         
         payload = {
-            "business_name": business_name.strip(),
+            "first_name": first_name.strip(),
+            "last_name": last_name.strip(),
             "pan": pan.upper().strip(),
             "mobile": mobile_clean,
             "consent": consent
         }
         
-        logger.info(f"Fetching CRIF Commercial report for PAN: {pan[:4]}****")
+        logger.info(f"Fetching CRIF Consumer report for PAN: {pan[:4]}****")
         
         try:
             async with httpx.AsyncClient(timeout=60.0) as client:
