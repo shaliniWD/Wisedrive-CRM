@@ -107,7 +107,7 @@ def unlock_pdf(input_path: str, password: str, output_path: str, max_pages: int 
                 # Save without encryption
                 pdf.save(output_path)
         
-        logger.info(f"Successfully unlocked PDF")
+        logger.info("Successfully unlocked PDF")
         return True
         
     except Exception as e:
