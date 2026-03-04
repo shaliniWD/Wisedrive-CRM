@@ -947,7 +947,16 @@ export const CreditRiskDashboard = ({ isOpen, onClose, lead, pan: initialPan }) 
         
         Object.entries(reports).forEach(([bureau, reportData]) => {
           if (reportData) {
-            newBureauData[bureau] = {
+            // Map lowercase API keys to frontend bureau IDs
+            const bureauIdMap = {
+              'cibil': 'CIBIL',
+              'equifax': 'Equifax',
+              'experian': 'Experian',
+              'crif': 'CRIF'
+            };
+            const bureauId = bureauIdMap[bureau.toLowerCase()] || bureau;
+            
+            newBureauData[bureauId] = {
               score: reportData.credit_score,
               report: reportData.parsed_report || reportData.raw_report,
               fetchedAt: reportData.fetched_at,
