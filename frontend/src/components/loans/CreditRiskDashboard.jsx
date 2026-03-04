@@ -1154,6 +1154,7 @@ export const CreditRiskDashboard = ({ isOpen, onClose, lead, pan: initialPan }) 
             ) : activeBureau && bureauData[activeBureau]?.report ? (
               <CreditRiskBureauView
                 report={bureauData[activeBureau].report}
+                creditScore={bureauData[activeBureau].score}
                 bureauName={activeBureau}
                 bureauColor={bureaus.find(b => b.id === activeBureau)?.color || 'slate'}
               />
