@@ -136,10 +136,9 @@ class BankStatementAnalyzer:
             return {"error": "AI service not configured", "success": False}
         
         # Models to try in order (fallback if one fails)
-        # Note: GPT-4o tried first due to Gemini API instability
+        # Note: Only Gemini supports file attachments in emergentintegrations
         models_to_try = [
-            ("openai", "gpt-4o"),  # Primary - more stable
-            ("gemini", "gemini-2.5-flash"),  # Fallback
+            ("gemini", "gemini-2.5-flash"),  # Primary - supports file attachments
         ]
         
         # Retry logic for transient API errors
