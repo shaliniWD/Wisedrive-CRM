@@ -1254,13 +1254,14 @@ class SurepassService:
     
     async def fetch_crif_pdf(
         self,
-        business_name: str,
+        first_name: str,
+        last_name: str,
         pan: str,
         mobile: str,
         consent: str = "Y"
     ) -> Dict[str, Any]:
         """
-        Fetch CRIF Commercial credit report (PDF format)
+        Fetch CRIF Consumer credit report (PDF format)
         
         Returns:
             Dict with credit score and PDF download link
@@ -1278,13 +1279,14 @@ class SurepassService:
             mobile_clean = mobile_clean[2:]
         
         payload = {
-            "business_name": business_name.strip(),
+            "first_name": first_name.strip(),
+            "last_name": last_name.strip(),
             "pan": pan.upper().strip(),
             "mobile": mobile_clean,
             "consent": consent
         }
         
-        logger.info(f"Fetching CRIF Commercial PDF report for PAN: {pan[:4]}****")
+        logger.info(f"Fetching CRIF Consumer PDF report for PAN: {pan[:4]}****")
         
         try:
             async with httpx.AsyncClient(timeout=60.0) as client:
