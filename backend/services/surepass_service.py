@@ -1332,155 +1332,346 @@ class SurepassService:
     
     def parse_crif_report(self, credit_report: dict) -> Dict[str, Any]:
         """
-        Parse CRIF Commercial credit report into a structured format for UI display
+        Parse CRIF Consumer credit report into a structured format for UI display
         
         Args:
             credit_report: Raw credit report dict from API
             
         Returns:
-            Structured dict with parsed data
+            Structured dict with parsed data compatible with CreditRiskDashboard
         """
         if not credit_report:
             return {}
         
         parsed = {
-            "business_info": {},
+            "personal_info": {},
             "id_info": [],
             "phone_info": [],
             "address_info": [],
+            "email_info": [],
             "score_info": {},
-            "credit_facilities": [],
+            "SCORE": {},
+            "accounts": [],
+            "CAIS_Account": {},
             "enquiries": [],
-            "summary": {}
+            "CAPS": {},
+            "summary": {},
+            "employment_info": {}
         }
         
         try:
-            # Get CCR Response
-            ccr_response = credit_report.get("CCRResponse", {})
-            commercial_bureau = ccr_response.get("CommercialBureauResponse", {})
-            response_details = commercial_bureau.get("CommercialBureauResponseDetails", {})
+            # CRIF Consumer format based on sample response
+            header = credit_report.get("HEADER", {})
+            personal_info_variation = credit_report.get("PERSONAL-INFO-VARIATION", {})
+            accounts_summary = credit_report.get("ACCOUNTS-SUMMARY", {})
+            responses = credit_report.get("RESPONSES", {})
+            inquiry_history = credit_report.get("INQUIRY-HISTORY", {})
+            scores = credit_report.get("SCORES", {})
+            employment = credit_report.get("EMPLOYMENT-DETAILS", {})
             
-            # ID and Contact Info
-            id_contact = response_details.get("IDAndContactInfo", {})
-            
-            # Business Info
-            personal_info = id_contact.get("CommercialPersonalInfo", {})
-            parsed["business_info"] = {
-                "business_name": personal_info.get("BusinessName"),
-                "legal_constitution": personal_info.get("BusinessLegalConstitution"),
-                "business_category": personal_info.get("BusinessCategory"),
-                "industry_type": personal_info.get("BusinessIndustryType"),
-                "class_activity": personal_info.get("ClassActivity")
-            }
-            
-            # Identity Info
-            identity_info = id_contact.get("CommercialIdentityInfo", {})
-            if identity_info.get("PANId"):
-                for pan in identity_info["PANId"]:
-                    parsed["id_info"].append({
-                        "type": "PAN",
-                        "number": pan.get("IdNumber")
-                    })
-            if identity_info.get("Dunsnbr"):
-                for duns in identity_info["Dunsnbr"]:
-                    parsed["id_info"].append({
-                        "type": "DUNS",
-                        "number": duns.get("IdNumber")
-                    })
-            
-            # Address Info
-            address_info = id_contact.get("CommercialAddressInfo", [])
-            for addr in address_info:
-                parsed["address_info"].append({
-                    "address": addr.get("Address"),
-                    "city": addr.get("City"),
-                    "district": addr.get("District"),
-                    "state": addr.get("State"),
-                    "postal": addr.get("Postal"),
-                    "country": addr.get("Country"),
-                    "type": addr.get("Type"),
-                    "reported_date": addr.get("ReportedDate")
-                })
-            
-            # Phone Info
-            phone_info = id_contact.get("CommercialPhoneInfo", [])
-            phone_type_map = {"M": "Mobile", "L": "Landline", "O": "Office"}
-            for phone in phone_info:
-                parsed["phone_info"].append({
-                    "number": phone.get("Number"),
-                    "type": phone_type_map.get(phone.get("typeCode"), phone.get("typeCode"))
-                })
-            
-            # CIR Summary
-            cir_summary = response_details.get("CommercialCIRSummary", {})
-            
-            # Score Info
-            equifax_scores = cir_summary.get("EquifaxScoresCommercial", {})
-            score_list = equifax_scores.get("CommercialScoreDetailsLst", [])
-            if score_list:
-                score = score_list[0]
+            # Parse Score
+            score_data = scores.get("SCORE", {})
+            score_value = score_data.get("SCORE-VALUE") or score_data.get("ScoreValue")
+            if score_value:
+                parsed["SCORE"] = {
+                    "FCIREXScore": score_value,
+                    "BureauScore": score_value,
+                    "Type": score_data.get("SCORE-TYPE", ""),
+                    "Version": ""
+                }
                 parsed["score_info"] = {
-                    "score_name": score.get("ScoreName"),
-                    "score_value": score.get("ScoreValue"),
-                    "scored_entity": score.get("ScoredEntity"),
-                    "relationship": score.get("Relationship")
+                    "score": score_value,
+                    "score_name": score_data.get("SCORE-TYPE", ""),
+                    "score_factors": score_data.get("SCORE-FACTORS", "")
                 }
             
-            # Credit Summary
-            overall_summary = cir_summary.get("OverallCreditSummary", {})
-            as_borrower = overall_summary.get("AsBorrower", {})
-            latest_year = as_borrower.get("2024-2025", {}) or as_borrower.get("2023-2024", {})
+            # Parse Personal Info from variations
+            name_variations = personal_info_variation.get("NAME-VARIATIONS", {}).get("VARIATION", [])
+            if name_variations:
+                if isinstance(name_variations, dict):
+                    name_variations = [name_variations]
+                parsed["personal_info"] = {
+                    "name": name_variations[0].get("VALUE") if name_variations else "",
+                    "reported_date": name_variations[0].get("REPORTED-DATE") if name_variations else ""
+                }
             
+            # Parse DOB
+            dob_variations = personal_info_variation.get("DATE-OF-BIRTH-VARIATIONS", {}).get("VARIATION", {})
+            if dob_variations:
+                if isinstance(dob_variations, list):
+                    dob_variations = dob_variations[0]
+                parsed["personal_info"]["birth_date"] = dob_variations.get("VALUE", "")
+            
+            # Parse PAN
+            pan_variations = personal_info_variation.get("PAN-VARIATIONS", {}).get("VARIATION", [])
+            if pan_variations:
+                if isinstance(pan_variations, dict):
+                    pan_variations = [pan_variations]
+                for pan in pan_variations:
+                    parsed["id_info"].append({
+                        "type": "PAN",
+                        "number": pan.get("VALUE"),
+                        "reported_date": pan.get("REPORTED-DATE")
+                    })
+            
+            # Parse UID/Aadhaar
+            uid_variations = personal_info_variation.get("UID-VARIATIONS", {}).get("VARIATION", {})
+            if uid_variations:
+                if isinstance(uid_variations, list):
+                    uid_variations = uid_variations[0]
+                parsed["id_info"].append({
+                    "type": "Aadhaar",
+                    "number": uid_variations.get("VALUE"),
+                    "reported_date": uid_variations.get("REPORTED-DATE")
+                })
+            
+            # Parse Address
+            address_variations = personal_info_variation.get("ADDRESS-VARIATIONS", {}).get("VARIATION", [])
+            if address_variations:
+                if isinstance(address_variations, dict):
+                    address_variations = [address_variations]
+                for addr in address_variations:
+                    parsed["address_info"].append({
+                        "address": addr.get("VALUE"),
+                        "reported_date": addr.get("REPORTED-DATE")
+                    })
+            
+            # Parse Phone
+            phone_variations = personal_info_variation.get("PHONE-NUMBER-VARIATIONS", {}).get("VARIATION", [])
+            if phone_variations:
+                if isinstance(phone_variations, dict):
+                    phone_variations = [phone_variations]
+                for phone in phone_variations:
+                    parsed["phone_info"].append({
+                        "number": phone.get("VALUE"),
+                        "type": "Mobile",
+                        "reported_date": phone.get("REPORTED-DATE")
+                    })
+            
+            # Parse Email
+            email_variations = personal_info_variation.get("EMAIL-VARIATIONS", {}).get("VARIATION", [])
+            if email_variations:
+                if isinstance(email_variations, dict):
+                    email_variations = [email_variations]
+                for email in email_variations:
+                    parsed["email_info"].append({
+                        "email": email.get("VALUE"),
+                        "reported_date": email.get("REPORTED-DATE")
+                    })
+            
+            # Parse Employment
+            if employment:
+                parsed["employment_info"] = {
+                    "details": employment.get("EMPLOYMENT-DETAIL", "")
+                }
+            
+            # Parse Accounts (RESPONSES)
+            account_details_list = []
+            written_off_count = 0
+            negative_count = 0
+            dpd_over_90_count = 0
+            total_balance = 0
+            total_overdue = 0
+            active_count = 0
+            closed_count = 0
+            
+            response_list = responses.get("RESPONSE", [])
+            if isinstance(response_list, dict):
+                response_list = [response_list]
+            
+            for resp in response_list:
+                loan = resp.get("LOAN-DETAILS", {})
+                
+                account_status = loan.get("ACCOUNT-STATUS", "")
+                is_active = account_status.lower() in ["active", "open", "current"]
+                current_balance = self._parse_amount(loan.get("CURRENT-BAL", 0))
+                overdue_amount = self._parse_amount(loan.get("OVERDUE-AMT", 0))
+                write_off_amount = self._parse_amount(loan.get("WRITE-OFF-AMT", 0))
+                disbursed_amount = self._parse_amount(loan.get("DISBURSED-AMT", 0))
+                
+                # Parse payment history from COMBINED-PAYMENT-HISTORY
+                payment_history_str = loan.get("COMBINED-PAYMENT-HISTORY", "")
+                cais_account_history = []
+                has_dpd_over_90 = False
+                
+                if payment_history_str:
+                    # Format: "Jul:2025,000/XXX|Jun:2025,000/XXX|"
+                    entries = payment_history_str.split("|")
+                    for entry in entries:
+                        if ":" in entry and "," in entry:
+                            try:
+                                month_year, dpd_status = entry.split(",", 1)
+                                month_part = month_year.split(":")[0]
+                                year_part = month_year.split(":")[1] if ":" in month_year else ""
+                                dpd_part = dpd_status.split("/")[0] if "/" in dpd_status else dpd_status
+                                
+                                dpd_val = 0
+                                if dpd_part and dpd_part != "XXX":
+                                    try:
+                                        dpd_val = int(dpd_part)
+                                    except ValueError:
+                                        dpd_val = 0
+                                
+                                cais_account_history.append({
+                                    "Days_Past_Due": dpd_val,
+                                    "Month": month_part[:3],
+                                    "Year": year_part,
+                                    "PaymentStatus": dpd_part
+                                })
+                                
+                                if dpd_val > 90:
+                                    has_dpd_over_90 = True
+                            except:
+                                pass
+                
+                # Count metrics
+                if write_off_amount > 0:
+                    written_off_count += 1
+                if overdue_amount > 0 or write_off_amount > 0:
+                    negative_count += 1
+                if has_dpd_over_90:
+                    dpd_over_90_count += 1
+                
+                total_balance += current_balance
+                total_overdue += overdue_amount
+                
+                if is_active:
+                    active_count += 1
+                else:
+                    closed_count += 1
+                
+                account_entry = {
+                    "account_number": loan.get("ACCT-NUMBER", ""),
+                    "institution": loan.get("CREDIT-GUARANTOR", ""),
+                    "account_type": loan.get("ACCT-TYPE", ""),
+                    "ownership_type": loan.get("OWNERSHIP-IND", ""),
+                    "open_date": loan.get("DISBURSED-DT", ""),
+                    "close_date": loan.get("CLOSED-DATE", ""),
+                    "credit_limit": disbursed_amount,
+                    "current_balance": current_balance,
+                    "amount_overdue": overdue_amount,
+                    "credit_status": account_status,
+                    "last_payment_date": loan.get("LAST-PAYMENT-DATE", ""),
+                    "written_off_amount": write_off_amount,
+                    "repayment_tenure": loan.get("REPAYMENT-TENURE", ""),
+                    "security_details": loan.get("SECURITY-DETAILS", ""),
+                    # Equifax-compatible fields for frontend
+                    "Account_Status": account_status,
+                    "Balance": current_balance,
+                    "Current_Balance": current_balance,
+                    "Amount_Past_Due": overdue_amount,
+                    "Written_Off_Amt_Total": write_off_amount,
+                    "Date_Opened": loan.get("DISBURSED-DT", ""),
+                    "Open_Date": loan.get("DISBURSED-DT", ""),
+                    "Date_Closed": loan.get("CLOSED-DATE", ""),
+                    "Subscriber_Name": loan.get("CREDIT-GUARANTOR", ""),
+                    "Account_Type": loan.get("ACCT-TYPE", ""),
+                    "Highest_Credit_or_Original_Loan_Amount": disbursed_amount,
+                    "SuitFiledWilfulDefault": "N",
+                    "CAIS_Account_History": cais_account_history,
+                    "Days_Past_Due": cais_account_history[0].get("Days_Past_Due", 0) if cais_account_history else 0
+                }
+                account_details_list.append(account_entry)
+            
+            parsed["accounts"] = account_details_list
+            parsed["CAIS_Account"] = {
+                "CAIS_Account_DETAILS": account_details_list,
+                "CAIS_Summary": {
+                    "Credit_Account": {
+                        "CreditAccountTotal": len(account_details_list),
+                        "CreditAccountActive": active_count,
+                        "CreditAccountClosed": closed_count,
+                        "CreditAccountDefault": negative_count
+                    },
+                    "Total_Outstanding_Balance": {
+                        "Outstanding_Balance_All": total_balance,
+                        "Outstanding_Balance_All_Overdue": total_overdue
+                    }
+                }
+            }
+            
+            # Parse Accounts Summary from CRIF
+            primary_summary = accounts_summary.get("PRIMARY-ACCOUNTS-SUMMARY", {})
+            derived_attrs = accounts_summary.get("DERIVED-ATTRIBUTES", {})
+            
+            # Parse Enquiries (INQUIRY-HISTORY)
+            enquiry_details_list = []
+            history_list = inquiry_history.get("HISTORY", [])
+            if isinstance(history_list, dict):
+                history_list = [history_list]
+            
+            for hist in history_list:
+                enquiry_entry = {
+                    "institution": hist.get("MEMBER-NAME", ""),
+                    "date": hist.get("INQUIRY-DATE", ""),
+                    "purpose": hist.get("PURPOSE", ""),
+                    "amount": self._parse_amount(hist.get("AMOUNT", 0)),
+                    "ownership_type": hist.get("OWNERSHIP-TYPE", ""),
+                    # Equifax-compatible
+                    "Subscriber_Name": hist.get("MEMBER-NAME", ""),
+                    "Date_of_Request": hist.get("INQUIRY-DATE", ""),
+                    "Enquiry_Purpose": hist.get("PURPOSE", ""),
+                    "Enquiry_Amount": self._parse_amount(hist.get("AMOUNT", 0))
+                }
+                enquiry_details_list.append(enquiry_entry)
+            
+            parsed["enquiries"] = enquiry_details_list
+            parsed["CAPS"] = {
+                "CAPS_Application_Details": enquiry_details_list,
+                "CAPS_Summary": {
+                    "TotalCAPSLast7Days": 0,
+                    "TotalCAPSLast30Days": 0,
+                    "TotalCAPSLast90Days": int(derived_attrs.get("INQURIES-IN-LAST-SIX-MONTHS", 0) or 0),
+                    "TotalCAPSLast180Days": len(enquiry_details_list)
+                }
+            }
+            
+            # Summary
             parsed["summary"] = {
-                "total_credit_facilities": latest_year.get("CF_Count", 0),
-                "open_credit_facilities": latest_year.get("OpenCF_Count", 0),
-                "lenders_count": latest_year.get("Lenders_Count", 0),
-                "sanctioned_amount": latest_year.get("SanctionedAmtOpenCF_Sum", 0),
-                "current_balance": latest_year.get("CurrentBalanceOpenCF_Sum", 0),
-                "hit_as_borrower": commercial_bureau.get("hit_as_borrower", "0"),
-                "hit_as_guarantor": commercial_bureau.get("hit_as_guarantor", "0")
+                "total_accounts": len(account_details_list),
+                "active_accounts": active_count,
+                "closed_accounts": closed_count,
+                "total_balance": total_balance,
+                "total_overdue": total_overdue,
+                "total_enquiries": len(enquiry_details_list),
+                "written_off_accounts_count": written_off_count,
+                "negative_accounts_count": negative_count,
+                "dpd_over_90_count": dpd_over_90_count,
+                "credit_history_years": derived_attrs.get("LENGTH-OF-CREDIT-HISTORY-YEAR", ""),
+                "credit_history_months": derived_attrs.get("LENGTH-OF-CREDIT-HISTORY-MONTH", ""),
+                "avg_account_age_years": derived_attrs.get("AVERAGE-ACCOUNT-AGE-YEAR", ""),
+                "avg_account_age_months": derived_attrs.get("AVERAGE-ACCOUNT-AGE-MONTH", "")
             }
             
-            # Credit Facility Details
-            credit_facilities = response_details.get("CreditFacilityDetails", [])
-            for cf in credit_facilities[:20]:  # Limit to 20
-                parsed["credit_facilities"].append({
-                    "account_number": cf.get("account_number"),
-                    "credit_type": cf.get("credit_type"),
-                    "sanctioned_amount": cf.get("sanctioned_amount_notional_amountofcontract", 0),
-                    "current_balance": cf.get("current_balance_limit_utilized_marktomarket", 0),
-                    "amount_overdue": cf.get("amount_overdue_limit_overdue", 0),
-                    "sanction_date": cf.get("sanctiondate_loanactivation"),
-                    "maturity_date": cf.get("loan_expiry_maturity_date"),
-                    "account_status": cf.get("account_status"),
-                    "dpd_status": cf.get("assetclassification_dayspastdue"),
-                    "member_type": cf.get("member_type"),
-                    "sector_type": cf.get("sector_type")
-                })
-            
-            # Enquiry Summary
-            enquiry_summary = response_details.get("EnquirySummary", {})
-            parsed["enquiry_summary"] = {
-                "total": enquiry_summary.get("Total", 0),
-                "past_30_days": enquiry_summary.get("Past30Days", 0),
-                "past_12_months": enquiry_summary.get("Past12Months", 0),
-                "past_24_months": enquiry_summary.get("Past24Months", 0)
+            # Risk metrics
+            parsed["risk_metrics"] = {
+                "written_off_accounts_count": written_off_count,
+                "negative_accounts_count": negative_count,
+                "dpd_over_90_count": dpd_over_90_count,
+                "suit_filed_count": 0,
+                "settled_accounts_count": 0,
+                "total_written_off_amount": sum(a.get("written_off_amount", 0) for a in account_details_list)
             }
             
-            # Recent Enquiries
-            recent_enquiries = response_details.get("RecentEnquiries", [])
-            for enq in recent_enquiries[:10]:  # Limit to 10
-                parsed["enquiries"].append({
-                    "institution": enq.get("Institution"),
-                    "date": enq.get("Date"),
-                    "time": enq.get("Time"),
-                    "amount": enq.get("Amount")
-                })
+            logger.info(f"CRIF Consumer parse complete. Accounts: {len(account_details_list)}, Score: {score_value}")
             
         except Exception as e:
-            logger.error(f"Error parsing CRIF report: {str(e)}")
+            logger.error(f"Error parsing CRIF Consumer report: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
         
         return parsed
+    
+    def _parse_amount(self, value) -> float:
+        """Parse amount string to float, handling commas"""
+        if value is None:
+            return 0.0
+        if isinstance(value, (int, float)):
+            return float(value)
+        try:
+            return float(str(value).replace(",", "").replace(" ", ""))
+        except (ValueError, TypeError):
+            return 0.0
     
     def parse_credit_report(self, credit_report: list) -> Dict[str, Any]:
         """
