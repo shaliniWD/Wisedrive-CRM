@@ -17,6 +17,7 @@ import { Ionicons, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-ic
 import { LinearGradient } from 'expo-linear-gradient';
 import { useInspection } from '../src/context/InspectionContext';
 import { inspectionsApi } from '../src/lib/api';
+import { diagLogger } from '../src/lib/diagLogger';
 
 const { width } = Dimensions.get('window');
 
