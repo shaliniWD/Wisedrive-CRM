@@ -2,9 +2,20 @@ import axios, { AxiosError } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { diagLogger } from './diagLogger';
 
-// API Base URL - PREVIEW environment for debugging
-// Change back to 'https://crmdev.wisedrive.com/api' for production
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://mechanic-app-test.preview.emergentagent.com/api';
+// API Base URL Configuration
+// For PREVIEW/TESTING: Use the preview URL below
+// For PRODUCTION: Change to 'https://crmdev.wisedrive.com/api'
+const PREVIEW_API_URL = 'https://mechanic-app-test.preview.emergentagent.com/api';
+const PRODUCTION_API_URL = 'https://crmdev.wisedrive.com/api';
+
+// CURRENT ENVIRONMENT: Set to true for preview testing, false for production
+const USE_PREVIEW_ENVIRONMENT = true;
+
+const API_BASE_URL = USE_PREVIEW_ENVIRONMENT ? PREVIEW_API_URL : PRODUCTION_API_URL;
+
+// Log which environment is being used
+console.log('[API CONFIG] Using API URL:', API_BASE_URL);
+console.log('[API CONFIG] Environment:', USE_PREVIEW_ENVIRONMENT ? 'PREVIEW' : 'PRODUCTION');
 
 // Export the base URL (without /api suffix) for direct fetch calls
 export const API_BASE = API_BASE_URL.replace(/\/api$/, '');
