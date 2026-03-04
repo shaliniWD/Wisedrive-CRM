@@ -97,7 +97,19 @@ The application is a full-stack CRM for vehicle loans and inspections. Key featu
 - `server.py` - Still contains webhook logic, needs extraction to routes
 - `InspectionsPage.jsx` - Over 3,000 lines
 - `LoansPage.jsx` - Over 4,000 lines
-- `CreditScoreModal.jsx` - Over 1,200 lines
+- `CreditScoreModal.jsx` - ~~Over 1,200 lines~~ REPLACED by CreditRiskDashboard.jsx (Mar 2026)
+
+### Credit Risk Dashboard (Mar 2026)
+- ✅ Comprehensive credit risk assessment dashboard replacing old CreditScoreModal
+- ✅ Professional UI with Score Gauge visualization
+- ✅ Risk assessment badges (LOW/MODERATE/HIGH/CRITICAL)
+- ✅ Red Flags section for critical risk indicators (written-off accounts, suit filed, DPD > 90)
+- ✅ Multi-bureau support: CIBIL, Equifax, Experian, CRIF
+- ✅ Tabbed interface: Overview, Accounts, DPD Analysis, Enquiries, Profile
+- ✅ Payment history heatmap visualization
+- ✅ Account-level DPD tracking and risk metrics
+- ✅ Backend parsers enhanced with written-off count, negative accounts, DPD > 90 tracking
+- ✅ Component: `/app/frontend/src/components/loans/CreditRiskDashboard.jsx`
 
 ## API Endpoints
 
