@@ -132,16 +132,53 @@ export default function InspectionCategoriesScreen() {
       setLoadError(null);
       
       console.log('[Categories] Fetching questionnaire for inspection:', currentInspectionId);
+      diagLogger.info('CATEGORIES_FETCH_START', { 
+        inspectionId: currentInspectionId,
+        timestamp: new Date().toISOString()
+      });
       
       // Fetch both questionnaire and inspection details (for answers) in parallel
       const [data, inspectionData] = await Promise.all([
         inspectionsApi.getQuestionnaire(currentInspectionId),
-        inspectionsApi.getInspection(currentInspectionId).catch(() => null)
+        inspectionsApi.getInspection(currentInspectionId).catch((e) => {
+          diagLogger.error('CATEGORIES_INSPECTION_FETCH_ERROR', { 
+            error: e.message,
+            status: e.response?.status 
+          });
+          return null;
+        })
       ]);
       
-      // Get saved answers
-      const savedAnswers = inspectionData?.inspection_answers || {};
+      // Log questionnaire response
+      diagLogger.info('CATEGORIES_QUESTIONNAIRE_RESPONSE', {
+        hasQuestions: !!data?.questions,
+        questionsCount: data?.questions?.length || 0,
+        categoriesCount: data?.categories?.length || 0,
+        hasExistingAnswers: !!data?.existing_answers,
+        existingAnswersCount: data?.existing_answers ? Object.keys(data.existing_answers).length : 0,
+        hasCategoryProgress: !!data?.category_progress,
+        categoryProgressKeys: data?.category_progress ? Object.keys(data.category_progress) : [],
+      });
+      
+      // Log inspection data response  
+      diagLogger.info('CATEGORIES_INSPECTION_RESPONSE', {
+        hasInspectionData: !!inspectionData,
+        hasInspectionAnswers: !!inspectionData?.inspection_answers,
+        inspectionAnswersCount: inspectionData?.inspection_answers ? Object.keys(inspectionData.inspection_answers).length : 0,
+        obdResultsRef: inspectionData?.obd_results_ref || null,
+        obdTotalErrors: inspectionData?.obd_total_errors,
+        obdRescanEnabled: inspectionData?.obd_rescan_enabled || false,
+      });
+      
+      // Get saved answers - PRIORITIZE existing_answers from questionnaire endpoint (synced from CRM)
+      // Fall back to inspection_answers if existing_answers not available
+      const savedAnswers = data?.existing_answers || inspectionData?.inspection_answers || {};
       console.log('[Categories] Saved answers count:', Object.keys(savedAnswers).length);
+      diagLogger.info('CATEGORIES_SAVED_ANSWERS', {
+        source: data?.existing_answers ? 'questionnaire_existing_answers' : 'inspection_answers',
+        count: Object.keys(savedAnswers).length,
+        answerIds: Object.keys(savedAnswers).slice(0, 10), // First 10 for debugging
+      });
       
       // Check if OBD data was already submitted to backend
       // Backend stores obd_results_ref or obd_total_errors when OBD is submitted
@@ -207,6 +244,16 @@ export default function InspectionCategoriesScreen() {
           
           const isCompleted = completedCount === value.questions.length && value.questions.length > 0;
           
+          // Log category progress for debugging
+          diagLogger.info('CATEGORY_PROGRESS', {
+            categoryId: key,
+            categoryName: value.categoryName,
+            totalQuestions: value.questions.length,
+            completedCount,
+            isCompleted,
+            questionIds: value.questions.map(q => q.id),
+          });
+          
           dynamicCategories.push({
             id: key,
             name: value.categoryName,
@@ -223,11 +270,28 @@ export default function InspectionCategoriesScreen() {
         
         setCategories(dynamicCategories);
         console.log('[Categories] Loaded', dynamicCategories.length, 'categories with completion status');
+        diagLogger.info('CATEGORIES_LOAD_COMPLETE', {
+          totalCategories: dynamicCategories.length,
+          totalQuestions: dynamicCategories.reduce((sum, c) => sum + c.questionsCount, 0),
+          totalCompleted: dynamicCategories.reduce((sum, c) => sum + c.completedCount, 0),
+          categoryStatuses: dynamicCategories.map(c => ({ id: c.id, name: c.name, completed: c.completedCount, total: c.questionsCount })),
+        });
       } else {
         setLoadError('No questionnaire found for this inspection');
+        diagLogger.error('CATEGORIES_NO_QUESTIONNAIRE', {
+          inspectionId: currentInspectionId,
+          dataReceived: !!data,
+          questionsReceived: data?.questions,
+        });
       }
     } catch (error: any) {
       console.error('Failed to fetch questionnaire:', error);
+      diagLogger.error('CATEGORIES_FETCH_ERROR', {
+        inspectionId: currentInspectionId,
+        error: error.message,
+        status: error.response?.status,
+        responseData: error.response?.data,
+      });
       setLoadError(error.message || 'Failed to load questionnaire');
     } finally {
       setIsLoading(false);
