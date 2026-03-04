@@ -602,10 +602,17 @@ const DocumentsTab = ({ lead, onUpdate }) => {
         formData.append('content_type', file.type);
         
         const backendUrl = process.env.REACT_APP_BACKEND_URL;
+        const token = localStorage.getItem('token');
         const uploadResponse = await fetch(`${backendUrl}${upload_url}`, {
           method: 'POST',
-          body: formData
+          body: formData,
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         });
+        
+        if (!uploadResponse.ok) {
+          const errorData = await uploadResponse.json().catch(() => ({}));
+          throw new Error(errorData.detail || `Upload failed with status ${uploadResponse.status}`);
+        }
         
         // Check if Firebase URL was returned (for persistence)
         const uploadResult = await uploadResponse.json();
