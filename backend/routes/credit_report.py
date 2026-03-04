@@ -681,7 +681,7 @@ async def get_latest_credit_reports(
 ):
     """
     Get the latest credit report for each bureau for a PAN number
-    Returns one report per bureau (CIBIL, Equifax, Experian, CRIF)
+    Returns one report per bureau (CIBIL, Equifax, Experian)
     """
     pan = pan.upper().strip()
     
