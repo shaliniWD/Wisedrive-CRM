@@ -334,6 +334,7 @@ async def fetch_equifax_report(
         "id": report_id,
         "provider": "Equifax",
         "type": "json",
+        "pan": request.id_number.upper().strip() if request.id_type.lower() == "pan" else None,
         "id_number": request.id_number,
         "id_type": request.id_type,
         "mobile": request.mobile,
