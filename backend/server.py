@@ -7203,8 +7203,9 @@ async def assign_mechanic_to_inspection(
     if request_data.mechanic_id:
         # Validate car details before allowing mechanic assignment
         car_number = inspection.get("car_number", "")
-        make = inspection.get("make", "")
-        model = inspection.get("model", "")
+        # Check both field name variants (car_make/make, car_model/model)
+        make = inspection.get("make") or inspection.get("car_make") or ""
+        model = inspection.get("model") or inspection.get("car_model") or ""
         
         if not car_number or not car_number.strip():
             raise HTTPException(
