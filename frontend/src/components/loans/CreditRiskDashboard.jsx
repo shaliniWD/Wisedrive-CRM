@@ -940,7 +940,7 @@ export const CreditRiskDashboard = ({ isOpen, onClose, lead, pan: initialPan }) 
     
     setLoading(true);
     try {
-      const response = await loansApi.getLatestCreditReports(pan);
+      const response = await loansApi.getLatestReports(pan);
       if (response.data?.reports) {
         const reports = response.data.reports;
         const newBureauData = {};
