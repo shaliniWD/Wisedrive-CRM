@@ -924,7 +924,6 @@ export const CreditRiskDashboard = ({ isOpen, onClose, lead, pan: initialPan }) 
     { id: 'CIBIL', name: 'CIBIL', color: 'blue' },
     { id: 'Equifax', name: 'Equifax', color: 'purple' },
     { id: 'Experian', name: 'Experian', color: 'emerald' },
-    { id: 'CRIF', name: 'CRIF', color: 'amber' },
   ];
   
   // Load existing reports
