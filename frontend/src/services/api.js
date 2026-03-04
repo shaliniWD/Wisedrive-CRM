@@ -686,7 +686,6 @@ export const loansApi = {
   fetchCibilReport: (data) => axios.post(`${API_URL}/credit-report/cibil`, data),
   fetchEquifaxReport: (data) => axios.post(`${API_URL}/credit-report/equifax`, data),
   fetchExperianReport: (data) => axios.post(`${API_URL}/credit-report/experian`, data),
-  fetchCrifReport: (data) => axios.post(`${API_URL}/credit-report/crif`, data),
   getLatestReports: (pan) => axios.get(`${API_URL}/credit-report/latest/${pan}`),
 };
 
@@ -718,10 +717,6 @@ export const creditReportApi = {
   // Experian Reports
   fetchExperianReport: (data) => axios.post(`${API_URL}/credit-report/experian`, data),
   fetchExperianPdf: (data) => axios.post(`${API_URL}/credit-report/experian/pdf`, data),
-  
-  // CRIF Commercial Reports
-  fetchCrifReport: (data) => axios.post(`${API_URL}/credit-report/crif`, data),
-  fetchCrifPdf: (data) => axios.post(`${API_URL}/credit-report/crif/pdf`, data),
   
   // Get Reports
   getReport: (reportId) => axios.get(`${API_URL}/credit-report/${reportId}`),

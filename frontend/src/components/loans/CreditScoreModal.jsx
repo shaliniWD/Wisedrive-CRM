@@ -1027,8 +1027,7 @@ const CreditScoreModal = ({ isOpen, onClose, lead, onUpdate }) => {
   const [reports, setReports] = useState({
     cibil: null,
     equifax: null,
-    experian: null,
-    crif: null
+    experian: null
   });
   const [activeReport, setActiveReport] = useState(null);
   const [error, setError] = useState(null);
@@ -1049,7 +1048,7 @@ const CreditScoreModal = ({ isOpen, onClose, lead, onUpdate }) => {
             const cachedReports = {};
             let firstProvider = null;
             
-            ['cibil', 'equifax', 'experian', 'crif'].forEach(provider => {
+            ['cibil', 'equifax', 'experian'].forEach(provider => {
               if (data.reports[provider]) {
                 cachedReports[provider] = {
                   success: true,
@@ -1127,13 +1126,6 @@ const CreditScoreModal = ({ isOpen, onClose, lead, onUpdate }) => {
           mobile: mobile,
           consent: 'Y'
         });
-      } else if (provider === 'crif') {
-        result = await loansApi.fetchCrifReport({
-          business_name: `${firstName} ${lastName}`.trim(),
-          pan: lead.pan_number,
-          mobile: mobile,
-          consent: 'Y'
-        });
       }
       
       if (result?.data?.success) {
@@ -1155,13 +1147,13 @@ const CreditScoreModal = ({ isOpen, onClose, lead, onUpdate }) => {
   
   const fetchAllReports = async () => {
     setShowFetchMenu(false);
-    for (const provider of ['cibil', 'equifax', 'experian', 'crif']) {
+    for (const provider of ['cibil', 'equifax', 'experian']) {
       await fetchReport(provider, true);
     }
   };
   
   const handleClose = () => { 
-    setReports({ cibil: null, equifax: null, experian: null, crif: null }); 
+    setReports({ cibil: null, equifax: null, experian: null }); 
     setActiveReport(null);
     setError(null);
     setShowFetchMenu(false);
@@ -1171,8 +1163,7 @@ const CreditScoreModal = ({ isOpen, onClose, lead, onUpdate }) => {
   const providers = [
     { id: 'cibil', name: 'CIBIL', color: 'bg-purple-100 text-purple-700 border-purple-200' },
     { id: 'equifax', name: 'Equifax', color: 'bg-red-100 text-red-700 border-red-200' },
-    { id: 'experian', name: 'Experian', color: 'bg-blue-100 text-blue-700 border-blue-200' },
-    { id: 'crif', name: 'CRIF', color: 'bg-green-100 text-green-700 border-green-200' }
+    { id: 'experian', name: 'Experian', color: 'bg-blue-100 text-blue-700 border-blue-200' }
   ];
   
   const hasAnyReport = Object.values(reports).some(r => r !== null);
@@ -1336,7 +1327,7 @@ const CreditScoreModal = ({ isOpen, onClose, lead, onUpdate }) => {
                 <div className="text-center py-8 text-slate-500">
                   <CreditCard className="h-12 w-12 mx-auto mb-3 text-slate-300" />
                   <p className="font-medium">Select a credit bureau to fetch report</p>
-                  <p className="text-sm mt-1">Reports from CIBIL, Equifax, Experian & CRIF available</p>
+                  <p className="text-sm mt-1">Reports from CIBIL, Equifax & Experian available</p>
                 </div>
               )}
             </>
