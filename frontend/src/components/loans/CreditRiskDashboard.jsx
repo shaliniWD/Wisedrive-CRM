@@ -487,13 +487,14 @@ const getAccountStatus = (account) => {
 };
 
 // ============= MAIN BUREAU REPORT VIEW =============
-const CreditRiskBureauView = ({ report, bureauName, bureauColor }) => {
+const CreditRiskBureauView = ({ report, creditScore, bureauName, bureauColor }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const [expandedAccounts, setExpandedAccounts] = useState({});
   const [accountFilter, setAccountFilter] = useState('all');
   
   // Extract data with fallbacks for different bureau formats
-  const score = report?.score_info?.score || report?.SCORE?.FCIREXScore || report?.SCORE?.BureauScore || report?.creditScore || 0;
+  // Use passed creditScore first, then try to extract from report
+  const score = creditScore || report?.score_info?.score || report?.SCORE?.FCIREXScore || report?.SCORE?.BureauScore || report?.creditScore || 0;
   const accounts = report?.accounts || report?.CAIS_Account?.CAIS_Account_DETAILS || [];
   const enquiries = report?.enquiries || report?.CAPS?.CAPS_Application_Details || [];
   const caisSummary = report?.CAIS_Account?.CAIS_Summary || {};
