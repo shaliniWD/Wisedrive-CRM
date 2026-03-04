@@ -590,13 +590,29 @@ const DocumentsTab = ({ lead, onUpdate }) => {
         content_type: file.type
       });
 
-      const { upload_url, file_url } = uploadUrlRes.data;
+      const { upload_url, file_url, fields } = uploadUrlRes.data;
 
-      await fetch(upload_url, {
-        method: 'PUT',
-        body: file,
-        headers: { 'Content-Type': file.type }
-      });
+      // Handle different upload methods
+      if (upload_url.startsWith('/api/')) {
+        // Local storage - use form data upload
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('key', fields?.key || file_url.replace('/app/storage/', ''));
+        formData.append('content_type', file.type);
+        
+        const backendUrl = process.env.REACT_APP_BACKEND_URL;
+        await fetch(`${backendUrl}${upload_url}`, {
+          method: 'POST',
+          body: formData
+        });
+      } else {
+        // Firebase/S3 - direct PUT upload
+        await fetch(upload_url, {
+          method: 'PUT',
+          body: file,
+          headers: { 'Content-Type': file.type }
+        });
+      }
 
       await loansApi.uploadDocument(lead.id, {
         document_type: currentDocType,
