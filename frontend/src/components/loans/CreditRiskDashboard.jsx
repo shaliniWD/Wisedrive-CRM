@@ -978,27 +978,46 @@ export const CreditRiskDashboard = ({ isOpen, onClose, lead, pan: initialPan }) 
     setFetchingBureau(bureauId);
     try {
       let response;
-      const requestData = {
-        name: lead.customer_name,
-        id_number: pan,
-        id_type: 'pan',
-        mobile: lead.customer_phone?.replace('+91', ''),
-        consent: 'Y',
-        loan_lead_id: lead.id
-      };
+      const mobile = lead.customer_phone?.replace('+91', '').replace('+', '');
       
       switch (bureauId) {
         case 'CIBIL':
-          response = await loansApi.fetchCIBILReport(requestData);
+          response = await loansApi.fetchCIBILReport({
+            name: lead.customer_name,
+            pan: pan,
+            mobile: mobile,
+            gender: lead.gender || 'male',
+            consent: 'Y',
+            loan_lead_id: lead.id
+          });
           break;
         case 'Equifax':
-          response = await loansApi.fetchEquifaxReport(requestData);
+          response = await loansApi.fetchEquifaxReport({
+            name: lead.customer_name,
+            id_number: pan,
+            id_type: 'pan',
+            mobile: mobile,
+            consent: 'Y',
+            loan_lead_id: lead.id
+          });
           break;
         case 'Experian':
-          response = await loansApi.fetchExperianReport(requestData);
+          response = await loansApi.fetchExperianReport({
+            name: lead.customer_name,
+            pan: pan,
+            mobile: mobile,
+            consent: 'Y',
+            loan_lead_id: lead.id
+          });
           break;
         case 'CRIF':
-          response = await loansApi.fetchCRIFReport(requestData);
+          response = await loansApi.fetchCRIFReport({
+            business_name: lead.customer_name,
+            pan: pan,
+            mobile: mobile,
+            consent: 'Y',
+            loan_lead_id: lead.id
+          });
           break;
       }
       
