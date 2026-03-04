@@ -591,6 +591,7 @@ const DocumentsTab = ({ lead, onUpdate }) => {
       });
 
       const { upload_url, file_url, fields } = uploadUrlRes.data;
+      let finalFileUrl = file_url;
 
       // Handle different upload methods
       if (upload_url.startsWith('/api/')) {
@@ -601,10 +602,17 @@ const DocumentsTab = ({ lead, onUpdate }) => {
         formData.append('content_type', file.type);
         
         const backendUrl = process.env.REACT_APP_BACKEND_URL;
-        await fetch(`${backendUrl}${upload_url}`, {
+        const uploadResponse = await fetch(`${backendUrl}${upload_url}`, {
           method: 'POST',
           body: formData
         });
+        
+        // Check if Firebase URL was returned (for persistence)
+        const uploadResult = await uploadResponse.json();
+        if (uploadResult.firebase_url) {
+          finalFileUrl = uploadResult.firebase_url;
+          console.log('Using Firebase URL for persistence:', finalFileUrl);
+        }
       } else {
         // Firebase/S3 - direct PUT upload
         await fetch(upload_url, {
@@ -616,7 +624,7 @@ const DocumentsTab = ({ lead, onUpdate }) => {
 
       await loansApi.uploadDocument(lead.id, {
         document_type: currentDocType,
-        file_url: file_url,
+        file_url: finalFileUrl,
         file_name: file.name
       });
 
