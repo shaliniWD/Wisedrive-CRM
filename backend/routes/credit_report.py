@@ -80,20 +80,6 @@ class ExperianReportRequest(BaseModel):
     loan_lead_id: Optional[str] = None
 
 
-class CRIFReportRequest(BaseModel):
-    """Request model for fetching CRIF Consumer credit report"""
-    first_name: str = Field(..., description="Customer first name")
-    last_name: str = Field(..., description="Customer last name")
-    pan: str = Field(..., description="Customer PAN number")
-    mobile: str = Field(..., description="Customer mobile number")
-    consent: str = Field(default="Y", description="Customer consent")
-    
-    # Optional: Link to existing records
-    customer_id: Optional[str] = None
-    lead_id: Optional[str] = None
-    loan_lead_id: Optional[str] = None
-
-
 class CreditReportResponse(BaseModel):
     """Response model for credit report"""
     success: bool
