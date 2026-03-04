@@ -7090,7 +7090,7 @@ async def fetch_vaahan_data_for_inspection(
     
     # Normalize manufacturer name using brand mapper
     raw_manufacturer = vaahan_data.get("manufacturer", "")
-    normalized_make = brand_mapper.normalize_brand(raw_manufacturer) if raw_manufacturer else ""
+    normalized_make = brand_mapper.get_brand_with_fallback(raw_manufacturer) if raw_manufacturer else ""
     
     # Prepare update dict with Vaahan data
     update_dict = {
