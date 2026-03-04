@@ -560,6 +560,12 @@ class SurepassService:
                 closed_count = 0
                 secured_balance = 0
                 unsecured_balance = 0
+                written_off_count = 0
+                negative_accounts_count = 0
+                dpd_over_90_count = 0
+                suit_filed_count = 0
+                settled_count = 0
+                total_written_off_amount = 0
                 
                 if isinstance(retail_accounts, list):
                     for acc in retail_accounts:
@@ -569,6 +575,62 @@ class SurepassService:
                         amount_overdue = float(acc.get("AmountPastDue") or acc.get("AmountOverdue") or acc.get("Amount_Past_Due") or 0)
                         credit_limit = float(acc.get("CreditLimit") or acc.get("HighCreditAmount") or acc.get("High_Credit_Amount") or acc.get("SanctionedAmount") or 0)
                         account_type = acc.get("AccountType") or acc.get("Type") or acc.get("Account_Type") or ""
+                        written_off_amt = float(acc.get("WrittenOffAmount") or acc.get("WriteOffAmount") or acc.get("Written_Off_Amt_Total") or 0)
+                        settlement_amt = float(acc.get("SettlementAmount") or acc.get("Settlement_Amount") or 0)
+                        suit_filed = acc.get("SuitFiled", "") == "Y" or acc.get("WilfulDefault", "") == "Y" or acc.get("SuitFiledWilfulDefault", "") == "Y"
+                        
+                        # Parse payment history - try multiple formats
+                        payment_history_raw = acc.get("PaymentHistory") or acc.get("Payment_History") or acc.get("PaymentHistoryProfile") or []
+                        cais_account_history = []
+                        has_dpd_over_90 = False
+                        current_dpd = 0
+                        
+                        # If payment history is a list of objects
+                        if isinstance(payment_history_raw, list):
+                            for ph in payment_history_raw:
+                                dpd_val = int(ph.get("DPD") or ph.get("DaysPastDue") or ph.get("Days_Past_Due") or 0)
+                                cais_account_history.append({
+                                    "Days_Past_Due": dpd_val,
+                                    "Month": ph.get("Month") or ph.get("PaymentMonth") or "",
+                                    "Year": ph.get("Year") or ph.get("PaymentYear") or ""
+                                })
+                                if dpd_val > 90:
+                                    has_dpd_over_90 = True
+                            if cais_account_history:
+                                current_dpd = cais_account_history[0].get("Days_Past_Due", 0)
+                        # If payment history is a string (like CIBIL format)
+                        elif isinstance(payment_history_raw, str) and payment_history_raw:
+                            months = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"]
+                            for i in range(0, min(len(payment_history_raw), 72), 3):
+                                dpd_str = payment_history_raw[i:i+3]
+                                try:
+                                    dpd_val = int(dpd_str) if dpd_str.isdigit() else 0
+                                except:
+                                    dpd_val = 0
+                                month_idx = (i // 3) % 12
+                                year_offset = (i // 3) // 12
+                                cais_account_history.append({
+                                    "Days_Past_Due": dpd_val,
+                                    "Month": months[month_idx],
+                                    "Year": str(2026 - year_offset)
+                                })
+                                if dpd_val > 90:
+                                    has_dpd_over_90 = True
+                            if cais_account_history:
+                                current_dpd = cais_account_history[0].get("Days_Past_Due", 0)
+                        
+                        # Count risk metrics
+                        if written_off_amt > 0 or account_status in ["78", "89"]:
+                            written_off_count += 1
+                            total_written_off_amount += written_off_amt
+                        if settlement_amt > 0:
+                            settled_count += 1
+                        if suit_filed:
+                            suit_filed_count += 1
+                        if has_dpd_over_90:
+                            dpd_over_90_count += 1
+                        if amount_overdue > 0 or written_off_amt > 0 or suit_filed:
+                            negative_accounts_count += 1
                         
                         # Determine if secured or unsecured
                         secured_types = ["01", "02", "05", "07", "housing", "auto", "home", "property", "vehicle", "mortgage", "secured"]
@@ -586,20 +648,27 @@ class SurepassService:
                             "current_balance": current_balance,
                             "amount_overdue": amount_overdue,
                             "credit_status": "Active" if is_active else "Closed",
-                            "payment_history": acc.get("PaymentHistory") or acc.get("Payment_History") or "",
+                            "payment_history": payment_history_raw if isinstance(payment_history_raw, str) else "",
                             "last_payment_date": acc.get("LastPaymentDate") or acc.get("DateLastPayment") or acc.get("Date_Last_Payment") or "",
-                            "written_off_amount": float(acc.get("WrittenOffAmount") or acc.get("WriteOffAmount") or acc.get("Written_Off_Amt_Total") or 0),
-                            "settlement_amount": float(acc.get("SettlementAmount") or acc.get("Settlement_Amount") or 0),
+                            "written_off_amount": written_off_amt,
+                            "settlement_amount": settlement_amt,
                             # Equifax specific fields for frontend compatibility
                             "Account_Status": account_status,
                             "Balance": current_balance,
+                            "Current_Balance": current_balance,
                             "Amount_Past_Due": amount_overdue,
-                            "Written_Off_Amt_Total": float(acc.get("WrittenOffAmount") or acc.get("Written_Off_Amt_Total") or 0),
+                            "Written_Off_Amt_Total": written_off_amt,
+                            "Settlement_Amount": settlement_amt,
                             "Date_Opened": acc.get("DateOpened") or acc.get("Date_Opened") or "",
+                            "Open_Date": acc.get("DateOpened") or acc.get("Date_Opened") or "",
                             "Date_Closed": acc.get("DateClosed") or acc.get("Date_Closed") or "",
                             "Subscriber_Name": acc.get("Institution") or acc.get("Subscriber") or acc.get("Subscriber_Name") or "",
                             "Account_Type": account_type,
                             "Credit_Limit_Amount": credit_limit,
+                            "Highest_Credit_or_Original_Loan_Amount": credit_limit,
+                            "SuitFiledWilfulDefault": "Y" if suit_filed else "N",
+                            "CAIS_Account_History": cais_account_history,
+                            "Days_Past_Due": current_dpd
                         }
                         
                         account_details_list.append(account_entry)
