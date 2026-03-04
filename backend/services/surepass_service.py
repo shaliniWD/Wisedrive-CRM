@@ -751,9 +751,17 @@ class SurepassService:
                     cir_data.get("EnquiryDetails", []) or 
                     cir_data.get("Enquiries", []) or 
                     cir_data.get("InquiryDetails", []) or
+                    cir_data.get("EnquirySummary", {}).get("EnquiryDetails", []) or
+                    cir_data.get("RecentActivities", {}).get("EnquiryDetails", []) or
                     credit_report.get("Enquiries", []) or
                     credit_report.get("EnquiryDetails", [])
                 )
+                
+                # Also check for EnquirySummary structure
+                enquiry_summary = cir_data.get("EnquirySummary", {})
+                if enquiry_summary:
+                    logger.info(f"EnquirySummary keys: {list(enquiry_summary.keys())}")
+                    logger.info(f"EnquirySummary content: {str(enquiry_summary)[:500]}")
                 
                 logger.info(f"Enquiries count: {len(enquiry_list) if enquiry_list else 0}")
                 
