@@ -612,19 +612,61 @@ class SurepassService:
                         suit_filed = acc.get("SuitFiled", "") == "Y" or acc.get("WilfulDefault", "") == "Y" or acc.get("SuitFiledWilfulDefault", "") == "Y"
                         
                         # Parse payment history - try multiple formats
-                        payment_history_raw = acc.get("PaymentHistory") or acc.get("Payment_History") or acc.get("PaymentHistoryProfile") or []
+                        payment_history_raw = acc.get("PaymentHistory") or acc.get("Payment_History") or acc.get("PaymentHistoryProfile") or acc.get("History48Months") or []
                         cais_account_history = []
                         has_dpd_over_90 = False
                         current_dpd = 0
                         
-                        # If payment history is a list of objects
+                        # If payment history is a list of objects (Equifax History48Months format)
                         if isinstance(payment_history_raw, list):
                             for ph in payment_history_raw:
-                                dpd_val = int(ph.get("DPD") or ph.get("DaysPastDue") or ph.get("Days_Past_Due") or 0)
+                                # Handle Equifax History48Months format: {'key': '07-24', 'PaymentStatus': 'CLSD', ...}
+                                payment_status = ph.get("PaymentStatus", "") or ph.get("DPD") or ph.get("DaysPastDue") or ph.get("Days_Past_Due")
+                                key = ph.get("key", "")
+                                
+                                # Parse month/year from key (e.g., "07-24" -> month=07, year=2024)
+                                month = ph.get("Month") or ph.get("PaymentMonth") or ""
+                                year = ph.get("Year") or ph.get("PaymentYear") or ""
+                                if key and not month:
+                                    parts = key.split("-")
+                                    if len(parts) == 2:
+                                        month = parts[0]
+                                        year = f"20{parts[1]}" if len(parts[1]) == 2 else parts[1]
+                                
+                                # Convert PaymentStatus to DPD value
+                                dpd_val = 0
+                                if payment_status:
+                                    status_str = str(payment_status).upper()
+                                    if status_str in ["STD", "CLSD", "000", "CUR", "OK", "0"]:
+                                        dpd_val = 0
+                                    elif status_str in ["30+", "030", "1-30"]:
+                                        dpd_val = 30
+                                    elif status_str in ["60+", "060", "31-60"]:
+                                        dpd_val = 60
+                                    elif status_str in ["90+", "090", "61-90"]:
+                                        dpd_val = 90
+                                    elif status_str in ["120+", "120", "91-120"]:
+                                        dpd_val = 120
+                                    elif status_str in ["150+", "150", "121-150"]:
+                                        dpd_val = 150
+                                    elif status_str in ["180+", "180", "151-180"]:
+                                        dpd_val = 180
+                                    elif status_str in ["WO", "WRITTEN-OFF", "WRITEOFF"]:
+                                        dpd_val = 999
+                                    elif status_str in ["SMA", "SUB"]:
+                                        dpd_val = 90
+                                    else:
+                                        # Try to parse as number
+                                        try:
+                                            dpd_val = int(ph.get("DPD") or ph.get("DaysPastDue") or ph.get("Days_Past_Due") or 0)
+                                        except (ValueError, TypeError):
+                                            dpd_val = 0
+                                
                                 cais_account_history.append({
                                     "Days_Past_Due": dpd_val,
-                                    "Month": ph.get("Month") or ph.get("PaymentMonth") or "",
-                                    "Year": ph.get("Year") or ph.get("PaymentYear") or ""
+                                    "Month": month,
+                                    "Year": year,
+                                    "PaymentStatus": payment_status
                                 })
                                 if dpd_val > 90:
                                     has_dpd_over_90 = True
