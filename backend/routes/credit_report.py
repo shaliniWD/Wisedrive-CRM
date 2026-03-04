@@ -656,8 +656,7 @@ async def fetch_crif_report(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Fetch CRIF Commercial credit report (JSON format)
-    For business/company credit reports
+    Fetch CRIF Consumer credit report (JSON format)
     """
     surepass = get_surepass_service()
     
@@ -671,7 +670,8 @@ async def fetch_crif_report(
     
     # Fetch report from Surepass
     result = await surepass.fetch_crif_report(
-        business_name=request.business_name,
+        first_name=request.first_name,
+        last_name=request.last_name,
         pan=pan,
         mobile=request.mobile,
         consent=request.consent
@@ -695,7 +695,8 @@ async def fetch_crif_report(
         "type": "json",
         "pan": pan,
         "mobile": request.mobile,
-        "business_name": request.business_name,
+        "first_name": request.first_name,
+        "last_name": request.last_name,
         "credit_score": result.get("credit_score"),
         "client_id": result.get("client_id"),
         "parsed_report": parsed_report,
