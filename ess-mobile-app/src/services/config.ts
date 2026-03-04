@@ -1,6 +1,7 @@
 // API Configuration
-// Production endpoint - using stable custom domain
-export const API_BASE_URL = 'https://crmdev.wisedrive.com/api';
+// Uses environment variable for flexibility across environments
+// Falls back to production URL if not set
+export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://crmdev.wisedrive.com/api';
 
 export const API_ENDPOINTS = {
   // Auth
