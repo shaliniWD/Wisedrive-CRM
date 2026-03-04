@@ -357,16 +357,29 @@ async def fetch_equifax_report(
     logger.info(f"Stored Equifax report {report_id} for {request.id_type}: {request.id_number[:4]}****")
     
     # Update loan_lead with credit score if loan_lead_id provided
+    # Only update credit_score if CIBIL score doesn't exist (CIBIL is preferred)
     if request.loan_lead_id:
+        # Check if CIBIL score exists
+        existing_lead = await _db.loan_leads.find_one({"id": request.loan_lead_id})
+        cibil_exists = existing_lead and existing_lead.get("credit_report_provider") == "CIBIL"
+        
+        update_data = {
+            "equifax_credit_score": result.get("credit_score"),
+            "equifax_report_id": report_id,
+            "equifax_report_fetched_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        # Only update main credit_score if no CIBIL score exists
+        if not cibil_exists:
+            update_data["credit_score"] = result.get("credit_score")
+            update_data["credit_report_id"] = report_id
+            update_data["credit_report_provider"] = "Equifax"
+            update_data["credit_report_fetched_at"] = datetime.now(timezone.utc).isoformat()
+        
         await _db.loan_leads.update_one(
             {"id": request.loan_lead_id},
-            {"$set": {
-                "credit_score": result.get("credit_score"),
-                "credit_report_id": report_id,
-                "credit_report_provider": "Equifax",
-                "credit_report_fetched_at": datetime.now(timezone.utc).isoformat(),
-                "updated_at": datetime.now(timezone.utc).isoformat()
-            }}
+            {"$set": update_data}
         )
     
     return {
