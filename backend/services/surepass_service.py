@@ -690,7 +690,8 @@ class SurepassService:
                         "Credit_Account": {
                             "CreditAccountTotal": len(account_details_list),
                             "CreditAccountActive": active_count,
-                            "CreditAccountClosed": closed_count
+                            "CreditAccountClosed": closed_count,
+                            "CreditAccountDefault": negative_accounts_count
                         },
                         "Total_Outstanding_Balance": {
                             "Outstanding_Balance_All": total_outstanding,
@@ -699,6 +700,16 @@ class SurepassService:
                             "Outstanding_Balance_All_Overdue": total_overdue
                         }
                     }
+                }
+                
+                # Add risk metrics to summary
+                parsed["risk_metrics"] = {
+                    "written_off_accounts_count": written_off_count,
+                    "negative_accounts_count": negative_accounts_count,
+                    "dpd_over_90_count": dpd_over_90_count,
+                    "suit_filed_count": suit_filed_count,
+                    "settled_accounts_count": settled_count,
+                    "total_written_off_amount": total_written_off_amount
                 }
                 
                 logger.info(f"Parsed {len(account_details_list)} accounts, active: {active_count}, closed: {closed_count}")
