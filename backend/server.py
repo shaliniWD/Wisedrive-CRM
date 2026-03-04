@@ -7201,6 +7201,23 @@ async def assign_mechanic_to_inspection(
     }
     
     if request_data.mechanic_id:
+        # Validate car details before allowing mechanic assignment
+        car_number = inspection.get("car_number", "")
+        make = inspection.get("make", "")
+        model = inspection.get("model", "")
+        
+        if not car_number or not car_number.strip():
+            raise HTTPException(
+                status_code=400, 
+                detail="Cannot assign mechanic: Vehicle registration number is required. Please add car details first."
+            )
+        
+        if (not make or not make.strip()) and (not model or not model.strip()):
+            raise HTTPException(
+                status_code=400, 
+                detail="Cannot assign mechanic: Vehicle make/model is required. Please add car details first."
+            )
+        
         # Assign mechanic
         mechanic = await db.users.find_one({"id": request_data.mechanic_id}, {"_id": 0, "id": 1, "name": 1, "inspection_cities": 1})
         if not mechanic:
