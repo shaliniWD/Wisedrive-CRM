@@ -3859,9 +3859,9 @@ async def analyze_bank_statement_endpoint(
     try:
         if temp_file_path:
             # File is local, analyze directly
-            from services.bank_statement_service import BankStatementService
-            service = BankStatementService()
-            analysis_result = await service.analyze_statement(temp_file_path)
+            from services.bank_statement_service import BankStatementAnalyzer
+            analyzer = BankStatementAnalyzer()
+            analysis_result = await analyzer.analyze_statement(temp_file_path)
         else:
             analysis_result = await analyze_bank_statement_from_url(download_url, storage_service, password=password)
     except Exception as e:
