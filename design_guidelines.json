@@ -1,111 +1,162 @@
 {
   "design_system": {
-    "identity": {
-      "persona": "E1",
-      "tone": "Professional, Trustworthy, Efficient, Modern",
-      "theme": "Light",
-      "primary_font": "Inter",
-      "secondary_font": "Inter"
+    "typography": {
+      "font_family": {
+        "headings": "Manrope, sans-serif",
+        "body": "Inter, sans-serif",
+        "data": "JetBrains Mono, monospace"
+      },
+      "scale": {
+        "h1": "text-2xl font-bold tracking-tight",
+        "h2": "text-xl font-semibold tracking-tight",
+        "h3": "text-lg font-medium",
+        "body": "text-sm leading-relaxed",
+        "caption": "text-xs text-slate-500",
+        "data_large": "text-3xl font-mono font-bold tracking-tighter",
+        "data_medium": "text-xl font-mono font-semibold"
+      }
     },
     "colors": {
-      "primary": "#2E3192",
-      "secondary": "#6366F1",
-      "accent": "#FFD700",
-      "background": "#FFFFFF",
-      "surface": "#F8FAFC",
-      "text": {
-        "primary": "#0F172A",
-        "secondary": "#64748B",
-        "muted": "#94A3B8"
-      },
-      "border": "#E2E8F0",
-      "success": "#10B981",
-      "warning": "#F59E0B",
-      "error": "#EF4444"
-    },
-    "typography": {
-      "headings": "font-sans font-semibold tracking-tight text-slate-900",
-      "body": "font-sans text-sm text-slate-600 leading-relaxed",
-      "labels": "text-xs font-medium text-slate-500 uppercase tracking-wider"
+      "theme": "light",
+      "palette": {
+        "primary": {
+          "main": "#0F172A",
+          "light": "#334155",
+          "dark": "#020617"
+        },
+        "background": {
+          "default": "#F8FAFC",
+          "paper": "#FFFFFF",
+          "subtle": "#F1F5F9"
+        },
+        "status": {
+          "success": {
+            "bg": "#ECFDF5",
+            "text": "#059669",
+            "border": "#A7F3D0"
+          },
+          "warning": {
+            "bg": "#FFFBEB",
+            "text": "#D97706",
+            "border": "#FDE68A"
+          },
+          "error": {
+            "bg": "#FEF2F2",
+            "text": "#DC2626",
+            "border": "#FECACA"
+          },
+          "info": {
+            "bg": "#EFF6FF",
+            "text": "#2563EB",
+            "border": "#BFDBFE"
+          }
+        },
+        "border": {
+          "default": "#E2E8F0",
+          "subtle": "#F1F5F9"
+        }
+      }
     },
     "spacing": {
-      "container_padding": "p-6 md:p-8",
-      "element_gap": "gap-4 md:gap-6",
-      "section_gap": "space-y-6"
+      "container_padding": "p-6",
+      "element_gap": "gap-4",
+      "section_gap": "gap-8"
     },
     "shadows": {
-      "card": "shadow-sm hover:shadow-md transition-shadow duration-200",
-      "modal": "shadow-2xl",
-      "dropdown": "shadow-lg ring-1 ring-black/5"
+      "card": "shadow-[0_1px_3px_0_rgb(0,0,0,0.1),0_1px_2px_-1px_rgb(0,0,0,0.1)]",
+      "dropdown": "shadow-[0_10px_15px_-3px_rgb(0,0,0,0.1),0_4px_6px_-2px_rgb(0,0,0,0.05)]",
+      "modal": "shadow-2xl"
     },
     "border_radius": {
-      "base": "rounded-lg",
       "card": "rounded-xl",
-      "button": "rounded-md"
+      "button": "rounded-lg",
+      "badge": "rounded-full"
     }
   },
   "components": {
-    "Modal": {
-      "wrapper": "DialogContent max-w-4xl p-0 overflow-hidden bg-white gap-0",
-      "header": "px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-10",
-      "title": "text-lg font-semibold text-slate-900",
-      "body": "p-6 bg-slate-50/50 min-h-[400px] max-h-[80vh] overflow-y-auto"
+    "CreditScoreModal": {
+      "path": "/app/frontend/src/components/loans/CreditScoreModal.jsx",
+      "layout_strategy": "Bento Grid Mode B (High Density)",
+      "sections": [
+        {
+          "name": "Header",
+          "description": "Sticky header with customer name, report date, and bureau toggle",
+          "style": "bg-white border-b border-slate-200 sticky top-0 z-10"
+        },
+        {
+          "name": "RiskSummaryHero",
+          "description": "Top section containing Credit Score Gauge, Risk Band, and Critical Alerts",
+          "layout": "grid grid-cols-1 md:grid-cols-12 gap-4 p-6 bg-slate-50/50",
+          "elements": [
+            {
+              "name": "ScoreGauge",
+              "col_span": "md:col-span-4",
+              "type": "Visual Gauge",
+              "details": "Semi-circle gauge with score value in center. Color coded based on risk."
+            },
+            {
+              "name": "KeyMetrics",
+              "col_span": "md:col-span-8",
+              "type": "Grid",
+              "details": "4-column grid showing Total Accounts, Active Loans, Total Overdue, Recent Inquiries"
+            }
+          ]
+        },
+        {
+          "name": "RedFlagsSection",
+          "description": "Dedicated section for negative indicators. ONLY visible if issues exist.",
+          "style": "bg-red-50 border border-red-100 rounded-xl p-4 mx-6 mb-6",
+          "elements": ["Write-offs", "Settlements", "Suit Filed", "DPD > 90"]
+        },
+        {
+          "name": "DetailedTabs",
+          "description": "Tabbed interface for deep dive",
+          "tabs": ["Overview", "Accounts (Detailed)", "Payment History", "Enquiries", "Profile"],
+          "style": "px-6"
+        }
+      ]
     },
-    "Tabs": {
-      "list": "w-full justify-start border-b border-slate-200 bg-transparent p-0 h-auto rounded-none",
-      "trigger": "data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none border-b-2 border-transparent rounded-none px-4 py-3 text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors bg-transparent"
-    },
-    "Card": {
-      "base": "bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden",
-      "header": "px-5 py-3 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center",
-      "content": "p-5"
-    },
-    "Input": {
-      "base": "flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200"
-    },
-    "Button": {
-      "primary": "bg-[#2E3192] text-white hover:bg-[#2E3192]/90 shadow-sm",
-      "secondary": "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 shadow-sm",
-      "ghost": "hover:bg-slate-100 text-slate-600",
-      "destructive": "bg-red-50 text-red-600 hover:bg-red-100 border border-red-200"
+    "VisualEnhancers": {
+      "PaymentHistoryHeatmap": {
+        "description": "Horizontal strip of colored blocks representing last 24-36 months",
+        "colors": {
+          "0": "bg-emerald-500",
+          "1-30": "bg-amber-400",
+          "31-60": "bg-orange-500",
+          "61-90": "bg-red-500",
+          "90+": "bg-red-700",
+          "unknown": "bg-slate-200"
+        }
+      },
+      "RiskBandBadge": {
+        "description": "Pill-shaped badge with risk level text",
+        "variants": {
+          "Low": "bg-emerald-100 text-emerald-700 border-emerald-200",
+          "Medium": "bg-amber-100 text-amber-700 border-amber-200",
+          "High": "bg-red-100 text-red-700 border-red-200",
+          "Critical": "bg-red-50 text-red-900 border-red-500 ring-1 ring-red-500"
+        }
+      }
     }
-  },
-  "layout_rules": {
-    "CustomerInfo": {
-      "grid": "grid grid-cols-1 md:grid-cols-2 gap-6",
-      "section": "space-y-4"
-    },
-    "Vehicles": {
-      "list_layout": "flex flex-col gap-4",
-      "card_grid": "grid grid-cols-2 md:grid-cols-4 gap-4 text-sm"
-    },
-    "Documents": {
-      "list_item": "flex items-center justify-between p-4 bg-white border border-slate-200 rounded-lg hover:border-primary/50 transition-colors group"
-    }
-  },
-  "assets": {
-    "icons": "lucide-react",
-    "image_urls": []
   },
   "instructions_to_main_agent": [
-    "Use .js and .jsx extensions for files, NOT .ts or .tsx.",
-    "Implement the 'Customer Details Modal' using the Shadcn Dialog component.",
-    "Use the 'Tabs' component for switching between Customer Info, Vehicles, and Documents.",
-    "Ensure all inputs have labels and proper spacing.",
-    "For the Vehicles tab, use a Card-based layout for each vehicle instead of a wide table if possible, or a very clean table if data is dense.",
-    "For the Documents tab, create a clean list view with upload buttons.",
-    "Use the defined color palette: Primary #2E3192, Secondary #6366F1.",
-    "Ensure the modal is responsive and fits within the viewport (max-h-[80vh] with overflow-y-auto).",
-    "Add 'data-testid' to all interactive elements.",
-    "Do NOT use gradients for backgrounds; stick to clean white and slate surfaces.",
-    "Preserve all existing functionality: Edit/Save for customer, Add/Delete/Refresh for vehicles, Upload/View/Delete for documents."
+    "Refactor `CreditScoreModal.jsx` to use the new design system.",
+    "Maintain all existing logic for OTP, API calls, and data parsing. DO NOT BREAK the `DualBureauReportView` logic.",
+    "Replace the existing `ScoreCard` with a more professional `RiskSummaryHero`.",
+    "Implement a `RedFlagsSection` that dynamically appears when `problemAccounts.length > 0` or `totalOverdue > 0`.",
+    "Redesign the Accounts List to be a dense table/grid with 'Payment History' visualized as a mini-heatmap inline.",
+    "Use `lucide-react` icons for all visual indicators.",
+    "Ensure all text colors meet APCA contrast guidelines (no grey-on-grey text).",
+    "Add `data-testid` to all interactive elements (tabs, buttons, inputs, expanded rows).",
+    "Use `JetBrains Mono` for all financial figures (amounts, dates, account numbers).",
+    "Do not use `transparent` backgrounds for dropdowns or modals.",
+    "Ensure the modal is responsive (stack columns on mobile, grid on desktop)."
   ],
   "universal_guidelines": [
-    "Avoid 'AI slop' aesthetics; focus on professional, high-trust design.",
-    "Use generous padding (p-6, p-8) to reduce congestion.",
-    "Use specific transitions (e.g., transition-colors duration-200) instead of 'transition-all'.",
-    "Do not center-align text in forms; keep it left-aligned for readability.",
-    "Use 'sonner' for toast notifications if needed.",
-    "Ensure high contrast for text against backgrounds."
+    "Avoid 'AI Slop' - no generic centered layouts.",
+    "Use 2-3x more spacing (padding) inside containers than standard.",
+    "Use specific transitions (e.g., `transition-colors duration-200`) instead of `transition-all`.",
+    "Never use pure black (#000000). Use #0F172A or #1E293B.",
+    "Interactive elements must have clear hover and focus states."
   ]
 }
