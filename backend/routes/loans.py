@@ -3742,19 +3742,125 @@ async def analyze_bank_statement_endpoint(
     if not file_url:
         raise HTTPException(status_code=400, detail="Document has no file URL")
     
-    # Get download URL if it's a Firebase path
+    logger.info(f"Bank statement analysis - file_url from DB: {file_url}")
+    
+    # Handle different file_url formats:
+    # 1. Full Firebase URL: https://firebasestorage.googleapis.com/...
+    # 2. Local storage path: /app/storage/loan_documents/... or loan_documents/...
+    # 3. gs:// path: gs://bucket-name/path
+    
+    download_url = None
+    temp_file_path = None
+    
     try:
-        if storage_service:
-            download_url = await storage_service.get_download_url(file_url)
-        else:
+        if file_url.startswith(('http://', 'https://')):
+            # It's already a valid HTTP URL
             download_url = file_url
+            logger.info(f"Using HTTP URL directly: {download_url}")
+        elif file_url.startswith('gs://'):
+            # Firebase gs:// path - need to convert to download URL
+            download_url = file_url.replace('gs://', 'https://storage.googleapis.com/')
+            logger.info(f"Converted gs:// to HTTP URL: {download_url}")
+        elif '/app/storage/' in file_url or file_url.startswith('loan_documents/'):
+            # It's a local storage path - file is likely in Firebase
+            # Extract the relative path and try to download from Firebase
+            if '/app/storage/' in file_url:
+                firebase_path = file_url.replace('/app/storage/', '')
+            else:
+                firebase_path = file_url
+            
+            logger.info(f"Attempting Firebase download for path: {firebase_path}")
+            
+            # Try to download from Firebase using the SDK
+            try:
+                import firebase_admin
+                from firebase_admin import storage as firebase_storage
+                
+                # Get Firebase bucket
+                try:
+                    bucket = firebase_storage.bucket()
+                except ValueError:
+                    # Firebase not initialized, try to initialize
+                    cred_path = "/app/ess/api/firebase-credentials.json"
+                    if os.path.exists(cred_path):
+                        from firebase_admin import credentials
+                        cred = credentials.Certificate(cred_path)
+                        firebase_admin.initialize_app(cred, {
+                            'storageBucket': 'wisedrive-ess-app.firebasestorage.app'
+                        })
+                        bucket = firebase_storage.bucket()
+                    else:
+                        raise HTTPException(status_code=500, detail="Firebase not configured")
+                
+                blob = bucket.blob(firebase_path)
+                
+                # Check if blob exists
+                if blob.exists():
+                    # Generate signed URL for download
+                    from datetime import timedelta
+                    expiration = datetime.now(timezone.utc) + timedelta(hours=1)
+                    download_url = blob.generate_signed_url(
+                        version="v4",
+                        expiration=expiration,
+                        method="GET"
+                    )
+                    logger.info(f"Generated Firebase signed URL for download")
+                else:
+                    logger.warning(f"File not found in Firebase: {firebase_path}")
+                    # Try alternate paths
+                    alternate_paths = [
+                        firebase_path,
+                        f"loan_documents/{firebase_path.split('/')[-2]}/{firebase_path.split('/')[-1]}" if '/' in firebase_path else firebase_path,
+                    ]
+                    
+                    for alt_path in alternate_paths:
+                        alt_blob = bucket.blob(alt_path)
+                        if alt_blob.exists():
+                            expiration = datetime.now(timezone.utc) + timedelta(hours=1)
+                            download_url = alt_blob.generate_signed_url(
+                                version="v4",
+                                expiration=expiration,
+                                method="GET"
+                            )
+                            logger.info(f"Found file at alternate path: {alt_path}")
+                            break
+                    
+                    if not download_url:
+                        # Last resort - check if file exists locally
+                        local_paths = [file_url, f"/app/storage/{firebase_path}", f"/app/{file_url}"]
+                        for local_path in local_paths:
+                            if os.path.exists(local_path):
+                                temp_file_path = local_path
+                                logger.info(f"Found local file: {local_path}")
+                                break
+                        
+                        if not temp_file_path:
+                            raise HTTPException(
+                                status_code=404, 
+                                detail=f"File not found in Firebase or locally. Path: {firebase_path}"
+                            )
+            except ImportError:
+                logger.error("Firebase Admin SDK not installed")
+                raise HTTPException(status_code=500, detail="Firebase SDK not available")
+        else:
+            # Unknown format - try as direct URL
+            download_url = file_url
+            logger.warning(f"Unknown file_url format, trying as-is: {file_url}")
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Failed to get download URL: {e}")
-        raise HTTPException(status_code=500, detail="Failed to access document")
+        logger.error(f"Failed to resolve file URL: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to access document: {str(e)}")
     
     # Analyze using AI (with optional password for encrypted PDFs)
     try:
-        analysis_result = await analyze_bank_statement_from_url(download_url, storage_service, password=password)
+        if temp_file_path:
+            # File is local, analyze directly
+            from services.bank_statement_service import BankStatementService
+            service = BankStatementService()
+            analysis_result = await service.analyze_statement(temp_file_path)
+        else:
+            analysis_result = await analyze_bank_statement_from_url(download_url, storage_service, password=password)
     except Exception as e:
         logger.error(f"Bank statement analysis failed: {e}")
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
