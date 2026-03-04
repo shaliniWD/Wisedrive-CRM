@@ -19,7 +19,7 @@ import { formatDate, formatDateTime } from '@/utils/dateFormat';
 
 // Import loan components
 import {
-  CreditScoreModal,
+  CreditRiskDashboard,
   LoanProcessingModal,
   CustomerProfileModal,
   CustomerDetailsModal,
@@ -589,8 +589,8 @@ export default function LoansPage() {
         onUpdate={refreshSelectedLead}
       />
       
-      {/* Credit Score Modal */}
-      <CreditScoreModal
+      {/* Credit Risk Dashboard Modal */}
+      <CreditRiskDashboard
         isOpen={creditScoreModalOpen}
         onClose={() => setCreditScoreModalOpen(false)}
         lead={selectedLead}

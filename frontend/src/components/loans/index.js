@@ -1,5 +1,6 @@
 // Loans Module - Component exports
 export { default as CreditScoreModal } from './CreditScoreModal';
+export { default as CreditRiskDashboard } from './CreditRiskDashboard';
 export { default as BankOffersModal } from './BankOffersModal';
 export { default as LoanProcessingModal } from './LoanProcessingModal';
 export { default as CustomerProfileModal } from './CustomerProfileModal';
