@@ -686,7 +686,7 @@ async def get_latest_credit_reports(
     pan = pan.upper().strip()
     
     # Get latest report for each provider
-    bureaus = ["CIBIL", "Equifax", "Experian", "CRIF"]
+    bureaus = ["CIBIL", "Equifax", "Experian"]
     latest_reports = {}
     
     for bureau in bureaus:
