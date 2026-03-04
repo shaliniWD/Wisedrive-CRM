@@ -190,7 +190,11 @@ async def fetch_cibil_report(
             {"$set": {
                 "credit_score": result.get("credit_score"),
                 "credit_report_id": report_id,
+                "credit_report_provider": "CIBIL",
                 "credit_report_fetched_at": datetime.now(timezone.utc).isoformat(),
+                "cibil_credit_score": result.get("credit_score"),
+                "cibil_report_id": report_id,
+                "cibil_report_fetched_at": datetime.now(timezone.utc).isoformat(),
                 "updated_at": datetime.now(timezone.utc).isoformat()
             }}
         )
