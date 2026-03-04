@@ -1520,8 +1520,10 @@ class SurepassService:
         # Calculate summary stats
         total_accounts = len(account_info)
         active_accounts = len([a for a in account_info if safe_int(a.get("current_balance", 0)) > 0])
+        closed_accounts = total_accounts - active_accounts
         total_balance = sum(safe_int(a.get("current_balance", 0)) for a in account_info)
         total_overdue = sum(safe_int(a.get("amount_overdue", 0)) for a in account_info)
+        total_written_off = sum(safe_int(a.get("written_off_amount", 0)) for a in account_info)
         enquiries_last_6_months = len([e for e in enquiry_info if e.get("date")])  # Simplified
         
         return {
@@ -1535,9 +1537,45 @@ class SurepassService:
             "summary": {
                 "total_accounts": total_accounts,
                 "active_accounts": active_accounts,
+                "closed_accounts": closed_accounts,
                 "total_balance": total_balance,
                 "total_overdue": total_overdue,
-                "total_enquiries": len(enquiry_info)
+                "total_enquiries": len(enquiry_info),
+                "written_off_accounts_count": written_off_count,
+                "negative_accounts_count": negative_accounts_count,
+                "dpd_over_90_count": dpd_over_90_count,
+                "suit_filed_count": suit_filed_count,
+                "settled_accounts_count": settled_count,
+                "total_written_off_amount": total_written_off
+            },
+            # Equifax-compatible structure for frontend
+            "CAIS_Account": {
+                "CAIS_Account_DETAILS": account_info,
+                "CAIS_Summary": {
+                    "Credit_Account": {
+                        "CreditAccountTotal": total_accounts,
+                        "CreditAccountActive": active_accounts,
+                        "CreditAccountClosed": closed_accounts,
+                        "CreditAccountDefault": negative_accounts_count
+                    },
+                    "Total_Outstanding_Balance": {
+                        "Outstanding_Balance_All": total_balance,
+                        "Outstanding_Balance_All_Overdue": total_overdue
+                    }
+                }
+            },
+            "SCORE": {
+                "FCIREXScore": score_info.get("score", 0),
+                "BureauScore": score_info.get("score", 0)
+            },
+            "CAPS": {
+                "CAPS_Application_Details": enquiry_info
+            },
+            "TotalCAPS_Summary": {
+                "TotalCAPSLast7Days": 0,
+                "TotalCAPSLast30Days": 0,
+                "TotalCAPSLast90Days": 0,
+                "TotalCAPSLast180Days": len(enquiry_info)
             }
         }
 
