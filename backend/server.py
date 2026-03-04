@@ -14003,23 +14003,44 @@ async def upload_media_direct(
     file: UploadFile = File(...),
     current_user: dict = Depends(get_current_user)
 ):
-    """Direct upload endpoint for local storage (development mode)"""
+    """Direct upload endpoint - saves locally AND to Firebase for persistence"""
     try:
-        # Save file to local storage
+        # Read file content once
+        file_content = await file.read()
+        
+        # 1. Save file to local storage (for immediate access)
         storage_path = f"/app/storage/{key}"
         dir_path = os.path.dirname(storage_path)
         os.makedirs(dir_path, exist_ok=True)
         
-        # Read and save file
-        file_content = await file.read()
         with open(storage_path, 'wb') as f:
             f.write(file_content)
         
         logger.info(f"[LOCAL_UPLOAD] File saved to: {storage_path}")
         
+        # 2. Also upload to Firebase for persistence (async, don't block on failure)
+        firebase_url = None
+        try:
+            get_firebase_app()
+            bucket = firebase_storage.bucket()
+            blob = bucket.blob(key)
+            blob.upload_from_string(file_content, content_type=content_type)
+            
+            # Generate public URL
+            expiration_time = datetime.now(timezone.utc) + timedelta(days=365)
+            firebase_url = blob.generate_signed_url(
+                version="v4",
+                expiration=expiration_time,
+                method="GET",
+            )
+            logger.info(f"[FIREBASE_UPLOAD] File also uploaded to Firebase: {key}")
+        except Exception as firebase_err:
+            logger.warning(f"[FIREBASE_UPLOAD] Could not upload to Firebase (file still available locally): {firebase_err}")
+        
         return {
             "success": True,
             "file_url": storage_path,
+            "firebase_url": firebase_url,
             "key": key
         }
     except Exception as e:
