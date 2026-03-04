@@ -3813,6 +3813,7 @@ async def analyze_bank_statement_endpoint(
                         f"loan_documents/{firebase_path.split('/')[-2]}/{firebase_path.split('/')[-1]}" if '/' in firebase_path else firebase_path,
                     ]
                     
+                    logger.info(f"Trying alternate paths: {alternate_paths}")
                     for alt_path in alternate_paths:
                         alt_blob = bucket.blob(alt_path)
                         if alt_blob.exists():
@@ -3828,6 +3829,7 @@ async def analyze_bank_statement_endpoint(
                     if not download_url:
                         # Last resort - check if file exists locally
                         local_paths = [file_url, f"/app/storage/{firebase_path}", f"/app/{file_url}"]
+                        logger.info(f"Checking local paths: {local_paths}")
                         for local_path in local_paths:
                             if os.path.exists(local_path):
                                 temp_file_path = local_path
@@ -3835,9 +3837,10 @@ async def analyze_bank_statement_endpoint(
                                 break
                         
                         if not temp_file_path:
+                            logger.error(f"File not found anywhere - raising 404")
                             raise HTTPException(
                                 status_code=404, 
-                                detail=f"File not found in Firebase or locally. Path: {firebase_path}"
+                                detail=f"File not found in Firebase or locally. The file was uploaded to server storage and is only accessible from the production server. Path: {firebase_path}"
                             )
             except ImportError:
                 logger.error("Firebase Admin SDK not installed")
