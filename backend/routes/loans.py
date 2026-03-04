@@ -3858,12 +3858,37 @@ async def analyze_bank_statement_endpoint(
     # Analyze using AI (with optional password for encrypted PDFs)
     try:
         if temp_file_path:
-            # File is local, analyze directly
-            from services.bank_statement_service import BankStatementAnalyzer
+            # File is local, analyze directly (handle password if needed)
+            from services.bank_statement_service import BankStatementAnalyzer, unlock_pdf
+            import tempfile as tmp_module
+            
             analyzer = BankStatementAnalyzer()
-            analysis_result = await analyzer.analyze_statement(temp_file_path)
+            file_to_analyze = temp_file_path
+            unlocked_temp = None
+            
+            # If password provided, unlock the PDF first
+            if password:
+                unlocked_temp = tmp_module.NamedTemporaryFile(delete=False, suffix='_unlocked.pdf')
+                unlocked_temp.close()
+                
+                if unlock_pdf(temp_file_path, password, unlocked_temp.name):
+                    file_to_analyze = unlocked_temp.name
+                    logger.info("PDF unlocked successfully for local file analysis")
+                else:
+                    raise HTTPException(status_code=400, detail="Failed to unlock PDF with provided password")
+            
+            analysis_result = await analyzer.analyze_statement(file_to_analyze)
+            
+            # Cleanup unlocked temp file
+            if unlocked_temp and os.path.exists(unlocked_temp.name):
+                try:
+                    os.unlink(unlocked_temp.name)
+                except Exception:
+                    pass
         else:
             analysis_result = await analyze_bank_statement_from_url(download_url, storage_service, password=password)
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Bank statement analysis failed: {e}")
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
