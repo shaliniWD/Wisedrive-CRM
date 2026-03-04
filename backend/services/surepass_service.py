@@ -398,7 +398,10 @@ class SurepassService:
             Structured dict with parsed data
         """
         if not credit_report:
+            logger.warning("Empty credit report received for parsing")
             return {}
+        
+        logger.info(f"Parsing Equifax report. Top-level keys: {list(credit_report.keys())}")
         
         parsed = {
             "personal_info": {},
@@ -419,30 +422,44 @@ class SurepassService:
         try:
             # Get CCR Response data
             ccr_response = credit_report.get("CCRResponse", {})
-            cir_report_list = ccr_response.get("CIRReportDataLst", [])
+            logger.info(f"CCRResponse keys: {list(ccr_response.keys()) if ccr_response else 'None'}")
             
-            # Extract Score from root level
-            scores = credit_report.get("Score", [])
+            cir_report_list = ccr_response.get("CIRReportDataLst", [])
+            logger.info(f"CIRReportDataLst count: {len(cir_report_list)}")
+            
+            # Extract Score from root level or CCRResponse
+            scores = credit_report.get("Score", []) or ccr_response.get("Score", [])
+            if not scores:
+                # Try alternate score locations
+                inquiry_header = ccr_response.get("InquiryResponseHeader", {})
+                if inquiry_header.get("Score"):
+                    scores = [inquiry_header.get("Score")]
+            
+            logger.info(f"Scores found: {scores}")
+            
             if scores and len(scores) > 0:
-                first_score = scores[0]
-                score_value = first_score.get("Value")
+                first_score = scores[0] if isinstance(scores, list) else scores
+                score_value = first_score.get("Value") if isinstance(first_score, dict) else first_score
                 parsed["SCORE"] = {
                     "FCIREXScore": score_value,
                     "BureauScore": score_value,
-                    "FCIREXScoreConfidLevel": first_score.get("Confidence", ""),
-                    "Type": first_score.get("Type"),
-                    "Version": first_score.get("Version")
+                    "FCIREXScoreConfidLevel": first_score.get("Confidence", "") if isinstance(first_score, dict) else "",
+                    "Type": first_score.get("Type") if isinstance(first_score, dict) else "",
+                    "Version": first_score.get("Version") if isinstance(first_score, dict) else ""
                 }
                 parsed["score_info"] = {
                     "score": score_value,
-                    "score_name": first_score.get("Type"),
-                    "score_version": first_score.get("Version"),
-                    "confidence": first_score.get("Confidence")
+                    "score_name": first_score.get("Type") if isinstance(first_score, dict) else "",
+                    "score_version": first_score.get("Version") if isinstance(first_score, dict) else "",
+                    "confidence": first_score.get("Confidence") if isinstance(first_score, dict) else ""
                 }
             
+            # Process CIRReportDataLst if available
             if cir_report_list:
                 first_report = cir_report_list[0]
                 cir_data = first_report.get("CIRReportData", {})
+                logger.info(f"CIRReportData keys: {list(cir_data.keys()) if cir_data else 'None'}")
+                
                 id_contact_info = cir_data.get("IDAndContactInfo", {})
                 
                 # Report Header
@@ -465,118 +482,137 @@ class SurepassService:
                     "last_name": name_info.get("LastName"),
                     "birth_date": personal_info.get("DateOfBirth"),
                     "gender": personal_info.get("Gender"),
-                    "age": personal_info.get("Age", {}).get("Age")
+                    "age": personal_info.get("Age", {}).get("Age") if isinstance(personal_info.get("Age"), dict) else personal_info.get("Age")
                 }
                 
                 # Identity Info
                 identity_info = id_contact_info.get("IdentityInfo", {})
-                if identity_info.get("PANId"):
-                    for pan in identity_info["PANId"]:
-                        parsed["id_info"].append({
-                            "type": "PAN",
-                            "number": pan.get("IdNumber"),
-                            "reported_date": pan.get("ReportedDate")
-                        })
-                if identity_info.get("Passport"):
-                    for passport in identity_info["Passport"]:
-                        parsed["id_info"].append({
-                            "type": "Passport",
-                            "number": passport.get("IdNumber"),
-                            "reported_date": passport.get("ReportedDate")
-                        })
-                if identity_info.get("VoterID"):
-                    for voter in identity_info["VoterID"]:
-                        parsed["id_info"].append({
-                            "type": "Voter ID",
-                            "number": voter.get("IdNumber"),
-                            "reported_date": voter.get("ReportedDate")
-                        })
-                if identity_info.get("DriverLicence"):
-                    for dl in identity_info["DriverLicence"]:
-                        parsed["id_info"].append({
-                            "type": "Driving License",
-                            "number": dl.get("IdNumber"),
-                            "reported_date": dl.get("ReportedDate")
-                        })
+                for id_type, id_list in [
+                    ("PAN", identity_info.get("PANId", [])),
+                    ("Passport", identity_info.get("Passport", [])),
+                    ("Voter ID", identity_info.get("VoterID", [])),
+                    ("Driving License", identity_info.get("DriverLicence", [])),
+                    ("UID", identity_info.get("UID", []))
+                ]:
+                    if isinstance(id_list, list):
+                        for doc in id_list:
+                            parsed["id_info"].append({
+                                "type": id_type,
+                                "number": doc.get("IdNumber"),
+                                "reported_date": doc.get("ReportedDate")
+                            })
                 
                 # Address Info
                 address_info = id_contact_info.get("AddressInfo", [])
-                for addr in address_info:
-                    parsed["address_info"].append({
-                        "address": addr.get("Address"),
-                        "state": addr.get("State"),
-                        "postal": addr.get("Postal"),
-                        "type": addr.get("Type"),
-                        "reported_date": addr.get("ReportedDate")
-                    })
+                if isinstance(address_info, list):
+                    for addr in address_info:
+                        parsed["address_info"].append({
+                            "address": addr.get("Address"),
+                            "state": addr.get("State"),
+                            "postal": addr.get("Postal"),
+                            "type": addr.get("Type"),
+                            "reported_date": addr.get("ReportedDate")
+                        })
                 
                 # Phone Info
                 phone_info = id_contact_info.get("PhoneInfo", [])
                 phone_type_map = {"H": "Home", "M": "Mobile", "O": "Office"}
-                for phone in phone_info:
-                    parsed["phone_info"].append({
-                        "number": phone.get("Number"),
-                        "type": phone_type_map.get(phone.get("typeCode"), phone.get("typeCode")),
-                        "reported_date": phone.get("ReportedDate")
-                    })
+                if isinstance(phone_info, list):
+                    for phone in phone_info:
+                        parsed["phone_info"].append({
+                            "number": phone.get("Number"),
+                            "type": phone_type_map.get(phone.get("typeCode"), phone.get("typeCode")),
+                            "reported_date": phone.get("ReportedDate")
+                        })
                 
                 # Email Info
                 email_info = id_contact_info.get("EmailAddressInfo", [])
-                for email in email_info:
-                    parsed["email_info"].append({
-                        "email": email.get("Email"),
-                        "reported_date": email.get("ReportedDate")
-                    })
+                if isinstance(email_info, list):
+                    for email in email_info:
+                        parsed["email_info"].append({
+                            "email": email.get("Email"),
+                            "reported_date": email.get("ReportedDate")
+                        })
                 
-                # Account Information (Credit Accounts)
-                retail_accounts = cir_data.get("RetailAccountDetails", [])
+                # Account Information - Try multiple possible locations
+                retail_accounts = (
+                    cir_data.get("RetailAccountDetails", []) or 
+                    cir_data.get("Accounts", []) or 
+                    cir_data.get("AccountDetails", []) or 
+                    cir_data.get("TradeLines", []) or
+                    credit_report.get("Accounts", []) or
+                    credit_report.get("RetailAccountDetails", [])
+                )
+                
+                logger.info(f"RetailAccountDetails count: {len(retail_accounts) if retail_accounts else 0}")
+                
+                if not retail_accounts:
+                    # Log all keys in cir_data to find accounts
+                    for key in cir_data.keys():
+                        val = cir_data.get(key)
+                        if isinstance(val, list) and len(val) > 0 and isinstance(val[0], dict):
+                            logger.info(f"Potential accounts list in '{key}': {len(val)} items, keys: {list(val[0].keys())[:10]}")
+                
                 account_details_list = []
                 total_outstanding = 0
                 total_overdue = 0
                 active_count = 0
                 closed_count = 0
+                secured_balance = 0
+                unsecured_balance = 0
                 
-                for acc in retail_accounts:
-                    account_status = acc.get("AccountStatus", "")
-                    is_active = account_status in ["Active", "Open", "Current"]
-                    current_balance = acc.get("CurrentBalance") or acc.get("Balance") or 0
-                    amount_overdue = acc.get("AmountPastDue") or acc.get("AmountOverdue") or 0
-                    
-                    account_entry = {
-                        # Fields for both CIBIL and Equifax formats
-                        "account_number": acc.get("AccountNumber", ""),
-                        "institution": acc.get("Institution") or acc.get("Subscriber") or acc.get("CreditorName", ""),
-                        "account_type": acc.get("AccountType") or acc.get("Type", ""),
-                        "ownership_type": acc.get("OwnershipType") or acc.get("Ownership", ""),
-                        "open_date": acc.get("DateOpened") or acc.get("OpenDate", ""),
-                        "close_date": acc.get("DateClosed") or acc.get("CloseDate", ""),
-                        "credit_limit": acc.get("CreditLimit") or acc.get("HighCreditAmount") or 0,
-                        "current_balance": current_balance,
-                        "amount_overdue": amount_overdue,
-                        "credit_status": "Active" if is_active else "Closed",
-                        "payment_history": acc.get("PaymentHistory", ""),
-                        "last_payment_date": acc.get("LastPaymentDate") or acc.get("DateLastPayment", ""),
-                        "written_off_amount": acc.get("WrittenOffAmount") or acc.get("WriteOffAmount") or 0,
-                        "settlement_amount": acc.get("SettlementAmount") or 0,
-                        # Equifax specific fields for frontend compatibility
-                        "Account_Status": account_status,
-                        "Balance": current_balance,
-                        "Amount_Past_Due": amount_overdue,
-                        "Written_Off_Amt_Total": acc.get("WrittenOffAmount") or 0,
-                        "Date_Opened": acc.get("DateOpened") or acc.get("OpenDate", ""),
-                        "Date_Closed": acc.get("DateClosed") or acc.get("CloseDate", ""),
-                        "Subscriber_Name": acc.get("Institution") or acc.get("Subscriber", ""),
-                        "Account_Type": acc.get("AccountType") or acc.get("Type", ""),
-                        "Credit_Limit_Amount": acc.get("CreditLimit") or acc.get("HighCreditAmount") or 0,
-                    }
-                    
-                    account_details_list.append(account_entry)
-                    total_outstanding += current_balance
-                    total_overdue += amount_overdue
-                    if is_active:
-                        active_count += 1
-                    else:
-                        closed_count += 1
+                if isinstance(retail_accounts, list):
+                    for acc in retail_accounts:
+                        account_status = acc.get("AccountStatus") or acc.get("Account_Status") or acc.get("Status") or ""
+                        is_active = str(account_status).lower() in ["active", "open", "current", "01", "02", "21", "22", "23"]
+                        current_balance = float(acc.get("CurrentBalance") or acc.get("Balance") or acc.get("Current_Balance") or 0)
+                        amount_overdue = float(acc.get("AmountPastDue") or acc.get("AmountOverdue") or acc.get("Amount_Past_Due") or 0)
+                        credit_limit = float(acc.get("CreditLimit") or acc.get("HighCreditAmount") or acc.get("High_Credit_Amount") or acc.get("SanctionedAmount") or 0)
+                        account_type = acc.get("AccountType") or acc.get("Type") or acc.get("Account_Type") or ""
+                        
+                        # Determine if secured or unsecured
+                        secured_types = ["01", "02", "05", "07", "housing", "auto", "home", "property", "vehicle", "mortgage", "secured"]
+                        is_secured = any(st in str(account_type).lower() for st in secured_types)
+                        
+                        account_entry = {
+                            # Universal fields
+                            "account_number": acc.get("AccountNumber") or acc.get("Account_Number") or "",
+                            "institution": acc.get("Institution") or acc.get("Subscriber") or acc.get("CreditorName") or acc.get("Subscriber_Name") or "",
+                            "account_type": account_type,
+                            "ownership_type": acc.get("OwnershipType") or acc.get("Ownership") or acc.get("Ownership_Type") or "",
+                            "open_date": acc.get("DateOpened") or acc.get("OpenDate") or acc.get("Date_Opened") or "",
+                            "close_date": acc.get("DateClosed") or acc.get("CloseDate") or acc.get("Date_Closed") or "",
+                            "credit_limit": credit_limit,
+                            "current_balance": current_balance,
+                            "amount_overdue": amount_overdue,
+                            "credit_status": "Active" if is_active else "Closed",
+                            "payment_history": acc.get("PaymentHistory") or acc.get("Payment_History") or "",
+                            "last_payment_date": acc.get("LastPaymentDate") or acc.get("DateLastPayment") or acc.get("Date_Last_Payment") or "",
+                            "written_off_amount": float(acc.get("WrittenOffAmount") or acc.get("WriteOffAmount") or acc.get("Written_Off_Amt_Total") or 0),
+                            "settlement_amount": float(acc.get("SettlementAmount") or acc.get("Settlement_Amount") or 0),
+                            # Equifax specific fields for frontend compatibility
+                            "Account_Status": account_status,
+                            "Balance": current_balance,
+                            "Amount_Past_Due": amount_overdue,
+                            "Written_Off_Amt_Total": float(acc.get("WrittenOffAmount") or acc.get("Written_Off_Amt_Total") or 0),
+                            "Date_Opened": acc.get("DateOpened") or acc.get("Date_Opened") or "",
+                            "Date_Closed": acc.get("DateClosed") or acc.get("Date_Closed") or "",
+                            "Subscriber_Name": acc.get("Institution") or acc.get("Subscriber") or acc.get("Subscriber_Name") or "",
+                            "Account_Type": account_type,
+                            "Credit_Limit_Amount": credit_limit,
+                        }
+                        
+                        account_details_list.append(account_entry)
+                        total_outstanding += current_balance
+                        total_overdue += amount_overdue
+                        if is_active:
+                            active_count += 1
+                            if is_secured:
+                                secured_balance += current_balance
+                            else:
+                                unsecured_balance += current_balance
+                        else:
+                            closed_count += 1
                 
                 parsed["accounts"] = account_details_list
                 parsed["CAIS_Account"] = {
@@ -589,28 +625,42 @@ class SurepassService:
                         },
                         "Total_Outstanding_Balance": {
                             "Outstanding_Balance_All": total_outstanding,
+                            "Outstanding_Balance_Secured": secured_balance,
+                            "Outstanding_Balance_UnSecured": unsecured_balance,
                             "Outstanding_Balance_All_Overdue": total_overdue
                         }
                     }
                 }
                 
-                # Enquiries (Credit Applications / CAPS)
-                enquiry_list = cir_data.get("EnquiryDetails", []) or cir_data.get("Enquiries", [])
+                logger.info(f"Parsed {len(account_details_list)} accounts, active: {active_count}, closed: {closed_count}")
+                
+                # Enquiries - Try multiple possible locations
+                enquiry_list = (
+                    cir_data.get("EnquiryDetails", []) or 
+                    cir_data.get("Enquiries", []) or 
+                    cir_data.get("InquiryDetails", []) or
+                    credit_report.get("Enquiries", []) or
+                    credit_report.get("EnquiryDetails", [])
+                )
+                
+                logger.info(f"Enquiries count: {len(enquiry_list) if enquiry_list else 0}")
+                
                 enquiry_details_list = []
                 
-                for enq in enquiry_list:
-                    enquiry_entry = {
-                        "institution": enq.get("Institution") or enq.get("Subscriber") or enq.get("EnquiryMemberName", ""),
-                        "date": enq.get("EnquiryDate") or enq.get("Date", ""),
-                        "purpose": enq.get("EnquiryPurpose") or enq.get("Purpose") or enq.get("Reason", ""),
-                        "amount": enq.get("EnquiryAmount") or enq.get("Amount") or 0,
-                        # Equifax specific fields for frontend
-                        "Subscriber_Name": enq.get("Institution") or enq.get("Subscriber", ""),
-                        "Date_of_Request": enq.get("EnquiryDate") or enq.get("Date", ""),
-                        "Enquiry_Purpose": enq.get("EnquiryPurpose") or enq.get("Purpose", ""),
-                        "Enquiry_Amount": enq.get("EnquiryAmount") or enq.get("Amount") or 0,
-                    }
-                    enquiry_details_list.append(enquiry_entry)
+                if isinstance(enquiry_list, list):
+                    for enq in enquiry_list:
+                        enquiry_entry = {
+                            "institution": enq.get("Institution") or enq.get("Subscriber") or enq.get("EnquiryMemberName") or enq.get("Subscriber_Name") or "",
+                            "date": enq.get("EnquiryDate") or enq.get("Date") or enq.get("Date_of_Request") or "",
+                            "purpose": enq.get("EnquiryPurpose") or enq.get("Purpose") or enq.get("Reason") or enq.get("Enquiry_Purpose") or "",
+                            "amount": float(enq.get("EnquiryAmount") or enq.get("Amount") or enq.get("Enquiry_Amount") or 0),
+                            # Equifax specific fields for frontend
+                            "Subscriber_Name": enq.get("Institution") or enq.get("Subscriber") or enq.get("Subscriber_Name") or "",
+                            "Date_of_Request": enq.get("EnquiryDate") or enq.get("Date") or enq.get("Date_of_Request") or "",
+                            "Enquiry_Purpose": enq.get("EnquiryPurpose") or enq.get("Purpose") or enq.get("Enquiry_Purpose") or "",
+                            "Enquiry_Amount": float(enq.get("EnquiryAmount") or enq.get("Amount") or enq.get("Enquiry_Amount") or 0),
+                        }
+                        enquiry_details_list.append(enquiry_entry)
                 
                 parsed["enquiries"] = enquiry_details_list
                 parsed["CAPS"] = {
@@ -625,7 +675,7 @@ class SurepassService:
             
             # Summary
             parsed["summary"] = {
-                "total_reports": len(cir_report_list),
+                "total_reports": len(cir_report_list) if cir_report_list else 0,
                 "total_addresses": len(parsed["address_info"]),
                 "total_phones": len(parsed["phone_info"]),
                 "total_ids": len(parsed["id_info"]),
@@ -633,8 +683,12 @@ class SurepassService:
                 "active_accounts": parsed.get("CAIS_Account", {}).get("CAIS_Summary", {}).get("Credit_Account", {}).get("CreditAccountActive", 0),
                 "total_enquiries": len(parsed["enquiries"]),
                 "total_balance": parsed.get("CAIS_Account", {}).get("CAIS_Summary", {}).get("Total_Outstanding_Balance", {}).get("Outstanding_Balance_All", 0),
-                "total_overdue": parsed.get("CAIS_Account", {}).get("CAIS_Summary", {}).get("Total_Outstanding_Balance", {}).get("Outstanding_Balance_All_Overdue", 0)
+                "total_overdue": parsed.get("CAIS_Account", {}).get("CAIS_Summary", {}).get("Total_Outstanding_Balance", {}).get("Outstanding_Balance_All_Overdue", 0),
+                "secured_balance": parsed.get("CAIS_Account", {}).get("CAIS_Summary", {}).get("Total_Outstanding_Balance", {}).get("Outstanding_Balance_Secured", 0),
+                "unsecured_balance": parsed.get("CAIS_Account", {}).get("CAIS_Summary", {}).get("Total_Outstanding_Balance", {}).get("Outstanding_Balance_UnSecured", 0)
             }
+            
+            logger.info(f"Equifax parse complete. Summary: {parsed['summary']}")
             
         except Exception as e:
             logger.error(f"Error parsing Equifax report: {str(e)}")
