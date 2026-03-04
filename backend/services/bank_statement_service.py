@@ -179,7 +179,7 @@ class BankStatementAnalyzer:
         Download file from URL and analyze it
         
         Args:
-            file_url: URL of the PDF file
+            file_url: URL of the PDF file (can be HTTP URL or local file path)
             storage_service: Storage service to download from Firebase
             password: Optional password for encrypted PDFs
             
@@ -190,8 +190,31 @@ class BankStatementAnalyzer:
         unlocked_file = None
         
         try:
-            # Download file to temp location
-            if storage_service and hasattr(storage_service, 'download_file'):
+            # Check if it's a local file path (not a URL)
+            if file_url and not file_url.startswith(('http://', 'https://')):
+                # It might be a local file path
+                local_paths_to_check = [
+                    file_url,  # Direct path
+                    f"/app/storage/{file_url}",  # Relative to storage
+                    f"/app/{file_url}",  # Relative to app
+                ]
+                
+                local_file_found = None
+                for path in local_paths_to_check:
+                    if os.path.exists(path):
+                        local_file_found = path
+                        break
+                
+                if local_file_found:
+                    logger.info(f"Using local file: {local_file_found}")
+                    file_path = local_file_found
+                else:
+                    logger.error(f"File URL is not a valid HTTP URL and not found locally: {file_url}")
+                    return {
+                        "success": False,
+                        "error": f"Invalid file URL: {file_url}. Expected HTTP URL or valid local path."
+                    }
+            elif storage_service and hasattr(storage_service, 'download_file'):
                 # Download from Firebase/storage
                 temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
                 await storage_service.download_file(file_url, temp_file.name)
