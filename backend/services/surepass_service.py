@@ -1,6 +1,6 @@
 """
 Surepass API Integration Service
-Provides credit report fetching from CIBIL, Equifax, Experian, and CRIF
+Provides credit report fetching from CIBIL, Equifax, and Experian
 """
 
 import os
@@ -27,8 +27,6 @@ class SurepassService:
         "equifax_pdf": "/credit-report-v2/fetch-pdf-report",
         "experian_json": "/credit-report-experian/fetch-report",
         "experian_pdf": "/credit-report-experian/fetch-report-pdf",
-        "crif_json": "/credit-report-crif/fetch-report",
-        "crif_pdf": "/credit-report-crif/fetch-report-pdf",
     }
     
     def __init__(self):
