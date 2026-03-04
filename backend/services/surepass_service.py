@@ -605,7 +605,7 @@ class SurepassService:
                                 dpd_str = payment_history_raw[i:i+3]
                                 try:
                                     dpd_val = int(dpd_str) if dpd_str.isdigit() else 0
-                                except:
+                                except (ValueError, TypeError):
                                     dpd_val = 0
                                 month_idx = (i // 3) % 12
                                 year_offset = (i // 3) // 12
@@ -1508,7 +1508,7 @@ class SurepassService:
                     dpd_str = payment_history_str[i:i+3]
                     try:
                         dpd_val = int(dpd_str) if dpd_str.isdigit() else 0
-                    except:
+                    except (ValueError, TypeError):
                         dpd_val = 0
                     month_idx = (i // 3) % 12
                     year_offset = (i // 3) // 12
@@ -1604,7 +1604,7 @@ class SurepassService:
         total_balance = sum(safe_int(a.get("current_balance", 0)) for a in account_info)
         total_overdue = sum(safe_int(a.get("amount_overdue", 0)) for a in account_info)
         total_written_off = sum(safe_int(a.get("written_off_amount", 0)) for a in account_info)
-        enquiries_last_6_months = len([e for e in enquiry_info if e.get("date")])  # Simplified
+        # Count enquiries for summary
         
         return {
             "personal_info": personal_info,
