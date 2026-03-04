@@ -81,10 +81,11 @@ class ExperianReportRequest(BaseModel):
 
 
 class CRIFReportRequest(BaseModel):
-    """Request model for fetching CRIF Commercial credit report"""
-    business_name: str = Field(..., description="Business/Company name")
-    pan: str = Field(..., description="Business PAN number")
-    mobile: str = Field(..., description="Business mobile number")
+    """Request model for fetching CRIF Consumer credit report"""
+    first_name: str = Field(..., description="Customer first name")
+    last_name: str = Field(..., description="Customer last name")
+    pan: str = Field(..., description="Customer PAN number")
+    mobile: str = Field(..., description="Customer mobile number")
     consent: str = Field(default="Y", description="Customer consent")
     
     # Optional: Link to existing records
