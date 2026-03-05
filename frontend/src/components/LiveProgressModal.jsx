@@ -644,6 +644,43 @@ export default function LiveProgressModal({
     }
   };
   
+  // Fetch Recommended Purchase Price (RPP) from car portals
+  const fetchRPP = async () => {
+    if (!inspection?.id) return;
+    
+    // Check if we have vehicle details
+    const hasVehicleDetails = inspection.vehicle_make && inspection.vehicle_model;
+    if (!hasVehicleDetails) {
+      toast.error('Vehicle make and model are required to fetch market prices');
+      return;
+    }
+    
+    setFetchingRPP(true);
+    try {
+      const response = await inspectionsApi.fetchRPP(inspection.id);
+      if (response.data.success) {
+        toast.success(`Market prices fetched from ${response.data.sources_count} sources!`);
+        
+        // Update local state with RPP values
+        setEditData(prev => ({
+          ...prev,
+          market_value_min: response.data.recommended_min || prev.market_value_min,
+          market_value_max: response.data.recommended_max || prev.market_value_max,
+        }));
+        
+        // Refresh inspection data to show full breakdown
+        onRefresh(inspection.id);
+      } else {
+        toast.warning('Could not fetch market prices. Using estimation model.');
+        onRefresh(inspection.id);
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to fetch market prices');
+    } finally {
+      setFetchingRPP(false);
+    }
+  };
+  
   // Generate Share URL
   const generateShareUrl = async () => {
     if (!inspection?.id) return;
