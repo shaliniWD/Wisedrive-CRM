@@ -813,6 +813,7 @@ async def get_version():
         "environment": os.environ.get("ENVIRONMENT", "preview"),
         "jwt_secret_status": jwt_status,  # Important for debugging auth issues
         "recent_changes": [
+            "v2.5.8 - Added PUBLIC debug endpoint /mechanic/public-debug/{mechanic_id} to diagnose 500 error",
             "v2.5.7 - CRITICAL: Wrapped ENTIRE get_mechanic_inspections in try-catch (fixes 500 when accessing current_user)",
             "v2.5.6 - CRITICAL: Fixed 500 error on /mechanic/inspections for ALL mechanics (regex escaping, global error handler)",
             "v2.5.5 - VERIFIED: /mechanic/inspections/{id} returns inspection_answers field",
@@ -821,8 +822,7 @@ async def get_version():
             "v2.5.2 - COMPREHENSIVE FIX: All inspection fields now safely converted to strings",
             "v2.5.1 - CRITICAL FIX: manufacturingYear/odometerReading converted to string (fixes 500 error on /mechanic/inspections)",
             "v2.5.1 - Mechanic assignment validation: requires car details before assignment",
-            "v2.5.1 - City alias support for mechanic assignment (Bengaluru/Bangalore)",
-            "v2.4.6 - Fixed inspection_status bug: progress save now sets INSPECTION_STARTED correctly"
+            "v2.5.1 - City alias support for mechanic assignment (Bengaluru/Bangalore)"
         ],
         "otp_storage": "mongodb",  # Key indicator - old version uses "memory"
         "db_collections": {
