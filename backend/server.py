@@ -13214,6 +13214,16 @@ async def get_mechanic_inspections(
     # Return as JSONResponse to bypass any automatic Pydantic validation
     from fastapi.responses import JSONResponse
     return JSONResponse(content=result)
+    
+    except Exception as e:
+        # Global exception handler to prevent 500 errors
+        import traceback
+        logger.error(f"CRITICAL ERROR in get_mechanic_inspections: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        logger.error(f"Mechanic ID: {mechanic_id}, Cities: {mechanic_cities}")
+        # Return empty list with error info rather than 500
+        from fastapi.responses import JSONResponse
+        return JSONResponse(content=[], status_code=200)
 
 
 @api_router.get("/mechanic/debug-inspections")
