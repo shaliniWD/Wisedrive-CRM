@@ -813,6 +813,7 @@ async def get_version():
         "environment": os.environ.get("ENVIRONMENT", "preview"),
         "jwt_secret_status": jwt_status,  # Important for debugging auth issues
         "recent_changes": [
+            "v2.5.2 - COMPREHENSIVE FIX: All inspection fields now safely converted to strings",
             "v2.5.1 - CRITICAL FIX: manufacturingYear/odometerReading converted to string (fixes 500 error on /mechanic/inspections)",
             "v2.5.1 - Mechanic assignment validation: requires car details before assignment",
             "v2.5.1 - City alias support for mechanic assignment (Bengaluru/Bangalore)",
@@ -821,8 +822,7 @@ async def get_version():
             "v2.4.4 - Mobile app bug fixes: Navigate button, cache clearing, inspection detail API enhanced",
             "v2.4.3 - Questionnaire endpoint enhanced to lookup partner template",
             "v2.4.1 - Added jwt_secret_status diagnostic and /auth/test-auth endpoint",
-            "v2.4.0 - OTP storage moved to MongoDB (fixes intermittent validation)",
-            "v2.3.0 - Fast2SMS integration for OTP"
+            "v2.4.0 - OTP storage moved to MongoDB (fixes intermittent validation)"
         ],
         "otp_storage": "mongodb",  # Key indicator - old version uses "memory"
         "db_collections": {
