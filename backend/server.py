@@ -13225,6 +13225,52 @@ async def get_mechanic_inspections(
         return JSONResponse(content=[], status_code=200)
 
 
+# PUBLIC DEBUG ENDPOINT - NO AUTH REQUIRED - FOR DIAGNOSING 500 ERROR
+@api_router.get("/mechanic/public-debug/{mechanic_id}")
+async def public_debug_mechanic(mechanic_id: str):
+    """
+    Public debug endpoint to test database query without authentication.
+    This helps diagnose if the 500 error is in auth or in the query.
+    REMOVE THIS ENDPOINT AFTER DEBUGGING!
+    """
+    import traceback
+    from fastapi.responses import JSONResponse
+    
+    debug_info = {
+        "mechanic_id": mechanic_id,
+        "endpoint_reached": True,
+        "database_connected": False,
+        "inspections_found": 0,
+        "error": None,
+        "traceback": None
+    }
+    
+    try:
+        # Test 1: Simple count query
+        count = await db.inspections.count_documents({"mechanic_id": mechanic_id})
+        debug_info["database_connected"] = True
+        debug_info["inspections_found"] = count
+        
+        # Test 2: Fetch one inspection
+        if count > 0:
+            insp = await db.inspections.find_one({"mechanic_id": mechanic_id}, {"_id": 0})
+            debug_info["sample_inspection"] = {
+                "id": insp.get("id") if insp else None,
+                "car_number": insp.get("car_number") if insp else None,
+                "status": insp.get("inspection_status") if insp else None,
+                "car_year_type": type(insp.get("car_year")).__name__ if insp else None,
+                "car_year_value": str(insp.get("car_year")) if insp else None,
+            }
+        
+        debug_info["success"] = True
+        return JSONResponse(content=debug_info)
+        
+    except Exception as e:
+        debug_info["error"] = str(e)
+        debug_info["traceback"] = traceback.format_exc()
+        return JSONResponse(content=debug_info, status_code=200)
+
+
 @api_router.get("/mechanic/debug-inspections")
 async def debug_mechanic_inspections(
     current_user: dict = Depends(get_current_user)
