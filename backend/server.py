@@ -14089,10 +14089,14 @@ async def mechanic_complete_inspection(
     }
     await db.inspection_activities.insert_one(activity)
     
+    # AUTO-TRIGGER AI REPORT GENERATION
+    logger.info(f"[INSPECTION_COMPLETE] Triggering AI report generation for inspection {inspection_id}")
+    asyncio.create_task(auto_generate_ai_report_background(inspection_id, 100))
+    
     return {
         "id": inspection_id,
         "status": "INSPECTION_COMPLETED",
-        "message": "Inspection completed successfully"
+        "message": "Inspection completed successfully. AI analysis in progress."
     }
 
 
