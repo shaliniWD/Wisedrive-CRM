@@ -5798,10 +5798,13 @@ async def fetch_recommended_purchase_price(
     if inspection.get("lead_id"):
         lead = await db.leads.find_one({"id": inspection["lead_id"]}, {"_id": 0})
     
-    # Extract vehicle details
-    make = inspection.get("vehicle_make") or (lead.get("vehicle_make") if lead else None)
-    model = inspection.get("vehicle_model") or (lead.get("vehicle_model") if lead else None)
-    year = inspection.get("vehicle_year") or inspection.get("car_year") or (lead.get("vehicle_year") if lead else None)
+    # Extract vehicle details (check multiple field names for compatibility)
+    make = (inspection.get("vehicle_make") or inspection.get("car_make") or 
+            (lead.get("vehicle_make") if lead else None))
+    model = (inspection.get("vehicle_model") or inspection.get("car_model") or 
+             (lead.get("vehicle_model") if lead else None))
+    year = (inspection.get("vehicle_year") or inspection.get("car_year") or 
+            (lead.get("vehicle_year") if lead else None))
     fuel_type = inspection.get("fuel_type") or (lead.get("fuel_type") if lead else None)
     transmission = inspection.get("transmission") or (lead.get("transmission") if lead else None)
     kms_driven = inspection.get("kms_driven") or (lead.get("kms_driven") if lead else None)
