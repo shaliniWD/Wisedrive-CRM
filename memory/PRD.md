@@ -146,6 +146,34 @@ The application is a full-stack CRM for vehicle loans and inspections. Key featu
 - ✅ Save button disabled during save operation
 - ✅ Save button only appears when there are unsaved changes
 
+### Vaahan API Integration (Mar 2026)
+- ✅ Complete vehicle RTO data integration via Invincible Ocean Vaahan API
+- ✅ Backend endpoint: `POST /api/inspections/{id}/fetch-vaahan-data`
+- ✅ Local DB caching to reduce API calls (checks `vehicles` collection first)
+- ✅ Force refresh option to bypass cache
+- ✅ Auto-fetches when opening Live Progress Modal (if car_number exists and no vaahan_data)
+- ✅ Frontend: Vehicle & RTO tab in LiveProgressModal with comprehensive display
+- ✅ Data displayed: Engine Number, Chassis Number, Make, Model, Year, Color
+- ✅ Technical specs: Engine CC, Cylinders, Seating Capacity, Weight, Wheelbase, Emissions
+- ✅ Registration: Mfg Date, Reg Date, RC Expiry, RTO Authority, Owner Count
+- ✅ Insurance: Company, Policy Number, Valid Upto, Status (Active/Expired)
+- ✅ Finance: Hypothecation status, Financer name, Blacklist status
+- ✅ PUCC: Number and validity
+- ✅ "Vaahan API Verified" banner with ACTIVE/INACTIVE status indicator
+- ✅ All fields editable with save functionality
+- ✅ Service: `/app/backend/services/vaahan_service.py`
+- ✅ Credentials: VAAHAN_CLIENT_ID and VAAHAN_SECRET_KEY in backend/.env
+
+### AI Analysis & Editable Ratings (Mar 2026)
+- ✅ Editable category ratings (0-10) in Q&A Details tab
+- ✅ Ratings auto-populate "Condition Ratings" section in AI Analysis tab
+- ✅ Condition mapping: 0-3 = Poor, 4-6 = Average, 7-10 = Good
+- ✅ Categories: Engine, Exterior, Interior, Transmission
+
+### Inspections Page UI Refactor (Mar 2026)
+- ✅ Merged "Edit" and "Mechanic" columns into "MECHANIC & EDIT" column
+- ✅ Combined modal with compact 2-column layout (no scrolling)
+
 ## API Endpoints
 
 ### Recommended Purchase Price (RPP)
