@@ -1287,27 +1287,28 @@ export default function CategoryQuestionsScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      <View style={styles.footer}>
-        <TouchableOpacity
-          style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
-          onPress={saveAllAnswers}
-          disabled={isSaving}
-        >
-          {isSaving ? (
-            <>
-              <ActivityIndicator size="small" color="#fff" />
-              <Text style={styles.saveButtonText}>Saving...</Text>
-            </>
-          ) : (
-            <>
-              <Ionicons name={hasUnsavedChanges ? "save" : "checkmark-circle"} size={22} color="#fff" />
-              <Text style={styles.saveButtonText}>
-                {hasUnsavedChanges ? 'Save & Next' : 'Done'}
-              </Text>
-            </>
-          )}
-        </TouchableOpacity>
-      </View>
+      {/* Only show Save button when there are unsaved changes */}
+      {hasUnsavedChanges && (
+        <View style={styles.footer}>
+          <TouchableOpacity
+            style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
+            onPress={saveAllAnswers}
+            disabled={isSaving}
+          >
+            {isSaving ? (
+              <>
+                <ActivityIndicator size="small" color="#fff" />
+                <Text style={styles.saveButtonText}>Saving...</Text>
+              </>
+            ) : (
+              <>
+                <Ionicons name="save" size={22} color="#fff" />
+                <Text style={styles.saveButtonText}>Save</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Video Player Modal */}
       <Modal
