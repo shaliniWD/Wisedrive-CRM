@@ -273,6 +273,11 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Copy Logs Button - Top Right */}
+      <View style={styles.copyLogsContainer}>
+        <CopyLogsButton iconColor="#666" iconSize={22} />
+      </View>
+      
       <KeyboardAvoidingView 
         style={styles.keyboardView} 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
