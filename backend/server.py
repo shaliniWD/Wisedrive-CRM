@@ -5436,8 +5436,12 @@ class GenerateAIReportRequest(BaseModel):
 
 async def auto_generate_ai_report_background(inspection_id: str, completion_percentage: int):
     """
-    Background task to auto-generate AI report at milestones.
-    Called when mechanic saves progress.
+    Background task to auto-generate AI report when inspection is COMPLETED.
+    Called when mechanic completes the inspection.
+    
+    IMPORTANT: AI category ratings should ONLY be generated when:
+    1. Inspection status is COMPLETED (INSPECTION_COMPLETED)
+    2. All Q&A categories are answered (100% completion)
     """
     from services.ai_report_service import generate_ai_report_insights
     
@@ -5448,6 +5452,12 @@ async def auto_generate_ai_report_background(inspection_id: str, completion_perc
         inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
         if not inspection:
             logger.warning(f"[AI_REPORT_AUTO] Inspection {inspection_id} not found")
+            return
+        
+        # MANDATORY: Only generate AI report for COMPLETED inspections
+        inspection_status = inspection.get("inspection_status", "")
+        if inspection_status not in ["INSPECTION_COMPLETED", "COMPLETED"]:
+            logger.info(f"[AI_REPORT_AUTO] Skipping AI generation - inspection not completed (status: {inspection_status})")
             return
         
         # Check if already generated at this milestone
