@@ -1815,21 +1815,6 @@ export default function InspectionsPage() {
                       </button>
                     </td>
                     
-                    {/* Edit Column */}
-                    <td className="px-2 py-2.5 text-center">
-                      <button
-                        onClick={() => {
-                          setEditInspectionData(inspection);
-                          setIsEditInspectionModalOpen(true);
-                        }}
-                        className="px-2.5 py-1 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded transition-colors"
-                        title="Edit Inspection"
-                        data-testid={`edit-inspection-${inspection.id}`}
-                      >
-                        Edit
-                      </button>
-                    </td>
-                    
                     {/* Live Progress Column */}
                     <td className="px-2 py-2.5 text-center">
                       <button
