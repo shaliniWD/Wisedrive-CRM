@@ -336,9 +336,9 @@ def validate_ai_response(ai_response: Dict[str, Any], market_price_data: Dict[st
         "generated_at": datetime.now(timezone.utc).isoformat()
     }
     
-    # Validate rating is within bounds
-    if not 1 <= validated["overall_rating"] <= 5:
-        validated["overall_rating"] = 3
+    # Validate rating is within bounds (0-10 scale)
+    if not 0 <= validated["overall_rating"] <= 10:
+        validated["overall_rating"] = 5
     
     return validated
 
