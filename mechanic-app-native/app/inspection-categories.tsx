@@ -831,7 +831,11 @@ export default function InspectionCategoriesScreen() {
               <View style={styles.incompleteNotice}>
                 <Ionicons name="information-circle" size={16} color={Colors.warning} />
                 <Text style={styles.incompleteNoticeText}>
-                  {`Complete all categories (${categories.filter(c => !c.isCompleted).length} remaining)`}
+                  {!allCategoriesCompleted && !obdCompleted 
+                    ? `Complete all categories (${categories.filter(c => !c.isCompleted).length} remaining) and OBD scan`
+                    : !allCategoriesCompleted 
+                    ? `Complete all categories (${categories.filter(c => !c.isCompleted).length} remaining)`
+                    : 'Complete OBD scan to submit'}
                 </Text>
               </View>
             )}
