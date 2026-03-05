@@ -329,8 +329,8 @@ export default function InspectionCategoriesScreen() {
   const progress = totalQuestions > 0 ? (completedQuestions / totalQuestions) * 100 : 0;
   
   // Check if Complete Inspection button should be enabled
-  // Requires: All categories completed AND OBD data submitted
-  const canCompleteInspection = allCategoriesCompleted && obdCompleted;
+  // OBD scan is OPTIONAL - only require all categories to be completed
+  const canCompleteInspection = allCategoriesCompleted;
   
   // Check if a category is accessible (sequential category logic)
   const isCategoryAccessible = (categoryIndex: number): boolean => {
