@@ -730,24 +730,36 @@ export default function CategoryQuestionsScreen() {
           diagLogger.info(`SAVE_ANSWER_SUCCESS`, { questionId, index: i + 1 });
           
         } catch (err: any) {
-          diagLogger.error(`SAVE_ANSWER_FAILED`, { 
+          diagLogger.error('QA_SAVE_ANSWER_FAILED', { 
             questionId, 
             index: i + 1,
             error: err.message,
-            status: err.response?.status
+            errorCode: err.code,
+            responseStatus: err.response?.status,
+            responseData: err.response?.data,
+            timestamp: new Date().toISOString()
           });
+          console.log('[Q&A] Save FAILED:', questionId, err.message, err.response?.status);
           results.push({ questionId, success: false, error: err.message });
         }
       }
       
       const failures = results.filter(r => !r.success);
       const successes = results.filter(r => r.success);
+      const totalDuration = Date.now() - startTime;
       
-      diagLogger.info('SAVE_ALL_COMPLETE', { 
+      diagLogger.info('QA_SAVE_ALL_COMPLETE', { 
         total: results.length, 
         succeeded: successes.length, 
-        failed: failures.length 
+        failed: failures.length,
+        durationMs: totalDuration,
+        failedQuestions: failures.map(f => ({ id: f.questionId, error: f.error })),
+        timestamp: new Date().toISOString()
       });
+      console.log('[Q&A] Save complete:', successes.length, '/', results.length, 'in', totalDuration, 'ms');
+      if (failures.length > 0) {
+        console.log('[Q&A] Failures:', failures);
+      }
       
       if (failures.length > 0) {
         Alert.alert(
