@@ -699,6 +699,17 @@ export default function CategoryQuestionsScreen() {
           }
           
           // Save to backend (now with Firebase URLs instead of base64)
+          const saveStartTime = Date.now();
+          diagLogger.info('QA_SAVE_TO_BACKEND_START', {
+            inspectionId,
+            questionId,
+            categoryId,
+            hasAnswer: !!processedAnswer,
+            answerType: typeof processedAnswer === 'string' && processedAnswer.startsWith('data:') ? 'base64' : typeof processedAnswer,
+            apiUrl: getCurrentApiUrl()
+          });
+          console.log('[Q&A] Saving to backend:', questionId);
+          
           await inspectionsApi.saveProgress(inspectionId, {
             question_id: questionId,
             category_id: categoryId,
@@ -706,6 +717,14 @@ export default function CategoryQuestionsScreen() {
             sub_answer_1: processedSubAnswer1,
             sub_answer_2: processedSubAnswer2,
           });
+          
+          const saveDuration = Date.now() - saveStartTime;
+          diagLogger.info('QA_SAVE_TO_BACKEND_SUCCESS', {
+            questionId,
+            durationMs: saveDuration,
+            timestamp: new Date().toISOString()
+          });
+          console.log('[Q&A] Save success:', questionId, 'in', saveDuration, 'ms');
           
           results.push({ questionId, success: true });
           diagLogger.info(`SAVE_ANSWER_SUCCESS`, { questionId, index: i + 1 });
