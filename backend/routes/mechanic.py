@@ -328,7 +328,13 @@ async def get_mechanic_inspections(
             "packageName": safe_str(insp.get("package_type") or insp.get("inspection_package_name", "Standard Inspection"))
         })
     
-    return result
+        return JSONResponse(content=result)
+        
+    except Exception as e:
+        logger.error(f"CRITICAL ERROR in get_mechanic_inspections: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        # Return empty list instead of 500 error
+        return JSONResponse(content=[], status_code=200)
 
 
 @router.get("/inspections/{inspection_id}")
