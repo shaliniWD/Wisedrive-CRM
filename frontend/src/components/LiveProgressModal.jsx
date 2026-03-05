@@ -1686,13 +1686,18 @@ export default function LiveProgressModal({
                     </Button>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 mb-3">Rate each category from 0-10. These ratings populate condition fields in AI Analysis. Click a category to filter questions below.</p>
+                <p className="text-xs text-gray-500 mb-3">
+                  {inspection?.inspection_status === 'INSPECTION_COMPLETED' || inspection?.status === 'COMPLETED' 
+                    ? 'AI-generated ratings (0-10) based on Q&A answers. Click a category to filter questions below.' 
+                    : 'AI ratings will be generated after inspection is completed. Complete all Q&A categories to see ratings.'}
+                </p>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                   {liveProgressData?.categories?.map((category, idx) => {
                     const answered = category.answered_questions || 0;
                     const total = category.total_questions || 0;
                     const percentage = total > 0 ? Math.round((answered / total) * 100) : 0;
                     const isSelected = selectedCategoryId === category.category_id;
+                    const isCompleted = inspection?.inspection_status === 'INSPECTION_COMPLETED' || inspection?.status === 'COMPLETED';
                     
                     // Get editable rating for this category (0-10 scale)
                     // Use normalized key that matches AI output (remove consecutive underscores, trim)
