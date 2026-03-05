@@ -1756,19 +1756,6 @@ export default function LiveProgressModal({
                     const currentRating = savedRating ?? aiRating ?? 0;
                     const isAIRating = savedRating === undefined && aiRating !== null;
                     
-                    // Debug log for first category
-                    if (idx === 0) {
-                      console.log('Category rating debug:', {
-                        categoryName,
-                        categoryKey,
-                        savedRating,
-                        aiRating,
-                        currentRating,
-                        isAIRating,
-                        aiCategoryRatings: inspection?.ai_insights?.category_ratings
-                      });
-                    }
-                    
                     // Helper to get condition text and color
                     const getCondition = (rating) => {
                       if (rating >= 8) return { text: 'Good', color: 'bg-green-500', bgColor: 'bg-green-50 border-green-300' };
