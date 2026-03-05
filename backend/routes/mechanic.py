@@ -234,50 +234,50 @@ async def get_mechanic_inspections(
                 {"mechanic_name": {"$regex": f"^{re.escape(mechanic_name)}$", "$options": "i"}} if mechanic_name else {"_never_match_": True}
             ]
         }
-    
-    # Date filter
-    if date_filter:
-        today = datetime.now(timezone.utc).date()
-        if date_filter == 'today':
-            query["scheduled_date"] = {"$regex": f"^{today.isoformat()}"}
-        elif date_filter == 'week':
-            week_start = today - timedelta(days=today.weekday())
-            week_end = week_start + timedelta(days=6)
-            query["scheduled_date"] = {
-                "$gte": week_start.isoformat(),
-                "$lte": (week_end + timedelta(days=1)).isoformat()
-            }
-    
-    # Status filter
-    if status:
-        query["inspection_status"] = status
-    
-    # City filter
-    if city:
-        query["city"] = {"$regex": f"^{city}$", "$options": "i"}
-    
-    inspections = await db.inspections.find(
-        query,
-        {"_id": 0}
-    ).sort("scheduled_date", -1).to_list(100)
-    
-    logger.info(f"Found {len(inspections)} inspections for mechanic {mechanic_id}")
-    
-    # Transform to mechanic app format
-    result = []
-    for insp in inspections:
-        # Map CRM status to mechanic app status
-        crm_status = insp.get("inspection_status", "NEW_INSPECTION")
-        if crm_status == "INSPECTION_COMPLETED":
-            app_status = "COMPLETED"
-        elif crm_status in ["MECHANIC_REJECTED", "INSPECTION_CANCELLED_WD", "INSPECTION_CANCELLED_CUS"]:
-            app_status = "REJECTED"
-        elif crm_status == "INSPECTION_STARTED":
-            app_status = "IN_PROGRESS"
-        elif crm_status == "MECHANIC_ACCEPTED":
-            app_status = "ACCEPTED"
-        elif crm_status in ["NEW_INSPECTION", "ASSIGNED_TO_MECHANIC"]:
-            app_status = "NEW"
+        
+        # Date filter
+        if date_filter:
+            today = datetime.now(timezone.utc).date()
+            if date_filter == 'today':
+                query["scheduled_date"] = {"$regex": f"^{today.isoformat()}"}
+            elif date_filter == 'week':
+                week_start = today - timedelta(days=today.weekday())
+                week_end = week_start + timedelta(days=6)
+                query["scheduled_date"] = {
+                    "$gte": week_start.isoformat(),
+                    "$lte": (week_end + timedelta(days=1)).isoformat()
+                }
+        
+        # Status filter
+        if status:
+            query["inspection_status"] = status
+        
+        # City filter
+        if city:
+            query["city"] = {"$regex": f"^{city}$", "$options": "i"}
+        
+        inspections = await db.inspections.find(
+            query,
+            {"_id": 0}
+        ).sort("scheduled_date", -1).to_list(100)
+        
+        logger.info(f"Found {len(inspections)} inspections for mechanic {mechanic_id}")
+        
+        # Transform to mechanic app format
+        result = []
+        for insp in inspections:
+            # Map CRM status to mechanic app status
+            crm_status = insp.get("inspection_status", "NEW_INSPECTION")
+            if crm_status == "INSPECTION_COMPLETED":
+                app_status = "COMPLETED"
+            elif crm_status in ["MECHANIC_REJECTED", "INSPECTION_CANCELLED_WD", "INSPECTION_CANCELLED_CUS"]:
+                app_status = "REJECTED"
+            elif crm_status == "INSPECTION_STARTED":
+                app_status = "IN_PROGRESS"
+            elif crm_status == "MECHANIC_ACCEPTED":
+                app_status = "ACCEPTED"
+            elif crm_status in ["NEW_INSPECTION", "ASSIGNED_TO_MECHANIC"]:
+                app_status = "NEW"
         elif crm_status == "RESCHEDULED":
             app_status = "NEW"  # Show rescheduled as new for mechanic to accept again
         else:
