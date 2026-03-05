@@ -13116,60 +13116,75 @@ async def get_mechanic_inspections(
     
     # Transform to mechanic app format
     result = []
-    for insp in inspections:
-        # Map CRM status to mechanic app status
-        crm_status = insp.get("inspection_status", "NEW_INSPECTION")
-        if crm_status == "INSPECTION_COMPLETED":
-            app_status = "COMPLETED"
-        elif crm_status in ["MECHANIC_REJECTED", "INSPECTION_CANCELLED_WD", "INSPECTION_CANCELLED_CUS"]:
-            app_status = "REJECTED"
-        elif crm_status == "INSPECTION_STARTED":
-            app_status = "IN_PROGRESS"
-        elif crm_status == "MECHANIC_ACCEPTED":
-            app_status = "ACCEPTED"
-        elif crm_status in ["NEW_INSPECTION", "ASSIGNED_TO_MECHANIC"]:
-            app_status = "NEW"
-        elif crm_status == "RESCHEDULED":
-            app_status = "NEW"  # Show rescheduled as new for mechanic to accept again
-        else:
-            app_status = "NEW"
-        
-        result.append({
-            "id": insp.get("id"),
-            "scheduledAt": insp.get("scheduled_date") or insp.get("created_at"),
-            "status": app_status,
-            "crmStatus": crm_status,  # Include original CRM status for debugging
-            "vehicleNumber": insp.get("car_number", ""),
-            "makeModelVariant": f"{insp.get('car_make', insp.get('make', ''))} {insp.get('car_model', insp.get('model', ''))} {insp.get('variant', '')}".strip() or "Not Available",
-            "carMake": insp.get("car_make", insp.get("make", "")),
-            "carModel": insp.get("car_model", insp.get("model", "")),
-            "fuelType": insp.get("fuel_type", ""),
-            # CRITICAL: Always convert manufacturingYear to string to prevent Pydantic validation errors
-            "manufacturingYear": str(insp.get("car_year", insp.get("manufacturing_year", "")) or ""),
-            "odometerReading": str(insp.get("odometer_reading", "") or ""),
-            "city": insp.get("city", ""),
-            "customerName": insp.get("customer_name", ""),
-            "customerPhone": insp.get("customer_mobile", ""),
-            "customerAddress": insp.get("address", ""),
-            "latitude": insp.get("latitude") or insp.get("location_lat"),
-            "longitude": insp.get("longitude") or insp.get("location_lng"),
-            "assignedMechanicId": insp.get("mechanic_id"),
-            "partner_id": insp.get("partner_id"),
-            "partner_name": insp.get("partner_name"),
-            "requiredModules": {
-                "photos": True,
-                "sound": False,
-                "obd": False
-            },
-            "progress": insp.get("inspection_progress", {
-                "photosDone": False,
-                "soundDone": False,
-                "obdDone": False,
-                "notesDone": False
-            }),
-            "orderId": insp.get("order_id"),
-            "packageName": insp.get("package_type") or insp.get("inspection_package_name", "Standard Inspection")
-        })
+    for idx, insp in enumerate(inspections):
+        try:
+            # Map CRM status to mechanic app status
+            crm_status = insp.get("inspection_status", "NEW_INSPECTION")
+            if crm_status == "INSPECTION_COMPLETED":
+                app_status = "COMPLETED"
+            elif crm_status in ["MECHANIC_REJECTED", "INSPECTION_CANCELLED_WD", "INSPECTION_CANCELLED_CUS"]:
+                app_status = "REJECTED"
+            elif crm_status == "INSPECTION_STARTED":
+                app_status = "IN_PROGRESS"
+            elif crm_status == "MECHANIC_ACCEPTED":
+                app_status = "ACCEPTED"
+            elif crm_status in ["NEW_INSPECTION", "ASSIGNED_TO_MECHANIC"]:
+                app_status = "NEW"
+            elif crm_status == "RESCHEDULED":
+                app_status = "NEW"  # Show rescheduled as new for mechanic to accept again
+            else:
+                app_status = "NEW"
+            
+            # Helper function to safely convert to string
+            def safe_str(val, default=""):
+                if val is None:
+                    return default
+                return str(val) if val else default
+            
+            # Build the inspection object with safe type conversions
+            inspection_obj = {
+                "id": safe_str(insp.get("id")),
+                "scheduledAt": insp.get("scheduled_date") or insp.get("created_at"),
+                "status": app_status,
+                "crmStatus": crm_status,
+                "vehicleNumber": safe_str(insp.get("car_number")),
+                "makeModelVariant": f"{safe_str(insp.get('car_make', insp.get('make', '')))} {safe_str(insp.get('car_model', insp.get('model', '')))} {safe_str(insp.get('variant', ''))}".strip() or "Not Available",
+                "carMake": safe_str(insp.get("car_make", insp.get("make", ""))),
+                "carModel": safe_str(insp.get("car_model", insp.get("model", ""))),
+                "fuelType": safe_str(insp.get("fuel_type")),
+                "manufacturingYear": safe_str(insp.get("car_year", insp.get("manufacturing_year", ""))),
+                "odometerReading": safe_str(insp.get("odometer_reading")),
+                "city": safe_str(insp.get("city")),
+                "customerName": safe_str(insp.get("customer_name")),
+                "customerPhone": safe_str(insp.get("customer_mobile")),
+                "customerAddress": safe_str(insp.get("address")),
+                "latitude": insp.get("latitude") or insp.get("location_lat"),
+                "longitude": insp.get("longitude") or insp.get("location_lng"),
+                "assignedMechanicId": safe_str(insp.get("mechanic_id")) or None,
+                "partner_id": safe_str(insp.get("partner_id")) or None,
+                "partner_name": safe_str(insp.get("partner_name")),
+                "requiredModules": {
+                    "photos": True,
+                    "sound": False,
+                    "obd": False
+                },
+                "progress": insp.get("inspection_progress", {
+                    "photosDone": False,
+                    "soundDone": False,
+                    "obdDone": False,
+                    "notesDone": False
+                }),
+                "orderId": safe_str(insp.get("order_id")) or None,
+                "packageName": safe_str(insp.get("package_type") or insp.get("inspection_package_name", "Standard Inspection"))
+            }
+            
+            result.append(inspection_obj)
+            
+        except Exception as e:
+            logger.error(f"CRITICAL: Error transforming inspection {idx}: {str(e)}")
+            logger.error(f"CRITICAL: Problematic inspection data: {insp}")
+            # Continue processing other inspections
+            continue
     
     logger.info(f"DEBUGGING: Transformation complete. Result has {len(result)} items")
     if result:
