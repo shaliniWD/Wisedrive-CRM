@@ -117,13 +117,17 @@ Based on this data, provide your assessment in the following JSON format:
     }},
     
     "category_ratings": {{
-        "<EXACT_CATEGORY_NAME_FROM_DATA>": {{
+        "<CATEGORY_KEY>": {{
             "rating": <number 0-10 based on analyzing ALL answers in this category>,
             "status": "<PASS if rating>=7, ATTENTION if rating>=4, FAIL if rating<4>",
             "summary": "<brief summary explaining why this rating was given based on Q&A answers>",
             "issues_found": ["<specific issue found from Q&A answers>"]
         }}
     }},
+    // NOTE: For CATEGORY_KEY, convert category name to lowercase and replace ALL non-alphanumeric characters with single underscore.
+    // Example: "Engine Health and Diagnosis" -> "engine_health_and_diagnosis"
+    // Example: "Infotainment , Electrical System" -> "infotainment_electrical_system"
+    // Example: "Suspension & Brakes" -> "suspension_brakes"
     
     "estimated_repairs": [
         {{
