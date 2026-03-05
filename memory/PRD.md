@@ -129,6 +129,23 @@ The application is a full-stack CRM for vehicle loans and inspections. Key featu
 - ✅ Backend parsers enhanced with written-off count, negative accounts, DPD > 90 tracking
 - ✅ Component: `/app/frontend/src/components/loans/CreditRiskDashboard.jsx`
 
+### Recommended Purchase Price (RPP) Feature (Mar 2026)
+- ✅ Web scraping service for car prices from: OLX, Spinny, Cars24, CarWale, CarDekho
+- ✅ New API endpoint: `POST /api/inspections/{id}/fetch-rpp`
+- ✅ Fetches market prices based on: Make, Model, Year, Fuel Type, Transmission, KMs Driven
+- ✅ Calculates recommended purchase price (5-10% below market average)
+- ✅ Stores results in `market_price_research` field on inspection
+- ✅ Frontend: RPP section in LiveProgressModal with "Fetch Market Prices" button
+- ✅ Website-wise price breakdown with color-coded cards (CarDekho=orange, CarWale=blue, Cars24=yellow, Spinny=purple, OLX=green)
+- ✅ Fallback to depreciation model when web scraping fails
+- ✅ Service: `/app/backend/services/car_price_scraper.py`
+
+### Mechanic App UX Improvements (Mar 2026)
+- ✅ APK v1.9.2 built with Q&A screen UX fixes
+- ✅ Removed automatic navigation back after saving answers
+- ✅ Save button disabled during save operation
+- ✅ Save button only appears when there are unsaved changes
+
 ## API Endpoints
 
 ### Bank Statement Analysis
