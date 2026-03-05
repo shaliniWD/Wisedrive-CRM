@@ -329,7 +329,10 @@ export default function LiveProgressModal({
         
         // OBD
         obd_connected: liveProgressData?.obd_scan?.completed || false,
-        dtc_codes: inspection.dtc_codes || []
+        dtc_codes: inspection.dtc_codes || [],
+        
+        // Category Ratings (0-10 scale)
+        category_ratings: inspection.category_ratings || {}
       });
       
       // Store original data for change tracking
