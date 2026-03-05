@@ -19,7 +19,7 @@ import {
   ChevronDown, ChevronRight, DollarSign, Gauge, History, Download,
   Star, ThumbsUp, ThumbsDown, AlertCircle, Info, Zap, Eye, Share2,
   ExternalLink, Copy, ClipboardList, CircleDot, RotateCcw, Package,
-  Sparkles, Lightbulb, MapPin, CalendarClock
+  Sparkles, Lightbulb, MapPin, CalendarClock, BarChart3
 } from 'lucide-react';
 
 // Condition options for dropdowns
