@@ -160,8 +160,9 @@ export default function InspectionCategoriesScreen() {
       });
       
       // Fetch both questionnaire and inspection details (for answers) in parallel
+      // IMPORTANT: Always force refresh questionnaire to get latest answers after save
       const [data, inspectionData] = await Promise.all([
-        inspectionsApi.getQuestionnaire(currentInspectionId),
+        inspectionsApi.getQuestionnaire(currentInspectionId, true), // forceRefresh=true
         inspectionsApi.getInspection(currentInspectionId).catch((e) => {
           diagLogger.error('CATEGORIES_INSPECTION_FETCH_ERROR', { 
             error: e.message,
