@@ -193,12 +193,13 @@ export default function InspectionCategoriesScreen() {
         obdRescanEnabled: inspectionData?.obd_rescan_enabled || false,
       });
       
-      // Get saved answers - PRIORITIZE existing_answers from questionnaire endpoint (synced from CRM)
-      // Fall back to inspection_answers if existing_answers not available
-      const savedAnswers = data?.existing_answers || inspectionData?.inspection_answers || {};
+      // Get saved answers - PRIORITIZE inspection_answers (from getInspection - always fresh)
+      // over existing_answers (from questionnaire which might be cached)
+      // This ensures answers saved in Q&A screen are immediately visible
+      const savedAnswers = inspectionData?.inspection_answers || data?.existing_answers || {};
       console.log('[Categories] Saved answers count:', Object.keys(savedAnswers).length);
       diagLogger.info('CATEGORIES_SAVED_ANSWERS', {
-        source: data?.existing_answers ? 'questionnaire_existing_answers' : 'inspection_answers',
+        source: inspectionData?.inspection_answers ? 'inspection_answers_fresh' : 'questionnaire_existing_answers',
         count: Object.keys(savedAnswers).length,
         answerIds: Object.keys(savedAnswers).slice(0, 10), // First 10 for debugging
       });
