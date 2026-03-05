@@ -1684,7 +1684,46 @@ export default function LiveProgressModal({
                     
                     // Get editable rating for this category (0-10 scale)
                     const categoryKey = category.category_name?.toLowerCase().replace(/[^a-z0-9]/g, '_');
-                    const currentRating = editData.category_ratings?.[categoryKey] ?? 0;
+                    
+                    // Map AI condition_ratings to Q&A category ratings
+                    // Map category names to AI condition types
+                    const getAIConditionRating = (catName) => {
+                      const name = catName?.toLowerCase() || '';
+                      const aiConditions = inspection?.ai_insights?.condition_ratings || {};
+                      
+                      // Map Q&A categories to AI condition types
+                      if (name.includes('engine') || name.includes('health')) {
+                        const cond = aiConditions.engine?.toUpperCase();
+                        if (cond === 'POOR') return 2;
+                        if (cond === 'AVERAGE') return 5;
+                        if (cond === 'GOOD') return 8;
+                      }
+                      if (name.includes('exterior')) {
+                        const cond = aiConditions.exterior?.toUpperCase();
+                        if (cond === 'POOR') return 2;
+                        if (cond === 'AVERAGE') return 5;
+                        if (cond === 'GOOD') return 8;
+                      }
+                      if (name.includes('interior')) {
+                        const cond = aiConditions.interior?.toUpperCase();
+                        if (cond === 'POOR') return 2;
+                        if (cond === 'AVERAGE') return 5;
+                        if (cond === 'GOOD') return 8;
+                      }
+                      if (name.includes('transmission')) {
+                        const cond = aiConditions.transmission?.toUpperCase();
+                        if (cond === 'POOR') return 2;
+                        if (cond === 'AVERAGE') return 5;
+                        if (cond === 'GOOD') return 8;
+                      }
+                      return null;
+                    };
+                    
+                    // Priority: editData.category_ratings > AI condition rating > 0
+                    const savedRating = editData.category_ratings?.[categoryKey];
+                    const aiRating = getAIConditionRating(category.category_name);
+                    const currentRating = savedRating ?? aiRating ?? 0;
+                    const isAIRating = !savedRating && aiRating !== null;
                     
                     // Helper to get condition text and color
                     const getCondition = (rating) => {
