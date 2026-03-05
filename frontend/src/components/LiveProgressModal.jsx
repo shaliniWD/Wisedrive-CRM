@@ -1166,11 +1166,77 @@ export default function LiveProgressModal({
                 </div>
               </div>
               
-              {/* Assessment Summary */}
-              <Section title="Assessment Summary" icon={FileText} defaultOpen={true}>
+              {/* AI-Powered Assessment Summary */}
+              <Section title="AI Assessment Summary" icon={FileText} defaultOpen={true}>
                 <div className="space-y-4">
+                  {/* AI Generated Badge */}
+                  {inspection?.ai_insights?.ai_generated && (
+                    <div className="flex items-center gap-2 bg-purple-50 border border-purple-200 rounded-lg px-3 py-2">
+                      <Sparkles className="h-4 w-4 text-purple-600" />
+                      <span className="text-sm text-purple-700 font-medium">AI Generated Analysis</span>
+                      {inspection?.ai_insights?.generated_at && (
+                        <span className="text-xs text-purple-500 ml-auto">
+                          {new Date(inspection.ai_insights.generated_at).toLocaleString()}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Section-wise Assessment from AI */}
+                  {inspection?.ai_insights?.assessment_summary && typeof inspection.ai_insights.assessment_summary === 'object' && (
+                    <div className="bg-slate-50 rounded-lg p-4 border space-y-3">
+                      <h4 className="font-semibold text-gray-800 flex items-center gap-2">
+                        <ClipboardList className="h-4 w-4 text-blue-600" />
+                        Section-wise Assessment
+                      </h4>
+                      
+                      {/* Overall */}
+                      {inspection.ai_insights.assessment_summary.overall && (
+                        <div className="bg-white rounded-lg p-3 border-l-4 border-l-blue-500">
+                          <p className="text-xs font-semibold text-blue-600 uppercase">Overall</p>
+                          <p className="text-sm text-gray-700 mt-1">{inspection.ai_insights.assessment_summary.overall}</p>
+                        </div>
+                      )}
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {/* Engine & Mechanical */}
+                        {inspection.ai_insights.assessment_summary.engine_and_mechanical && (
+                          <div className="bg-white rounded-lg p-3 border">
+                            <p className="text-xs font-semibold text-gray-500 uppercase">🔧 Engine & Mechanical</p>
+                            <p className="text-sm text-gray-700 mt-1">{inspection.ai_insights.assessment_summary.engine_and_mechanical}</p>
+                          </div>
+                        )}
+                        
+                        {/* Exterior Body */}
+                        {inspection.ai_insights.assessment_summary.exterior_body && (
+                          <div className="bg-white rounded-lg p-3 border">
+                            <p className="text-xs font-semibold text-gray-500 uppercase">🚗 Exterior Body</p>
+                            <p className="text-sm text-gray-700 mt-1">{inspection.ai_insights.assessment_summary.exterior_body}</p>
+                          </div>
+                        )}
+                        
+                        {/* Interior Comfort */}
+                        {inspection.ai_insights.assessment_summary.interior_comfort && (
+                          <div className="bg-white rounded-lg p-3 border">
+                            <p className="text-xs font-semibold text-gray-500 uppercase">🛋️ Interior Comfort</p>
+                            <p className="text-sm text-gray-700 mt-1">{inspection.ai_insights.assessment_summary.interior_comfort}</p>
+                          </div>
+                        )}
+                        
+                        {/* Safety Systems */}
+                        {inspection.ai_insights.assessment_summary.safety_systems && (
+                          <div className="bg-white rounded-lg p-3 border">
+                            <p className="text-xs font-semibold text-gray-500 uppercase">🛡️ Safety Systems</p>
+                            <p className="text-sm text-gray-700 mt-1">{inspection.ai_insights.assessment_summary.safety_systems}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Editable Summary (fallback or override) */}
                   <EditableField
-                    label="Summary"
+                    label="Custom Summary"
                     value={editData.assessment_summary}
                     onChange={(val) => updateField('assessment_summary', val)}
                     type="textarea"
@@ -1178,9 +1244,26 @@ export default function LiveProgressModal({
                     disabled={!canEdit}
                   />
                   
-                  <div>
-                    <Label className="text-xs text-gray-600 mb-2 block">Key Highlights</Label>
+                  {/* Key Highlights from AI */}
+                  <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                    <Label className="text-sm font-semibold text-green-800 mb-3 flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4" />
+                      Key Highlights
+                    </Label>
                     <div className="space-y-2">
+                      {/* AI Generated Highlights */}
+                      {inspection?.ai_insights?.key_highlights?.length > 0 && (
+                        <div className="space-y-1 mb-3">
+                          {inspection.ai_insights.key_highlights.map((highlight, idx) => (
+                            <div key={`ai-${idx}`} className="flex items-start gap-2 text-sm text-green-700">
+                              <span className="text-green-500 mt-0.5">✓</span>
+                              <span>{highlight}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {/* Editable Highlights */}
                       {(editData.key_highlights || []).map((highlight, idx) => (
                         <div key={idx} className="flex items-center gap-2">
                           <Input
@@ -1220,6 +1303,60 @@ export default function LiveProgressModal({
                       )}
                     </div>
                   </div>
+                  
+                  {/* Concerns from AI */}
+                  {inspection?.ai_insights?.concerns?.length > 0 && (
+                    <div className="bg-red-50 rounded-lg p-4 border border-red-200">
+                      <Label className="text-sm font-semibold text-red-800 mb-3 flex items-center gap-2">
+                        <AlertCircle className="h-4 w-4" />
+                        Concerns Identified
+                      </Label>
+                      <div className="space-y-1">
+                        {inspection.ai_insights.concerns.map((concern, idx) => (
+                          <div key={idx} className="flex items-start gap-2 text-sm text-red-700">
+                            <span className="text-red-500 mt-0.5">⚠</span>
+                            <span>{concern}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Risk Factors */}
+                  {inspection?.ai_insights?.risk_factors?.length > 0 && (
+                    <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">
+                      <Label className="text-sm font-semibold text-amber-800 mb-3 flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4" />
+                        Risk Factors
+                      </Label>
+                      <div className="space-y-1">
+                        {inspection.ai_insights.risk_factors.map((risk, idx) => (
+                          <div key={idx} className="flex items-start gap-2 text-sm text-amber-700">
+                            <span className="text-amber-500 mt-0.5">!</span>
+                            <span>{risk}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Recommendations */}
+                  {inspection?.ai_insights?.recommendations?.length > 0 && (
+                    <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                      <Label className="text-sm font-semibold text-blue-800 mb-3 flex items-center gap-2">
+                        <Lightbulb className="h-4 w-4" />
+                        Recommendations
+                      </Label>
+                      <div className="space-y-1">
+                        {inspection.ai_insights.recommendations.map((rec, idx) => (
+                          <div key={idx} className="flex items-start gap-2 text-sm text-blue-700">
+                            <span className="text-blue-500 mt-0.5">→</span>
+                            <span>{rec}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </Section>
               
