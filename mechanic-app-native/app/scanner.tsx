@@ -971,12 +971,27 @@ export default function OBDScannerScreen() {
       
       // Save to AsyncStorage as backup BEFORE attempting backend submission
       await saveOBDToStorage(currentInspectionId, obdData);
-      diagLogger.info('OBD_SAVED_LOCALLY', { inspectionId: currentInspectionId });
+      diagLogger.info('OBD_SAVED_LOCALLY', { 
+        inspectionId: currentInspectionId,
+        totalErrors: obdData.total_errors,
+        liveDataCount: obdData.live_data?.length || 0,
+        timestamp: new Date().toISOString()
+      });
       
       // Submit to backend
-      await inspectionsApi.submitOBDResults(currentInspectionId, obdData);
+      diagLogger.info('OBD_BACKEND_SUBMIT_START', {
+        inspectionId: currentInspectionId,
+        dataKeys: Object.keys(obdData),
+        timestamp: new Date().toISOString()
+      });
       
-      diagLogger.info('OBD_SUBMIT_SUCCESS', { inspectionId: currentInspectionId });
+      const response = await inspectionsApi.submitOBDResults(currentInspectionId, obdData);
+      
+      diagLogger.info('OBD_SUBMIT_SUCCESS', { 
+        inspectionId: currentInspectionId,
+        response: JSON.stringify(response).substring(0, 500),
+        timestamp: new Date().toISOString()
+      });
       setIsSubmitted(true);
       setAlreadySubmittedToBackend(true);
       setPendingLocalData(null);
@@ -996,16 +1011,16 @@ export default function OBDScannerScreen() {
       }
       
       Alert.alert(
-        'OBD Data Submitted',
-        'The diagnostic results have been saved successfully.',
+        'OBD Scan Complete ✓',
+        `Diagnostic data uploaded successfully!\n\nDTCs Found: ${allDTCs.length}\nLive Data Points: ${liveData.length}`,
         [
           {
-            text: 'Continue',
+            text: 'Continue to Inspection',
             onPress: () => {
               disconnect();
-              // Navigate to checklist or inspection page
+              // Navigate to inspection categories
               if (currentInspectionId) {
-                router.push(`/checklist/${currentInspectionId}`);
+                router.push(`/inspection-categories`);
               } else {
                 router.push('/home');
               }
@@ -1016,13 +1031,16 @@ export default function OBDScannerScreen() {
     } catch (error: any) {
       diagLogger.error('OBD_SUBMIT_FAILED', { 
         inspectionId: currentInspectionId, 
-        error: error.message 
+        error: error.message,
+        status: error.response?.status,
+        responseData: error.response?.data,
+        timestamp: new Date().toISOString()
       });
       setSubmitError(error.message || 'Failed to submit OBD data');
       
       Alert.alert(
-        'Submission Failed',
-        'Unable to save the diagnostic data. Please try again.',
+        'Upload Failed',
+        `Unable to upload OBD data: ${error.message || 'Unknown error'}\n\nThe data has been saved locally. You can retry from the inspection screen.`,
         [{ text: 'OK' }]
       );
     } finally {
