@@ -110,6 +110,7 @@ export default function InspectionCategoriesScreen() {
   const [obdRescanEnabled, setObdRescanEnabled] = useState(false);
   
   // OBD is completed if either context says so OR backend has OBD data (and rescan is NOT enabled)
+  // NOTE: OBD is OPTIONAL - this flag is only used to show completion status, not to block inspection completion
   const obdCompleted = (obdScanResult?.completed || obdSubmittedToBackend) && !obdRescanEnabled;
   const obdResults = obdScanResult || (obdSubmittedToBackend ? { completed: true, ...backendObdData } : null);
 
