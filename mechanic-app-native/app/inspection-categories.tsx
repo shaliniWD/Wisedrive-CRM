@@ -146,9 +146,24 @@ export default function InspectionCategoriesScreen() {
   const submitPendingObd = async () => {
     if (!pendingObdData || !currentInspectionId) return;
     
+    diagLogger.info('OBD_PENDING_SUBMIT_START', {
+      inspectionId: currentInspectionId,
+      dataKeys: Object.keys(pendingObdData),
+      totalErrors: pendingObdData.total_errors,
+      liveDataCount: pendingObdData.live_data?.length || 0,
+      timestamp: new Date().toISOString()
+    });
+    
     setIsSubmittingPendingObd(true);
     try {
-      await inspectionsApi.submitOBDResults(currentInspectionId, pendingObdData);
+      const response = await inspectionsApi.submitOBDResults(currentInspectionId, pendingObdData);
+      
+      diagLogger.info('OBD_PENDING_SUBMIT_SUCCESS', {
+        inspectionId: currentInspectionId,
+        response: response,
+        timestamp: new Date().toISOString()
+      });
+      
       await AsyncStorage.setItem(`obd_submitted_${currentInspectionId}`, 'true');
       
       setObdSubmittedToBackend(true);
@@ -158,10 +173,32 @@ export default function InspectionCategoriesScreen() {
       });
       setPendingObdData(null);
       
-      Alert.alert('Success', 'OBD data has been submitted successfully!');
+      // Update context
+      if (setOBDScanResult) {
+        setOBDScanResult({
+          completed: true,
+          dtcCount: pendingObdData.total_errors || 0,
+          liveDataCount: pendingObdData.live_data?.length || 0,
+          timestamp: new Date().toISOString(),
+        });
+      }
+      
+      Alert.alert(
+        'OBD Scan Complete ✓', 
+        `OBD data uploaded successfully!\n\nDTCs Found: ${pendingObdData.total_errors || 0}\nLive Data Points: ${pendingObdData.live_data?.length || 0}`,
+        [{ text: 'OK' }]
+      );
       fetchQuestionnaire(); // Refresh to get updated status
     } catch (e: any) {
-      Alert.alert('Error', 'Failed to submit OBD data: ' + (e.message || 'Unknown error'));
+      diagLogger.error('OBD_PENDING_SUBMIT_FAILED', {
+        inspectionId: currentInspectionId,
+        error: e.message,
+        status: e.response?.status,
+        responseData: e.response?.data,
+        timestamp: new Date().toISOString()
+      });
+      
+      Alert.alert('Upload Failed', `Failed to submit OBD data: ${e.message || 'Unknown error'}\n\nPlease check your internet connection and try again.`);
     } finally {
       setIsSubmittingPendingObd(false);
     }
