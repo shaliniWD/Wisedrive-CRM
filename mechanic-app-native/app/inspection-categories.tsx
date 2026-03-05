@@ -1091,6 +1091,56 @@ const styles = StyleSheet.create({
     color: Colors.primary,
   },
 
+  // Pending OBD Alert
+  pendingObdAlert: {
+    marginBottom: 16,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#D97706',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  pendingObdGradient: {
+    padding: 16,
+  },
+  pendingObdContent: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    marginBottom: 12,
+  },
+  pendingObdText: {
+    flex: 1,
+  },
+  pendingObdTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#92400E',
+    marginBottom: 4,
+  },
+  pendingObdDesc: {
+    fontSize: 13,
+    color: '#B45309',
+    lineHeight: 18,
+  },
+  pendingObdButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#D97706',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    gap: 8,
+  },
+  pendingObdButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFF',
+  },
+
   // Error
   errorCard: {
     backgroundColor: Colors.warningLight,
