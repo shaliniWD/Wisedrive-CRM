@@ -13007,14 +13007,14 @@ async def get_mechanic_inspections(
         mechanic_name = current_user.get("name", "")
         
         logger.info(f"Fetching inspections for mechanic: {mechanic_id} ({mechanic_name}), cities: {mechanic_cities}")
-    
-    # Resolve mechanic cities to include aliases
-    all_city_variants = []
-    for mc in mechanic_cities:
-        all_city_variants.append(mc)
-        all_city_variants.append(mc.lower())
-        all_city_variants.append(mc.upper())
-        all_city_variants.append(mc.title())
+        
+        # Resolve mechanic cities to include aliases
+        all_city_variants = []
+        for mc in mechanic_cities:
+            all_city_variants.append(mc)
+            all_city_variants.append(mc.lower())
+            all_city_variants.append(mc.upper())
+            all_city_variants.append(mc.title())
         
         # Check if this city has aliases in the master table
         city_doc = await db.cities.find_one({
