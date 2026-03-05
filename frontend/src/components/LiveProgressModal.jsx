@@ -192,6 +192,9 @@ export default function LiveProgressModal({
   // OBD Rescan state
   const [requestingRescan, setRequestingRescan] = useState(false);
   
+  // RPP (Recommended Purchase Price) state
+  const [fetchingRPP, setFetchingRPP] = useState(false);
+  
   // Repairs Module state
   const [repairParts, setRepairParts] = useState([]);
   const [repairRules, setRepairRules] = useState([]);
