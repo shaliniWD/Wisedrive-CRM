@@ -813,6 +813,7 @@ async def get_version():
         "environment": os.environ.get("ENVIRONMENT", "preview"),
         "jwt_secret_status": jwt_status,  # Important for debugging auth issues
         "recent_changes": [
+            "v2.5.6 - CRITICAL: Fixed 500 error on /mechanic/inspections for ALL mechanics (regex escaping, global error handler)",
             "v2.5.5 - VERIFIED: /mechanic/inspections/{id} returns inspection_answers field",
             "v2.5.5 - Mobile app fix: Q&A screen now uses questionnaire endpoint for answers (consistent with Categories)",
             "v2.5.4 - Answer sync fix: Cache cleared after save, forceRefresh on categories",
@@ -821,8 +822,7 @@ async def get_version():
             "v2.5.1 - Mechanic assignment validation: requires car details before assignment",
             "v2.5.1 - City alias support for mechanic assignment (Bengaluru/Bangalore)",
             "v2.4.6 - Fixed inspection_status bug: progress save now sets INSPECTION_STARTED correctly",
-            "v2.4.5 - Mobile app v1.4.0: Fixed profile version display, improved image compression",
-            "v2.4.4 - Mobile app bug fixes: Navigate button, cache clearing, inspection detail API enhanced"
+            "v2.4.5 - Mobile app v1.4.0: Fixed profile version display, improved image compression"
         ],
         "otp_storage": "mongodb",  # Key indicator - old version uses "memory"
         "db_collections": {
