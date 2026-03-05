@@ -13214,7 +13214,13 @@ async def get_mechanic_inspections(
         # Global exception handler to prevent 500 errors
         logger.error(f"CRITICAL ERROR in get_mechanic_inspections: {str(e)}")
         logger.error(f"Traceback: {traceback.format_exc()}")
-        logger.error(f"Mechanic ID: {mechanic_id}, Cities: {mechanic_cities}")
+        # Safely get mechanic info for logging
+        try:
+            m_id = current_user.get("id", "unknown") if current_user else "no_user"
+            m_cities = current_user.get("inspection_cities", []) if current_user else []
+            logger.error(f"Mechanic ID: {m_id}, Cities: {m_cities}")
+        except:
+            logger.error("Could not extract mechanic info from current_user")
         # Return empty list rather than 500 error
         return JSONResponse(content=[], status_code=200)
 
