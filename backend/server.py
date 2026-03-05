@@ -13001,52 +13001,71 @@ async def get_mechanic_inspections(
     current_user: dict = Depends(get_current_user)
 ):
     """Get inspections for mechanic app - shows inspections assigned to or available for the mechanic"""
+    import re
+    
     mechanic_id = current_user["id"]
     mechanic_cities = current_user.get("inspection_cities", [])
     mechanic_name = current_user.get("name", "")
     
     logger.info(f"Fetching inspections for mechanic: {mechanic_id} ({mechanic_name}), cities: {mechanic_cities}")
     
-    # Resolve mechanic cities to include aliases
-    all_city_variants = []
-    for mc in mechanic_cities:
-        all_city_variants.append(mc)
-        all_city_variants.append(mc.lower())
-        all_city_variants.append(mc.upper())
-        all_city_variants.append(mc.title())
+    try:
+        # Resolve mechanic cities to include aliases
+        all_city_variants = []
+        for mc in mechanic_cities:
+            if not mc:
+                continue
+            all_city_variants.append(mc)
+            all_city_variants.append(mc.lower())
+            all_city_variants.append(mc.upper())
+            all_city_variants.append(mc.title())
+            
+            # Check if this city has aliases in the master table
+            try:
+                city_doc = await db.cities.find_one({
+                    "$or": [
+                        {"name": {"$regex": f"^{re.escape(mc)}$", "$options": "i"}},
+                        {"aliases": {"$regex": f"^{re.escape(mc)}$", "$options": "i"}}
+                    ]
+                })
+                if city_doc:
+                    all_city_variants.append(city_doc["name"])
+                    all_city_variants.extend(city_doc.get("aliases", []))
+            except Exception as city_err:
+                logger.warning(f"Error looking up city aliases for {mc}: {city_err}")
         
-        # Check if this city has aliases in the master table
-        city_doc = await db.cities.find_one({
-            "$or": [
-                {"name": {"$regex": f"^{mc}$", "$options": "i"}},
-                {"aliases": {"$regex": f"^{mc}$", "$options": "i"}}
-            ]
-        })
-        if city_doc:
-            all_city_variants.append(city_doc["name"])
-            all_city_variants.extend(city_doc.get("aliases", []))
-    
-    # Remove duplicates while preserving order
-    all_city_variants = list(dict.fromkeys(all_city_variants))
-    
-    logger.info(f"Resolved city variants for mechanic: {all_city_variants}")
-    
-    # Base query: inspections that are either:
-    # 1. Assigned to this mechanic by ID (any status)
-    # 2. Assigned to this mechanic by name (fallback for older records)
-    # 3. In the ASSIGNED_TO_MECHANIC status with matching mechanic_id
-    # 4. Unassigned but in mechanic's cities (NEW_INSPECTION status)
-    query = {
-        "$or": [
-            {"mechanic_id": mechanic_id},
-            {"mechanic_name": {"$regex": f"^{mechanic_name}$", "$options": "i"}} if mechanic_name else {"mechanic_id": mechanic_id},
-            {
-                "mechanic_id": {"$in": [None, ""]},
-                "city": {"$regex": f"^({'|'.join(all_city_variants)})$", "$options": "i"} if all_city_variants else {"$exists": True},
-                "inspection_status": {"$in": ["NEW_INSPECTION", "ASSIGNED_TO_MECHANIC"]}
-            }
+        # Remove duplicates and empty values while preserving order
+        all_city_variants = [c for c in dict.fromkeys(all_city_variants) if c]
+        
+        logger.info(f"Resolved city variants for mechanic: {all_city_variants}")
+        
+        # Build city regex pattern safely - escape special regex characters
+        city_regex_pattern = None
+        if all_city_variants:
+            escaped_cities = [re.escape(c) for c in all_city_variants]
+            city_regex_pattern = f"^({'|'.join(escaped_cities)})$"
+        
+        # Base query: inspections that are either:
+        # 1. Assigned to this mechanic by ID (any status)
+        # 2. Assigned to this mechanic by name (fallback for older records)
+        # 3. Unassigned but in mechanic's cities (NEW_INSPECTION status)
+        or_conditions = [
+            {"mechanic_id": mechanic_id}
         ]
-    }
+        
+        # Add mechanic name match if name exists
+        if mechanic_name:
+            or_conditions.append({"mechanic_name": {"$regex": f"^{re.escape(mechanic_name)}$", "$options": "i"}})
+        
+        # Add unassigned inspections in mechanic's cities
+        if city_regex_pattern:
+            or_conditions.append({
+                "mechanic_id": {"$in": [None, ""]},
+                "city": {"$regex": city_regex_pattern, "$options": "i"},
+                "inspection_status": {"$in": ["NEW_INSPECTION", "ASSIGNED_TO_MECHANIC"]}
+            })
+        
+        query = {"$or": or_conditions}
     
     # Date filter
     if date_filter:
