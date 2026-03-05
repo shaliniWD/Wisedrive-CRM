@@ -1687,7 +1687,7 @@ export default function LiveProgressModal({
                     const categoryName = category.category_name;
                     
                     // Get AI rating from ai_insights.category_ratings (uses exact category name)
-                    const getAICategoryRating = (catName) => {
+                    const getAICategoryRating = (catName, catKey) => {
                       const aiCategoryRatings = inspection?.ai_insights?.category_ratings || {};
                       
                       // Try exact match first
@@ -1696,17 +1696,26 @@ export default function LiveProgressModal({
                         return typeof ratingData === 'object' ? ratingData.rating : ratingData;
                       }
                       
-                      // Try case-insensitive match
-                      const catNameLower = catName?.toLowerCase() || '';
+                      // Try key match (lowercase with underscores)
+                      if (aiCategoryRatings[catKey]) {
+                        const ratingData = aiCategoryRatings[catKey];
+                        return typeof ratingData === 'object' ? ratingData.rating : ratingData;
+                      }
+                      
+                      // Try case-insensitive and normalized key match
+                      const normalizeKey = (str) => str?.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_') || '';
+                      const normalizedCatKey = normalizeKey(catName);
+                      
                       for (const [key, value] of Object.entries(aiCategoryRatings)) {
-                        if (key.toLowerCase() === catNameLower) {
+                        const normalizedKey = normalizeKey(key);
+                        if (normalizedKey === normalizedCatKey || key.toLowerCase() === catName?.toLowerCase()) {
                           return typeof value === 'object' ? value.rating : value;
                         }
                       }
                       
                       // Fallback: Try to match from condition_ratings for legacy data
                       const aiConditions = inspection?.ai_insights?.condition_ratings || {};
-                      const name = catNameLower;
+                      const name = catName?.toLowerCase() || '';
                       
                       if (name.includes('engine') || name.includes('health')) {
                         const cond = aiConditions.engine?.toUpperCase();
