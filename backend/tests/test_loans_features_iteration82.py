@@ -11,7 +11,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://inspection-crm.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://carcrm-vaahan.preview.emergentagent.com')
 
 # Test credentials
 ADMIN_EMAIL = "kalyan@wisedrive.com"
