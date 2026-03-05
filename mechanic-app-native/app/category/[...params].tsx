@@ -408,6 +408,14 @@ export default function CategoryQuestionsScreen() {
   const loadData = async () => {
     if (!isMounted.current) return;
     
+    const startTime = Date.now();
+    diagLogger.info('QA_LOAD_DATA_START', {
+      inspectionId,
+      categoryId,
+      timestamp: new Date().toISOString()
+    });
+    console.log('[Q&A] Loading data for inspection:', inspectionId, 'category:', categoryId);
+    
     try {
       setIsLoading(true);
       setLoadError(null);
@@ -419,6 +427,14 @@ export default function CategoryQuestionsScreen() {
       
       const allQuestions = data.questions || [];
       const categoryQuestions = allQuestions.filter((q: any) => q.category_id === categoryId);
+      
+      diagLogger.info('QA_QUESTIONS_LOADED', {
+        totalQuestions: allQuestions.length,
+        categoryQuestions: categoryQuestions.length,
+        categoryId,
+        questionIds: categoryQuestions.map((q: any) => q.id)
+      });
+      console.log('[Q&A] Questions loaded:', categoryQuestions.length, 'for category');
       
       if (categoryQuestions.length > 0 && categoryQuestions[0].category_name) {
         setCategoryName(categoryQuestions[0].category_name);
@@ -441,6 +457,15 @@ export default function CategoryQuestionsScreen() {
         
         const serverAnswers = inspection?.inspection_answers || {};
         
+        diagLogger.info('QA_ANSWERS_FETCHED', {
+          serverAnswersCount: Object.keys(serverAnswers).length,
+          serverAnswerKeys: Object.keys(serverAnswers).slice(0, 10),
+          localDraftsCount: Object.keys(localDrafts).length,
+          localDraftKeys: Object.keys(localDrafts)
+        });
+        console.log('[Q&A] Server answers:', Object.keys(serverAnswers).length);
+        console.log('[Q&A] Local drafts:', Object.keys(localDrafts).length);
+        
         // Merge: prefer local drafts (if isDraft) over server answers
         const mergedAnswers: Record<string, Answer> = {};
         
@@ -455,11 +480,21 @@ export default function CategoryQuestionsScreen() {
           }
         }
         
+        diagLogger.info('QA_ANSWERS_MERGED', {
+          mergedCount: Object.keys(mergedAnswers).length,
+          mergedKeys: Object.keys(mergedAnswers),
+          hasDrafts: Object.values(mergedAnswers).some(a => a.isDraft)
+        });
+        
         setDraftAnswers(mergedAnswers);
         setHasUnsavedChanges(Object.values(mergedAnswers).some(a => a.isDraft));
         
-      } catch (answerErr) {
-        console.error('Error loading answers:', answerErr);
+      } catch (answerErr: any) {
+        diagLogger.error('QA_LOAD_ANSWERS_ERROR', {
+          error: answerErr.message,
+          stack: answerErr.stack?.substring(0, 200)
+        });
+        console.error('[Q&A] Error loading answers:', answerErr);
         const localDrafts = await loadDraftsFromStorage();
         if (isMounted.current) {
           setDraftAnswers(localDrafts);
@@ -467,8 +502,23 @@ export default function CategoryQuestionsScreen() {
         }
       }
       
+      const duration = Date.now() - startTime;
+      diagLogger.info('QA_LOAD_DATA_SUCCESS', {
+        durationMs: duration,
+        questionsCount: categoryQuestions.length,
+        answersCount: Object.keys(draftAnswers).length
+      });
+      console.log('[Q&A] Data loaded successfully in', duration, 'ms');
+      
     } catch (err: any) {
-      console.error('Error loading data:', err);
+      const duration = Date.now() - startTime;
+      diagLogger.error('QA_LOAD_DATA_ERROR', {
+        error: err.message,
+        responseStatus: err.response?.status,
+        responseData: err.response?.data,
+        durationMs: duration
+      });
+      console.error('[Q&A] Error loading data:', err);
       if (isMounted.current) {
         setLoadError(err.message || 'Failed to load questions');
       }
