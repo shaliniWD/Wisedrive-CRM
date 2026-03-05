@@ -2684,6 +2684,97 @@ export default function InspectionsPage() {
                 )}
               </div>
             </div>
+            
+            {/* Mechanic Assignment Section */}
+            <div className="space-y-3 pt-2 border-t">
+              <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                <User className="h-4 w-4 text-indigo-600" />
+                Mechanic Assignment
+              </div>
+              
+              {/* Current Mechanic */}
+              {editInspectionData?.mechanic_name && (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+                  <Label className="text-xs text-emerald-700">Currently Assigned</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <UserCheck className="h-4 w-4 text-emerald-600" />
+                    <span className="font-medium text-emerald-800">{editInspectionData.mechanic_name}</span>
+                  </div>
+                </div>
+              )}
+              
+              <div className="space-y-2">
+                <Label className="text-xs text-gray-500">
+                  {editInspectionData?.mechanic_name ? 'Reassign Mechanic' : 'Assign Mechanic'}
+                </Label>
+                {/* Show inspection city info */}
+                {editInspectionData?.city && (
+                  <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-md inline-flex items-center gap-1">
+                    <MapPin className="h-3 w-3" />
+                    Showing mechanics for: <span className="font-medium">{editInspectionData.city}</span>
+                  </div>
+                )}
+                <Select value={selectedMechanicId} onValueChange={setSelectedMechanicId}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Select mechanic..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unassign">
+                      <span className="text-gray-500 italic">-- Unassign --</span>
+                    </SelectItem>
+                    {mechanics
+                      .filter(mechanic => {
+                        // Filter by inspection city using alias resolution
+                        const inspectionCity = editInspectionData?.city?.toLowerCase()?.trim();
+                        if (!inspectionCity) return true; // Show all if no city
+                        
+                        // Resolve the inspection city to its canonical form using alias map
+                        const canonicalInspectionCity = cityAliasMap[inspectionCity] || inspectionCity;
+                        
+                        // Check if mechanic has the canonical city (or any alias) in their inspection_cities
+                        const mechanicCities = mechanic.inspection_cities || [];
+                        return mechanicCities.some(mc => {
+                          const mcLower = mc.toLowerCase().trim();
+                          const canonicalMc = cityAliasMap[mcLower] || mcLower;
+                          // Match if canonical cities are the same
+                          return canonicalMc === canonicalInspectionCity;
+                        });
+                      })
+                      .map((mechanic) => (
+                      <SelectItem key={mechanic.id} value={mechanic.id}>
+                        <div className="flex items-center gap-2">
+                          <UserCheck className="h-4 w-4 text-emerald-500" />
+                          <span>{mechanic.name}</span>
+                          {mechanic.inspection_cities?.length > 0 && (
+                            <span className="text-xs text-gray-400">
+                              ({mechanic.inspection_cities.join(', ')})
+                            </span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {mechanics.filter(m => {
+                  const inspectionCity = editInspectionData?.city?.toLowerCase()?.trim();
+                  if (!inspectionCity) return true;
+                  
+                  const canonicalInspectionCity = cityAliasMap[inspectionCity] || inspectionCity;
+                  
+                  const mechanicCities = m.inspection_cities || [];
+                  return mechanicCities.some(mc => {
+                    const mcLower = mc.toLowerCase().trim();
+                    const canonicalMc = cityAliasMap[mcLower] || mcLower;
+                    return canonicalMc === canonicalInspectionCity;
+                  });
+                }).length === 0 && (
+                  <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded-md">
+                    No mechanics available for {editInspectionData?.city || 'this city'}. 
+                    Add mechanics for this city in HR Module.
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
           
           <DialogFooter className="border-t pt-4 mt-4">
