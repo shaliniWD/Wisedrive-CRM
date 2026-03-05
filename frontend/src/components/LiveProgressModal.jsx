@@ -331,8 +331,8 @@ export default function LiveProgressModal({
         obd_connected: liveProgressData?.obd_scan?.completed || false,
         dtc_codes: inspection.dtc_codes || [],
         
-        // Category Ratings (0-10 scale)
-        category_ratings: inspection.category_ratings || {}
+        // Category Ratings (0-10 scale) - Initialize empty, will be populated from AI
+        category_ratings: {}
       });
       
       // Store original data for change tracking
