@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -19,6 +19,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../src/context/AuthContext';
 import axios from 'axios';
+import { diagLogger } from '../src/lib/diagLogger';
+import { getCurrentApiUrl, getEnvironment } from '../src/lib/api';
 
 // API Base URL
 const API_BASE_URL = 'https://crmdev.wisedrive.com/api';
