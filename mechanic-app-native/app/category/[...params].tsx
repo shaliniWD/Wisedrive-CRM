@@ -328,6 +328,22 @@ export default function CategoryQuestionsScreen() {
   const [currentVideoUrl, setCurrentVideoUrl] = useState<string | null>(null);
   const videoRef = useRef<Video>(null);
 
+  // Log screen mount
+  useEffect(() => {
+    diagLogger.info('QA_SCREEN_MOUNTED', {
+      inspectionId,
+      categoryId,
+      apiUrl: getCurrentApiUrl(),
+      environment: getEnvironment(),
+      timestamp: new Date().toISOString()
+    });
+    console.log('[Q&A] Screen mounted');
+    console.log('[Q&A] Inspection ID:', inspectionId);
+    console.log('[Q&A] Category ID:', categoryId);
+    console.log('[Q&A] API URL:', getCurrentApiUrl());
+    console.log('[Q&A] Environment:', getEnvironment());
+  }, []);
+
   // Function to play video in modal
   const playVideo = (videoUrl: string) => {
     setCurrentVideoUrl(videoUrl);
@@ -343,6 +359,7 @@ export default function CategoryQuestionsScreen() {
   useEffect(() => {
     isMounted.current = true;
     if (inspectionId && categoryId) {
+      diagLogger.info('QA_LOADING_DATA', { inspectionId, categoryId });
       loadData();
     }
     return () => {
