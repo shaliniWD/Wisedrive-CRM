@@ -5617,31 +5617,103 @@ async def generate_ai_inspection_report(
     # Get inspection answers
     answers_data = inspection.get("inspection_answers", {})
     
-    # Get inspection categories with questions
-    package_id = inspection.get("package_id")
+    # Get inspection categories with questions - USE SAME SOURCE AS Q&A TAB
     categories_info = {}
     
-    if package_id:
-        # Get categories for this package
-        package = await db.packages.find_one({"id": package_id}, {"_id": 0})
-        category_ids = package.get("category_ids", []) if package else []
-        
-        if category_ids:
-            categories = await db.inspection_categories.find(
-                {"id": {"$in": category_ids}},
-                {"_id": 0}
-            ).to_list(50)
-            
-            for cat in categories:
-                cat_id = cat.get("id")
-                categories_info[cat_id] = {
-                    "name": cat.get("name", cat_id),
-                    "questions": cat.get("questions", [])
-                }
+    # First, try to get from inspection template (same as live-progress endpoint)
+    inspection_template_id = inspection.get("inspection_template_id")
     
-    # If no package categories, try to get from inspection_categories
+    # Fallback 1: Try to get from partner
+    if not inspection_template_id:
+        partner_id = inspection.get("partner_id")
+        if partner_id:
+            partner = await db.partners.find_one({"id": partner_id}, {"_id": 0, "inspection_template_id": 1})
+            if partner:
+                inspection_template_id = partner.get("inspection_template_id")
+    
+    # Fallback 2: Try to get from report_template
+    if not inspection_template_id:
+        report_template_id = inspection.get("report_template_id")
+        if report_template_id:
+            report_template = await db.report_templates.find_one(
+                {"id": report_template_id}, 
+                {"_id": 0, "inspection_template_id": 1}
+            )
+            if report_template:
+                inspection_template_id = report_template.get("inspection_template_id")
+    
+    # Fallback 3: Use default template
+    if not inspection_template_id:
+        default_template = await db.inspection_templates.find_one(
+            {"is_default": True, "is_active": True},
+            {"_id": 0}
+        )
+        if default_template:
+            inspection_template_id = default_template.get("id")
+    
+    # Get template questions and categories
+    if inspection_template_id:
+        insp_template = await db.inspection_templates.find_one({"id": inspection_template_id}, {"_id": 0})
+        if insp_template:
+            question_ids = insp_template.get("question_ids", [])
+            if question_ids:
+                questions_cursor = await db.inspection_questions.find(
+                    {"id": {"$in": question_ids}},
+                    {"_id": 0}
+                ).to_list(500)
+                
+                # Sort questions by the order in question_ids
+                question_map = {q["id"]: q for q in questions_cursor}
+                questions = [question_map[qid] for qid in question_ids if qid in question_map]
+                
+                # Get categories for these questions from inspection_qa_categories
+                category_ids = list(set(q.get("category_id") for q in questions if q.get("category_id")))
+                categories_cursor = await db.inspection_qa_categories.find(
+                    {"id": {"$in": category_ids}},
+                    {"_id": 0}
+                ).to_list(100)
+                qa_categories = {c["id"]: c.get("name", c["id"]) for c in categories_cursor}
+                
+                # Build categories_info in the format expected by AI report service
+                for q in questions:
+                    cat_id = q.get("category_id")
+                    cat_name = qa_categories.get(cat_id, cat_id)
+                    
+                    if cat_id not in categories_info:
+                        categories_info[cat_id] = {
+                            "name": cat_name,
+                            "questions": []
+                        }
+                    
+                    categories_info[cat_id]["questions"].append({
+                        "id": q.get("id"),
+                        "text": q.get("question") or q.get("text", ""),
+                        "type": q.get("answer_type") or q.get("input_type", "text"),
+                        "options": q.get("options", q.get("answer_options", []))
+                    })
+    
+    # Fallback to old approach: package categories
     if not categories_info:
-        # Get all categories for this inspection's country
+        package_id = inspection.get("package_id")
+        if package_id:
+            package = await db.packages.find_one({"id": package_id}, {"_id": 0})
+            category_ids = package.get("category_ids", []) if package else []
+            
+            if category_ids:
+                categories = await db.inspection_categories.find(
+                    {"id": {"$in": category_ids}},
+                    {"_id": 0}
+                ).to_list(50)
+                
+                for cat in categories:
+                    cat_id = cat.get("id")
+                    categories_info[cat_id] = {
+                        "name": cat.get("name", cat_id),
+                        "questions": cat.get("questions", [])
+                    }
+    
+    # Final fallback: all categories for this inspection's country  
+    if not categories_info:
         country_id = inspection.get("country_id")
         all_categories = await db.inspection_categories.find(
             {"country_id": country_id} if country_id else {},
