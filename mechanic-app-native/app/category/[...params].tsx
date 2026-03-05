@@ -21,7 +21,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Video, ResizeMode } from 'expo-av';
-import { inspectionsApi, getAuthToken, resolveMediaUrl } from '../../src/lib/api';
+import { inspectionsApi, getAuthToken, resolveMediaUrl, getCurrentApiUrl, getEnvironment } from '../../src/lib/api';
 import { diagLogger } from '../../src/lib/diagLogger';
 import uploadMediaWithRetry from '../../src/lib/firebaseUpload';
 
