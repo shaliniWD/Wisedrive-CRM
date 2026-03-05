@@ -769,12 +769,22 @@ export default function CategoryQuestionsScreen() {
         Alert.alert(
           'Partial Save',
           `${successes.length} of ${results.length} answers saved.\n\nFailed:\n${failures.map(f => `• ${f.error || 'Unknown error'}`).join('\n')}`,
-          [{ text: 'OK', onPress: () => router.back() }]
+          [{ text: 'OK' }]
         );
       } else {
         await clearDraftsFromStorage();
+        // Mark all saved answers as not drafts anymore
+        setDraftAnswers(prev => {
+          const updated = { ...prev };
+          for (const [qid] of answersToSave) {
+            if (updated[qid]) {
+              updated[qid] = { ...updated[qid], isDraft: false };
+            }
+          }
+          return updated;
+        });
         setHasUnsavedChanges(false);
-        router.back();
+        // Stay on the same screen - mechanic can continue answering or use back button
       }
       
     } catch (err: any) {
