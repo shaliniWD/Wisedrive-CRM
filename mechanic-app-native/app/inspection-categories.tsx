@@ -18,6 +18,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useInspection } from '../src/context/InspectionContext';
 import { inspectionsApi, getCurrentApiUrl, getEnvironment } from '../src/lib/api';
 import { diagLogger } from '../src/lib/diagLogger';
+import { CopyLogsButton } from '../src/components/CopyLogsButton';
 
 const { width } = Dimensions.get('window');
 
