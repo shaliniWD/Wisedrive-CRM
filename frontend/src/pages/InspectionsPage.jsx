@@ -954,7 +954,7 @@ export default function InspectionsPage() {
     }
   };
 
-  // Handle Combined Edit Inspection (Date/Time, Location, Vehicle)
+  // Handle Combined Edit Inspection (Date/Time, Location, Vehicle, Mechanic)
   useEffect(() => {
     if (editInspectionData) {
       setEditInspectionFormData({
@@ -967,6 +967,8 @@ export default function InspectionsPage() {
         car_number: editInspectionData.car_number || '',
       });
       setEditVehicleData(null);
+      // Initialize mechanic selection with current assignment
+      setSelectedMechanicId(editInspectionData.mechanic_id || '');
     }
   }, [editInspectionData]);
 
