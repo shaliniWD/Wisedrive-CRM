@@ -218,3 +218,10 @@ GET  /api/credit-report/latest/{pan} - Get all cached reports for PAN
 - **Razorpay:** Payments
 - **Twilio:** WhatsApp messaging
 - **Vaahan API (Invincible Ocean):** Vehicle RTO data (chassis, engine, insurance, finance status)
+
+## Production Database
+```
+MONGO_URL: mongodb+srv://autocrm-stage:d689l8clqs2c73cm8mg0@customer-apps.c5ddpr.mongodb.net/?appName=vehicle-inspect-39&maxPoolSize=5&retryWrites=true&timeoutMS=10000&w=majority
+DB_NAME: autocrm-stage-test_database
+```
+**Note:** Preview environment uses local MongoDB. Use the above credentials to access production data for debugging.
