@@ -377,12 +377,16 @@ export default function InspectionCategoriesScreen() {
       return;
     }
     
-    // Check if OBD is completed - NOW REQUIRED
+    // OBD scan is optional - just submit the inspection
+    // If OBD is not done, show a quick confirmation
     if (!obdCompleted) {
       Alert.alert(
-        'OBD Scan Required',
-        'Please complete the OBD-II diagnostic scan before completing the inspection.',
-        [{ text: 'OK', onPress: handleOBDScan }]
+        'OBD Scan Not Done',
+        'OBD-II scan was not performed. Do you want to complete the inspection without it?',
+        [
+          { text: 'Go Back', style: 'cancel' },
+          { text: 'Complete Anyway', onPress: submitInspection }
+        ]
       );
       return;
     }
