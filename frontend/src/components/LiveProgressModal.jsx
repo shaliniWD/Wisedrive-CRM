@@ -1360,7 +1360,7 @@ export default function LiveProgressModal({
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="font-semibold text-gray-900 flex items-center gap-2">
                     <Activity className="h-5 w-5 text-blue-600" />
-                    Category-wise Progress
+                    Category-wise Progress & AI Ratings
                   </h3>
                   {selectedCategoryId && (
                     <Button
@@ -1374,13 +1374,38 @@ export default function LiveProgressModal({
                     </Button>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 mb-3">Click a category to filter questions below</p>
+                <p className="text-xs text-gray-500 mb-3">Click a category to filter questions below. AI ratings update after inspection completion.</p>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                   {liveProgressData?.categories?.map((category, idx) => {
                     const answered = category.answered_questions || 0;
                     const total = category.total_questions || 0;
                     const percentage = total > 0 ? Math.round((answered / total) * 100) : 0;
                     const isSelected = selectedCategoryId === category.category_id;
+                    
+                    // Get AI rating for this category (from inspection.category_ratings)
+                    const categoryRating = inspection?.category_ratings?.[category.category_name] || 
+                                          inspection?.ai_insights?.category_ratings?.[category.category_name];
+                    const aiRating = categoryRating?.rating || 0;
+                    const aiStatus = categoryRating?.status || 'PENDING';
+                    const aiSummary = categoryRating?.summary || '';
+                    
+                    const getRatingColor = (rating) => {
+                      if (rating >= 4) return 'bg-green-100 text-green-700 border-green-300';
+                      if (rating >= 3) return 'bg-yellow-100 text-yellow-700 border-yellow-300';
+                      if (rating >= 2) return 'bg-orange-100 text-orange-700 border-orange-300';
+                      if (rating >= 1) return 'bg-red-100 text-red-700 border-red-300';
+                      return 'bg-gray-100 text-gray-500 border-gray-300';
+                    };
+                    
+                    const getStatusBadge = (status) => {
+                      switch(status) {
+                        case 'PASS': return 'bg-green-500 text-white';
+                        case 'ATTENTION': return 'bg-yellow-500 text-white';
+                        case 'FAIL': return 'bg-red-500 text-white';
+                        default: return 'bg-gray-400 text-white';
+                      }
+                    };
+                    
                     return (
                       <button
                         key={idx}
@@ -1389,17 +1414,43 @@ export default function LiveProgressModal({
                           isSelected ? 'ring-2 ring-blue-500 border-blue-500' : 'hover:border-blue-300'
                         }`}
                       >
-                        <p className="text-xs font-medium text-gray-700 truncate">{category.category_name}</p>
-                        <div className="flex items-center justify-between mt-1">
-                          <span className="text-sm font-bold text-gray-900">{answered}/{total}</span>
-                          <span className={`text-xs px-2 py-0.5 rounded-full ${
-                            percentage === 100 ? 'bg-green-100 text-green-700' :
-                            percentage > 50 ? 'bg-yellow-100 text-yellow-700' :
-                            'bg-gray-100 text-gray-600'
-                          }`}>
-                            {percentage}%
-                          </span>
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-medium text-gray-700 truncate flex-1">{category.category_name}</p>
+                          {aiRating > 0 && (
+                            <span className={`text-xs px-1.5 py-0.5 rounded font-bold ${getStatusBadge(aiStatus)}`}>
+                              {aiStatus === 'PASS' ? '✓' : aiStatus === 'FAIL' ? '✗' : '!'}
+                            </span>
+                          )}
                         </div>
+                        
+                        {/* AI Rating Display */}
+                        {aiRating > 0 ? (
+                          <div className={`mt-2 p-1.5 rounded border ${getRatingColor(aiRating)}`}>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-semibold">AI Rating</span>
+                              <div className="flex items-center gap-1">
+                                {[1,2,3,4,5].map(star => (
+                                  <span key={star} className={`text-xs ${star <= aiRating ? 'text-yellow-500' : 'text-gray-300'}`}>★</span>
+                                ))}
+                              </div>
+                            </div>
+                            {aiSummary && (
+                              <p className="text-xs mt-1 line-clamp-2 opacity-80">{aiSummary}</p>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between mt-2">
+                            <span className="text-sm font-bold text-gray-900">{answered}/{total}</span>
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${
+                              percentage === 100 ? 'bg-green-100 text-green-700' :
+                              percentage > 50 ? 'bg-yellow-100 text-yellow-700' :
+                              'bg-gray-100 text-gray-600'
+                            }`}>
+                              {percentage}%
+                            </span>
+                          </div>
+                        )}
+                        
                         <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
                           <div
                             className={`h-1.5 rounded-full ${
