@@ -457,6 +457,18 @@ export default function HomeScreen() {
   };
 
   const fetchInspections = useCallback(async (filterType?: string, fromDate?: Date, toDate?: Date) => {
+    const startTime = Date.now();
+    diagLogger.info('HOME_FETCH_INSPECTIONS_START', {
+      mechanicId: mechanic?.id,
+      mechanicName: mechanic?.name,
+      filterType: filterType ?? dateFilter,
+      apiUrl: getCurrentApiUrl(),
+      timestamp: new Date().toISOString()
+    });
+    console.log('[HOME] Fetching inspections...');
+    console.log('[HOME] Mechanic ID:', mechanic?.id);
+    console.log('[HOME] Filter:', filterType ?? dateFilter);
+    
     try {
       setIsLoading(true);
       const params: any = {};
@@ -473,11 +485,43 @@ export default function HomeScreen() {
         params.date_filter = currentFilter;
       }
       
-      console.log('Fetching inspections with params:', params);
+      console.log('[HOME] Fetch params:', params);
+      diagLogger.info('HOME_FETCH_INSPECTIONS_PARAMS', { params });
+      
       const data = await inspectionsApi.getInspections(params);
+      const duration = Date.now() - startTime;
+      
+      diagLogger.info('HOME_FETCH_INSPECTIONS_SUCCESS', {
+        mechanicId: mechanic?.id,
+        inspectionsCount: data?.length || 0,
+        inspectionIds: data?.slice(0, 5).map((i: any) => i.id),
+        inspectionStatuses: data?.map((i: any) => ({ id: i.id?.substring(0, 8), status: i.status, vehicleNumber: i.vehicleNumber })),
+        durationMs: duration,
+        timestamp: new Date().toISOString()
+      });
+      console.log('[HOME] Fetch success:', data?.length, 'inspections in', duration, 'ms');
+      console.log('[HOME] Inspections:', data?.map((i: any) => ({ 
+        id: i.id?.substring(0, 8), 
+        status: i.status, 
+        vehicle: i.vehicleNumber,
+        mechanic: i.assignedMechanicId?.substring(0, 8)
+      })));
+      
       setInspections(data || []);
-    } catch (error) {
-      console.error('Failed to fetch inspections:', error);
+    } catch (error: any) {
+      const duration = Date.now() - startTime;
+      const errorInfo = {
+        mechanicId: mechanic?.id,
+        errorMessage: error.message,
+        errorCode: error.code,
+        responseStatus: error.response?.status,
+        responseData: error.response?.data,
+        durationMs: duration,
+        timestamp: new Date().toISOString()
+      };
+      diagLogger.error('HOME_FETCH_INSPECTIONS_FAILED', errorInfo);
+      console.log('[HOME] Fetch failed:', errorInfo);
+      
       Alert.alert('Error', 'Failed to load inspections. Please try again.');
     } finally {
       setIsLoading(false);
@@ -488,7 +532,12 @@ export default function HomeScreen() {
   // Refresh when screen comes into focus (after returning from inspection)
   useFocusEffect(
     useCallback(() => {
-      console.log('[Home] Screen focused, refreshing inspections...');
+      diagLogger.info('HOME_SCREEN_FOCUSED', {
+        mechanicId: mechanic?.id,
+        dateFilter,
+        timestamp: new Date().toISOString()
+      });
+      console.log('[HOME] Screen focused, refreshing inspections...');
       fetchInspections(dateFilter, customDateFrom, customDateTo);
     }, [dateFilter, customDateFrom, customDateTo])
   );
