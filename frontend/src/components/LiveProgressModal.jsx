@@ -1704,7 +1704,7 @@ export default function LiveProgressModal({
                       }
                       
                       // Try case-insensitive and normalized key match
-                      const normalizeKey = (str) => str?.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_') || '';
+                      const normalizeKey = (str) => (str?.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_') || '').replace(/^_+|_+$/g, '');
                       const normalizedCatKey = normalizeKey(catName);
                       
                       for (const [key, value] of Object.entries(aiCategoryRatings)) {
