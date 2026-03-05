@@ -1767,11 +1767,11 @@ export default function LiveProgressModal({
                       return null;
                     };
                     
-                    // Priority: editData.category_ratings > AI category rating > 0
+                    // Priority: editData.category_ratings > AI category rating (only if completed) > 0
                     const savedRating = editData.category_ratings?.[categoryKey];
-                    const aiRating = getAICategoryRating(categoryName, categoryKey);
+                    const aiRating = isCompleted ? getAICategoryRating(categoryName, categoryKey) : null;
                     const currentRating = savedRating ?? aiRating ?? 0;
-                    const isAIRating = savedRating === undefined && aiRating !== null;
+                    const isAIRating = savedRating === undefined && aiRating !== null && isCompleted;
                     
                     // Helper to get condition text and color
                     const getCondition = (rating) => {
