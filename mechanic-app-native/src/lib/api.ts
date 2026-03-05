@@ -234,6 +234,11 @@ export const inspectionsApi = {
         savedAnswersCount: response.data?.answers ? Object.keys(response.data.answers).length : 'unknown',
       });
       
+      // CRITICAL: Clear the questionnaire cache after successful save
+      // This ensures fresh data is fetched when user navigates back to categories
+      inspectionsApi.clearQuestionnaireCache(id);
+      diagLogger.info(`CACHE_CLEARED: ${id}`, { reason: 'answer_saved' });
+      
       return response.data;
     } catch (error: any) {
       const duration = Date.now() - startTime;
