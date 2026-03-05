@@ -21,6 +21,7 @@ import { useAuth } from '../src/context/AuthContext';
 import axios from 'axios';
 import { diagLogger } from '../src/lib/diagLogger';
 import { getCurrentApiUrl, getEnvironment } from '../src/lib/api';
+import { CopyLogsButton } from '../src/components/CopyLogsButton';
 
 // API Base URL
 const API_BASE_URL = 'https://crmdev.wisedrive.com/api';
