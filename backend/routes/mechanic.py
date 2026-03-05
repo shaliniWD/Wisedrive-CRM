@@ -279,27 +279,36 @@ async def get_mechanic_inspections(
         else:
             app_status = "NEW"
         
+        # Helper function to safely convert any value to string
+        def safe_str(val, default=""):
+            if val is None:
+                return default
+            try:
+                return str(val) if val else default
+            except:
+                return default
+        
         result.append({
-            "id": insp.get("id"),
+            "id": safe_str(insp.get("id")),
             "scheduledAt": insp.get("scheduled_date") or insp.get("created_at"),
             "status": app_status,
             "crmStatus": crm_status,
-            "vehicleNumber": insp.get("car_number") or "",
-            "makeModelVariant": f"{insp.get('car_make') or insp.get('make', '')} {insp.get('car_model') or insp.get('model', '')} {insp.get('variant', '')}".strip() or "Not Available",
-            "carMake": insp.get("car_make") or insp.get("make", ""),
-            "carModel": insp.get("car_model") or insp.get("model", ""),
-            "fuelType": insp.get("fuel_type", ""),
-            "manufacturingYear": insp.get("car_year") or insp.get("manufacturing_year", ""),
-            "odometerReading": insp.get("odometer_reading", ""),
-            "city": insp.get("city", ""),
-            "customerName": insp.get("customer_name", ""),
-            "customerPhone": insp.get("customer_mobile", ""),
-            "customerAddress": insp.get("address", ""),
+            "vehicleNumber": safe_str(insp.get("car_number")),
+            "makeModelVariant": f"{safe_str(insp.get('car_make', insp.get('make', '')))} {safe_str(insp.get('car_model', insp.get('model', '')))} {safe_str(insp.get('variant', ''))}".strip() or "Not Available",
+            "carMake": safe_str(insp.get("car_make", insp.get("make", ""))),
+            "carModel": safe_str(insp.get("car_model", insp.get("model", ""))),
+            "fuelType": safe_str(insp.get("fuel_type")),
+            "manufacturingYear": safe_str(insp.get("car_year", insp.get("manufacturing_year", ""))),
+            "odometerReading": safe_str(insp.get("odometer_reading")),
+            "city": safe_str(insp.get("city")),
+            "customerName": safe_str(insp.get("customer_name")),
+            "customerPhone": safe_str(insp.get("customer_mobile")),
+            "customerAddress": safe_str(insp.get("address")),
             "latitude": insp.get("latitude") or insp.get("location_lat"),
             "longitude": insp.get("longitude") or insp.get("location_lng"),
-            "assignedMechanicId": insp.get("mechanic_id"),
-            "partner_id": insp.get("partner_id"),
-            "partner_name": insp.get("partner_name"),
+            "assignedMechanicId": safe_str(insp.get("mechanic_id")) or None,
+            "partner_id": safe_str(insp.get("partner_id")) or None,
+            "partner_name": safe_str(insp.get("partner_name")),
             "requiredModules": {
                 "photos": True,
                 "sound": False,
@@ -311,8 +320,8 @@ async def get_mechanic_inspections(
                 "obdDone": False,
                 "notesDone": False
             }),
-            "orderId": insp.get("order_id"),
-            "packageName": insp.get("package_type") or insp.get("inspection_package_name", "Standard Inspection")
+            "orderId": safe_str(insp.get("order_id")) or None,
+            "packageName": safe_str(insp.get("package_type") or insp.get("inspection_package_name", "Standard Inspection"))
         })
     
     return result
