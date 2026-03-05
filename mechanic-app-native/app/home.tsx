@@ -676,6 +676,7 @@ export default function HomeScreen() {
           <Text style={styles.dateText}>{todayStr}</Text>
         </TouchableOpacity>
         <View style={styles.headerRight}>
+          <CopyLogsButton iconColor={Colors.textSecondary} iconSize={20} style={styles.iconBtn} />
           <TouchableOpacity 
             style={[styles.iconBtn, dateFilter !== 'all' && styles.iconBtnActive]} 
             onPress={() => setDateFilterModalVisible(true)}
