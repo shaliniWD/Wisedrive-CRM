@@ -421,8 +421,9 @@ export default function CategoryQuestionsScreen() {
       setIsLoading(true);
       setLoadError(null);
       
-      // Use cached questionnaire
-      const data = await inspectionsApi.getQuestionnaire(inspectionId!);
+      // CRITICAL: Always force refresh questionnaire to get latest answers
+      // This ensures answers saved in previous sessions are visible
+      const data = await inspectionsApi.getQuestionnaire(inspectionId!, true);
       
       if (!isMounted.current) return;
       
