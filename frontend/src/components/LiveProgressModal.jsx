@@ -1505,44 +1505,90 @@ export default function LiveProgressModal({
               )}
             </TabsContent>
             
-            {/* Vehicle Tab */}
+            {/* Vehicle Tab - Comprehensive Vaahan API Data */}
             <TabsContent value="vehicle" className="space-y-4 mt-0">
-              <Section title="Vehicle Details" icon={Car} defaultOpen={true}>
+              {/* Vaahan API Data Banner */}
+              {inspection?.vaahan_data && (
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-3 border border-blue-200 flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                    <Shield className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-blue-800">Vaahan API Verified</p>
+                    <p className="text-xs text-blue-600">Data fetched from RTO database</p>
+                  </div>
+                  <span className={`ml-auto px-3 py-1 rounded-full text-xs font-semibold ${
+                    inspection.vaahan_data.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                  }`}>
+                    {inspection.vaahan_data.status || 'ACTIVE'}
+                  </span>
+                </div>
+              )}
+              
+              {/* Vehicle Identification */}
+              <Section title="Vehicle Identification" icon={Car} defaultOpen={true}>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <EditableField label="Registration No." value={editData.car_number || inspection?.car_number} onChange={(val) => updateField('car_number', val)} disabled={!canEdit} />
+                  <EditableField label="Engine Number" value={editData.engine_number || inspection?.vaahan_data?.engine_number} onChange={(val) => updateField('engine_number', val)} disabled={!canEdit} placeholder="From Vaahan API" />
+                  <EditableField label="Chassis Number" value={editData.chassis_number || inspection?.vaahan_data?.chassis_number} onChange={(val) => updateField('chassis_number', val)} disabled={!canEdit} placeholder="From Vaahan API" />
+                </div>
+              </Section>
+              
+              {/* Vehicle Details */}
+              <Section title="Vehicle Details" icon={Car} defaultOpen={true}>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <EditableField label="Make" value={editData.vehicle_make} onChange={(val) => updateField('vehicle_make', val)} disabled={!canEdit} />
                   <EditableField label="Model" value={editData.vehicle_model} onChange={(val) => updateField('vehicle_model', val)} disabled={!canEdit} />
                   <EditableField label="Year" value={editData.vehicle_year} onChange={(val) => updateField('vehicle_year', val)} type="number" disabled={!canEdit} />
-                  <EditableField label="Fuel Type" value={editData.fuel_type} onChange={(val) => updateField('fuel_type', val)} type="select" options={['Petrol', 'Diesel', 'CNG', 'Electric', 'Hybrid']} disabled={!canEdit} />
-                  <EditableField label="Transmission" value={editData.transmission} onChange={(val) => updateField('transmission', val)} type="select" options={['Manual', 'Automatic', 'CVT', 'DCT']} disabled={!canEdit} />
                   <EditableField label="Colour" value={editData.vehicle_colour} onChange={(val) => updateField('vehicle_colour', val)} disabled={!canEdit} />
-                  <EditableField label="Engine CC" value={editData.engine_cc} onChange={(val) => updateField('engine_cc', val)} type="number" disabled={!canEdit} />
+                  <EditableField label="Fuel Type" value={editData.fuel_type} onChange={(val) => updateField('fuel_type', val)} type="select" options={['Petrol', 'Diesel', 'CNG', 'Electric', 'Hybrid', 'LPG']} disabled={!canEdit} />
+                  <EditableField label="Transmission" value={editData.transmission} onChange={(val) => updateField('transmission', val)} type="select" options={['Manual', 'Automatic', 'CVT', 'DCT', 'AMT']} disabled={!canEdit} />
+                  <EditableField label="Body Type" value={editData.body_type || inspection?.vaahan_data?.body_type} onChange={(val) => updateField('body_type', val)} disabled={!canEdit} />
+                  <EditableField label="Vehicle Class" value={editData.vehicle_class || inspection?.vaahan_data?.vehicle_class} onChange={(val) => updateField('vehicle_class', val)} disabled={!canEdit} />
+                </div>
+              </Section>
+              
+              {/* Technical Specifications (from Vaahan API) */}
+              <Section title="Technical Specifications" icon={Settings} defaultOpen={false}>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <EditableField label="Engine CC" value={editData.engine_cc || inspection?.vaahan_data?.cubic_capacity} onChange={(val) => updateField('engine_cc', val)} type="number" disabled={!canEdit} />
+                  <EditableField label="Cylinders" value={editData.cylinders || inspection?.vaahan_data?.cylinders} onChange={(val) => updateField('cylinders', val)} type="number" disabled={!canEdit} />
+                  <EditableField label="Seating Capacity" value={editData.seating_capacity || inspection?.vaahan_data?.seating_capacity} onChange={(val) => updateField('seating_capacity', val)} type="number" disabled={!canEdit} />
+                  <EditableField label="Gross Weight (kg)" value={editData.gross_weight || inspection?.vaahan_data?.gross_weight} onChange={(val) => updateField('gross_weight', val)} type="number" disabled={!canEdit} />
+                  <EditableField label="Unladen Weight (kg)" value={editData.unladen_weight || inspection?.vaahan_data?.unladen_weight} onChange={(val) => updateField('unladen_weight', val)} type="number" disabled={!canEdit} />
+                  <EditableField label="Wheelbase (mm)" value={editData.wheelbase || inspection?.vaahan_data?.wheelbase} onChange={(val) => updateField('wheelbase', val)} type="number" disabled={!canEdit} />
+                  <EditableField label="Emission Norms" value={editData.emission_norms || inspection?.vaahan_data?.emission_norms} onChange={(val) => updateField('emission_norms', val)} disabled={!canEdit} />
                   <EditableField label="KMs Driven" value={editData.kms_driven} onChange={(val) => updateField('kms_driven', val)} type="number" disabled={!canEdit} />
-                  <EditableField label="Owners" value={editData.owners} onChange={(val) => updateField('owners', val)} type="number" disabled={!canEdit} />
                 </div>
               </Section>
               
-              <Section title="Vehicle History" icon={History}>
-                <div className="space-y-3">
-                  <EditableField label="Accident History" value={editData.accident_history} onChange={(val) => updateField('accident_history', val)} type="switch" disabled={!canEdit} />
-                  <EditableField label="Flood Damage" value={editData.flood_damage} onChange={(val) => updateField('flood_damage', val)} type="switch" disabled={!canEdit} />
-                  <EditableField label="Dents & Scratches" value={editData.dents_scratches} onChange={(val) => updateField('dents_scratches', val)} type="switch" disabled={!canEdit} />
+              {/* Registration & Manufacturing */}
+              <Section title="Registration Details" icon={FileText} defaultOpen={false}>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <EditableField label="Mfg. Date" value={editData.manufacturing_date || inspection?.vaahan_data?.manufacturing_date} onChange={(val) => updateField('manufacturing_date', val)} disabled={!canEdit} />
+                  <EditableField label="Reg. Date" value={editData.registration_date || inspection?.vaahan_data?.registration_date} onChange={(val) => updateField('registration_date', val)} disabled={!canEdit} />
+                  <EditableField label="RC Expiry" value={editData.rc_expiry_date || inspection?.vaahan_data?.rc_expiry_date} onChange={(val) => updateField('rc_expiry_date', val)} disabled={!canEdit} />
+                  <EditableField label="Reg. Authority (RTO)" value={editData.registration_authority || inspection?.vaahan_data?.registration_authority} onChange={(val) => updateField('registration_authority', val)} disabled={!canEdit} />
+                  <EditableField label="Owner Count" value={editData.owners || inspection?.vaahan_data?.owner_count} onChange={(val) => updateField('owners', val)} type="number" disabled={!canEdit} />
+                  <EditableField label="Current Owner" value={editData.owner_name || inspection?.vaahan_data?.owner_name} onChange={(val) => updateField('owner_name', val)} disabled={!canEdit} />
                 </div>
               </Section>
               
-              <Section title="Insurance Details" icon={Shield}>
+              {/* Insurance Details */}
+              <Section title="Insurance Details" icon={Shield} defaultOpen={false}>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   <EditableField label="Status" value={editData.insurance_status} onChange={(val) => updateField('insurance_status', val)} type="select" options={['Active', 'Expired', 'Unknown']} disabled={!canEdit} />
-                  <EditableField label="Insurer" value={editData.insurer_name} onChange={(val) => updateField('insurer_name', val)} disabled={!canEdit} />
-                  <EditableField label="Policy Number" value={editData.policy_number} onChange={(val) => updateField('policy_number', val)} disabled={!canEdit} />
-                  <EditableField label="Expiry Date" value={editData.insurance_expiry} onChange={(val) => updateField('insurance_expiry', val)} type="date" disabled={!canEdit} />
+                  <EditableField label="Insurance Company" value={editData.insurer_name || inspection?.vaahan_data?.insurance_company} onChange={(val) => updateField('insurer_name', val)} disabled={!canEdit} />
+                  <EditableField label="Policy Number" value={editData.policy_number || inspection?.vaahan_data?.insurance_policy_number} onChange={(val) => updateField('policy_number', val)} disabled={!canEdit} />
+                  <EditableField label="Valid Upto" value={editData.insurance_expiry || inspection?.vaahan_data?.insurance_valid_upto} onChange={(val) => updateField('insurance_expiry', val)} disabled={!canEdit} />
                   <EditableField label="Policy Type" value={editData.policy_type} onChange={(val) => updateField('policy_type', val)} type="select" options={['Comprehensive', 'Third Party', 'Zero Dep']} disabled={!canEdit} />
                   <EditableField label="IDV Value" value={editData.idv_value} onChange={(val) => updateField('idv_value', val)} type="number" disabled={!canEdit} />
                 </div>
               </Section>
               
-              {/* RTO Verification (from Vaahan API) - moved from Verification tab */}
-              <Section title="RTO Verification (Vaahan API)" icon={Shield}>
-                <div className="grid grid-cols-2 gap-4">
+              {/* RTO Verification & Finance */}
+              <Section title="RTO Verification & Finance" icon={Shield} defaultOpen={true}>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   <EditableField
                     label="Verification Status"
                     value={editData.rto_verification_status}
@@ -1552,21 +1598,56 @@ export default function LiveProgressModal({
                     disabled={!canEdit}
                   />
                   <EditableField
-                    label="Hypothecation"
-                    value={editData.hypothecation}
-                    onChange={(val) => updateField('hypothecation', val)}
-                    placeholder="Bank/Financier name if any"
+                    label="Financed"
+                    value={editData.is_financed ?? inspection?.vaahan_data?.financed}
+                    onChange={(val) => updateField('is_financed', val)}
+                    type="switch"
                     disabled={!canEdit}
                   />
-                  <div className="col-span-2">
-                    <EditableField
-                      label="Blacklisted"
-                      value={editData.blacklist_status}
-                      onChange={(val) => updateField('blacklist_status', val)}
-                      type="switch"
-                      disabled={!canEdit}
-                    />
-                  </div>
+                  <EditableField
+                    label="Financier / Hypothecation"
+                    value={editData.hypothecation || inspection?.vaahan_data?.financer}
+                    onChange={(val) => updateField('hypothecation', val)}
+                    placeholder="Bank/Financier name"
+                    disabled={!canEdit}
+                  />
+                  <EditableField
+                    label="Blacklisted"
+                    value={editData.blacklist_status ?? inspection?.vaahan_data?.blacklist_status}
+                    onChange={(val) => updateField('blacklist_status', val)}
+                    type="switch"
+                    disabled={!canEdit}
+                  />
+                  <EditableField
+                    label="Tax Valid Upto"
+                    value={editData.tax_valid_upto || inspection?.vaahan_data?.tax_valid_upto}
+                    onChange={(val) => updateField('tax_valid_upto', val)}
+                    disabled={!canEdit}
+                  />
+                  <EditableField
+                    label="Fitness Valid Upto"
+                    value={editData.fitness_upto || inspection?.vaahan_data?.fitness_upto}
+                    onChange={(val) => updateField('fitness_upto', val)}
+                    disabled={!canEdit}
+                  />
+                </div>
+              </Section>
+              
+              {/* PUCC Details */}
+              <Section title="PUCC (Pollution) Details" icon={Zap} defaultOpen={false}>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <EditableField label="PUCC Number" value={editData.pucc_number || inspection?.vaahan_data?.pucc_number} onChange={(val) => updateField('pucc_number', val)} disabled={!canEdit} />
+                  <EditableField label="PUCC Valid Upto" value={editData.pucc_valid_upto || inspection?.vaahan_data?.pucc_valid_upto} onChange={(val) => updateField('pucc_valid_upto', val)} disabled={!canEdit} />
+                </div>
+              </Section>
+              
+              {/* Vehicle History */}
+              <Section title="Vehicle History" icon={History} defaultOpen={false}>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <EditableField label="Accident History" value={editData.accident_history} onChange={(val) => updateField('accident_history', val)} type="switch" disabled={!canEdit} />
+                  <EditableField label="Flood Damage" value={editData.flood_damage} onChange={(val) => updateField('flood_damage', val)} type="switch" disabled={!canEdit} />
+                  <EditableField label="Dents & Scratches" value={editData.dents_scratches} onChange={(val) => updateField('dents_scratches', val)} type="switch" disabled={!canEdit} />
+                  <EditableField label="Is Commercial" value={editData.is_commercial ?? inspection?.vaahan_data?.is_commercial} onChange={(val) => updateField('is_commercial', val)} type="switch" disabled={!canEdit} />
                 </div>
               </Section>
             </TabsContent>
