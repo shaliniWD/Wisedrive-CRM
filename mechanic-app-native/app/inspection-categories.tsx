@@ -436,9 +436,12 @@ export default function InspectionCategoriesScreen() {
           <Text style={styles.headerTitle}>Inspection</Text>
           <Text style={styles.headerSubtitle}>{currentInspection?.vehicleNumber || 'N/A'}</Text>
         </View>
-        <TouchableOpacity onPress={fetchQuestionnaire} style={styles.refreshBtn}>
-          <Ionicons name="refresh" size={20} color={Colors.textSecondary} />
-        </TouchableOpacity>
+        <View style={styles.headerRightButtons}>
+          <CopyLogsButton iconColor={Colors.textSecondary} iconSize={20} style={styles.headerIconBtn} />
+          <TouchableOpacity onPress={fetchQuestionnaire} style={styles.refreshBtn}>
+            <Ionicons name="refresh" size={20} color={Colors.textSecondary} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView 
