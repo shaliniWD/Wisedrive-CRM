@@ -1007,9 +1007,18 @@ export default function InspectionsPage() {
         });
       }
       
+      // Update mechanic assignment if changed
+      const currentMechanicId = editInspectionData.mechanic_id || '';
+      const newMechanicId = selectedMechanicId === 'unassign' ? null : (selectedMechanicId || null);
+      
+      if (newMechanicId !== currentMechanicId) {
+        await inspectionsApi.assignMechanic(editInspectionData.id, newMechanicId);
+      }
+      
       toast.success('Inspection updated successfully!');
       setIsEditInspectionModalOpen(false);
       setEditInspectionData(null);
+      setSelectedMechanicId('');
       fetchData();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to update inspection');
