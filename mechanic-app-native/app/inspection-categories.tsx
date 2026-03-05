@@ -16,7 +16,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useInspection } from '../src/context/InspectionContext';
-import { inspectionsApi } from '../src/lib/api';
+import { inspectionsApi, getCurrentApiUrl, getEnvironment } from '../src/lib/api';
 import { diagLogger } from '../src/lib/diagLogger';
 
 const { width } = Dimensions.get('window');
