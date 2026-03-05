@@ -1751,7 +1751,7 @@ export default function LiveProgressModal({
                     
                     // Priority: editData.category_ratings > AI category rating > 0
                     const savedRating = editData.category_ratings?.[categoryKey];
-                    const aiRating = getAICategoryRating(categoryName);
+                    const aiRating = getAICategoryRating(categoryName, categoryKey);
                     const currentRating = savedRating ?? aiRating ?? 0;
                     const isAIRating = savedRating === undefined && aiRating !== null;
                     
