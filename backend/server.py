@@ -13203,6 +13203,12 @@ async def get_mechanic_inspection_detail(
     if not inspection:
         raise HTTPException(status_code=404, detail="Inspection not found")
     
+    # Helper function to safely convert to string
+    def safe_str(val, default=""):
+        if val is None:
+            return default
+        return str(val) if val else default
+    
     # Map CRM status to mechanic app status
     crm_status = inspection.get("inspection_status", "NEW")
     if crm_status in ["INSPECTION_COMPLETED", "COMPLETED"]:
@@ -13215,29 +13221,29 @@ async def get_mechanic_inspection_detail(
         app_status = "NEW"
     
     return {
-        "id": inspection.get("id"),
+        "id": safe_str(inspection.get("id")),
         "scheduledAt": inspection.get("scheduled_date") or inspection.get("created_at"),
         "status": app_status,
-        "vehicleNumber": inspection.get("car_number", ""),
-        "makeModelVariant": f"{inspection.get('car_make', inspection.get('make', ''))} {inspection.get('car_model', inspection.get('model', ''))} {inspection.get('variant', '')}".strip() or "Not Available",
-        "carMake": inspection.get("car_make", inspection.get("make", "")),
-        "carModel": inspection.get("car_model", inspection.get("model", "")),
-        "make": inspection.get("car_make", inspection.get("make", "")),
-        "model": inspection.get("car_model", inspection.get("model", "")),
-        "fuelType": inspection.get("fuel_type", ""),
-        "fuel_type": inspection.get("fuel_type", ""),
-        "manufacturingYear": str(inspection.get("car_year", inspection.get("manufacturing_year", "")) or ""),
-        "year": str(inspection.get("car_year", inspection.get("manufacturing_year", "")) or ""),
-        "odometerReading": str(inspection.get("odometer_reading", "") or ""),
-        "odometer": str(inspection.get("odometer_reading", "") or ""),
-        "city": inspection.get("city", ""),
-        "customerName": inspection.get("customer_name", ""),
-        "customer_name": inspection.get("customer_name", ""),
-        "customerPhone": inspection.get("customer_mobile", ""),
-        "customerAddress": inspection.get("address", ""),
+        "vehicleNumber": safe_str(inspection.get("car_number")),
+        "makeModelVariant": f"{safe_str(inspection.get('car_make', inspection.get('make', '')))} {safe_str(inspection.get('car_model', inspection.get('model', '')))} {safe_str(inspection.get('variant', ''))}".strip() or "Not Available",
+        "carMake": safe_str(inspection.get("car_make", inspection.get("make", ""))),
+        "carModel": safe_str(inspection.get("car_model", inspection.get("model", ""))),
+        "make": safe_str(inspection.get("car_make", inspection.get("make", ""))),
+        "model": safe_str(inspection.get("car_model", inspection.get("model", ""))),
+        "fuelType": safe_str(inspection.get("fuel_type")),
+        "fuel_type": safe_str(inspection.get("fuel_type")),
+        "manufacturingYear": safe_str(inspection.get("car_year", inspection.get("manufacturing_year", ""))),
+        "year": safe_str(inspection.get("car_year", inspection.get("manufacturing_year", ""))),
+        "odometerReading": safe_str(inspection.get("odometer_reading")),
+        "odometer": safe_str(inspection.get("odometer_reading")),
+        "city": safe_str(inspection.get("city")),
+        "customerName": safe_str(inspection.get("customer_name")),
+        "customer_name": safe_str(inspection.get("customer_name")),
+        "customerPhone": safe_str(inspection.get("customer_mobile")),
+        "customerAddress": safe_str(inspection.get("address")),
         "latitude": inspection.get("latitude") or inspection.get("location_lat"),
         "longitude": inspection.get("longitude") or inspection.get("location_lng"),
-        "assignedMechanicId": inspection.get("mechanic_id"),
+        "assignedMechanicId": safe_str(inspection.get("mechanic_id")) or None,
         "requiredModules": {
             "photos": True,
             "sound": False,
@@ -13251,10 +13257,10 @@ async def get_mechanic_inspection_detail(
         }),
         # Include saved answers for the mechanic app
         "inspection_answers": inspection.get("inspection_answers", {}),
-        "orderId": inspection.get("order_id"),
-        "packageName": inspection.get("package_type") or inspection.get("inspection_package_name", "Standard Inspection"),
-        "partnerId": inspection.get("partner_id"),
-        "partnerName": inspection.get("partner_name")
+        "orderId": safe_str(inspection.get("order_id")) or None,
+        "packageName": safe_str(inspection.get("package_type") or inspection.get("inspection_package_name", "Standard Inspection")),
+        "partnerId": safe_str(inspection.get("partner_id")) or None,
+        "partnerName": safe_str(inspection.get("partner_name"))
     }
 
 
