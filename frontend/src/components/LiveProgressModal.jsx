@@ -1499,12 +1499,12 @@ export default function LiveProgressModal({
             
             {/* Q&A Details Tab (formerly Inspection) - Last tab with editable answers */}
             <TabsContent value="inspection" className="space-y-4 mt-0">
-              {/* Category Progress Summary - Clickable cards for filtering */}
+              {/* Category Progress Summary - Clickable cards with editable ratings */}
               <div className="bg-gradient-to-r from-slate-50 to-gray-50 rounded-xl p-4 border">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="font-semibold text-gray-900 flex items-center gap-2">
                     <Activity className="h-5 w-5 text-blue-600" />
-                    Category-wise Progress & AI Ratings
+                    Category-wise Progress & Ratings (0-10)
                   </h3>
                   {selectedCategoryId && (
                     <Button
@@ -1518,72 +1518,42 @@ export default function LiveProgressModal({
                     </Button>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 mb-3">Click a category to filter questions below. AI ratings update after inspection completion.</p>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                <p className="text-xs text-gray-500 mb-3">Rate each category from 0-10. These ratings populate condition fields in AI Analysis. Click a category to filter questions below.</p>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                   {liveProgressData?.categories?.map((category, idx) => {
                     const answered = category.answered_questions || 0;
                     const total = category.total_questions || 0;
                     const percentage = total > 0 ? Math.round((answered / total) * 100) : 0;
                     const isSelected = selectedCategoryId === category.category_id;
                     
-                    // Get AI rating for this category (from inspection.category_ratings)
-                    const categoryRating = inspection?.category_ratings?.[category.category_name] || 
-                                          inspection?.ai_insights?.category_ratings?.[category.category_name];
-                    const aiRating = categoryRating?.rating || 0;
-                    const aiStatus = categoryRating?.status || 'PENDING';
-                    const aiSummary = categoryRating?.summary || '';
+                    // Get editable rating for this category (0-10 scale)
+                    const categoryKey = category.category_name?.toLowerCase().replace(/[^a-z0-9]/g, '_');
+                    const currentRating = editData.category_ratings?.[categoryKey] ?? 0;
                     
-                    const getRatingColor = (rating) => {
-                      if (rating >= 4) return 'bg-green-100 text-green-700 border-green-300';
-                      if (rating >= 3) return 'bg-yellow-100 text-yellow-700 border-yellow-300';
-                      if (rating >= 2) return 'bg-orange-100 text-orange-700 border-orange-300';
-                      if (rating >= 1) return 'bg-red-100 text-red-700 border-red-300';
-                      return 'bg-gray-100 text-gray-500 border-gray-300';
+                    // Helper to get condition text and color
+                    const getCondition = (rating) => {
+                      if (rating >= 8) return { text: 'Good', color: 'bg-green-500', bgColor: 'bg-green-50 border-green-300' };
+                      if (rating >= 4) return { text: 'Average', color: 'bg-yellow-500', bgColor: 'bg-yellow-50 border-yellow-300' };
+                      if (rating > 0) return { text: 'Poor', color: 'bg-red-500', bgColor: 'bg-red-50 border-red-300' };
+                      return { text: 'Not Rated', color: 'bg-gray-400', bgColor: 'bg-gray-50 border-gray-300' };
                     };
                     
-                    const getStatusBadge = (status) => {
-                      switch(status) {
-                        case 'PASS': return 'bg-green-500 text-white';
-                        case 'ATTENTION': return 'bg-yellow-500 text-white';
-                        case 'FAIL': return 'bg-red-500 text-white';
-                        default: return 'bg-gray-400 text-white';
-                      }
-                    };
+                    const condition = getCondition(currentRating);
                     
                     return (
-                      <button
+                      <div
                         key={idx}
-                        onClick={() => setSelectedCategoryId(isSelected ? null : category.category_id)}
-                        className={`bg-white rounded-lg p-3 border text-left transition-all hover:shadow-md ${
+                        className={`bg-white rounded-lg p-3 border transition-all hover:shadow-md ${
                           isSelected ? 'ring-2 ring-blue-500 border-blue-500' : 'hover:border-blue-300'
                         }`}
                       >
-                        <div className="flex items-center justify-between">
-                          <p className="text-xs font-medium text-gray-700 truncate flex-1">{category.category_name}</p>
-                          {aiRating > 0 && (
-                            <span className={`text-xs px-1.5 py-0.5 rounded font-bold ${getStatusBadge(aiStatus)}`}>
-                              {aiStatus === 'PASS' ? '✓' : aiStatus === 'FAIL' ? '✗' : '!'}
-                            </span>
-                          )}
-                        </div>
-                        
-                        {/* AI Rating Display */}
-                        {aiRating > 0 ? (
-                          <div className={`mt-2 p-1.5 rounded border ${getRatingColor(aiRating)}`}>
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs font-semibold">AI Rating</span>
-                              <div className="flex items-center gap-1">
-                                {[1,2,3,4,5].map(star => (
-                                  <span key={star} className={`text-xs ${star <= aiRating ? 'text-yellow-500' : 'text-gray-300'}`}>★</span>
-                                ))}
-                              </div>
-                            </div>
-                            {aiSummary && (
-                              <p className="text-xs mt-1 line-clamp-2 opacity-80">{aiSummary}</p>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-between mt-2">
+                        {/* Category Name - Clickable to filter */}
+                        <button
+                          onClick={() => setSelectedCategoryId(isSelected ? null : category.category_id)}
+                          className="w-full text-left"
+                        >
+                          <p className="text-xs font-medium text-gray-700 truncate">{category.category_name}</p>
+                          <div className="flex items-center justify-between mt-1">
                             <span className="text-sm font-bold text-gray-900">{answered}/{total}</span>
                             <span className={`text-xs px-2 py-0.5 rounded-full ${
                               percentage === 100 ? 'bg-green-100 text-green-700' :
@@ -1593,8 +1563,46 @@ export default function LiveProgressModal({
                               {percentage}%
                             </span>
                           </div>
-                        )}
+                        </button>
                         
+                        {/* Editable Rating (0-10) */}
+                        <div className={`mt-2 p-2 rounded border ${condition.bgColor}`}>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs font-semibold text-gray-600">Rating</span>
+                            <span className={`text-xs px-2 py-0.5 rounded text-white ${condition.color}`}>
+                              {condition.text}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="range"
+                              min="0"
+                              max="10"
+                              value={currentRating}
+                              onChange={(e) => {
+                                const newRatings = { ...editData.category_ratings, [categoryKey]: parseInt(e.target.value) };
+                                updateField('category_ratings', newRatings);
+                              }}
+                              className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                              disabled={!canEdit}
+                            />
+                            <input
+                              type="number"
+                              min="0"
+                              max="10"
+                              value={currentRating}
+                              onChange={(e) => {
+                                const val = Math.min(10, Math.max(0, parseInt(e.target.value) || 0));
+                                const newRatings = { ...editData.category_ratings, [categoryKey]: val };
+                                updateField('category_ratings', newRatings);
+                              }}
+                              className="w-12 h-7 text-center text-sm font-bold border rounded"
+                              disabled={!canEdit}
+                            />
+                          </div>
+                        </div>
+                        
+                        {/* Progress bar */}
                         <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
                           <div
                             className={`h-1.5 rounded-full ${
@@ -1605,7 +1613,7 @@ export default function LiveProgressModal({
                             style={{ width: `${percentage}%` }}
                           />
                         </div>
-                      </button>
+                      </div>
                     );
                   })}
                 </div>
