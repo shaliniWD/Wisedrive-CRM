@@ -99,6 +99,24 @@ The application is a full-stack CRM for vehicle loans and inspections. Key featu
 - `LoansPage.jsx` - Over 4,000 lines
 - `CreditScoreModal.jsx` - ~~Over 1,200 lines~~ REPLACED by CreditRiskDashboard.jsx (Mar 2026)
 
+## Development Guidelines
+
+### ⚠️ CRITICAL: Pre-Deployment Testing Protocol
+**Ensure thorough testing of ALL backend changes in preview environment before requesting deployment to production.** This reduces iterations and improves efficiency.
+
+**Testing Checklist Before Deployment:**
+1. Verify syntax: `python3 -m py_compile /app/backend/server.py`
+2. Test endpoints via curl in preview environment
+3. Verify all response fields are correct types (especially strings vs integers)
+4. Test with real user scenarios (e.g., mechanic login → fetch inspections)
+5. Use debug endpoints to inspect raw data if issues occur
+
+**Why This Matters:**
+- Each deployment takes 5-7 minutes
+- APK builds take 10 minutes  
+- Testing takes 5 minutes
+- **Total per iteration: ~22 minutes** → Minimize iterations by thorough preview testing
+
 ### Credit Risk Dashboard (Mar 2026)
 - ✅ Comprehensive credit risk assessment dashboard replacing old CreditScoreModal
 - ✅ Professional UI with Score Gauge visualization
