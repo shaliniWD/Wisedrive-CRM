@@ -13189,8 +13189,12 @@ async def get_mechanic_inspections(
     logger.info(f"DEBUGGING: Transformation complete. Result has {len(result)} items")
     if result:
         logger.info(f"DEBUGGING: First result keys: {list(result[0].keys())[:10]}")
+        # Log the actual values to debug
+        logger.info(f"DEBUGGING: First result manufacturingYear: {repr(result[0].get('manufacturingYear'))} type: {type(result[0].get('manufacturingYear'))}")
     
-    return result
+    # Return as JSONResponse to bypass any automatic Pydantic validation
+    from fastapi.responses import JSONResponse
+    return JSONResponse(content=result)
 
 
 @api_router.get("/mechanic/debug-inspections")
