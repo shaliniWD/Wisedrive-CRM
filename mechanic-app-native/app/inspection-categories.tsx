@@ -112,10 +112,31 @@ export default function InspectionCategoriesScreen() {
   const obdCompleted = (obdScanResult?.completed || obdSubmittedToBackend) && !obdRescanEnabled;
   const obdResults = obdScanResult || (obdSubmittedToBackend ? { completed: true, ...backendObdData } : null);
 
+  // Log screen mount
+  useEffect(() => {
+    diagLogger.info('CATEGORIES_SCREEN_MOUNTED', {
+      inspectionId: currentInspectionId,
+      inspectionVehicle: currentInspection?.vehicleNumber,
+      inspectionStatus: currentInspection?.status,
+      apiUrl: getCurrentApiUrl(),
+      environment: getEnvironment(),
+      timestamp: new Date().toISOString()
+    });
+    console.log('[CATEGORIES] Screen mounted');
+    console.log('[CATEGORIES] Inspection ID:', currentInspectionId);
+    console.log('[CATEGORIES] Vehicle:', currentInspection?.vehicleNumber);
+    console.log('[CATEGORIES] API URL:', getCurrentApiUrl());
+    console.log('[CATEGORIES] Environment:', getEnvironment());
+  }, []);
+
   // Refresh data when screen comes into focus (after returning from Q&A)
   useFocusEffect(
     useCallback(() => {
-      console.log('[Categories] Screen focused, refreshing data...');
+      diagLogger.info('CATEGORIES_SCREEN_FOCUSED', {
+        inspectionId: currentInspectionId,
+        timestamp: new Date().toISOString()
+      });
+      console.log('[CATEGORIES] Screen focused, refreshing data...');
       fetchQuestionnaire();
     }, [currentInspectionId])
   );
