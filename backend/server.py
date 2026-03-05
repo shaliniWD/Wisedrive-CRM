@@ -5426,7 +5426,9 @@ async def get_inspection_report(inspection_id: str):
 # ==================== AI REPORT GENERATION ====================
 
 # Milestones at which AI report should be auto-generated (percentage completion)
-AI_REPORT_AUTO_GENERATE_MILESTONES = [25, 50, 75, 100]
+# AI report auto-generation - ONLY at 100% completion (when inspection is COMPLETED)
+# Category-wise ratings and condition ratings require all Q&A to be answered
+AI_REPORT_AUTO_GENERATE_MILESTONES = [100]  # Only generate on completion
 
 class GenerateAIReportRequest(BaseModel):
     force_regenerate: bool = False  # Force regeneration even if AI insights exist
