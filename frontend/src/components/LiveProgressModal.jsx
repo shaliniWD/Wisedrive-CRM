@@ -1763,7 +1763,9 @@ export default function LiveProgressModal({
                         {/* Editable Rating (0-10) */}
                         <div className={`mt-2 p-2 rounded border ${condition.bgColor}`}>
                           <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs font-semibold text-gray-600">Rating</span>
+                            <span className="text-xs font-semibold text-gray-600">
+                              Rating {isAIRating && <span className="text-blue-500 ml-1">(AI)</span>}
+                            </span>
                             <span className={`text-xs px-2 py-0.5 rounded text-white ${condition.color}`}>
                               {condition.text}
                             </span>
