@@ -1684,46 +1684,67 @@ export default function LiveProgressModal({
                     
                     // Get editable rating for this category (0-10 scale)
                     const categoryKey = category.category_name?.toLowerCase().replace(/[^a-z0-9]/g, '_');
+                    const categoryName = category.category_name;
                     
-                    // Map AI condition_ratings to Q&A category ratings
-                    // Map category names to AI condition types
-                    const getAIConditionRating = (catName) => {
-                      const name = catName?.toLowerCase() || '';
-                      const aiConditions = inspection?.ai_insights?.condition_ratings || {};
+                    // Get AI rating from ai_insights.category_ratings (uses exact category name)
+                    const getAICategoryRating = (catName) => {
+                      const aiCategoryRatings = inspection?.ai_insights?.category_ratings || {};
                       
-                      // Map Q&A categories to AI condition types
+                      // Try exact match first
+                      if (aiCategoryRatings[catName]) {
+                        const ratingData = aiCategoryRatings[catName];
+                        return typeof ratingData === 'object' ? ratingData.rating : ratingData;
+                      }
+                      
+                      // Try case-insensitive match
+                      const catNameLower = catName?.toLowerCase() || '';
+                      for (const [key, value] of Object.entries(aiCategoryRatings)) {
+                        if (key.toLowerCase() === catNameLower) {
+                          return typeof value === 'object' ? value.rating : value;
+                        }
+                      }
+                      
+                      // Fallback: Try to match from condition_ratings for legacy data
+                      const aiConditions = inspection?.ai_insights?.condition_ratings || {};
+                      const name = catNameLower;
+                      
                       if (name.includes('engine') || name.includes('health')) {
                         const cond = aiConditions.engine?.toUpperCase();
                         if (cond === 'POOR') return 2;
-                        if (cond === 'AVERAGE') return 5;
-                        if (cond === 'GOOD') return 8;
+                        if (cond === 'AVERAGE' || cond === 'FAIR') return 5;
+                        if (cond === 'GOOD') return 7;
+                        if (cond === 'EXCELLENT') return 9;
                       }
                       if (name.includes('exterior')) {
                         const cond = aiConditions.exterior?.toUpperCase();
                         if (cond === 'POOR') return 2;
-                        if (cond === 'AVERAGE') return 5;
-                        if (cond === 'GOOD') return 8;
+                        if (cond === 'AVERAGE' || cond === 'FAIR') return 5;
+                        if (cond === 'GOOD') return 7;
+                        if (cond === 'EXCELLENT') return 9;
                       }
                       if (name.includes('interior')) {
                         const cond = aiConditions.interior?.toUpperCase();
                         if (cond === 'POOR') return 2;
-                        if (cond === 'AVERAGE') return 5;
-                        if (cond === 'GOOD') return 8;
+                        if (cond === 'AVERAGE' || cond === 'FAIR') return 5;
+                        if (cond === 'GOOD') return 7;
+                        if (cond === 'EXCELLENT') return 9;
                       }
                       if (name.includes('transmission')) {
                         const cond = aiConditions.transmission?.toUpperCase();
                         if (cond === 'POOR') return 2;
-                        if (cond === 'AVERAGE') return 5;
-                        if (cond === 'GOOD') return 8;
+                        if (cond === 'AVERAGE' || cond === 'FAIR') return 5;
+                        if (cond === 'GOOD') return 7;
+                        if (cond === 'EXCELLENT') return 9;
                       }
+                      
                       return null;
                     };
                     
-                    // Priority: editData.category_ratings > AI condition rating > 0
+                    // Priority: editData.category_ratings > AI category rating > 0
                     const savedRating = editData.category_ratings?.[categoryKey];
-                    const aiRating = getAIConditionRating(category.category_name);
+                    const aiRating = getAICategoryRating(categoryName);
                     const currentRating = savedRating ?? aiRating ?? 0;
-                    const isAIRating = !savedRating && aiRating !== null;
+                    const isAIRating = savedRating === undefined && aiRating !== null;
                     
                     // Helper to get condition text and color
                     const getCondition = (rating) => {
