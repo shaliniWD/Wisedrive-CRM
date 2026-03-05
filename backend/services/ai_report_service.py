@@ -117,11 +117,11 @@ Based on this data, provide your assessment in the following JSON format:
     }},
     
     "category_ratings": {{
-        "<category_name>": {{
-            "rating": <number 1-5 based on answers in this category>,
-            "status": "<PASS/ATTENTION/FAIL>",
-            "summary": "<brief summary based on Q&A in this category>",
-            "issues_found": ["<issue 1>", "<issue 2>"]
+        "<EXACT_CATEGORY_NAME_FROM_DATA>": {{
+            "rating": <number 0-10 based on analyzing ALL answers in this category>,
+            "status": "<PASS if rating>=7, ATTENTION if rating>=4, FAIL if rating<4>",
+            "summary": "<brief summary explaining why this rating was given based on Q&A answers>",
+            "issues_found": ["<specific issue found from Q&A answers>"]
         }}
     }},
     
