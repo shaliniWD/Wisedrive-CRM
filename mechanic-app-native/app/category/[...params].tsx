@@ -553,7 +553,7 @@ export default function CategoryQuestionsScreen() {
     const answersToSave = Object.entries(draftAnswers).filter(([_, answer]) => answer.isDraft);
     
     if (answersToSave.length === 0) {
-      router.back();
+      // No unsaved changes - do nothing (user can use back button to go to categories)
       return;
     }
     
