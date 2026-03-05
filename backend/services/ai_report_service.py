@@ -345,7 +345,6 @@ def validate_ai_response(ai_response: Dict[str, Any], market_price_data: Dict[st
     normalized_category_ratings = {}
     for key, value in raw_category_ratings.items():
         # Normalize: lowercase, replace non-alphanumeric with _, collapse multiple underscores
-        import re
         normalized_key = re.sub(r'_+', '_', re.sub(r'[^a-z0-9]', '_', key.lower())).strip('_')
         normalized_category_ratings[normalized_key] = value
     validated["category_ratings"] = normalized_category_ratings
