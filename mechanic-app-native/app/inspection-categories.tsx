@@ -654,6 +654,40 @@ export default function InspectionCategoriesScreen() {
           </TouchableOpacity>
         )}
 
+        {/* Pending OBD Data Alert */}
+        {pendingObdData && !obdSubmittedToBackend && (
+          <View style={styles.pendingObdAlert}>
+            <LinearGradient
+              colors={['#FEF3C7', '#FDE68A']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.pendingObdGradient}
+            >
+              <View style={styles.pendingObdContent}>
+                <Ionicons name="warning" size={24} color="#D97706" />
+                <View style={styles.pendingObdText}>
+                  <Text style={styles.pendingObdTitle}>OBD Data Not Uploaded</Text>
+                  <Text style={styles.pendingObdDesc}>You have OBD scan data that wasn't submitted to the server.</Text>
+                </View>
+              </View>
+              <TouchableOpacity 
+                style={styles.pendingObdButton}
+                onPress={submitPendingObd}
+                disabled={isSubmittingPendingObd}
+              >
+                {isSubmittingPendingObd ? (
+                  <ActivityIndicator size="small" color="#FFF" />
+                ) : (
+                  <>
+                    <Ionicons name="cloud-upload" size={16} color="#FFF" />
+                    <Text style={styles.pendingObdButtonText}>Upload Now</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </LinearGradient>
+          </View>
+        )}
+
         {/* Categories Section */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Inspection Checklist</Text>
