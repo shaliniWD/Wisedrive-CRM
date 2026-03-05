@@ -332,6 +332,23 @@ export default function HomeScreen() {
   const [customDateTo, setCustomDateTo] = useState<Date>(new Date());
   const [showDatePicker, setShowDatePicker] = useState<'from' | 'to' | null>(null);
 
+  // Log home screen mount
+  useEffect(() => {
+    diagLogger.info('HOME_SCREEN_MOUNTED', {
+      mechanicId: mechanic?.id,
+      mechanicName: mechanic?.name,
+      mechanicCities: mechanic?.inspection_cities,
+      apiUrl: getCurrentApiUrl(),
+      environment: getEnvironment(),
+      timestamp: new Date().toISOString()
+    });
+    console.log('[HOME] Screen mounted');
+    console.log('[HOME] Mechanic:', mechanic?.name, mechanic?.id);
+    console.log('[HOME] Cities:', mechanic?.inspection_cities);
+    console.log('[HOME] API URL:', getCurrentApiUrl());
+    console.log('[HOME] Environment:', getEnvironment());
+  }, []);
+
   // Fetch debug info
   const fetchDebugInfo = async () => {
     setDebugLoading(true);
