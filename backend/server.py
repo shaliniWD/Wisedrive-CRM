@@ -5577,6 +5577,10 @@ async def generate_ai_inspection_report(
     - Condition ratings (engine, interior, exterior, transmission)
     - Category-wise ratings
     - Risk factors and recommendations
+    
+    IMPORTANT: AI category-wise ratings should ONLY be generated when:
+    1. Inspection status is COMPLETED (INSPECTION_COMPLETED)
+    2. All Q&A categories are answered
     """
     from services.ai_report_service import generate_ai_report_insights
     
@@ -5586,6 +5590,14 @@ async def generate_ai_inspection_report(
     inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
     if not inspection:
         raise HTTPException(status_code=404, detail="Inspection not found")
+    
+    # Check inspection status - AI report should only be generated for COMPLETED inspections
+    inspection_status = inspection.get("inspection_status", "")
+    if inspection_status not in ["INSPECTION_COMPLETED", "COMPLETED"] and not force_regenerate:
+        raise HTTPException(
+            status_code=400, 
+            detail="AI report can only be generated for completed inspections. Please complete all Q&A categories first."
+        )
     
     # Check if AI insights already exist and we're not forcing regeneration
     if inspection.get("ai_insights") and not force_regenerate:
