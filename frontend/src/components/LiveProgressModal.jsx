@@ -1367,16 +1367,18 @@ export default function LiveProgressModal({
                 </div>
               </Section>
               
-              {/* Condition Ratings - Auto-populated from Q&A Category Ratings */}
-              <Section title="Condition Ratings (from Q&A)" icon={Gauge} defaultOpen={true}>
+              {/* Condition Ratings - From AI Analysis or inspection fields */}
+              <Section title="Condition Ratings" icon={Gauge} defaultOpen={true}>
                 <p className="text-xs text-gray-500 mb-3">
-                  These ratings are derived from category ratings in Q&A Details tab. 0-3 = Poor, 4-7 = Average, 8-10 = Good
+                  Vehicle condition ratings from AI analysis. POOR = needs attention, AVERAGE = acceptable, GOOD = excellent
                 </p>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {/* Engine = Engine Health & Diagnosis */}
+                  {/* Engine */}
                   {(() => {
-                    const engineRating = editData.category_ratings?.['engine_health_and_diagnosis'] || 0;
-                    const condition = engineRating >= 8 ? 'GOOD' : engineRating >= 4 ? 'AVERAGE' : engineRating > 0 ? 'POOR' : 'PENDING';
+                    // Use AI insights condition_ratings first, then top-level field, then editData
+                    const aiCondition = inspection?.ai_insights?.condition_ratings?.engine;
+                    const topLevelCondition = inspection?.engine_condition || editData.engine_condition;
+                    const condition = (aiCondition || topLevelCondition || 'PENDING').toUpperCase();
                     return (
                       <div className={`p-3 rounded-lg border ${
                         condition === 'GOOD' ? 'bg-green-50 border-green-300' :
@@ -1392,17 +1394,17 @@ export default function LiveProgressModal({
                             condition === 'POOR' ? 'text-red-700' :
                             'text-gray-500'
                           }`}>{condition}</span>
-                          <span className="text-sm font-semibold text-gray-600">{engineRating}/10</span>
                         </div>
-                        <p className="text-xs text-gray-400 mt-1">From: Engine Health & Diagnosis</p>
+                        <p className="text-xs text-gray-400 mt-1">From: AI Analysis</p>
                       </div>
                     );
                   })()}
                   
-                  {/* Exterior = Exterior Inspection */}
+                  {/* Exterior */}
                   {(() => {
-                    const exteriorRating = editData.category_ratings?.['exterior_inspection'] || 0;
-                    const condition = exteriorRating >= 8 ? 'GOOD' : exteriorRating >= 4 ? 'AVERAGE' : exteriorRating > 0 ? 'POOR' : 'PENDING';
+                    const aiCondition = inspection?.ai_insights?.condition_ratings?.exterior;
+                    const topLevelCondition = inspection?.exterior_condition || editData.exterior_condition;
+                    const condition = (aiCondition || topLevelCondition || 'PENDING').toUpperCase();
                     return (
                       <div className={`p-3 rounded-lg border ${
                         condition === 'GOOD' ? 'bg-green-50 border-green-300' :
@@ -1418,17 +1420,17 @@ export default function LiveProgressModal({
                             condition === 'POOR' ? 'text-red-700' :
                             'text-gray-500'
                           }`}>{condition}</span>
-                          <span className="text-sm font-semibold text-gray-600">{exteriorRating}/10</span>
                         </div>
-                        <p className="text-xs text-gray-400 mt-1">From: Exterior Inspection</p>
+                        <p className="text-xs text-gray-400 mt-1">From: AI Analysis</p>
                       </div>
                     );
                   })()}
                   
-                  {/* Interior = Interior Inspection */}
+                  {/* Interior */}
                   {(() => {
-                    const interiorRating = editData.category_ratings?.['interior_inspection'] || 0;
-                    const condition = interiorRating >= 8 ? 'GOOD' : interiorRating >= 4 ? 'AVERAGE' : interiorRating > 0 ? 'POOR' : 'PENDING';
+                    const aiCondition = inspection?.ai_insights?.condition_ratings?.interior;
+                    const topLevelCondition = inspection?.interior_condition || editData.interior_condition;
+                    const condition = (aiCondition || topLevelCondition || 'PENDING').toUpperCase();
                     return (
                       <div className={`p-3 rounded-lg border ${
                         condition === 'GOOD' ? 'bg-green-50 border-green-300' :
@@ -1444,17 +1446,17 @@ export default function LiveProgressModal({
                             condition === 'POOR' ? 'text-red-700' :
                             'text-gray-500'
                           }`}>{condition}</span>
-                          <span className="text-sm font-semibold text-gray-600">{interiorRating}/10</span>
                         </div>
-                        <p className="text-xs text-gray-400 mt-1">From: Interior Inspection</p>
+                        <p className="text-xs text-gray-400 mt-1">From: AI Analysis</p>
                       </div>
                     );
                   })()}
                   
-                  {/* Transmission = Transmission System Diagnosis */}
+                  {/* Transmission */}
                   {(() => {
-                    const transmissionRating = editData.category_ratings?.['transmission_system_diagnosis'] || 0;
-                    const condition = transmissionRating >= 8 ? 'GOOD' : transmissionRating >= 4 ? 'AVERAGE' : transmissionRating > 0 ? 'POOR' : 'PENDING';
+                    const aiCondition = inspection?.ai_insights?.condition_ratings?.transmission;
+                    const topLevelCondition = inspection?.transmission_condition || editData.transmission_condition;
+                    const condition = (aiCondition || topLevelCondition || 'PENDING').toUpperCase();
                     return (
                       <div className={`p-3 rounded-lg border ${
                         condition === 'GOOD' ? 'bg-green-50 border-green-300' :
@@ -1470,9 +1472,8 @@ export default function LiveProgressModal({
                             condition === 'POOR' ? 'text-red-700' :
                             'text-gray-500'
                           }`}>{condition}</span>
-                          <span className="text-sm font-semibold text-gray-600">{transmissionRating}/10</span>
                         </div>
-                        <p className="text-xs text-gray-400 mt-1">From: Transmission System Diagnosis</p>
+                        <p className="text-xs text-gray-400 mt-1">From: AI Analysis</p>
                       </div>
                     );
                   })()}
