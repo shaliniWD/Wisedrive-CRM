@@ -1367,41 +1367,115 @@ export default function LiveProgressModal({
                 </div>
               </Section>
               
-              {/* Condition Ratings */}
-              <Section title="Condition Ratings" icon={Gauge} defaultOpen={true}>
+              {/* Condition Ratings - Auto-populated from Q&A Category Ratings */}
+              <Section title="Condition Ratings (from Q&A)" icon={Gauge} defaultOpen={true}>
+                <p className="text-xs text-gray-500 mb-3">
+                  These ratings are derived from category ratings in Q&A Details tab. 0-3 = Poor, 4-7 = Average, 8-10 = Good
+                </p>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <EditableField
-                    label="Engine"
-                    value={editData.engine_condition}
-                    onChange={(val) => updateField('engine_condition', val)}
-                    type="select"
-                    options={CONDITION_OPTIONS}
-                    disabled={!canEdit}
-                  />
-                  <EditableField
-                    label="Interior"
-                    value={editData.interior_condition}
-                    onChange={(val) => updateField('interior_condition', val)}
-                    type="select"
-                    options={CONDITION_OPTIONS}
-                    disabled={!canEdit}
-                  />
-                  <EditableField
-                    label="Exterior"
-                    value={editData.exterior_condition}
-                    onChange={(val) => updateField('exterior_condition', val)}
-                    type="select"
-                    options={CONDITION_OPTIONS}
-                    disabled={!canEdit}
-                  />
-                  <EditableField
-                    label="Transmission"
-                    value={editData.transmission_condition}
-                    onChange={(val) => updateField('transmission_condition', val)}
-                    type="select"
-                    options={CONDITION_OPTIONS}
-                    disabled={!canEdit}
-                  />
+                  {/* Engine = Engine Health & Diagnosis */}
+                  {(() => {
+                    const engineRating = editData.category_ratings?.['engine_health_and_diagnosis'] || 0;
+                    const condition = engineRating >= 8 ? 'GOOD' : engineRating >= 4 ? 'AVERAGE' : engineRating > 0 ? 'POOR' : 'PENDING';
+                    return (
+                      <div className={`p-3 rounded-lg border ${
+                        condition === 'GOOD' ? 'bg-green-50 border-green-300' :
+                        condition === 'AVERAGE' ? 'bg-yellow-50 border-yellow-300' :
+                        condition === 'POOR' ? 'bg-red-50 border-red-300' :
+                        'bg-gray-50 border-gray-300'
+                      }`}>
+                        <p className="text-xs text-gray-500 font-medium">🔧 Engine</p>
+                        <div className="flex items-center justify-between mt-1">
+                          <span className={`text-lg font-bold ${
+                            condition === 'GOOD' ? 'text-green-700' :
+                            condition === 'AVERAGE' ? 'text-yellow-700' :
+                            condition === 'POOR' ? 'text-red-700' :
+                            'text-gray-500'
+                          }`}>{condition}</span>
+                          <span className="text-sm font-semibold text-gray-600">{engineRating}/10</span>
+                        </div>
+                        <p className="text-xs text-gray-400 mt-1">From: Engine Health & Diagnosis</p>
+                      </div>
+                    );
+                  })()}
+                  
+                  {/* Exterior = Exterior Inspection */}
+                  {(() => {
+                    const exteriorRating = editData.category_ratings?.['exterior_inspection'] || 0;
+                    const condition = exteriorRating >= 8 ? 'GOOD' : exteriorRating >= 4 ? 'AVERAGE' : exteriorRating > 0 ? 'POOR' : 'PENDING';
+                    return (
+                      <div className={`p-3 rounded-lg border ${
+                        condition === 'GOOD' ? 'bg-green-50 border-green-300' :
+                        condition === 'AVERAGE' ? 'bg-yellow-50 border-yellow-300' :
+                        condition === 'POOR' ? 'bg-red-50 border-red-300' :
+                        'bg-gray-50 border-gray-300'
+                      }`}>
+                        <p className="text-xs text-gray-500 font-medium">🚗 Exterior</p>
+                        <div className="flex items-center justify-between mt-1">
+                          <span className={`text-lg font-bold ${
+                            condition === 'GOOD' ? 'text-green-700' :
+                            condition === 'AVERAGE' ? 'text-yellow-700' :
+                            condition === 'POOR' ? 'text-red-700' :
+                            'text-gray-500'
+                          }`}>{condition}</span>
+                          <span className="text-sm font-semibold text-gray-600">{exteriorRating}/10</span>
+                        </div>
+                        <p className="text-xs text-gray-400 mt-1">From: Exterior Inspection</p>
+                      </div>
+                    );
+                  })()}
+                  
+                  {/* Interior = Interior Inspection */}
+                  {(() => {
+                    const interiorRating = editData.category_ratings?.['interior_inspection'] || 0;
+                    const condition = interiorRating >= 8 ? 'GOOD' : interiorRating >= 4 ? 'AVERAGE' : interiorRating > 0 ? 'POOR' : 'PENDING';
+                    return (
+                      <div className={`p-3 rounded-lg border ${
+                        condition === 'GOOD' ? 'bg-green-50 border-green-300' :
+                        condition === 'AVERAGE' ? 'bg-yellow-50 border-yellow-300' :
+                        condition === 'POOR' ? 'bg-red-50 border-red-300' :
+                        'bg-gray-50 border-gray-300'
+                      }`}>
+                        <p className="text-xs text-gray-500 font-medium">🛋️ Interior</p>
+                        <div className="flex items-center justify-between mt-1">
+                          <span className={`text-lg font-bold ${
+                            condition === 'GOOD' ? 'text-green-700' :
+                            condition === 'AVERAGE' ? 'text-yellow-700' :
+                            condition === 'POOR' ? 'text-red-700' :
+                            'text-gray-500'
+                          }`}>{condition}</span>
+                          <span className="text-sm font-semibold text-gray-600">{interiorRating}/10</span>
+                        </div>
+                        <p className="text-xs text-gray-400 mt-1">From: Interior Inspection</p>
+                      </div>
+                    );
+                  })()}
+                  
+                  {/* Transmission = Transmission System Diagnosis */}
+                  {(() => {
+                    const transmissionRating = editData.category_ratings?.['transmission_system_diagnosis'] || 0;
+                    const condition = transmissionRating >= 8 ? 'GOOD' : transmissionRating >= 4 ? 'AVERAGE' : transmissionRating > 0 ? 'POOR' : 'PENDING';
+                    return (
+                      <div className={`p-3 rounded-lg border ${
+                        condition === 'GOOD' ? 'bg-green-50 border-green-300' :
+                        condition === 'AVERAGE' ? 'bg-yellow-50 border-yellow-300' :
+                        condition === 'POOR' ? 'bg-red-50 border-red-300' :
+                        'bg-gray-50 border-gray-300'
+                      }`}>
+                        <p className="text-xs text-gray-500 font-medium">⚙️ Transmission</p>
+                        <div className="flex items-center justify-between mt-1">
+                          <span className={`text-lg font-bold ${
+                            condition === 'GOOD' ? 'text-green-700' :
+                            condition === 'AVERAGE' ? 'text-yellow-700' :
+                            condition === 'POOR' ? 'text-red-700' :
+                            'text-gray-500'
+                          }`}>{condition}</span>
+                          <span className="text-sm font-semibold text-gray-600">{transmissionRating}/10</span>
+                        </div>
+                        <p className="text-xs text-gray-400 mt-1">From: Transmission System Diagnosis</p>
+                      </div>
+                    );
+                  })()}
                 </div>
               </Section>
               
