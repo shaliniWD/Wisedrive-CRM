@@ -7,12 +7,14 @@ Handles all mechanic-related endpoints including:
 - Performance tracking
 """
 from fastapi import APIRouter, HTTPException, Depends, Request, UploadFile, File
+from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Optional, List, Literal
 from datetime import datetime, timezone, timedelta
 from pydantic import BaseModel
 import uuid
 import logging
+import traceback
 
 logger = logging.getLogger(__name__)
 
