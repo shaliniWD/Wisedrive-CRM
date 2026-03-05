@@ -1008,81 +1008,161 @@ export default function LiveProgressModal({
                       </span>
                     </div>
                   </div>
+                </div>
+                
+                {/* RPP - Recommended Purchase Price Section */}
+                <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 border-2 border-green-200">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">💰</span>
+                      <h3 className="font-semibold text-gray-900">Recommended Purchase Price (RPP)</h3>
+                      {inspection?.market_price_research?.market_average > 0 && (
+                        <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                          {inspection.market_price_research.sources_count} sources
+                        </span>
+                      )}
+                    </div>
+                    <Button
+                      onClick={fetchRPP}
+                      disabled={fetchingRPP || !inspection?.vehicle_make || !inspection?.vehicle_model}
+                      size="sm"
+                      className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+                      data-testid="fetch-rpp-btn"
+                    >
+                      {fetchingRPP ? (
+                        <><Loader2 className="h-4 w-4 animate-spin mr-2" />Fetching...</>
+                      ) : (
+                        <><RefreshCw className="h-4 w-4 mr-2" />Fetch Market Prices</>
+                      )}
+                    </Button>
+                  </div>
                   
-                  <div className="bg-white rounded-lg p-3 border col-span-2">
-                    <Label className="text-xs text-gray-500">Recommended Purchase Price</Label>
-                    <p className="text-xs text-green-600 mb-2">(5-10% below market average)</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-gray-500">₹</span>
+                  <p className="text-xs text-gray-600 mb-3">
+                    Scrapes prices from OLX, Spinny, Cars24, CarWale, CarDekho to recommend a fair purchase price (5-10% below market average)
+                  </p>
+                  
+                  {/* RPP Input Fields */}
+                  <div className="bg-white rounded-lg p-3 border mb-3">
+                    <Label className="text-xs text-gray-500">Recommended Price Range</Label>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-gray-500 font-medium">₹</span>
                       <Input
                         type="number"
                         value={editData.market_value_min}
                         onChange={(e) => updateField('market_value_min', parseFloat(e.target.value) || 0)}
-                        className="h-8 text-sm"
+                        className="h-9 text-sm font-semibold"
                         placeholder="Min"
                         disabled={!canEdit}
                       />
-                      <span className="text-gray-400">to</span>
+                      <span className="text-gray-400 font-medium">to</span>
+                      <span className="text-gray-500 font-medium">₹</span>
                       <Input
                         type="number"
                         value={editData.market_value_max}
                         onChange={(e) => updateField('market_value_max', parseFloat(e.target.value) || 0)}
-                        className="h-8 text-sm"
+                        className="h-9 text-sm font-semibold"
                         placeholder="Max"
                         disabled={!canEdit}
                       />
                     </div>
-                    
-                    {/* Market Research Results - Website-wise breakdown */}
-                    {inspection?.market_price_research?.market_average > 0 ? (
-                      <div className="mt-3 pt-3 border-t border-gray-200">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-semibold text-gray-700">Market Research Data</span>
-                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
-                            {inspection.market_price_research.sources_count} sources
+                    {editData.market_value_min > 0 && editData.market_value_max > 0 && (
+                      <p className="text-sm font-bold text-green-700 mt-2">
+                        ₹{(editData.market_value_min / 100000).toFixed(2)} - ₹{(editData.market_value_max / 100000).toFixed(2)} Lakh
+                      </p>
+                    )}
+                  </div>
+                  
+                  {/* Market Research Results - Website-wise breakdown */}
+                  {inspection?.market_price_research?.market_average > 0 ? (
+                    <div className="space-y-3">
+                      {/* Market Average Card */}
+                      <div className="bg-white rounded-lg p-3 border">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600 font-medium">Market Average</span>
+                          <span className="text-lg font-bold text-gray-800">
+                            ₹{(inspection.market_price_research.market_average / 100000).toFixed(2)} Lakh
                           </span>
                         </div>
-                        
-                        {/* Market Average */}
-                        <div className="bg-gray-50 rounded-lg p-2 mb-2">
-                          <div className="flex justify-between items-center">
-                            <span className="text-xs text-gray-600">Market Average:</span>
-                            <span className="text-sm font-bold text-gray-800">
-                              ₹{(inspection.market_price_research.market_average / 100000).toFixed(2)} Lakh
-                            </span>
-                          </div>
-                          <div className="flex justify-between items-center mt-1">
-                            <span className="text-xs text-gray-600">Range:</span>
-                            <span className="text-xs text-gray-700">
-                              ₹{(inspection.market_price_research.market_min / 100000).toFixed(2)}L - ₹{(inspection.market_price_research.market_max / 100000).toFixed(2)}L
-                            </span>
-                          </div>
+                        <div className="flex justify-between items-center mt-1">
+                          <span className="text-xs text-gray-500">Price Range</span>
+                          <span className="text-sm text-gray-600">
+                            ₹{(inspection.market_price_research.market_min / 100000).toFixed(2)}L - ₹{(inspection.market_price_research.market_max / 100000).toFixed(2)}L
+                          </span>
                         </div>
-                        
-                        {/* Website-wise breakdown */}
-                        {inspection.market_price_research.sources?.length > 0 && (
-                          <div className="space-y-1">
-                            <span className="text-xs text-gray-500">Prices by Source:</span>
-                            <div className="grid grid-cols-2 gap-1">
-                              {inspection.market_price_research.sources.slice(0, 6).map((source, idx) => (
-                                <div key={idx} className="flex items-center justify-between bg-white rounded px-2 py-1 border text-xs">
-                                  <span className="text-blue-600 font-medium">{source.source}</span>
-                                  <span className="text-gray-700">₹{(source.price / 100000).toFixed(2)}L</span>
-                                </div>
-                              ))}
-                            </div>
+                        {inspection.market_price_research.estimation_method && (
+                          <div className="flex items-center gap-1 mt-2">
+                            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                              {inspection.market_price_research.estimation_method === 'web_scraping' ? '🌐 Web Scraped' : '📊 Estimated'}
+                            </span>
+                            {inspection.market_price_research.fetched_at && (
+                              <span className="text-xs text-gray-400">
+                                {new Date(inspection.market_price_research.fetched_at).toLocaleDateString()}
+                              </span>
+                            )}
                           </div>
                         )}
                       </div>
-                    ) : (
-                      <div className="mt-3 pt-3 border-t border-gray-200">
-                        <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-50 p-2 rounded-lg">
-                          <AlertCircle className="h-4 w-4" />
-                          <span>Click "Regenerate" above to fetch latest market prices from web sources</span>
+                      
+                      {/* Website-wise Price Cards */}
+                      {inspection.market_price_research.sources?.length > 0 && (
+                        <div>
+                          <span className="text-xs font-semibold text-gray-700 mb-2 block">Prices by Portal</span>
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                            {inspection.market_price_research.sources.map((source, idx) => {
+                              // Website color coding
+                              const getSourceStyle = (name) => {
+                                switch(name) {
+                                  case 'CarDekho': return 'bg-orange-50 border-orange-200 text-orange-700';
+                                  case 'CarWale': return 'bg-blue-50 border-blue-200 text-blue-700';
+                                  case 'Cars24': return 'bg-yellow-50 border-yellow-200 text-yellow-700';
+                                  case 'Spinny': return 'bg-purple-50 border-purple-200 text-purple-700';
+                                  case 'OLX': return 'bg-green-50 border-green-200 text-green-700';
+                                  default: return 'bg-gray-50 border-gray-200 text-gray-700';
+                                }
+                              };
+                              const getSourceIcon = (name) => {
+                                switch(name) {
+                                  case 'CarDekho': return '🚗';
+                                  case 'CarWale': return '🏎️';
+                                  case 'Cars24': return '🚙';
+                                  case 'Spinny': return '🔄';
+                                  case 'OLX': return '📦';
+                                  default: return '🌐';
+                                }
+                              };
+                              return (
+                                <div 
+                                  key={idx} 
+                                  className={`flex items-center justify-between rounded-lg px-3 py-2 border ${getSourceStyle(source.source)}`}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <span>{getSourceIcon(source.source)}</span>
+                                    <span className="font-medium text-sm">{source.source}</span>
+                                  </div>
+                                  <span className="font-bold text-sm">₹{(source.price / 100000).toFixed(2)}L</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="bg-white rounded-lg p-3 border">
+                      <div className="flex items-center gap-3 text-amber-700">
+                        <AlertCircle className="h-5 w-5 flex-shrink-0" />
+                        <div>
+                          <p className="text-sm font-medium">No market price data available</p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {inspection?.vehicle_make && inspection?.vehicle_model 
+                              ? 'Click "Fetch Market Prices" to get prices from OLX, Spinny, Cars24, CarWale, CarDekho'
+                              : 'Vehicle make and model are required to fetch market prices'
+                            }
+                          </p>
                         </div>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               </div>
               
