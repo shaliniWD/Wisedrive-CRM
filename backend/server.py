@@ -13001,20 +13001,19 @@ async def get_mechanic_inspections(
     current_user: dict = Depends(get_current_user)
 ):
     """Get inspections for mechanic app - shows inspections assigned to or available for the mechanic"""
-    try:
-        mechanic_id = current_user["id"]
-        mechanic_cities = current_user.get("inspection_cities", [])
-        mechanic_name = current_user.get("name", "")
-        
-        logger.info(f"Fetching inspections for mechanic: {mechanic_id} ({mechanic_name}), cities: {mechanic_cities}")
-        
-        # Resolve mechanic cities to include aliases
-        all_city_variants = []
-        for mc in mechanic_cities:
-            all_city_variants.append(mc)
-            all_city_variants.append(mc.lower())
-            all_city_variants.append(mc.upper())
-            all_city_variants.append(mc.title())
+    mechanic_id = current_user["id"]
+    mechanic_cities = current_user.get("inspection_cities", [])
+    mechanic_name = current_user.get("name", "")
+    
+    logger.info(f"Fetching inspections for mechanic: {mechanic_id} ({mechanic_name}), cities: {mechanic_cities}")
+    
+    # Resolve mechanic cities to include aliases
+    all_city_variants = []
+    for mc in mechanic_cities:
+        all_city_variants.append(mc)
+        all_city_variants.append(mc.lower())
+        all_city_variants.append(mc.upper())
+        all_city_variants.append(mc.title())
         
         # Check if this city has aliases in the master table
         city_doc = await db.cities.find_one({
