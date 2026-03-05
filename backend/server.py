@@ -13144,8 +13144,9 @@ async def get_mechanic_inspections(
             "carMake": insp.get("car_make", insp.get("make", "")),
             "carModel": insp.get("car_model", insp.get("model", "")),
             "fuelType": insp.get("fuel_type", ""),
+            # CRITICAL: Always convert manufacturingYear to string to prevent Pydantic validation errors
             "manufacturingYear": str(insp.get("car_year", insp.get("manufacturing_year", "")) or ""),
-            "odometerReading": insp.get("odometer_reading", ""),
+            "odometerReading": str(insp.get("odometer_reading", "") or ""),
             "city": insp.get("city", ""),
             "customerName": insp.get("customer_name", ""),
             "customerPhone": insp.get("customer_mobile", ""),
