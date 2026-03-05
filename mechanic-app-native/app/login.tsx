@@ -58,8 +58,25 @@ export default function LoginScreen() {
   
   const otpInputs = useRef<(TextInput | null)[]>([]);
 
+  // Log screen mount
+  useEffect(() => {
+    diagLogger.info('LOGIN_SCREEN_MOUNTED', {
+      apiUrl: API_BASE_URL,
+      configuredApiUrl: getCurrentApiUrl(),
+      environment: getEnvironment(),
+      timestamp: new Date().toISOString(),
+      platform: Platform.OS,
+      version: Platform.Version,
+    });
+    console.log('[LOGIN] Screen mounted');
+    console.log('[LOGIN] API URL:', API_BASE_URL);
+    console.log('[LOGIN] Configured API:', getCurrentApiUrl());
+    console.log('[LOGIN] Environment:', getEnvironment());
+  }, []);
+
   const handleSendOtp = async () => {
     if (phone.length < 10) {
+      diagLogger.warn('LOGIN_PHONE_VALIDATION_FAILED', { phoneLength: phone.length });
       setErrorMessage('Please enter a valid 10-digit phone number');
       return;
     }
@@ -67,11 +84,26 @@ export default function LoginScreen() {
     setIsLoading(true);
     setErrorMessage('');
     
+    const fullPhone = `${countryCode}${phone}`;
+    diagLogger.info('LOGIN_OTP_REQUEST_START', { 
+      phone: fullPhone,
+      apiUrl: API_BASE_URL,
+      timestamp: new Date().toISOString()
+    });
+    console.log('[LOGIN] Requesting OTP for:', fullPhone);
+    
     try {
-      const fullPhone = `${countryCode}${phone}`;
       const response = await axios.post(`${API_BASE_URL}/auth/request-otp`, {
         phone: fullPhone
       });
+      
+      diagLogger.info('LOGIN_OTP_REQUEST_SUCCESS', {
+        phone: fullPhone,
+        responseStatus: response.status,
+        responseData: response.data,
+        timestamp: new Date().toISOString()
+      });
+      console.log('[LOGIN] OTP request success:', response.data);
       
       setStep('otp');
       // Focus first OTP input after a short delay
@@ -79,6 +111,18 @@ export default function LoginScreen() {
         otpInputs.current[0]?.focus();
       }, 100);
     } catch (error: any) {
+      const errorInfo = {
+        phone: fullPhone,
+        errorMessage: error.message,
+        errorCode: error.code,
+        responseStatus: error.response?.status,
+        responseData: error.response?.data,
+        requestMade: !!error.request,
+        timestamp: new Date().toISOString()
+      };
+      diagLogger.error('LOGIN_OTP_REQUEST_FAILED', errorInfo);
+      console.log('[LOGIN] OTP request failed:', errorInfo);
+      
       if (error.response) {
         const detail = error.response.data?.detail || 'Failed to send OTP';
         setErrorMessage(detail);
@@ -102,20 +146,70 @@ export default function LoginScreen() {
     setIsLoading(true);
     setErrorMessage('');
 
+    const fullPhone = `${countryCode}${phone}`;
+    diagLogger.info('LOGIN_OTP_VERIFY_START', {
+      phone: fullPhone,
+      otpLength: otpValue.length,
+      apiUrl: API_BASE_URL,
+      timestamp: new Date().toISOString()
+    });
+    console.log('[LOGIN] Verifying OTP for:', fullPhone);
+
     try {
-      const fullPhone = `${countryCode}${phone}`;
       const response = await axios.post(`${API_BASE_URL}/auth/verify-otp`, {
         phone: fullPhone,
         otp: otpValue
       });
 
+      diagLogger.info('LOGIN_OTP_VERIFY_RESPONSE', {
+        phone: fullPhone,
+        responseStatus: response.status,
+        success: response.data.success,
+        hasToken: !!response.data.token,
+        hasProfile: !!response.data.mechanicProfile,
+        profileName: response.data.mechanicProfile?.name,
+        profileId: response.data.mechanicProfile?.id,
+        profileCities: response.data.mechanicProfile?.inspection_cities,
+        timestamp: new Date().toISOString()
+      });
+      console.log('[LOGIN] OTP verify response:', {
+        success: response.data.success,
+        hasToken: !!response.data.token,
+        profile: response.data.mechanicProfile
+      });
+
       if (response.data.success && response.data.token) {
+        diagLogger.info('LOGIN_SUCCESS', {
+          phone: fullPhone,
+          mechanicId: response.data.mechanicProfile?.id,
+          mechanicName: response.data.mechanicProfile?.name,
+          cities: response.data.mechanicProfile?.inspection_cities,
+          timestamp: new Date().toISOString()
+        });
+        console.log('[LOGIN] Login successful, navigating to home');
+        
         await login(response.data.token, response.data.mechanicProfile);
         router.replace('/home');
       } else {
+        diagLogger.warn('LOGIN_VERIFY_UNEXPECTED_RESPONSE', {
+          phone: fullPhone,
+          response: response.data,
+          timestamp: new Date().toISOString()
+        });
         setErrorMessage('Verification failed. Please try again.');
       }
     } catch (error: any) {
+      const errorInfo = {
+        phone: fullPhone,
+        errorMessage: error.message,
+        errorCode: error.code,
+        responseStatus: error.response?.status,
+        responseData: error.response?.data,
+        timestamp: new Date().toISOString()
+      };
+      diagLogger.error('LOGIN_OTP_VERIFY_FAILED', errorInfo);
+      console.log('[LOGIN] OTP verify failed:', errorInfo);
+      
       if (error.response) {
         const detail = error.response.data?.detail || 'Invalid OTP';
         setErrorMessage(detail);
