@@ -1251,7 +1251,7 @@ export default function CategoryQuestionsScreen() {
             {hasUnsavedChanges && ' • Unsaved'}
           </Text>
         </View>
-        <View style={{ width: 40 }} />
+        <CopyLogsButton iconColor={colors.textSecondary} iconSize={20} style={styles.copyLogsBtn} />
       </View>
 
       <View style={styles.progressBarContainer}>
