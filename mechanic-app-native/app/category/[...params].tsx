@@ -449,22 +449,24 @@ export default function CategoryQuestionsScreen() {
       
       // Load saved answers and drafts
       try {
-        const [inspection, localDrafts] = await Promise.all([
-          inspectionsApi.getInspection(inspectionId!).catch(() => null),
-          loadDraftsFromStorage(),
-        ]);
+        const localDrafts = await loadDraftsFromStorage();
         
         if (!isMounted.current) return;
         
-        const serverAnswers = inspection?.inspection_answers || {};
+        // CRITICAL FIX: Use existing_answers from questionnaire endpoint (reliable)
+        // This is the same data source that Categories screen uses successfully
+        // Fallback to getInspection only if questionnaire doesn't have answers
+        const questionnaireAnswers = data?.existing_answers || {};
+        const serverAnswers = questionnaireAnswers;
         
         diagLogger.info('QA_ANSWERS_FETCHED', {
           serverAnswersCount: Object.keys(serverAnswers).length,
           serverAnswerKeys: Object.keys(serverAnswers).slice(0, 10),
           localDraftsCount: Object.keys(localDrafts).length,
-          localDraftKeys: Object.keys(localDrafts)
+          localDraftKeys: Object.keys(localDrafts),
+          source: 'questionnaire_existing_answers'
         });
-        console.log('[Q&A] Server answers:', Object.keys(serverAnswers).length);
+        console.log('[Q&A] Server answers:', Object.keys(serverAnswers).length, '(from questionnaire)');
         console.log('[Q&A] Local drafts:', Object.keys(localDrafts).length);
         
         // Merge: prefer local drafts (if isDraft) over server answers
