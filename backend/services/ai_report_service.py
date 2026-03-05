@@ -332,13 +332,22 @@ def validate_ai_response(ai_response: Dict[str, Any], market_price_data: Dict[st
         "key_highlights": ai_response.get("key_highlights", defaults["key_highlights"]),
         "concerns": ai_response.get("concerns", []),
         "condition_ratings": ai_response.get("condition_ratings", defaults["condition_ratings"]),
-        "category_ratings": ai_response.get("category_ratings", defaults["category_ratings"]),
         "estimated_repairs": ai_response.get("estimated_repairs", []),
         "risk_factors": ai_response.get("risk_factors", defaults["risk_factors"]),
         "recommendations": ai_response.get("recommendations", defaults["recommendations"]),
         "ai_generated": True,
         "generated_at": datetime.now(timezone.utc).isoformat()
     }
+    
+    # Normalize category_ratings keys (replace non-alphanumeric with single underscore)
+    raw_category_ratings = ai_response.get("category_ratings", defaults["category_ratings"])
+    normalized_category_ratings = {}
+    for key, value in raw_category_ratings.items():
+        # Normalize: lowercase, replace non-alphanumeric with _, collapse multiple underscores
+        import re
+        normalized_key = re.sub(r'_+', '_', re.sub(r'[^a-z0-9]', '_', key.lower())).strip('_')
+        normalized_category_ratings[normalized_key] = value
+    validated["category_ratings"] = normalized_category_ratings
     
     # Validate rating is within bounds (0-10 scale)
     if not 0 <= validated["overall_rating"] <= 10:
