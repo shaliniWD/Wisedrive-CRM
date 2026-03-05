@@ -8,6 +8,7 @@ Includes:
 - Market value integration
 """
 import os
+import re
 import json
 import logging
 from typing import Dict, Any, Optional, List
