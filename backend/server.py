@@ -13066,9 +13066,9 @@ async def get_mechanic_inspections(
             })
         
         query = {"$or": or_conditions}
-    
-    # Date filter
-    if date_filter:
+        
+        # Date filter
+        if date_filter:
         today = datetime.now(timezone.utc).date()
         if date_filter == 'today':
             query["scheduled_date"] = {"$regex": f"^{today.isoformat()}"}
