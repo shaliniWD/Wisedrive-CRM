@@ -278,56 +278,56 @@ async def get_mechanic_inspections(
                 app_status = "ACCEPTED"
             elif crm_status in ["NEW_INSPECTION", "ASSIGNED_TO_MECHANIC"]:
                 app_status = "NEW"
-        elif crm_status == "RESCHEDULED":
-            app_status = "NEW"  # Show rescheduled as new for mechanic to accept again
-        else:
-            app_status = "NEW"
+            elif crm_status == "RESCHEDULED":
+                app_status = "NEW"  # Show rescheduled as new for mechanic to accept again
+            else:
+                app_status = "NEW"
+            
+            # Helper function to safely convert any value to string
+            def safe_str(val, default=""):
+                if val is None:
+                    return default
+                try:
+                    return str(val) if val else default
+                except:
+                    return default
+            
+            result.append({
+                "id": safe_str(insp.get("id")),
+                "scheduledAt": insp.get("scheduled_date") or insp.get("created_at"),
+                "status": app_status,
+                "crmStatus": crm_status,
+                "vehicleNumber": safe_str(insp.get("car_number")),
+                "makeModelVariant": f"{safe_str(insp.get('car_make', insp.get('make', '')))} {safe_str(insp.get('car_model', insp.get('model', '')))} {safe_str(insp.get('variant', ''))}".strip() or "Not Available",
+                "carMake": safe_str(insp.get("car_make", insp.get("make", ""))),
+                "carModel": safe_str(insp.get("car_model", insp.get("model", ""))),
+                "fuelType": safe_str(insp.get("fuel_type")),
+                "manufacturingYear": safe_str(insp.get("car_year", insp.get("manufacturing_year", ""))),
+                "odometerReading": safe_str(insp.get("odometer_reading")),
+                "city": safe_str(insp.get("city")),
+                "customerName": safe_str(insp.get("customer_name")),
+                "customerPhone": safe_str(insp.get("customer_mobile")),
+                "customerAddress": safe_str(insp.get("address")),
+                "latitude": insp.get("latitude") or insp.get("location_lat"),
+                "longitude": insp.get("longitude") or insp.get("location_lng"),
+                "assignedMechanicId": safe_str(insp.get("mechanic_id")) or None,
+                "partner_id": safe_str(insp.get("partner_id")) or None,
+                "partner_name": safe_str(insp.get("partner_name")),
+                "requiredModules": {
+                    "photos": True,
+                    "sound": False,
+                    "obd": False
+                },
+                "progress": insp.get("inspection_progress", {
+                    "photosDone": False,
+                    "soundDone": False,
+                    "obdDone": False,
+                    "notesDone": False
+                }),
+                "orderId": safe_str(insp.get("order_id")) or None,
+                "packageName": safe_str(insp.get("package_type") or insp.get("inspection_package_name", "Standard Inspection"))
+            })
         
-        # Helper function to safely convert any value to string
-        def safe_str(val, default=""):
-            if val is None:
-                return default
-            try:
-                return str(val) if val else default
-            except:
-                return default
-        
-        result.append({
-            "id": safe_str(insp.get("id")),
-            "scheduledAt": insp.get("scheduled_date") or insp.get("created_at"),
-            "status": app_status,
-            "crmStatus": crm_status,
-            "vehicleNumber": safe_str(insp.get("car_number")),
-            "makeModelVariant": f"{safe_str(insp.get('car_make', insp.get('make', '')))} {safe_str(insp.get('car_model', insp.get('model', '')))} {safe_str(insp.get('variant', ''))}".strip() or "Not Available",
-            "carMake": safe_str(insp.get("car_make", insp.get("make", ""))),
-            "carModel": safe_str(insp.get("car_model", insp.get("model", ""))),
-            "fuelType": safe_str(insp.get("fuel_type")),
-            "manufacturingYear": safe_str(insp.get("car_year", insp.get("manufacturing_year", ""))),
-            "odometerReading": safe_str(insp.get("odometer_reading")),
-            "city": safe_str(insp.get("city")),
-            "customerName": safe_str(insp.get("customer_name")),
-            "customerPhone": safe_str(insp.get("customer_mobile")),
-            "customerAddress": safe_str(insp.get("address")),
-            "latitude": insp.get("latitude") or insp.get("location_lat"),
-            "longitude": insp.get("longitude") or insp.get("location_lng"),
-            "assignedMechanicId": safe_str(insp.get("mechanic_id")) or None,
-            "partner_id": safe_str(insp.get("partner_id")) or None,
-            "partner_name": safe_str(insp.get("partner_name")),
-            "requiredModules": {
-                "photos": True,
-                "sound": False,
-                "obd": False
-            },
-            "progress": insp.get("inspection_progress", {
-                "photosDone": False,
-                "soundDone": False,
-                "obdDone": False,
-                "notesDone": False
-            }),
-            "orderId": safe_str(insp.get("order_id")) or None,
-            "packageName": safe_str(insp.get("package_type") or insp.get("inspection_package_name", "Standard Inspection"))
-        })
-    
         return JSONResponse(content=result)
         
     except Exception as e:
