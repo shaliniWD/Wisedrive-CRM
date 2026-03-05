@@ -13192,6 +13192,16 @@ async def get_mechanic_inspections(
         logger.info(f"DEBUGGING: First result keys: {list(result[0].keys())[:10]}")
     
     return result
+    
+    except Exception as e:
+        import traceback
+        error_traceback = traceback.format_exc()
+        logger.error(f"CRITICAL ERROR in get_mechanic_inspections: {str(e)}")
+        logger.error(f"TRACEBACK: {error_traceback}")
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Internal error: {str(e)}"
+        )
 
 
 @api_router.get("/mechanic/inspections/{inspection_id}")
