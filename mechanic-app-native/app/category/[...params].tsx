@@ -554,10 +554,18 @@ export default function CategoryQuestionsScreen() {
     }
     
     setIsSaving(true);
-    diagLogger.info('SAVE_ALL_START', { 
+    const startTime = Date.now();
+    diagLogger.info('QA_SAVE_ALL_START', { 
+      inspectionId,
+      categoryId,
       totalAnswers: answersToSave.length,
-      questionIds: answersToSave.map(([qid]) => qid)
+      questionIds: answersToSave.map(([qid]) => qid),
+      apiUrl: getCurrentApiUrl(),
+      environment: getEnvironment(),
+      timestamp: new Date().toISOString()
     });
+    console.log('[Q&A] Saving', answersToSave.length, 'answers');
+    console.log('[Q&A] Question IDs:', answersToSave.map(([qid]) => qid));
     
     const results: Array<{ questionId: string; success: boolean; error?: string }> = [];
     
