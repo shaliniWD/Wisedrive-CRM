@@ -430,6 +430,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
+  copyLogsContainer: {
+    position: 'absolute',
+    top: 50,
+    right: 16,
+    zIndex: 100,
+  },
   keyboardView: {
     flex: 1,
   },
