@@ -13264,6 +13264,76 @@ async def debug_mechanic_inspections(
     return debug_info
 
 
+@api_router.get("/debug/mechanic-inspections/{mechanic_id}")
+async def public_debug_mechanic_inspections(mechanic_id: str):
+    """Public debug endpoint - no auth required - for diagnosing inspection issues"""
+    import traceback
+    
+    debug_info = {
+        "mechanic_id": mechanic_id,
+        "inspections_found": 0,
+        "raw_inspections": [],
+        "transformation_errors": [],
+        "success": False
+    }
+    
+    try:
+        # Get mechanic info
+        mechanic = await db.users.find_one({"id": mechanic_id}, {"_id": 0, "id": 1, "name": 1, "inspection_cities": 1})
+        if mechanic:
+            debug_info["mechanic_name"] = mechanic.get("name")
+            debug_info["mechanic_cities"] = mechanic.get("inspection_cities", [])
+        
+        # Simple query - just get inspections for this mechanic
+        query = {"mechanic_id": mechanic_id}
+        cursor = db.inspections.find(query, {"_id": 0}).limit(5)
+        inspections = await cursor.to_list(length=5)
+        
+        debug_info["inspections_found"] = len(inspections)
+        
+        # Show raw data for first 3 inspections (limited fields)
+        for idx, insp in enumerate(inspections[:3]):
+            raw_data = {
+                "id": insp.get("id"),
+                "car_year_type": type(insp.get("car_year")).__name__,
+                "car_year_value": repr(insp.get("car_year")),
+                "manufacturing_year_type": type(insp.get("manufacturing_year")).__name__,
+                "manufacturing_year_value": repr(insp.get("manufacturing_year")),
+                "odometer_reading_type": type(insp.get("odometer_reading")).__name__,
+                "odometer_reading_value": repr(insp.get("odometer_reading")),
+                "car_number": insp.get("car_number"),
+                "inspection_status": insp.get("inspection_status"),
+            }
+            debug_info["raw_inspections"].append(raw_data)
+            
+            # Try transformation
+            try:
+                def safe_str(val, default=""):
+                    if val is None:
+                        return default
+                    return str(val) if val else default
+                
+                transformed = {
+                    "manufacturingYear": safe_str(insp.get("car_year", insp.get("manufacturing_year", ""))),
+                    "odometerReading": safe_str(insp.get("odometer_reading")),
+                }
+                debug_info["raw_inspections"][-1]["transformation_result"] = transformed
+            except Exception as e:
+                debug_info["transformation_errors"].append({
+                    "inspection_idx": idx,
+                    "error": str(e),
+                    "traceback": traceback.format_exc()[:500]
+                })
+        
+        debug_info["success"] = True
+        
+    except Exception as e:
+        debug_info["error"] = str(e)
+        debug_info["traceback"] = traceback.format_exc()
+    
+    return debug_info
+
+
 @api_router.get("/mechanic/inspections/{inspection_id}")
 async def get_mechanic_inspection_detail(
     inspection_id: str,
