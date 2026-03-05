@@ -217,21 +217,23 @@ async def get_mechanic_inspections(
     
     Unassigned inspections should NOT be shown - they go back to the CRM pool.
     """
-    mechanic_id = current_user["id"]
-    mechanic_name = current_user.get("name", "")
-    
-    logger.info(f"Fetching inspections for mechanic: {mechanic_id} ({mechanic_name})")
-    
-    # Query: ONLY inspections assigned to THIS mechanic
-    # When unassigned, mechanic_id becomes null/empty, so they won't see it anymore
-    query = {
-        "$or": [
-            # Match by mechanic_id (primary)
-            {"mechanic_id": mechanic_id},
-            # Also match by mechanic_name for backward compatibility
-            {"mechanic_name": {"$regex": f"^{mechanic_name}$", "$options": "i"}} if mechanic_name else {"_never_match_": True}
-        ]
-    }
+    try:
+        mechanic_id = current_user["id"]
+        mechanic_name = current_user.get("name", "")
+        
+        logger.info(f"Fetching inspections for mechanic: {mechanic_id} ({mechanic_name})")
+        
+        # Query: ONLY inspections assigned to THIS mechanic
+        # When unassigned, mechanic_id becomes null/empty, so they won't see it anymore
+        import re
+        query = {
+            "$or": [
+                # Match by mechanic_id (primary)
+                {"mechanic_id": mechanic_id},
+                # Also match by mechanic_name for backward compatibility (with regex escaping)
+                {"mechanic_name": {"$regex": f"^{re.escape(mechanic_name)}$", "$options": "i"}} if mechanic_name else {"_never_match_": True}
+            ]
+        }
     
     # Date filter
     if date_filter:
