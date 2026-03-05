@@ -21,7 +21,8 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../src/context/AuthContext';
 import { useInspection } from '../src/context/InspectionContext';
-import { inspectionsApi } from '../src/lib/api';
+import { inspectionsApi, getCurrentApiUrl, getEnvironment } from '../src/lib/api';
+import { diagLogger } from '../src/lib/diagLogger';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { formatDateShort, formatTime, formatDateMedium, formatDateWithDay, formatDateForApi } from '../src/utils/dateFormat';
 
