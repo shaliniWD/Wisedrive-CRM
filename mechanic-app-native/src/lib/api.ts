@@ -9,16 +9,25 @@ const PREVIEW_API_URL = 'https://mechanic-app-test.preview.emergentagent.com/api
 const PRODUCTION_API_URL = 'https://crmdev.wisedrive.com/api';
 
 // CURRENT ENVIRONMENT: Set to true for preview testing, false for production
-const USE_PREVIEW_ENVIRONMENT = true;
+const USE_PREVIEW_ENVIRONMENT = false;  // PRODUCTION MODE
 
 const API_BASE_URL = USE_PREVIEW_ENVIRONMENT ? PREVIEW_API_URL : PRODUCTION_API_URL;
 
 // Log which environment is being used
+console.log('[API CONFIG] ========================================');
 console.log('[API CONFIG] Using API URL:', API_BASE_URL);
 console.log('[API CONFIG] Environment:', USE_PREVIEW_ENVIRONMENT ? 'PREVIEW' : 'PRODUCTION');
+console.log('[API CONFIG] ========================================');
+diagLogger.info('API_CONFIG_INIT', { 
+  apiUrl: API_BASE_URL, 
+  environment: USE_PREVIEW_ENVIRONMENT ? 'PREVIEW' : 'PRODUCTION',
+  timestamp: new Date().toISOString()
+});
 
 // Export the base URL (without /api suffix) for direct fetch calls
 export const API_BASE = API_BASE_URL.replace(/\/api$/, '');
+export const getCurrentApiUrl = () => API_BASE_URL;
+export const getEnvironment = () => USE_PREVIEW_ENVIRONMENT ? 'PREVIEW' : 'PRODUCTION';
 
 // Helper to get auth token
 export const getAuthToken = async (): Promise<string | null> => {
