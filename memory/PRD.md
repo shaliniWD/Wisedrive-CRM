@@ -148,6 +148,11 @@ The application is a full-stack CRM for vehicle loans and inspections. Key featu
 
 ## API Endpoints
 
+### Recommended Purchase Price (RPP)
+```
+POST /api/inspections/{id}/fetch-rpp  - Fetch market prices from OLX, Spinny, Cars24, CarWale, CarDekho
+```
+
 ### Bank Statement Analysis
 ```
 POST /api/loan-leads/analyze-bank-statement-url  - Analyze PDF from URL (with password support)
