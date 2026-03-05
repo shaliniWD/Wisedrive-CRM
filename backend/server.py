@@ -13002,6 +13002,8 @@ async def get_mechanic_inspections(
 ):
     """Get inspections for mechanic app - shows inspections assigned to or available for the mechanic"""
     import re
+    import traceback
+    from fastapi.responses import JSONResponse
     
     mechanic_id = current_user["id"]
     mechanic_cities = current_user.get("inspection_cities", [])
@@ -13069,160 +13071,152 @@ async def get_mechanic_inspections(
         
         # Date filter
         if date_filter:
-        today = datetime.now(timezone.utc).date()
-        if date_filter == 'today':
-            query["scheduled_date"] = {"$regex": f"^{today.isoformat()}"}
-        elif date_filter == 'week':
-            week_start = today - timedelta(days=today.weekday())
-            week_end = week_start + timedelta(days=6)
-            query["$and"] = query.get("$and", []) + [
-                {"scheduled_date": {"$gte": week_start.isoformat()}},
-                {"scheduled_date": {"$lte": (week_end + timedelta(days=1)).isoformat()}}
-            ]
-        elif date_filter == 'month':
-            month_start = today.replace(day=1)
-            if today.month == 12:
-                month_end = today.replace(year=today.year + 1, month=1, day=1)
+            today = datetime.now(timezone.utc).date()
+            if date_filter == 'today':
+                query["scheduled_date"] = {"$regex": f"^{today.isoformat()}"}
+            elif date_filter == 'week':
+                week_start = today - timedelta(days=today.weekday())
+                week_end = week_start + timedelta(days=6)
+                query["$and"] = query.get("$and", []) + [
+                    {"scheduled_date": {"$gte": week_start.isoformat()}},
+                    {"scheduled_date": {"$lte": (week_end + timedelta(days=1)).isoformat()}}
+                ]
+            elif date_filter == 'month':
+                month_start = today.replace(day=1)
+                if today.month == 12:
+                    month_end = today.replace(year=today.year + 1, month=1, day=1)
+                else:
+                    month_end = today.replace(month=today.month + 1, day=1)
+                query["$and"] = query.get("$and", []) + [
+                    {"scheduled_date": {"$gte": month_start.isoformat()}},
+                    {"scheduled_date": {"$lt": month_end.isoformat()}}
+                ]
+            elif date_filter == 'last_month':
+                if today.month == 1:
+                    last_month_start = today.replace(year=today.year - 1, month=12, day=1)
+                else:
+                    last_month_start = today.replace(month=today.month - 1, day=1)
+                month_start = today.replace(day=1)
+                query["$and"] = query.get("$and", []) + [
+                    {"scheduled_date": {"$gte": last_month_start.isoformat()}},
+                    {"scheduled_date": {"$lt": month_start.isoformat()}}
+                ]
+        
+        # Filter by city
+        if city:
+            query["city"] = {"$regex": f"^{re.escape(city)}$", "$options": "i"}
+        
+        # Filter by status (map mechanic app status to CRM status)
+        status_map = {
+            "NEW": ["NEW_INSPECTION", "ASSIGNED_TO_MECHANIC"],
+            "ACCEPTED": ["MECHANIC_ACCEPTED"],
+            "IN_PROGRESS": ["INSPECTION_STARTED"],
+            "COMPLETED": ["INSPECTION_COMPLETED"],
+            "REJECTED": ["MECHANIC_REJECTED", "INSPECTION_CANCELLED_WD", "INSPECTION_CANCELLED_CUS"]
+        }
+        
+        if status:
+            crm_statuses = status_map.get(status, [status])
+            if "$or" in query:
+                # Combine with existing $or
+                original_or = query["$or"]
+                query["$and"] = query.get("$and", []) + [
+                    {"$or": original_or},
+                    {"inspection_status": {"$in": crm_statuses}}
+                ]
+                del query["$or"]
             else:
-                month_end = today.replace(month=today.month + 1, day=1)
-            query["$and"] = query.get("$and", []) + [
-                {"scheduled_date": {"$gte": month_start.isoformat()}},
-                {"scheduled_date": {"$lt": month_end.isoformat()}}
-            ]
-        elif date_filter == 'last_month':
-            if today.month == 1:
-                last_month_start = today.replace(year=today.year - 1, month=12, day=1)
-            else:
-                last_month_start = today.replace(month=today.month - 1, day=1)
-            month_start = today.replace(day=1)
-            query["$and"] = query.get("$and", []) + [
-                {"scheduled_date": {"$gte": last_month_start.isoformat()}},
-                {"scheduled_date": {"$lt": month_start.isoformat()}}
-            ]
-    
-    # Filter by city
-    if city:
-        query["city"] = {"$regex": f"^{re.escape(city)}$", "$options": "i"}
-    
-    # Filter by status (map mechanic app status to CRM status)
-    status_map = {
-        "NEW": ["NEW_INSPECTION", "ASSIGNED_TO_MECHANIC"],
-        "ACCEPTED": ["MECHANIC_ACCEPTED"],
-        "IN_PROGRESS": ["INSPECTION_STARTED"],
-        "COMPLETED": ["INSPECTION_COMPLETED"],
-        "REJECTED": ["MECHANIC_REJECTED", "INSPECTION_CANCELLED_WD", "INSPECTION_CANCELLED_CUS"]
-    }
-    
-    if status:
-        crm_statuses = status_map.get(status, [status])
-        if "$or" in query:
-            # Combine with existing $or
-            original_or = query["$or"]
-            query["$and"] = query.get("$and", []) + [
-                {"$or": original_or},
-                {"inspection_status": {"$in": crm_statuses}}
-            ]
-            del query["$or"]
-        else:
-            query["inspection_status"] = {"$in": crm_statuses}
-    
-    logger.info(f"Mechanic inspections query: {query}")
-    
-    inspections = await db.inspections.find(query, {"_id": 0}).sort("scheduled_date", -1).to_list(100)
-    
-    logger.info(f"Found {len(inspections)} inspections for mechanic {mechanic_id}")
-    logger.info(f"DEBUGGING: Starting transformation for {len(inspections)} inspections")
-    
-    # Transform to mechanic app format
-    result = []
-    for idx, insp in enumerate(inspections):
-        try:
-            # Map CRM status to mechanic app status
-            crm_status = insp.get("inspection_status", "NEW_INSPECTION")
-            if crm_status == "INSPECTION_COMPLETED":
-                app_status = "COMPLETED"
-            elif crm_status in ["MECHANIC_REJECTED", "INSPECTION_CANCELLED_WD", "INSPECTION_CANCELLED_CUS"]:
-                app_status = "REJECTED"
-            elif crm_status == "INSPECTION_STARTED":
-                app_status = "IN_PROGRESS"
-            elif crm_status == "MECHANIC_ACCEPTED":
-                app_status = "ACCEPTED"
-            elif crm_status in ["NEW_INSPECTION", "ASSIGNED_TO_MECHANIC"]:
-                app_status = "NEW"
-            elif crm_status == "RESCHEDULED":
-                app_status = "NEW"  # Show rescheduled as new for mechanic to accept again
-            else:
-                app_status = "NEW"
-            
-            # Helper function to safely convert to string
-            def safe_str(val, default=""):
-                if val is None:
-                    return default
+                query["inspection_status"] = {"$in": crm_statuses}
+        
+        logger.info(f"Mechanic inspections query: {query}")
+        
+        inspections = await db.inspections.find(query, {"_id": 0}).sort("scheduled_date", -1).to_list(100)
+        
+        logger.info(f"Found {len(inspections)} inspections for mechanic {mechanic_id}")
+        
+        # Helper function to safely convert to string
+        def safe_str(val, default=""):
+            if val is None:
+                return default
+            try:
                 return str(val) if val else default
-            
-            # Build the inspection object with safe type conversions
-            inspection_obj = {
-                "id": safe_str(insp.get("id")),
-                "scheduledAt": insp.get("scheduled_date") or insp.get("created_at"),
-                "status": app_status,
-                "crmStatus": crm_status,
-                "vehicleNumber": safe_str(insp.get("car_number")),
-                "makeModelVariant": f"{safe_str(insp.get('car_make', insp.get('make', '')))} {safe_str(insp.get('car_model', insp.get('model', '')))} {safe_str(insp.get('variant', ''))}".strip() or "Not Available",
-                "carMake": safe_str(insp.get("car_make", insp.get("make", ""))),
-                "carModel": safe_str(insp.get("car_model", insp.get("model", ""))),
-                "fuelType": safe_str(insp.get("fuel_type")),
-                "manufacturingYear": safe_str(insp.get("car_year", insp.get("manufacturing_year", ""))),
-                "odometerReading": safe_str(insp.get("odometer_reading")),
-                "city": safe_str(insp.get("city")),
-                "customerName": safe_str(insp.get("customer_name")),
-                "customerPhone": safe_str(insp.get("customer_mobile")),
-                "customerAddress": safe_str(insp.get("address")),
-                "latitude": insp.get("latitude") or insp.get("location_lat"),
-                "longitude": insp.get("longitude") or insp.get("location_lng"),
-                "assignedMechanicId": safe_str(insp.get("mechanic_id")) or None,
-                "partner_id": safe_str(insp.get("partner_id")) or None,
-                "partner_name": safe_str(insp.get("partner_name")),
-                "requiredModules": {
-                    "photos": True,
-                    "sound": False,
-                    "obd": False
-                },
-                "progress": insp.get("inspection_progress", {
-                    "photosDone": False,
-                    "soundDone": False,
-                    "obdDone": False,
-                    "notesDone": False
-                }),
-                "orderId": safe_str(insp.get("order_id")) or None,
-                "packageName": safe_str(insp.get("package_type") or insp.get("inspection_package_name", "Standard Inspection"))
-            }
-            
-            result.append(inspection_obj)
-            
-        except Exception as e:
-            logger.error(f"CRITICAL: Error transforming inspection {idx}: {str(e)}")
-            logger.error(f"CRITICAL: Problematic inspection data: {insp}")
-            # Continue processing other inspections
-            continue
-    
-    logger.info(f"DEBUGGING: Transformation complete. Result has {len(result)} items")
-    if result:
-        logger.info(f"DEBUGGING: First result keys: {list(result[0].keys())[:10]}")
-        # Log the actual values to debug
-        logger.info(f"DEBUGGING: First result manufacturingYear: {repr(result[0].get('manufacturingYear'))} type: {type(result[0].get('manufacturingYear'))}")
-    
-    # Return as JSONResponse to bypass any automatic Pydantic validation
-    from fastapi.responses import JSONResponse
-    return JSONResponse(content=result)
-    
+            except:
+                return default
+        
+        # Transform to mechanic app format
+        result = []
+        for idx, insp in enumerate(inspections):
+            try:
+                # Map CRM status to mechanic app status
+                crm_status = insp.get("inspection_status", "NEW_INSPECTION")
+                if crm_status == "INSPECTION_COMPLETED":
+                    app_status = "COMPLETED"
+                elif crm_status in ["MECHANIC_REJECTED", "INSPECTION_CANCELLED_WD", "INSPECTION_CANCELLED_CUS"]:
+                    app_status = "REJECTED"
+                elif crm_status == "INSPECTION_STARTED":
+                    app_status = "IN_PROGRESS"
+                elif crm_status == "MECHANIC_ACCEPTED":
+                    app_status = "ACCEPTED"
+                elif crm_status in ["NEW_INSPECTION", "ASSIGNED_TO_MECHANIC"]:
+                    app_status = "NEW"
+                elif crm_status == "RESCHEDULED":
+                    app_status = "NEW"
+                else:
+                    app_status = "NEW"
+                
+                # Build the inspection object with safe type conversions
+                inspection_obj = {
+                    "id": safe_str(insp.get("id")),
+                    "scheduledAt": insp.get("scheduled_date") or insp.get("created_at"),
+                    "status": app_status,
+                    "crmStatus": crm_status,
+                    "vehicleNumber": safe_str(insp.get("car_number")),
+                    "makeModelVariant": f"{safe_str(insp.get('car_make', insp.get('make', '')))} {safe_str(insp.get('car_model', insp.get('model', '')))} {safe_str(insp.get('variant', ''))}".strip() or "Not Available",
+                    "carMake": safe_str(insp.get("car_make", insp.get("make", ""))),
+                    "carModel": safe_str(insp.get("car_model", insp.get("model", ""))),
+                    "fuelType": safe_str(insp.get("fuel_type")),
+                    "manufacturingYear": safe_str(insp.get("car_year", insp.get("manufacturing_year", ""))),
+                    "odometerReading": safe_str(insp.get("odometer_reading")),
+                    "city": safe_str(insp.get("city")),
+                    "customerName": safe_str(insp.get("customer_name")),
+                    "customerPhone": safe_str(insp.get("customer_mobile")),
+                    "customerAddress": safe_str(insp.get("address")),
+                    "latitude": insp.get("latitude") or insp.get("location_lat"),
+                    "longitude": insp.get("longitude") or insp.get("location_lng"),
+                    "assignedMechanicId": safe_str(insp.get("mechanic_id")) or None,
+                    "partner_id": safe_str(insp.get("partner_id")) or None,
+                    "partner_name": safe_str(insp.get("partner_name")),
+                    "requiredModules": {
+                        "photos": True,
+                        "sound": False,
+                        "obd": False
+                    },
+                    "progress": insp.get("inspection_progress", {
+                        "photosDone": False,
+                        "soundDone": False,
+                        "obdDone": False,
+                        "notesDone": False
+                    }),
+                    "orderId": safe_str(insp.get("order_id")) or None,
+                    "packageName": safe_str(insp.get("package_type") or insp.get("inspection_package_name", "Standard Inspection"))
+                }
+                
+                result.append(inspection_obj)
+                
+            except Exception as e:
+                logger.error(f"Error transforming inspection {idx}: {str(e)}")
+                logger.error(f"Problematic inspection ID: {insp.get('id', 'unknown')}")
+                continue
+        
+        logger.info(f"Returning {len(result)} inspections for mechanic {mechanic_id}")
+        return JSONResponse(content=result)
+        
     except Exception as e:
         # Global exception handler to prevent 500 errors
-        import traceback
         logger.error(f"CRITICAL ERROR in get_mechanic_inspections: {str(e)}")
         logger.error(f"Traceback: {traceback.format_exc()}")
         logger.error(f"Mechanic ID: {mechanic_id}, Cities: {mechanic_cities}")
-        # Return empty list with error info rather than 500
-        from fastapi.responses import JSONResponse
+        # Return empty list rather than 500 error
         return JSONResponse(content=[], status_code=200)
 
 
