@@ -5774,6 +5774,144 @@ async def generate_ai_inspection_report(
     }
 
 
+# ==================== RECOMMENDED PURCHASE PRICE (RPP) ====================
+
+@api_router.post("/inspections/{inspection_id}/fetch-rpp")
+async def fetch_recommended_purchase_price(
+    inspection_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Fetch Recommended Purchase Price (RPP) by scraping car portals.
+    This can be called when inspection starts to get early price estimates.
+    Scrapes: OLX, Spinny, Cars24, CarWale, CarDekho
+    """
+    from services.car_price_scraper import get_price_scraper
+    
+    # Get inspection
+    inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
+    if not inspection:
+        raise HTTPException(status_code=404, detail="Inspection not found")
+    
+    # Get vehicle data from inspection or linked lead
+    lead = None
+    if inspection.get("lead_id"):
+        lead = await db.leads.find_one({"id": inspection["lead_id"]}, {"_id": 0})
+    
+    # Extract vehicle details
+    make = inspection.get("vehicle_make") or (lead.get("vehicle_make") if lead else None)
+    model = inspection.get("vehicle_model") or (lead.get("vehicle_model") if lead else None)
+    year = inspection.get("vehicle_year") or inspection.get("car_year") or (lead.get("vehicle_year") if lead else None)
+    fuel_type = inspection.get("fuel_type") or (lead.get("fuel_type") if lead else None)
+    transmission = inspection.get("transmission") or (lead.get("transmission") if lead else None)
+    kms_driven = inspection.get("kms_driven") or (lead.get("kms_driven") if lead else None)
+    city = inspection.get("city") or (lead.get("city") if lead else None)
+    
+    if not make or not model:
+        raise HTTPException(
+            status_code=400, 
+            detail="Vehicle make and model are required to fetch market prices"
+        )
+    
+    # Parse year
+    try:
+        year_value = int(year) if year else datetime.now().year - 3
+    except (ValueError, TypeError):
+        year_value = datetime.now().year - 3
+    
+    # Parse kms
+    try:
+        kms_value = int(kms_driven) if kms_driven else None
+    except (ValueError, TypeError):
+        kms_value = None
+    
+    logger.info(f"[RPP] Fetching prices for {make} {model} {year_value}, Fuel: {fuel_type}, Trans: {transmission}, KMs: {kms_value}")
+    
+    # Fetch prices from scraper
+    scraper = get_price_scraper()
+    market_data = await scraper.get_market_price(
+        make=make,
+        model=model,
+        year=year_value,
+        fuel_type=fuel_type,
+        transmission=transmission,
+        kms_driven=kms_value,
+        city=city
+    )
+    
+    logger.info(f"[RPP] Fetch result: success={market_data.get('success')}, sources={market_data.get('sources_count', 0)}")
+    
+    # Store in inspection
+    now = datetime.now(timezone.utc).isoformat()
+    
+    if market_data.get("success"):
+        update_doc = {
+            "market_price_research": {
+                "market_average": market_data.get("market_average", 0),
+                "market_min": market_data.get("market_min", 0),
+                "market_max": market_data.get("market_max", 0),
+                "recommended_min": market_data.get("recommended_min", 0),
+                "recommended_max": market_data.get("recommended_max", 0),
+                "sources_count": market_data.get("sources_count", 0),
+                "sources": market_data.get("sources", []),
+                "estimation_method": market_data.get("estimation_method", "web_scraping"),
+                "discount_applied": market_data.get("discount_applied", "5-10% below market average"),
+                "vehicle_searched": {
+                    "make": make,
+                    "model": model,
+                    "year": year_value,
+                    "fuel_type": fuel_type,
+                    "transmission": transmission,
+                    "kms_driven": kms_value
+                },
+                "fetched_at": now
+            },
+            # Also update the editable market values (RPP)
+            "market_value_min": market_data.get("recommended_min", 0),
+            "market_value_max": market_data.get("recommended_max", 0),
+            "updated_at": now
+        }
+        
+        await db.inspections.update_one({"id": inspection_id}, {"$set": update_doc})
+        
+        # Log activity
+        activity = {
+            "id": str(uuid.uuid4()),
+            "inspection_id": inspection_id,
+            "user_id": current_user.get("id"),
+            "user_name": current_user.get("name", "Unknown"),
+            "action": "RPP_FETCHED",
+            "action_label": "Market Prices Fetched",
+            "details": f"Fetched prices from {market_data.get('sources_count', 0)} sources. Average: ₹{market_data.get('market_average', 0):,}",
+            "source": "CRM",
+            "created_at": now
+        }
+        await db.inspection_activities.insert_one(activity)
+    
+    return {
+        "success": market_data.get("success", False),
+        "market_average": market_data.get("market_average", 0),
+        "market_min": market_data.get("market_min", 0),
+        "market_max": market_data.get("market_max", 0),
+        "recommended_min": market_data.get("recommended_min", 0),
+        "recommended_max": market_data.get("recommended_max", 0),
+        "discount_applied": market_data.get("discount_applied", ""),
+        "sources_count": market_data.get("sources_count", 0),
+        "sources": market_data.get("sources", []),
+        "estimation_method": market_data.get("estimation_method", ""),
+        "note": market_data.get("note", ""),
+        "vehicle": {
+            "make": make,
+            "model": model,
+            "year": year_value,
+            "fuel_type": fuel_type,
+            "transmission": transmission,
+            "kms_driven": kms_value
+        },
+        "fetched_at": now
+    }
+
+
 # ==================== PUBLIC REPORT ACCESS (OTP-PROTECTED) ====================
 
 class ReportOTPRequest(BaseModel):
