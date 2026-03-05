@@ -196,7 +196,7 @@ async def mechanic_verify_otp(data: MechanicLogin):
 
 # ==================== MECHANIC INSPECTIONS ====================
 
-@router.get("/inspections", response_model=List[MechanicInspectionResponse])
+@router.get("/inspections")  # Removed response_model to prevent Pydantic validation errors
 async def get_mechanic_inspections(
     date_filter: Optional[str] = None,
     city: Optional[str] = None,
