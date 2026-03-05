@@ -144,14 +144,17 @@ Based on this data, provide your assessment in the following JSON format:
     ]
 }}
 
-RATING GUIDELINES:
-- 5: Excellent - All answers positive, no issues
-- 4: Good - Minor issues only, mostly positive
-- 3: Fair - Some concerns, needs attention
-- 2: Poor - Multiple issues, significant repairs needed
-- 1: Bad - Major problems, not recommended
+RATING GUIDELINES (0-10 scale):
+- 10: Perfect - All answers positive, no issues at all
+- 8-9: Excellent - Minor cosmetic issues only, fully functional
+- 6-7: Good - Some wear but acceptable, minor attention needed
+- 4-5: Fair - Multiple concerns, requires attention and repairs
+- 2-3: Poor - Significant issues, major repairs needed
+- 0-1: Bad - Critical problems, not recommended for purchase
 
-Analyze each category's Q&A carefully. If an answer indicates damage, wear, or issues, reduce the rating accordingly.
+IMPORTANT: You MUST provide a rating for EVERY category in the inspection_categories data.
+Use the EXACT category name as provided in the data (e.g., "Engine Health and Diagnosis", "Exterior Inspection", etc.)
+Analyze each question and answer carefully - negative answers should significantly reduce the rating.
 Respond with ONLY the JSON object, no other text."""
 
         # Initialize the chat
