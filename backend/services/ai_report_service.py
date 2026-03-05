@@ -79,7 +79,7 @@ VEHICLE & INSPECTION DATA:
 
 Based on this data, provide your assessment in the following JSON format:
 {{
-    "overall_rating": <number 1-5, calculated as weighted average of category ratings>,
+    "overall_rating": <number 0-10, calculated as weighted average of category ratings>,
     "overall_rating_explanation": "<brief explanation of how rating was determined>",
     "recommended_to_buy": <true/false based on inspection findings>,
     "buy_recommendation_reason": "<reason for recommendation>",
