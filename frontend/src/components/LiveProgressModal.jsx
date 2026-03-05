@@ -18,7 +18,8 @@ import {
   AlertTriangle, CheckCircle, Clock, RefreshCw, Save, Pencil, X,
   ChevronDown, ChevronRight, DollarSign, Gauge, History, Download,
   Star, ThumbsUp, ThumbsDown, AlertCircle, Info, Zap, Eye, Share2,
-  ExternalLink, Copy, ClipboardList, CircleDot, RotateCcw, Package
+  ExternalLink, Copy, ClipboardList, CircleDot, RotateCcw, Package,
+  Sparkles, Lightbulb, MapPin, CalendarClock
 } from 'lucide-react';
 
 // Condition options for dropdowns
