@@ -1350,6 +1350,11 @@ const styles = StyleSheet.create({
   headerTitleContainer: { flex: 1 },
   headerTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
   headerSubtitle: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
+  copyLogsBtn: { 
+    padding: 8, 
+    borderRadius: 8, 
+    backgroundColor: colors.background,
+  },
   progressBarContainer: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: colors.cardBg, gap: 12 },
   progressBarBg: { flex: 1, height: 8, backgroundColor: colors.border, borderRadius: 4, overflow: 'hidden' },
   progressBarFill: { height: '100%', backgroundColor: colors.success, borderRadius: 4 },
