@@ -258,7 +258,10 @@ export default function LiveProgressModal({
     
     // OBD
     obd_connected: false,
-    dtc_codes: []
+    dtc_codes: [],
+    
+    // Category Ratings (0-10 scale, editable)
+    category_ratings: {}
   });
   
   // Initialize edit data from inspection and live progress
