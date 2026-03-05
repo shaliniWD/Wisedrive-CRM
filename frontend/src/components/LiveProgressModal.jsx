@@ -1683,8 +1683,8 @@ export default function LiveProgressModal({
                     const isSelected = selectedCategoryId === category.category_id;
                     
                     // Get editable rating for this category (0-10 scale)
-                    // Use normalized key that matches AI output (remove consecutive underscores)
-                    const categoryKey = category.category_name?.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_') || '';
+                    // Use normalized key that matches AI output (remove consecutive underscores, trim)
+                    const categoryKey = (category.category_name?.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_') || '').replace(/^_+|_+$/g, '');
                     const categoryName = category.category_name;
                     
                     // Get AI rating from ai_insights.category_ratings (uses exact category name)
