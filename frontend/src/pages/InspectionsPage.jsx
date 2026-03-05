@@ -1767,25 +1767,30 @@ export default function InspectionsPage() {
                       </Select>
                     </td>
                     
-                    {/* Mechanic Column - Clickable name to reassign */}
+                    {/* Mechanic & Edit Column - Combined */}
                     <td className="px-2 py-2.5">
                       <button
                         onClick={() => {
-                          setMechanicEditInspection(inspection);
+                          // Open combined modal with both edit and mechanic assignment
+                          setEditInspectionData(inspection);
                           setSelectedMechanicId(inspection.mechanic_id || '');
-                          setIsMechanicModalOpen(true);
+                          setIsEditInspectionModalOpen(true);
                         }}
-                        className="flex items-center gap-1.5 hover:bg-blue-50 px-1.5 py-1 rounded transition-colors cursor-pointer w-full"
-                        title={inspection.mechanic_name ? "Click to reassign" : "Click to assign"}
-                        data-testid={`mechanic-${inspection.id}`}
+                        className="flex items-center gap-1.5 hover:bg-blue-50 px-2 py-1.5 rounded transition-colors cursor-pointer w-full group"
+                        title={inspection.mechanic_name ? "Edit inspection & reassign mechanic" : "Edit inspection & assign mechanic"}
+                        data-testid={`mechanic-edit-${inspection.id}`}
                       >
                         {inspection.mechanic_name ? (
                           <>
                             <UserCheck className="h-4 w-4 text-emerald-500 flex-shrink-0" />
-                            <span className="text-sm text-gray-700 truncate hover:text-blue-600">{inspection.mechanic_name}</span>
+                            <span className="text-sm text-gray-700 truncate group-hover:text-blue-600">{inspection.mechanic_name}</span>
+                            <Edit2 className="h-3.5 w-3.5 text-gray-400 group-hover:text-blue-600 ml-auto flex-shrink-0" />
                           </>
                         ) : (
-                          <span className="text-sm text-blue-600 hover:underline">+ Assign</span>
+                          <span className="text-sm text-blue-600 hover:underline flex items-center gap-1">
+                            <Edit2 className="h-3.5 w-3.5" />
+                            Edit & Assign
+                          </span>
                         )}
                       </button>
                     </td>
