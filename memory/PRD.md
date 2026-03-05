@@ -181,6 +181,13 @@ The application is a full-stack CRM for vehicle loans and inspections. Key featu
 POST /api/inspections/{id}/fetch-rpp  - Fetch market prices from OLX, Spinny, Cars24, CarWale, CarDekho
 ```
 
+### Vaahan API (Vehicle RTO Data)
+```
+POST /api/inspections/{id}/fetch-vaahan-data  - Fetch vehicle details from Vaahan API (with local DB caching)
+  - Query param: force_refresh=true to bypass cache
+  - Returns: vaahan_data with engine_number, chassis_number, owner details, insurance, finance status
+```
+
 ### Bank Statement Analysis
 ```
 POST /api/loan-leads/analyze-bank-statement-url  - Analyze PDF from URL (with password support)
