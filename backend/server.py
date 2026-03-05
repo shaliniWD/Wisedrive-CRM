@@ -13005,13 +13005,12 @@ async def get_mechanic_inspections(
     import traceback
     from fastapi.responses import JSONResponse
     
-    mechanic_id = current_user["id"]
-    mechanic_cities = current_user.get("inspection_cities", [])
-    mechanic_name = current_user.get("name", "")
-    
-    logger.info(f"Fetching inspections for mechanic: {mechanic_id} ({mechanic_name}), cities: {mechanic_cities}")
-    
     try:
+        mechanic_id = current_user["id"]
+        mechanic_cities = current_user.get("inspection_cities", [])
+        mechanic_name = current_user.get("name", "")
+        
+        logger.info(f"Fetching inspections for mechanic: {mechanic_id} ({mechanic_name}), cities: {mechanic_cities}")
         # Resolve mechanic cities to include aliases
         all_city_variants = []
         for mc in mechanic_cities:
