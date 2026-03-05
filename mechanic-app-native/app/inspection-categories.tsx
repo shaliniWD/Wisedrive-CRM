@@ -108,11 +108,63 @@ export default function InspectionCategoriesScreen() {
   const [obdSubmittedToBackend, setObdSubmittedToBackend] = useState(false);
   const [backendObdData, setBackendObdData] = useState<{ dtcCount: number; liveDataCount: number } | null>(null);
   const [obdRescanEnabled, setObdRescanEnabled] = useState(false);
+  const [pendingObdData, setPendingObdData] = useState<any>(null);
+  const [isSubmittingPendingObd, setIsSubmittingPendingObd] = useState(false);
   
   // OBD is completed if either context says so OR backend has OBD data (and rescan is NOT enabled)
   // NOTE: OBD is OPTIONAL - this flag is only used to show completion status, not to block inspection completion
   const obdCompleted = (obdScanResult?.completed || obdSubmittedToBackend) && !obdRescanEnabled;
   const obdResults = obdScanResult || (obdSubmittedToBackend ? { completed: true, ...backendObdData } : null);
+  
+  // Check for pending OBD data in AsyncStorage that wasn't submitted
+  useEffect(() => {
+    const checkPendingObd = async () => {
+      if (!currentInspectionId) return;
+      
+      try {
+        const pendingKey = `obd_data_${currentInspectionId}`;
+        const submittedKey = `obd_submitted_${currentInspectionId}`;
+        
+        const pendingData = await AsyncStorage.getItem(pendingKey);
+        const isSubmitted = await AsyncStorage.getItem(submittedKey);
+        
+        if (pendingData && isSubmitted !== 'true') {
+          const parsed = JSON.parse(pendingData);
+          console.log('[Categories] Found pending OBD data that was not submitted');
+          setPendingObdData(parsed);
+        }
+      } catch (e) {
+        console.log('[Categories] Error checking pending OBD:', e);
+      }
+    };
+    
+    checkPendingObd();
+  }, [currentInspectionId]);
+  
+  // Submit pending OBD data
+  const submitPendingObd = async () => {
+    if (!pendingObdData || !currentInspectionId) return;
+    
+    setIsSubmittingPendingObd(true);
+    try {
+      await inspectionsApi.submitOBDResults(currentInspectionId, pendingObdData);
+      await AsyncStorage.setItem(`obd_submitted_${currentInspectionId}`, 'true');
+      
+      setObdSubmittedToBackend(true);
+      setBackendObdData({
+        dtcCount: pendingObdData.total_errors || 0,
+        liveDataCount: pendingObdData.live_data?.length || 0,
+      });
+      setPendingObdData(null);
+      
+      Alert.alert('Success', 'OBD data has been submitted successfully!');
+      fetchQuestionnaire(); // Refresh to get updated status
+    } catch (e: any) {
+      Alert.alert('Error', 'Failed to submit OBD data: ' + (e.message || 'Unknown error'));
+    } finally {
+      setIsSubmittingPendingObd(false);
+    }
+  };
 
   // Log screen mount
   useEffect(() => {
