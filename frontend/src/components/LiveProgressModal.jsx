@@ -1487,7 +1487,9 @@ export default function LiveProgressModal({
                       </div>
                     );
                   })()}
-                </div>
+                    </div>
+                  </>
+                )}
               </Section>
               
               {/* Mechanic Info */}
