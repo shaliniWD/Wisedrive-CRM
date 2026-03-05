@@ -430,17 +430,34 @@ export default function InspectionCategoriesScreen() {
       return;
     }
     
-    // OBD scan is optional - just submit the inspection
-    // If OBD is not done, show a quick confirmation
+    // OBD scan is MANDATORY - block completion if not done
     if (!obdCompleted) {
-      Alert.alert(
-        'OBD Scan Not Done',
-        'OBD-II scan was not performed. Do you want to complete the inspection without it?',
-        [
-          { text: 'Go Back', style: 'cancel' },
-          { text: 'Complete Anyway', onPress: submitInspection }
-        ]
-      );
+      diagLogger.warn('INSPECTION_COMPLETE_BLOCKED', {
+        inspectionId: currentInspectionId,
+        reason: 'OBD_NOT_COMPLETED',
+        obdScanResult: obdScanResult ? 'EXISTS_IN_CONTEXT' : 'NOT_IN_CONTEXT',
+        obdSubmittedToBackend,
+        pendingObdData: pendingObdData ? 'HAS_PENDING_DATA' : 'NO_PENDING_DATA',
+        timestamp: new Date().toISOString()
+      });
+      
+      // Check if there's pending OBD data that can be uploaded
+      if (pendingObdData) {
+        Alert.alert(
+          'OBD Data Not Uploaded',
+          'You have completed the OBD scan but the data was not uploaded to the server. Please upload the OBD data first.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Upload OBD Data', onPress: submitPendingObd }
+          ]
+        );
+      } else {
+        Alert.alert(
+          'OBD Scan Required',
+          'Please complete the OBD-II diagnostic scan before completing the inspection. This is mandatory for all inspections.',
+          [{ text: 'Start OBD Scan', onPress: handleOBDScan }]
+        );
+      }
       return;
     }
 
@@ -448,16 +465,38 @@ export default function InspectionCategoriesScreen() {
   };
   
   const submitInspection = async () => {
+    diagLogger.info('INSPECTION_SUBMIT_START', {
+      inspectionId: currentInspectionId,
+      allCategoriesCompleted,
+      obdCompleted,
+      obdSubmittedToBackend,
+      timestamp: new Date().toISOString()
+    });
+    
     try {
       await inspectionsApi.completeInspection(currentInspectionId!);
+      
+      diagLogger.info('INSPECTION_SUBMIT_SUCCESS', {
+        inspectionId: currentInspectionId,
+        timestamp: new Date().toISOString()
+      });
+      
       Alert.alert('Success', 'Inspection submitted successfully!', [
         { text: 'OK', onPress: () => {
           clearInspection();
           router.replace('/home');
         }}
       ]);
-    } catch (error) {
-      Alert.alert('Error', 'Failed to submit inspection. Please try again.');
+    } catch (error: any) {
+      diagLogger.error('INSPECTION_SUBMIT_FAILED', {
+        inspectionId: currentInspectionId,
+        error: error.message,
+        status: error.response?.status,
+        responseData: error.response?.data,
+        timestamp: new Date().toISOString()
+      });
+      
+      Alert.alert('Error', `Failed to submit inspection: ${error.message || 'Unknown error'}. Please try again.`);
     }
   };
 
