@@ -23,6 +23,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Video, ResizeMode } from 'expo-av';
 import { inspectionsApi, getAuthToken, resolveMediaUrl, getCurrentApiUrl, getEnvironment } from '../../src/lib/api';
 import { diagLogger } from '../../src/lib/diagLogger';
+import { CopyLogsButton } from '../../src/components/CopyLogsButton';
 import uploadMediaWithRetry from '../../src/lib/firebaseUpload';
 
 // AsyncStorage key for failed uploads
