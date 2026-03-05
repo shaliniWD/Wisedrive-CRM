@@ -13102,7 +13102,7 @@ async def get_mechanic_inspections(
     
     # Filter by city
     if city:
-        query["city"] = {"$regex": f"^{city}$", "$options": "i"}
+        query["city"] = {"$regex": f"^{re.escape(city)}$", "$options": "i"}
     
     # Filter by status (map mechanic app status to CRM status)
     status_map = {
