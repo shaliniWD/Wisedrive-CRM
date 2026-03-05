@@ -217,3 +217,4 @@ GET  /api/credit-report/latest/{pan} - Get all cached reports for PAN
 - **Meta Ads:** Lead sync
 - **Razorpay:** Payments
 - **Twilio:** WhatsApp messaging
+- **Vaahan API (Invincible Ocean):** Vehicle RTO data (chassis, engine, insurance, finance status)
