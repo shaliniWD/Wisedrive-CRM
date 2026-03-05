@@ -1244,11 +1244,17 @@ export default function CategoryQuestionsScreen() {
           if (hasUnsavedChanges) {
             Alert.alert(
               'Unsaved Changes',
-              'You have unsaved answers. Save before leaving?',
+              'You have unsaved answers. What would you like to do?',
               [
-                { text: 'Discard', style: 'destructive', onPress: () => router.back() },
-                { text: 'Save & Exit', onPress: saveAllAnswers },
                 { text: 'Cancel', style: 'cancel' },
+                { text: 'Discard', style: 'destructive', onPress: () => router.back() },
+                { 
+                  text: 'Save First', 
+                  onPress: async () => {
+                    await saveAllAnswers();
+                    router.back();
+                  }
+                },
               ]
             );
           } else {
