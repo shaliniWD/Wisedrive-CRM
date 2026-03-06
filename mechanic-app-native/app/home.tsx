@@ -850,70 +850,43 @@ export default function HomeScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHandle} />
-            <Text style={styles.modalTitle}>Filter by Date</Text>
+            <Text style={styles.modalTitle}>Select Date Range</Text>
 
-            <ScrollView style={styles.reasonsList} showsVerticalScrollIndicator={false}>
-              {[
-                { key: 'all', label: 'All Inspections', icon: 'infinite-outline' },
-                { key: 'today', label: 'Today', icon: 'today-outline' },
-                { key: 'week', label: 'This Week', icon: 'calendar-outline' },
-                { key: 'month', label: 'This Month', icon: 'calendar-number-outline' },
-                { key: 'last_month', label: 'Last Month', icon: 'time-outline' },
-                { key: 'custom', label: 'Custom Range', icon: 'options-outline' },
-              ].map((option) => (
-                <TouchableOpacity
-                  key={option.key}
-                  style={[styles.reasonItem, dateFilter === option.key && styles.reasonItemSelected]}
-                  onPress={() => { 
-                    setDateFilter(option.key as any); 
-                  }}
+            <View style={styles.customDateContainer}>
+              <View style={styles.datePickerRow}>
+                <TouchableOpacity 
+                  style={styles.datePickerBtn}
+                  onPress={() => setShowDatePicker('from')}
                 >
-                  <Ionicons name={option.icon as any} size={18} color={dateFilter === option.key ? Colors.primary : Colors.textSecondary} />
-                  <Text style={[styles.reasonText, dateFilter === option.key && styles.reasonTextSelected]}>{option.label}</Text>
-                  {dateFilter === option.key && <Ionicons name="checkmark-circle" size={18} color={Colors.primary} />}
-                </TouchableOpacity>
-              ))}
-
-              {/* Custom Date Range Picker */}
-              {dateFilter === 'custom' && (
-                <View style={styles.customDateContainer}>
-                  <Text style={styles.customDateLabel}>Select Date Range</Text>
-                  
-                  <View style={styles.datePickerRow}>
-                    <TouchableOpacity 
-                      style={styles.datePickerBtn}
-                      onPress={() => setShowDatePicker('from')}
-                    >
-                      <Ionicons name="calendar" size={18} color={Colors.primary} />
-                      <View style={styles.datePickerTextContainer}>
-                        <Text style={styles.datePickerLabel}>From</Text>
-                        <Text style={styles.datePickerValue}>{formatDateDisplay(customDateFrom)}</Text>
-                      </View>
-                    </TouchableOpacity>
-                    
-                    <Ionicons name="arrow-forward" size={20} color={Colors.textMuted} />
-                    
-                    <TouchableOpacity 
-                      style={styles.datePickerBtn}
-                      onPress={() => setShowDatePicker('to')}
-                    >
-                      <Ionicons name="calendar" size={18} color={Colors.primary} />
-                      <View style={styles.datePickerTextContainer}>
-                        <Text style={styles.datePickerLabel}>To</Text>
-                        <Text style={styles.datePickerValue}>{formatDateDisplay(customDateTo)}</Text>
-                      </View>
-                    </TouchableOpacity>
+                  <Ionicons name="calendar" size={18} color={Colors.primary} />
+                  <View style={styles.datePickerTextContainer}>
+                    <Text style={styles.datePickerLabel}>From</Text>
+                    <Text style={styles.datePickerValue}>{formatDateDisplay(customDateFrom)}</Text>
                   </View>
-                </View>
-              )}
-            </ScrollView>
+                </TouchableOpacity>
+                
+                <Ionicons name="arrow-forward" size={20} color={Colors.textMuted} />
+                
+                <TouchableOpacity 
+                  style={styles.datePickerBtn}
+                  onPress={() => setShowDatePicker('to')}
+                >
+                  <Ionicons name="calendar" size={18} color={Colors.primary} />
+                  <View style={styles.datePickerTextContainer}>
+                    <Text style={styles.datePickerLabel}>To</Text>
+                    <Text style={styles.datePickerValue}>{formatDateDisplay(customDateTo)}</Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </View>
 
             <TouchableOpacity 
               style={styles.closeFilterBtn} 
               onPress={() => {
                 setDateFilterModalVisible(false);
-                // Fetch with current filter settings
-                fetchInspections(dateFilter, customDateFrom, customDateTo);
+                setActiveTab('custom');
+                // Fetch with custom date settings
+                fetchInspections('custom', customDateFrom, customDateTo);
               }}
             >
               <Text style={styles.closeFilterBtnText}>Apply Filter</Text>
