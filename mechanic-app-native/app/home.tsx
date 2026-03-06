@@ -736,6 +736,24 @@ export default function HomeScreen() {
       <View style={styles.tabBar}>
         {tabs.map((tab) => {
           const isActive = activeTab === tab.key;
+          if (tab.isCalendar) {
+            // Calendar icon for custom date selection
+            return (
+              <TouchableOpacity
+                key={tab.key}
+                style={[styles.calendarTab, isActive && styles.tabActive]}
+                onPress={() => setDateFilterModalVisible(true)}
+                activeOpacity={0.7}
+              >
+                <Ionicons 
+                  name={tab.icon as any} 
+                  size={20} 
+                  color={isActive ? Colors.primary : Colors.textSecondary} 
+                />
+                {isActive && <View style={styles.tabIndicator} />}
+              </TouchableOpacity>
+            );
+          }
           return (
             <TouchableOpacity
               key={tab.key}
