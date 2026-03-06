@@ -706,12 +706,6 @@ export default function HomeScreen() {
         </TouchableOpacity>
         <View style={styles.headerRight}>
           <CopyLogsButton iconColor={Colors.textSecondary} iconSize={20} style={styles.iconBtn} />
-          <TouchableOpacity 
-            style={[styles.iconBtn, dateFilter !== 'all' && styles.iconBtnActive]} 
-            onPress={() => setDateFilterModalVisible(true)}
-          >
-            <Ionicons name="calendar-outline" size={20} color={dateFilter !== 'all' ? Colors.primary : Colors.textSecondary} />
-          </TouchableOpacity>
           <TouchableOpacity style={styles.avatarBtn} onPress={() => router.push('/profile')}>
             <LinearGradient colors={[Colors.gradientStart, Colors.gradientEnd]} style={styles.avatar}>
               <Text style={styles.avatarText}>{mechanic?.name?.charAt(0)?.toUpperCase() || 'P'}</Text>
