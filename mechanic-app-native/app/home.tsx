@@ -314,7 +314,7 @@ export default function HomeScreen() {
   const [inspections, setInspections] = useState<Inspection[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'all' | 'new' | 'accepted' | 'history'>('all');
+  const [activeTab, setActiveTab] = useState<'today' | 'tomorrow' | 'week' | 'custom'>('today');
   
   const [rejectModalVisible, setRejectModalVisible] = useState(false);
   const [selectedInspection, setSelectedInspection] = useState<Inspection | null>(null);
