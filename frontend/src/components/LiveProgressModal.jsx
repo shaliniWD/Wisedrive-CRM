@@ -693,8 +693,24 @@ export default function LiveProgressModal({
       
       await inspectionsApi.update(inspection.id, updatePayload);
       toast.success('Changes saved successfully');
-      onRefresh(inspection.id);
+      
+      // Update original data to reflect saved state (prevents "unsaved changes" after save)
+      setOriginalData(JSON.stringify({
+        overall_rating: editData.overall_rating,
+        recommended_to_buy: editData.recommended_to_buy,
+        market_value_min: editData.market_value_min,
+        market_value_max: editData.market_value_max,
+        assessment_summary: editData.assessment_summary,
+        repairs: editData.repairs
+      }));
+      setHasUnsavedChanges(false);
+      
+      // Refresh inspection data
+      if (onRefresh) {
+        onRefresh(inspection.id);
+      }
     } catch (error) {
+      console.error('Save error:', error);
       toast.error(error.response?.data?.detail || 'Failed to save changes');
     } finally {
       setSaving(false);
