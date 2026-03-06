@@ -811,7 +811,14 @@ export default function HomeScreen() {
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
-              onRefresh={() => { setRefreshing(true); fetchInspections(dateFilter, customDateFrom, customDateTo); }}
+              onRefresh={() => { 
+                setRefreshing(true); 
+                if (activeTab === 'custom') {
+                  fetchInspections('custom', customDateFrom, customDateTo);
+                } else {
+                  fetchInspections('all', new Date(), new Date());
+                }
+              }}
               colors={[Colors.primary]}
               tintColor={Colors.primary}
             />
