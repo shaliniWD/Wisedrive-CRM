@@ -1063,9 +1063,9 @@ const styles = StyleSheet.create({
   badgeDot: { width: 6, height: 6, borderRadius: 3 },
   badgeText: { fontSize: 11, fontWeight: '600' },
 
-  detailsGrid: { flexDirection: 'row', paddingHorizontal: 14, paddingTop: 12, gap: 16 },
+  detailsGrid: { flexDirection: 'row', paddingHorizontal: 14, paddingTop: 12, justifyContent: 'space-between', alignItems: 'center' },
   detailItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  detailText: { fontSize: 13, color: Colors.textSecondary },
+  detailText: { fontSize: 13, color: Colors.textSecondary, flexShrink: 1 },
 
   locationBar: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
