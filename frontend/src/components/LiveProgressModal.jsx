@@ -418,6 +418,13 @@ export default function LiveProgressModal({
     return () => clearInterval(interval);
   }, [isOpen, autoRefresh, inspection?.id, onRefresh]);
   
+  // Reset initialized inspection ID when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setInitializedInspectionId(null);
+    }
+  }, [isOpen]);
+  
   // Auto-fetch Vaahan data when modal opens and vehicle details are empty
   useEffect(() => {
     const autoFetchVaahanData = async () => {
