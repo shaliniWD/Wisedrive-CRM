@@ -7353,6 +7353,26 @@ async def fetch_vaahan_data_for_inspection(
     if vaahan_data.get("fuel_type") and (not inspection.get("fuel_type") or inspection.get("fuel_type") == ""):
         update_dict["fuel_type"] = vaahan_data.get("fuel_type")
     
+    # Extract transmission type from model name (MT = Manual, AT = Automatic)
+    model_name = vaahan_data.get("model", "").upper()
+    if not inspection.get("transmission") or inspection.get("transmission") == "":
+        transmission = None
+        # Check for common transmission indicators in model name
+        if " MT" in model_name or model_name.endswith("MT") or "(MT)" in model_name or "-MT" in model_name:
+            transmission = "Manual"
+        elif " AT" in model_name or model_name.endswith("AT") or "(AT)" in model_name or "-AT" in model_name:
+            transmission = "Automatic"
+        elif " AMT" in model_name or model_name.endswith("AMT") or "(AMT)" in model_name or "-AMT" in model_name:
+            transmission = "AMT"
+        elif " CVT" in model_name or model_name.endswith("CVT") or "(CVT)" in model_name or "-CVT" in model_name:
+            transmission = "CVT"
+        elif " DCT" in model_name or model_name.endswith("DCT") or "(DCT)" in model_name or "-DCT" in model_name:
+            transmission = "DCT"
+        
+        if transmission:
+            update_dict["transmission"] = transmission
+            logger.info(f"Extracted transmission '{transmission}' from model name: {model_name}")
+    
     # Extract year from manufacturing date if available
     mfg_date = vaahan_data.get("manufacturing_date", "")
     if mfg_date and (not inspection.get("vehicle_year") or inspection.get("vehicle_year") == ""):
