@@ -13232,7 +13232,9 @@ async def mechanic_verify_otp(data: MechanicOtpVerify):
 
 @api_router.get("/mechanic/inspections")
 async def get_mechanic_inspections(
-    date_filter: Optional[str] = None,  # 'today', 'week', 'month', 'last_month', 'all'
+    date_filter: Optional[str] = None,  # 'today', 'tomorrow', 'week', 'month', 'last_month', 'all'
+    date_from: Optional[str] = None,    # Custom date range start (YYYY-MM-DD)
+    date_to: Optional[str] = None,      # Custom date range end (YYYY-MM-DD)
     city: Optional[str] = None,
     status: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
