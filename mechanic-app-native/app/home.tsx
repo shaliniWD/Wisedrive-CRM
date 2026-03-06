@@ -1025,6 +1025,12 @@ const styles = StyleSheet.create({
     position: 'absolute', bottom: 0, left: 16, right: 16,
     height: 2, backgroundColor: Colors.primary, borderRadius: 1,
   },
+  calendarTab: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
   // List
   listContent: { padding: 16 },
