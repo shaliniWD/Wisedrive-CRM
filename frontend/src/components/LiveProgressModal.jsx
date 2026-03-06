@@ -1077,14 +1077,14 @@ export default function LiveProgressModal({
                       <Input
                         type="number"
                         min="0"
-                        max="5"
+                        max="10"
                         step="0.5"
                         value={editData.overall_rating}
                         onChange={(e) => updateField('overall_rating', parseFloat(e.target.value) || 0)}
                         className="h-8 w-16 text-center font-bold"
                         disabled={!canEdit}
                       />
-                      <span className="text-sm text-gray-500">/ 5</span>
+                      <span className="text-sm text-gray-500">/ 10</span>
                       <Star className="h-5 w-5 text-yellow-500" />
                     </div>
                   </div>
