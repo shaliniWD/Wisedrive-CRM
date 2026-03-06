@@ -655,10 +655,10 @@ export default function HomeScreen() {
   };
 
   const tabs = [
-    { key: 'all', label: 'All' },
-    { key: 'new', label: 'New' },
-    { key: 'accepted', label: 'Active' },
-    { key: 'history', label: 'History' },
+    { key: 'today', label: 'Today', icon: 'today-outline' },
+    { key: 'tomorrow', label: 'Tomorrow', icon: 'sunny-outline' },
+    { key: 'week', label: 'This Week', icon: 'calendar-outline' },
+    { key: 'custom', label: '', icon: 'calendar-number-outline', isCalendar: true },
   ];
 
   const todayStr = formatDateWithDay(new Date());
