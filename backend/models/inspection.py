@@ -179,6 +179,13 @@ class InspectionUpdate(BaseModel):
     rto_verification_status: Optional[str] = None
     hypothecation: Optional[str] = None
     blacklist_status: Optional[bool] = None
+    registration_authority: Optional[str] = None
+    
+    # AI Category Ratings (for Q&A categories like Engine Health, Exterior, etc.)
+    category_ratings: Optional[dict] = None
+    
+    # Market Price Research (RPP)
+    market_price_research: Optional[dict] = None
 
 
 class Inspection(InspectionBase):
