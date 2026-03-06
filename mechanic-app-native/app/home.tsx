@@ -570,7 +570,12 @@ export default function HomeScreen() {
   const handleAccept = async (inspection: Inspection) => {
     try {
       await inspectionsApi.acceptInspection(inspection.id);
-      fetchInspections(dateFilter, customDateFrom, customDateTo);
+      // Refresh list
+      if (activeTab === 'custom') {
+        fetchInspections('custom', customDateFrom, customDateTo);
+      } else {
+        fetchInspections('all', new Date(), new Date());
+      }
       // No modal - just refresh the list silently
     } catch (error) {
       Alert.alert('Error', 'Failed to accept inspection');
