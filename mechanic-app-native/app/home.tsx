@@ -535,23 +535,14 @@ export default function HomeScreen() {
     useCallback(() => {
       diagLogger.info('HOME_SCREEN_FOCUSED', {
         mechanicId: mechanic?.id,
-        dateFilter,
+        activeTab,
         timestamp: new Date().toISOString()
       });
       console.log('[HOME] Screen focused, refreshing inspections...');
-      // Fetch based on activeTab for today/tomorrow/week/custom
-      if (activeTab === 'custom') {
-        fetchInspections('custom', customDateFrom, customDateTo);
-      } else if (activeTab === 'today') {
-        fetchInspections('today', new Date(), new Date());
-      } else if (activeTab === 'tomorrow') {
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        fetchInspections('today', tomorrow, tomorrow);
-      } else {
-        fetchInspections('week', new Date(), new Date());
-      }
-    }, [activeTab, customDateFrom, customDateTo])
+      // Always fetch ALL inspections - client-side filtering handles the tabs
+      // This ensures Today/Tomorrow/This Week tabs all have correct data
+      fetchInspections('all');
+    }, [])
   );
 
   const onDateChange = (event: any, selectedDate?: Date) => {
