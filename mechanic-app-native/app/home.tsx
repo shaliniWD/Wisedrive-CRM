@@ -174,15 +174,15 @@ const InspectionCard = ({
       
       {/* Details Grid */}
       <View style={styles.detailsGrid}>
-        <View style={styles.detailItem}>
+        <View style={[styles.detailItem, { flex: 1, minWidth: 0 }]}>
           <Ionicons name="car-outline" size={16} color={Colors.textMuted} />
-          <Text style={styles.detailText} numberOfLines={1}>
+          <Text style={styles.detailText} numberOfLines={1} ellipsizeMode="tail">
             {inspection.makeModelVariant || 'Vehicle Model'}
           </Text>
         </View>
-        <View style={styles.detailItem}>
+        <View style={[styles.detailItem, { flexShrink: 0 }]}>
           <Ionicons name="calendar-outline" size={16} color={Colors.textMuted} />
-          <Text style={styles.detailText}>{dateStr} • {timeStr}</Text>
+          <Text style={[styles.detailText, { flexShrink: 0 }]}>{dateStr} • {timeStr}</Text>
         </View>
       </View>
       
