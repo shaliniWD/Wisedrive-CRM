@@ -539,8 +539,19 @@ export default function HomeScreen() {
         timestamp: new Date().toISOString()
       });
       console.log('[HOME] Screen focused, refreshing inspections...');
-      fetchInspections(dateFilter, customDateFrom, customDateTo);
-    }, [dateFilter, customDateFrom, customDateTo])
+      // Fetch based on activeTab for today/tomorrow/week/custom
+      if (activeTab === 'custom') {
+        fetchInspections('custom', customDateFrom, customDateTo);
+      } else if (activeTab === 'today') {
+        fetchInspections('today', new Date(), new Date());
+      } else if (activeTab === 'tomorrow') {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        fetchInspections('today', tomorrow, tomorrow);
+      } else {
+        fetchInspections('week', new Date(), new Date());
+      }
+    }, [activeTab, customDateFrom, customDateTo])
   );
 
   const onDateChange = (event: any, selectedDate?: Date) => {
