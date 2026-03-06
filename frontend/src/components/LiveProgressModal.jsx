@@ -264,98 +264,112 @@ export default function LiveProgressModal({
     category_ratings: {}
   });
   
-  // Initialize edit data from inspection and live progress
+  // Initialize edit data from inspection and live progress - only when inspection ID changes
+  const [initializedInspectionId, setInitializedInspectionId] = useState(null);
+  
   useEffect(() => {
-    if (inspection && liveProgressData) {
-      // Handle assessment_summary - it might be an object or a string
-      let assessmentSummary = inspection.assessment_summary || '';
-      if (typeof assessmentSummary === 'object' && assessmentSummary !== null) {
-        assessmentSummary = assessmentSummary.overall || '';
-      }
-      
-      // Get market values from multiple possible sources
-      const aiInsights = inspection.ai_insights || {};
-      const marketValueMin = inspection.market_value_min || aiInsights.market_value?.min || 0;
-      const marketValueMax = inspection.market_value_max || aiInsights.market_value?.max || 0;
-      
-      setEditData({
-        // From AI insights
-        overall_rating: inspection.overall_rating || aiInsights.overall_rating || liveProgressData?.ai_report?.overall_rating || 0,
-        recommended_to_buy: inspection.recommended_to_buy ?? aiInsights.recommended_to_buy ?? liveProgressData?.ai_report?.recommended_to_buy ?? false,
-        market_value_min: marketValueMin,
-        market_value_max: marketValueMax,
-        assessment_summary: assessmentSummary,
-        key_highlights: inspection.key_highlights || aiInsights.key_highlights || [],
-        
-        // Vehicle
-        vehicle_make: inspection.vehicle_make || inspection.vaahan_data?.manufacturer || '',
-        vehicle_model: inspection.vehicle_model || inspection.vaahan_data?.model || '',
-        vehicle_year: inspection.vehicle_year || '',
-        fuel_type: inspection.fuel_type || inspection.vaahan_data?.fuel_type || '',
-        transmission: inspection.transmission || (() => {
-          // Extract transmission from model name if not set
-          const model = (inspection.vaahan_data?.model || '').toUpperCase();
-          if (model.includes(' MT') || model.endsWith('MT') || model.includes('(MT)') || model.includes('-MT')) return 'Manual';
-          if (model.includes(' AT') || model.endsWith('AT') || model.includes('(AT)') || model.includes('-AT')) return 'Automatic';
-          if (model.includes(' AMT') || model.endsWith('AMT') || model.includes('(AMT)') || model.includes('-AMT')) return 'AMT';
-          if (model.includes(' CVT') || model.endsWith('CVT') || model.includes('(CVT)') || model.includes('-CVT')) return 'CVT';
-          if (model.includes(' DCT') || model.endsWith('DCT') || model.includes('(DCT)') || model.includes('-DCT')) return 'DCT';
-          return '';
-        })(),
-        vehicle_colour: inspection.vehicle_colour || inspection.vaahan_data?.color || '',
-        engine_cc: inspection.engine_cc || 0,
-        kms_driven: inspection.kms_driven || 0,
-        owners: inspection.owners || parseInt(inspection.vaahan_data?.owner_count) || 0,
-        
-        // Conditions
-        engine_condition: inspection.engine_condition || 'PENDING',
-        interior_condition: inspection.interior_condition || 'PENDING',
-        exterior_condition: inspection.exterior_condition || 'PENDING',
-        transmission_condition: inspection.transmission_condition || 'PENDING',
-        
-        // Key Info
-        accident_history: inspection.accident_history || false,
-        flood_damage: inspection.flood_damage || false,
-        dents_scratches: inspection.dents_scratches || false,
-        
-        // Insurance
-        insurance_status: inspection.insurance_status || '',
-        insurer_name: inspection.insurer_name || '',
-        policy_number: inspection.policy_number || '',
-        insurance_expiry: inspection.insurance_expiry || '',
-        policy_type: inspection.policy_type || '',
-        idv_value: inspection.idv_value || 0,
-        
-        // Repairs
-        repairs: inspection.repairs || [],
-        total_repair_cost_min: inspection.total_repair_cost_min || 0,
-        total_repair_cost_max: inspection.total_repair_cost_max || 0,
-        
-        // RTO
-        rto_verification_status: inspection.rto_verification_status || 'PENDING',
-        hypothecation: inspection.hypothecation || '',
-        blacklist_status: inspection.blacklist_status || false,
-        
-        // OBD
-        obd_connected: liveProgressData?.obd_scan?.completed || false,
-        dtc_codes: inspection.dtc_codes || [],
-        
-        // Category Ratings (0-10 scale) - Load from saved inspection data or empty
-        category_ratings: inspection.category_ratings || {}
-      });
-      
-      // Store original data for change tracking
-      setOriginalData(JSON.stringify({
-        overall_rating: inspection.overall_rating || 0,
-        recommended_to_buy: inspection.recommended_to_buy || false,
-        market_value_min: marketValueMin,
-        market_value_max: marketValueMax,
-        assessment_summary: assessmentSummary,
-        repairs: inspection.repairs || []
-      }));
-      setHasUnsavedChanges(false);
+    // Only initialize once per inspection ID to prevent resetting user edits
+    if (!inspection || !liveProgressData || initializedInspectionId === inspection.id) return;
+    
+    // Handle assessment_summary - it might be an object or a string
+    let assessmentSummary = inspection.assessment_summary || '';
+    if (typeof assessmentSummary === 'object' && assessmentSummary !== null) {
+      assessmentSummary = assessmentSummary.overall || '';
     }
-  }, [inspection, liveProgressData]);
+    
+    // Get market values from multiple possible sources
+    const aiInsights = inspection.ai_insights || {};
+    const marketValueMin = inspection.market_value_min || aiInsights.market_value?.min || 0;
+    const marketValueMax = inspection.market_value_max || aiInsights.market_value?.max || 0;
+    
+    // Get overall rating - handle 0 as valid value
+    const overallRating = inspection.overall_rating !== undefined && inspection.overall_rating !== null 
+      ? inspection.overall_rating 
+      : (aiInsights.overall_rating !== undefined && aiInsights.overall_rating !== null 
+        ? aiInsights.overall_rating 
+        : (liveProgressData?.ai_report?.overall_rating || 0));
+    
+    // Get fuel type from multiple sources
+    const fuelType = inspection.fuel_type || inspection.vaahan_data?.fuel_type || '';
+    
+    setEditData({
+      // From AI insights
+      overall_rating: overallRating,
+      recommended_to_buy: inspection.recommended_to_buy ?? aiInsights.recommended_to_buy ?? liveProgressData?.ai_report?.recommended_to_buy ?? false,
+      market_value_min: marketValueMin,
+      market_value_max: marketValueMax,
+      assessment_summary: assessmentSummary,
+      key_highlights: inspection.key_highlights || aiInsights.key_highlights || [],
+      
+      // Vehicle
+      vehicle_make: inspection.vehicle_make || inspection.vaahan_data?.manufacturer || '',
+      vehicle_model: inspection.vehicle_model || inspection.vaahan_data?.model || '',
+      vehicle_year: inspection.vehicle_year || '',
+      fuel_type: fuelType,
+      transmission: inspection.transmission || (() => {
+        // Extract transmission from model name if not set
+        const model = (inspection.vaahan_data?.model || '').toUpperCase();
+        if (model.includes(' MT') || model.endsWith('MT') || model.includes('(MT)') || model.includes('-MT')) return 'Manual';
+        if (model.includes(' AT') || model.endsWith('AT') || model.includes('(AT)') || model.includes('-AT')) return 'Automatic';
+        if (model.includes(' AMT') || model.endsWith('AMT') || model.includes('(AMT)') || model.includes('-AMT')) return 'AMT';
+        if (model.includes(' CVT') || model.endsWith('CVT') || model.includes('(CVT)') || model.includes('-CVT')) return 'CVT';
+        if (model.includes(' DCT') || model.endsWith('DCT') || model.includes('(DCT)') || model.includes('-DCT')) return 'DCT';
+        return '';
+      })(),
+      vehicle_colour: inspection.vehicle_colour || inspection.vaahan_data?.color || '',
+      engine_cc: inspection.engine_cc || 0,
+      kms_driven: inspection.kms_driven || 0,
+      owners: inspection.owners || parseInt(inspection.vaahan_data?.owner_count) || 0,
+      
+      // Conditions
+      engine_condition: inspection.engine_condition || 'PENDING',
+      interior_condition: inspection.interior_condition || 'PENDING',
+      exterior_condition: inspection.exterior_condition || 'PENDING',
+      transmission_condition: inspection.transmission_condition || 'PENDING',
+      
+      // Key Info
+      accident_history: inspection.accident_history || false,
+      flood_damage: inspection.flood_damage || false,
+      dents_scratches: inspection.dents_scratches || false,
+      
+      // Insurance
+      insurance_status: inspection.insurance_status || '',
+      insurer_name: inspection.insurer_name || '',
+      policy_number: inspection.policy_number || '',
+      insurance_expiry: inspection.insurance_expiry || '',
+      policy_type: inspection.policy_type || '',
+      idv_value: inspection.idv_value || 0,
+      
+      // Repairs
+      repairs: inspection.repairs || [],
+      total_repair_cost_min: inspection.total_repair_cost_min || 0,
+      total_repair_cost_max: inspection.total_repair_cost_max || 0,
+      
+      // RTO
+      rto_verification_status: inspection.rto_verification_status || 'PENDING',
+      hypothecation: inspection.hypothecation || '',
+      blacklist_status: inspection.blacklist_status || false,
+      
+      // OBD
+      obd_connected: liveProgressData?.obd_scan?.completed || false,
+      dtc_codes: inspection.dtc_codes || [],
+      
+      // Category Ratings (0-10 scale) - Load from saved inspection data or empty
+      category_ratings: inspection.category_ratings || {}
+    });
+    
+    // Store original data for change tracking
+    setOriginalData(JSON.stringify({
+      overall_rating: overallRating,
+      recommended_to_buy: inspection.recommended_to_buy || false,
+      market_value_min: marketValueMin,
+      market_value_max: marketValueMax,
+      assessment_summary: assessmentSummary,
+      repairs: inspection.repairs || []
+    }));
+    setHasUnsavedChanges(false);
+    setInitializedInspectionId(inspection.id);
+  }, [inspection?.id, liveProgressData, initializedInspectionId]);
   
   // Track changes
   useEffect(() => {
