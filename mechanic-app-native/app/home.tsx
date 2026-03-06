@@ -623,36 +623,65 @@ export default function HomeScreen() {
     }
   };
 
-  // Filter
+  // Filter inspections based on date tab
   const filteredInspections = inspections.filter(i => {
-    let passesTabFilter = true;
-    if (activeTab === 'new') passesTabFilter = i.status === 'NEW';
-    else if (activeTab === 'accepted') passesTabFilter = i.status === 'ACCEPTED' || i.status === 'IN_PROGRESS';
-    else if (activeTab === 'history') passesTabFilter = i.status === 'COMPLETED' || i.status === 'REJECTED';
-    if (!passesTabFilter) return false;
-    
     const inspectionDate = new Date(i.scheduledAt);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    if (dateFilter === 'today') {
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const dayAfterTomorrow = new Date(today);
+    dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
+    
+    const weekFromNow = new Date(today);
+    weekFromNow.setDate(weekFromNow.getDate() + 7);
+    
+    if (activeTab === 'today') {
       return inspectionDate >= today && inspectionDate < tomorrow;
-    } else if (dateFilter === 'week') {
-      const weekFromNow = new Date(today);
-      weekFromNow.setDate(weekFromNow.getDate() + 7);
+    } else if (activeTab === 'tomorrow') {
+      return inspectionDate >= tomorrow && inspectionDate < dayAfterTomorrow;
+    } else if (activeTab === 'week') {
       return inspectionDate >= today && inspectionDate < weekFromNow;
+    } else if (activeTab === 'custom' && customDateFrom && customDateTo) {
+      const fromDate = new Date(customDateFrom);
+      fromDate.setHours(0, 0, 0, 0);
+      const toDate = new Date(customDateTo);
+      toDate.setHours(23, 59, 59, 999);
+      return inspectionDate >= fromDate && inspectionDate <= toDate;
     }
     return true;
   });
 
-  const counts = {
-    all: inspections.length,
-    new: inspections.filter(i => i.status === 'NEW').length,
-    accepted: inspections.filter(i => i.status === 'ACCEPTED' || i.status === 'IN_PROGRESS').length,
-    history: inspections.filter(i => i.status === 'COMPLETED' || i.status === 'REJECTED').length,
+  // Counts for today/tomorrow/week
+  const getCounts = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dayAfterTomorrow = new Date(today);
+    dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
+    const weekFromNow = new Date(today);
+    weekFromNow.setDate(weekFromNow.getDate() + 7);
+    
+    return {
+      today: inspections.filter(i => {
+        const d = new Date(i.scheduledAt);
+        return d >= today && d < tomorrow;
+      }).length,
+      tomorrow: inspections.filter(i => {
+        const d = new Date(i.scheduledAt);
+        return d >= tomorrow && d < dayAfterTomorrow;
+      }).length,
+      week: inspections.filter(i => {
+        const d = new Date(i.scheduledAt);
+        return d >= today && d < weekFromNow;
+      }).length,
+    };
   };
+  
+  const counts = getCounts();
 
   const tabs = [
     { key: 'today', label: 'Today', icon: 'today-outline' },
