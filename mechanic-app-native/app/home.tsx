@@ -561,13 +561,8 @@ export default function HomeScreen() {
   const handleAccept = async (inspection: Inspection) => {
     try {
       await inspectionsApi.acceptInspection(inspection.id);
-      // Refresh list
-      if (activeTab === 'custom') {
-        fetchInspections('custom', customDateFrom, customDateTo);
-      } else {
-        fetchInspections('all', new Date(), new Date());
-      }
-      // No modal - just refresh the list silently
+      // Refresh list - always fetch all for client-side filtering
+      fetchInspections('all');
     } catch (error) {
       Alert.alert('Error', 'Failed to accept inspection');
     }
@@ -611,12 +606,8 @@ export default function HomeScreen() {
     try {
       await inspectionsApi.rejectInspection(selectedInspection.id, selectedReason);
       setRejectModalVisible(false);
-      // Refresh list
-      if (activeTab === 'custom') {
-        fetchInspections('custom', customDateFrom, customDateTo);
-      } else {
-        fetchInspections('all', new Date(), new Date());
-      }
+      // Refresh list - always fetch all for client-side filtering
+      fetchInspections('all');
     } catch (error) {
       Alert.alert('Error', 'Failed to reject');
     } finally {
@@ -804,11 +795,8 @@ export default function HomeScreen() {
               refreshing={refreshing}
               onRefresh={() => { 
                 setRefreshing(true); 
-                if (activeTab === 'custom') {
-                  fetchInspections('custom', customDateFrom, customDateTo);
-                } else {
-                  fetchInspections('all', new Date(), new Date());
-                }
+                // Always fetch all - client-side filtering handles tabs
+                fetchInspections('all');
               }}
               colors={[Colors.primary]}
               tintColor={Colors.primary}
