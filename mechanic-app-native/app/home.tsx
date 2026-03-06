@@ -620,7 +620,12 @@ export default function HomeScreen() {
     try {
       await inspectionsApi.rejectInspection(selectedInspection.id, selectedReason);
       setRejectModalVisible(false);
-      fetchInspections(dateFilter, customDateFrom, customDateTo);
+      // Refresh list
+      if (activeTab === 'custom') {
+        fetchInspections('custom', customDateFrom, customDateTo);
+      } else {
+        fetchInspections('all', new Date(), new Date());
+      }
     } catch (error) {
       Alert.alert('Error', 'Failed to reject');
     } finally {
