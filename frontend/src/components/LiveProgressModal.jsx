@@ -444,9 +444,66 @@ export default function LiveProgressModal({
     autoFetchVaahanData();
   }, [isOpen, inspection?.id, inspection?.car_number, inspection?.vehicle_make, inspection?.vehicle_model, inspection?.vaahan_data, onInspectionUpdated]);
   
-  // Update a single field
+  // Helper function to convert rating (0-10) to condition string
+  const ratingToCondition = (rating) => {
+    if (rating >= 8) return 'GOOD';
+    if (rating >= 4) return 'AVERAGE';
+    if (rating > 0) return 'POOR';
+    return 'PENDING';
+  };
+  
+  // Update a single field - with auto-calculation for category ratings
   const updateField = (field, value) => {
-    setEditData(prev => ({ ...prev, [field]: value }));
+    setEditData(prev => {
+      const newData = { ...prev, [field]: value };
+      
+      // Auto-update condition ratings when category_ratings change
+      if (field === 'category_ratings' && typeof value === 'object') {
+        const categories = liveProgressData?.categories || [];
+        
+        // Calculate average ratings for engine, exterior, interior, transmission categories
+        let engineRatings = [];
+        let exteriorRatings = [];
+        let interiorRatings = [];
+        let transmissionRatings = [];
+        
+        categories.forEach(cat => {
+          const catName = (cat.category_name || '').toLowerCase();
+          const catKey = catName.replace(/[^a-z0-9]+/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+          const rating = value[catKey];
+          
+          if (rating !== undefined && rating !== null) {
+            if (catName.includes('engine') || catName.includes('diagnos')) {
+              engineRatings.push(rating);
+            }
+            if (catName.includes('exterior') || catName.includes('body') || catName.includes('paint')) {
+              exteriorRatings.push(rating);
+            }
+            if (catName.includes('interior') || catName.includes('cabin') || catName.includes('seat')) {
+              interiorRatings.push(rating);
+            }
+            if (catName.includes('transmission') || catName.includes('gearbox') || catName.includes('clutch')) {
+              transmissionRatings.push(rating);
+            }
+          }
+        });
+        
+        // Calculate averages and update conditions
+        const avgRating = (ratings) => ratings.length > 0 ? Math.round(ratings.reduce((a, b) => a + b, 0) / ratings.length) : null;
+        
+        const engineAvg = avgRating(engineRatings);
+        const exteriorAvg = avgRating(exteriorRatings);
+        const interiorAvg = avgRating(interiorRatings);
+        const transmissionAvg = avgRating(transmissionRatings);
+        
+        if (engineAvg !== null) newData.engine_condition = ratingToCondition(engineAvg);
+        if (exteriorAvg !== null) newData.exterior_condition = ratingToCondition(exteriorAvg);
+        if (interiorAvg !== null) newData.interior_condition = ratingToCondition(interiorAvg);
+        if (transmissionAvg !== null) newData.transmission_condition = ratingToCondition(transmissionAvg);
+      }
+      
+      return newData;
+    });
   };
   
   // Add a repair item
