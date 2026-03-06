@@ -723,18 +723,18 @@ export default function HomeScreen() {
       {/* Stats */}
       <View style={styles.statsContainer}>
         <View style={styles.statBox}>
-          <Text style={styles.statValue}>{counts.new}</Text>
-          <Text style={styles.statLabel}>Pending</Text>
+          <Text style={styles.statValue}>{counts.today}</Text>
+          <Text style={styles.statLabel}>Today</Text>
         </View>
         <View style={styles.statDivider} />
         <View style={styles.statBox}>
-          <Text style={styles.statValue}>{counts.accepted}</Text>
-          <Text style={styles.statLabel}>Active</Text>
+          <Text style={styles.statValue}>{counts.tomorrow}</Text>
+          <Text style={styles.statLabel}>Tomorrow</Text>
         </View>
         <View style={styles.statDivider} />
         <View style={styles.statBox}>
-          <Text style={styles.statValue}>{counts.history}</Text>
-          <Text style={styles.statLabel}>Done</Text>
+          <Text style={styles.statValue}>{counts.week}</Text>
+          <Text style={styles.statLabel}>This Week</Text>
         </View>
       </View>
 
