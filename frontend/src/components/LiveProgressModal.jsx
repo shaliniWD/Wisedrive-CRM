@@ -288,15 +288,15 @@ export default function LiveProgressModal({
         key_highlights: inspection.key_highlights || aiInsights.key_highlights || [],
         
         // Vehicle
-        vehicle_make: inspection.vehicle_make || '',
-        vehicle_model: inspection.vehicle_model || '',
+        vehicle_make: inspection.vehicle_make || inspection.vaahan_data?.manufacturer || '',
+        vehicle_model: inspection.vehicle_model || inspection.vaahan_data?.model || '',
         vehicle_year: inspection.vehicle_year || '',
-        fuel_type: inspection.fuel_type || '',
+        fuel_type: inspection.fuel_type || inspection.vaahan_data?.fuel_type || '',
         transmission: inspection.transmission || '',
-        vehicle_colour: inspection.vehicle_colour || '',
+        vehicle_colour: inspection.vehicle_colour || inspection.vaahan_data?.color || '',
         engine_cc: inspection.engine_cc || 0,
         kms_driven: inspection.kms_driven || 0,
-        owners: inspection.owners || 0,
+        owners: inspection.owners || parseInt(inspection.vaahan_data?.owner_count) || 0,
         
         // Conditions
         engine_condition: inspection.engine_condition || 'PENDING',
