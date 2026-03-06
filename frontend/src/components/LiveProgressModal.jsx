@@ -918,6 +918,20 @@ export default function LiveProgressModal({
   const stats = liveProgressData?.overall_stats || {};
   const aiReport = liveProgressData?.ai_report || {};
   
+  // Guard: Don't render if no inspection data
+  if (!inspection) {
+    return (
+      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+        <DialogContent className="sm:max-w-[400px]">
+          <div className="flex items-center justify-center p-8">
+            <RefreshCw className="h-8 w-8 animate-spin text-blue-600" />
+            <span className="ml-3 text-gray-600">Loading inspection...</span>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+  
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-[1000px] max-h-[95vh] overflow-hidden flex flex-col p-0">
