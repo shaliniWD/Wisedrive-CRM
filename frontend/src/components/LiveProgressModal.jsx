@@ -292,7 +292,16 @@ export default function LiveProgressModal({
         vehicle_model: inspection.vehicle_model || inspection.vaahan_data?.model || '',
         vehicle_year: inspection.vehicle_year || '',
         fuel_type: inspection.fuel_type || inspection.vaahan_data?.fuel_type || '',
-        transmission: inspection.transmission || '',
+        transmission: inspection.transmission || (() => {
+          // Extract transmission from model name if not set
+          const model = (inspection.vaahan_data?.model || '').toUpperCase();
+          if (model.includes(' MT') || model.endsWith('MT') || model.includes('(MT)') || model.includes('-MT')) return 'Manual';
+          if (model.includes(' AT') || model.endsWith('AT') || model.includes('(AT)') || model.includes('-AT')) return 'Automatic';
+          if (model.includes(' AMT') || model.endsWith('AMT') || model.includes('(AMT)') || model.includes('-AMT')) return 'AMT';
+          if (model.includes(' CVT') || model.endsWith('CVT') || model.includes('(CVT)') || model.includes('-CVT')) return 'CVT';
+          if (model.includes(' DCT') || model.endsWith('DCT') || model.includes('(DCT)') || model.includes('-DCT')) return 'DCT';
+          return '';
+        })(),
         vehicle_colour: inspection.vehicle_colour || inspection.vaahan_data?.color || '',
         engine_cc: inspection.engine_cc || 0,
         kms_driven: inspection.kms_driven || 0,
