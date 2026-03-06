@@ -13308,15 +13308,23 @@ async def get_mechanic_inspections(
         query = {"$or": or_conditions}
         
         # Date filter
-        if date_filter:
+        if date_from and date_to:
+            # Custom date range - has priority over date_filter
+            query["$and"] = query.get("$and", []) + [
+                {"scheduled_date": {"$gte": date_from}},
+                {"scheduled_date": {"$lte": date_to + "T23:59:59"}}  # Include entire end day
+            ]
+        elif date_filter:
             today = datetime.now(timezone.utc).date()
             if date_filter == 'today':
                 query["scheduled_date"] = {"$regex": f"^{today.isoformat()}"}
+            elif date_filter == 'tomorrow':
+                tomorrow = today + timedelta(days=1)
+                query["scheduled_date"] = {"$regex": f"^{tomorrow.isoformat()}"}
             elif date_filter == 'week':
-                week_start = today - timedelta(days=today.weekday())
-                week_end = week_start + timedelta(days=6)
+                week_end = today + timedelta(days=7)
                 query["$and"] = query.get("$and", []) + [
-                    {"scheduled_date": {"$gte": week_start.isoformat()}},
+                    {"scheduled_date": {"$gte": today.isoformat()}},
                     {"scheduled_date": {"$lte": (week_end + timedelta(days=1)).isoformat()}}
                 ]
             elif date_filter == 'month':
