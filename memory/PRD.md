@@ -118,6 +118,14 @@ The application is a full-stack CRM for vehicle loans and inspections. Key featu
     - User comments are internal-only notes
   - Stats section shows: Total Publishes count, Last Published date, Status
   - ✅ **VERIFIED** - Backend: 14/14 tests, Frontend: 12/12 features (100% pass rate)
+- ✅ **Authenticated Preview Report Page** - CRM Internal Only (Mar 7, 2026):
+  - New `/preview-report/:id` route - requires CRM authentication
+  - Shows "🔒 INTERNAL PREVIEW" banner with "Back to CRM" button
+  - Maps all fields from LiveProgressModal to report format (30+ fields)
+  - Field mapping documented in `/app/inspection-report/FIELD_MAPPING.md`
+  - Sections: Header, Hero, Assessment Summary, Vehicle Details, Key Info, RTO, OBD, Q&A Details
+  - Connected to "Preview Report" button in LiveProgressModal (NOT publish yet)
+  - ✅ **VERIFIED** - Report loads with authentication, shows all mapped fields
 
 ## Pending Issues (Priority Order)
 
