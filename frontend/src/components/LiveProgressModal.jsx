@@ -1272,7 +1272,21 @@ export default function LiveProgressModal({
       }
     } catch (error) {
       console.error('Save error:', error);
-      const errorMessage = error.response?.data?.detail || error.message || 'Failed to save changes';
+      // Handle different error formats
+      let errorMessage = 'Failed to save changes';
+      if (error.response?.data?.detail) {
+        const detail = error.response.data.detail;
+        if (typeof detail === 'string') {
+          errorMessage = detail;
+        } else if (Array.isArray(detail)) {
+          // Pydantic validation errors come as array
+          errorMessage = detail.map(e => e.msg || e.message || String(e)).join(', ');
+        } else if (typeof detail === 'object') {
+          errorMessage = detail.msg || detail.message || JSON.stringify(detail);
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
       toast.error(errorMessage);
     } finally {
       setSaving(false);
