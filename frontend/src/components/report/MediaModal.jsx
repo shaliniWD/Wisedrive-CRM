@@ -370,8 +370,8 @@ export function RepairsModal({ isOpen, onClose, repairs = [], totalCost = 0, typ
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="spare_part">🔧 Spare Part</SelectItem>
-                      <SelectItem value="labor">👷 Labor Charge</SelectItem>
+                      <SelectItem value="spare_part">Spare Part</SelectItem>
+                      <SelectItem value="labor">Labor Charge</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
