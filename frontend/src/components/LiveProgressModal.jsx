@@ -1072,10 +1072,16 @@ export default function LiveProgressModal({
     // Strategy 1: Match using inspection_answers + inspectionQuestions (most reliable)
     Object.entries(inspectionAnswers).forEach(([questionId, answerData]) => {
       const answerValue = extractAnswerValue(answerData);
-      if (!answerValue) return;
       
       // Get question text from our map or from the answer data itself
       const questionText = questionTextMap[questionId] || answerData?.question || '';
+      
+      // Extract sub_answer values (MCQ answers for photo questions - Dent/Scratch severity)
+      const subAnswer1 = typeof answerData === 'object' ? answerData?.sub_answer_1 : null; // Dent severity
+      const subAnswer2 = typeof answerData === 'object' ? answerData?.sub_answer_2 : null; // Scratch severity
+      
+      // Skip if no relevant answers
+      if (!answerValue && !subAnswer1 && !subAnswer2) return;
       
       // Find rules that match this question
       repairRules.forEach(rule => {
@@ -1094,8 +1100,30 @@ export default function LiveProgressModal({
         
         if (!isMatch) return;
         
+        // Determine which answer to check based on rule's sub_answer_type
+        let valueToCheck = answerValue;
+        let answerLabel = 'Answer';
+        
+        // Check if this rule targets sub_answer_1 (Dent) or sub_answer_2 (Scratch)
+        if (rule.sub_answer_type === 'dent' || rule.sub_answer_type === 'sub_answer_1') {
+          valueToCheck = subAnswer1;
+          answerLabel = 'Dent';
+        } else if (rule.sub_answer_type === 'scratch' || rule.sub_answer_type === 'sub_answer_2') {
+          valueToCheck = subAnswer2;
+          answerLabel = 'Scratch';
+        } else if (!answerValue && subAnswer1) {
+          // For photo questions without text answer, check sub_answer_1 (Dent) first
+          if (subAnswer1 && subAnswer1 !== 'No Dents' && checkCondition(subAnswer1, rule)) {
+            valueToCheck = subAnswer1;
+            answerLabel = 'Dent';
+          } else if (subAnswer2 && subAnswer2 !== 'No Scratch' && checkCondition(subAnswer2, rule)) {
+            valueToCheck = subAnswer2;
+            answerLabel = 'Scratch';
+          }
+        }
+        
         // Check if answer matches condition
-        if (checkCondition(answerValue, rule)) {
+        if (valueToCheck && checkCondition(valueToCheck, rule)) {
           const part = repairParts.find(p => p.id === rule.part_id);
           if (part) {
             const actionType = rule.action_type || 'REPAIR';
@@ -1116,7 +1144,7 @@ export default function LiveProgressModal({
                 action: actionType.toUpperCase(),
                 question_id: questionId,
                 question: questionText || rule.question_text,
-                answer: answerValue,
+                answer: `${answerLabel}: ${valueToCheck}`,
                 condition_matched: `${rule.condition_type}: ${rule.condition_value}`,
                 price: priceInfo.price,
                 labor: priceInfo.labor,
