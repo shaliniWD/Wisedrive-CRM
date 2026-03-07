@@ -98,6 +98,13 @@ The application is a full-stack CRM for vehicle loans and inspections. Key featu
   - Shows "X questions available in this category" helper text
   - Questions filtered by selected category for easier discovery
   - ✅ **VERIFIED** - All 8 features tested and passed (100% success rate)
+- ✅ **Save to Master Functionality** - Write-back flow for repairs (Mar 7, 2026):
+  - Users can add new custom parts in LiveProgressModal Repairs tab
+  - "Save to Master" button appears for unsaved entries
+  - New parts are created in spare parts master with pricing
+  - Price modifications can be saved back with brand-specific overrides
+  - "Custom pricing (not saved to master)" warning for manual overrides
+  - ✅ **VERIFIED** - All 15 steps tested and passed (100% success rate)
 
 ## Pending Issues (Priority Order)
 
