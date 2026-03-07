@@ -1780,11 +1780,12 @@ export default function LiveProgressModal({
     }
   };
   
-  // Preview report in new tab
+  // Preview report in new tab - Opens authenticated preview (CRM internal only)
   const handlePreviewReport = () => {
     if (!inspection?.id) return;
-    const baseUrl = process.env.REACT_APP_BACKEND_URL || window.location.origin;
-    const reportUrl = `${baseUrl}/report/${inspection.id}`;
+    // Use the new authenticated preview route
+    const baseUrl = window.location.origin;
+    const reportUrl = `${baseUrl}/preview-report/${inspection.id}`;
     window.open(reportUrl, '_blank');
   };
   
