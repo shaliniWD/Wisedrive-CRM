@@ -319,13 +319,13 @@ const PartFormModal = ({ isOpen, onClose, part, categories, onSave }) => {
                   />
                 </div>
                 <div>
-                  <Label>Category *</Label>
+                  <Label>Component *</Label>
                   <Select
                     value={formData.category}
                     onValueChange={(val) => setFormData({ ...formData, category: val })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
+                      <SelectValue placeholder="Select component type" />
                     </SelectTrigger>
                     <SelectContent>
                       {categories.map(cat => (
