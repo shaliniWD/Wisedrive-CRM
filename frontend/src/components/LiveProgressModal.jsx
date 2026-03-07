@@ -1243,9 +1243,14 @@ export default function LiveProgressModal({
       });
     });
     
-    // Sort by priority (critical > high > normal > low)
-    const priorityOrder = { critical: 0, high: 1, normal: 2, low: 3 };
-    repairs.sort((a, b) => (priorityOrder[a.priority] || 2) - (priorityOrder[b.priority] || 2));
+    // Sort by priority (critical/1 > high/2 > normal/3 > low)
+    // Support both numeric (1=high, 2=medium, 3=low) and string priorities
+    const getPriorityValue = (priority) => {
+      if (typeof priority === 'number') return priority;
+      const priorityOrder = { critical: 0, high: 1, normal: 2, low: 3 };
+      return priorityOrder[priority] || 2;
+    };
+    repairs.sort((a, b) => getPriorityValue(a.priority) - getPriorityValue(b.priority));
     
     return repairs;
   }, [repairRules, repairParts, inspectionQuestions, liveProgressData?.categories, inspection]);
