@@ -1731,6 +1731,56 @@ export default function LiveProgressModal({
     }
   };
   
+  // Fetch publish history
+  const fetchPublishHistory = async () => {
+    if (!inspection?.id) return;
+    setLoadingPublishHistory(true);
+    try {
+      const response = await inspectionsApi.getPublishHistory(inspection.id);
+      setPublishHistory(response.data.history || []);
+    } catch (error) {
+      console.error('Failed to fetch publish history:', error);
+      toast.error('Failed to load publish history');
+    } finally {
+      setLoadingPublishHistory(false);
+    }
+  };
+  
+  // Publish report to customer
+  const handlePublishReport = async () => {
+    if (!inspection?.id) return;
+    setPublishingReport(true);
+    try {
+      const response = await inspectionsApi.publishReport(inspection.id, {
+        notes: publishNotes,
+        send_whatsapp: true,
+        send_email: false
+      });
+      
+      toast.success(`Report published! ${response.data.whatsapp_sent ? 'WhatsApp sent to customer.' : ''}`);
+      setPublishNotes('');
+      setShowPublishModal(false);
+      
+      // Refresh publish history
+      fetchPublishHistory();
+      
+      // Refresh inspection data
+      onRefresh(inspection.id);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to publish report');
+    } finally {
+      setPublishingReport(false);
+    }
+  };
+  
+  // Preview report in new tab
+  const handlePreviewReport = () => {
+    if (!inspection?.id) return;
+    const baseUrl = process.env.REACT_APP_BACKEND_URL || window.location.origin;
+    const reportUrl = `${baseUrl}/report/${inspection.id}`;
+    window.open(reportUrl, '_blank');
+  };
+  
   // Edit a single answer with predefined options
   const updateAnswer = async (questionId, newAnswer, options = []) => {
     if (!inspection?.id || !questionId) return;
