@@ -1200,7 +1200,7 @@ export default function RepairsModulePage() {
               <TableHeader>
                 <TableRow className="bg-gray-50">
                   <TableHead>Part Name</TableHead>
-                  <TableHead>Category</TableHead>
+                  <TableHead>Component</TableHead>
                   <TableHead className="text-center">Hatchback</TableHead>
                   <TableHead className="text-center">Sedan</TableHead>
                   <TableHead className="text-center">SUV</TableHead>
