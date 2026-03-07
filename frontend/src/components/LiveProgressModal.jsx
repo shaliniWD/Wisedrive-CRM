@@ -1749,8 +1749,8 @@ export default function LiveProgressModal({
                       <span className="text-gray-500 font-medium">₹</span>
                       <Input
                         type="number"
-                        value={editData.market_value_min}
-                        onChange={(e) => updateField('market_value_min', parseFloat(e.target.value) || 0)}
+                        value={editData.market_value_min === 0 ? '' : editData.market_value_min}
+                        onChange={(e) => updateField('market_value_min', e.target.value === '' ? 0 : parseFloat(e.target.value))}
                         className="h-9 text-sm font-semibold"
                         placeholder="Min"
                         disabled={!canEdit}
@@ -1759,8 +1759,8 @@ export default function LiveProgressModal({
                       <span className="text-gray-500 font-medium">₹</span>
                       <Input
                         type="number"
-                        value={editData.market_value_max}
-                        onChange={(e) => updateField('market_value_max', parseFloat(e.target.value) || 0)}
+                        value={editData.market_value_max === 0 ? '' : editData.market_value_max}
+                        onChange={(e) => updateField('market_value_max', e.target.value === '' ? 0 : parseFloat(e.target.value))}
                         className="h-9 text-sm font-semibold"
                         placeholder="Max"
                         disabled={!canEdit}
