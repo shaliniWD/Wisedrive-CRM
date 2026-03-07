@@ -1685,8 +1685,9 @@ export default function LiveProgressModal({
                         min="0"
                         max="10"
                         step="0.5"
-                        value={editData.overall_rating}
-                        onChange={(e) => updateField('overall_rating', parseFloat(e.target.value) || 0)}
+                        value={editData.overall_rating === 0 ? '' : editData.overall_rating}
+                        onChange={(e) => updateField('overall_rating', e.target.value === '' ? 0 : parseFloat(e.target.value))}
+                        placeholder="0"
                         className="h-8 w-16 text-center font-bold"
                         disabled={!canEdit}
                       />
