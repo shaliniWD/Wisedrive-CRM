@@ -594,6 +594,9 @@ export const repairsApi = {
   // Helper endpoints
   getAvailableQuestions: (countryId) => axios.get(`${API_URL}/repair-rules/available-questions`, { params: { country_id: countryId } }),
   calculateCost: (data) => axios.post(`${API_URL}/repair-parts/calculate-cost`, data),
+  
+  // Inspection Categories (top-level categories like Physical/Manual, OBD2, etc.)
+  getInspectionCategories: (countryId) => axios.get(`${API_URL}/inspection-categories`, { params: { country_id: countryId } }),
 };
 
 // SMS Logs API
