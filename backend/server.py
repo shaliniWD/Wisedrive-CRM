@@ -8212,24 +8212,38 @@ async def publish_inspection_report(
     else:
         changes.append({"field": "Report", "type": "created", "details": "Initial report publish"})
     
-    # Create publish history entry with user comment
+    # Create publish history entry - INTERNAL AUDIT ONLY (not visible to customers)
+    # This captures comprehensive change logs for future reference
     publish_entry = {
         "id": str(uuid.uuid4()),
         "inspection_id": inspection_id,
         "published_at": datetime.now(timezone.utc).isoformat(),
         "published_by": current_user["id"],
         "published_by_name": current_user.get("name", current_user.get("email", "Unknown")),
-        "user_comment": request_data.notes,  # Renamed from notes to user_comment for clarity
-        "changes": changes,
-        "state_snapshot": current_state,
+        "published_by_email": current_user.get("email"),
+        "published_by_role": current_user.get("role"),
+        "user_comment": request_data.notes,  # Internal comment - NOT for customer view
+        "changes": changes,  # Auto-detected changes - INTERNAL AUDIT ONLY
+        "changes_count": len(changes),
+        "state_snapshot": current_state,  # Full state for future diff comparison
+        "previous_state_id": previous_publish.get("id") if previous_publish else None,
         "short_url": short_url,
         "send_whatsapp": request_data.send_whatsapp,
         "send_email": request_data.send_email,
-        "email": request_data.email
+        "email": request_data.email,
+        "audit_metadata": {
+            "ip_address": None,  # Can be populated from request headers if needed
+            "user_agent": None,
+            "source": "crm_web",
+            "version": "2.5.9"
+        }
     }
     
-    # Insert publish history
+    # Insert publish history - This is INTERNAL audit log, not visible to customers
     await db.report_publish_history.insert_one(publish_entry)
+    
+    # Also log to application logger for backup audit trail
+    logger.info(f"[AUDIT_PUBLISH] Inspection {inspection_id[:8]}... published by {current_user.get('email')} - {len(changes)} changes detected")
     
     # Get customer details
     customer_name = inspection.get("customer_name", "Customer")
