@@ -84,12 +84,13 @@ The application is a full-stack CRM for vehicle loans and inspections. Key featu
   - Backend API updated to return sub_options_1 and sub_options_2 from questions
   - Pricing logic updated to handle new action types correctly
 - ✅ **Grouped Rules View in Repairs Module** - Reorganized Question Rules table:
-  - Rules grouped by **Question Category** (e.g., Exterior Inspection, Brake System, AC & Cooling, Door Panel, Engine Health)
+  - Rules grouped by **Q&A Categories** (e.g., "Exterior Inspection", "Battery Health Checkup", "Engine Health and Diagnosis", "Air Condition System Check")
   - Within each category, rules grouped by **Question**
-  - Each rule displays: Part name, exact answer value, action type, status
+  - Each rule displays: Part name, exact answer value, action type (REPAIR/REPLACE/LABOR), status
   - Expand/collapse functionality for categories and questions
   - Search works for category name, part name, question text, and condition value
   - Renamed "Category" to "Component" in Spare Parts section
+  - ✅ **VERIFIED (Mar 7, 2026)** - 156 rules across 7+ Q&A categories, tested with testing agent (100% pass rate)
 
 ## Pending Issues (Priority Order)
 
