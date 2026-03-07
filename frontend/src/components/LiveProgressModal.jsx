@@ -159,7 +159,8 @@ const RepairItem = ({
   repair, 
   index, 
   onUpdate, 
-  onRemove, 
+  onRemove,
+  onSaveToMaster,
   repairParts = [], 
   partCategories = [],
   vehicleMake = '', 
@@ -169,6 +170,27 @@ const RepairItem = ({
   const [showPartSelector, setShowPartSelector] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showBrandPricing, setShowBrandPricing] = useState(false);
+  const [savingToMaster, setSavingToMaster] = useState(false);
+  
+  // Check if this repair has unsaved price changes or is a new part
+  const hasUnsavedChanges = useMemo(() => {
+    // New part not in master
+    if (!repair.part_id && repair.item) return true;
+    // Price was manually overridden
+    if (repair.price_source === 'manual_override' || repair.price_source === 'manual') return true;
+    return false;
+  }, [repair]);
+  
+  // Handle save to master
+  const handleSaveToMaster = async () => {
+    if (!onSaveToMaster) return;
+    setSavingToMaster(true);
+    try {
+      await onSaveToMaster(repair, index);
+    } finally {
+      setSavingToMaster(false);
+    }
+  };
   
   // Filter parts based on search
   const filteredParts = useMemo(() => {
