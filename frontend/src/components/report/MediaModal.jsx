@@ -248,20 +248,42 @@ export function TyreModal({ isOpen, onClose, tyreDetails, tyreQAData, isEditMode
   );
 }
 
-// Repairs Modal with Edit Capability
-export function RepairsModal({ isOpen, onClose, repairs, type, isEditMode, onUpdateRepairs }) {
-  const [localRepairs, setLocalRepairs] = useState(repairs.filter(r => r.type === type));
+// Repairs Modal with Edit Capability - Updated for calculated repairs
+export function RepairsModal({ isOpen, onClose, repairs = [], totalCost = 0, type, isEditMode, onUpdateRepairs }) {
+  // Handle both old format (type field) and new format (pre-filtered)
+  const filteredRepairs = repairs.filter(r => {
+    const repairType = (r.type || '').toLowerCase();
+    return repairType === type || repairType === type.toUpperCase();
+  });
+  
+  // Use pre-filtered repairs if provided (new format) or filter from all repairs (old format)
+  const displayRepairs = filteredRepairs.length > 0 ? filteredRepairs : repairs;
+  
+  const [localRepairs, setLocalRepairs] = useState(displayRepairs);
   const [newRepair, setNewRepair] = useState({ type, serviceType: 'spare_part', description: '', cost: '' });
 
+  // Update local repairs when props change
+  React.useEffect(() => {
+    const filtered = repairs.filter(r => {
+      const repairType = (r.type || '').toLowerCase();
+      return repairType === type || repairType === type.toUpperCase();
+    });
+    setLocalRepairs(filtered.length > 0 ? filtered : repairs);
+  }, [repairs, type]);
+
   const typeLabel = type === 'minor' ? 'Minor' : 'Major';
-  const total = localRepairs.reduce((sum, r) => sum + r.cost, 0);
+  
+  // Calculate total from items or use provided totalCost
+  const calculatedTotal = localRepairs.reduce((sum, r) => sum + (r.estimated_cost || r.cost || 0), 0);
+  const total = totalCost > 0 ? totalCost : calculatedTotal;
 
   const handleAddRepair = () => {
     if (newRepair.description && newRepair.cost) {
       const repair = {
         id: Date.now(),
         ...newRepair,
-        cost: parseInt(newRepair.cost)
+        cost: parseInt(newRepair.cost),
+        estimated_cost: parseInt(newRepair.cost)
       };
       setLocalRepairs([...localRepairs, repair]);
       setNewRepair({ type, serviceType: 'spare_part', description: '', cost: '' });
@@ -284,31 +306,54 @@ export function RepairsModal({ isOpen, onClose, repairs, type, isEditMode, onUpd
         
         <div className="space-y-4">
           {/* Repairs List */}
-          <div className="space-y-2">
-            {localRepairs.map((repair) => (
-              <div key={repair.id} className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm truncate">{repair.description}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {repair.serviceType === 'spare_part' ? '🔧 Spare Part' : '👷 Labor'}
-                  </p>
+          {localRepairs.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <IndianRupee className="h-12 w-12 mx-auto mb-2 opacity-50" />
+              <p>No {typeLabel.toLowerCase()} repairs identified</p>
+              <p className="text-xs mt-1">Based on inspection Q&A analysis</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {localRepairs.map((repair, index) => (
+                <div key={repair.id || index} className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{repair.part_name || repair.description || 'Repair Item'}</p>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      {repair.category && <span className="bg-muted px-2 py-0.5 rounded">{repair.category}</span>}
+                      {repair.action && <span>• {repair.action}</span>}
+                      {repair.priority && (
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] ${
+                          repair.priority === 'high' || repair.priority === 'critical' 
+                            ? 'bg-destructive/10 text-destructive' 
+                            : 'bg-warning/10 text-warning'
+                        }`}>
+                          {repair.priority}
+                        </span>
+                      )}
+                    </div>
+                    {repair.parts_cost > 0 && repair.labor_cost > 0 && (
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        Parts: {formatCurrency(repair.parts_cost)} + Labor: {formatCurrency(repair.labor_cost)}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold">{formatCurrency(repair.estimated_cost || repair.cost || 0)}</span>
+                    {isEditMode && (
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 text-destructive hover:text-destructive"
+                        onClick={() => handleRemoveRepair(repair.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold">{formatCurrency(repair.cost)}</span>
-                  {isEditMode && (
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8 text-destructive hover:text-destructive"
-                      onClick={() => handleRemoveRepair(repair.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
           
           {/* Add New Repair (Edit Mode Only) */}
           {isEditMode && (
