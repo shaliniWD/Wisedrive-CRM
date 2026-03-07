@@ -8064,7 +8064,7 @@ async def publish_inspection_report(
     
     # Create publish history entry
     publish_entry = {
-        "id": str(uuid4()),
+        "id": str(uuid.uuid4()),
         "inspection_id": inspection_id,
         "published_at": datetime.now(timezone.utc).isoformat(),
         "published_by": current_user["id"],
