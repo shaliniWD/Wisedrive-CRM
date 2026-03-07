@@ -2604,6 +2604,7 @@ export default function LiveProgressModal({
                         onUpdate={updateRepair}
                         onRemove={removeRepair}
                         repairParts={repairParts}
+                        partCategories={partCategories}
                         vehicleMake={inspection?.vehicle_make || ''}
                         carType={inspection?.car_type || 'sedan'}
                         canEdit={canEdit}
