@@ -70,11 +70,15 @@ The application is a full-stack CRM for vehicle loans and inspections. Key featu
 - ✅ Customer data repair API enhanced
 - ✅ Test-5 customer modal display fix
 
+### Bug Fixes (Mar 7, 2026)
+- ✅ **MCQ Answers Display in Q&A Details** - Fixed issue where sub_answer_1 (Dent severity) and sub_answer_2 (Scratch severity) were not displaying in LiveProgressModal Q&A Details tab for photo questions. Now shows as colored badges below photos.
+
 ## Pending Issues (Priority Order)
 
 ### P0 - Critical
 1. ~~**Lead Reassignment Bug**~~ - FIXED (Mar 2026)
 2. ~~**Second Payment Not Creating Inspections**~~ - FIXED (Dec 2025)
+3. ~~**MCQ Answers Not Displaying**~~ - FIXED (Mar 7, 2026)
 
 ### P1 - High  
 1. **Loan Eligibility Frontend** - Backend API ready, need UI integration
