@@ -3470,34 +3470,41 @@ export default function LiveProgressModal({
                           </div>
                         </div>
                         
-                        {/* Notes */}
-                        {entry.notes && (
+                        {/* User Comment */}
+                        {(entry.user_comment || entry.notes) && (
                           <div className="mt-2 p-2 bg-white rounded border text-sm">
-                            <span className="text-gray-500">Notes:</span> {entry.notes}
+                            <span className="text-gray-500 font-medium">💬 Comment:</span> {entry.user_comment || entry.notes}
                           </div>
                         )}
                         
-                        {/* Changes */}
+                        {/* Changes - Auto-detected */}
                         {entry.changes && entry.changes.length > 0 && (
                           <div className="mt-3">
-                            <div className="text-xs font-medium text-gray-500 mb-2">Changes in this publish:</div>
-                            <div className="space-y-1">
+                            <div className="text-xs font-medium text-gray-500 mb-2 flex items-center gap-1">
+                              <BarChart3 className="h-3 w-3" />
+                              Auto-detected changes in this version:
+                            </div>
+                            <div className="space-y-1 max-h-48 overflow-y-auto">
                               {entry.changes.map((change, cIdx) => (
                                 <div 
                                   key={cIdx} 
-                                  className={`flex items-center gap-2 text-sm p-2 rounded ${
+                                  className={`flex items-start gap-2 text-sm p-2 rounded ${
                                     change.type === 'created' ? 'bg-blue-50 text-blue-700' :
                                     change.type === 'updated' ? 'bg-amber-50 text-amber-700' :
+                                    change.type === 'republished' ? 'bg-gray-50 text-gray-600' :
                                     'bg-gray-50 text-gray-700'
                                   }`}
                                 >
-                                  <span className={`h-1.5 w-1.5 rounded-full ${
+                                  <span className={`h-1.5 w-1.5 rounded-full mt-1.5 flex-shrink-0 ${
                                     change.type === 'created' ? 'bg-blue-500' :
                                     change.type === 'updated' ? 'bg-amber-500' :
                                     'bg-gray-400'
                                   }`}></span>
-                                  <span className="font-medium">{change.field}:</span>
-                                  <span>{change.details}</span>
+                                  <div>
+                                    <span className="font-medium">{change.field}</span>
+                                    <span className="text-gray-500 mx-1">—</span>
+                                    <span className="text-gray-600">{change.details}</span>
+                                  </div>
                                 </div>
                               ))}
                             </div>
