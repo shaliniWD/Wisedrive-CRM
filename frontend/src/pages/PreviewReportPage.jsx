@@ -378,9 +378,14 @@ function transformInspectionToReport(inspection, lead, customer, liveProgressDat
         tyres: inspection.tyre_details || []
       },
       
-      repairs: inspection.repairs || [],
-      totalRepairCostMin: inspection.total_repair_cost_min || 0,
-      totalRepairCostMax: inspection.total_repair_cost_max || 0
+      // Calculated repairs from backend
+      repairs: [...minorRepairs, ...majorRepairs],
+      minorRepairs: minorRepairs,
+      majorRepairs: majorRepairs,
+      totalMinorRepairsCost: totalMinor,
+      totalMajorRepairsCost: totalMajor,
+      totalRepairCostMin: inspection.total_repair_cost_min || totalMinor + totalMajor,
+      totalRepairCostMax: inspection.total_repair_cost_max || Math.round((totalMinor + totalMajor) * 1.2)
     },
 
     rtoVerification: {
