@@ -829,7 +829,18 @@ export default function LiveProgressModal({
   const addRepair = () => {
     setEditData(prev => ({
       ...prev,
-      repairs: [...prev.repairs, { item: '', type: 'MINOR', estimated_cost: 0 }]
+      repairs: [...prev.repairs, { 
+        item: '', 
+        type: 'MINOR', 
+        action: 'repair',
+        price: 0,
+        labor: 0,
+        estimated_cost: 0,
+        part_id: null,
+        category: '',
+        part_number: '',
+        price_source: 'manual'
+      }]
     }));
   };
   
