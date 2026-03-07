@@ -924,8 +924,16 @@ const RuleFormModal = ({ isOpen, onClose, rule, parts, questions, inspectionCate
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.part_id || !formData.question_id) {
-      toast.error('Part and Question are required');
+    if (!formData.part_id) {
+      toast.error('Please select a Repair Part');
+      return;
+    }
+    if (!selectedCategoryId) {
+      toast.error('Please select an Inspection Q&A Category');
+      return;
+    }
+    if (!formData.question_id) {
+      toast.error('Please select a Linked Question');
       return;
     }
     if (formData.conditions.length === 0) {
