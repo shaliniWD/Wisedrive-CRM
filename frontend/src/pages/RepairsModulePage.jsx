@@ -52,10 +52,11 @@ const PRIORITIES = [
   { value: 'critical', label: 'Critical', color: 'bg-red-100 text-red-700' }
 ];
 
-// Action types
+// Action types - now includes Labor and Both options
 const ACTION_TYPES = [
-  { value: 'repair', label: 'Repair' },
-  { value: 'replace', label: 'Replace' },
+  { value: 'repair', label: 'Repair (Part Cost Only)' },
+  { value: 'labor', label: 'Labor (Labor Cost Only)' },
+  { value: 'both', label: 'Both (Part + Labor)' },
   { value: 'inspect_further', label: 'Inspect Further' }
 ];
 
