@@ -1101,6 +1101,7 @@ export default function RepairsModulePage() {
       rule.part?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       rule.part_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       rule.question_text?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      rule.inspection_category_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       rule.category_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       conditionValue?.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesSearch;
