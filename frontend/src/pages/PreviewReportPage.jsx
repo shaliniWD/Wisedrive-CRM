@@ -93,6 +93,25 @@ function transformInspectionToReport(inspection, lead, customer) {
   const conditionRatings = aiInsights.condition_ratings || {};
   const vaahanData = inspection.vaahan_data || {};
   
+  // Handle assessment_summary - it can be a string or an object
+  const getAssessmentText = () => {
+    const summary = inspection.assessment_summary || aiInsights.assessment_summary;
+    if (!summary) return "This vehicle has been professionally inspected. Detailed assessment available below.";
+    if (typeof summary === 'string') return summary;
+    // If it's an object, combine the values into a readable paragraph
+    if (typeof summary === 'object') {
+      const parts = [];
+      if (summary.overall) parts.push(summary.overall);
+      if (summary.engine_and_mechanical) parts.push(`Engine & Mechanical: ${summary.engine_and_mechanical}`);
+      if (summary.exterior_body) parts.push(`Exterior: ${summary.exterior_body}`);
+      if (summary.interior_comfort) parts.push(`Interior: ${summary.interior_comfort}`);
+      if (summary.safety_systems) parts.push(`Safety: ${summary.safety_systems}`);
+      if (summary.documentation) parts.push(`Documentation: ${summary.documentation}`);
+      return parts.join(' ') || "This vehicle has been professionally inspected. Detailed assessment available below.";
+    }
+    return "This vehicle has been professionally inspected. Detailed assessment available below.";
+  };
+  
   // Build comprehensive report data structure
   const reportData = {
     header: {
