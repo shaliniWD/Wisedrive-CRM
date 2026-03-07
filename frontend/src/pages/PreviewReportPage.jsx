@@ -440,8 +440,8 @@ function PreviewReportContent({ inspectionId }) {
         return;
       }
 
-      // Fetch both inspection report and live-progress data in parallel
-      const [reportResponse, liveProgressResponse] = await Promise.all([
+      // Fetch inspection report, live-progress data, and calculated repairs in parallel
+      const [reportResponse, liveProgressResponse, repairsResponse] = await Promise.all([
         axios.get(
           `${API_URL}/api/inspections/${inspectionId}/report`,
           { headers: { Authorization: `Bearer ${token}` } }
@@ -449,14 +449,19 @@ function PreviewReportContent({ inspectionId }) {
         axios.get(
           `${API_URL}/api/inspections/${inspectionId}/live-progress`,
           { headers: { Authorization: `Bearer ${token}` } }
-        ).catch(() => ({ data: {} })) // Fallback if live-progress fails
+        ).catch(() => ({ data: {} })), // Fallback if live-progress fails
+        axios.get(
+          `${API_URL}/api/inspections/${inspectionId}/calculated-repairs`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        ).catch(() => ({ data: { minor_repairs: [], major_repairs: [], total_minor: 0, total_major: 0 } })) // Fallback
       ]);
       
       const { inspection, lead, customer } = reportResponse.data;
       const liveProgressData = liveProgressResponse.data;
+      const repairsData = repairsResponse.data;
       
-      // Transform to report format, including live progress data
-      const reportData = transformInspectionToReport(inspection, lead, customer, liveProgressData);
+      // Transform to report format, including live progress data and repairs
+      const reportData = transformInspectionToReport(inspection, lead, customer, liveProgressData, repairsData);
       setData(reportData);
     } catch (err) {
       console.error('Error fetching report:', err);
