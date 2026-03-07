@@ -6873,6 +6873,15 @@ async def get_inspection_live_progress(inspection_id: str, current_user: dict = 
             q_detail["is_answered"] = True
             raw_answer = answer_data.get("answer")
             q_detail["answered_at"] = answer_data.get("answered_at")
+            
+            # Extract sub-answers (MCQ responses that accompany photos)
+            sub_answer_1 = answer_data.get("sub_answer_1")
+            sub_answer_2 = answer_data.get("sub_answer_2")
+            q_detail["sub_answer_1"] = sub_answer_1
+            q_detail["sub_answer_2"] = sub_answer_2
+            q_detail["sub_answer_1_at"] = answer_data.get("sub_answer_1_at")
+            q_detail["sub_answer_2_at"] = answer_data.get("sub_answer_2_at")
+            
             category_stats[cat_id]["answered_questions"] += 1
             
             # Resolve media URLs (gs:// or media_ref:)
