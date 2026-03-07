@@ -289,7 +289,7 @@ function InspectionReportContent({ inspectionId }) {
         <VehicleDetailsSection data={data.vehicleInfo} />
         
         {/* Key Information with Modals */}
-        <KeyInfoSection data={data.keyInfo} />
+        <KeyInfoSection data={data.keyInfo} inspectionCategories={data.inspectionCategories} />
         
         {/* RTO Verification */}
         <RTOVerificationSection data={data.rtoVerification} />
