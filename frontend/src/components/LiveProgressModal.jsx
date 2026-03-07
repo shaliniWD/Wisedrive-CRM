@@ -703,14 +703,16 @@ export default function LiveProgressModal({
       if (!isOpen) return;
       setLoadingRepairs(true);
       try {
-        const [partsRes, rulesRes, categoriesRes] = await Promise.all([
+        const [partsRes, rulesRes, categoriesRes, questionsRes] = await Promise.all([
           repairsApi.getParts(),
           repairsApi.getRules(),
-          repairsApi.getPartCategories()
+          repairsApi.getPartCategories(),
+          repairsApi.getInspectionQuestions()
         ]);
         setRepairParts(partsRes.data || []);
         setRepairRules(rulesRes.data || []);
         setPartCategories(categoriesRes.data || []);
+        setInspectionQuestions(questionsRes.data || []);
       } catch (err) {
         console.error('Failed to load repairs data:', err);
       } finally {
