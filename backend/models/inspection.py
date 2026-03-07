@@ -150,6 +150,7 @@ class InspectionUpdate(BaseModel):
     engine_cc: Optional[int] = None
     kms_driven: Optional[int] = None
     owners: Optional[int] = None
+    car_type: Optional[str] = None  # hatchback, sedan, suv - for pricing
     
     # Condition Ratings (NEW)
     engine_condition: Optional[str] = None
