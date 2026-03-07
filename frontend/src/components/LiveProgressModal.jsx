@@ -2541,11 +2541,27 @@ export default function LiveProgressModal({
               <Section title="Manual Repair Entries" icon={Wrench} defaultOpen={calculatedRepairCosts.length === 0}>
                 <div className="space-y-4">
                   <p className="text-sm text-gray-600">
-                    Add additional repairs that weren't auto-detected. These will be included in the final estimate.
+                    Add repairs from the parts list or enter custom items. Prices auto-populate based on vehicle type and brand.
                   </p>
                   
+                  {/* Vehicle Info for Pricing */}
+                  <div className="bg-blue-50 rounded-lg p-3 flex items-center gap-4 text-sm">
+                    <div className="flex items-center gap-2">
+                      <Car className="h-4 w-4 text-blue-600" />
+                      <span className="text-gray-600">Vehicle:</span>
+                      <span className="font-medium">{inspection?.vehicle_make || 'Unknown'}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-600">Type:</span>
+                      <span className="font-medium capitalize">{inspection?.car_type || 'sedan'}</span>
+                    </div>
+                    <div className="text-xs text-blue-600 ml-auto">
+                      {repairParts.length} parts in catalog
+                    </div>
+                  </div>
+                  
                   {/* Repair Items */}
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {editData.repairs.map((repair, idx) => (
                       <RepairItem
                         key={idx}
@@ -2553,13 +2569,18 @@ export default function LiveProgressModal({
                         index={idx}
                         onUpdate={updateRepair}
                         onRemove={removeRepair}
+                        repairParts={repairParts}
+                        vehicleMake={inspection?.vehicle_make || ''}
+                        carType={inspection?.car_type || 'sedan'}
+                        canEdit={canEdit}
                       />
                     ))}
                   </div>
                   
                   {canEdit && (
-                    <Button variant="outline" onClick={addRepair} className="w-full">
-                      + Add Manual Repair Item
+                    <Button variant="outline" onClick={addRepair} className="w-full border-dashed">
+                      <Package className="h-4 w-4 mr-2" />
+                      Add Repair Item
                     </Button>
                   )}
                   
