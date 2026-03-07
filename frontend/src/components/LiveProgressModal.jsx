@@ -146,6 +146,7 @@ const RepairItem = ({
   onUpdate, 
   onRemove, 
   repairParts = [], 
+  partCategories = [],
   vehicleMake = '', 
   carType = 'sedan',
   canEdit = true 
