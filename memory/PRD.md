@@ -99,6 +99,7 @@ The application is a full-stack CRM for vehicle loans and inspections. Key featu
 2. ~~**Second Payment Not Creating Inspections**~~ - FIXED (Dec 2025)
 3. ~~**MCQ Answers Not Displaying**~~ - FIXED (Mar 7, 2026)
 4. ~~**Auto-Repair Detection Not Working**~~ - FIXED (Mar 7, 2026)
+5. ~~**Repair Rules Grouping by Q&A Categories**~~ - FIXED & VERIFIED (Mar 7, 2026)
 
 ### P1 - High  
 1. **Loan Eligibility Frontend** - Backend API ready, need UI integration
