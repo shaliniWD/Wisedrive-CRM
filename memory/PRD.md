@@ -77,6 +77,12 @@ The application is a full-stack CRM for vehicle loans and inspections. Key featu
   - Rules match on severity values: "1-2", "3-4", "4+"
   - Frontend updated to check sub_answer_1/sub_answer_2 for rule matching
   - Repairs tab now shows 40+ auto-detected repairs with correct pricing
+- ✅ **Simplified Repair Rules UI** - Streamlined the Conditions & Actions section:
+  - "If answer is" dropdown now shows exact answer options from Q&A page (grouped by Dent/Scratch)
+  - Removed the "value" text input (selecting exact answers instead)
+  - "Then charge" dropdown shows: Repair (Part Cost Only), Labor (Labor Cost Only), Both (Part + Labor), Inspect Further
+  - Backend API updated to return sub_options_1 and sub_options_2 from questions
+  - Pricing logic updated to handle new action types correctly
 
 ## Pending Issues (Priority Order)
 
