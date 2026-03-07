@@ -1358,6 +1358,7 @@ export default function RepairsModulePage() {
         rule={ruleModal.rule}
         parts={parts}
         questions={questions}
+        inspectionCategories={inspectionCategories}
         onSave={fetchData}
       />
     </div>
