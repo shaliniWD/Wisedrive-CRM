@@ -806,6 +806,8 @@ const RuleFormModal = ({ isOpen, onClose, rule, parts, questions, onSave }) => {
     part_id: '',
     question_id: '',
     question_text: '',
+    inspection_category_id: '',
+    inspection_category_name: '',
     conditions: [],
     is_active: true
   });
@@ -818,6 +820,8 @@ const RuleFormModal = ({ isOpen, onClose, rule, parts, questions, onSave }) => {
         part_id: rule.part_id || '',
         question_id: rule.question_id || '',
         question_text: rule.question_text || '',
+        inspection_category_id: rule.inspection_category_id || rule.category_id || '',
+        inspection_category_name: rule.inspection_category_name || rule.category_name || '',
         conditions: rule.conditions || [],
         is_active: rule.is_active !== false
       });
@@ -828,6 +832,8 @@ const RuleFormModal = ({ isOpen, onClose, rule, parts, questions, onSave }) => {
         part_id: '',
         question_id: '',
         question_text: '',
+        inspection_category_id: '',
+        inspection_category_name: '',
         conditions: [],
         is_active: true
       });
@@ -841,7 +847,9 @@ const RuleFormModal = ({ isOpen, onClose, rule, parts, questions, onSave }) => {
     setFormData({
       ...formData,
       question_id: qId,
-      question_text: q?.question_text || ''
+      question_text: q?.question_text || '',
+      inspection_category_id: q?.category_id || '',
+      inspection_category_name: q?.category_name || ''
     });
   };
 
