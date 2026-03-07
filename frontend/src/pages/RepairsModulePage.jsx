@@ -397,18 +397,60 @@ const PartFormModal = ({ isOpen, onClose, part, categories, onSave }) => {
 };
 
 // Rule Condition Row Component
-const RuleConditionRow = ({ condition, index, onChange, onRemove }) => {
-  const [showRange, setShowRange] = useState(condition?.condition?.operator === 'between');
+const RuleConditionRow = ({ condition, index, onChange, onRemove, selectedQuestion }) => {
+  // Get available answer options from the selected question
+  const getAnswerOptions = () => {
+    if (!selectedQuestion) return [];
+    
+    const options = [];
+    
+    // Add main options if available
+    if (selectedQuestion.options?.length > 0) {
+      selectedQuestion.options.forEach(opt => {
+        options.push({ value: opt, label: opt, type: 'answer' });
+      });
+    }
+    
+    // Add sub-question 1 options (Dent)
+    if (selectedQuestion.sub_options_1?.length > 0) {
+      options.push({ value: '__divider_dent__', label: `── ${selectedQuestion.sub_question_1 || 'Dent Options'} ──`, disabled: true });
+      selectedQuestion.sub_options_1.forEach(opt => {
+        options.push({ value: `dent:${opt}`, label: opt, type: 'dent' });
+      });
+    }
+    
+    // Add sub-question 2 options (Scratch)
+    if (selectedQuestion.sub_options_2?.length > 0) {
+      options.push({ value: '__divider_scratch__', label: `── ${selectedQuestion.sub_question_2 || 'Scratch Options'} ──`, disabled: true });
+      selectedQuestion.sub_options_2.forEach(opt => {
+        options.push({ value: `scratch:${opt}`, label: opt, type: 'scratch' });
+      });
+    }
+    
+    return options;
+  };
+
+  const answerOptions = getAnswerOptions();
 
   const updateCondition = (field, value) => {
     const updated = { ...condition };
     if (!updated.condition) updated.condition = {};
-    updated.condition[field] = value;
-    if (field === 'operator' && value === 'between') {
-      updated.condition.value = [0, 0];
-      setShowRange(true);
-    } else if (field === 'operator') {
-      setShowRange(false);
+    
+    if (field === 'answer') {
+      // Parse the answer value to determine type
+      if (value.startsWith('dent:')) {
+        updated.condition.sub_answer_type = 'dent';
+        updated.condition.value = value.replace('dent:', '');
+      } else if (value.startsWith('scratch:')) {
+        updated.condition.sub_answer_type = 'scratch';
+        updated.condition.value = value.replace('scratch:', '');
+      } else {
+        updated.condition.sub_answer_type = 'answer';
+        updated.condition.value = value;
+      }
+      updated.condition.answer = value; // Store full value for UI
+    } else {
+      updated.condition[field] = value;
     }
     onChange(updated);
   };
@@ -420,13 +462,19 @@ const RuleConditionRow = ({ condition, index, onChange, onRemove }) => {
     onChange(updated);
   };
 
-  const updateRangeValue = (idx, val) => {
-    const updated = { ...condition };
-    if (!updated.condition.value || !Array.isArray(updated.condition.value)) {
-      updated.condition.value = [0, 0];
+  // Get current selected answer value for display
+  const getCurrentAnswerValue = () => {
+    if (condition?.condition?.answer) return condition.condition.answer;
+    // Reconstruct from sub_answer_type and value
+    if (condition?.condition?.sub_answer_type && condition?.condition?.value) {
+      if (condition.condition.sub_answer_type === 'dent') {
+        return `dent:${condition.condition.value}`;
+      } else if (condition.condition.sub_answer_type === 'scratch') {
+        return `scratch:${condition.condition.value}`;
+      }
+      return condition.condition.value;
     }
-    updated.condition.value[idx] = parseFloat(val) || 0;
-    onChange(updated);
+    return '';
   };
 
   return (
@@ -438,65 +486,46 @@ const RuleConditionRow = ({ condition, index, onChange, onRemove }) => {
         </Button>
       </div>
       
-      <div className="grid grid-cols-3 gap-3">
-        {/* Operator */}
+      <div className="grid grid-cols-2 gap-3">
+        {/* Answer Selection */}
         <div>
-          <Label className="text-xs">If answer</Label>
+          <Label className="text-xs">If answer is</Label>
           <Select
-            value={condition?.condition?.operator || ''}
-            onValueChange={(val) => updateCondition('operator', val)}
+            value={getCurrentAnswerValue()}
+            onValueChange={(val) => updateCondition('answer', val)}
           >
             <SelectTrigger className="h-9">
-              <SelectValue placeholder="Select operator" />
+              <SelectValue placeholder="Select answer" />
             </SelectTrigger>
             <SelectContent>
-              {OPERATORS.map(op => (
-                <SelectItem key={op.value} value={op.value}>{op.label}</SelectItem>
-              ))}
+              {answerOptions.length === 0 ? (
+                <SelectItem value="__none__" disabled>Select a question first</SelectItem>
+              ) : (
+                answerOptions.map((opt, idx) => (
+                  opt.disabled ? (
+                    <div key={idx} className="px-2 py-1.5 text-xs text-gray-500 font-medium bg-gray-50">
+                      {opt.label}
+                    </div>
+                  ) : (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  )
+                ))
+              )}
             </SelectContent>
           </Select>
         </div>
         
-        {/* Value */}
-        <div>
-          <Label className="text-xs">Value</Label>
-          {showRange ? (
-            <div className="flex items-center gap-1">
-              <Input
-                type="number"
-                value={condition?.condition?.value?.[0] || 0}
-                onChange={(e) => updateRangeValue(0, e.target.value)}
-                className="h-9"
-                placeholder="Min"
-              />
-              <span className="text-gray-400">-</span>
-              <Input
-                type="number"
-                value={condition?.condition?.value?.[1] || 0}
-                onChange={(e) => updateRangeValue(1, e.target.value)}
-                className="h-9"
-                placeholder="Max"
-              />
-            </div>
-          ) : (
-            <Input
-              value={condition?.condition?.value || ''}
-              onChange={(e) => updateCondition('value', e.target.value)}
-              className="h-9"
-              placeholder="Value to compare"
-            />
-          )}
-        </div>
-        
         {/* Action Type */}
         <div>
-          <Label className="text-xs">Then</Label>
+          <Label className="text-xs">Then charge</Label>
           <Select
             value={condition?.action?.action_type || ''}
             onValueChange={(val) => updateAction('action_type', val)}
           >
             <SelectTrigger className="h-9">
-              <SelectValue placeholder="Action" />
+              <SelectValue placeholder="Select action" />
             </SelectTrigger>
             <SelectContent>
               {ACTION_TYPES.map(at => (
