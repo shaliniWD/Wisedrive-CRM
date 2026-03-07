@@ -510,10 +510,30 @@ const RepairItem = ({
             
             {/* Actions */}
             <div className="col-span-3 flex items-center gap-1 justify-end">
-              {repair.price_source && repair.price_source !== 'manual' && (
+              {repair.price_source && repair.price_source !== 'manual' && repair.price_source !== 'manual_override' && (
                 <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
                   {repair.price_source.includes('brand') ? '🏷️ Brand' : '📋 Default'}
                 </span>
+              )}
+              {/* Save to Master Button - shows when there are unsaved changes */}
+              {canEdit && hasUnsavedChanges && onSaveToMaster && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSaveToMaster}
+                  disabled={savingToMaster}
+                  className="h-8 px-2 text-xs text-green-600 border-green-300 hover:bg-green-50"
+                  title="Save this part/pricing to master data"
+                >
+                  {savingToMaster ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <>
+                      <Save className="h-3 w-3 mr-1" />
+                      Save to Master
+                    </>
+                  )}
+                </Button>
               )}
               {canEdit && (
                 <Button 
@@ -536,6 +556,11 @@ const RepairItem = ({
               )}
               {repair.part_number && (
                 <span>Part #: {repair.part_number}</span>
+              )}
+              {repair.price_source === 'manual_override' && (
+                <span className="text-orange-600 bg-orange-50 px-2 py-0.5 rounded">
+                  ⚠️ Custom pricing (not saved to master)
+                </span>
               )}
             </div>
           )}
