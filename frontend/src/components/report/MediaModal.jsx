@@ -121,11 +121,59 @@ export function InsuranceModal({ isOpen, onClose, insurance, isEditMode }) {
   );
 }
 
-// Tyre Details Modal
-export function TyreModal({ isOpen, onClose, tyreDetails, isEditMode }) {
+// Tyre Details Modal - Enhanced with Q&A photos
+export function TyreModal({ isOpen, onClose, tyreDetails, tyreQAData, isEditMode }) {
+  // Parse tyre data from Q&A if available
+  const parseTyreLifePercentage = (subAnswer) => {
+    if (!subAnswer) return 0;
+    // Format: "60-80", "20-40", etc. - take the average
+    const match = subAnswer.match(/(\d+)-(\d+)/);
+    if (match) {
+      return Math.round((parseInt(match[1]) + parseInt(match[2])) / 2);
+    }
+    // Try parsing as single number
+    const num = parseInt(subAnswer);
+    return isNaN(num) ? 0 : num;
+  };
+
+  // Extract tyre questions from Q&A data
+  const tyreQuestions = (tyreQAData || []).filter(q => 
+    q.question_text && 
+    q.question_text.toLowerCase().includes('tyre') && 
+    q.question_text.toLowerCase().includes('photo') &&
+    !q.question_text.toLowerCase().includes('boot') &&
+    !q.question_text.toLowerCase().includes('trunk')
+  );
+
+  // Map tyre questions to display format
+  const tyresFromQA = tyreQuestions.map(q => {
+    // Extract position from question text
+    let position = 'Tyre';
+    if (q.question_text.toLowerCase().includes('front right')) position = 'Front Right';
+    else if (q.question_text.toLowerCase().includes('rear right')) position = 'Rear Right';
+    else if (q.question_text.toLowerCase().includes('front left')) position = 'Front Left';
+    else if (q.question_text.toLowerCase().includes('rear left')) position = 'Rear Left';
+    else if (q.question_text.toLowerCase().includes('spare')) position = 'Spare';
+    
+    return {
+      position,
+      photo: q.media_url || q.answer,
+      treadLife: parseTyreLifePercentage(q.sub_answer_1),
+      condition: q.sub_answer_1 || 'N/A'
+    };
+  });
+
+  // Use Q&A data if available, otherwise fall back to legacy tyreDetails
+  const displayTyres = tyresFromQA.length > 0 ? tyresFromQA : (tyreDetails?.tyres || []);
+  
+  // Calculate average tyre life
+  const avgLife = displayTyres.length > 0 
+    ? Math.round(displayTyres.reduce((sum, t) => sum + t.treadLife, 0) / displayTyres.length)
+    : (tyreDetails?.avgLife || 0);
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <CircleDot className="h-5 w-5 text-accent" />
@@ -137,41 +185,63 @@ export function TyreModal({ isOpen, onClose, tyreDetails, isEditMode }) {
           {/* Average Life */}
           <div className="text-center p-4 bg-secondary/50 rounded-xl">
             <p className="text-sm text-muted-foreground">Average Tyre Life</p>
-            <p className="text-3xl font-bold text-accent">{tyreDetails.avgLife}%</p>
+            <p className={`text-3xl font-bold ${avgLife >= 50 ? 'text-success' : avgLife >= 30 ? 'text-warning' : 'text-destructive'}`}>
+              {avgLife}%
+            </p>
           </div>
           
           {/* Tyre Grid */}
-          <div className="grid grid-cols-2 gap-3">
-            {tyreDetails.tyres.map((tyre, index) => (
-              <div key={index} className="border border-border rounded-xl overflow-hidden">
-                <div className="aspect-video relative">
-                  <img 
-                    src={tyre.photo} 
-                    alt={tyre.position}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
-                    <p className="text-white text-xs font-medium">{tyre.position}</p>
+          {displayTyres.length > 0 ? (
+            <div className="grid grid-cols-2 gap-3">
+              {displayTyres.map((tyre, index) => (
+                <div key={index} className="border border-border rounded-xl overflow-hidden">
+                  {/* Tyre Photo */}
+                  <div className="aspect-video relative bg-muted">
+                    {tyre.photo ? (
+                      <img 
+                        src={tyre.photo} 
+                        alt={tyre.position}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <CircleDot className="h-8 w-8 text-muted-foreground" />
+                      </div>
+                    )}
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
+                      <p className="text-white text-xs font-medium">{tyre.position}</p>
+                    </div>
+                  </div>
+                  {/* Tyre Info */}
+                  <div className="p-3">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-xs text-muted-foreground">Tread Life</span>
+                      <span className={`text-sm font-bold ${tyre.treadLife >= 50 ? 'text-success' : tyre.treadLife >= 30 ? 'text-warning' : 'text-destructive'}`}>
+                        {tyre.treadLife}%
+                      </span>
+                    </div>
+                    <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full rounded-full ${tyre.treadLife >= 50 ? 'bg-success' : tyre.treadLife >= 30 ? 'bg-warning' : 'bg-destructive'}`}
+                        style={{ width: `${tyre.treadLife}%` }}
+                      />
+                    </div>
+                    {tyre.condition && tyre.condition !== 'N/A' && (
+                      <p className="text-xs text-muted-foreground mt-2">Condition: {tyre.condition}</p>
+                    )}
+                    {tyre.brand && (
+                      <p className="text-xs text-muted-foreground mt-1">Brand: {tyre.brand}</p>
+                    )}
                   </div>
                 </div>
-                <div className="p-3">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-xs text-muted-foreground">Tread Life</span>
-                    <span className={`text-sm font-bold ${tyre.treadLife >= 50 ? 'text-success' : tyre.treadLife >= 30 ? 'text-warning' : 'text-destructive'}`}>
-                      {tyre.treadLife}%
-                    </span>
-                  </div>
-                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                    <div 
-                      className={`h-full rounded-full ${tyre.treadLife >= 50 ? 'bg-success' : tyre.treadLife >= 30 ? 'bg-warning' : 'bg-destructive'}`}
-                      style={{ width: `${tyre.treadLife}%` }}
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">Brand: {tyre.brand}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <CircleDot className="h-12 w-12 mx-auto mb-2 opacity-50" />
+              <p>No tyre inspection data available</p>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
