@@ -10574,7 +10574,19 @@ async def admin_restore_repairs_data(current_user: dict = Depends(get_current_us
     
     # Load and restore from JSON files if they exist
     import os
-    backup_dir = "/app/backup_repairs_data"
+    # Try multiple possible paths for backup files
+    backup_dirs = [
+        "/app/backend/backup_repairs_data",  # Deployed location
+        "/app/backup_repairs_data"            # Dev location
+    ]
+    backup_dir = None
+    for bd in backup_dirs:
+        if os.path.exists(bd):
+            backup_dir = bd
+            break
+    
+    if not backup_dir:
+        logger.warning("No backup directory found, using embedded data only")
     
     stats = {
         "inspection_categories": categories_restored,
