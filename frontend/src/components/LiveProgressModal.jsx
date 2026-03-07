@@ -2615,36 +2615,55 @@ export default function LiveProgressModal({
                 <Section title="Auto-Detected Repairs" icon={Zap} defaultOpen={true} badge={`${calculatedRepairCosts.length} items`}>
                   <div className="space-y-3">
                     <p className="text-sm text-gray-600">
-                      These repairs were automatically detected based on inspection answers and repair rules.
+                      Repairs automatically detected from Q&A answers using repair rules. Prices based on {inspection?.car_type || 'sedan'} pricing{inspection?.vehicle_make ? ` for ${inspection.vehicle_make}` : ''}.
                     </p>
                     
                     {/* Repair Items from Rules */}
                     <div className="space-y-2">
                       {calculatedRepairCosts.map((repair, idx) => (
-                        <div key={idx} className={`p-3 rounded-lg border-l-4 ${
-                          repair.action === 'REPLACE' ? 'bg-red-50 border-l-red-500' : 'bg-amber-50 border-l-amber-500'
+                        <div key={idx} className={`p-4 rounded-lg border-l-4 ${
+                          repair.action === 'REPLACE' ? 'bg-red-50 border-l-red-500' : 
+                          repair.priority === 'critical' ? 'bg-red-50 border-l-red-500' :
+                          repair.priority === 'high' ? 'bg-orange-50 border-l-orange-500' :
+                          'bg-amber-50 border-l-amber-500'
                         }`}>
-                          <div className="flex items-start justify-between">
+                          <div className="flex items-start justify-between gap-4">
                             <div className="flex-1">
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 flex-wrap">
                                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                                   repair.action === 'REPLACE' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
                                 }`}>
                                   {repair.action}
                                 </span>
-                                <span className="font-medium text-gray-900">{repair.part_name}</span>
-                                <span className="text-xs text-gray-500">({repair.category})</span>
+                                <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                  repair.priority === 'critical' ? 'bg-red-100 text-red-700' :
+                                  repair.priority === 'high' ? 'bg-orange-100 text-orange-700' :
+                                  'bg-gray-100 text-gray-600'
+                                }`}>
+                                  {repair.priority?.toUpperCase() || 'NORMAL'}
+                                </span>
+                                <span className="font-semibold text-gray-900">{repair.part_name}</span>
                               </div>
-                              <p className="text-xs text-gray-600 mt-1">
-                                Q: {repair.question?.substring(0, 50)}...
-                              </p>
-                              <p className="text-xs text-blue-600 mt-0.5">
-                                A: {repair.answer}
-                              </p>
+                              <div className="flex items-center gap-2 mt-1 text-xs">
+                                <span className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">{repair.category}</span>
+                                {repair.part_number && <span className="text-gray-400">#{repair.part_number}</span>}
+                                <span className="text-gray-400">• {repair.category_name}</span>
+                              </div>
+                              <div className="mt-2 p-2 bg-white/50 rounded text-xs">
+                                <p className="text-gray-600">
+                                  <span className="font-medium">Q:</span> {repair.question}
+                                </p>
+                                <p className="text-blue-700 mt-0.5">
+                                  <span className="font-medium">A:</span> {repair.answer}
+                                </p>
+                              </div>
                             </div>
-                            <div className="text-right">
-                              <p className="text-lg font-bold text-gray-900">₹{repair.cost.toLocaleString()}</p>
-                              <p className="text-xs text-gray-500">incl. labor</p>
+                            <div className="text-right flex-shrink-0">
+                              <p className="text-xl font-bold text-gray-900">₹{repair.cost?.toLocaleString()}</p>
+                              <div className="text-xs text-gray-500 mt-1">
+                                <p>Part: ₹{repair.price?.toLocaleString() || 0}</p>
+                                <p>Labor: ₹{repair.labor?.toLocaleString() || 0}</p>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -2664,6 +2683,10 @@ export default function LiveProgressModal({
                           <p className="text-xs text-gray-500">
                             Replace: {calculatedRepairCosts.filter(r => r.action === 'REPLACE').length} |
                             Repair: {calculatedRepairCosts.filter(r => r.action === 'REPAIR').length}
+                          </p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            Parts: ₹{calculatedRepairCosts.reduce((sum, r) => sum + (r.price || 0), 0).toLocaleString()} |
+                            Labor: ₹{calculatedRepairCosts.reduce((sum, r) => sum + (r.labor || 0), 0).toLocaleString()}
                           </p>
                         </div>
                       </div>
