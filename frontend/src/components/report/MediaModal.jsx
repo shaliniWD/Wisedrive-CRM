@@ -249,12 +249,20 @@ export function TyreModal({ isOpen, onClose, tyreDetails, tyreQAData, isEditMode
 }
 
 // Repairs Modal with Edit Capability
-export function RepairsModal({ isOpen, onClose, repairs, type, isEditMode, onUpdateRepairs }) {
-  const [localRepairs, setLocalRepairs] = useState(repairs.filter(r => r.type === type));
+export function RepairsModal({ isOpen, onClose, repairs = [], type, isEditMode, onUpdateRepairs }) {
+  // Handle case where repairs is already pre-filtered or needs filtering
+  const initialRepairs = repairs.filter(r => !r.type || r.type === type || r.type.toLowerCase() === type);
+  const [localRepairs, setLocalRepairs] = useState(initialRepairs);
   const [newRepair, setNewRepair] = useState({ type, serviceType: 'spare_part', description: '', cost: '' });
 
+  // Update localRepairs when repairs prop changes
+  React.useEffect(() => {
+    const filtered = repairs.filter(r => !r.type || r.type === type || r.type.toLowerCase() === type);
+    setLocalRepairs(filtered);
+  }, [repairs, type]);
+
   const typeLabel = type === 'minor' ? 'Minor' : 'Major';
-  const total = localRepairs.reduce((sum, r) => sum + r.cost, 0);
+  const total = localRepairs.reduce((sum, r) => sum + (r.cost || r.estimated_cost || 0), 0);
 
   const handleAddRepair = () => {
     if (newRepair.description && newRepair.cost) {
