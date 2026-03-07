@@ -139,44 +139,317 @@ const EditableField = ({ label, value, onChange, type = 'text', options = [], di
 };
 
 // Repair Item Component
-const RepairItem = ({ repair, index, onUpdate, onRemove }) => {
+// Enhanced RepairItem Component - Synced with Repairs Module
+const RepairItem = ({ 
+  repair, 
+  index, 
+  onUpdate, 
+  onRemove, 
+  repairParts = [], 
+  vehicleMake = '', 
+  carType = 'sedan',
+  canEdit = true 
+}) => {
+  const [showPartSelector, setShowPartSelector] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showBrandPricing, setShowBrandPricing] = useState(false);
+  
+  // Filter parts based on search
+  const filteredParts = useMemo(() => {
+    if (!searchQuery) return repairParts;
+    const query = searchQuery.toLowerCase();
+    return repairParts.filter(p => 
+      p.name?.toLowerCase().includes(query) || 
+      p.category?.toLowerCase().includes(query)
+    );
+  }, [repairParts, searchQuery]);
+  
+  // Get price for a part based on car type and brand
+  const getPartPrice = (part, action = 'repair') => {
+    if (!part) return { price: 0, labor: 0, total: 0, source: 'manual' };
+    
+    // Check for brand-specific override first
+    const brandOverride = part.brand_overrides?.find(
+      bo => bo.brand?.toLowerCase() === vehicleMake?.toLowerCase()
+    );
+    
+    let pricing;
+    let source = 'default';
+    
+    if (brandOverride && brandOverride[carType]) {
+      pricing = brandOverride[carType];
+      source = `brand:${vehicleMake}`;
+    } else if (part[carType]) {
+      pricing = part[carType];
+      source = `carType:${carType}`;
+    } else {
+      pricing = part.sedan || {}; // Default to sedan pricing
+      source = 'default:sedan';
+    }
+    
+    const price = action === 'replace' ? (pricing.replace_price || 0) : (pricing.repair_price || 0);
+    const labor = action === 'replace' ? (pricing.replace_labor || 0) : (pricing.repair_labor || 0);
+    
+    return {
+      price,
+      labor,
+      total: price + labor,
+      source
+    };
+  };
+  
+  // Handle part selection from master list
+  const handlePartSelect = (part) => {
+    const action = repair.action || 'repair';
+    const priceInfo = getPartPrice(part, action);
+    
+    onUpdate(index, {
+      ...repair,
+      part_id: part.id,
+      item: part.name,
+      category: part.category,
+      part_number: part.part_number,
+      price: priceInfo.price,
+      labor: priceInfo.labor,
+      estimated_cost: priceInfo.total,
+      price_source: priceInfo.source,
+      // Store full part data for brand-specific pricing
+      part_data: part
+    });
+    setShowPartSelector(false);
+    setSearchQuery('');
+  };
+  
+  // Handle action type change (repair/replace)
+  const handleActionChange = (newAction) => {
+    if (repair.part_data) {
+      const priceInfo = getPartPrice(repair.part_data, newAction);
+      onUpdate(index, {
+        ...repair,
+        action: newAction,
+        price: priceInfo.price,
+        labor: priceInfo.labor,
+        estimated_cost: priceInfo.total,
+        price_source: priceInfo.source
+      });
+    } else {
+      onUpdate(index, { ...repair, action: newAction });
+    }
+  };
+  
+  // Handle manual price override
+  const handlePriceOverride = (field, value) => {
+    const numValue = parseFloat(value) || 0;
+    const updatedRepair = { ...repair, [field]: numValue };
+    
+    // Recalculate total
+    const price = field === 'price' ? numValue : (repair.price || 0);
+    const labor = field === 'labor' ? numValue : (repair.labor || 0);
+    updatedRepair.estimated_cost = price + labor;
+    updatedRepair.price_source = 'manual_override';
+    
+    onUpdate(index, updatedRepair);
+  };
+  
   return (
-    <div className="flex items-start gap-3 p-3 bg-white rounded-lg border">
-      <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold ${
-        repair.type === 'CRITICAL' ? 'bg-red-100 text-red-700' :
-        repair.type === 'MAJOR' ? 'bg-orange-100 text-orange-700' :
-        'bg-yellow-100 text-yellow-700'
-      }`}>
-        {index + 1}
-      </div>
-      <div className="flex-1 grid grid-cols-3 gap-2">
-        <Input
-          value={repair.item || ''}
-          onChange={(e) => onUpdate(index, { ...repair, item: e.target.value })}
-          placeholder="Repair item"
-          className="h-8 text-sm"
-        />
-        <Select value={repair.type || 'MINOR'} onValueChange={(val) => onUpdate(index, { ...repair, type: val })}>
-          <SelectTrigger className="h-8 text-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {REPAIR_TYPES.map((t) => (
-              <SelectItem key={t} value={t}>{t}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <div className="flex items-center gap-2">
-          <Input
-            type="number"
-            value={repair.estimated_cost || ''}
-            onChange={(e) => onUpdate(index, { ...repair, estimated_cost: parseFloat(e.target.value) || 0 })}
-            placeholder="Cost ₹"
-            className="h-8 text-sm"
-          />
-          <Button variant="ghost" size="sm" onClick={() => onRemove(index)} className="h-8 w-8 p-0 text-red-500 hover:text-red-700">
-            <X className="h-4 w-4" />
-          </Button>
+    <div className="p-4 bg-white rounded-lg border hover:shadow-md transition-shadow">
+      <div className="flex items-start gap-3">
+        {/* Index Badge */}
+        <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
+          repair.action === 'replace' ? 'bg-red-100 text-red-700' :
+          repair.type === 'CRITICAL' ? 'bg-red-100 text-red-700' :
+          repair.type === 'MAJOR' ? 'bg-orange-100 text-orange-700' :
+          'bg-blue-100 text-blue-700'
+        }`}>
+          {index + 1}
+        </div>
+        
+        <div className="flex-1 space-y-3">
+          {/* Row 1: Part Selection & Action Type */}
+          <div className="grid grid-cols-12 gap-2">
+            {/* Part Name / Selector */}
+            <div className="col-span-6 relative">
+              <Label className="text-xs text-gray-500 mb-1 block">Part / Item</Label>
+              {showPartSelector ? (
+                <div className="absolute z-50 top-6 left-0 right-0 bg-white border rounded-lg shadow-xl max-h-72 overflow-hidden">
+                  <div className="p-2 border-b sticky top-0 bg-white">
+                    <Input
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search parts..."
+                      className="h-8 text-sm"
+                      autoFocus
+                    />
+                  </div>
+                  <div className="max-h-52 overflow-y-auto">
+                    {filteredParts.length > 0 ? (
+                      filteredParts.map(part => (
+                        <button
+                          key={part.id}
+                          onClick={() => handlePartSelect(part)}
+                          className="w-full text-left px-3 py-2 hover:bg-blue-50 border-b last:border-b-0"
+                        >
+                          <div className="font-medium text-sm">{part.name}</div>
+                          <div className="text-xs text-gray-500 flex items-center gap-2">
+                            <span className="bg-gray-100 px-1.5 py-0.5 rounded">{part.category}</span>
+                            {part.part_number && <span>#{part.part_number}</span>}
+                          </div>
+                        </button>
+                      ))
+                    ) : (
+                      <div className="p-4 text-center text-gray-500 text-sm">
+                        No parts found. Add via Repairs Module.
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-2 border-t bg-gray-50">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => { setShowPartSelector(false); setSearchQuery(''); }}
+                      className="w-full text-xs"
+                    >
+                      <X className="h-3 w-3 mr-1" /> Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex gap-1">
+                  <Input
+                    value={repair.item || ''}
+                    onChange={(e) => onUpdate(index, { ...repair, item: e.target.value, part_id: null, part_data: null, price_source: 'manual' })}
+                    placeholder="Part name or search..."
+                    className="h-8 text-sm flex-1"
+                    disabled={!canEdit}
+                  />
+                  {canEdit && repairParts.length > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowPartSelector(true)}
+                      className="h-8 px-2"
+                      title="Select from parts list"
+                    >
+                      <Package className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              )}
+              {repair.part_id && (
+                <span className="text-xs text-green-600 mt-0.5 block">
+                  ✓ Synced with Repairs Module
+                </span>
+              )}
+            </div>
+            
+            {/* Action Type (Repair/Replace) */}
+            <div className="col-span-3">
+              <Label className="text-xs text-gray-500 mb-1 block">Action</Label>
+              <Select 
+                value={repair.action || 'repair'} 
+                onValueChange={handleActionChange}
+                disabled={!canEdit}
+              >
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ACTION_TYPES.map((t) => (
+                    <SelectItem key={t.value} value={t.value}>
+                      {t.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* Priority/Type */}
+            <div className="col-span-3">
+              <Label className="text-xs text-gray-500 mb-1 block">Priority</Label>
+              <Select 
+                value={repair.type || 'MINOR'} 
+                onValueChange={(val) => onUpdate(index, { ...repair, type: val })}
+                disabled={!canEdit}
+              >
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {REPAIR_TYPES.map((t) => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          {/* Row 2: Pricing */}
+          <div className="grid grid-cols-12 gap-2 items-end">
+            {/* Part Price */}
+            <div className="col-span-3">
+              <Label className="text-xs text-gray-500 mb-1 block">Part Price (₹)</Label>
+              <Input
+                type="number"
+                value={repair.price || ''}
+                onChange={(e) => handlePriceOverride('price', e.target.value)}
+                placeholder="0"
+                className="h-8 text-sm"
+                disabled={!canEdit}
+              />
+            </div>
+            
+            {/* Labor Cost */}
+            <div className="col-span-3">
+              <Label className="text-xs text-gray-500 mb-1 block">Labor (₹)</Label>
+              <Input
+                type="number"
+                value={repair.labor || ''}
+                onChange={(e) => handlePriceOverride('labor', e.target.value)}
+                placeholder="0"
+                className="h-8 text-sm"
+                disabled={!canEdit}
+              />
+            </div>
+            
+            {/* Total Cost */}
+            <div className="col-span-3">
+              <Label className="text-xs text-gray-500 mb-1 block">Total (₹)</Label>
+              <div className="h-8 px-3 flex items-center bg-gray-100 rounded-md text-sm font-bold text-gray-900">
+                ₹{(repair.estimated_cost || 0).toLocaleString()}
+              </div>
+            </div>
+            
+            {/* Actions */}
+            <div className="col-span-3 flex items-center gap-1 justify-end">
+              {repair.price_source && repair.price_source !== 'manual' && (
+                <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                  {repair.price_source.includes('brand') ? '🏷️ Brand' : '📋 Default'}
+                </span>
+              )}
+              {canEdit && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => onRemove(index)} 
+                  className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </div>
+          
+          {/* Row 3: Category & Notes (if part is from module) */}
+          {(repair.category || repair.part_number) && (
+            <div className="flex items-center gap-3 text-xs text-gray-500">
+              {repair.category && (
+                <span className="bg-gray-100 px-2 py-0.5 rounded">{repair.category}</span>
+              )}
+              {repair.part_number && (
+                <span>Part #: {repair.part_number}</span>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
