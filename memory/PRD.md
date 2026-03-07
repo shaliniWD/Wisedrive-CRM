@@ -83,6 +83,12 @@ The application is a full-stack CRM for vehicle loans and inspections. Key featu
   - "Then charge" dropdown shows: Repair (Part Cost Only), Labor (Labor Cost Only), Both (Part + Labor), Inspect Further
   - Backend API updated to return sub_options_1 and sub_options_2 from questions
   - Pricing logic updated to handle new action types correctly
+- ✅ **Grouped Rules View in Repairs Module** - Reorganized Question Rules table:
+  - Rules grouped by **Category** (e.g., Exterior Inspection, Brake System, AC & Cooling)
+  - Within each category, rules grouped by **Question**
+  - Each rule displays: Part name, exact answer value, action type, status
+  - Expand/collapse functionality for categories and questions
+  - Search works for category name, part name, question text, and condition value
 
 ## Pending Issues (Priority Order)
 
