@@ -984,22 +984,48 @@ const RuleFormModal = ({ isOpen, onClose, rule, parts, questions, inspectionCate
                 </Select>
               </div>
 
+              {/* Q&A Category Selection */}
+              <div>
+                <Label>Inspection Q&A Category *</Label>
+                <Select
+                  value={selectedCategoryId}
+                  onValueChange={handleCategorySelect}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a category to filter questions" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {qaCategories.map(cat => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selectedCategoryId && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    {filteredQuestions.length} questions available in this category
+                  </p>
+                )}
+              </div>
+
               {/* Question Selection */}
               <div>
                 <Label>Linked Question *</Label>
                 <Select
                   value={formData.question_id}
                   onValueChange={handleQuestionSelect}
+                  disabled={!selectedCategoryId}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a question" />
+                    <SelectValue placeholder={selectedCategoryId ? "Select a question" : "Select a category first"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {questions.map(q => (
+                    {filteredQuestions.map(q => (
                       <SelectItem key={q.question_id} value={q.question_id}>
                         <div className="flex flex-col">
                           <span className="truncate max-w-[400px]">{q.question_text}</span>
-                          <span className="text-xs text-gray-500">{q.category_name} • {q.package_name}</span>
+                          <span className="text-xs text-gray-500">{q.package_name}</span>
                         </div>
                       </SelectItem>
                     ))}
