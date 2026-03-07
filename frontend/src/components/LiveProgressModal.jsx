@@ -1161,12 +1161,14 @@ export default function LiveProgressModal({
     // Strategy 2: Also check liveProgressData.categories for questions (backup)
     categories.forEach(cat => {
       (cat.questions || []).forEach(q => {
-        if (!q.answer) return;
-        
         const answerValue = extractAnswerValue(q.answer);
-        if (!answerValue) return;
+        const subAnswer1 = q.sub_answer_1; // Dent severity from live-progress API
+        const subAnswer2 = q.sub_answer_2; // Scratch severity from live-progress API
         
-        const qText = q.question || q.text || '';
+        // Skip if no relevant answers
+        if (!answerValue && !subAnswer1 && !subAnswer2) return;
+        
+        const qText = q.question_text || q.question || q.text || '';
         
         repairRules.forEach(rule => {
           if (!rule.is_active) return;
@@ -1174,7 +1176,7 @@ export default function LiveProgressModal({
           let isMatch = false;
           
           // Try exact ID match
-          if (rule.question_id && q.id && rule.question_id === q.id) {
+          if (rule.question_id && q.question_id && rule.question_id === q.question_id) {
             isMatch = true;
           }
           // Try text matching
@@ -1184,7 +1186,28 @@ export default function LiveProgressModal({
           
           if (!isMatch) return;
           
-          if (checkCondition(answerValue, rule)) {
+          // Determine which answer to check based on rule's sub_answer_type
+          let valueToCheck = answerValue;
+          let answerLabel = 'Answer';
+          
+          if (rule.sub_answer_type === 'dent' || rule.sub_answer_type === 'sub_answer_1') {
+            valueToCheck = subAnswer1;
+            answerLabel = 'Dent';
+          } else if (rule.sub_answer_type === 'scratch' || rule.sub_answer_type === 'sub_answer_2') {
+            valueToCheck = subAnswer2;
+            answerLabel = 'Scratch';
+          } else if (!answerValue) {
+            // For photo questions, check sub_answers
+            if (subAnswer1 && subAnswer1 !== 'No Dents' && checkCondition(subAnswer1, rule)) {
+              valueToCheck = subAnswer1;
+              answerLabel = 'Dent';
+            } else if (subAnswer2 && subAnswer2 !== 'No Scratch' && checkCondition(subAnswer2, rule)) {
+              valueToCheck = subAnswer2;
+              answerLabel = 'Scratch';
+            }
+          }
+          
+          if (valueToCheck && checkCondition(valueToCheck, rule)) {
             const part = repairParts.find(p => p.id === rule.part_id);
             if (part) {
               const actionType = rule.action_type || 'REPAIR';
@@ -1203,9 +1226,9 @@ export default function LiveProgressModal({
                   category: part.category,
                   category_name: cat.category_name || cat.name || 'Unknown',
                   action: actionType.toUpperCase(),
-                  question_id: q.id,
+                  question_id: q.question_id || q.id,
                   question: qText || rule.question_text,
-                  answer: answerValue,
+                  answer: `${answerLabel}: ${valueToCheck}`,
                   condition_matched: `${rule.condition_type}: ${rule.condition_value}`,
                   price: priceInfo.price,
                   labor: priceInfo.labor,
