@@ -508,6 +508,7 @@ export default function LiveProgressModal({
   // Repairs Module state
   const [repairParts, setRepairParts] = useState([]);
   const [repairRules, setRepairRules] = useState([]);
+  const [partCategories, setPartCategories] = useState([]);
   const [loadingRepairs, setLoadingRepairs] = useState(false);
   const [calculatedRepairs, setCalculatedRepairs] = useState([]);
   
