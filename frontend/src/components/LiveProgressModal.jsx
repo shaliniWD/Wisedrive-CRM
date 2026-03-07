@@ -1992,6 +1992,13 @@ export default function LiveProgressModal({
                 <ClipboardList className="h-4 w-4 mr-2" />
                 Q&A Details
               </TabsTrigger>
+              <TabsTrigger value="report" className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-t-lg rounded-b-none h-10 px-4" data-testid="report-tab">
+                <FileText className="h-4 w-4 mr-2" />
+                Report
+                {inspection?.publish_count > 0 && (
+                  <span className="ml-2 px-1.5 py-0.5 text-xs bg-green-100 text-green-700 rounded-full">{inspection.publish_count}x</span>
+                )}
+              </TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
