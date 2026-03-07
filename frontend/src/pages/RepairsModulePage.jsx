@@ -1084,7 +1084,10 @@ export default function RepairsModulePage() {
   const filteredRules = rules.filter(rule => {
     const matchesSearch = !searchTerm ||
       rule.part?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      rule.question_text?.toLowerCase().includes(searchTerm.toLowerCase());
+      rule.part_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      rule.question_text?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      rule.category_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      rule.condition_value?.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesSearch;
   });
 
