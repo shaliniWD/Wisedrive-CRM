@@ -815,14 +815,36 @@ const RuleFormModal = ({ isOpen, onClose, rule, parts, questions, inspectionCate
   });
   const [saving, setSaving] = useState(false);
   const [selectedQuestion, setSelectedQuestion] = useState(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState('');
+
+  // Extract unique Q&A categories from questions
+  const qaCategories = useMemo(() => {
+    const categoryMap = new Map();
+    questions.forEach(q => {
+      if (q.category_id && q.category_name) {
+        categoryMap.set(q.category_id, q.category_name);
+      }
+    });
+    return Array.from(categoryMap.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [questions]);
+
+  // Filter questions based on selected category
+  const filteredQuestions = useMemo(() => {
+    if (!selectedCategoryId) return questions;
+    return questions.filter(q => q.category_id === selectedCategoryId);
+  }, [questions, selectedCategoryId]);
 
   useEffect(() => {
     if (rule) {
+      const categoryId = rule.inspection_category_id || rule.category_id || '';
+      setSelectedCategoryId(categoryId);
       setFormData({
         part_id: rule.part_id || '',
         question_id: rule.question_id || '',
         question_text: rule.question_text || '',
-        inspection_category_id: rule.inspection_category_id || rule.category_id || '',
+        inspection_category_id: categoryId,
         inspection_category_name: rule.inspection_category_name || rule.category_name || '',
         conditions: rule.conditions || [],
         is_active: rule.is_active !== false
@@ -830,6 +852,7 @@ const RuleFormModal = ({ isOpen, onClose, rule, parts, questions, inspectionCate
       const q = questions.find(q => q.question_id === rule.question_id);
       setSelectedQuestion(q);
     } else {
+      setSelectedCategoryId('');
       setFormData({
         part_id: '',
         question_id: '',
@@ -843,6 +866,20 @@ const RuleFormModal = ({ isOpen, onClose, rule, parts, questions, inspectionCate
     }
   }, [rule, isOpen, questions]);
 
+  const handleCategorySelect = (categoryId) => {
+    const category = qaCategories.find(c => c.id === categoryId);
+    setSelectedCategoryId(categoryId);
+    // Reset question selection when category changes
+    setSelectedQuestion(null);
+    setFormData({
+      ...formData,
+      question_id: '',
+      question_text: '',
+      inspection_category_id: categoryId,
+      inspection_category_name: category?.name || ''
+    });
+  };
+
   const handleQuestionSelect = (qId) => {
     const q = questions.find(q => q.question_id === qId);
     setSelectedQuestion(q);
@@ -853,6 +890,10 @@ const RuleFormModal = ({ isOpen, onClose, rule, parts, questions, inspectionCate
       inspection_category_id: q?.category_id || '',
       inspection_category_name: q?.category_name || ''
     });
+    // Also update the category selection if it changed
+    if (q?.category_id && q.category_id !== selectedCategoryId) {
+      setSelectedCategoryId(q.category_id);
+    }
   };
 
   const addCondition = () => {
