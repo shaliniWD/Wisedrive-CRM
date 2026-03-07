@@ -570,6 +570,236 @@ const RuleConditionRow = ({ condition, index, onChange, onRemove, selectedQuesti
   );
 };
 
+// Grouped Rules View - displays rules grouped by Category then Question
+const GroupedRulesView = ({ rules, onEdit, onDelete }) => {
+  const [expandedCategories, setExpandedCategories] = useState({});
+  const [expandedQuestions, setExpandedQuestions] = useState({});
+
+  // Group rules by category_name, then by question_text
+  const groupedRules = useMemo(() => {
+    const grouped = {};
+    
+    rules.forEach(rule => {
+      const categoryName = rule.category_name || rule.part?.category || 'Uncategorized';
+      const questionText = rule.question_text || 'Unknown Question';
+      
+      if (!grouped[categoryName]) {
+        grouped[categoryName] = {
+          questions: {},
+          totalRules: 0
+        };
+      }
+      
+      if (!grouped[categoryName].questions[questionText]) {
+        grouped[categoryName].questions[questionText] = {
+          rules: [],
+          questionId: rule.question_id
+        };
+      }
+      
+      grouped[categoryName].questions[questionText].rules.push(rule);
+      grouped[categoryName].totalRules++;
+    });
+    
+    return grouped;
+  }, [rules]);
+
+  const toggleCategory = (categoryName) => {
+    setExpandedCategories(prev => ({
+      ...prev,
+      [categoryName]: !prev[categoryName]
+    }));
+  };
+
+  const toggleQuestion = (key) => {
+    setExpandedQuestions(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
+
+  // Get condition display text
+  const getConditionDisplay = (rule) => {
+    // Handle new format with conditions array
+    if (rule.conditions && rule.conditions.length > 0) {
+      const cond = rule.conditions[0];
+      const answer = cond.condition?.answer || cond.condition?.value || 'N/A';
+      const action = cond.action?.action_type || 'repair';
+      return { answer, action };
+    }
+    // Handle old format
+    const answer = rule.condition_value || 'N/A';
+    const action = rule.action_type || 'repair';
+    return { answer, action };
+  };
+
+  const getActionBadgeColor = (action) => {
+    switch (action?.toLowerCase()) {
+      case 'repair': return 'bg-blue-100 text-blue-700';
+      case 'labor': return 'bg-purple-100 text-purple-700';
+      case 'both': return 'bg-green-100 text-green-700';
+      case 'replace': return 'bg-orange-100 text-orange-700';
+      case 'inspect_further': return 'bg-yellow-100 text-yellow-700';
+      default: return 'bg-gray-100 text-gray-700';
+    }
+  };
+
+  if (rules.length === 0) {
+    return (
+      <div className="border rounded-lg p-8 text-center text-gray-500">
+        <HelpCircle className="h-12 w-12 mx-auto text-gray-400 mb-3" />
+        <p className="font-medium">No rules found</p>
+        <p className="text-sm">Click "Create Rule" to link a part to a question.</p>
+      </div>
+    );
+  }
+
+  const categories = Object.keys(groupedRules).sort();
+
+  return (
+    <div className="space-y-3">
+      {categories.map(categoryName => {
+        const categoryData = groupedRules[categoryName];
+        const isCategoryExpanded = expandedCategories[categoryName] !== false; // Default expanded
+        const questionCount = Object.keys(categoryData.questions).length;
+        
+        return (
+          <div key={categoryName} className="border rounded-lg overflow-hidden">
+            {/* Category Header */}
+            <div
+              className="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50 to-white cursor-pointer hover:bg-gray-100 transition-colors"
+              onClick={() => toggleCategory(categoryName)}
+            >
+              <div className="flex items-center gap-3">
+                {isCategoryExpanded ? (
+                  <ChevronDown className="h-5 w-5 text-gray-500" />
+                ) : (
+                  <ChevronRight className="h-5 w-5 text-gray-500" />
+                )}
+                <div>
+                  <h3 className="font-semibold text-gray-900">{categoryName}</h3>
+                  <p className="text-xs text-gray-500">
+                    {questionCount} question{questionCount !== 1 ? 's' : ''} • {categoryData.totalRules} rule{categoryData.totalRules !== 1 ? 's' : ''}
+                  </p>
+                </div>
+              </div>
+              <Badge variant="outline" className="bg-white">
+                {categoryData.totalRules} rules
+              </Badge>
+            </div>
+            
+            {/* Questions within Category */}
+            {isCategoryExpanded && (
+              <div className="border-t">
+                {Object.entries(categoryData.questions).map(([questionText, questionData], qIdx) => {
+                  const questionKey = `${categoryName}-${questionText}`;
+                  const isQuestionExpanded = expandedQuestions[questionKey] !== false; // Default expanded
+                  
+                  return (
+                    <div key={questionKey} className={qIdx > 0 ? 'border-t' : ''}>
+                      {/* Question Header */}
+                      <div
+                        className="flex items-center justify-between px-4 py-2 bg-gray-50/50 cursor-pointer hover:bg-gray-100 transition-colors"
+                        onClick={() => toggleQuestion(questionKey)}
+                      >
+                        <div className="flex items-center gap-2">
+                          {isQuestionExpanded ? (
+                            <ChevronDown className="h-4 w-4 text-gray-400" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4 text-gray-400" />
+                          )}
+                          <span className="text-sm font-medium text-gray-700 max-w-lg truncate">
+                            {questionText}
+                          </span>
+                        </div>
+                        <Badge variant="outline" className="text-xs">
+                          {questionData.rules.length} rule{questionData.rules.length !== 1 ? 's' : ''}
+                        </Badge>
+                      </div>
+                      
+                      {/* Rules for this Question */}
+                      {isQuestionExpanded && (
+                        <div className="divide-y divide-gray-100">
+                          {questionData.rules.map(rule => {
+                            const { answer, action } = getConditionDisplay(rule);
+                            
+                            return (
+                              <div
+                                key={rule.id}
+                                className="flex items-center justify-between px-6 py-2 hover:bg-blue-50/50 transition-colors"
+                              >
+                                <div className="flex items-center gap-4 flex-1">
+                                  {/* Part Name */}
+                                  <div className="w-32">
+                                    <p className="text-sm font-medium text-gray-900">{rule.part?.name || rule.part_name || 'N/A'}</p>
+                                  </div>
+                                  
+                                  {/* Answer Badge */}
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs text-gray-500">If answer:</span>
+                                    <Badge variant="outline" className="bg-white text-xs font-medium">
+                                      {answer}
+                                    </Badge>
+                                  </div>
+                                  
+                                  {/* Arrow */}
+                                  <ArrowRight className="h-4 w-4 text-gray-400" />
+                                  
+                                  {/* Action Badge */}
+                                  <Badge className={`${getActionBadgeColor(action)} text-xs`}>
+                                    {action?.toUpperCase() || 'REPAIR'}
+                                  </Badge>
+                                  
+                                  {/* Status */}
+                                  {rule.is_active ? (
+                                    <Badge className="bg-green-100 text-green-700 text-xs">Active</Badge>
+                                  ) : (
+                                    <Badge className="bg-gray-100 text-gray-600 text-xs">Inactive</Badge>
+                                  )}
+                                </div>
+                                
+                                {/* Actions */}
+                                <div className="flex items-center gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onEdit(rule);
+                                    }}
+                                    className="h-8 w-8 p-0"
+                                  >
+                                    <Edit2 className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onDelete(rule.id);
+                                    }}
+                                    className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 // Repair Rule Form Modal
 const RuleFormModal = ({ isOpen, onClose, rule, parts, questions, onSave }) => {
   const [formData, setFormData] = useState({
