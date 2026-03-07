@@ -186,7 +186,7 @@ export function KeyInfoSection({ data, inspectionCategories }) {
             <KeyInfoItem 
               icon={CircleDot} 
               label="Tyre Life" 
-              value={tyreDetails.avgLife || 0} 
+              value={calculatedAvgTyreLife} 
               isPercentage={true}
               hasModal={true}
               onClick={() => setTyreModal(true)}
