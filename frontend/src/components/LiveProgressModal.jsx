@@ -943,6 +943,9 @@ export default function LiveProgressModal({
     const carType = (inspection?.car_type || 'sedan').toLowerCase();
     const brand = inspection?.car_make || inspection?.vehicle_make || '';
     
+    // Also check inspection_answers from the inspection document
+    const inspectionAnswers = inspection?.inspection_answers || {};
+    
     // Helper: Get price for a part based on car type and brand
     const getPartPrice = (part, action = 'repair') => {
       if (!part) return 0;
@@ -967,105 +970,94 @@ export default function LiveProgressModal({
       return { price, labor, total: price + labor };
     };
     
-    // Iterate through all answered questions and check rules
-    categories.forEach(cat => {
-      (cat.questions || []).forEach(q => {
-        if (!q.answer) return;
-        
-        // Find matching rules for this question (by ID or text match)
-        const matchingRules = repairRules.filter(rule => {
-          // Try exact question ID match first
+    // Helper: Extract answer value from various formats
+    const extractAnswerValue = (answerData) => {
+      if (!answerData) return '';
+      if (typeof answerData === 'string') {
+        // Skip media references
+        if (answerData.startsWith('media_ref:')) return '';
+        return answerData;
+      }
+      if (typeof answerData === 'object') {
+        // Handle {answer: {selection: 'value'}} format
+        const answer = answerData.answer || answerData;
+        if (typeof answer === 'object') {
+          return answer.selection || answer.value || '';
+        }
+        return String(answer);
+      }
+      return String(answerData);
+    };
+    
+    // Helper: Check if answer matches rule condition
+    const checkCondition = (answer, rule) => {
+      const answerLower = answer.toLowerCase().trim();
+      const conditionValue = (rule.condition_value || '').toLowerCase().trim();
+      const conditionType = rule.condition_type || 'CONTAINS';
+      
+      switch (conditionType) {
+        case 'EQUALS':
+          return answerLower === conditionValue;
+        case 'CONTAINS':
+          return answerLower.includes(conditionValue) || conditionValue.includes(answerLower);
+        case 'NOT_EQUALS':
+          return answerLower !== conditionValue;
+        case 'GREATER_THAN':
+          return parseFloat(answerLower) > parseFloat(conditionValue);
+        case 'LESS_THAN':
+          return parseFloat(answerLower) < parseFloat(conditionValue);
+        default:
+          return answerLower.includes(conditionValue) || answerLower === conditionValue;
+      }
+    };
+    
+    // Strategy 1: Match rules by question_text (primary method since IDs may not match)
+    repairRules.forEach(rule => {
+      if (!rule.is_active) return;
+      
+      const ruleQuestionText = (rule.question_text || '').toLowerCase();
+      if (!ruleQuestionText) return;
+      
+      // Search through categories for matching questions
+      categories.forEach(cat => {
+        (cat.questions || []).forEach(q => {
+          if (!q.answer) return;
+          
+          // Get question text - try multiple sources
+          const qText = (q.question || q.text || '').toLowerCase();
+          
+          // Check if this question matches the rule (by text similarity)
+          let isMatch = false;
+          
+          // Try exact ID match first
           if (rule.question_id && q.id && rule.question_id === q.id) {
-            return rule.is_active;
+            isMatch = true;
           }
-          // Fallback to text matching
-          if (rule.question_text && q.question) {
-            const ruleText = rule.question_text.toLowerCase();
-            const qText = q.question.toLowerCase();
-            return (ruleText.includes(qText.substring(0, 30)) || qText.includes(ruleText.substring(0, 30))) && rule.is_active;
-          }
-          return false;
-        });
-        
-        matchingRules.forEach(rule => {
-          const answer = String(q.answer).toLowerCase().trim();
-          
-          // Check all conditions in the rule
-          const conditions = rule.conditions || [];
-          let shouldTriggerRepair = false;
-          let actionType = 'repair';
-          let priority = 'normal';
-          
-          conditions.forEach(cond => {
-            const condition = cond.condition || cond;
-            const action = cond.action || {};
-            const conditionValue = String(condition.value || '').toLowerCase().trim();
-            const operator = condition.operator || 'equals';
-            
-            let matches = false;
-            switch (operator) {
-              case 'equals':
-                matches = answer === conditionValue;
-                break;
-              case 'contains':
-                matches = answer.includes(conditionValue);
-                break;
-              case 'greater_than':
-                matches = parseFloat(answer) > parseFloat(conditionValue);
-                break;
-              case 'less_than':
-                matches = parseFloat(answer) < parseFloat(conditionValue);
-                break;
-              case 'greater_than_or_equal':
-                matches = parseFloat(answer) >= parseFloat(conditionValue);
-                break;
-              case 'less_than_or_equal':
-                matches = parseFloat(answer) <= parseFloat(conditionValue);
-                break;
-              case 'between':
-                const [min, max] = Array.isArray(condition.value) ? condition.value : [0, 0];
-                matches = parseFloat(answer) >= min && parseFloat(answer) <= max;
-                break;
-              default:
-                matches = answer.includes(conditionValue) || answer === conditionValue;
-            }
-            
-            if (matches) {
-              shouldTriggerRepair = true;
-              actionType = action.action_type || 'repair';
-              priority = action.priority || 'normal';
-            }
-          });
-          
-          // Legacy support: check old condition format
-          if (!conditions.length && rule.condition_type && rule.condition_value) {
-            const conditionValue = (rule.condition_value || '').toLowerCase();
-            let matches = false;
-            switch (rule.condition_type) {
-              case 'EQUALS':
-                matches = answer === conditionValue;
-                break;
-              case 'CONTAINS':
-                matches = answer.includes(conditionValue);
-                break;
-              default:
-                matches = answer.includes(conditionValue);
-            }
-            if (matches) {
-              shouldTriggerRepair = true;
-              actionType = rule.action_type || 'repair';
-              priority = rule.priority || 'normal';
-            }
+          // Try text matching - check if rule question is similar to this question
+          else if (qText && ruleQuestionText) {
+            // Check for significant text overlap
+            const ruleWords = ruleQuestionText.split(/\s+/).filter(w => w.length > 3);
+            const qWords = qText.split(/\s+/).filter(w => w.length > 3);
+            const matchingWords = ruleWords.filter(w => qWords.some(qw => qw.includes(w) || w.includes(qw)));
+            isMatch = matchingWords.length >= Math.min(2, ruleWords.length * 0.5);
           }
           
-          if (shouldTriggerRepair) {
+          if (!isMatch) return;
+          
+          // Extract answer value
+          const answerValue = extractAnswerValue(q.answer);
+          if (!answerValue) return;
+          
+          // Check if answer matches the condition
+          if (checkCondition(answerValue, rule)) {
             const part = repairParts.find(p => p.id === rule.part_id);
             if (part) {
+              const actionType = rule.action_type || 'REPAIR';
               const priceInfo = getPartPrice(part, actionType.toLowerCase());
               
               // Avoid duplicates
               const isDuplicate = repairs.some(r => 
-                r.part_id === part.id && r.question_id === q.id
+                r.part_id === part.id && r.question_text === rule.question_text
               );
               
               if (!isDuplicate && priceInfo.total > 0) {
@@ -1076,13 +1068,15 @@ export default function LiveProgressModal({
                   category: part.category,
                   category_name: cat.category_name || cat.name,
                   action: actionType.toUpperCase(),
-                  question_id: q.id,
-                  question: q.question,
-                  answer: q.answer,
+                  question_id: q.id || rule.question_id,
+                  question: qText || rule.question_text,
+                  question_text: rule.question_text,
+                  answer: answerValue,
+                  condition_matched: `${rule.condition_type}: ${rule.condition_value}`,
                   price: priceInfo.price,
                   labor: priceInfo.labor,
                   cost: priceInfo.total,
-                  priority: priority,
+                  priority: rule.priority || 'normal',
                   rule_id: rule.id
                 });
               }
