@@ -1082,12 +1082,17 @@ export default function RepairsModulePage() {
 
   // Filter rules
   const filteredRules = rules.filter(rule => {
+    // Get condition value from conditions array or fallback to condition_value
+    const conditionValue = rule.conditions?.[0]?.condition?.value || 
+                          rule.conditions?.[0]?.condition?.answer || 
+                          rule.condition_value || '';
+    
     const matchesSearch = !searchTerm ||
       rule.part?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       rule.part_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       rule.question_text?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       rule.category_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      rule.condition_value?.toLowerCase().includes(searchTerm.toLowerCase());
+      conditionValue?.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesSearch;
   });
 
