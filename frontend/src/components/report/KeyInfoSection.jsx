@@ -29,14 +29,6 @@ const StatusBadge = ({ status }) => {
     return 'bg-muted text-muted-foreground';
   };
 
-  const getIcon = () => {
-    const s = status ? status.toLowerCase() : '';
-    if (s === 'good' || s === 'no') return <CheckCircle2 className="h-3 w-3" />;
-    if (s === 'average') return <AlertCircle className="h-3 w-3" />;
-    if (s === 'poor' || s === 'expired' || s === 'yes') return <XCircle className="h-3 w-3" />;
-    return null;
-  };
-
   const getLabel = () => {
     const s = status ? status.toLowerCase() : '';
     if (s === 'good') return 'Good';
@@ -50,7 +42,6 @@ const StatusBadge = ({ status }) => {
 
   return (
     <span className={`status-badge ${getStatusStyle()}`}>
-      {getIcon()}
       {getLabel()}
     </span>
   );
