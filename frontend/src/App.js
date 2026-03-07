@@ -64,9 +64,12 @@ function App() {
           {/* Customer Report Access - Public route with OTP */}
           <Route path="/r/:shortCode" element={<CustomerReportPage />} />
           
-          {/* Inspection Report - Internal route (CRM users) */}
+          {/* OLD Inspection Report - Keep for backward compatibility */}
           <Route path="/inspection-report/:id" element={<InspectionReportPage />} />
           <Route path="/inspection-report" element={<InspectionReportPage />} />
+          
+          {/* NEW Preview Report - CRM Internal Only (requires authentication) */}
+          <Route path="/preview-report/:id" element={<PreviewReportPage />} />
           
           {/* Protected Routes */}
           <Route element={<MainLayout />}>
