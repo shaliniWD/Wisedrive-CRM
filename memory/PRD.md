@@ -91,6 +91,13 @@ The application is a full-stack CRM for vehicle loans and inspections. Key featu
   - Search works for category name, part name, question text, and condition value
   - Renamed "Category" to "Component" in Spare Parts section
   - ✅ **VERIFIED (Mar 7, 2026)** - 156 rules across 7+ Q&A categories, tested with testing agent (100% pass rate)
+- ✅ **Create Rule Modal Category Filter** - Enhanced rule creation flow (Mar 7, 2026):
+  - Added "Inspection Q&A Category" dropdown between Repair Part and Linked Question
+  - Category dropdown shows all 23 Q&A categories alphabetically
+  - Linked Question dropdown disabled until category is selected
+  - Shows "X questions available in this category" helper text
+  - Questions filtered by selected category for easier discovery
+  - ✅ **VERIFIED** - All 8 features tested and passed (100% success rate)
 
 ## Pending Issues (Priority Order)
 
