@@ -109,10 +109,11 @@ export function KeyInfoSection({ data, inspectionCategories }) {
     return 'poor';
   };
 
-  // Safely access repairs array
-  const repairs = data?.repairs || [];
-  const minorTotal = repairs.filter(r => r.type === 'minor').reduce((sum, r) => sum + (r.cost || 0), 0);
-  const majorTotal = repairs.filter(r => r.type === 'major').reduce((sum, r) => sum + (r.cost || 0), 0);
+  // Get repairs from new calculated structure or fallback to old structure
+  const minorRepairs = data?.minorRepairs || [];
+  const majorRepairs = data?.majorRepairs || [];
+  const minorTotal = data?.totalMinorRepairsCost || minorRepairs.reduce((sum, r) => sum + (r.estimated_cost || r.cost || 0), 0);
+  const majorTotal = data?.totalMajorRepairsCost || majorRepairs.reduce((sum, r) => sum + (r.estimated_cost || r.cost || 0), 0);
 
   // Safely access other data
   const insurance = data?.insurance || {};
