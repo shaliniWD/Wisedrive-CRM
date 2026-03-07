@@ -233,14 +233,16 @@ export function KeyInfoSection({ data, inspectionCategories }) {
       <RepairsModal 
         isOpen={minorRepairsModal} 
         onClose={() => setMinorRepairsModal(false)} 
-        repairs={repairs}
+        repairs={minorRepairs}
+        totalCost={minorTotal}
         type="minor"
         isEditMode={isEditMode}
       />
       <RepairsModal 
         isOpen={majorRepairsModal} 
         onClose={() => setMajorRepairsModal(false)} 
-        repairs={repairs}
+        repairs={majorRepairs}
+        totalCost={majorTotal}
         type="major"
         isEditMode={isEditMode}
       />
