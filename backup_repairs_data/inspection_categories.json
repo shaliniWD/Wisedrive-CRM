@@ -1,1 +1,443 @@
-[]
+[
+  {
+    "id": "b2411c9d-88ed-475d-b486-b4922286c3df",
+    "name": "Physical / Manual Inspection",
+    "description": "Physical / Manual Inspection",
+    "check_points": 135,
+    "icon": "",
+    "color": "#3B82F6",
+    "items": [
+      {
+        "id": "a0576b71-0bca-406c-8fe2-8da44b674156",
+        "name": "Engine & Transmission Check",
+        "description": null,
+        "is_benefit": false
+      },
+      {
+        "id": "f4f9ee87-5f42-47c2-af1e-2afc9eaaaea6",
+        "name": "Electrical Parts Check",
+        "description": null,
+        "is_benefit": false
+      },
+      {
+        "id": "74b48b2b-7e8f-4e55-a2be-682effc9fa29",
+        "name": "Mechanical Parts Check",
+        "description": null,
+        "is_benefit": false
+      },
+      {
+        "id": "25fa2e3d-8bc0-44fc-8148-da379fbf2cca",
+        "name": "Interior & Exterior Check",
+        "description": null,
+        "is_benefit": false
+      }
+    ],
+    "benefits": [
+      {
+        "id": "5ee605b4-efd8-4d77-8a4a-7aa42d1bbbad",
+        "name": "Battery function check",
+        "description": null,
+        "is_benefit": true
+      },
+      {
+        "id": "af619fd6-ed09-40ce-ba65-0b96b4a5277a",
+        "name": "Odometer Tampering Check Braking System",
+        "description": null,
+        "is_benefit": true
+      },
+      {
+        "id": "cdd5c588-4dff-4d20-8983-3921cb27d7b6",
+        "name": "Fuel System Check",
+        "description": null,
+        "is_benefit": true
+      },
+      {
+        "id": "20141823-172a-4d49-8b81-ddd5d0f6892d",
+        "name": "Flood Vehicle Check",
+        "description": null,
+        "is_benefit": true
+      },
+      {
+        "id": "2d9b0d92-c7fb-43ba-9a29-70a12a5446fb",
+        "name": "Major engine repair check",
+        "description": null,
+        "is_benefit": true
+      }
+    ],
+    "is_free": false,
+    "order": 0,
+    "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1",
+    "is_active": true,
+    "created_at": "2026-02-16T14:44:12.656000",
+    "updated_at": "2026-03-01T14:21:52.711146+00:00",
+    "created_by": "a175fdb0-dbd7-40e0-ab89-5031a96b7371",
+    "updated_by": null
+  },
+  {
+    "id": "a0cf3f6a-30e5-4246-ade2-b20195fd13e0",
+    "name": "Advanced OBD2 Scanner Test",
+    "description": "",
+    "check_points": 76,
+    "icon": "",
+    "color": "#3B82F6",
+    "items": [
+      {
+        "id": "34a6882c-615a-49f7-80fb-41c4c88fa823",
+        "name": "Engine Control Module (ECM)",
+        "description": null,
+        "is_benefit": false
+      },
+      {
+        "id": "9b0a530f-0f09-4eac-9a32-3cefc335dc7b",
+        "name": "Transmission Control Module",
+        "description": null,
+        "is_benefit": false
+      },
+      {
+        "id": "0bbc7089-3a76-462f-80d7-ed9bc58e15d9",
+        "name": "Body Control Module (BCM)",
+        "description": null,
+        "is_benefit": false
+      },
+      {
+        "id": "933e304e-a05e-4c93-9be4-0644086998fe",
+        "name": "Fault Code check and Analysis",
+        "description": null,
+        "is_benefit": false
+      }
+    ],
+    "benefits": [
+      {
+        "id": "508e5db8-04c1-47af-b047-1aa998d65422",
+        "name": "Engine failure probability Analysis",
+        "description": null,
+        "is_benefit": true
+      },
+      {
+        "id": "24253680-f080-41ca-9de9-34416b648a8e",
+        "name": "Transmission Failure Probability Analysis",
+        "description": null,
+        "is_benefit": true
+      },
+      {
+        "id": "2072ca0c-6680-4403-b65b-e246baae7e9d",
+        "name": "Stability driving check at high speeds",
+        "description": null,
+        "is_benefit": true
+      },
+      {
+        "id": "816f705a-b4f4-46ab-b951-f0744b7fbf1b",
+        "name": "Expensive Repair prevention check",
+        "description": null,
+        "is_benefit": true
+      }
+    ],
+    "is_free": false,
+    "order": 1,
+    "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1",
+    "is_active": true,
+    "created_at": "2026-02-16T14:46:30.855000",
+    "updated_at": "2026-02-16T14:46:30.855000",
+    "created_by": "a175fdb0-dbd7-40e0-ab89-5031a96b7371",
+    "updated_by": null
+  },
+  {
+    "id": "a2c9d016-8185-450a-9eae-cfcc6d64d7d1",
+    "name": "Service History",
+    "description": "This Package Includes 2 Service History with Inspection",
+    "check_points": 2,
+    "icon": "",
+    "color": "#4fb319",
+    "items": [],
+    "benefits": [],
+    "is_free": false,
+    "order": 1,
+    "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1",
+    "is_active": true,
+    "created_at": "2026-03-01T14:22:53.103000",
+    "updated_at": "2026-03-01T14:22:53.103000",
+    "created_by": "fd7d1d88-6543-47e5-b604-889acebfbf13",
+    "updated_by": null
+  },
+  {
+    "id": "7267c4c5-6c75-425b-9b45-5f81cc8ae215",
+    "name": "Service History ",
+    "description": "This Package Includes 2 Service History with Inspection",
+    "check_points": 1,
+    "icon": "",
+    "color": "#4fb319",
+    "items": [],
+    "benefits": [],
+    "is_free": false,
+    "order": 2,
+    "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1",
+    "is_active": true,
+    "created_at": "2026-03-01T14:23:17.828000",
+    "updated_at": "2026-03-01T14:23:17.828000",
+    "created_by": "fd7d1d88-6543-47e5-b604-889acebfbf13",
+    "updated_by": null
+  },
+  {
+    "id": "5c20e8dc-355c-4d59-9054-46db75bb6d48",
+    "name": "RTO & Police Verification",
+    "description": "",
+    "check_points": 29,
+    "icon": "",
+    "color": "#3B82F6",
+    "items": [
+      {
+        "id": "58dae5a4-ff2c-4976-8d1d-bba982242c15",
+        "name": "Loan and Insurance Check",
+        "description": null,
+        "is_benefit": false
+      },
+      {
+        "id": "2691f31c-1005-4e09-9163-82791c77f437",
+        "name": "Traffic Fines & Blacklist Check",
+        "description": null,
+        "is_benefit": false
+      },
+      {
+        "id": "797a143e-65cc-45f7-b0ca-e58bc4b902e9",
+        "name": "PUC and RC Validity Check",
+        "description": null,
+        "is_benefit": false
+      },
+      {
+        "id": "96ecf2ee-2eab-4cb5-ab13-20c541240bfe",
+        "name": "No. of Owners Check",
+        "description": null,
+        "is_benefit": false
+      },
+      {
+        "id": "6d16b477-bf12-4e80-83e6-190a0f1a4ea5",
+        "name": "Vehicle Info Check",
+        "description": null,
+        "is_benefit": false
+      }
+    ],
+    "benefits": [
+      {
+        "id": "839bee63-40df-41e1-82b9-b52c4837a845",
+        "name": "Loan NOC Check",
+        "description": null,
+        "is_benefit": true
+      },
+      {
+        "id": "5b32f25d-6f40-4ea0-801e-09e95fda5be0",
+        "name": "Insurance Expiry Check",
+        "description": null,
+        "is_benefit": true
+      },
+      {
+        "id": "83ed9159-06b8-4bc9-8b06-4cac0f6fd429",
+        "name": "Blacklist Status Check",
+        "description": null,
+        "is_benefit": true
+      },
+      {
+        "id": "e10a3f55-7e69-4476-befd-6c28fdfd0e3e",
+        "name": "RC Document data verification with Vaahan Database",
+        "description": null,
+        "is_benefit": true
+      }
+    ],
+    "is_free": false,
+    "order": 2,
+    "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1",
+    "is_active": true,
+    "created_at": "2026-02-16T14:48:50.050000",
+    "updated_at": "2026-02-16T14:48:50.050000",
+    "created_by": "a175fdb0-dbd7-40e0-ab89-5031a96b7371",
+    "updated_by": null
+  },
+  {
+    "id": "c013ae4e-be63-4db1-a02f-6a51846d81fb",
+    "name": "Market Research & Estimates",
+    "description": "",
+    "check_points": 0,
+    "icon": "",
+    "color": "#3B82F6",
+    "items": [
+      {
+        "id": "dfaa1619-a055-4c8a-8e98-9bf13923e694",
+        "name": "Fair Price Estimate",
+        "description": null,
+        "is_benefit": false
+      },
+      {
+        "id": "e3bda842-42ed-402a-b3e3-0fbf86f5f45c",
+        "name": "Repair Estimate from Expert Mechanic",
+        "description": null,
+        "is_benefit": false
+      }
+    ],
+    "benefits": [],
+    "is_free": false,
+    "order": 3,
+    "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1",
+    "is_active": true,
+    "created_at": "2026-02-16T14:49:54.473000",
+    "updated_at": "2026-02-16T14:49:54.473000",
+    "created_by": "a175fdb0-dbd7-40e0-ab89-5031a96b7371",
+    "updated_by": null
+  },
+  {
+    "id": "ba82395c-d9a3-4f6b-a69e-d017033046be",
+    "name": "Extended Warranty",
+    "description": "",
+    "check_points": 0,
+    "icon": "",
+    "color": "#3B82F6",
+    "items": [],
+    "benefits": [],
+    "is_free": false,
+    "order": 4,
+    "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1",
+    "is_active": true,
+    "created_at": "2026-02-16T14:50:16.375000",
+    "updated_at": "2026-02-16T14:50:16.375000",
+    "created_by": "a175fdb0-dbd7-40e0-ab89-5031a96b7371",
+    "updated_by": null
+  },
+  {
+    "id": "05dab670-a704-4fdc-be45-d7f08092e2ef",
+    "name": "Tyre Check",
+    "description": "Tyre Check",
+    "check_points": 20,
+    "icon": "",
+    "color": "#3B82F6",
+    "items": [
+      {
+        "id": "c864e5e5-5e3e-4536-aa08-0944e13a3c43",
+        "name": "Michelin Tyre check Machine",
+        "description": null,
+        "is_benefit": false
+      },
+      {
+        "id": "47a7a352-adaa-4c91-b146-45a676d33980",
+        "name": "ultimate tyre check",
+        "description": null,
+        "is_benefit": false
+      }
+    ],
+    "benefits": [],
+    "is_free": false,
+    "order": 5,
+    "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1",
+    "is_active": true,
+    "created_at": "2026-02-17T15:24:40.779000",
+    "updated_at": "2026-02-17T15:25:03.454511+00:00",
+    "created_by": "a175fdb0-dbd7-40e0-ab89-5031a96b7371",
+    "updated_by": "a175fdb0-dbd7-40e0-ab89-5031a96b7371"
+  },
+  {
+    "id": "9816cf61-045a-4c9f-80d4-61bf68da13e0",
+    "name": "Loan Processing",
+    "description": "Loan Processing at 0% processing fee",
+    "check_points": 0,
+    "icon": "",
+    "color": "#3B82F6",
+    "items": [
+      {
+        "id": "11f62fee-2c76-41ea-9aed-7a52cc4f5da6",
+        "name": "0% processing fee",
+        "description": null,
+        "is_benefit": false
+      },
+      {
+        "id": "0b168cb9-0a42-487d-8602-74c55e39c5bc",
+        "name": "6 months extended warranty free",
+        "description": null,
+        "is_benefit": false
+      },
+      {
+        "id": "0513e01d-4727-42a6-aac4-199a20b2ed0f",
+        "name": "1 periodic maintenance service",
+        "description": null,
+        "is_benefit": false
+      }
+    ],
+    "benefits": [],
+    "is_free": false,
+    "order": 6,
+    "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1",
+    "is_active": true,
+    "created_at": "2026-02-27T09:32:28.485000",
+    "updated_at": "2026-02-27T09:32:28.485000",
+    "created_by": "a175fdb0-dbd7-40e0-ab89-5031a96b7371",
+    "updated_by": null
+  },
+  {
+    "id": "21f0e804-00e7-4964-8de1-65c55b719602",
+    "name": "Verified Car Listing ",
+    "description": "This Package Includes 40 Verified car list as per Customer Request and Availability in Market. ",
+    "check_points": 40,
+    "icon": "",
+    "color": "#a9271e",
+    "items": [],
+    "benefits": [],
+    "is_free": false,
+    "order": 9,
+    "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1",
+    "is_active": true,
+    "created_at": "2026-03-01T14:25:04.225000",
+    "updated_at": "2026-03-01T14:25:04.225000",
+    "created_by": "fd7d1d88-6543-47e5-b604-889acebfbf13",
+    "updated_by": null
+  },
+  {
+    "id": "05b9568d-d572-4da1-86f1-74ccd9ee25e7",
+    "name": "Verified Car Listing ",
+    "description": "This Package Includes 25 Verified car list as per Customer Request and Availability in Market. ",
+    "check_points": 25,
+    "icon": "",
+    "color": "#a9271e",
+    "items": [],
+    "benefits": [],
+    "is_free": false,
+    "order": 10,
+    "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1",
+    "is_active": true,
+    "created_at": "2026-03-01T14:25:39.377000",
+    "updated_at": "2026-03-01T14:26:20.782928+00:00",
+    "created_by": "fd7d1d88-6543-47e5-b604-889acebfbf13",
+    "updated_by": "fd7d1d88-6543-47e5-b604-889acebfbf13"
+  },
+  {
+    "id": "f918b87a-2c4e-4835-b404-12fbc85c57ed",
+    "name": "Verified Car Listing ",
+    "description": "This Package Includes 10 Verified car list as per Customer Request and Availability in Market. ",
+    "check_points": 10,
+    "icon": "",
+    "color": "#a9271e",
+    "items": [],
+    "benefits": [],
+    "is_free": false,
+    "order": 11,
+    "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1",
+    "is_active": true,
+    "created_at": "2026-03-01T14:26:09.647000",
+    "updated_at": "2026-03-01T14:26:09.647000",
+    "created_by": "fd7d1d88-6543-47e5-b604-889acebfbf13",
+    "updated_by": null
+  },
+  {
+    "id": "3a678e8b-600e-4549-b5bc-4d53f981f05e",
+    "name": "Service History ",
+    "description": "This Package Includes 3 Service History with Inspection",
+    "check_points": 3,
+    "icon": "",
+    "color": "#4fb319",
+    "items": [],
+    "benefits": [],
+    "is_free": false,
+    "order": 12,
+    "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1",
+    "is_active": true,
+    "created_at": "2026-03-01T14:59:40.610000",
+    "updated_at": "2026-03-01T14:59:40.610000",
+    "created_by": "fd7d1d88-6543-47e5-b604-889acebfbf13",
+    "updated_by": null
+  }
+]
