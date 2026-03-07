@@ -118,16 +118,31 @@ const EditableField = ({ label, value, onChange, type = 'text', options = [], di
     );
   }
   
+  // For number inputs, handle the 0 value properly
+  const displayValue = type === 'number' 
+    ? (value === 0 || value === '0' ? '' : value) 
+    : (value || '');
+  
+  const handleChange = (e) => {
+    if (type === 'number') {
+      const val = e.target.value;
+      // Allow empty string, convert to 0 only on save
+      onChange(val === '' ? '' : parseFloat(val));
+    } else {
+      onChange(e.target.value);
+    }
+  };
+  
   return (
     <div className="space-y-1.5">
       <Label className="text-xs text-gray-600">{label}</Label>
       <div className="relative">
         <Input
           type={type}
-          value={value || ''}
-          onChange={(e) => onChange(type === 'number' ? parseFloat(e.target.value) || 0 : e.target.value)}
+          value={displayValue}
+          onChange={handleChange}
           disabled={disabled}
-          placeholder={placeholder}
+          placeholder={placeholder || (type === 'number' ? '0' : '')}
           className="h-9 text-sm"
         />
         {suffix && (
