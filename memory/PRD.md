@@ -72,6 +72,11 @@ The application is a full-stack CRM for vehicle loans and inspections. Key featu
 
 ### Bug Fixes (Mar 7, 2026)
 - ✅ **MCQ Answers Display in Q&A Details** - Fixed issue where sub_answer_1 (Dent severity) and sub_answer_2 (Scratch severity) were not displaying in LiveProgressModal Q&A Details tab for photo questions. Now shows as colored badges below photos.
+- ✅ **Auto-Repair Detection System** - Implemented complete flow: Mechanic app → Inspections Q&A → Answers → Rules → Repairs display
+  - Created 60 new repair rules with `sub_answer_type` field (30 for dent, 30 for scratch)
+  - Rules match on severity values: "1-2", "3-4", "4+"
+  - Frontend updated to check sub_answer_1/sub_answer_2 for rule matching
+  - Repairs tab now shows 40+ auto-detected repairs with correct pricing
 
 ## Pending Issues (Priority Order)
 
@@ -79,6 +84,7 @@ The application is a full-stack CRM for vehicle loans and inspections. Key featu
 1. ~~**Lead Reassignment Bug**~~ - FIXED (Mar 2026)
 2. ~~**Second Payment Not Creating Inspections**~~ - FIXED (Dec 2025)
 3. ~~**MCQ Answers Not Displaying**~~ - FIXED (Mar 7, 2026)
+4. ~~**Auto-Repair Detection Not Working**~~ - FIXED (Mar 7, 2026)
 
 ### P1 - High  
 1. **Loan Eligibility Frontend** - Backend API ready, need UI integration
