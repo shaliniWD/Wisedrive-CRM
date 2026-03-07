@@ -1,1 +1,998 @@
-[]
+[
+  {
+    "id": "bea9fcf7-257e-4ee6-a160-1881b6390110",
+    "name": "AC Compressor",
+    "category": "ac_cooling",
+    "description": "Air conditioning compressor unit",
+    "part_number": "AC-COMP-001",
+    "hatchback": {
+      "repair_price": 3000.0,
+      "replace_price": 12000.0,
+      "repair_labor": 2000.0,
+      "replace_labor": 4000.0
+    },
+    "sedan": {
+      "repair_price": 3500.0,
+      "replace_price": 15000.0,
+      "repair_labor": 2500.0,
+      "replace_labor": 5000.0
+    },
+    "suv": {
+      "repair_price": 4500.0,
+      "replace_price": 20000.0,
+      "repair_labor": 3000.0,
+      "replace_labor": 6000.0
+    },
+    "brand_overrides": [],
+    "is_active": true,
+    "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1",
+    "created_by": "7cf43310-c14c-45d0-aa2d-6eb99b04ea1b",
+    "created_at": "2026-02-28T08:34:55.013126+00:00",
+    "updated_at": "2026-03-07T12:56:02.470312+00:00",
+    "updated_by": "a175fdb0-dbd7-40e0-ab89-5031a96b7371"
+  },
+  {
+    "id": "3d47106c-c627-46d2-8749-d296885d51d8",
+    "name": "Radiator",
+    "category": "ac_cooling",
+    "description": "Engine cooling radiator",
+    "part_number": "AC-RAD-001",
+    "hatchback": {
+      "repair_price": 2000.0,
+      "replace_price": 8000.0,
+      "repair_labor": 1500.0,
+      "replace_labor": 3000.0
+    },
+    "sedan": {
+      "repair_price": 2500.0,
+      "replace_price": 10000.0,
+      "repair_labor": 1800.0,
+      "replace_labor": 3500.0
+    },
+    "suv": {
+      "repair_price": 3000.0,
+      "replace_price": 14000.0,
+      "repair_labor": 2200.0,
+      "replace_labor": 4500.0
+    },
+    "brand_overrides": [],
+    "is_active": true,
+    "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1",
+    "created_by": "7cf43310-c14c-45d0-aa2d-6eb99b04ea1b",
+    "created_at": "2026-02-28T08:34:55.164857+00:00",
+    "updated_at": "2026-02-28T08:34:55.164857+00:00"
+  },
+  {
+    "id": "22445490-f840-4d20-9315-f733ae985d76",
+    "name": "Front Bumper",
+    "category": "body_panels",
+    "description": "Front bumper assembly including grille mounting points",
+    "part_number": "BP-FRONT-001",
+    "hatchback": {
+      "repair_price": 2500.0,
+      "replace_price": 12000.0,
+      "repair_labor": 1500.0,
+      "replace_labor": 2500.0
+    },
+    "sedan": {
+      "repair_price": 3000.0,
+      "replace_price": 15000.0,
+      "repair_labor": 1800.0,
+      "replace_labor": 3000.0
+    },
+    "suv": {
+      "repair_price": 4000.0,
+      "replace_price": 20000.0,
+      "repair_labor": 2200.0,
+      "replace_labor": 3500.0
+    },
+    "brand_overrides": [
+      {
+        "brand": "BMW",
+        "hatchback": {
+          "repair_price": 5000.0,
+          "replace_price": 35000.0,
+          "repair_labor": 3000.0,
+          "replace_labor": 5000.0
+        },
+        "sedan": {
+          "repair_price": 6000.0,
+          "replace_price": 45000.0,
+          "repair_labor": 3500.0,
+          "replace_labor": 6000.0
+        },
+        "suv": {
+          "repair_price": 8000.0,
+          "replace_price": 55000.0,
+          "repair_labor": 4000.0,
+          "replace_labor": 7000.0
+        }
+      },
+      {
+        "brand": "Mercedes-Benz",
+        "hatchback": {
+          "repair_price": 5500.0,
+          "replace_price": 40000.0,
+          "repair_labor": 3200.0,
+          "replace_labor": 5500.0
+        },
+        "sedan": {
+          "repair_price": 6500.0,
+          "replace_price": 50000.0,
+          "repair_labor": 3800.0,
+          "replace_labor": 6500.0
+        },
+        "suv": {
+          "repair_price": 8500.0,
+          "replace_price": 60000.0,
+          "repair_labor": 4500.0,
+          "replace_labor": 7500.0
+        }
+      }
+    ],
+    "is_active": true,
+    "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1",
+    "created_by": "7cf43310-c14c-45d0-aa2d-6eb99b04ea1b",
+    "created_at": "2026-02-28T08:32:57.798500+00:00",
+    "updated_at": "2026-02-28T08:32:57.798500+00:00"
+  },
+  {
+    "id": "332868c2-edd9-4ecb-a334-57d8be456d73",
+    "name": "Rear Bumper",
+    "category": "body_panels",
+    "description": "Rear bumper assembly including parking sensor mounting",
+    "part_number": "BP-REAR-001",
+    "hatchback": {
+      "repair_price": 2200.0,
+      "replace_price": 10000.0,
+      "repair_labor": 1200.0,
+      "replace_labor": 2000.0
+    },
+    "sedan": {
+      "repair_price": 2800.0,
+      "replace_price": 13000.0,
+      "repair_labor": 1500.0,
+      "replace_labor": 2500.0
+    },
+    "suv": {
+      "repair_price": 3500.0,
+      "replace_price": 18000.0,
+      "repair_labor": 2000.0,
+      "replace_labor": 3000.0
+    },
+    "brand_overrides": [],
+    "is_active": true,
+    "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1",
+    "created_by": "7cf43310-c14c-45d0-aa2d-6eb99b04ea1b",
+    "created_at": "2026-02-28T08:32:57.998478+00:00",
+    "updated_at": "2026-02-28T08:32:57.998478+00:00"
+  },
+  {
+    "id": "0bf345e1-beb6-4f37-b3c0-2a2bde1de5dd",
+    "name": "Front Right Fender",
+    "category": "body_panels",
+    "description": "Right side front fender panel",
+    "part_number": "FND-FR-001",
+    "hatchback": {
+      "repair_price": 1800.0,
+      "replace_price": 8000.0,
+      "repair_labor": 1200.0,
+      "replace_labor": 2000.0
+    },
+    "sedan": {
+      "repair_price": 2200.0,
+      "replace_price": 10000.0,
+      "repair_labor": 1500.0,
+      "replace_labor": 2500.0
+    },
+    "suv": {
+      "repair_price": 3000.0,
+      "replace_price": 14000.0,
+      "repair_labor": 1800.0,
+      "replace_labor": 3000.0
+    },
+    "brand_overrides": [],
+    "is_active": true,
+    "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1",
+    "created_by": "7cf43310-c14c-45d0-aa2d-6eb99b04ea1b",
+    "created_at": "2026-02-28T08:33:18.955051+00:00",
+    "updated_at": "2026-02-28T08:33:18.955051+00:00"
+  },
+  {
+    "id": "eab7a776-bd48-4fe5-a60b-3c53c00fe03f",
+    "name": "Front Left Fender",
+    "category": "body_panels",
+    "description": null,
+    "part_number": "FND-FL-001",
+    "hatchback": {
+      "repair_price": 1800.0,
+      "replace_price": 8000.0,
+      "repair_labor": 1200.0,
+      "replace_labor": 2000.0
+    },
+    "sedan": {
+      "repair_price": 2200.0,
+      "replace_price": 10000.0,
+      "repair_labor": 1500.0,
+      "replace_labor": 2500.0
+    },
+    "suv": {
+      "repair_price": 3000.0,
+      "replace_price": 14000.0,
+      "repair_labor": 1800.0,
+      "replace_labor": 3000.0
+    },
+    "brand_overrides": [],
+    "is_active": true,
+    "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1",
+    "created_by": "7cf43310-c14c-45d0-aa2d-6eb99b04ea1b",
+    "created_at": "2026-02-28T08:33:19.104161+00:00",
+    "updated_at": "2026-02-28T08:33:19.104161+00:00"
+  },
+  {
+    "id": "c8ef6258-f0d3-442e-9ad4-ecc976253990",
+    "name": "Front Right Door",
+    "category": "body_panels",
+    "description": "Front right door panel with window mechanism",
+    "part_number": "DR-FR-001",
+    "hatchback": {
+      "repair_price": 3000.0,
+      "replace_price": 18000.0,
+      "repair_labor": 2000.0,
+      "replace_labor": 4000.0
+    },
+    "sedan": {
+      "repair_price": 3500.0,
+      "replace_price": 22000.0,
+      "repair_labor": 2500.0,
+      "replace_labor": 5000.0
+    },
+    "suv": {
+      "repair_price": 4500.0,
+      "replace_price": 28000.0,
+      "repair_labor": 3000.0,
+      "replace_labor": 6000.0
+    },
+    "brand_overrides": [],
+    "is_active": true,
+    "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1",
+    "created_by": "7cf43310-c14c-45d0-aa2d-6eb99b04ea1b",
+    "created_at": "2026-02-28T08:33:19.260298+00:00",
+    "updated_at": "2026-02-28T08:33:19.260298+00:00"
+  },
+  {
+    "id": "d054e1ee-c293-40d6-8744-57031bc3773a",
+    "name": "Front Left Door",
+    "category": "body_panels",
+    "description": null,
+    "part_number": "DR-FL-001",
+    "hatchback": {
+      "repair_price": 3000.0,
+      "replace_price": 18000.0,
+      "repair_labor": 2000.0,
+      "replace_labor": 4000.0
+    },
+    "sedan": {
+      "repair_price": 3500.0,
+      "replace_price": 22000.0,
+      "repair_labor": 2500.0,
+      "replace_labor": 5000.0
+    },
+    "suv": {
+      "repair_price": 4500.0,
+      "replace_price": 28000.0,
+      "repair_labor": 3000.0,
+      "replace_labor": 6000.0
+    },
+    "brand_overrides": [],
+    "is_active": true,
+    "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1",
+    "created_by": "7cf43310-c14c-45d0-aa2d-6eb99b04ea1b",
+    "created_at": "2026-02-28T08:33:19.432476+00:00",
+    "updated_at": "2026-02-28T08:33:19.432476+00:00"
+  },
+  {
+    "id": "3a00c807-a328-49c7-a508-127203fedd25",
+    "name": "Rear Right Door",
+    "category": "body_panels",
+    "description": null,
+    "part_number": "DR-RR-001",
+    "hatchback": {
+      "repair_price": 2800.0,
+      "replace_price": 16000.0,
+      "repair_labor": 1800.0,
+      "replace_labor": 3500.0
+    },
+    "sedan": {
+      "repair_price": 3200.0,
+      "replace_price": 20000.0,
+      "repair_labor": 2200.0,
+      "replace_labor": 4500.0
+    },
+    "suv": {
+      "repair_price": 4000.0,
+      "replace_price": 25000.0,
+      "repair_labor": 2800.0,
+      "replace_labor": 5500.0
+    },
+    "brand_overrides": [],
+    "is_active": true,
+    "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1",
+    "created_by": "7cf43310-c14c-45d0-aa2d-6eb99b04ea1b",
+    "created_at": "2026-02-28T08:33:19.583317+00:00",
+    "updated_at": "2026-02-28T08:33:19.583317+00:00"
+  },
+  {
+    "id": "fb0d72d2-950b-475c-916f-e442a5390075",
+    "name": "Rear Left Door",
+    "category": "body_panels",
+    "description": null,
+    "part_number": "DR-RL-001",
+    "hatchback": {
+      "repair_price": 2800.0,
+      "replace_price": 16000.0,
+      "repair_labor": 1800.0,
+      "replace_labor": 3500.0
+    },
+    "sedan": {
+      "repair_price": 3200.0,
+      "replace_price": 20000.0,
+      "repair_labor": 2200.0,
+      "replace_labor": 4500.0
+    },
+    "suv": {
+      "repair_price": 4000.0,
+      "replace_price": 25000.0,
+      "repair_labor": 2800.0,
+      "replace_labor": 5500.0
+    },
+    "brand_overrides": [],
+    "is_active": true,
+    "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1",
+    "created_by": "7cf43310-c14c-45d0-aa2d-6eb99b04ea1b",
+    "created_at": "2026-02-28T08:33:19.731406+00:00",
+    "updated_at": "2026-02-28T08:33:19.731406+00:00"
+  },
+  {
+    "id": "43b9655a-280e-4f6f-bc9a-9c7e66f643a6",
+    "name": "Bonnet / Hood",
+    "category": "body_panels",
+    "description": "Engine bonnet/hood panel",
+    "part_number": "BP-HOOD-001",
+    "hatchback": {
+      "repair_price": 2500.0,
+      "replace_price": 12000.0,
+      "repair_labor": 1500.0,
+      "replace_labor": 2500.0
+    },
+    "sedan": {
+      "repair_price": 3000.0,
+      "replace_price": 15000.0,
+      "repair_labor": 1800.0,
+      "replace_labor": 3000.0
+    },
+    "suv": {
+      "repair_price": 4000.0,
+      "replace_price": 20000.0,
+      "repair_labor": 2200.0,
+      "replace_labor": 3500.0
+    },
+    "brand_overrides": [],
+    "is_active": true,
+    "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1",
+    "created_by": "7cf43310-c14c-45d0-aa2d-6eb99b04ea1b",
+    "created_at": "2026-02-28T08:33:43.914507+00:00",
+    "updated_at": "2026-02-28T08:33:43.914507+00:00"
+  },
+  {
+    "id": "44ab03cd-f325-4805-8e6c-36c054c0759f",
+    "name": "Boot Lid / Trunk",
+    "category": "body_panels",
+    "description": "Rear boot lid/trunk panel",
+    "part_number": "BP-BOOT-001",
+    "hatchback": {
+      "repair_price": 2000.0,
+      "replace_price": 10000.0,
+      "repair_labor": 1200.0,
+      "replace_labor": 2000.0
+    },
+    "sedan": {
+      "repair_price": 2500.0,
+      "replace_price": 13000.0,
+      "repair_labor": 1500.0,
+      "replace_labor": 2500.0
+    },
+    "suv": {
+      "repair_price": 3500.0,
+      "replace_price": 18000.0,
+      "repair_labor": 2000.0,
+      "replace_labor": 3000.0
+    },
+    "brand_overrides": [],
+    "is_active": true,
+    "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1",
+    "created_by": "7cf43310-c14c-45d0-aa2d-6eb99b04ea1b",
+    "created_at": "2026-02-28T08:33:44.069048+00:00",
+    "updated_at": "2026-02-28T08:33:44.069048+00:00"
+  },
+  {
+    "id": "a24b16f3-1efe-4a12-8b18-5de8e78de1fc",
+    "name": "Roof Panel",
+    "category": "body_panels",
+    "description": "Vehicle roof panel",
+    "part_number": "BP-ROOF-001",
+    "hatchback": {
+      "repair_price": 4000.0,
+      "replace_price": 25000.0,
+      "repair_labor": 3000.0,
+      "replace_labor": 8000.0
+    },
+    "sedan": {
+      "repair_price": 5000.0,
+      "replace_price": 30000.0,
+      "repair_labor": 3500.0,
+      "replace_labor": 10000.0
+    },
+    "suv": {
+      "repair_price": 6000.0,
+      "replace_price": 40000.0,
+      "repair_labor": 4500.0,
+      "replace_labor": 12000.0
+    },
+    "brand_overrides": [],
+    "is_active": true,
+    "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1",
+    "created_by": "7cf43310-c14c-45d0-aa2d-6eb99b04ea1b",
+    "created_at": "2026-02-28T08:33:44.221141+00:00",
+    "updated_at": "2026-02-28T08:33:44.221141+00:00"
+  },
+  {
+    "id": "2f5f81fa-5917-4514-8817-275c0e6c9a0d",
+    "name": "Headlight Assembly - Right",
+    "category": "electrical",
+    "description": "Right side headlight unit including bulbs and housing",
+    "part_number": "HL-R-001",
+    "hatchback": {
+      "repair_price": 1500.0,
+      "replace_price": 8000.0,
+      "repair_labor": 800.0,
+      "replace_labor": 1200.0
+    },
+    "sedan": {
+      "repair_price": 2000.0,
+      "replace_price": 12000.0,
+      "repair_labor": 1000.0,
+      "replace_labor": 1500.0
+    },
+    "suv": {
+      "repair_price": 2500.0,
+      "replace_price": 15000.0,
+      "repair_labor": 1200.0,
+      "replace_labor": 1800.0
+    },
+    "brand_overrides": [
+      {
+        "brand": "BMW",
+        "hatchback": {
+          "repair_price": 4000.0,
+          "replace_price": 35000.0,
+          "repair_labor": 2000.0,
+          "replace_labor": 3000.0
+        },
+        "sedan": {
+          "repair_price": 5000.0,
+          "replace_price": 45000.0,
+          "repair_labor": 2500.0,
+          "replace_labor": 3500.0
+        },
+        "suv": {
+          "repair_price": 6000.0,
+          "replace_price": 55000.0,
+          "repair_labor": 3000.0,
+          "replace_labor": 4000.0
+        }
+      }
+    ],
+    "is_active": true,
+    "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1",
+    "created_by": "7cf43310-c14c-45d0-aa2d-6eb99b04ea1b",
+    "created_at": "2026-02-28T08:33:44.444473+00:00",
+    "updated_at": "2026-02-28T08:33:44.444473+00:00"
+  },
+  {
+    "id": "3de03684-2a1b-4fae-a2c2-229d73b98e90",
+    "name": "Headlight Assembly - Left",
+    "category": "electrical",
+    "description": null,
+    "part_number": "HL-L-001",
+    "hatchback": {
+      "repair_price": 1500.0,
+      "replace_price": 8000.0,
+      "repair_labor": 800.0,
+      "replace_labor": 1200.0
+    },
+    "sedan": {
+      "repair_price": 2000.0,
+      "replace_price": 12000.0,
+      "repair_labor": 1000.0,
+      "replace_labor": 1500.0
+    },
+    "suv": {
+      "repair_price": 2500.0,
+      "replace_price": 15000.0,
+      "repair_labor": 1200.0,
+      "replace_labor": 1800.0
+    },
+    "brand_overrides": [],
+    "is_active": true,
+    "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1",
+    "created_by": "7cf43310-c14c-45d0-aa2d-6eb99b04ea1b",
+    "created_at": "2026-02-28T08:33:44.598823+00:00",
+    "updated_at": "2026-02-28T08:33:44.598823+00:00"
+  },
+  {
+    "id": "493bdbf6-f283-475d-8c55-9ff98390df22",
+    "name": "Taillight Assembly - Right",
+    "category": "electrical",
+    "description": null,
+    "part_number": "TL-R-001",
+    "hatchback": {
+      "repair_price": 1000.0,
+      "replace_price": 5000.0,
+      "repair_labor": 600.0,
+      "replace_labor": 1000.0
+    },
+    "sedan": {
+      "repair_price": 1200.0,
+      "replace_price": 7000.0,
+      "repair_labor": 800.0,
+      "replace_labor": 1200.0
+    },
+    "suv": {
+      "repair_price": 1500.0,
+      "replace_price": 9000.0,
+      "repair_labor": 1000.0,
+      "replace_labor": 1500.0
+    },
+    "brand_overrides": [],
+    "is_active": true,
+    "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1",
+    "created_by": "7cf43310-c14c-45d0-aa2d-6eb99b04ea1b",
+    "created_at": "2026-02-28T08:33:44.754368+00:00",
+    "updated_at": "2026-02-28T08:33:44.754368+00:00"
+  },
+  {
+    "id": "3e720a9d-5255-4b94-8dbf-53c03c82fa21",
+    "name": "Taillight Assembly - Left",
+    "category": "electrical",
+    "description": null,
+    "part_number": "TL-L-001",
+    "hatchback": {
+      "repair_price": 1000.0,
+      "replace_price": 5000.0,
+      "repair_labor": 600.0,
+      "replace_labor": 1000.0
+    },
+    "sedan": {
+      "repair_price": 1200.0,
+      "replace_price": 7000.0,
+      "repair_labor": 800.0,
+      "replace_labor": 1200.0
+    },
+    "suv": {
+      "repair_price": 1500.0,
+      "replace_price": 9000.0,
+      "repair_labor": 1000.0,
+      "replace_labor": 1500.0
+    },
+    "brand_overrides": [],
+    "is_active": true,
+    "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1",
+    "created_by": "7cf43310-c14c-45d0-aa2d-6eb99b04ea1b",
+    "created_at": "2026-02-28T08:33:44.907801+00:00",
+    "updated_at": "2026-02-28T08:33:44.907801+00:00"
+  },
+  {
+    "id": "ce3da6a0-f6c3-4f0a-a21a-907ce4783891",
+    "name": "Starter Motor",
+    "category": "electrical",
+    "description": "Engine starter motor assembly",
+    "part_number": "EL-START-001",
+    "hatchback": {
+      "repair_price": 2000.0,
+      "replace_price": 6000.0,
+      "repair_labor": 1500.0,
+      "replace_labor": 2500.0
+    },
+    "sedan": {
+      "repair_price": 2500.0,
+      "replace_price": 8000.0,
+      "repair_labor": 1800.0,
+      "replace_labor": 3000.0
+    },
+    "suv": {
+      "repair_price": 3000.0,
+      "replace_price": 10000.0,
+      "repair_labor": 2200.0,
+      "replace_labor": 3500.0
+    },
+    "brand_overrides": [],
+    "is_active": true,
+    "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1",
+    "created_by": "7cf43310-c14c-45d0-aa2d-6eb99b04ea1b",
+    "created_at": "2026-02-28T08:34:54.651919+00:00",
+    "updated_at": "2026-02-28T08:34:54.651919+00:00"
+  },
+  {
+    "id": "ad5c6be8-9619-42bf-9321-16116e2339bd",
+    "name": "Battery",
+    "category": "electrical",
+    "description": "Car battery replacement",
+    "part_number": "EL-BATT-001",
+    "hatchback": {
+      "repair_price": 0.0,
+      "replace_price": 4500.0,
+      "repair_labor": 0.0,
+      "replace_labor": 300.0
+    },
+    "sedan": {
+      "repair_price": 0.0,
+      "replace_price": 6000.0,
+      "repair_labor": 0.0,
+      "replace_labor": 400.0
+    },
+    "suv": {
+      "repair_price": 0.0,
+      "replace_price": 8000.0,
+      "repair_labor": 0.0,
+      "replace_labor": 500.0
+    },
+    "brand_overrides": [],
+    "is_active": true,
+    "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1",
+    "created_by": "7cf43310-c14c-45d0-aa2d-6eb99b04ea1b",
+    "created_at": "2026-02-28T08:34:54.859023+00:00",
+    "updated_at": "2026-02-28T08:34:54.859023+00:00"
+  },
+  {
+    "id": "f7221e50-9644-4405-abee-e834267105d9",
+    "name": "Silencer / Muffler",
+    "category": "exhaust",
+    "description": "Exhaust silencer/muffler",
+    "part_number": "EX-SIL-001",
+    "hatchback": {
+      "repair_price": 1500.0,
+      "replace_price": 5000.0,
+      "repair_labor": 1000.0,
+      "replace_labor": 1500.0
+    },
+    "sedan": {
+      "repair_price": 2000.0,
+      "replace_price": 7000.0,
+      "repair_labor": 1200.0,
+      "replace_labor": 2000.0
+    },
+    "suv": {
+      "repair_price": 2500.0,
+      "replace_price": 9000.0,
+      "repair_labor": 1500.0,
+      "replace_labor": 2500.0
+    },
+    "brand_overrides": [],
+    "is_active": true,
+    "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1",
+    "created_by": "7cf43310-c14c-45d0-aa2d-6eb99b04ea1b",
+    "created_at": "2026-02-28T08:34:55.319471+00:00",
+    "updated_at": "2026-02-28T08:34:55.319471+00:00"
+  },
+  {
+    "id": "d83d541e-b7af-4ca6-b83c-2167fe25de45",
+    "name": "Windshield / Front Glass",
+    "category": "glass",
+    "description": "Front windshield glass with installation",
+    "part_number": "GL-WS-001",
+    "hatchback": {
+      "repair_price": 1500.0,
+      "replace_price": 8000.0,
+      "repair_labor": 500.0,
+      "replace_labor": 2000.0
+    },
+    "sedan": {
+      "repair_price": 2000.0,
+      "replace_price": 12000.0,
+      "repair_labor": 600.0,
+      "replace_labor": 2500.0
+    },
+    "suv": {
+      "repair_price": 2500.0,
+      "replace_price": 15000.0,
+      "repair_labor": 800.0,
+      "replace_labor": 3000.0
+    },
+    "brand_overrides": [],
+    "is_active": true,
+    "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1",
+    "created_by": "7cf43310-c14c-45d0-aa2d-6eb99b04ea1b",
+    "created_at": "2026-02-28T08:34:25.156262+00:00",
+    "updated_at": "2026-02-28T08:34:25.156262+00:00"
+  },
+  {
+    "id": "6090c79e-fd9e-49a2-b09b-db9aa7d3d234",
+    "name": "Rear Glass / Back Windshield",
+    "category": "glass",
+    "description": null,
+    "part_number": "GL-RG-001",
+    "hatchback": {
+      "repair_price": 1000.0,
+      "replace_price": 6000.0,
+      "repair_labor": 400.0,
+      "replace_labor": 1500.0
+    },
+    "sedan": {
+      "repair_price": 1500.0,
+      "replace_price": 8000.0,
+      "repair_labor": 500.0,
+      "replace_labor": 2000.0
+    },
+    "suv": {
+      "repair_price": 2000.0,
+      "replace_price": 10000.0,
+      "repair_labor": 600.0,
+      "replace_labor": 2500.0
+    },
+    "brand_overrides": [],
+    "is_active": true,
+    "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1",
+    "created_by": "7cf43310-c14c-45d0-aa2d-6eb99b04ea1b",
+    "created_at": "2026-02-28T08:34:25.307695+00:00",
+    "updated_at": "2026-02-28T08:34:25.307695+00:00"
+  },
+  {
+    "id": "02c79b05-1290-4e3b-a792-17c389b00f78",
+    "name": "Outside Rear View Mirror - Right",
+    "category": "glass",
+    "description": "Right side ORVM with motor and glass",
+    "part_number": "MR-R-001",
+    "hatchback": {
+      "repair_price": 800.0,
+      "replace_price": 3500.0,
+      "repair_labor": 400.0,
+      "replace_labor": 800.0
+    },
+    "sedan": {
+      "repair_price": 1000.0,
+      "replace_price": 5000.0,
+      "repair_labor": 500.0,
+      "replace_labor": 1000.0
+    },
+    "suv": {
+      "repair_price": 1200.0,
+      "replace_price": 6000.0,
+      "repair_labor": 600.0,
+      "replace_labor": 1200.0
+    },
+    "brand_overrides": [],
+    "is_active": true,
+    "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1",
+    "created_by": "7cf43310-c14c-45d0-aa2d-6eb99b04ea1b",
+    "created_at": "2026-02-28T08:34:25.466620+00:00",
+    "updated_at": "2026-02-28T08:34:25.466620+00:00"
+  },
+  {
+    "id": "c4c6fcf5-8b3a-49e4-961f-0a6bdef2343d",
+    "name": "Outside Rear View Mirror - Left",
+    "category": "glass",
+    "description": null,
+    "part_number": "MR-L-001",
+    "hatchback": {
+      "repair_price": 800.0,
+      "replace_price": 3500.0,
+      "repair_labor": 400.0,
+      "replace_labor": 800.0
+    },
+    "sedan": {
+      "repair_price": 1000.0,
+      "replace_price": 5000.0,
+      "repair_labor": 500.0,
+      "replace_labor": 1000.0
+    },
+    "suv": {
+      "repair_price": 1200.0,
+      "replace_price": 6000.0,
+      "repair_labor": 600.0,
+      "replace_labor": 1200.0
+    },
+    "brand_overrides": [],
+    "is_active": true,
+    "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1",
+    "created_by": "7cf43310-c14c-45d0-aa2d-6eb99b04ea1b",
+    "created_at": "2026-02-28T08:34:25.703640+00:00",
+    "updated_at": "2026-02-28T08:34:25.703640+00:00"
+  },
+  {
+    "id": "d300f733-fb18-4231-866b-135cc6990d0f",
+    "name": "Brake Pads - Front Set",
+    "category": "mechanical",
+    "description": "Front brake pads set (both wheels)",
+    "part_number": "BR-PAD-F-001",
+    "hatchback": {
+      "repair_price": 0.0,
+      "replace_price": 2500.0,
+      "repair_labor": 0.0,
+      "replace_labor": 800.0
+    },
+    "sedan": {
+      "repair_price": 0.0,
+      "replace_price": 3500.0,
+      "repair_labor": 0.0,
+      "replace_labor": 1000.0
+    },
+    "suv": {
+      "repair_price": 0.0,
+      "replace_price": 4500.0,
+      "repair_labor": 0.0,
+      "replace_labor": 1200.0
+    },
+    "brand_overrides": [],
+    "is_active": true,
+    "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1",
+    "created_by": "7cf43310-c14c-45d0-aa2d-6eb99b04ea1b",
+    "created_at": "2026-02-28T08:34:54.041965+00:00",
+    "updated_at": "2026-02-28T08:34:54.041965+00:00"
+  },
+  {
+    "id": "0e93d720-5675-4df6-97e0-4b4dc305b4d0",
+    "name": "Brake Pads - Rear Set",
+    "category": "mechanical",
+    "description": null,
+    "part_number": "BR-PAD-R-001",
+    "hatchback": {
+      "repair_price": 0.0,
+      "replace_price": 2000.0,
+      "repair_labor": 0.0,
+      "replace_labor": 800.0
+    },
+    "sedan": {
+      "repair_price": 0.0,
+      "replace_price": 3000.0,
+      "repair_labor": 0.0,
+      "replace_labor": 1000.0
+    },
+    "suv": {
+      "repair_price": 0.0,
+      "replace_price": 4000.0,
+      "repair_labor": 0.0,
+      "replace_labor": 1200.0
+    },
+    "brand_overrides": [],
+    "is_active": true,
+    "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1",
+    "created_by": "7cf43310-c14c-45d0-aa2d-6eb99b04ea1b",
+    "created_at": "2026-02-28T08:34:54.185220+00:00",
+    "updated_at": "2026-02-28T08:34:54.185220+00:00"
+  },
+  {
+    "id": "56eb363c-106b-406c-bb40-a50de29ee229",
+    "name": "Brake Disc - Front Single",
+    "category": "mechanical",
+    "description": null,
+    "part_number": "BR-DISC-F-001",
+    "hatchback": {
+      "repair_price": 1000.0,
+      "replace_price": 3500.0,
+      "repair_labor": 500.0,
+      "replace_labor": 1000.0
+    },
+    "sedan": {
+      "repair_price": 1200.0,
+      "replace_price": 5000.0,
+      "repair_labor": 600.0,
+      "replace_labor": 1200.0
+    },
+    "suv": {
+      "repair_price": 1500.0,
+      "replace_price": 6500.0,
+      "repair_labor": 800.0,
+      "replace_labor": 1500.0
+    },
+    "brand_overrides": [],
+    "is_active": true,
+    "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1",
+    "created_by": "7cf43310-c14c-45d0-aa2d-6eb99b04ea1b",
+    "created_at": "2026-02-28T08:34:54.333722+00:00",
+    "updated_at": "2026-02-28T08:34:54.333722+00:00"
+  },
+  {
+    "id": "2aeb9d36-aa04-49ea-980e-186b1b4a5de6",
+    "name": "Engine Oil + Filter Service",
+    "category": "mechanical",
+    "description": "Engine oil change with oil filter replacement",
+    "part_number": "SVC-OIL-001",
+    "hatchback": {
+      "repair_price": 0.0,
+      "replace_price": 2500.0,
+      "repair_labor": 0.0,
+      "replace_labor": 500.0
+    },
+    "sedan": {
+      "repair_price": 0.0,
+      "replace_price": 3500.0,
+      "repair_labor": 0.0,
+      "replace_labor": 600.0
+    },
+    "suv": {
+      "repair_price": 0.0,
+      "replace_price": 4500.0,
+      "repair_labor": 0.0,
+      "replace_labor": 800.0
+    },
+    "brand_overrides": [],
+    "is_active": true,
+    "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1",
+    "created_by": "7cf43310-c14c-45d0-aa2d-6eb99b04ea1b",
+    "created_at": "2026-02-28T08:34:54.494502+00:00",
+    "updated_at": "2026-02-28T08:34:54.494502+00:00"
+  },
+  {
+    "id": "76dd1a47-2abe-4239-881c-6f2c271ec5fd",
+    "name": "Tyre - Single",
+    "category": "tyres_wheels",
+    "description": "Single tyre replacement (brand varies)",
+    "part_number": "TY-001",
+    "hatchback": {
+      "repair_price": 500.0,
+      "replace_price": 3500.0,
+      "repair_labor": 200.0,
+      "replace_labor": 400.0
+    },
+    "sedan": {
+      "repair_price": 600.0,
+      "replace_price": 5000.0,
+      "repair_labor": 250.0,
+      "replace_labor": 500.0
+    },
+    "suv": {
+      "repair_price": 800.0,
+      "replace_price": 7000.0,
+      "repair_labor": 300.0,
+      "replace_labor": 600.0
+    },
+    "brand_overrides": [],
+    "is_active": true,
+    "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1",
+    "created_by": "7cf43310-c14c-45d0-aa2d-6eb99b04ea1b",
+    "created_at": "2026-02-28T08:34:25.872750+00:00",
+    "updated_at": "2026-02-28T08:34:25.872750+00:00"
+  },
+  {
+    "id": "f5635a81-7be1-436a-9a05-12bb7f32409f",
+    "name": "Alloy Wheel - Single",
+    "category": "tyres_wheels",
+    "description": "Single alloy wheel replacement",
+    "part_number": "WH-ALLOY-001",
+    "hatchback": {
+      "repair_price": 1500.0,
+      "replace_price": 6000.0,
+      "repair_labor": 500.0,
+      "replace_labor": 800.0
+    },
+    "sedan": {
+      "repair_price": 2000.0,
+      "replace_price": 8000.0,
+      "repair_labor": 600.0,
+      "replace_labor": 1000.0
+    },
+    "suv": {
+      "repair_price": 2500.0,
+      "replace_price": 12000.0,
+      "repair_labor": 800.0,
+      "replace_labor": 1200.0
+    },
+    "brand_overrides": [],
+    "is_active": true,
+    "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1",
+    "created_by": "7cf43310-c14c-45d0-aa2d-6eb99b04ea1b",
+    "created_at": "2026-02-28T08:34:26.029870+00:00",
+    "updated_at": "2026-02-28T08:34:26.029870+00:00"
+  }
+]
