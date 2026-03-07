@@ -84,6 +84,176 @@ function ReportError({ error, onRetry, onBack }) {
 }
 
 /**
+ * Transform Q&A categories from live progress to report format
+ * Maps the backend category structure to what InspectionDetailsSection expects
+ */
+function transformCategoriesToReportFormat(categories) {
+  if (!categories || !Array.isArray(categories) || categories.length === 0) {
+    return [];
+  }
+  
+  return categories.map((cat, index) => {
+    // Transform questions to details format
+    const details = (cat.questions || [])
+      .filter(q => q.is_answered) // Only show answered questions
+      .map(q => {
+        // Determine status based on answer
+        let status = 'good';
+        const answer = q.answer;
+        const answerLower = typeof answer === 'string' ? answer.toLowerCase() : '';
+        
+        // Check for poor/average indicators
+        if (answerLower.includes('poor') || answerLower.includes('bad') || answerLower.includes('damaged') || 
+            answerLower.includes('broken') || answerLower.includes('not working') || answerLower.includes('faulty')) {
+          status = 'poor';
+        } else if (answerLower.includes('average') || answerLower.includes('fair') || answerLower.includes('needs attention') ||
+                   answerLower.includes('worn') || answerLower.includes('minor')) {
+          status = 'average';
+        }
+        
+        // Determine type based on answer content
+        let type = 'qa';
+        let media = null;
+        
+        if (q.media_url) {
+          if (q.question_type === 'video' || (q.media_url && q.media_url.includes('video'))) {
+            type = 'video';
+          } else {
+            type = 'photo';
+          }
+          media = {
+            thumbnail: q.media_url,
+            url: q.media_url,
+            duration: type === 'video' ? '0:30' : undefined
+          };
+        }
+        
+        return {
+          item: q.question_text || 'Question',
+          status: status,
+          type: type,
+          note: typeof answer === 'string' ? answer : JSON.stringify(answer),
+          question: q.question_text,
+          answer: typeof answer === 'string' ? answer : JSON.stringify(answer),
+          media: media,
+          captureInstruction: type !== 'qa' ? q.question_text : undefined,
+          followUpQuestion: q.sub_answer_1 ? 'Additional Details' : undefined,
+          followUpAnswer: q.sub_answer_1 || undefined
+        };
+      });
+    
+    // Calculate category rating based on answered questions
+    const goodCount = details.filter(d => d.status === 'good').length;
+    const totalAnswered = details.length;
+    const rating = totalAnswered > 0 ? Math.round((goodCount / totalAnswered) * 10) : 0;
+    
+    return {
+      id: cat.category_id || `cat-${index}`,
+      name: cat.category_name || 'General',
+      icon: 'Settings', // Default icon
+      rating: rating,
+      checkpoints: cat.total_questions || 0,
+      details: details
+    };
+  });
+}
+
+/**
+ * Transform OBD data to report format
+ * Maps raw OBD data to what OBDReportMobile expects
+ */
+function transformObdToReportFormat(obdScan) {
+  if (!obdScan || !obdScan.completed) {
+    return {
+      connected: false,
+      dtcCodes: [],
+      totalErrors: 0,
+      systems: []
+    };
+  }
+  
+  const obdData = obdScan.data || {};
+  const rawCodes = obdData.raw_codes || obdData.dtc_codes || obdData.codes || [];
+  
+  // If no errors, return clean state
+  if (!rawCodes || rawCodes.length === 0) {
+    return {
+      connected: true,
+      dtcCodes: [],
+      totalErrors: 0,
+      liveData: obdData.live_data || [],
+      deviceName: obdData.device_name || '',
+      protocol: obdData.protocol || '',
+      scannedAt: obdScan.scanned_at || '',
+      vin: obdData.vin || '',
+      systems: [] // Empty systems = "No Diagnostic Errors" message
+    };
+  }
+  
+  // Group codes by system type
+  const systemMap = {
+    'P0': { name: 'Powertrain', icon: 'Cog', faults: [] },
+    'P1': { name: 'Powertrain (Manufacturer)', icon: 'Cog', faults: [] },
+    'P2': { name: 'Powertrain (Generic)', icon: 'Cog', faults: [] },
+    'P3': { name: 'Powertrain (Generic)', icon: 'Cog', faults: [] },
+    'B': { name: 'Body', icon: 'Shield', faults: [] },
+    'C': { name: 'Chassis', icon: 'Settings', faults: [] },
+    'U': { name: 'Network', icon: 'Settings', faults: [] }
+  };
+  
+  rawCodes.forEach(codeEntry => {
+    const code = typeof codeEntry === 'string' ? codeEntry : (codeEntry.code || codeEntry.dtc_code || '');
+    const description = typeof codeEntry === 'object' ? (codeEntry.description || codeEntry.meaning || `Diagnostic code ${code}`) : `Diagnostic code ${code}`;
+    
+    // Determine system from code prefix
+    let systemKey = 'P0'; // Default
+    if (code.startsWith('B')) systemKey = 'B';
+    else if (code.startsWith('C')) systemKey = 'C';
+    else if (code.startsWith('U')) systemKey = 'U';
+    else if (code.startsWith('P0')) systemKey = 'P0';
+    else if (code.startsWith('P1')) systemKey = 'P1';
+    else if (code.startsWith('P2')) systemKey = 'P2';
+    else if (code.startsWith('P3')) systemKey = 'P3';
+    
+    const fault = {
+      code: code,
+      description: description,
+      severity: code.startsWith('P0') || code.startsWith('P3') ? 'critical' : 'warning',
+      status: 'Active',
+      possibleCauses: ['Sensor malfunction', 'Wiring issue', 'Component failure'],
+      symptoms: ['Check engine light', 'Reduced performance'],
+      solutions: ['Diagnose with professional scanner', 'Check related components', 'Consult mechanic']
+    };
+    
+    if (systemMap[systemKey]) {
+      systemMap[systemKey].faults.push(fault);
+    } else {
+      systemMap['P0'].faults.push(fault);
+    }
+  });
+  
+  // Build systems array from non-empty system groups
+  const systems = Object.values(systemMap)
+    .filter(sys => sys.faults.length > 0)
+    .map(sys => ({
+      ...sys,
+      errorCount: sys.faults.length
+    }));
+  
+  return {
+    connected: true,
+    dtcCodes: rawCodes,
+    totalErrors: rawCodes.length,
+    liveData: obdData.live_data || [],
+    deviceName: obdData.device_name || '',
+    protocol: obdData.protocol || '',
+    scannedAt: obdScan.scanned_at || '',
+    vin: obdData.vin || '',
+    systems: systems
+  };
+}
+
+/**
  * Transform CRM inspection data to report format
  * Maps all fields from LiveProgressModal to InspectionReport structure
  */
@@ -95,10 +265,13 @@ function transformInspectionToReport(inspection, lead, customer, liveProgressDat
   
   // Get OBD data from live progress
   const obdScan = liveProgressData.obd_scan || {};
-  const obdData = obdScan.data || {};
   
-  // Get Q&A categories from live progress
-  const categories = liveProgressData.categories || [];
+  // Get Q&A categories from live progress and transform to report format
+  const rawCategories = liveProgressData.categories || [];
+  const transformedCategories = transformCategoriesToReportFormat(rawCategories);
+  
+  // Transform OBD data to report format
+  const transformedObd = transformObdToReportFormat(obdScan);
   
   // Handle assessment_summary - it can be a string or an object
   const getAssessmentText = () => {
