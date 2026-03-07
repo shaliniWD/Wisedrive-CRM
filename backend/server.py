@@ -9392,6 +9392,170 @@ async def calculate_repair_cost(
     }
 
 
+@api_router.get("/inspections/{inspection_id}/calculated-repairs")
+async def get_inspection_calculated_repairs(
+    inspection_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Calculate repairs for an inspection based on Q&A answers and repair rules.
+    Returns minor and major repairs with costs.
+    """
+    # Get inspection
+    inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
+    if not inspection:
+        raise HTTPException(status_code=404, detail="Inspection not found")
+    
+    # Get all active repair rules and parts
+    rules = await db.repair_rules.find({"is_active": True}, {"_id": 0}).to_list(500)
+    parts = await db.repair_parts.find({"is_active": True}, {"_id": 0}).to_list(500)
+    
+    if not rules or not parts:
+        return {"minor_repairs": [], "major_repairs": [], "total_minor": 0, "total_major": 0}
+    
+    # Build parts map
+    parts_map = {p["id"]: p for p in parts}
+    
+    # Get inspection answers and car details
+    inspection_answers = inspection.get("inspection_answers", {})
+    car_type = (inspection.get("car_type") or "sedan").lower()
+    brand = inspection.get("car_make") or inspection.get("vehicle_make") or ""
+    
+    # Normalize brand
+    normalized_brand = brand_mapper.get_crm_brand(brand) or brand
+    
+    # Helper to get price for a part
+    def get_part_price(part, action_type="repair"):
+        if not part:
+            return {"price": 0, "labor": 0, "total": 0}
+        
+        # Check for brand-specific override
+        brand_pricing = None
+        for override in part.get("brand_overrides", []):
+            ob = override.get("brand", "")
+            if ob.lower() == normalized_brand.lower() or ob.lower() == brand.lower():
+                brand_pricing = override.get(car_type)
+                break
+        
+        pricing = brand_pricing or part.get(car_type) or part.get("sedan") or {}
+        
+        if action_type == "repair":
+            price = pricing.get("repair_price", 0)
+            labor = 0
+        elif action_type == "labor":
+            price = 0
+            labor = pricing.get("repair_labor", 0)
+        elif action_type == "both":
+            price = pricing.get("repair_price", 0)
+            labor = pricing.get("repair_labor", 0)
+        elif action_type == "replace":
+            price = pricing.get("replace_price", 0)
+            labor = pricing.get("replace_labor", 0)
+        else:
+            price = pricing.get("repair_price", 0)
+            labor = pricing.get("repair_labor", 0)
+        
+        return {"price": price, "labor": labor, "total": price + labor}
+    
+    # Calculate repairs
+    repairs = []
+    processed_parts = set()
+    
+    for rule in rules:
+        question_id = rule.get("question_id")
+        part_id = rule.get("part_id")
+        
+        # Skip if already processed this part for this inspection
+        if part_id in processed_parts:
+            continue
+        
+        # Get the answer for this question
+        answer_data = inspection_answers.get(question_id)
+        if not answer_data:
+            continue
+        
+        answer = answer_data.get("answer") if isinstance(answer_data, dict) else answer_data
+        if not answer:
+            continue
+        
+        # Get the part
+        part = parts_map.get(part_id)
+        if not part:
+            continue
+        
+        # Evaluate conditions
+        for condition_group in rule.get("conditions", []):
+            condition = condition_group.get("condition", {})
+            action = condition_group.get("action", {})
+            
+            operator = condition.get("operator")
+            value = condition.get("value")
+            
+            matches = False
+            
+            try:
+                answer_str = str(answer).lower()
+                value_str = str(value).lower() if value else ""
+                
+                if operator == "equals":
+                    matches = answer_str == value_str
+                elif operator == "contains":
+                    matches = value_str in answer_str
+                elif operator == "greater_than":
+                    matches = float(answer) > float(value)
+                elif operator == "less_than":
+                    matches = float(answer) < float(value)
+                elif operator == "between":
+                    if isinstance(value, list) and len(value) == 2:
+                        matches = float(value[0]) <= float(answer) <= float(value[1])
+            except (ValueError, TypeError):
+                continue
+            
+            if matches:
+                action_type = action.get("type", "repair")
+                priority = action.get("priority", "medium")
+                
+                pricing = get_part_price(part, action_type)
+                
+                # Determine if minor or major based on priority and cost
+                is_major = priority in ["high", "critical"] or pricing["total"] > 5000
+                
+                repair_item = {
+                    "id": str(uuid.uuid4()),
+                    "part_id": part_id,
+                    "part_name": part.get("name", "Unknown Part"),
+                    "category": part.get("category", "General"),
+                    "action": action_type,
+                    "priority": priority,
+                    "type": "MAJOR" if is_major else "MINOR",
+                    "parts_cost": pricing["price"],
+                    "labor_cost": pricing["labor"],
+                    "estimated_cost": pricing["total"],
+                    "notes": action.get("notes", "")
+                }
+                
+                repairs.append(repair_item)
+                processed_parts.add(part_id)
+                break
+    
+    # Separate into minor and major
+    minor_repairs = [r for r in repairs if r["type"] == "MINOR"]
+    major_repairs = [r for r in repairs if r["type"] == "MAJOR"]
+    
+    # Calculate totals
+    total_minor = sum(r["estimated_cost"] for r in minor_repairs)
+    total_major = sum(r["estimated_cost"] for r in major_repairs)
+    
+    return {
+        "minor_repairs": minor_repairs,
+        "major_repairs": major_repairs,
+        "total_minor": total_minor,
+        "total_major": total_major,
+        "all_repairs": repairs,
+        "total": total_minor + total_major
+    }
+
+
 # ==================== OFFERS ROUTES ====================
 
 @api_router.get("/offers")
