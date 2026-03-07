@@ -105,6 +105,14 @@ The application is a full-stack CRM for vehicle loans and inspections. Key featu
   - Price modifications can be saved back with brand-specific overrides
   - "Custom pricing (not saved to master)" warning for manual overrides
   - ✅ **VERIFIED** - All 15 steps tested and passed (100% success rate)
+- ✅ **Report Tab in LiveProgressModal** - Publish & History feature (Mar 7, 2026):
+  - New "Report" tab added with Preview Report and Publish Report buttons
+  - Preview opens report in new browser tab
+  - Publish sends WhatsApp notification to customer with report link
+  - Publish History logs all publishes with timestamps, user, notes
+  - Change detection: tracks what changed between each publish (AI Analysis, Conditions, Repairs, Ratings, Q&A)
+  - Stats section shows: Total Publishes count, Last Published date, Status
+  - ✅ **VERIFIED** - Backend: 14/14 tests, Frontend: 12/12 features (100% pass rate)
 
 ## Pending Issues (Priority Order)
 
