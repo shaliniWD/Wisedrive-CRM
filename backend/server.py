@@ -8150,10 +8150,15 @@ async def publish_inspection_report(
                     return str(v)
                 return str(v)
             
+            # Store comprehensive change data for audit
             changes.append({
                 "field": label,
+                "field_key": field,  # Raw field name for programmatic access
                 "type": "updated",
-                "details": f"'{format_val(prev_val)}' → '{format_val(curr_val)}'"
+                "details": f"'{format_val(prev_val)}' → '{format_val(curr_val)}'",
+                "old_value": prev_val,  # Raw old value for audit
+                "new_value": curr_val,  # Raw new value for audit
+                "changed_at": datetime.now(timezone.utc).isoformat()
             })
         
         # Check key highlights (array)
