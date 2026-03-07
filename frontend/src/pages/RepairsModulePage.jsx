@@ -1225,7 +1225,7 @@ export default function RepairsModulePage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline">{getCategoryName(part.category)}</Badge>
+                        <Badge variant="outline">{getComponentName(part.category)}</Badge>
                       </TableCell>
                       <TableCell className="text-center text-xs">
                         <div>R: ₹{part.hatchback?.repair_price?.toLocaleString() || 0}</div>
