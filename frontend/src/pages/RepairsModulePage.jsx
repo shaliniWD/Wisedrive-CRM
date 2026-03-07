@@ -765,6 +765,7 @@ const RuleFormModal = ({ isOpen, onClose, rule, parts, questions, onSave }) => {
                         index={idx}
                         onChange={(updated) => updateCondition(idx, updated)}
                         onRemove={() => removeCondition(idx)}
+                        selectedQuestion={selectedQuestion}
                       />
                     ))}
                   </div>
