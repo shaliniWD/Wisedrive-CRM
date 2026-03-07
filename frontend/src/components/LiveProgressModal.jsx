@@ -2670,11 +2670,26 @@ export default function LiveProgressModal({
                                     <>
                                       <p className="text-xs text-gray-500 mb-1">Answer:</p>
                                       {q.media_url ? (
-                                        <div>
+                                        <div className="space-y-2">
                                           {q.media_url.includes('video') || q.media_url.includes('.mp4') ? (
                                             <video src={q.media_url} controls className="max-h-32 rounded" />
                                           ) : (
                                             <img src={q.media_url} alt="Answer" className="max-h-32 rounded cursor-pointer" onClick={() => window.open(q.media_url, '_blank')} />
+                                          )}
+                                          {/* Display MCQ sub-answers alongside the photo */}
+                                          {(q.sub_answer_1 || q.sub_answer_2) && (
+                                            <div className="flex flex-wrap gap-2 mt-2">
+                                              {q.sub_answer_1 && (
+                                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                  Dent: {q.sub_answer_1}
+                                                </span>
+                                              )}
+                                              {q.sub_answer_2 && (
+                                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                                                  Scratch: {q.sub_answer_2}
+                                                </span>
+                                              )}
+                                            </div>
                                           )}
                                         </div>
                                       ) : (
