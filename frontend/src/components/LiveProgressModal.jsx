@@ -3424,8 +3424,16 @@ export default function LiveProgressModal({
                 </div>
               </div>
               
-              {/* Publish History */}
-              <Section title="Publish History" icon={History} defaultOpen={true} badge={`${publishHistory.length} entries`}>
+              {/* Publish History - INTERNAL AUDIT LOG (not visible to customers) */}
+              <Section 
+                title="Internal Audit Log" 
+                icon={History} 
+                defaultOpen={true} 
+                badge={`${publishHistory.length} entries`}
+              >
+                <div className="mb-3 p-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700">
+                  <strong>🔒 Internal Only:</strong> This audit log is for internal tracking purposes only and is NOT visible to customers.
+                </div>
                 {loadingPublishHistory ? (
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
