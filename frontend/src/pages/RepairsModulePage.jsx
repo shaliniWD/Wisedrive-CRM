@@ -803,7 +803,7 @@ const GroupedRulesView = ({ rules, onEdit, onDelete }) => {
 };
 
 // Repair Rule Form Modal
-const RuleFormModal = ({ isOpen, onClose, rule, parts, questions, onSave }) => {
+const RuleFormModal = ({ isOpen, onClose, rule, parts, questions, inspectionCategories, onSave }) => {
   const [formData, setFormData] = useState({
     part_id: '',
     question_id: '',
