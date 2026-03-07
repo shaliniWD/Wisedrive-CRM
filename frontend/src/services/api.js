@@ -166,6 +166,8 @@ export const inspectionsApi = {
   // Publish Report APIs
   publishReport: (id, data) => axios.post(`${API_URL}/inspections/${id}/publish-report`, data),
   getPublishHistory: (id) => axios.get(`${API_URL}/inspections/${id}/publish-history`),
+  // Calculated Repairs for Report
+  getCalculatedRepairs: (id) => axios.get(`${API_URL}/inspections/${id}/calculated-repairs`),
 };
 
 // Users API (V2)
