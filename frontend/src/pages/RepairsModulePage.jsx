@@ -1045,6 +1045,7 @@ export default function RepairsModulePage() {
   const [categories, setCategories] = useState([]); // Component categories for parts
   const [rules, setRules] = useState([]);
   const [questions, setQuestions] = useState([]);
+  const [inspectionCategories, setInspectionCategories] = useState([]); // Top-level inspection categories
   
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
@@ -1058,17 +1059,19 @@ export default function RepairsModulePage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [partsRes, categoriesRes, rulesRes, questionsRes] = await Promise.all([
+      const [partsRes, categoriesRes, rulesRes, questionsRes, inspCatRes] = await Promise.all([
         repairsApi.getParts({}),
         repairsApi.getPartCategories(),
         repairsApi.getRules({}),
-        repairsApi.getAvailableQuestions()
+        repairsApi.getAvailableQuestions(),
+        repairsApi.getInspectionCategories()
       ]);
       
       setParts(partsRes.data || []);
       setCategories(categoriesRes.data || []);
       setRules(rulesRes.data || []);
       setQuestions(questionsRes.data || []);
+      setInspectionCategories(inspCatRes.data || []);
     } catch (error) {
       console.error('Failed to fetch data:', error);
       toast.error('Failed to load repairs data');
