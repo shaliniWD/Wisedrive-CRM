@@ -203,6 +203,7 @@ export function KeyInfoSection({ data, inspectionCategories }) {
         isOpen={tyreModal} 
         onClose={() => setTyreModal(false)} 
         tyreDetails={tyreDetails}
+        tyreQAData={tyreQAData}
         isEditMode={isEditMode}
       />
       <RepairsModal 
