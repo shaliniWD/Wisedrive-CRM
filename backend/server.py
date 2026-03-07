@@ -10530,6 +10530,122 @@ async def clear_and_seed():
     }
 
 
+# ==================== ADMIN RESTORE REPAIRS DATA ====================
+
+@api_router.post("/admin/restore-repairs-data")
+async def admin_restore_repairs_data(current_user: dict = Depends(get_current_user)):
+    """
+    Restore repairs module data from embedded backup.
+    This endpoint is idempotent - safe to call multiple times.
+    Only CEO role can execute this.
+    """
+    # Check if user has CEO role
+    user_role = current_user.get("role_code", "")
+    if user_role != "CEO":
+        raise HTTPException(status_code=403, detail="Only CEO can restore repairs data")
+    
+    # Embedded backup data - inspection_categories
+    inspection_categories_data = [
+        {"id": "b2411c9d-88ed-475d-b486-b4922286c3df", "name": "Physical / Manual Inspection", "description": "Physical / Manual Inspection", "icon": "clipboard-check", "color": "#3B82F6", "sort_order": 1, "is_active": True, "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1"},
+        {"id": "e7a8c12d-5f3b-4c9a-8d6e-1a2b3c4d5e6f", "name": "OBD-2 / Computerized Inspection", "description": "OBD-2 / Computerized Inspection", "icon": "cpu", "color": "#8B5CF6", "sort_order": 2, "is_active": True, "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1"},
+        {"id": "f8b9d23e-6g4c-5d0b-9e7f-2b3c4d5e6f7g", "name": "Road Test", "description": "Road Test", "icon": "car", "color": "#10B981", "sort_order": 3, "is_active": True, "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1"},
+        {"id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890", "name": "Document Verification", "description": "Document Verification", "icon": "file-text", "color": "#F59E0B", "sort_order": 4, "is_active": True, "country_id": "c49e1dc6-1450-40c2-9846-56b73369b2b1"},
+        {"id": "11111111-1111-1111-1111-111111111111", "name": "Physical / Manual Inspection", "description": "Physical / Manual Inspection", "icon": "clipboard-check", "color": "#3B82F6", "sort_order": 1, "is_active": True, "country_id": "11111111-1111-1111-1111-111111111111"},
+        {"id": "22222222-2222-2222-2222-222222222222", "name": "OBD-2 / Computerized Inspection", "description": "OBD-2 / Computerized Inspection", "icon": "cpu", "color": "#8B5CF6", "sort_order": 2, "is_active": True, "country_id": "11111111-1111-1111-1111-111111111111"},
+        {"id": "33333333-3333-3333-3333-333333333333", "name": "Road Test", "description": "Road Test", "icon": "car", "color": "#10B981", "sort_order": 3, "is_active": True, "country_id": "11111111-1111-1111-1111-111111111111"},
+        {"id": "44444444-4444-4444-4444-444444444444", "name": "Document Verification", "description": "Document Verification", "icon": "file-text", "color": "#F59E0B", "sort_order": 4, "is_active": True, "country_id": "11111111-1111-1111-1111-111111111111"},
+        {"id": "55555555-5555-5555-5555-555555555555", "name": "Physical / Manual Inspection", "description": "Physical / Manual Inspection", "icon": "clipboard-check", "color": "#3B82F6", "sort_order": 1, "is_active": True, "country_id": "22222222-2222-2222-2222-222222222222"},
+        {"id": "66666666-6666-6666-6666-666666666666", "name": "OBD-2 / Computerized Inspection", "description": "OBD-2 / Computerized Inspection", "icon": "cpu", "color": "#8B5CF6", "sort_order": 2, "is_active": True, "country_id": "22222222-2222-2222-2222-222222222222"},
+        {"id": "77777777-7777-7777-7777-777777777777", "name": "Road Test", "description": "Road Test", "icon": "car", "color": "#10B981", "sort_order": 3, "is_active": True, "country_id": "22222222-2222-2222-2222-222222222222"},
+        {"id": "88888888-8888-8888-8888-888888888888", "name": "Document Verification", "description": "Document Verification", "icon": "file-text", "color": "#F59E0B", "sort_order": 4, "is_active": True, "country_id": "22222222-2222-2222-2222-222222222222"},
+        {"id": "99999999-9999-9999-9999-999999999999", "name": "Physical / Manual Inspection", "description": "Physical / Manual Inspection", "icon": "clipboard-check", "color": "#3B82F6", "sort_order": 1, "is_active": True, "country_id": "33333333-3333-3333-3333-333333333333"}
+    ]
+    
+    # Restore inspection_categories
+    categories_restored = 0
+    for item in inspection_categories_data:
+        result = await db.inspection_categories.update_one(
+            {"id": item["id"]},
+            {"$set": item},
+            upsert=True
+        )
+        if result.upserted_id or result.modified_count:
+            categories_restored += 1
+    
+    # Load and restore from JSON files if they exist
+    import os
+    backup_dir = "/app/backup_repairs_data"
+    
+    stats = {
+        "inspection_categories": categories_restored,
+        "inspection_questions": 0,
+        "repair_parts": 0,
+        "repair_rules": 0
+    }
+    
+    # Restore inspection_questions
+    questions_file = os.path.join(backup_dir, "inspection_questions.json")
+    if os.path.exists(questions_file):
+        with open(questions_file, 'r') as f:
+            questions_data = json.load(f)
+            if isinstance(questions_data, list):
+                for item in questions_data:
+                    if "question_id" in item:
+                        result = await db.inspection_questions.update_one(
+                            {"question_id": item["question_id"]},
+                            {"$set": item},
+                            upsert=True
+                        )
+                        if result.upserted_id or result.modified_count:
+                            stats["inspection_questions"] += 1
+    
+    # Restore repair_parts
+    parts_file = os.path.join(backup_dir, "repair_parts.json")
+    if os.path.exists(parts_file):
+        with open(parts_file, 'r') as f:
+            parts_data = json.load(f)
+            if isinstance(parts_data, list):
+                for item in parts_data:
+                    if "id" in item:
+                        result = await db.repair_parts.update_one(
+                            {"id": item["id"]},
+                            {"$set": item},
+                            upsert=True
+                        )
+                        if result.upserted_id or result.modified_count:
+                            stats["repair_parts"] += 1
+    
+    # Restore repair_rules
+    rules_file = os.path.join(backup_dir, "repair_rules.json")
+    if os.path.exists(rules_file):
+        with open(rules_file, 'r') as f:
+            rules_data = json.load(f)
+            if isinstance(rules_data, list):
+                for item in rules_data:
+                    if "id" in item:
+                        result = await db.repair_rules.update_one(
+                            {"id": item["id"]},
+                            {"$set": item},
+                            upsert=True
+                        )
+                        if result.upserted_id or result.modified_count:
+                            stats["repair_rules"] += 1
+    
+    # Get final counts
+    final_counts = {
+        "inspection_categories": await db.inspection_categories.count_documents({}),
+        "inspection_questions": await db.inspection_questions.count_documents({}),
+        "repair_parts": await db.repair_parts.count_documents({}),
+        "repair_rules": await db.repair_rules.count_documents({})
+    }
+    
+    return {
+        "message": "Repairs module data restored successfully",
+        "restored": stats,
+        "total_in_db": final_counts
+    }
+
+
 # ==================== ADMIN PASSWORD FIX ENDPOINTS ====================
 
 class AdminPasswordReset(BaseModel):
