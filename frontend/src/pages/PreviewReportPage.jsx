@@ -257,7 +257,7 @@ function transformObdToReportFormat(obdScan) {
  * Transform CRM inspection data to report format
  * Maps all fields from LiveProgressModal to InspectionReport structure
  */
-function transformInspectionToReport(inspection, lead, customer, liveProgressData = {}) {
+function transformInspectionToReport(inspection, lead, customer, liveProgressData = {}, repairsData = {}) {
   // Extract AI insights if available
   const aiInsights = inspection.ai_insights || {};
   const conditionRatings = aiInsights.condition_ratings || {};
@@ -272,6 +272,12 @@ function transformInspectionToReport(inspection, lead, customer, liveProgressDat
   
   // Transform OBD data to report format
   const transformedObd = transformObdToReportFormat(obdScan);
+  
+  // Extract repairs data
+  const minorRepairs = repairsData.minor_repairs || [];
+  const majorRepairs = repairsData.major_repairs || [];
+  const totalMinor = repairsData.total_minor || 0;
+  const totalMajor = repairsData.total_major || 0;
   
   // Handle assessment_summary - it can be a string or an object
   const getAssessmentText = () => {
