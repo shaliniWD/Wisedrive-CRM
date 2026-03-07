@@ -1186,31 +1186,83 @@ export default function LiveProgressModal({
   
   // Save all changes
   const saveChanges = async () => {
-    if (!inspection?.id) return;
+    if (!inspection?.id) {
+      toast.error('No inspection selected');
+      return;
+    }
     
     setSaving(true);
     try {
-      // Calculate repair totals
-      const repairTotals = calculateRepairTotals();
+      // Calculate repair totals safely
+      const repairs = editData.repairs || [];
+      const total = repairs.reduce((sum, r) => sum + (r.estimated_cost || 0), 0);
+      const hasMinor = repairs.some(r => r.type === 'MINOR');
+      const hasMajor = repairs.some(r => r.type === 'MAJOR' || r.type === 'CRITICAL');
+      const variance = hasMajor ? 0.2 : hasMinor ? 0.1 : 0;
+      const repairTotals = {
+        min: Math.round(total * (1 - variance)),
+        max: Math.round(total * (1 + variance))
+      };
       
+      // Build update payload - only include defined fields
       const updatePayload = {
-        ...editData,
+        overall_rating: editData.overall_rating,
+        recommended_to_buy: editData.recommended_to_buy,
+        market_value_min: editData.market_value_min,
+        market_value_max: editData.market_value_max,
+        assessment_summary: editData.assessment_summary,
+        key_highlights: editData.key_highlights,
+        vehicle_make: editData.vehicle_make,
+        vehicle_model: editData.vehicle_model,
+        vehicle_year: editData.vehicle_year,
+        fuel_type: editData.fuel_type,
+        transmission: editData.transmission,
+        vehicle_colour: editData.vehicle_colour,
+        engine_cc: editData.engine_cc,
+        kms_driven: editData.kms_driven,
+        owners: editData.owners,
+        engine_condition: editData.engine_condition,
+        interior_condition: editData.interior_condition,
+        exterior_condition: editData.exterior_condition,
+        transmission_condition: editData.transmission_condition,
+        accident_history: editData.accident_history,
+        flood_damage: editData.flood_damage,
+        dents_scratches: editData.dents_scratches,
+        insurance_status: editData.insurance_status,
+        insurer_name: editData.insurer_name,
+        policy_number: editData.policy_number,
+        insurance_expiry: editData.insurance_expiry,
+        policy_type: editData.policy_type,
+        idv_value: editData.idv_value,
+        repairs: repairs,
         total_repair_cost_min: repairTotals.min,
         total_repair_cost_max: repairTotals.max,
+        rto_verification_status: editData.rto_verification_status,
+        hypothecation: editData.hypothecation,
+        blacklist_status: editData.blacklist_status,
+        category_ratings: editData.category_ratings,
         updated_at: new Date().toISOString()
       };
       
+      // Remove undefined values
+      Object.keys(updatePayload).forEach(key => {
+        if (updatePayload[key] === undefined) {
+          delete updatePayload[key];
+        }
+      });
+      
+      console.log('Saving inspection with payload:', Object.keys(updatePayload));
       await inspectionsApi.update(inspection.id, updatePayload);
       toast.success('Changes saved successfully');
       
-      // Update original data to reflect saved state (prevents "unsaved changes" after save)
+      // Update original data to reflect saved state
       setOriginalData(JSON.stringify({
         overall_rating: editData.overall_rating,
         recommended_to_buy: editData.recommended_to_buy,
         market_value_min: editData.market_value_min,
         market_value_max: editData.market_value_max,
         assessment_summary: editData.assessment_summary,
-        repairs: editData.repairs
+        repairs: repairs
       }));
       setHasUnsavedChanges(false);
       
@@ -1220,7 +1272,8 @@ export default function LiveProgressModal({
       }
     } catch (error) {
       console.error('Save error:', error);
-      toast.error(error.response?.data?.detail || 'Failed to save changes');
+      const errorMessage = error.response?.data?.detail || error.message || 'Failed to save changes';
+      toast.error(errorMessage);
     } finally {
       setSaving(false);
     }
