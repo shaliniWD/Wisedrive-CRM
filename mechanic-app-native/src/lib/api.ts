@@ -5,7 +5,7 @@ import { diagLogger } from './diagLogger';
 // API Base URL Configuration
 // For PREVIEW/TESTING: Use the preview URL below
 // For PRODUCTION: Change to 'https://crmdev.wisedrive.com/api'
-const PREVIEW_API_URL = 'https://vehicle-repair-mgmt-1.preview.emergentagent.com/api';
+const PREVIEW_API_URL = 'https://auto-repairs-crm.preview.emergentagent.com/api';
 const PRODUCTION_API_URL = 'https://crmdev.wisedrive.com/api';
 
 // CURRENT ENVIRONMENT: Set to true for preview testing, false for production

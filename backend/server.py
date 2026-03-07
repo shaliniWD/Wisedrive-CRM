@@ -7985,7 +7985,7 @@ async def publish_inspection_report(
     short_url = inspection.get("short_url") or inspection.get("report_url")
     if not short_url:
         # Generate short URL if not exists
-        base_url = os.environ.get("FRONTEND_URL", "https://vehicle-repair-mgmt-1.preview.emergentagent.com")
+        base_url = os.environ.get("FRONTEND_URL", "https://auto-repairs-crm.preview.emergentagent.com")
         short_url = f"{base_url}/report/{inspection_id}"
     
     # Get previous publish data for comparison
