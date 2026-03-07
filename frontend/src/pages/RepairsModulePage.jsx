@@ -1054,81 +1054,12 @@ export default function RepairsModulePage() {
             </Button>
           </div>
 
-          {/* Rules Table */}
-          <div className="border rounded-lg overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-gray-50">
-                  <TableHead>Part</TableHead>
-                  <TableHead>Linked Question</TableHead>
-                  <TableHead>Conditions</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredRules.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-gray-500">
-                      No rules found. Click "Create Rule" to link a part to a question.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredRules.map(rule => (
-                    <TableRow key={rule.id}>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{rule.part?.name || 'Unknown'}</p>
-                          <p className="text-xs text-gray-500">{getCategoryName(rule.part?.category)}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <p className="text-sm max-w-md truncate">{rule.question_text}</p>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {rule.conditions?.slice(0, 3).map((cond, idx) => (
-                            <Badge key={idx} variant="outline" className="text-xs">
-                              {cond.condition?.operator}: {Array.isArray(cond.condition?.value) ? cond.condition.value.join('-') : cond.condition?.value} → {cond.action?.action_type}
-                            </Badge>
-                          ))}
-                          {rule.conditions?.length > 3 && (
-                            <Badge variant="outline" className="text-xs">+{rule.conditions.length - 3} more</Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {rule.is_active ? (
-                          <Badge className="bg-green-100 text-green-700">Active</Badge>
-                        ) : (
-                          <Badge className="bg-gray-100 text-gray-600">Inactive</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setRuleModal({ open: true, rule })}
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteRule(rule.id)}
-                            className="text-red-500 hover:text-red-700"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+          {/* Grouped Rules Display */}
+          <GroupedRulesView 
+            rules={filteredRules} 
+            onEdit={(rule) => setRuleModal({ open: true, rule })}
+            onDelete={handleDeleteRule}
+          />
         </TabsContent>
       </Tabs>
 
