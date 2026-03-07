@@ -262,16 +262,23 @@ function PreviewReportContent({ inspectionId }) {
         return;
       }
 
-      // Fetch inspection data from authenticated CRM API
-      const response = await axios.get(
-        `${API_URL}/api/inspections/${inspectionId}/report`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      // Fetch both inspection report and live-progress data in parallel
+      const [reportResponse, liveProgressResponse] = await Promise.all([
+        axios.get(
+          `${API_URL}/api/inspections/${inspectionId}/report`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        ),
+        axios.get(
+          `${API_URL}/api/inspections/${inspectionId}/live-progress`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        ).catch(() => ({ data: {} })) // Fallback if live-progress fails
+      ]);
       
-      const { inspection, lead, customer } = response.data;
+      const { inspection, lead, customer } = reportResponse.data;
+      const liveProgressData = liveProgressResponse.data;
       
-      // Transform to report format
-      const reportData = transformInspectionToReport(inspection, lead, customer);
+      // Transform to report format, including live progress data
+      const reportData = transformInspectionToReport(inspection, lead, customer, liveProgressData);
       setData(reportData);
     } catch (err) {
       console.error('Error fetching report:', err);
