@@ -126,6 +126,14 @@ The application is a full-stack CRM for vehicle loans and inspections. Key featu
   - Sections: Header, Hero, Assessment Summary, Vehicle Details, Key Info, RTO, OBD, Q&A Details
   - Connected to "Preview Report" button in LiveProgressModal (NOT publish yet)
   - ✅ **VERIFIED** - Report loads with authentication, shows all mapped fields
+- ✅ **Preview Report Q&A & OBD Data Display Fix** (Mar 7, 2026):
+  - Fixed issue where Q&A categories and OBD data were not displaying on preview report page
+  - Added `transformCategoriesToReportFormat()` function to convert backend Q&A format to frontend card format
+  - Added `transformObdToReportFormat()` function to convert raw OBD codes to systems/faults format
+  - Page now fetches from both `/api/inspections/:id/report` AND `/api/inspections/:id/live-progress`
+  - Q&A section shows all 11 categories with expandable cards, ratings, and 53+ checkpoints
+  - OBD section correctly displays "No Diagnostic Errors" or fault codes when present
+  - ✅ **VERIFIED** - All 6 test cases passed (100% success rate, testing_agent_v3_fork iteration_95)
 
 ## Pending Issues (Priority Order)
 
