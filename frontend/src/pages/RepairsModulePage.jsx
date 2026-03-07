@@ -980,6 +980,34 @@ const RuleFormModal = ({ isOpen, onClose, rule, parts, questions, inspectionCate
                 )}
               </div>
 
+              {/* Inspection Category Selection */}
+              <div>
+                <Label>Inspection Category *</Label>
+                <p className="text-xs text-gray-500 mb-2">Select the top-level category this rule belongs to (for grouping)</p>
+                <Select
+                  value={formData.inspection_category_id}
+                  onValueChange={(val) => {
+                    const cat = inspectionCategories.find(c => c.id === val);
+                    setFormData({ 
+                      ...formData, 
+                      inspection_category_id: val,
+                      inspection_category_name: cat?.name || ''
+                    });
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select inspection category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {inspectionCategories.map(cat => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        {cat.name} ({cat.check_points || 0} check points)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               {/* Conditions */}
               <div>
                 <div className="flex items-center justify-between mb-3">
