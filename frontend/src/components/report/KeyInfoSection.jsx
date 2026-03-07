@@ -122,13 +122,36 @@ export function KeyInfoSection({ data, inspectionCategories }) {
   const tyreCategory = (inspectionCategories || []).find(cat => 
     cat.name && (cat.name.toLowerCase().includes('tyre') || cat.name.toLowerCase().includes('tire'))
   );
+  
+  // Build tyre Q&A data for the modal - include media URL and sub_answer
   const tyreQAData = tyreCategory?.details?.map(d => ({
     question_text: d.question || d.item,
-    media_url: d.media?.url || d.media?.thumbnail,
+    media_url: d.media?.url || d.media?.thumbnail || (typeof d.answer === 'string' && d.answer.startsWith('data:') ? d.answer : null),
     answer: d.answer || d.note,
-    sub_answer_1: d.followUpAnswer || d.note,
+    sub_answer_1: d.followUpAnswer, // This contains the tyre life percentage like "60-80"
     is_answered: true
   })) || [];
+  
+  // Calculate average tyre life from Q&A data for display
+  const parseTyreLife = (subAnswer) => {
+    if (!subAnswer) return 0;
+    const match = subAnswer.match(/(\d+)-(\d+)/);
+    if (match) return Math.round((parseInt(match[1]) + parseInt(match[2])) / 2);
+    return parseInt(subAnswer) || 0;
+  };
+  
+  const tyreQuestionsWithLife = tyreQAData.filter(q => 
+    q.question_text && 
+    q.question_text.toLowerCase().includes('tyre') && 
+    q.question_text.toLowerCase().includes('photo') &&
+    !q.question_text.toLowerCase().includes('boot') &&
+    !q.question_text.toLowerCase().includes('trunk') &&
+    q.sub_answer_1
+  );
+  
+  const calculatedAvgTyreLife = tyreQuestionsWithLife.length > 0
+    ? Math.round(tyreQuestionsWithLife.reduce((sum, q) => sum + parseTyreLife(q.sub_answer_1), 0) / tyreQuestionsWithLife.length)
+    : (tyreDetails?.avgLife || 0);
 
   return (
     <section className="px-4 md:px-0 mt-4 md:mt-6">
