@@ -87,11 +87,18 @@ function ReportError({ error, onRetry, onBack }) {
  * Transform CRM inspection data to report format
  * Maps all fields from LiveProgressModal to InspectionReport structure
  */
-function transformInspectionToReport(inspection, lead, customer) {
+function transformInspectionToReport(inspection, lead, customer, liveProgressData = {}) {
   // Extract AI insights if available
   const aiInsights = inspection.ai_insights || {};
   const conditionRatings = aiInsights.condition_ratings || {};
   const vaahanData = inspection.vaahan_data || {};
+  
+  // Get OBD data from live progress
+  const obdScan = liveProgressData.obd_scan || {};
+  const obdData = obdScan.data || {};
+  
+  // Get Q&A categories from live progress
+  const categories = liveProgressData.categories || [];
   
   // Handle assessment_summary - it can be a string or an object
   const getAssessmentText = () => {
