@@ -1219,47 +1219,60 @@ export default function LiveProgressModal({
         max: Math.round(total * (1 + variance))
       };
       
-      // Build update payload - only include defined fields
+      // Helper to convert empty strings to 0 for numbers, ensure strings are strings
+      const sanitize = (val, type = 'string') => {
+        if (type === 'number') {
+          if (val === '' || val === null || val === undefined) return 0;
+          return typeof val === 'number' ? val : parseFloat(val) || 0;
+        }
+        if (type === 'string') {
+          if (val === null || val === undefined) return '';
+          return String(val);
+        }
+        return val;
+      };
+      
+      // Build update payload with proper type conversion
       const updatePayload = {
-        overall_rating: editData.overall_rating,
-        recommended_to_buy: editData.recommended_to_buy,
-        market_value_min: editData.market_value_min,
-        market_value_max: editData.market_value_max,
-        assessment_summary: editData.assessment_summary,
-        key_highlights: editData.key_highlights,
-        vehicle_make: editData.vehicle_make,
-        vehicle_model: editData.vehicle_model,
-        vehicle_year: editData.vehicle_year,
-        fuel_type: editData.fuel_type,
-        transmission: editData.transmission,
-        vehicle_colour: editData.vehicle_colour,
-        engine_cc: editData.engine_cc,
-        kms_driven: editData.kms_driven,
-        owners: editData.owners,
-        engine_condition: editData.engine_condition,
-        interior_condition: editData.interior_condition,
-        exterior_condition: editData.exterior_condition,
-        transmission_condition: editData.transmission_condition,
-        accident_history: editData.accident_history,
-        flood_damage: editData.flood_damage,
-        dents_scratches: editData.dents_scratches,
-        insurance_status: editData.insurance_status,
-        insurer_name: editData.insurer_name,
-        policy_number: editData.policy_number,
-        insurance_expiry: editData.insurance_expiry,
-        policy_type: editData.policy_type,
-        idv_value: editData.idv_value,
+        overall_rating: sanitize(editData.overall_rating, 'number'),
+        recommended_to_buy: editData.recommended_to_buy || false,
+        market_value_min: sanitize(editData.market_value_min, 'number'),
+        market_value_max: sanitize(editData.market_value_max, 'number'),
+        assessment_summary: sanitize(editData.assessment_summary, 'string'),
+        key_highlights: Array.isArray(editData.key_highlights) ? editData.key_highlights : [],
+        vehicle_make: sanitize(editData.vehicle_make, 'string'),
+        vehicle_model: sanitize(editData.vehicle_model, 'string'),
+        vehicle_year: sanitize(editData.vehicle_year, 'string'),
+        fuel_type: sanitize(editData.fuel_type, 'string'),
+        transmission: sanitize(editData.transmission, 'string'),
+        vehicle_colour: sanitize(editData.vehicle_colour, 'string'),
+        engine_cc: sanitize(editData.engine_cc, 'number'),
+        kms_driven: sanitize(editData.kms_driven, 'number'),
+        owners: sanitize(editData.owners, 'number'),
+        engine_condition: sanitize(editData.engine_condition, 'string') || 'PENDING',
+        interior_condition: sanitize(editData.interior_condition, 'string') || 'PENDING',
+        exterior_condition: sanitize(editData.exterior_condition, 'string') || 'PENDING',
+        transmission_condition: sanitize(editData.transmission_condition, 'string') || 'PENDING',
+        accident_history: editData.accident_history || false,
+        flood_damage: editData.flood_damage || false,
+        dents_scratches: editData.dents_scratches || false,
+        insurance_status: sanitize(editData.insurance_status, 'string'),
+        insurer_name: sanitize(editData.insurer_name, 'string'),
+        policy_number: sanitize(editData.policy_number, 'string'),
+        insurance_expiry: sanitize(editData.insurance_expiry, 'string'),
+        policy_type: sanitize(editData.policy_type, 'string'),
+        idv_value: sanitize(editData.idv_value, 'number'),
         repairs: repairs,
         total_repair_cost_min: repairTotals.min,
         total_repair_cost_max: repairTotals.max,
-        rto_verification_status: editData.rto_verification_status,
-        hypothecation: editData.hypothecation,
-        blacklist_status: editData.blacklist_status,
-        category_ratings: editData.category_ratings,
+        rto_verification_status: sanitize(editData.rto_verification_status, 'string') || 'PENDING',
+        hypothecation: sanitize(editData.hypothecation, 'string'),
+        blacklist_status: editData.blacklist_status || false,
+        category_ratings: editData.category_ratings || {},
         updated_at: new Date().toISOString()
       };
       
-      // Remove undefined values
+      // Remove undefined values (but keep empty strings and 0s)
       Object.keys(updatePayload).forEach(key => {
         if (updatePayload[key] === undefined) {
           delete updatePayload[key];
