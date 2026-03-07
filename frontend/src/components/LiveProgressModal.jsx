@@ -26,6 +26,22 @@ import {
 const CONDITION_OPTIONS = ['EXCELLENT', 'GOOD', 'FAIR', 'POOR', 'NOT_INSPECTED'];
 const REPAIR_TYPES = ['MINOR', 'MAJOR', 'CRITICAL'];
 
+// Car type options (must match repairs module)
+const CAR_TYPES = ['hatchback', 'sedan', 'suv'];
+
+// Common Indian car brands (must match repairs module)
+const CAR_BRANDS = [
+  'Maruti Suzuki', 'Hyundai', 'Tata', 'Mahindra', 'Kia', 'Toyota',
+  'Honda', 'Ford', 'Volkswagen', 'Skoda', 'Renault', 'Nissan',
+  'MG', 'Jeep', 'BMW', 'Mercedes-Benz', 'Audi', 'Land Rover'
+];
+
+// Action types for repair items
+const ACTION_TYPES = [
+  { value: 'repair', label: 'Repair' },
+  { value: 'replace', label: 'Replace' }
+];
+
 // Section Component for collapsible sections
 const Section = ({ title, icon: Icon, children, defaultOpen = false, badge = null }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
