@@ -1,0 +1,2430 @@
+[
+  {
+    "question_id": "709db3b2-d6be-4223-8a09-1bf2f5d7e389",
+    "question_text": "Please take Front Right Side Fender Photo",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "Number Of Dent On Front Right Fender?",
+    "sub_options_1": [
+      "1-2",
+      "3-4",
+      "4+",
+      "No Dents"
+    ],
+    "sub_question_2": "Number of Scratches on Front Right Fenders?",
+    "sub_options_2": [
+      "1-2",
+      "3-4",
+      "4+",
+      "No Scratch"
+    ],
+    "category_id": "exterior_inspection",
+    "category_name": "Exterior Inspection",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "4222b518-1c32-4b3d-a667-8bc6fa0c92e0",
+    "question_text": "Please Click Driver Side Door Photo",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "Number Of Dent On Driver Side Door ?",
+    "sub_options_1": [
+      "1-2",
+      "3-4",
+      "4+",
+      "No Dents"
+    ],
+    "sub_question_2": "Number Of Scratches On Driver Side Door?",
+    "sub_options_2": [
+      "1-2",
+      "3-4",
+      "4+",
+      "No Scratch"
+    ],
+    "category_id": "exterior_inspection",
+    "category_name": "Exterior Inspection",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "7d76f1e7-df4d-4f3d-ae2f-91f15f11aa0f",
+    "question_text": "Does the Vehicle appear to be flood-damaged?",
+    "question_type": "multiple_choice_photo",
+    "options": [
+      "Yes",
+      "No"
+    ],
+    "sub_question_1": "",
+    "sub_options_1": [],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "general_information",
+    "category_name": "General Information",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "5658cae7-d175-4ebd-94cb-255b34b48b56",
+    "question_text": "Please take Rear Right Side Fender Photo",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "Number of dent on Rear Right Side Fender?",
+    "sub_options_1": [
+      "1-2",
+      "3-4",
+      "4+",
+      "No Dents"
+    ],
+    "sub_question_2": "Number of Scratches on Rear Right Side Fender?",
+    "sub_options_2": [
+      "1-2",
+      "3-4",
+      "4+",
+      "No Scratch"
+    ],
+    "category_id": "exterior_inspection",
+    "category_name": "Exterior Inspection",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "31164b90-243d-42c1-9525-fe970fab94de",
+    "question_text": "Please take Rear Right Side Door Photo",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "Number Of Dent On Rear Right Side Door?",
+    "sub_options_1": [
+      "1-2",
+      "3-4",
+      "4+",
+      "No Dents"
+    ],
+    "sub_question_2": "Number Of Scratches On Rear Right Side Door?",
+    "sub_options_2": [
+      "1-2",
+      "3-4",
+      "4+",
+      "No Scratch"
+    ],
+    "category_id": "exterior_inspection",
+    "category_name": "Exterior Inspection",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "2c530e08-25e7-4cc4-abb2-4604c457c6de",
+    "question_text": "Please take Front Indicator Left Side Photo",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "Front Indicator Bulb / LED Left Side Condition?",
+    "sub_options_1": [
+      "Working",
+      "Not Working"
+    ],
+    "sub_question_2": "Front Indicator Left Side Condition?",
+    "sub_options_2": [
+      "Good",
+      "Crack",
+      "Damage"
+    ],
+    "category_id": "headlights_and_indictor_inspection",
+    "category_name": "Headlights and Indictor Inspection",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "03385648-405b-4f99-bc99-854c9b210218",
+    "question_text": "Please take Left Headlight Photo",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "Left Headlight Bulb / LED Condition?",
+    "sub_options_1": [
+      "Working",
+      "Not Working"
+    ],
+    "sub_question_2": "Left Headlight Condition?",
+    "sub_options_2": [
+      "Good",
+      "Crack",
+      "Damage"
+    ],
+    "category_id": "headlights_and_indictor_inspection",
+    "category_name": "Headlights and Indictor Inspection",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "05f98ef6-84d8-4681-b583-e2adc21acb60",
+    "question_text": "Does the Vehicle appear to have been in an accident?",
+    "question_type": "multiple_choice_photo",
+    "options": [
+      "Yes",
+      "No"
+    ],
+    "sub_question_1": "",
+    "sub_options_1": [],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "general_information",
+    "category_name": "General Information",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "3ceb8ccf-b744-4ab4-9a31-9a76c6ea58c4",
+    "question_text": "Please take Right Headlight Photo",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "Right Headlight Bulb / LED Condition?",
+    "sub_options_1": [
+      "Working",
+      "Not Working"
+    ],
+    "sub_question_2": "Right Headlight Condition?",
+    "sub_options_2": [
+      "Good",
+      "Crack",
+      "Damage"
+    ],
+    "category_id": "headlights_and_indictor_inspection",
+    "category_name": "Headlights and Indictor Inspection",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "7277a238-cff1-4c4c-9e44-912ab072c9d7",
+    "question_text": "Please take Front Indicator Right Side Photo",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "Front Indicator Bulb / LED  Right Side Condition?",
+    "sub_options_1": [
+      "Working",
+      "Not Working"
+    ],
+    "sub_question_2": "Front Indicator Right Side Condition?",
+    "sub_options_2": [
+      "Good",
+      "Crack",
+      "Damage"
+    ],
+    "category_id": "headlights_and_indictor_inspection",
+    "category_name": "Headlights and Indictor Inspection",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "b086aa7a-2cd2-44aa-8afc-86077b04faee",
+    "question_text": "Please take Driver Side seat Photo",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "Driver Side Seat Condition?",
+    "sub_options_1": [
+      "Good",
+      "Stained",
+      "Crack",
+      "Damage"
+    ],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "interior_inspection",
+    "category_name": "Interior Inspection",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "01c59be7-3679-4cc3-8080-d6107627baf2",
+    "question_text": "Please take Passenger Side seat Photo",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "Passenger Side Seat Condition?",
+    "sub_options_1": [
+      "Good",
+      "Stained",
+      "Crack",
+      "Damage"
+    ],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "interior_inspection",
+    "category_name": "Interior Inspection",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "7b9f4c3e-deea-4621-9f1d-f42875b57686",
+    "question_text": "Please take Rear seat Photo",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "Rear Seats Condition?",
+    "sub_options_1": [
+      "Good",
+      "Stained",
+      "Crack",
+      "Damage"
+    ],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "interior_inspection",
+    "category_name": "Interior Inspection",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "5c8afc48-898a-4e04-ac61-ae4a8667eb3f",
+    "question_text": "How is the Seat Belts Condition? ",
+    "question_type": "multiple_choice",
+    "options": [
+      "Working",
+      "Not Working",
+      "Not Applicable"
+    ],
+    "sub_question_1": "",
+    "sub_options_1": [],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "interior_inspection",
+    "category_name": "Interior Inspection",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "7814c759-4d08-4cef-81c2-1a4781e70833",
+    "question_text": "Please take Front Bumper Photo of the Vehicle",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "Number Of Dent On Front Bumper?",
+    "sub_options_1": [
+      "1-2",
+      "3-4",
+      "4+",
+      "No Dents"
+    ],
+    "sub_question_2": "Number of Scratches on Front Bumper?",
+    "sub_options_2": [
+      "1-2",
+      "3-4",
+      "4+",
+      "No Scratch"
+    ],
+    "category_id": "exterior_inspection",
+    "category_name": "Exterior Inspection",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "9d3e1841-b05e-4a19-8a60-20217c7a7a8d",
+    "question_text": "Is the steering wheel controls working properly?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Working",
+      "Not Working",
+      "Not Applicable"
+    ],
+    "sub_question_1": "",
+    "sub_options_1": [],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "infotainment_,_electrical_system_and_accessories_check",
+    "category_name": "Infotainment , Electrical System and Accessories Check",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "d00e8e22-d6d7-4adb-8e31-5ca8a71a7ac4",
+    "question_text": "Is Horn Working Properly?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Working",
+      "Not Working",
+      "Not Applicable"
+    ],
+    "sub_question_1": "",
+    "sub_options_1": [],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "infotainment_,_electrical_system_and_accessories_check",
+    "category_name": "Infotainment , Electrical System and Accessories Check",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "e3b24b7f-7a4a-4149-ade3-660f11b74670",
+    "question_text": "Please take photo of Infotainment System",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "Is Infotainment System Working Properly?",
+    "sub_options_1": [
+      "Working",
+      "Not Working",
+      "Not Applicable"
+    ],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "infotainment_,_electrical_system_and_accessories_check",
+    "category_name": "Infotainment , Electrical System and Accessories Check",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "7e293224-d476-4f77-9262-ac289c82dbc7",
+    "question_text": "Is Sound System Working Properly?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Working",
+      "Not Working",
+      "Not Applicable"
+    ],
+    "sub_question_1": "",
+    "sub_options_1": [],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "infotainment_,_electrical_system_and_accessories_check",
+    "category_name": "Infotainment , Electrical System and Accessories Check",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "adb6d2b2-b5fa-4770-a603-b4b4b486ec9b",
+    "question_text": "Please take interior Roof Photo",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "Interior Roof Condition",
+    "sub_options_1": [
+      "Good",
+      "Stained",
+      "Crack",
+      "Damage"
+    ],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "interior_inspection",
+    "category_name": "Interior Inspection",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "903c262e-bfd1-45ed-8c0b-1c090210ce94",
+    "question_text": "Please take Fog Light Left Side Photo",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "Fog Light Bulb / LED  Left Side Condition?",
+    "sub_options_1": [
+      "Working",
+      "Not Working",
+      "Not Applicable"
+    ],
+    "sub_question_2": "Fog Light Left Side Condition?",
+    "sub_options_2": [
+      "Good",
+      "Crack",
+      "Damage"
+    ],
+    "category_id": "headlights_and_indictor_inspection",
+    "category_name": "Headlights and Indictor Inspection",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "71014681-0b39-4232-a8e8-6a1e7307d567",
+    "question_text": "Is Side Electronic Mirror is working?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Working",
+      "Not Working",
+      "Not Applicable"
+    ],
+    "sub_question_1": "",
+    "sub_options_1": [],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "infotainment_,_electrical_system_and_accessories_check",
+    "category_name": "Infotainment , Electrical System and Accessories Check",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "0eb59838-a453-44e4-bd64-309b11a5c92b",
+    "question_text": "Please take a photo of the front AC vents on the driver\u2019s side",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "Front AC Vents Working Condition?",
+    "sub_options_1": [
+      "Working",
+      "Not Working",
+      "Not Applicable"
+    ],
+    "sub_question_2": "Ac Vents Condition?",
+    "sub_options_2": [
+      "Good",
+      "Damaged",
+      "Not Available"
+    ],
+    "category_id": "air_condition_system_check",
+    "category_name": "Air Condition System Check",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "ea133797-ceb8-49c1-aaf0-5f6435a8e6f1",
+    "question_text": "Please take a photo of the front AC vents on the passenger\u2019s side",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "Front AC Vents Passenger Side Working Condition?",
+    "sub_options_1": [
+      "Working",
+      "Not Working",
+      "Not Applicable"
+    ],
+    "sub_question_2": "Ac Vents Condition?",
+    "sub_options_2": [
+      "Good",
+      "Damaged",
+      "Not Available"
+    ],
+    "category_id": "air_condition_system_check",
+    "category_name": "Air Condition System Check",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "9195b8d2-7359-43aa-8ac0-93984ffd507e",
+    "question_text": "Please Click Rear AC Vents Photo ",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "Rear AC Vents Working Condition?",
+    "sub_options_1": [
+      "Working",
+      "Not Working",
+      "Not Applicable"
+    ],
+    "sub_question_2": "Ac Vents Condition?",
+    "sub_options_2": [
+      "Good",
+      "Damaged",
+      "Not Available"
+    ],
+    "category_id": "air_condition_system_check",
+    "category_name": "Air Condition System Check",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "bb9c6cdd-f79a-42a1-be85-27837e19e7e3",
+    "question_text": "Please take a photo of the front middle AC vents",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "Front AC Vents Middle Working Condition?",
+    "sub_options_1": [
+      "Working",
+      "Not Working",
+      "Not Applicable"
+    ],
+    "sub_question_2": "Ac Vents Condition?",
+    "sub_options_2": [
+      "Good",
+      "Damaged",
+      "Not Available"
+    ],
+    "category_id": "air_condition_system_check",
+    "category_name": "Air Condition System Check",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "28e6295e-18c6-4e7a-a91e-b4a416749534",
+    "question_text": "Please take Engine Right Side View Photo",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "",
+    "sub_options_1": [],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "engine_health_and_diagnosis",
+    "category_name": "Engine Health and Diagnosis",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "66236db0-a9f0-4f5c-8d30-b26cb5ecec34",
+    "question_text": "Please Open the Bonnet and take Engine Top Side Photo ",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "",
+    "sub_options_1": [],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "engine_health_and_diagnosis",
+    "category_name": "Engine Health and Diagnosis",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "fb34b57f-b339-4106-b1d2-da5415b03a22",
+    "question_text": "Please take Video with Engine Start for 30 Sec",
+    "question_type": "video",
+    "options": [],
+    "sub_question_1": "",
+    "sub_options_1": [],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "engine_health_and_diagnosis",
+    "category_name": "Engine Health and Diagnosis",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "5d707f04-b1c1-477f-bdc9-544692cbbd75",
+    "question_text": "Does the engine start with a single crank? ",
+    "question_type": "multiple_choice",
+    "options": [
+      "Yes",
+      "No"
+    ],
+    "sub_question_1": "",
+    "sub_options_1": [],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "engine_health_and_diagnosis",
+    "category_name": "Engine Health and Diagnosis",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "8a00aded-1746-4566-a843-068872fe64e7",
+    "question_text": "Are there any sounds inside the Engine?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Knocking",
+      "Crackling",
+      "Humming",
+      "Metallic",
+      "Normal"
+    ],
+    "sub_question_1": "",
+    "sub_options_1": [],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "engine_health_and_diagnosis",
+    "category_name": "Engine Health and Diagnosis",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "6f8188de-4f12-4378-b43f-8c30f1e356f2",
+    "question_text": "Please take 20 seconds video of Transmission Lever Movement with engine start",
+    "question_type": "video",
+    "options": [],
+    "sub_question_1": "Gear lever movement with Ignition on",
+    "sub_options_1": [
+      "Hard",
+      "Smooth",
+      "Delay"
+    ],
+    "sub_question_2": "Gear Box Sound while shifting",
+    "sub_options_2": [
+      "Rough",
+      "Normal"
+    ],
+    "category_id": "transmission_system_diagnosis",
+    "category_name": "Transmission System Diagnosis",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "dc67aad2-5f55-4e8c-a263-2896071d9425",
+    "question_text": "How is the clutch pedal movement?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Hard",
+      "Smooth",
+      "Not Applicable"
+    ],
+    "sub_question_1": "",
+    "sub_options_1": [],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "transmission_system_diagnosis",
+    "category_name": "Transmission System Diagnosis",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "45289559-20a4-4f39-93c8-b678ee84d997",
+    "question_text": "Is Air Conditioning Working Properly?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Yes",
+      "No"
+    ],
+    "sub_question_1": "AC Cooling Condition",
+    "sub_options_1": [
+      "Normal",
+      "No Cooling",
+      "Excellent"
+    ],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "air_condition_system_check",
+    "category_name": "Air Condition System Check",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "6e20b93d-477a-4df5-b8d2-acf618411349",
+    "question_text": "Is there any delay in gear shifting?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Yes",
+      "No"
+    ],
+    "sub_question_1": "",
+    "sub_options_1": [],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "transmission_system_diagnosis",
+    "category_name": "Transmission System Diagnosis",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "8dd5d1d6-9efa-457c-97a7-114bac4b7c31",
+    "question_text": "If yes Take a Photo of the Leakage Parts",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "",
+    "sub_options_1": [],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "transmission_system_diagnosis",
+    "category_name": "Transmission System Diagnosis",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "3b4b8195-ae38-4015-bcb6-afcc08fd440e",
+    "question_text": "Please take Top view photo of Battery ",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "Brand of Battery ",
+    "sub_options_1": [
+      "Amaron",
+      "Exide",
+      "Livguard",
+      "Luminuous",
+      "SF",
+      "Elito",
+      "Others"
+    ],
+    "sub_question_2": "Is the battery in working Condition?",
+    "sub_options_2": [
+      "Yes",
+      "No"
+    ],
+    "category_id": "battery_health_checkup",
+    "category_name": "Battery Health Checkup",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "c0ed6fcc-cb79-445e-9a3e-ec70d0b1df61",
+    "question_text": "Does the battery have terminal corrosion?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Yes",
+      "No"
+    ],
+    "sub_question_1": "",
+    "sub_options_1": [],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "battery_health_checkup",
+    "category_name": "Battery Health Checkup",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "3c4ae99d-f907-4a65-9c2f-f50d9b9f3d8f",
+    "question_text": "Is there any leakage in the battery?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Yes",
+      "No"
+    ],
+    "sub_question_1": "",
+    "sub_options_1": [],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "battery_health_checkup",
+    "category_name": "Battery Health Checkup",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "6bb025ec-fe58-46d5-abd4-c9ee5c5dffdc",
+    "question_text": "What is the condition of the battery voltage supply? ",
+    "question_type": "multiple_choice",
+    "options": [
+      "Low",
+      "Average",
+      "High"
+    ],
+    "sub_question_1": "",
+    "sub_options_1": [],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "battery_health_checkup",
+    "category_name": "Battery Health Checkup",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "d31421bd-e7d2-4696-bd11-1db12d85df4a",
+    "question_text": "Is there any suspension noise while driving?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Yes",
+      "No"
+    ],
+    "sub_question_1": "",
+    "sub_options_1": [],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "suspension_&_brakes_inspection",
+    "category_name": "Suspension & Brakes Inspection",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "86e8fdc3-32ca-4e62-9c1e-b6598962d596",
+    "question_text": "Please take Engine Left Side view photo",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "",
+    "sub_options_1": [],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "engine_health_and_diagnosis",
+    "category_name": "Engine Health and Diagnosis",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "04e998bb-b07d-49fd-b800-f8f6c9286930",
+    "question_text": "What is the condition of the Bushes",
+    "question_type": "multiple_choice",
+    "options": [
+      "Working",
+      "Not Working"
+    ],
+    "sub_question_1": "",
+    "sub_options_1": [],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "suspension_&_brakes_inspection",
+    "category_name": "Suspension & Brakes Inspection",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "6dffec36-40b1-46cc-bd14-480dfc5368ba",
+    "question_text": "What is the condition of the Balljoints?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Working",
+      "Not Working"
+    ],
+    "sub_question_1": "",
+    "sub_options_1": [],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "suspension_&_brakes_inspection",
+    "category_name": "Suspension & Brakes Inspection",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "2e886cc0-a9e6-47b5-8281-7f69a04bb5fa",
+    "question_text": "Please take a photo of the under chassis from the bottom of the vehicle",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "Chassis Condition?",
+    "sub_options_1": [
+      "Damage",
+      "Not Damage",
+      "Repaired",
+      "Good Condition"
+    ],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "suspension_&_brakes_inspection",
+    "category_name": "Suspension & Brakes Inspection",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "619fc82f-eef2-49fd-91a0-1f0c65f9e547",
+    "question_text": "What is the condition of the shock absorbers?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Working",
+      "Not Working"
+    ],
+    "sub_question_1": "",
+    "sub_options_1": [],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "suspension_&_brakes_inspection",
+    "category_name": "Suspension & Brakes Inspection",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "d38a7132-4578-4987-93ed-0a98c00e2d21",
+    "question_text": "Is there any leakage near the transmission?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Yes",
+      "No"
+    ],
+    "sub_question_1": "Leakage Type?",
+    "sub_options_1": [
+      "Major",
+      "Minor",
+      "Not Applicable"
+    ],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "transmission_system_diagnosis",
+    "category_name": "Transmission System Diagnosis",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "13c378c0-8dc5-43a8-aba6-a8a0a1157153",
+    "question_text": "What is the condition of the brake pads?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Good",
+      "Bad",
+      "Not Applicable"
+    ],
+    "sub_question_1": "",
+    "sub_options_1": [],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "suspension_&_brakes_inspection",
+    "category_name": "Suspension & Brakes Inspection",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "2bff412f-1673-4401-a7f7-cf5438aa1ee0",
+    "question_text": "Please Take Front Right Tyre Photo",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "Choose Front Right Tyre Life Percentage?",
+    "sub_options_1": [
+      "0-20",
+      "20-40",
+      "40-60",
+      "60-80",
+      "80-100"
+    ],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "tires_and_tools_inspection",
+    "category_name": "Tires and Tools Inspection",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "b3f203ce-e2d5-4a08-a4da-415c75ad0c7f",
+    "question_text": "Please Take Rear Right Tyre Photo",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "Choose Front Left Tyre Life Percentage?",
+    "sub_options_1": [
+      "0-20",
+      "20-40",
+      "40-60",
+      "60-80",
+      "80-100"
+    ],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "tires_and_tools_inspection",
+    "category_name": "Tires and Tools Inspection",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "fb37a81d-4946-48dc-bc16-217be9c4cdb6",
+    "question_text": "Please Take Front Left Tyre Photo",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "Choose Rear Left Tyre Life Percentage?",
+    "sub_options_1": [
+      "0-20",
+      "20-40",
+      "40-60",
+      "60-80",
+      "80-100"
+    ],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "tires_and_tools_inspection",
+    "category_name": "Tires and Tools Inspection",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "74301e13-8e12-46b4-80eb-a7d5b8710559",
+    "question_text": "Please take Rear Left Side Fender Photo",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "Number of dent on Rear Left Side Fender?",
+    "sub_options_1": [
+      "1-2",
+      "3-4",
+      "4+",
+      "No Dents"
+    ],
+    "sub_question_2": "Number of Scratch on Rear Left Side Fender?",
+    "sub_options_2": [
+      "1-2",
+      "3-4",
+      "4+",
+      "No Scratch"
+    ],
+    "category_id": "exterior_inspection",
+    "category_name": "Exterior Inspection",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "27eee650-721f-4b75-b842-5a85c33ca569",
+    "question_text": "Please take Rear Left Side Door Photo",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "Number of dent on Rear Left Side Door?",
+    "sub_options_1": [
+      "1-2",
+      "3-4",
+      "4+",
+      "No Dents"
+    ],
+    "sub_question_2": "Number of Scratch on Rear Left Side Door?",
+    "sub_options_2": [
+      "1-2",
+      "3-4",
+      "4+",
+      "No Scratch"
+    ],
+    "category_id": "exterior_inspection",
+    "category_name": "Exterior Inspection",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "ec18685b-7eee-426e-aea6-b3b3a8f33770",
+    "question_text": "Please Take Rear Left Tyre Photo",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "Choose Rear Right Tyre Life Percentage?",
+    "sub_options_1": [
+      "0-20",
+      "20-40",
+      "40-60",
+      "60-80",
+      "80-100"
+    ],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "tires_and_tools_inspection",
+    "category_name": "Tires and Tools Inspection",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "dda3dcb6-624e-43a7-b7f7-57af304c372d",
+    "question_text": "Please Click Passenger Side Door Photo.",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "Number of Dent on Passenger Side Door",
+    "sub_options_1": [
+      "1-2",
+      "3-4",
+      "4+",
+      "No Dents"
+    ],
+    "sub_question_2": "Number of Scratch on Passenger Side Door",
+    "sub_options_2": [
+      "1-2",
+      "3-4",
+      "4+",
+      "No Scratch"
+    ],
+    "category_id": "exterior_inspection",
+    "category_name": "Exterior Inspection",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "39a3ab1b-fc43-44aa-8043-16a4db641862",
+    "question_text": "Please take Front Left Side Fender Photo",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "Number of dent on Front Left Side Fender",
+    "sub_options_1": [
+      "1-2",
+      "3-4",
+      "4+",
+      "No Dents"
+    ],
+    "sub_question_2": "Number of Scratch on Front Left Side Fender",
+    "sub_options_2": [
+      "1-2",
+      "3-4",
+      "4+",
+      "No Scratch"
+    ],
+    "category_id": "exterior_inspection",
+    "category_name": "Exterior Inspection",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "13e20ac5-99a7-4fef-bc7f-f7e653d95ede",
+    "question_text": "Please take Fog Light Right Side Photo",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "Fog Light Bulb / LED Right Side Condition?",
+    "sub_options_1": [
+      "Working",
+      "Not Working",
+      "Not  Applicable"
+    ],
+    "sub_question_2": "Fog Light Right Side Condition?",
+    "sub_options_2": [
+      "Good",
+      "Crack",
+      "Damage"
+    ],
+    "category_id": "headlights_and_indictor_inspection",
+    "category_name": "Headlights and Indictor Inspection",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "6ac71dcf-0b14-47d8-9d4e-a72866da55b8",
+    "question_text": "Please take Rear Indicator Right side Photo",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "Rear Indicator Bulb / LED Right side Condition?",
+    "sub_options_1": [
+      "Working",
+      "Not Working"
+    ],
+    "sub_question_2": "Rear Indicator Right side Condition?",
+    "sub_options_2": [
+      "Good",
+      "Crack",
+      "Damage"
+    ],
+    "category_id": "headlights_and_indictor_inspection",
+    "category_name": "Headlights and Indictor Inspection",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "bb4debd7-0136-4ef9-beb3-03f3d5676c18",
+    "question_text": "Please take Rear Bumper Photo of the Vehicle",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "Number Of Dent On Rear Bumper?",
+    "sub_options_1": [
+      "1-2",
+      "3-4",
+      "4+",
+      "No Dents"
+    ],
+    "sub_question_2": "Number of Scratches on Rear Bumper?",
+    "sub_options_2": [
+      "1-2",
+      "3-4",
+      "4+",
+      "No Scratch"
+    ],
+    "category_id": "exterior_inspection",
+    "category_name": "Exterior Inspection",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "339daa09-09a5-4f9a-af02-63db6deab61a",
+    "question_text": "Please take Brake Lights Left Side Photo",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "Brake Lights Left Side Bulb / LED Condition?",
+    "sub_options_1": [
+      "Working",
+      "Not Working"
+    ],
+    "sub_question_2": "Brake Lights Left Side Condition?",
+    "sub_options_2": [
+      "Good",
+      "Crack",
+      "Damage"
+    ],
+    "category_id": "headlights_and_indictor_inspection",
+    "category_name": "Headlights and Indictor Inspection",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "c54e3871-c1ec-41f7-885d-570cf7e565e2",
+    "question_text": "Please take Brake Lights Right Side Photo",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "Brake Lights Bulb / LED Right Side Condition?",
+    "sub_options_1": [
+      "Working",
+      "Not Working"
+    ],
+    "sub_question_2": "Brake Lights Right Side Condition?",
+    "sub_options_2": [
+      "Good",
+      "Crack",
+      "Damage"
+    ],
+    "category_id": "headlights_and_indictor_inspection",
+    "category_name": "Headlights and Indictor Inspection",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "5ff27a59-4ca4-474b-9cf9-81972656595f",
+    "question_text": "Please take Rear Tail Light Photo",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "How is the Rear Tail light Bulb / LED Condition?",
+    "sub_options_1": [
+      "Working",
+      "Not Working",
+      "Not  Applicable"
+    ],
+    "sub_question_2": "How is the Rear Tail light Condition?",
+    "sub_options_2": [
+      "Good",
+      "Crack",
+      "Damage"
+    ],
+    "category_id": "headlights_and_indictor_inspection",
+    "category_name": "Headlights and Indictor Inspection",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "d72d0a59-f621-4afa-8f2e-191f2efe31ef",
+    "question_text": "Please take ODOmeter Photo With Warning lights",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "Is there any warning light showing on the car's dashboard?",
+    "sub_options_1": [
+      "Yes",
+      "No",
+      "Not Applicable"
+    ],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "interior_inspection",
+    "category_name": "Interior Inspection",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "b2805edf-7114-4fbb-abed-0b1e0382c6b1",
+    "question_text": "Please take full dashboard photo",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "Dashboard Condition?",
+    "sub_options_1": [
+      "Good",
+      "Stained",
+      "Crack",
+      "Damage"
+    ],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "interior_inspection",
+    "category_name": "Interior Inspection",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "353cbe7a-0f4e-4f5d-9f46-bf1622ab2975",
+    "question_text": "Is Airbags Available? ",
+    "question_type": "multiple_choice",
+    "options": [
+      "Yes",
+      "No"
+    ],
+    "sub_question_1": "Number Of Airbags",
+    "sub_options_1": [
+      "0",
+      "2",
+      "4",
+      "6"
+    ],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "interior_inspection",
+    "category_name": "Interior Inspection",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "15378c38-08fd-4a4a-ac0d-03b9977f6b47",
+    "question_text": "Is Speedometer Working Properly? ",
+    "question_type": "multiple_choice",
+    "options": [
+      "Yes",
+      "No"
+    ],
+    "sub_question_1": "",
+    "sub_options_1": [],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "infotainment_,_electrical_system_and_accessories_check",
+    "category_name": "Infotainment , Electrical System and Accessories Check",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "9f524665-b94e-495b-98ff-aba46b7dd685",
+    "question_text": "Is Fuel Gauge Working Properly?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Yes",
+      "No"
+    ],
+    "sub_question_1": "",
+    "sub_options_1": [],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "infotainment_,_electrical_system_and_accessories_check",
+    "category_name": "Infotainment , Electrical System and Accessories Check",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "faa87ecc-3403-417a-8760-99d9ec33b780",
+    "question_text": "Is Bluetooth Working Properly? ",
+    "question_type": "multiple_choice",
+    "options": [
+      "Yes",
+      "No"
+    ],
+    "sub_question_1": "",
+    "sub_options_1": [],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "infotainment_,_electrical_system_and_accessories_check",
+    "category_name": "Infotainment , Electrical System and Accessories Check",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "e9a36e4f-121e-49d9-ad84-76ceb5b735a0",
+    "question_text": "Is USB Port Working Properly?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Yes",
+      "No"
+    ],
+    "sub_question_1": "",
+    "sub_options_1": [],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "infotainment_,_electrical_system_and_accessories_check",
+    "category_name": "Infotainment , Electrical System and Accessories Check",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "b435973c-5164-4b6f-a352-df3b0d5edd8d",
+    "question_text": "What is the condition of the window regulators? ",
+    "question_type": "multiple_choice",
+    "options": [
+      "Working",
+      "Not Working",
+      "Not Applicable"
+    ],
+    "sub_question_1": "",
+    "sub_options_1": [],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "infotainment_,_electrical_system_and_accessories_check",
+    "category_name": "Infotainment , Electrical System and Accessories Check",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "404baf1f-a9c7-4363-a0dc-e30c994dcc16",
+    "question_text": "Are the door locks manual or automatic?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Manual",
+      "Automatic"
+    ],
+    "sub_question_1": "Are the door locks functioning properly?",
+    "sub_options_1": [
+      "Working",
+      "Not Working",
+      "Not Applicable"
+    ],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "infotainment_,_electrical_system_and_accessories_check",
+    "category_name": "Infotainment , Electrical System and Accessories Check",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "efd6f0c0-f625-462d-89c7-3a271d8180b0",
+    "question_text": "Please Take Boot /Trunk Photo",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "Boot / Dikey/Trunk Condition?",
+    "sub_options_1": [
+      "Good",
+      "Damaged",
+      "Stained"
+    ],
+    "sub_question_2": "Tray Table Condition?",
+    "sub_options_2": [
+      "Good",
+      "Damaged",
+      "Stained"
+    ],
+    "category_id": "tires_and_tools_inspection",
+    "category_name": "Tires and Tools Inspection",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "fc2d1132-89bd-45fc-be26-34b8f01eadc6",
+    "question_text": "Does the engine have any misfires? ",
+    "question_type": "multiple_choice",
+    "options": [
+      "Yes",
+      "No"
+    ],
+    "sub_question_1": "",
+    "sub_options_1": [],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "engine_health_and_diagnosis",
+    "category_name": "Engine Health and Diagnosis",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "398d5807-2315-406d-b5dd-d769abc02efd",
+    "question_text": "Is there any sound coming from Timing belt? ",
+    "question_type": "multiple_choice",
+    "options": [
+      "Yes",
+      "No"
+    ],
+    "sub_question_1": "",
+    "sub_options_1": [],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "engine_health_and_diagnosis",
+    "category_name": "Engine Health and Diagnosis",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "e86bdd77-6baa-4b80-aea4-9e1513e5f1f9",
+    "question_text": "Is Blower Fan Working Properly?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Yes",
+      "No"
+    ],
+    "sub_question_1": "",
+    "sub_options_1": [],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "air_condition_system_check",
+    "category_name": "Air Condition System Check",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "b39e601a-0b86-47ce-913c-d806d36d72cf",
+    "question_text": "Is there any noise coming from the Timing Case?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Yes",
+      "No"
+    ],
+    "sub_question_1": "",
+    "sub_options_1": [],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "engine_health_and_diagnosis",
+    "category_name": "Engine Health and Diagnosis",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "163ee509-0f57-4dc8-b014-812a74e6a265",
+    "question_text": "Is there any sound coming from the Multi V Belt? ",
+    "question_type": "multiple_choice",
+    "options": [
+      "Yes",
+      "No"
+    ],
+    "sub_question_1": "",
+    "sub_options_1": [],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "engine_health_and_diagnosis",
+    "category_name": "Engine Health and Diagnosis",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "a9d8478a-18f6-4125-9050-531871d6cf20",
+    "question_text": "Is there Clicking Sound in the Fuel Injector?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Yes",
+      "No",
+      "Not Applicable"
+    ],
+    "sub_question_1": "",
+    "sub_options_1": [],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "engine_health_and_diagnosis",
+    "category_name": "Engine Health and Diagnosis",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "d9911cee-b0d5-4bd1-9044-29fdd5690d02",
+    "question_text": "Is there any sound from Alternator Belt? ",
+    "question_type": "multiple_choice",
+    "options": [
+      "Yes",
+      "No"
+    ],
+    "sub_question_1": "",
+    "sub_options_1": [],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "engine_health_and_diagnosis",
+    "category_name": "Engine Health and Diagnosis",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "4d59c302-e3bf-48ce-8716-65bbef2375ce",
+    "question_text": "Please take Rear Indicator Left side Photo",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "Rear Indicator Left side Bulb / LED Condition?",
+    "sub_options_1": [
+      "Working",
+      "Not Working"
+    ],
+    "sub_question_2": "Rear Indicator Left side Condition?",
+    "sub_options_2": [
+      "Good",
+      "Crack",
+      "Damage"
+    ],
+    "category_id": "headlights_and_indictor_inspection",
+    "category_name": "Headlights and Indictor Inspection",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "b6f4cabe-508a-4e07-b607-cf110a81f502",
+    "question_text": "What is the condition of the transmission oil?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Good",
+      "Bad",
+      "Average",
+      "Not Applicable"
+    ],
+    "sub_question_1": "",
+    "sub_options_1": [],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "transmission_system_diagnosis",
+    "category_name": "Transmission System Diagnosis",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "67cd5995-05af-4e84-a0eb-cbc6afa84854",
+    "question_text": "Click Transmission oil dipstick Photo , if Available",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "",
+    "sub_options_1": [],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "transmission_system_diagnosis",
+    "category_name": "Transmission System Diagnosis",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "4f9bd686-5062-43d1-9620-d7af107023bc",
+    "question_text": "How is Brake Rotors/Discs Condition?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Good",
+      "Bad",
+      "Not Applicable"
+    ],
+    "sub_question_1": "",
+    "sub_options_1": [],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "suspension_&_brakes_inspection",
+    "category_name": "Suspension & Brakes Inspection",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "1e187704-1e8f-4c7f-81ef-e21c60b29228",
+    "question_text": "How is Brake Drums Condition? ",
+    "question_type": "multiple_choice",
+    "options": [
+      "Good",
+      "Bad",
+      "Not Applicable"
+    ],
+    "sub_question_1": "",
+    "sub_options_1": [],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "suspension_&_brakes_inspection",
+    "category_name": "Suspension & Brakes Inspection",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "1ff4d8f5-c108-445d-8b47-900abaac0947",
+    "question_text": "How is Brake Pedal Movement? ",
+    "question_type": "multiple_choice",
+    "options": [
+      "Hard",
+      "Smooth"
+    ],
+    "sub_question_1": "",
+    "sub_options_1": [],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "suspension_&_brakes_inspection",
+    "category_name": "Suspension & Brakes Inspection",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "322682b3-cea3-42b3-8871-8695e85a2e4d",
+    "question_text": "Please Take Stepneys Tyre Photo",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "Choose Stepneys Tyre Life Percentage?",
+    "sub_options_1": [
+      "0-20",
+      "20-40",
+      "40-60",
+      "60-80",
+      "80-100"
+    ],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "tires_and_tools_inspection",
+    "category_name": "Tires and Tools Inspection",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "14ff95be-9e74-49c0-8d7e-7d915b2ded89",
+    "question_text": "Please Take Spare tools (jack, lug wrench) Photo",
+    "question_type": "photo",
+    "options": [],
+    "sub_question_1": "Spare tools (jack, lug wrench) Available?",
+    "sub_options_1": [
+      "Yes",
+      "No",
+      "Not Applicable"
+    ],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "tires_and_tools_inspection",
+    "category_name": "Tires and Tools Inspection",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "41b2473c-787f-4c75-95c9-745716ab341a",
+    "question_text": "Does the engine have back compression?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Yes",
+      "No"
+    ],
+    "sub_question_1": "",
+    "sub_options_1": [],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "engine_health_and_diagnosis",
+    "category_name": "Engine Health and Diagnosis",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "1e2cadd0-10c5-4000-afcc-0acd36b3a5af",
+    "question_text": "Is there any sound when the gear is in Parking or Neutral mode with the ignition ON?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Yes",
+      "No"
+    ],
+    "sub_question_1": "",
+    "sub_options_1": [],
+    "sub_question_2": "",
+    "sub_options_2": [],
+    "category_id": "transmission_system_diagnosis",
+    "category_name": "Transmission System Diagnosis",
+    "package_id": null,
+    "package_name": "Inspection Questions"
+  },
+  {
+    "question_id": "01a441f1-87ea-4c4b-bfa0-27f10c2dceb4",
+    "question_text": "How many dents are on the front bumper?",
+    "question_type": "multiple_choice",
+    "options": [
+      "No dents",
+      "1-2 small dents",
+      "3-4 dents",
+      "5+ dents or severe damage"
+    ],
+    "sub_question_1": null,
+    "sub_options_1": [],
+    "sub_question_2": null,
+    "sub_options_2": [],
+    "category_id": "97b12517-ecd2-48a8-bb0d-b3982f3964b0",
+    "category_name": "Front Bumper Inspection",
+    "package_id": null,
+    "package_name": "Q&A Category"
+  },
+  {
+    "question_id": "82f195db-3e84-4138-80fd-87bb0f90c90e",
+    "question_text": "Are there scratches on the front bumper?",
+    "question_type": "multiple_choice",
+    "options": [
+      "No scratches",
+      "Minor scratches (can be buffed)",
+      "Deep scratches",
+      "Paint peeling"
+    ],
+    "sub_question_1": null,
+    "sub_options_1": [],
+    "sub_question_2": null,
+    "sub_options_2": [],
+    "category_id": "97b12517-ecd2-48a8-bb0d-b3982f3964b0",
+    "category_name": "Front Bumper Inspection",
+    "package_id": null,
+    "package_name": "Q&A Category"
+  },
+  {
+    "question_id": "9c2b4d0f-96b5-422a-9238-902f291ead77",
+    "question_text": "Is the front bumper cracked?",
+    "question_type": "multiple_choice",
+    "options": [
+      "No cracks",
+      "Hairline cracks",
+      "Visible cracks",
+      "Severely cracked/broken"
+    ],
+    "sub_question_1": null,
+    "sub_options_1": [],
+    "sub_question_2": null,
+    "sub_options_2": [],
+    "category_id": "97b12517-ecd2-48a8-bb0d-b3982f3964b0",
+    "category_name": "Front Bumper Inspection",
+    "package_id": null,
+    "package_name": "Q&A Category"
+  },
+  {
+    "question_id": "8f2953a0-5de7-4cd6-8078-4893b23799e8",
+    "question_text": "How many dents are on the rear bumper?",
+    "question_type": "multiple_choice",
+    "options": [
+      "No dents",
+      "1-2 small dents",
+      "3-4 dents",
+      "5+ dents or severe damage"
+    ],
+    "sub_question_1": null,
+    "sub_options_1": [],
+    "sub_question_2": null,
+    "sub_options_2": [],
+    "category_id": "57db4f09-3f47-4463-a360-2e2f97018ac1",
+    "category_name": "Rear Bumper Inspection",
+    "package_id": null,
+    "package_name": "Q&A Category"
+  },
+  {
+    "question_id": "ac87b920-fffb-414b-b01a-d063083a4a80",
+    "question_text": "Are there scratches on the rear bumper?",
+    "question_type": "multiple_choice",
+    "options": [
+      "No scratches",
+      "Minor scratches",
+      "Deep scratches",
+      "Paint peeling"
+    ],
+    "sub_question_1": null,
+    "sub_options_1": [],
+    "sub_question_2": null,
+    "sub_options_2": [],
+    "category_id": "57db4f09-3f47-4463-a360-2e2f97018ac1",
+    "category_name": "Rear Bumper Inspection",
+    "package_id": null,
+    "package_name": "Q&A Category"
+  },
+  {
+    "question_id": "7344857f-1869-4baa-b71d-ee9b14d04329",
+    "question_text": "Is the rear bumper cracked?",
+    "question_type": "multiple_choice",
+    "options": [
+      "No cracks",
+      "Hairline cracks",
+      "Visible cracks",
+      "Severely cracked/broken"
+    ],
+    "sub_question_1": null,
+    "sub_options_1": [],
+    "sub_question_2": null,
+    "sub_options_2": [],
+    "category_id": "57db4f09-3f47-4463-a360-2e2f97018ac1",
+    "category_name": "Rear Bumper Inspection",
+    "package_id": null,
+    "package_name": "Q&A Category"
+  },
+  {
+    "question_id": "a02b62c1-e6d8-466e-9644-18a7c3f840b0",
+    "question_text": "What is the condition of the front right fender?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Good - No damage",
+      "Minor dent/scratch",
+      "Moderate damage",
+      "Severe damage - needs replacement"
+    ],
+    "sub_question_1": null,
+    "sub_options_1": [],
+    "sub_question_2": null,
+    "sub_options_2": [],
+    "category_id": "a8795662-ad6c-4110-8a86-e1e729722836",
+    "category_name": "Front Fender Inspection",
+    "package_id": null,
+    "package_name": "Q&A Category"
+  },
+  {
+    "question_id": "41c57792-d710-4d38-8cbb-5d7183427274",
+    "question_text": "What is the condition of the front left fender?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Good - No damage",
+      "Minor dent/scratch",
+      "Moderate damage",
+      "Severe damage - needs replacement"
+    ],
+    "sub_question_1": null,
+    "sub_options_1": [],
+    "sub_question_2": null,
+    "sub_options_2": [],
+    "category_id": "a8795662-ad6c-4110-8a86-e1e729722836",
+    "category_name": "Front Fender Inspection",
+    "package_id": null,
+    "package_name": "Q&A Category"
+  },
+  {
+    "question_id": "75759b54-3f1a-40c8-8ed3-e121c772bf8c",
+    "question_text": "Is there rust on the front fenders?",
+    "question_type": "multiple_choice",
+    "options": [
+      "No rust",
+      "Surface rust (can be treated)",
+      "Rust through (needs panel work)"
+    ],
+    "sub_question_1": null,
+    "sub_options_1": [],
+    "sub_question_2": null,
+    "sub_options_2": [],
+    "category_id": "a8795662-ad6c-4110-8a86-e1e729722836",
+    "category_name": "Front Fender Inspection",
+    "package_id": null,
+    "package_name": "Q&A Category"
+  },
+  {
+    "question_id": "131a786f-1439-4b8a-9127-9b55aa2271d9",
+    "question_text": "Front Right Door condition?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Good - No damage",
+      "Minor dent/scratch",
+      "Moderate damage",
+      "Severe damage"
+    ],
+    "sub_question_1": null,
+    "sub_options_1": [],
+    "sub_question_2": null,
+    "sub_options_2": [],
+    "category_id": "a905c392-00d7-4147-b8cf-e9b330ab77ae",
+    "category_name": "Door Panel Inspection",
+    "package_id": null,
+    "package_name": "Q&A Category"
+  },
+  {
+    "question_id": "dc5d17bd-51ce-486e-b208-c01e8b6f2b07",
+    "question_text": "Front Left Door condition?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Good - No damage",
+      "Minor dent/scratch",
+      "Moderate damage",
+      "Severe damage"
+    ],
+    "sub_question_1": null,
+    "sub_options_1": [],
+    "sub_question_2": null,
+    "sub_options_2": [],
+    "category_id": "a905c392-00d7-4147-b8cf-e9b330ab77ae",
+    "category_name": "Door Panel Inspection",
+    "package_id": null,
+    "package_name": "Q&A Category"
+  },
+  {
+    "question_id": "18e8a0c9-5cb6-42af-9c91-b4d3e288fb2c",
+    "question_text": "Rear Right Door condition?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Good - No damage",
+      "Minor dent/scratch",
+      "Moderate damage",
+      "Severe damage"
+    ],
+    "sub_question_1": null,
+    "sub_options_1": [],
+    "sub_question_2": null,
+    "sub_options_2": [],
+    "category_id": "a905c392-00d7-4147-b8cf-e9b330ab77ae",
+    "category_name": "Door Panel Inspection",
+    "package_id": null,
+    "package_name": "Q&A Category"
+  },
+  {
+    "question_id": "4ea27818-8220-48a4-9a68-905301a08b62",
+    "question_text": "Rear Left Door condition?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Good - No damage",
+      "Minor dent/scratch",
+      "Moderate damage",
+      "Severe damage"
+    ],
+    "sub_question_1": null,
+    "sub_options_1": [],
+    "sub_question_2": null,
+    "sub_options_2": [],
+    "category_id": "a905c392-00d7-4147-b8cf-e9b330ab77ae",
+    "category_name": "Door Panel Inspection",
+    "package_id": null,
+    "package_name": "Q&A Category"
+  },
+  {
+    "question_id": "c3f64c91-9430-434e-b495-9734238592e8",
+    "question_text": "What is the condition of the hood/bonnet?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Good - No damage",
+      "Minor dent/scratch",
+      "Moderate damage",
+      "Severe damage"
+    ],
+    "sub_question_1": null,
+    "sub_options_1": [],
+    "sub_question_2": null,
+    "sub_options_2": [],
+    "category_id": "e389d7c5-cc47-4c89-931d-1a15b33d6093",
+    "category_name": "Hood & Trunk Inspection",
+    "package_id": null,
+    "package_name": "Q&A Category"
+  },
+  {
+    "question_id": "4a004c28-fd6e-489a-adfb-00699e44448a",
+    "question_text": "What is the condition of the trunk/boot lid?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Good - No damage",
+      "Minor dent/scratch",
+      "Moderate damage",
+      "Severe damage"
+    ],
+    "sub_question_1": null,
+    "sub_options_1": [],
+    "sub_question_2": null,
+    "sub_options_2": [],
+    "category_id": "e389d7c5-cc47-4c89-931d-1a15b33d6093",
+    "category_name": "Hood & Trunk Inspection",
+    "package_id": null,
+    "package_name": "Q&A Category"
+  },
+  {
+    "question_id": "a78ce596-10d1-4a02-9488-9f3f9e712f65",
+    "question_text": "Is there hail damage on the roof panel?",
+    "question_type": "multiple_choice",
+    "options": [
+      "No damage",
+      "Light hail marks",
+      "Moderate hail damage",
+      "Severe hail damage"
+    ],
+    "sub_question_1": null,
+    "sub_options_1": [],
+    "sub_question_2": null,
+    "sub_options_2": [],
+    "category_id": "e389d7c5-cc47-4c89-931d-1a15b33d6093",
+    "category_name": "Hood & Trunk Inspection",
+    "package_id": null,
+    "package_name": "Q&A Category"
+  },
+  {
+    "question_id": "181a0309-3d09-4835-b005-466626ba4e44",
+    "question_text": "Right headlight condition?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Working & Clear",
+      "Foggy/Yellowed (needs restoration)",
+      "Cracked",
+      "Broken/Not working"
+    ],
+    "sub_question_1": null,
+    "sub_options_1": [],
+    "sub_question_2": null,
+    "sub_options_2": [],
+    "category_id": "d7da8f3f-3219-4869-84c2-59d10e28aa0b",
+    "category_name": "Headlight & Taillight Inspection",
+    "package_id": null,
+    "package_name": "Q&A Category"
+  },
+  {
+    "question_id": "a6f9e30c-2b16-46bd-a911-c94e27916155",
+    "question_text": "Left headlight condition?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Working & Clear",
+      "Foggy/Yellowed (needs restoration)",
+      "Cracked",
+      "Broken/Not working"
+    ],
+    "sub_question_1": null,
+    "sub_options_1": [],
+    "sub_question_2": null,
+    "sub_options_2": [],
+    "category_id": "d7da8f3f-3219-4869-84c2-59d10e28aa0b",
+    "category_name": "Headlight & Taillight Inspection",
+    "package_id": null,
+    "package_name": "Q&A Category"
+  },
+  {
+    "question_id": "017a076e-6105-4388-9584-5956b9e5f9c1",
+    "question_text": "Right taillight condition?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Working & Clear",
+      "Cracked",
+      "Broken/Not working"
+    ],
+    "sub_question_1": null,
+    "sub_options_1": [],
+    "sub_question_2": null,
+    "sub_options_2": [],
+    "category_id": "d7da8f3f-3219-4869-84c2-59d10e28aa0b",
+    "category_name": "Headlight & Taillight Inspection",
+    "package_id": null,
+    "package_name": "Q&A Category"
+  },
+  {
+    "question_id": "0628220d-d038-4990-8592-355ca7b49f2a",
+    "question_text": "Left taillight condition?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Working & Clear",
+      "Cracked",
+      "Broken/Not working"
+    ],
+    "sub_question_1": null,
+    "sub_options_1": [],
+    "sub_question_2": null,
+    "sub_options_2": [],
+    "category_id": "d7da8f3f-3219-4869-84c2-59d10e28aa0b",
+    "category_name": "Headlight & Taillight Inspection",
+    "package_id": null,
+    "package_name": "Q&A Category"
+  },
+  {
+    "question_id": "9309665a-1644-469b-b74d-6b8d6ace327a",
+    "question_text": "Front windshield condition?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Clear - No damage",
+      "Small chip (repairable)",
+      "Crack (needs replacement)",
+      "Severely damaged"
+    ],
+    "sub_question_1": null,
+    "sub_options_1": [],
+    "sub_question_2": null,
+    "sub_options_2": [],
+    "category_id": "e0bb3ed1-01ce-4d42-82c2-644606648ff6",
+    "category_name": "Windshield & Glass Inspection",
+    "package_id": null,
+    "package_name": "Q&A Category"
+  },
+  {
+    "question_id": "e896f4fb-044a-4809-9654-353973b6535c",
+    "question_text": "Rear windshield condition?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Clear - No damage",
+      "Small chip",
+      "Cracked",
+      "Severely damaged"
+    ],
+    "sub_question_1": null,
+    "sub_options_1": [],
+    "sub_question_2": null,
+    "sub_options_2": [],
+    "category_id": "e0bb3ed1-01ce-4d42-82c2-644606648ff6",
+    "category_name": "Windshield & Glass Inspection",
+    "package_id": null,
+    "package_name": "Q&A Category"
+  },
+  {
+    "question_id": "c1251a78-1350-46ed-90c5-46917c6c6954",
+    "question_text": "Right side ORVM (mirror) condition?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Working properly",
+      "Glass cracked/broken",
+      "Motor not working",
+      "Entire assembly damaged"
+    ],
+    "sub_question_1": null,
+    "sub_options_1": [],
+    "sub_question_2": null,
+    "sub_options_2": [],
+    "category_id": "e0bb3ed1-01ce-4d42-82c2-644606648ff6",
+    "category_name": "Windshield & Glass Inspection",
+    "package_id": null,
+    "package_name": "Q&A Category"
+  },
+  {
+    "question_id": "bbbcf61a-580b-49f9-b19a-57933b8bef2f",
+    "question_text": "Left side ORVM (mirror) condition?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Working properly",
+      "Glass cracked/broken",
+      "Motor not working",
+      "Entire assembly damaged"
+    ],
+    "sub_question_1": null,
+    "sub_options_1": [],
+    "sub_question_2": null,
+    "sub_options_2": [],
+    "category_id": "e0bb3ed1-01ce-4d42-82c2-644606648ff6",
+    "category_name": "Windshield & Glass Inspection",
+    "package_id": null,
+    "package_name": "Q&A Category"
+  },
+  {
+    "question_id": "e33cc15b-6781-4dad-8acd-92b63f0ee8a2",
+    "question_text": "Front Right Tyre condition?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Good tread (>4mm)",
+      "Moderate wear (2-4mm)",
+      "Low tread (<2mm)",
+      "Needs immediate replacement"
+    ],
+    "sub_question_1": null,
+    "sub_options_1": [],
+    "sub_question_2": null,
+    "sub_options_2": [],
+    "category_id": "6ffe493d-6b73-4b9b-ab7c-ad5774a2c887",
+    "category_name": "Tyre & Wheel Inspection",
+    "package_id": null,
+    "package_name": "Q&A Category"
+  },
+  {
+    "question_id": "8eba3163-4c0e-41f0-a51e-2a930a783534",
+    "question_text": "Front Left Tyre condition?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Good tread (>4mm)",
+      "Moderate wear (2-4mm)",
+      "Low tread (<2mm)",
+      "Needs immediate replacement"
+    ],
+    "sub_question_1": null,
+    "sub_options_1": [],
+    "sub_question_2": null,
+    "sub_options_2": [],
+    "category_id": "6ffe493d-6b73-4b9b-ab7c-ad5774a2c887",
+    "category_name": "Tyre & Wheel Inspection",
+    "package_id": null,
+    "package_name": "Q&A Category"
+  },
+  {
+    "question_id": "f13e3695-ffab-4a92-a83a-d69c73a2fc93",
+    "question_text": "Rear Right Tyre condition?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Good tread (>4mm)",
+      "Moderate wear (2-4mm)",
+      "Low tread (<2mm)",
+      "Needs immediate replacement"
+    ],
+    "sub_question_1": null,
+    "sub_options_1": [],
+    "sub_question_2": null,
+    "sub_options_2": [],
+    "category_id": "6ffe493d-6b73-4b9b-ab7c-ad5774a2c887",
+    "category_name": "Tyre & Wheel Inspection",
+    "package_id": null,
+    "package_name": "Q&A Category"
+  },
+  {
+    "question_id": "ac19381b-a235-44ea-90bd-5d62189da073",
+    "question_text": "Rear Left Tyre condition?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Good tread (>4mm)",
+      "Moderate wear (2-4mm)",
+      "Low tread (<2mm)",
+      "Needs immediate replacement"
+    ],
+    "sub_question_1": null,
+    "sub_options_1": [],
+    "sub_question_2": null,
+    "sub_options_2": [],
+    "category_id": "6ffe493d-6b73-4b9b-ab7c-ad5774a2c887",
+    "category_name": "Tyre & Wheel Inspection",
+    "package_id": null,
+    "package_name": "Q&A Category"
+  },
+  {
+    "question_id": "42e007a5-fc8a-476f-b16d-0f24f33b190b",
+    "question_text": "Are there any damaged alloy wheels?",
+    "question_type": "multiple_choice",
+    "options": [
+      "All wheels in good condition",
+      "Minor curb rash",
+      "Bent/cracked wheel",
+      "Multiple wheels damaged"
+    ],
+    "sub_question_1": null,
+    "sub_options_1": [],
+    "sub_question_2": null,
+    "sub_options_2": [],
+    "category_id": "6ffe493d-6b73-4b9b-ab7c-ad5774a2c887",
+    "category_name": "Tyre & Wheel Inspection",
+    "package_id": null,
+    "package_name": "Q&A Category"
+  },
+  {
+    "question_id": "a69ee7f7-3bc2-4c92-ae45-124988d5fc55",
+    "question_text": "Front brake pad condition?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Good (>50% remaining)",
+      "Moderate wear (25-50%)",
+      "Low (<25% - replace soon)",
+      "Needs immediate replacement"
+    ],
+    "sub_question_1": null,
+    "sub_options_1": [],
+    "sub_question_2": null,
+    "sub_options_2": [],
+    "category_id": "9aa7c410-cba9-428f-9f1e-eca5fe11a2d9",
+    "category_name": "Brake System Inspection",
+    "package_id": null,
+    "package_name": "Q&A Category"
+  },
+  {
+    "question_id": "872541f1-f06b-4423-9ca7-6153dc71e946",
+    "question_text": "Rear brake pad condition?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Good (>50% remaining)",
+      "Moderate wear (25-50%)",
+      "Low (<25% - replace soon)",
+      "Needs immediate replacement"
+    ],
+    "sub_question_1": null,
+    "sub_options_1": [],
+    "sub_question_2": null,
+    "sub_options_2": [],
+    "category_id": "9aa7c410-cba9-428f-9f1e-eca5fe11a2d9",
+    "category_name": "Brake System Inspection",
+    "package_id": null,
+    "package_name": "Q&A Category"
+  },
+  {
+    "question_id": "f7cc6d0e-0f60-4889-9b95-3204adae5f1b",
+    "question_text": "Front brake disc condition?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Good condition",
+      "Slight scoring (can be resurfaced)",
+      "Warped/grooved (needs replacement)",
+      "Severely damaged"
+    ],
+    "sub_question_1": null,
+    "sub_options_1": [],
+    "sub_question_2": null,
+    "sub_options_2": [],
+    "category_id": "9aa7c410-cba9-428f-9f1e-eca5fe11a2d9",
+    "category_name": "Brake System Inspection",
+    "package_id": null,
+    "package_name": "Q&A Category"
+  },
+  {
+    "question_id": "54cbe026-9d7e-4557-9750-75fa8370b861",
+    "question_text": "Battery condition?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Good - holding charge",
+      "Weak - may need replacement soon",
+      "Dead - needs replacement"
+    ],
+    "sub_question_1": null,
+    "sub_options_1": [],
+    "sub_question_2": null,
+    "sub_options_2": [],
+    "category_id": "965699af-a790-4096-bb18-7554db37db87",
+    "category_name": "Electrical & Battery Inspection",
+    "package_id": null,
+    "package_name": "Q&A Category"
+  },
+  {
+    "question_id": "0cc3f6cf-7a55-402a-a7c3-4f03019c4ba6",
+    "question_text": "Starter motor condition?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Starting smoothly",
+      "Slow cranking",
+      "Intermittent issues",
+      "Not working"
+    ],
+    "sub_question_1": null,
+    "sub_options_1": [],
+    "sub_question_2": null,
+    "sub_options_2": [],
+    "category_id": "965699af-a790-4096-bb18-7554db37db87",
+    "category_name": "Electrical & Battery Inspection",
+    "package_id": null,
+    "package_name": "Q&A Category"
+  },
+  {
+    "question_id": "4ca9227f-6a25-4a3e-b2fd-13534a3cde7d",
+    "question_text": "AC cooling performance?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Cooling well",
+      "Reduced cooling",
+      "Not cooling at all"
+    ],
+    "sub_question_1": null,
+    "sub_options_1": [],
+    "sub_question_2": null,
+    "sub_options_2": [],
+    "category_id": "ebb26206-fbbe-4422-ad97-5465e327d351",
+    "category_name": "AC & Cooling Inspection",
+    "package_id": null,
+    "package_name": "Q&A Category"
+  },
+  {
+    "question_id": "2338be67-ca5e-49b5-a46c-b2132f0d34dd",
+    "question_text": "Is there any coolant leak from radiator?",
+    "question_type": "multiple_choice",
+    "options": [
+      "No leaks",
+      "Minor seepage",
+      "Active leak - needs attention"
+    ],
+    "sub_question_1": null,
+    "sub_options_1": [],
+    "sub_question_2": null,
+    "sub_options_2": [],
+    "category_id": "ebb26206-fbbe-4422-ad97-5465e327d351",
+    "category_name": "AC & Cooling Inspection",
+    "package_id": null,
+    "package_name": "Q&A Category"
+  },
+  {
+    "question_id": "ab05508f-15ae-4fea-8e9e-5bedd6686053",
+    "question_text": "Silencer/Muffler condition?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Good - no noise",
+      "Slight rattle",
+      "Loud exhaust noise",
+      "Damaged/rusted through"
+    ],
+    "sub_question_1": null,
+    "sub_options_1": [],
+    "sub_question_2": null,
+    "sub_options_2": [],
+    "category_id": "1515c77c-f6e0-4421-8e9f-a1f495de7bdf",
+    "category_name": "Exhaust System Inspection",
+    "package_id": null,
+    "package_name": "Q&A Category"
+  },
+  {
+    "question_id": "201a8797-d816-4914-9354-4ab6a4106c61",
+    "question_text": "Engine oil condition?",
+    "question_type": "multiple_choice",
+    "options": [
+      "Clean - recently changed",
+      "Moderate - due for change soon",
+      "Dirty - needs immediate change"
+    ],
+    "sub_question_1": null,
+    "sub_options_1": [],
+    "sub_question_2": null,
+    "sub_options_2": [],
+    "category_id": "5ccc65ca-d2b7-4914-938f-35c963a9d518",
+    "category_name": "Engine Oil & Service Inspection",
+    "package_id": null,
+    "package_name": "Q&A Category"
+  }
+]
