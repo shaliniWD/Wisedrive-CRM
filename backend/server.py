@@ -7994,82 +7994,232 @@ async def publish_inspection_report(
         sort=[("published_at", -1)]
     )
     
-    # Capture current state for change detection
+    # Capture COMPREHENSIVE current state for change detection
+    # This tracks ALL editable fields in the LiveProgressModal
     current_state = {
-        "ai_insights": inspection.get("ai_insights"),
-        "repairs": inspection.get("repairs", []),
+        # Customer Info
+        "customer_name": inspection.get("customer_name"),
+        "customer_mobile": inspection.get("customer_mobile"),
+        "customer_email": inspection.get("customer_email"),
+        
+        # Vehicle Info
+        "car_number": inspection.get("car_number"),
+        "vehicle_make": inspection.get("vehicle_make"),
+        "vehicle_model": inspection.get("vehicle_model"),
+        "vehicle_year": inspection.get("vehicle_year"),
+        "fuel_type": inspection.get("fuel_type"),
+        "transmission": inspection.get("transmission"),
+        "vehicle_colour": inspection.get("vehicle_colour"),
+        "engine_cc": inspection.get("engine_cc"),
+        "kms_driven": inspection.get("kms_driven"),
+        "owners": inspection.get("owners"),
+        "car_type": inspection.get("car_type"),
+        
+        # Condition Ratings
         "engine_condition": inspection.get("engine_condition"),
         "exterior_condition": inspection.get("exterior_condition"),
         "interior_condition": inspection.get("interior_condition"),
         "transmission_condition": inspection.get("transmission_condition"),
+        
+        # Assessment
         "overall_rating": inspection.get("overall_rating"),
+        "recommended_to_buy": inspection.get("recommended_to_buy"),
+        "market_value_min": inspection.get("market_value_min"),
+        "market_value_max": inspection.get("market_value_max"),
+        "assessment_summary": inspection.get("assessment_summary"),
+        "key_highlights": inspection.get("key_highlights", []),
+        
+        # Key Flags
+        "accident_history": inspection.get("accident_history"),
+        "flood_damage": inspection.get("flood_damage"),
+        "dents_scratches": inspection.get("dents_scratches"),
+        
+        # Insurance
+        "insurance_status": inspection.get("insurance_status"),
+        "insurer_name": inspection.get("insurer_name"),
+        "policy_number": inspection.get("policy_number"),
+        "insurance_expiry": inspection.get("insurance_expiry"),
+        "policy_type": inspection.get("policy_type"),
+        "idv_value": inspection.get("idv_value"),
+        
+        # Repairs
+        "repairs": inspection.get("repairs", []),
+        "total_repair_cost_min": inspection.get("total_repair_cost_min"),
+        "total_repair_cost_max": inspection.get("total_repair_cost_max"),
+        
+        # RTO Data
+        "registration_date": inspection.get("registration_date"),
+        "registration_validity": inspection.get("registration_validity"),
+        "fitness_validity": inspection.get("fitness_validity"),
+        "tax_validity": inspection.get("tax_validity"),
+        "hypothecation": inspection.get("hypothecation"),
+        "rto_blacklist": inspection.get("rto_blacklist"),
+        "challan_pending": inspection.get("challan_pending"),
+        
+        # AI & Technical Data
+        "ai_insights": inspection.get("ai_insights"),
         "vaahan_data": inspection.get("vaahan_data"),
         "inspection_answers": inspection.get("inspection_answers", {}),
         "market_price_research": inspection.get("market_price_research"),
         "obd_data": inspection.get("obd_data")
     }
     
-    # Calculate changes from previous publish
+    # Calculate changes from previous publish - COMPREHENSIVE
     changes = []
     if previous_publish:
         prev_state = previous_publish.get("state_snapshot", {})
         
-        # Check AI insights changes
-        if current_state.get("ai_insights") != prev_state.get("ai_insights"):
-            changes.append({"field": "AI Analysis", "type": "updated", "details": "AI insights modified"})
+        # Field mappings for readable names
+        field_labels = {
+            # Customer Info
+            "customer_name": "Customer Name",
+            "customer_mobile": "Customer Mobile",
+            "customer_email": "Customer Email",
+            
+            # Vehicle Info
+            "car_number": "Registration Number",
+            "vehicle_make": "Vehicle Make",
+            "vehicle_model": "Vehicle Model",
+            "vehicle_year": "Manufacturing Year",
+            "fuel_type": "Fuel Type",
+            "transmission": "Transmission",
+            "vehicle_colour": "Vehicle Color",
+            "engine_cc": "Engine CC",
+            "kms_driven": "Kilometers Driven",
+            "owners": "Number of Owners",
+            "car_type": "Car Type",
+            
+            # Condition Ratings
+            "engine_condition": "Engine Condition",
+            "exterior_condition": "Exterior Condition",
+            "interior_condition": "Interior Condition",
+            "transmission_condition": "Transmission Condition",
+            
+            # Assessment
+            "overall_rating": "Overall Rating",
+            "recommended_to_buy": "Buy Recommendation",
+            "market_value_min": "Market Value (Min)",
+            "market_value_max": "Market Value (Max)",
+            "assessment_summary": "Assessment Summary",
+            
+            # Key Flags
+            "accident_history": "Accident History",
+            "flood_damage": "Flood Damage",
+            "dents_scratches": "Dents & Scratches",
+            
+            # Insurance
+            "insurance_status": "Insurance Status",
+            "insurer_name": "Insurer Name",
+            "policy_number": "Policy Number",
+            "insurance_expiry": "Insurance Expiry",
+            "policy_type": "Policy Type",
+            "idv_value": "IDV Value",
+            
+            # RTO Data
+            "registration_date": "Registration Date",
+            "registration_validity": "Registration Validity",
+            "fitness_validity": "Fitness Validity",
+            "tax_validity": "Tax Validity",
+            "hypothecation": "Hypothecation",
+            "rto_blacklist": "RTO Blacklist Status",
+            "challan_pending": "Pending Challans"
+        }
         
-        # Check condition ratings
-        for cond in ["engine_condition", "exterior_condition", "interior_condition", "transmission_condition"]:
-            if current_state.get(cond) != prev_state.get(cond):
-                field_name = cond.replace("_condition", "").title() + " Condition"
-                changes.append({
-                    "field": field_name, 
-                    "type": "updated", 
-                    "details": f"Changed from '{prev_state.get(cond, 'N/A')}' to '{current_state.get(cond, 'N/A')}'"
-                })
+        # Check all simple fields
+        for field, label in field_labels.items():
+            curr_val = current_state.get(field)
+            prev_val = prev_state.get(field)
+            
+            # Skip if both are None/empty
+            if curr_val is None and prev_val is None:
+                continue
+            if curr_val == "" and prev_val == "":
+                continue
+            if curr_val == prev_val:
+                continue
+                
+            # Format values for display
+            def format_val(v):
+                if v is None or v == "":
+                    return "Not set"
+                if isinstance(v, bool):
+                    return "Yes" if v else "No"
+                if isinstance(v, (int, float)):
+                    if field in ["market_value_min", "market_value_max", "idv_value", "total_repair_cost_min", "total_repair_cost_max"]:
+                        return f"₹{v:,.0f}"
+                    return str(v)
+                return str(v)
+            
+            changes.append({
+                "field": label,
+                "type": "updated",
+                "details": f"'{format_val(prev_val)}' → '{format_val(curr_val)}'"
+            })
         
-        # Check repairs changes
+        # Check key highlights (array)
+        prev_highlights = prev_state.get("key_highlights", [])
+        curr_highlights = current_state.get("key_highlights", [])
+        if prev_highlights != curr_highlights:
+            added = len(curr_highlights) - len(prev_highlights)
+            if added > 0:
+                changes.append({"field": "Key Highlights", "type": "updated", "details": f"Added {added} new highlight(s)"})
+            elif added < 0:
+                changes.append({"field": "Key Highlights", "type": "updated", "details": f"Removed {abs(added)} highlight(s)"})
+            else:
+                changes.append({"field": "Key Highlights", "type": "updated", "details": "Highlights modified"})
+        
+        # Check repairs (array)
         prev_repairs = prev_state.get("repairs", [])
         curr_repairs = current_state.get("repairs", [])
         if len(curr_repairs) != len(prev_repairs):
-            changes.append({
-                "field": "Repairs", 
-                "type": "updated", 
-                "details": f"Repair items changed from {len(prev_repairs)} to {len(curr_repairs)}"
-            })
+            diff = len(curr_repairs) - len(prev_repairs)
+            if diff > 0:
+                changes.append({"field": "Repairs", "type": "updated", "details": f"Added {diff} repair item(s)"})
+            else:
+                changes.append({"field": "Repairs", "type": "updated", "details": f"Removed {abs(diff)} repair item(s)"})
+        elif curr_repairs != prev_repairs:
+            changes.append({"field": "Repairs", "type": "updated", "details": "Repair details modified"})
         
-        # Check overall rating
-        if current_state.get("overall_rating") != prev_state.get("overall_rating"):
-            changes.append({
-                "field": "Overall Rating", 
-                "type": "updated", 
-                "details": f"Changed from '{prev_state.get('overall_rating', 'N/A')}' to '{current_state.get('overall_rating', 'N/A')}'"
-            })
+        # Check AI insights
+        if current_state.get("ai_insights") != prev_state.get("ai_insights"):
+            changes.append({"field": "AI Analysis", "type": "updated", "details": "AI insights regenerated or modified"})
         
         # Check Vaahan data
         if current_state.get("vaahan_data") != prev_state.get("vaahan_data"):
-            changes.append({"field": "Vehicle RTO Data", "type": "updated", "details": "Vaahan data modified"})
+            changes.append({"field": "Vehicle RTO Data", "type": "updated", "details": "Vaahan data refreshed"})
         
         # Check Q&A answers
         prev_answers = prev_state.get("inspection_answers", {})
         curr_answers = current_state.get("inspection_answers", {})
-        if len(curr_answers) != len(prev_answers):
-            changes.append({
-                "field": "Q&A Answers", 
-                "type": "updated", 
-                "details": f"Q&A answers changed from {len(prev_answers)} to {len(curr_answers)}"
-            })
+        if curr_answers != prev_answers:
+            answer_diff = len(curr_answers) - len(prev_answers)
+            if answer_diff != 0:
+                changes.append({"field": "Q&A Answers", "type": "updated", "details": f"Answer count changed by {answer_diff}"})
+            else:
+                changes.append({"field": "Q&A Answers", "type": "updated", "details": "Some answers modified"})
+        
+        # Check OBD data
+        if current_state.get("obd_data") != prev_state.get("obd_data"):
+            changes.append({"field": "OBD Scan Data", "type": "updated", "details": "OBD data updated"})
+        
+        # Check market research
+        if current_state.get("market_price_research") != prev_state.get("market_price_research"):
+            changes.append({"field": "Market Price Research", "type": "updated", "details": "Market research data updated"})
+        
+        # If no changes detected, note that
+        if not changes:
+            changes.append({"field": "Report", "type": "republished", "details": "No data changes - report republished"})
     else:
         changes.append({"field": "Report", "type": "created", "details": "Initial report publish"})
     
-    # Create publish history entry
+    # Create publish history entry with user comment
     publish_entry = {
         "id": str(uuid.uuid4()),
         "inspection_id": inspection_id,
         "published_at": datetime.now(timezone.utc).isoformat(),
         "published_by": current_user["id"],
         "published_by_name": current_user.get("name", current_user.get("email", "Unknown")),
-        "notes": request_data.notes,
+        "user_comment": request_data.notes,  # Renamed from notes to user_comment for clarity
         "changes": changes,
         "state_snapshot": current_state,
         "short_url": short_url,
