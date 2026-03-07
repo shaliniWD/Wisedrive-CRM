@@ -946,12 +946,20 @@ export default function LiveProgressModal({
     const carType = (inspection?.car_type || 'sedan').toLowerCase();
     const brand = inspection?.car_make || inspection?.vehicle_make || '';
     
-    // Also check inspection_answers from the inspection document
+    // Get inspection_answers from the inspection document (keyed by question ID)
     const inspectionAnswers = inspection?.inspection_answers || {};
+    
+    // Build a map of question IDs to question text from inspectionQuestions
+    const questionTextMap = {};
+    inspectionQuestions.forEach(q => {
+      if (q.id && q.question) {
+        questionTextMap[q.id] = q.question;
+      }
+    });
     
     // Helper: Get price for a part based on car type and brand
     const getPartPrice = (part, action = 'repair') => {
-      if (!part) return 0;
+      if (!part) return { price: 0, labor: 0, total: 0 };
       
       // Check for brand-specific override first
       const brandOverride = part.brand_overrides?.find(
@@ -977,16 +985,15 @@ export default function LiveProgressModal({
     const extractAnswerValue = (answerData) => {
       if (!answerData) return '';
       if (typeof answerData === 'string') {
-        // Skip media references
         if (answerData.startsWith('media_ref:')) return '';
         return answerData;
       }
       if (typeof answerData === 'object') {
-        // Handle {answer: {selection: 'value'}} format
         const answer = answerData.answer || answerData;
         if (typeof answer === 'object') {
           return answer.selection || answer.value || '';
         }
+        if (typeof answer === 'string' && answer.startsWith('media_ref:')) return '';
         return String(answer);
       }
       return String(answerData);
@@ -994,6 +1001,7 @@ export default function LiveProgressModal({
     
     // Helper: Check if answer matches rule condition
     const checkCondition = (answer, rule) => {
+      if (!answer) return false;
       const answerLower = answer.toLowerCase().trim();
       const conditionValue = (rule.condition_value || '').toLowerCase().trim();
       const conditionType = rule.condition_type || 'CONTAINS';
@@ -1014,44 +1022,125 @@ export default function LiveProgressModal({
       }
     };
     
-    // Strategy 1: Match rules by question_text (primary method since IDs may not match)
-    repairRules.forEach(rule => {
-      if (!rule.is_active) return;
+    // Helper: Normalize text for comparison
+    const normalizeText = (text) => {
+      return (text || '').toLowerCase()
+        .replace(/[^a-z0-9\s]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    };
+    
+    // Helper: Check if two questions are similar (fuzzy match)
+    const questionsMatch = (text1, text2) => {
+      const norm1 = normalizeText(text1);
+      const norm2 = normalizeText(text2);
       
-      const ruleQuestionText = (rule.question_text || '').toLowerCase();
-      if (!ruleQuestionText) return;
+      if (!norm1 || !norm2) return false;
       
-      // Search through categories for matching questions
-      categories.forEach(cat => {
-        (cat.questions || []).forEach(q => {
-          if (!q.answer) return;
+      // Exact match
+      if (norm1 === norm2) return true;
+      
+      // Check significant word overlap
+      const words1 = norm1.split(' ').filter(w => w.length > 3);
+      const words2 = norm2.split(' ').filter(w => w.length > 3);
+      
+      if (words1.length === 0 || words2.length === 0) return false;
+      
+      const matchingWords = words1.filter(w1 => 
+        words2.some(w2 => w1.includes(w2) || w2.includes(w1))
+      );
+      
+      // Require at least 2 matching words or 50% overlap
+      return matchingWords.length >= 2 || matchingWords.length >= Math.min(words1.length, words2.length) * 0.5;
+    };
+    
+    // Strategy 1: Match using inspection_answers + inspectionQuestions (most reliable)
+    Object.entries(inspectionAnswers).forEach(([questionId, answerData]) => {
+      const answerValue = extractAnswerValue(answerData);
+      if (!answerValue) return;
+      
+      // Get question text from our map or from the answer data itself
+      const questionText = questionTextMap[questionId] || answerData?.question || '';
+      
+      // Find rules that match this question
+      repairRules.forEach(rule => {
+        if (!rule.is_active) return;
+        
+        let isMatch = false;
+        
+        // Try exact question ID match
+        if (rule.question_id && rule.question_id === questionId) {
+          isMatch = true;
+        }
+        // Try text matching
+        else if (rule.question_text && questionText) {
+          isMatch = questionsMatch(rule.question_text, questionText);
+        }
+        
+        if (!isMatch) return;
+        
+        // Check if answer matches condition
+        if (checkCondition(answerValue, rule)) {
+          const part = repairParts.find(p => p.id === rule.part_id);
+          if (part) {
+            const actionType = rule.action_type || 'REPAIR';
+            const priceInfo = getPartPrice(part, actionType.toLowerCase());
+            
+            // Avoid duplicates
+            const isDuplicate = repairs.some(r => 
+              r.part_id === part.id && r.rule_id === rule.id
+            );
+            
+            if (!isDuplicate && priceInfo.total > 0) {
+              repairs.push({
+                part_id: part.id,
+                part_name: part.name,
+                part_number: part.part_number,
+                category: part.category,
+                category_name: 'From Q&A',
+                action: actionType.toUpperCase(),
+                question_id: questionId,
+                question: questionText || rule.question_text,
+                answer: answerValue,
+                condition_matched: `${rule.condition_type}: ${rule.condition_value}`,
+                price: priceInfo.price,
+                labor: priceInfo.labor,
+                cost: priceInfo.total,
+                priority: rule.priority || 'normal',
+                rule_id: rule.id
+              });
+            }
+          }
+        }
+      });
+    });
+    
+    // Strategy 2: Also check liveProgressData.categories for questions (backup)
+    categories.forEach(cat => {
+      (cat.questions || []).forEach(q => {
+        if (!q.answer) return;
+        
+        const answerValue = extractAnswerValue(q.answer);
+        if (!answerValue) return;
+        
+        const qText = q.question || q.text || '';
+        
+        repairRules.forEach(rule => {
+          if (!rule.is_active) return;
           
-          // Get question text - try multiple sources
-          const qText = (q.question || q.text || '').toLowerCase();
-          
-          // Check if this question matches the rule (by text similarity)
           let isMatch = false;
           
-          // Try exact ID match first
+          // Try exact ID match
           if (rule.question_id && q.id && rule.question_id === q.id) {
             isMatch = true;
           }
-          // Try text matching - check if rule question is similar to this question
-          else if (qText && ruleQuestionText) {
-            // Check for significant text overlap
-            const ruleWords = ruleQuestionText.split(/\s+/).filter(w => w.length > 3);
-            const qWords = qText.split(/\s+/).filter(w => w.length > 3);
-            const matchingWords = ruleWords.filter(w => qWords.some(qw => qw.includes(w) || w.includes(qw)));
-            isMatch = matchingWords.length >= Math.min(2, ruleWords.length * 0.5);
+          // Try text matching
+          else if (rule.question_text && qText) {
+            isMatch = questionsMatch(rule.question_text, qText);
           }
           
           if (!isMatch) return;
           
-          // Extract answer value
-          const answerValue = extractAnswerValue(q.answer);
-          if (!answerValue) return;
-          
-          // Check if answer matches the condition
           if (checkCondition(answerValue, rule)) {
             const part = repairParts.find(p => p.id === rule.part_id);
             if (part) {
@@ -1060,7 +1149,7 @@ export default function LiveProgressModal({
               
               // Avoid duplicates
               const isDuplicate = repairs.some(r => 
-                r.part_id === part.id && r.question_text === rule.question_text
+                r.part_id === part.id && r.rule_id === rule.id
               );
               
               if (!isDuplicate && priceInfo.total > 0) {
@@ -1069,11 +1158,10 @@ export default function LiveProgressModal({
                   part_name: part.name,
                   part_number: part.part_number,
                   category: part.category,
-                  category_name: cat.category_name || cat.name,
+                  category_name: cat.category_name || cat.name || 'Unknown',
                   action: actionType.toUpperCase(),
-                  question_id: q.id || rule.question_id,
+                  question_id: q.id,
                   question: qText || rule.question_text,
-                  question_text: rule.question_text,
                   answer: answerValue,
                   condition_matched: `${rule.condition_type}: ${rule.condition_value}`,
                   price: priceInfo.price,
@@ -1094,7 +1182,7 @@ export default function LiveProgressModal({
     repairs.sort((a, b) => (priorityOrder[a.priority] || 2) - (priorityOrder[b.priority] || 2));
     
     return repairs;
-  }, [repairRules, repairParts, liveProgressData?.categories, inspection]);
+  }, [repairRules, repairParts, inspectionQuestions, liveProgressData?.categories, inspection]);
   
   // Save all changes
   const saveChanges = async () => {
