@@ -990,8 +990,40 @@ export default function LiveProgressModal({
         pricing = part.sedan || {};
       }
       
-      const price = action === 'replace' ? (pricing.replace_price || 0) : (pricing.repair_price || 0);
-      const labor = action === 'replace' ? (pricing.replace_labor || 0) : (pricing.repair_labor || 0);
+      // Handle different action types
+      let price = 0;
+      let labor = 0;
+      
+      switch (action.toLowerCase()) {
+        case 'repair':
+          // Part cost only (repair price)
+          price = pricing.repair_price || 0;
+          labor = 0;
+          break;
+        case 'labor':
+          // Labor cost only
+          price = 0;
+          labor = pricing.repair_labor || 0;
+          break;
+        case 'both':
+          // Both part and labor
+          price = pricing.repair_price || 0;
+          labor = pricing.repair_labor || 0;
+          break;
+        case 'replace':
+          // Replace costs (for backward compatibility)
+          price = pricing.replace_price || 0;
+          labor = pricing.replace_labor || 0;
+          break;
+        case 'inspect_further':
+          // No cost, just flag for inspection
+          price = 0;
+          labor = 0;
+          break;
+        default:
+          price = pricing.repair_price || 0;
+          labor = pricing.repair_labor || 0;
+      }
       
       return { price, labor, total: price + labor };
     };
