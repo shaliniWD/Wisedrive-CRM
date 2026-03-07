@@ -109,8 +109,13 @@ The application is a full-stack CRM for vehicle loans and inspections. Key featu
   - New "Report" tab added with Preview Report and Publish Report buttons
   - Preview opens report in new browser tab
   - Publish sends WhatsApp notification to customer with report link
-  - Publish History logs all publishes with timestamps, user, notes
-  - Change detection: tracks what changed between each publish (AI Analysis, Conditions, Repairs, Ratings, Q&A)
+  - **Internal Audit Log** (NOT visible to customers):
+    - Renamed from "Publish History" to "Internal Audit Log"
+    - Shows 🔒 "Internal Only" warning badge
+    - Logs all publishes with timestamps, user, comments
+    - Comprehensive change detection: 30+ fields tracked including Customer info, Vehicle details, Conditions, Insurance, RTO, etc.
+    - Stores raw old/new values for audit compliance
+    - User comments are internal-only notes
   - Stats section shows: Total Publishes count, Last Published date, Status
   - ✅ **VERIFIED** - Backend: 14/14 tests, Frontend: 12/12 features (100% pass rate)
 
