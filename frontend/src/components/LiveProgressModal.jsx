@@ -940,53 +940,150 @@ export default function LiveProgressModal({
     
     const repairs = [];
     const categories = liveProgressData?.categories || [];
-    const carType = inspection?.car_type || 'sedan'; // Default to sedan
+    const carType = (inspection?.car_type || 'sedan').toLowerCase();
     const brand = inspection?.car_make || inspection?.vehicle_make || '';
+    
+    // Helper: Get price for a part based on car type and brand
+    const getPartPrice = (part, action = 'repair') => {
+      if (!part) return 0;
+      
+      // Check for brand-specific override first
+      const brandOverride = part.brand_overrides?.find(
+        bo => bo.brand?.toLowerCase() === brand?.toLowerCase()
+      );
+      
+      let pricing;
+      if (brandOverride && brandOverride[carType]) {
+        pricing = brandOverride[carType];
+      } else if (part[carType]) {
+        pricing = part[carType];
+      } else {
+        pricing = part.sedan || {};
+      }
+      
+      const price = action === 'replace' ? (pricing.replace_price || 0) : (pricing.repair_price || 0);
+      const labor = action === 'replace' ? (pricing.replace_labor || 0) : (pricing.repair_labor || 0);
+      
+      return { price, labor, total: price + labor };
+    };
     
     // Iterate through all answered questions and check rules
     categories.forEach(cat => {
       (cat.questions || []).forEach(q => {
         if (!q.answer) return;
         
-        // Find matching rules for this question
-        const matchingRules = repairRules.filter(rule => 
-          rule.question_text?.toLowerCase().includes(q.question?.toLowerCase().substring(0, 30)) &&
-          rule.is_active
-        );
+        // Find matching rules for this question (by ID or text match)
+        const matchingRules = repairRules.filter(rule => {
+          // Try exact question ID match first
+          if (rule.question_id && q.id && rule.question_id === q.id) {
+            return rule.is_active;
+          }
+          // Fallback to text matching
+          if (rule.question_text && q.question) {
+            const ruleText = rule.question_text.toLowerCase();
+            const qText = q.question.toLowerCase();
+            return (ruleText.includes(qText.substring(0, 30)) || qText.includes(ruleText.substring(0, 30))) && rule.is_active;
+          }
+          return false;
+        });
         
         matchingRules.forEach(rule => {
-          const answer = String(q.answer).toLowerCase();
-          const conditionValue = (rule.condition_value || '').toLowerCase();
+          const answer = String(q.answer).toLowerCase().trim();
           
-          let matches = false;
-          switch (rule.condition_type) {
-            case 'EQUALS':
-              matches = answer === conditionValue;
-              break;
-            case 'CONTAINS':
-              matches = answer.includes(conditionValue);
-              break;
-            default:
-              matches = answer.includes(conditionValue);
+          // Check all conditions in the rule
+          const conditions = rule.conditions || [];
+          let shouldTriggerRepair = false;
+          let actionType = 'repair';
+          let priority = 'normal';
+          
+          conditions.forEach(cond => {
+            const condition = cond.condition || cond;
+            const action = cond.action || {};
+            const conditionValue = String(condition.value || '').toLowerCase().trim();
+            const operator = condition.operator || 'equals';
+            
+            let matches = false;
+            switch (operator) {
+              case 'equals':
+                matches = answer === conditionValue;
+                break;
+              case 'contains':
+                matches = answer.includes(conditionValue);
+                break;
+              case 'greater_than':
+                matches = parseFloat(answer) > parseFloat(conditionValue);
+                break;
+              case 'less_than':
+                matches = parseFloat(answer) < parseFloat(conditionValue);
+                break;
+              case 'greater_than_or_equal':
+                matches = parseFloat(answer) >= parseFloat(conditionValue);
+                break;
+              case 'less_than_or_equal':
+                matches = parseFloat(answer) <= parseFloat(conditionValue);
+                break;
+              case 'between':
+                const [min, max] = Array.isArray(condition.value) ? condition.value : [0, 0];
+                matches = parseFloat(answer) >= min && parseFloat(answer) <= max;
+                break;
+              default:
+                matches = answer.includes(conditionValue) || answer === conditionValue;
+            }
+            
+            if (matches) {
+              shouldTriggerRepair = true;
+              actionType = action.action_type || 'repair';
+              priority = action.priority || 'normal';
+            }
+          });
+          
+          // Legacy support: check old condition format
+          if (!conditions.length && rule.condition_type && rule.condition_value) {
+            const conditionValue = (rule.condition_value || '').toLowerCase();
+            let matches = false;
+            switch (rule.condition_type) {
+              case 'EQUALS':
+                matches = answer === conditionValue;
+                break;
+              case 'CONTAINS':
+                matches = answer.includes(conditionValue);
+                break;
+              default:
+                matches = answer.includes(conditionValue);
+            }
+            if (matches) {
+              shouldTriggerRepair = true;
+              actionType = rule.action_type || 'repair';
+              priority = rule.priority || 'normal';
+            }
           }
           
-          if (matches) {
+          if (shouldTriggerRepair) {
             const part = repairParts.find(p => p.id === rule.part_id);
             if (part) {
-              const pricing = part[carType.toLowerCase()] || part.sedan || {};
-              const cost = rule.action_type === 'REPLACE' 
-                ? (pricing.replace_price || 0) + (pricing.replace_labor || 0)
-                : (pricing.repair_price || 0) + (pricing.repair_labor || 0);
+              const priceInfo = getPartPrice(part, actionType.toLowerCase());
               
-              if (cost > 0) {
+              // Avoid duplicates
+              const isDuplicate = repairs.some(r => 
+                r.part_id === part.id && r.question_id === q.id
+              );
+              
+              if (!isDuplicate && priceInfo.total > 0) {
                 repairs.push({
+                  part_id: part.id,
                   part_name: part.name,
+                  part_number: part.part_number,
                   category: part.category,
-                  action: rule.action_type,
+                  category_name: cat.category_name || cat.name,
+                  action: actionType.toUpperCase(),
+                  question_id: q.id,
                   question: q.question,
                   answer: q.answer,
-                  cost,
-                  priority: rule.priority || 'normal'
+                  price: priceInfo.price,
+                  labor: priceInfo.labor,
+                  cost: priceInfo.total,
+                  priority: priority,
+                  rule_id: rule.id
                 });
               }
             }
@@ -994,6 +1091,10 @@ export default function LiveProgressModal({
         });
       });
     });
+    
+    // Sort by priority (critical > high > normal > low)
+    const priorityOrder = { critical: 0, high: 1, normal: 2, low: 3 };
+    repairs.sort((a, b) => (priorityOrder[a.priority] || 2) - (priorityOrder[b.priority] || 2));
     
     return repairs;
   }, [repairRules, repairParts, liveProgressData?.categories, inspection]);
