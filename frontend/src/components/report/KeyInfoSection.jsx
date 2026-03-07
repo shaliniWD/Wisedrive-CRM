@@ -95,7 +95,7 @@ const KeyInfoItem = ({ icon: Icon, label, value, status, isBoolean, isCurrency, 
   return content;
 };
 
-export function KeyInfoSection({ data }) {
+export function KeyInfoSection({ data, inspectionCategories }) {
   const { isEditMode } = useEditMode();
   const [insuranceModal, setInsuranceModal] = useState(false);
   const [tyreModal, setTyreModal] = useState(false);
@@ -117,6 +117,18 @@ export function KeyInfoSection({ data }) {
   // Safely access other data
   const insurance = data?.insurance || {};
   const tyreDetails = data?.tyreDetails || { avgLife: 0, tyres: [] };
+
+  // Extract tyre Q&A data from inspection categories
+  const tyreCategory = (inspectionCategories || []).find(cat => 
+    cat.name && (cat.name.toLowerCase().includes('tyre') || cat.name.toLowerCase().includes('tire'))
+  );
+  const tyreQAData = tyreCategory?.details?.map(d => ({
+    question_text: d.question || d.item,
+    media_url: d.media?.url || d.media?.thumbnail,
+    answer: d.answer || d.note,
+    sub_answer_1: d.followUpAnswer || d.note,
+    is_answered: true
+  })) || [];
 
   return (
     <section className="px-4 md:px-0 mt-4 md:mt-6">
