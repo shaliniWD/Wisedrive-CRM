@@ -392,20 +392,11 @@ function transformInspectionToReport(inspection, lead, customer, liveProgressDat
       noc: vaahanData.noc_status || ""
     },
 
-    // OBD Report - from live progress data
-    obdReport: {
-      connected: obdScan.completed || inspection.obd_connected || false,
-      dtcCodes: obdData.raw_codes || inspection.dtc_codes || [],
-      totalErrors: obdData.total_errors || 0,
-      liveData: obdData.live_data || inspection.obd_live_data || [],
-      deviceName: obdData.device_name || "",
-      protocol: obdData.protocol || "",
-      scannedAt: obdData.scanned_at || obdScan.scanned_at || "",
-      vin: obdData.vin || ""
-    },
+    // OBD Report - transformed from live progress data with proper systems structure
+    obdReport: transformedObd,
 
-    // Q&A Categories - from live progress data
-    inspectionCategories: categories.length > 0 ? categories : (inspection.inspection_categories || []),
+    // Q&A Categories - transformed from live progress data with proper details structure
+    inspectionCategories: transformedCategories.length > 0 ? transformedCategories : (inspection.inspection_categories || []),
     categoryRatings: inspection.category_ratings || aiInsights.category_ratings || {},
 
     footer: {
