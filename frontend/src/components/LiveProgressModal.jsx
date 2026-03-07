@@ -980,6 +980,142 @@ export default function LiveProgressModal({
     }));
   };
   
+  // Save repair part/pricing to master data
+  const saveRepairToMaster = async (repair, index) => {
+    try {
+      const carTypeKey = (inspection?.car_type || 'sedan').toLowerCase();
+      
+      if (repair.part_id) {
+        // Existing part - update pricing
+        const existingPart = repairParts.find(p => p.id === repair.part_id);
+        if (!existingPart) {
+          toast.error('Part not found in master data');
+          return;
+        }
+        
+        // Build updated part data with new pricing
+        const updatedPart = { ...existingPart };
+        
+        // Check if this is brand-specific pricing
+        const vehicleBrand = inspection?.vehicle_make || '';
+        if (vehicleBrand) {
+          // Update or add brand-specific override
+          const brandOverrides = updatedPart.brand_overrides || [];
+          const existingOverrideIdx = brandOverrides.findIndex(
+            bo => bo.brand?.toLowerCase() === vehicleBrand.toLowerCase()
+          );
+          
+          const newPricing = {
+            repair_price: repair.price || 0,
+            replace_price: repair.action === 'replace' ? repair.price : (updatedPart[carTypeKey]?.replace_price || 0),
+            repair_labor: repair.labor || 0,
+            replace_labor: repair.action === 'replace' ? repair.labor : (updatedPart[carTypeKey]?.replace_labor || 0)
+          };
+          
+          if (existingOverrideIdx >= 0) {
+            brandOverrides[existingOverrideIdx] = {
+              ...brandOverrides[existingOverrideIdx],
+              brand: vehicleBrand,
+              [carTypeKey]: newPricing
+            };
+          } else {
+            brandOverrides.push({
+              brand: vehicleBrand,
+              [carTypeKey]: newPricing
+            });
+          }
+          updatedPart.brand_overrides = brandOverrides;
+        } else {
+          // Update default pricing for car type
+          updatedPart[carTypeKey] = {
+            repair_price: repair.price || 0,
+            replace_price: repair.action === 'replace' ? repair.price : (updatedPart[carTypeKey]?.replace_price || 0),
+            repair_labor: repair.labor || 0,
+            replace_labor: repair.action === 'replace' ? repair.labor : (updatedPart[carTypeKey]?.replace_labor || 0)
+          };
+        }
+        
+        // Call API to update part
+        await repairsApi.updatePart(repair.part_id, updatedPart);
+        toast.success(`Pricing for "${repair.item}" saved to master`);
+        
+        // Update local repair item to mark as synced
+        updateRepair(index, {
+          ...repair,
+          price_source: vehicleBrand ? `brand:${vehicleBrand}` : `carType:${carTypeKey}`,
+          part_data: updatedPart
+        });
+        
+        // Refresh parts list
+        const partsRes = await repairsApi.getParts();
+        setRepairParts(partsRes.data || []);
+        
+      } else if (repair.item) {
+        // New part - create it in master
+        const newPart = {
+          name: repair.item,
+          category: repair.category || 'Uncategorized',
+          description: `Added from inspection repair`,
+          part_number: repair.part_number || '',
+          hatchback: {
+            repair_price: carTypeKey === 'hatchback' ? (repair.price || 0) : 0,
+            replace_price: 0,
+            repair_labor: carTypeKey === 'hatchback' ? (repair.labor || 0) : 0,
+            replace_labor: 0
+          },
+          sedan: {
+            repair_price: carTypeKey === 'sedan' ? (repair.price || 0) : 0,
+            replace_price: 0,
+            repair_labor: carTypeKey === 'sedan' ? (repair.labor || 0) : 0,
+            replace_labor: 0
+          },
+          suv: {
+            repair_price: carTypeKey === 'suv' ? (repair.price || 0) : 0,
+            replace_price: 0,
+            repair_labor: carTypeKey === 'suv' ? (repair.labor || 0) : 0,
+            replace_labor: 0
+          },
+          brand_overrides: [],
+          is_active: true
+        };
+        
+        // If we have a brand, add brand-specific pricing
+        const vehicleBrand = inspection?.vehicle_make || '';
+        if (vehicleBrand) {
+          newPart.brand_overrides = [{
+            brand: vehicleBrand,
+            [carTypeKey]: {
+              repair_price: repair.price || 0,
+              replace_price: 0,
+              repair_labor: repair.labor || 0,
+              replace_labor: 0
+            }
+          }];
+        }
+        
+        // Call API to create part
+        const result = await repairsApi.createPart(newPart);
+        const createdPart = result.data;
+        toast.success(`New part "${repair.item}" added to master`);
+        
+        // Update local repair item with new part ID
+        updateRepair(index, {
+          ...repair,
+          part_id: createdPart.id,
+          price_source: vehicleBrand ? `brand:${vehicleBrand}` : `carType:${carTypeKey}`,
+          part_data: createdPart
+        });
+        
+        // Refresh parts list
+        const partsRes = await repairsApi.getParts();
+        setRepairParts(partsRes.data || []);
+      }
+    } catch (err) {
+      console.error('Failed to save to master:', err);
+      toast.error(err.response?.data?.detail || 'Failed to save to master data');
+    }
+  };
+  
   // Calculate total repair costs
   const calculateRepairTotals = () => {
     const total = editData.repairs.reduce((sum, r) => sum + (r.estimated_cost || 0), 0);
