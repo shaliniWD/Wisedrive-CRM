@@ -3533,17 +3533,30 @@ export default function LiveProgressModal({
                       </h3>
                       <p className="text-sm text-gray-600 mt-2">
                         Publishing will send the report to the customer via WhatsApp. 
-                        All changes since last publish will be logged.
+                        All changes since last publish will be <strong>automatically detected and logged</strong>.
                       </p>
                       
                       <div className="mt-4">
-                        <Label className="text-sm">Publish Notes (optional)</Label>
+                        <Label className="text-sm font-medium">Your Comment (optional)</Label>
+                        <p className="text-xs text-gray-500 mb-1">Add a personal note about this publish - this will be visible in version history</p>
                         <textarea
                           value={publishNotes}
                           onChange={(e) => setPublishNotes(e.target.value)}
-                          placeholder="Add notes about what changed in this publish..."
+                          placeholder="e.g., 'Updated exterior rating after customer feedback' or 'Final report after repairs verified'"
                           className="w-full mt-1 p-2 border rounded-lg text-sm min-h-[80px] resize-none"
                         />
+                      </div>
+                      
+                      <div className="mt-3 p-3 bg-blue-50 rounded-lg text-sm">
+                        <div className="flex items-start gap-2">
+                          <Info className="h-4 w-4 text-blue-600 mt-0.5" />
+                          <div>
+                            <p className="font-medium text-blue-800">Auto-tracked changes</p>
+                            <p className="text-blue-600 text-xs">
+                              Customer info, vehicle details, condition ratings, repairs, insurance, and all other edits will be automatically recorded.
+                            </p>
+                          </div>
+                        </div>
                       </div>
                       
                       <div className="mt-4 p-3 bg-amber-50 rounded-lg text-sm">
