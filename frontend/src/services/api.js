@@ -163,6 +163,9 @@ export const inspectionsApi = {
   fetchRPP: (id) => axios.post(`${API_URL}/inspections/${id}/fetch-rpp`),
   // Report URL (short URL for customer access)
   getShortUrl: (id) => axios.get(`${API_URL}/inspections/${id}/short-url`),
+  // Publish Report APIs
+  publishReport: (id, data) => axios.post(`${API_URL}/inspections/${id}/publish-report`, data),
+  getPublishHistory: (id) => axios.get(`${API_URL}/inspections/${id}/publish-history`),
 };
 
 // Users API (V2)
