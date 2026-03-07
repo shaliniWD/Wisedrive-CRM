@@ -8507,12 +8507,19 @@ class RepairRuleCreate(BaseModel):
     part_id: str
     question_id: str
     question_text: Optional[str] = None  # For display purposes
+    inspection_category_id: Optional[str] = None  # Category from inspection template
+    inspection_category_name: Optional[str] = None  # Category name for display
     conditions: List[dict]  # [{condition: RepairRuleCondition, action: RepairRuleAction}]
     country_id: Optional[str] = None
     is_active: bool = True
 
 class RepairRuleUpdate(BaseModel):
     """Update repair rule"""
+    part_id: Optional[str] = None
+    question_id: Optional[str] = None
+    question_text: Optional[str] = None
+    inspection_category_id: Optional[str] = None
+    inspection_category_name: Optional[str] = None
     conditions: Optional[List[dict]] = None
     is_active: Optional[bool] = None
 
