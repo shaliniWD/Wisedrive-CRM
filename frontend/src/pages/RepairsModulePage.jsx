@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { repairsApi } from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,7 +20,7 @@ import { toast } from 'sonner';
 import {
   Wrench, Plus, Search, Edit2, Trash2, Loader2, Package,
   DollarSign, Link2, Car, ChevronDown, ChevronRight, Save,
-  X, AlertCircle, CheckCircle, HelpCircle, Settings, Filter
+  X, AlertCircle, CheckCircle, HelpCircle, Settings, Filter, ArrowRight
 } from 'lucide-react';
 
 // Car type options
