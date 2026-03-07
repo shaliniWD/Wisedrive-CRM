@@ -588,6 +588,9 @@ export const repairsApi = {
   updateRule: (id, data) => axios.put(`${API_URL}/repair-rules/${id}`, data),
   deleteRule: (id) => axios.delete(`${API_URL}/repair-rules/${id}`),
   
+  // Inspection Questions (for rule matching)
+  getInspectionQuestions: () => axios.get(`${API_URL}/inspection-qa/questions`),
+  
   // Helper endpoints
   getAvailableQuestions: (countryId) => axios.get(`${API_URL}/repair-rules/available-questions`, { params: { country_id: countryId } }),
   calculateCost: (data) => axios.post(`${API_URL}/repair-parts/calculate-cost`, data),
