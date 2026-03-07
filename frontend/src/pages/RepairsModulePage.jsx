@@ -570,23 +570,25 @@ const RuleConditionRow = ({ condition, index, onChange, onRemove, selectedQuesti
   );
 };
 
-// Grouped Rules View - displays rules grouped by Category then Question
+// Grouped Rules View - displays rules grouped by Inspection Category then Question
 const GroupedRulesView = ({ rules, onEdit, onDelete }) => {
   const [expandedCategories, setExpandedCategories] = useState({});
   const [expandedQuestions, setExpandedQuestions] = useState({});
 
-  // Group rules by category_name, then by question_text
+  // Group rules by inspection_category_name, then by question_text
   const groupedRules = useMemo(() => {
     const grouped = {};
     
     rules.forEach(rule => {
-      const categoryName = rule.category_name || rule.part?.category || 'Uncategorized';
+      // Use inspection_category_name (from linked question's category), fallback to category_name for backward compatibility
+      const categoryName = rule.inspection_category_name || rule.category_name || 'Uncategorized';
       const questionText = rule.question_text || 'Unknown Question';
       
       if (!grouped[categoryName]) {
         grouped[categoryName] = {
           questions: {},
-          totalRules: 0
+          totalRules: 0,
+          categoryId: rule.inspection_category_id || rule.category_id
         };
       }
       
