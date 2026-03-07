@@ -1927,22 +1927,6 @@ export default function LiveProgressModal({
             </div>
             
             <div className="flex items-center gap-4">
-              {/* Open in Full Window */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  const baseUrl = process.env.REACT_APP_BACKEND_URL || window.location.origin;
-                  window.open(`${baseUrl}/report/${inspection?.id}`, '_blank');
-                }}
-                className="h-9 px-3 bg-white/10 hover:bg-white/20 text-white"
-                title="Open report in full window"
-                data-testid="fullscreen-btn"
-              >
-                <Maximize2 className="h-4 w-4 mr-2" />
-                Full View
-              </Button>
-              
               {/* Refresh Controls */}
               <div className="flex items-center gap-2">
                 <Button
