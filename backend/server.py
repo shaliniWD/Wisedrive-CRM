@@ -8673,6 +8673,32 @@ async def get_available_questions_for_rules(
         query["country_id"] = country_id
     
     questions = []
+    seen_ids = set()
+    
+    # First, get questions directly from inspection_questions collection (has sub_options)
+    insp_questions = await db.inspection_questions.find(
+        {"is_active": True},
+        {"_id": 0}
+    ).to_list(500)
+    
+    for q in insp_questions:
+        q_id = q.get("id")
+        if q_id and q_id not in seen_ids:
+            questions.append({
+                "question_id": q_id,
+                "question_text": q.get("question", q.get("text", "")),
+                "question_type": q.get("answer_type", q.get("type", "text")),
+                "options": q.get("options", []),
+                "sub_question_1": q.get("sub_question_1"),
+                "sub_options_1": q.get("sub_options_1", []),
+                "sub_question_2": q.get("sub_question_2"),
+                "sub_options_2": q.get("sub_options_2", []),
+                "category_id": q.get("category_id"),
+                "category_name": q.get("category_name"),
+                "package_id": None,
+                "package_name": "Inspection Questions"
+            })
+            seen_ids.add(q_id)
     
     # Get all packages
     packages = await db.inspection_packages.find(query, {"_id": 0}).to_list(50)
@@ -8703,24 +8729,29 @@ async def get_available_questions_for_rules(
         
         for cat in categories_data:
             for q in cat.get("questions", []):
-                questions.append({
-                    "question_id": q.get("id"),
-                    "question_text": q.get("question", q.get("text", "")),
-                    "question_type": q.get("answer_type", q.get("type", "text")),
-                    "options": q.get("options", []),
-                    "category_id": cat.get("id"),
-                    "category_name": cat.get("name"),
-                    "package_id": None,
-                    "package_name": "Inspection Category"
-                })
+                q_id = q.get("id")
+                if q_id and q_id not in seen_ids:
+                    questions.append({
+                        "question_id": q_id,
+                        "question_text": q.get("question", q.get("text", "")),
+                        "question_type": q.get("answer_type", q.get("type", "text")),
+                        "options": q.get("options", []),
+                        "sub_question_1": q.get("sub_question_1"),
+                        "sub_options_1": q.get("sub_options_1", []),
+                        "sub_question_2": q.get("sub_question_2"),
+                        "sub_options_2": q.get("sub_options_2", []),
+                        "category_id": cat.get("id"),
+                        "category_name": cat.get("name"),
+                        "package_id": None,
+                        "package_name": "Inspection Category"
+                    })
+                    seen_ids.add(q_id)
     
     # Also directly get categories that have questions
     all_categories = await db.inspection_qa_categories.find(
         {"is_active": {"$ne": False}, "questions": {"$exists": True, "$ne": []}},
         {"_id": 0}
     ).to_list(100)
-    
-    seen_ids = {q["question_id"] for q in questions if q.get("question_id")}
     
     for cat in all_categories:
         for q in cat.get("questions", []):
@@ -8731,6 +8762,10 @@ async def get_available_questions_for_rules(
                     "question_text": q.get("question", q.get("text", "")),
                     "question_type": q.get("answer_type", q.get("type", "text")),
                     "options": q.get("options", []),
+                    "sub_question_1": q.get("sub_question_1"),
+                    "sub_options_1": q.get("sub_options_1", []),
+                    "sub_question_2": q.get("sub_question_2"),
+                    "sub_options_2": q.get("sub_options_2", []),
                     "category_id": cat.get("id"),
                     "category_name": cat.get("name"),
                     "package_id": None,
