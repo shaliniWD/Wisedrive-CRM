@@ -2883,11 +2883,13 @@ export default function LiveProgressModal({
                                   {repair.action}
                                 </span>
                                 <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                  repair.priority === 'critical' ? 'bg-red-100 text-red-700' :
-                                  repair.priority === 'high' ? 'bg-orange-100 text-orange-700' :
+                                  repair.priority === 'critical' || repair.priority === 1 ? 'bg-red-100 text-red-700' :
+                                  repair.priority === 'high' || repair.priority === 2 ? 'bg-orange-100 text-orange-700' :
                                   'bg-gray-100 text-gray-600'
                                 }`}>
-                                  {repair.priority?.toUpperCase() || 'NORMAL'}
+                                  {typeof repair.priority === 'number' 
+                                    ? (repair.priority === 1 ? 'HIGH' : repair.priority === 2 ? 'MEDIUM' : 'LOW')
+                                    : (repair.priority?.toUpperCase() || 'NORMAL')}
                                 </span>
                                 <span className="font-semibold text-gray-900">{repair.part_name}</span>
                               </div>
