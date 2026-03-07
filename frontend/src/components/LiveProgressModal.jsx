@@ -3228,6 +3228,7 @@ export default function LiveProgressModal({
                         index={idx}
                         onUpdate={updateRepair}
                         onRemove={removeRepair}
+                        onSaveToMaster={saveRepairToMaster}
                         repairParts={repairParts}
                         partCategories={partCategories}
                         vehicleMake={inspection?.vehicle_make || ''}
