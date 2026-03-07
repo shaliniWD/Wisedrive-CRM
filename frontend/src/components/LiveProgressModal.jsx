@@ -3367,6 +3367,216 @@ export default function LiveProgressModal({
                 </div>
               )}
             </TabsContent>
+            
+            {/* Report Tab */}
+            <TabsContent value="report" className="space-y-4 mt-0" data-testid="report-tab-content">
+              {/* Report Actions */}
+              <div className="flex items-center justify-between bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl p-4 border border-emerald-200">
+                <div>
+                  <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-emerald-600" />
+                    Inspection Report
+                  </h4>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Preview and publish the inspection report to the customer
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={handlePreviewReport}
+                    className="border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                    data-testid="preview-report-btn"
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    Preview Report
+                  </Button>
+                  <Button
+                    onClick={() => setShowPublishModal(true)}
+                    className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700"
+                    data-testid="publish-report-btn"
+                  >
+                    <Share2 className="h-4 w-4 mr-2" />
+                    Publish Report
+                  </Button>
+                </div>
+              </div>
+              
+              {/* Publish Stats */}
+              <div className="grid grid-cols-3 gap-4">
+                <div className="bg-white rounded-xl p-4 border shadow-sm">
+                  <div className="text-2xl font-bold text-emerald-600">{inspection?.publish_count || 0}</div>
+                  <div className="text-sm text-gray-500">Total Publishes</div>
+                </div>
+                <div className="bg-white rounded-xl p-4 border shadow-sm">
+                  <div className="text-2xl font-bold text-blue-600">
+                    {inspection?.last_published_at 
+                      ? new Date(inspection.last_published_at).toLocaleDateString() 
+                      : '—'}
+                  </div>
+                  <div className="text-sm text-gray-500">Last Published</div>
+                </div>
+                <div className="bg-white rounded-xl p-4 border shadow-sm">
+                  <div className="text-2xl font-bold text-purple-600">
+                    {inspection?.report_published ? '✓ Published' : 'Not Published'}
+                  </div>
+                  <div className="text-sm text-gray-500">Status</div>
+                </div>
+              </div>
+              
+              {/* Publish History */}
+              <Section title="Publish History" icon={History} defaultOpen={true} badge={`${publishHistory.length} entries`}>
+                {loadingPublishHistory ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                  </div>
+                ) : publishHistory.length > 0 ? (
+                  <div className="space-y-4">
+                    {publishHistory.map((entry, idx) => (
+                      <div 
+                        key={entry.id} 
+                        className={`p-4 rounded-lg border-l-4 ${
+                          idx === 0 ? 'bg-emerald-50 border-l-emerald-500' : 'bg-gray-50 border-l-gray-300'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-gray-900">
+                                Publish #{publishHistory.length - idx}
+                              </span>
+                              {idx === 0 && (
+                                <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
+                                  Latest
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-sm text-gray-600 mt-1">
+                              <span className="flex items-center gap-1">
+                                <CalendarClock className="h-3 w-3" />
+                                {new Date(entry.published_at).toLocaleString()}
+                              </span>
+                            </div>
+                            <div className="text-sm text-gray-500 mt-0.5">
+                              By: {entry.published_by_name}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {entry.send_whatsapp && (
+                              <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
+                                WhatsApp Sent
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* Notes */}
+                        {entry.notes && (
+                          <div className="mt-2 p-2 bg-white rounded border text-sm">
+                            <span className="text-gray-500">Notes:</span> {entry.notes}
+                          </div>
+                        )}
+                        
+                        {/* Changes */}
+                        {entry.changes && entry.changes.length > 0 && (
+                          <div className="mt-3">
+                            <div className="text-xs font-medium text-gray-500 mb-2">Changes in this publish:</div>
+                            <div className="space-y-1">
+                              {entry.changes.map((change, cIdx) => (
+                                <div 
+                                  key={cIdx} 
+                                  className={`flex items-center gap-2 text-sm p-2 rounded ${
+                                    change.type === 'created' ? 'bg-blue-50 text-blue-700' :
+                                    change.type === 'updated' ? 'bg-amber-50 text-amber-700' :
+                                    'bg-gray-50 text-gray-700'
+                                  }`}
+                                >
+                                  <span className={`h-1.5 w-1.5 rounded-full ${
+                                    change.type === 'created' ? 'bg-blue-500' :
+                                    change.type === 'updated' ? 'bg-amber-500' :
+                                    'bg-gray-400'
+                                  }`}></span>
+                                  <span className="font-medium">{change.field}:</span>
+                                  <span>{change.details}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <History className="h-12 w-12 mx-auto text-gray-300 mb-2" />
+                    <p className="font-medium">No Publish History</p>
+                    <p className="text-sm">This report has not been published to the customer yet</p>
+                  </div>
+                )}
+              </Section>
+              
+              {/* Publish Modal */}
+              {showPublishModal && (
+                <Dialog open={showPublishModal} onOpenChange={setShowPublishModal}>
+                  <DialogContent className="sm:max-w-md">
+                    <div className="p-4">
+                      <h3 className="text-lg font-semibold flex items-center gap-2">
+                        <Share2 className="h-5 w-5 text-emerald-600" />
+                        Publish Report
+                      </h3>
+                      <p className="text-sm text-gray-600 mt-2">
+                        Publishing will send the report to the customer via WhatsApp. 
+                        All changes since last publish will be logged.
+                      </p>
+                      
+                      <div className="mt-4">
+                        <Label className="text-sm">Publish Notes (optional)</Label>
+                        <textarea
+                          value={publishNotes}
+                          onChange={(e) => setPublishNotes(e.target.value)}
+                          placeholder="Add notes about what changed in this publish..."
+                          className="w-full mt-1 p-2 border rounded-lg text-sm min-h-[80px] resize-none"
+                        />
+                      </div>
+                      
+                      <div className="mt-4 p-3 bg-amber-50 rounded-lg text-sm">
+                        <div className="flex items-start gap-2">
+                          <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5" />
+                          <div>
+                            <p className="font-medium text-amber-800">This will notify the customer</p>
+                            <p className="text-amber-600">
+                              A WhatsApp message with the report link will be sent to {inspection?.customer_mobile || 'the customer'}.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex justify-end gap-2 mt-4">
+                        <Button 
+                          variant="outline" 
+                          onClick={() => setShowPublishModal(false)}
+                          disabled={publishingReport}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          onClick={handlePublishReport}
+                          disabled={publishingReport}
+                          className="bg-gradient-to-r from-emerald-600 to-teal-600"
+                          data-testid="confirm-publish-btn"
+                        >
+                          {publishingReport ? (
+                            <><Loader2 className="h-4 w-4 animate-spin mr-2" />Publishing...</>
+                          ) : (
+                            <><Share2 className="h-4 w-4 mr-2" />Publish Now</>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              )}
+            </TabsContent>
           </Tabs>
             </div>
         </div>
