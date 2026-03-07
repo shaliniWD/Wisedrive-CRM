@@ -1118,7 +1118,7 @@ export default function RepairsModulePage() {
     }
   };
 
-  const getCategoryName = (catId) => {
+  const getComponentName = (catId) => {
     const cat = categories.find(c => c.id === catId);
     return cat?.name || catId;
   };
