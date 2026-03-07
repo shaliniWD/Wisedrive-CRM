@@ -607,6 +607,13 @@ export default function LiveProgressModal({
   const [loadingRepairs, setLoadingRepairs] = useState(false);
   const [calculatedRepairs, setCalculatedRepairs] = useState([]);
   
+  // Report Publish state
+  const [publishHistory, setPublishHistory] = useState([]);
+  const [loadingPublishHistory, setLoadingPublishHistory] = useState(false);
+  const [publishingReport, setPublishingReport] = useState(false);
+  const [publishNotes, setPublishNotes] = useState('');
+  const [showPublishModal, setShowPublishModal] = useState(false);
+  
   // Track unsaved changes
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [originalData, setOriginalData] = useState(null);
