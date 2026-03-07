@@ -269,7 +269,7 @@ const RepairItem = ({
           {/* Row 1: Part Selection & Action Type */}
           <div className="grid grid-cols-12 gap-2">
             {/* Part Name / Selector */}
-            <div className="col-span-6 relative">
+            <div className="col-span-5 relative">
               <Label className="text-xs text-gray-500 mb-1 block">Part / Item</Label>
               {showPartSelector ? (
                 <div className="absolute z-50 top-6 left-0 right-0 bg-white border rounded-lg shadow-xl max-h-72 overflow-hidden">
@@ -343,8 +343,27 @@ const RepairItem = ({
               )}
             </div>
             
-            {/* Action Type (Repair/Replace) */}
+            {/* Category */}
             <div className="col-span-3">
+              <Label className="text-xs text-gray-500 mb-1 block">Category</Label>
+              <Select 
+                value={repair.category || ''} 
+                onValueChange={(val) => onUpdate(index, { ...repair, category: val })}
+                disabled={!canEdit || repair.part_id}
+              >
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {partCategories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* Action Type (Repair/Replace) */}
+            <div className="col-span-2">
               <Label className="text-xs text-gray-500 mb-1 block">Action</Label>
               <Select 
                 value={repair.action || 'repair'} 
@@ -365,7 +384,7 @@ const RepairItem = ({
             </div>
             
             {/* Priority/Type */}
-            <div className="col-span-3">
+            <div className="col-span-2">
               <Label className="text-xs text-gray-500 mb-1 block">Priority</Label>
               <Select 
                 value={repair.type || 'MINOR'} 
