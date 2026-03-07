@@ -1136,6 +1136,13 @@ export default function LiveProgressModal({
     };
   };
   
+  // Fetch publish history when Report tab is active
+  useEffect(() => {
+    if (activeTab === 'report' && inspection?.id) {
+      fetchPublishHistory();
+    }
+  }, [activeTab, inspection?.id]);
+  
   // Request OBD Rescan
   const requestObdRescan = async () => {
     if (!inspection?.id) return;
