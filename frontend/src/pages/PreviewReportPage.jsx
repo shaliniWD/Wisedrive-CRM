@@ -237,9 +237,9 @@ function PreviewReportContent({ inspectionId }) {
     
     try {
       // Get auth token
-      const token = localStorage.getItem('authToken');
+      const token = localStorage.getItem('token');
       if (!token) {
-        setError('Authentication token not found');
+        setError('Authentication token not found. Please log in again.');
         setLoading(false);
         return;
       }
