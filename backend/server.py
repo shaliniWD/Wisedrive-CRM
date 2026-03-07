@@ -7957,7 +7957,203 @@ async def update_inspection_report(
     return {"success": True, "message": "Report updated"}
 
 
-# ==================== CUSTOMER EXTENDED ROUTES (Moved to routes/customers.py) ====================
+# Publish Report Request Model
+class PublishReportRequest(BaseModel):
+    notes: Optional[str] = None
+    send_whatsapp: bool = True
+    send_email: bool = False
+    email: Optional[str] = None
+
+
+@api_router.post("/inspections/{inspection_id}/publish-report")
+async def publish_inspection_report(
+    inspection_id: str,
+    request_data: PublishReportRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Publish inspection report to customer. 
+    Logs all changes made since last publish for audit trail.
+    """
+    from services.twilio_service import get_twilio_service
+    
+    inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0})
+    if not inspection:
+        raise HTTPException(status_code=404, detail="Inspection not found")
+    
+    # Get short URL for report
+    short_url = inspection.get("short_url") or inspection.get("report_url")
+    if not short_url:
+        # Generate short URL if not exists
+        base_url = os.environ.get("FRONTEND_URL", "https://vehicle-repair-mgmt-1.preview.emergentagent.com")
+        short_url = f"{base_url}/report/{inspection_id}"
+    
+    # Get previous publish data for comparison
+    previous_publish = await db.report_publish_history.find_one(
+        {"inspection_id": inspection_id},
+        sort=[("published_at", -1)]
+    )
+    
+    # Capture current state for change detection
+    current_state = {
+        "ai_insights": inspection.get("ai_insights"),
+        "repairs": inspection.get("repairs", []),
+        "engine_condition": inspection.get("engine_condition"),
+        "exterior_condition": inspection.get("exterior_condition"),
+        "interior_condition": inspection.get("interior_condition"),
+        "transmission_condition": inspection.get("transmission_condition"),
+        "overall_rating": inspection.get("overall_rating"),
+        "vaahan_data": inspection.get("vaahan_data"),
+        "inspection_answers": inspection.get("inspection_answers", {}),
+        "market_price_research": inspection.get("market_price_research"),
+        "obd_data": inspection.get("obd_data")
+    }
+    
+    # Calculate changes from previous publish
+    changes = []
+    if previous_publish:
+        prev_state = previous_publish.get("state_snapshot", {})
+        
+        # Check AI insights changes
+        if current_state.get("ai_insights") != prev_state.get("ai_insights"):
+            changes.append({"field": "AI Analysis", "type": "updated", "details": "AI insights modified"})
+        
+        # Check condition ratings
+        for cond in ["engine_condition", "exterior_condition", "interior_condition", "transmission_condition"]:
+            if current_state.get(cond) != prev_state.get(cond):
+                field_name = cond.replace("_condition", "").title() + " Condition"
+                changes.append({
+                    "field": field_name, 
+                    "type": "updated", 
+                    "details": f"Changed from '{prev_state.get(cond, 'N/A')}' to '{current_state.get(cond, 'N/A')}'"
+                })
+        
+        # Check repairs changes
+        prev_repairs = prev_state.get("repairs", [])
+        curr_repairs = current_state.get("repairs", [])
+        if len(curr_repairs) != len(prev_repairs):
+            changes.append({
+                "field": "Repairs", 
+                "type": "updated", 
+                "details": f"Repair items changed from {len(prev_repairs)} to {len(curr_repairs)}"
+            })
+        
+        # Check overall rating
+        if current_state.get("overall_rating") != prev_state.get("overall_rating"):
+            changes.append({
+                "field": "Overall Rating", 
+                "type": "updated", 
+                "details": f"Changed from '{prev_state.get('overall_rating', 'N/A')}' to '{current_state.get('overall_rating', 'N/A')}'"
+            })
+        
+        # Check Vaahan data
+        if current_state.get("vaahan_data") != prev_state.get("vaahan_data"):
+            changes.append({"field": "Vehicle RTO Data", "type": "updated", "details": "Vaahan data modified"})
+        
+        # Check Q&A answers
+        prev_answers = prev_state.get("inspection_answers", {})
+        curr_answers = current_state.get("inspection_answers", {})
+        if len(curr_answers) != len(prev_answers):
+            changes.append({
+                "field": "Q&A Answers", 
+                "type": "updated", 
+                "details": f"Q&A answers changed from {len(prev_answers)} to {len(curr_answers)}"
+            })
+    else:
+        changes.append({"field": "Report", "type": "created", "details": "Initial report publish"})
+    
+    # Create publish history entry
+    publish_entry = {
+        "id": str(uuid4()),
+        "inspection_id": inspection_id,
+        "published_at": datetime.now(timezone.utc).isoformat(),
+        "published_by": current_user["id"],
+        "published_by_name": current_user.get("name", current_user.get("email", "Unknown")),
+        "notes": request_data.notes,
+        "changes": changes,
+        "state_snapshot": current_state,
+        "short_url": short_url,
+        "send_whatsapp": request_data.send_whatsapp,
+        "send_email": request_data.send_email,
+        "email": request_data.email
+    }
+    
+    # Insert publish history
+    await db.report_publish_history.insert_one(publish_entry)
+    
+    # Get customer details
+    customer_name = inspection.get("customer_name", "Customer")
+    customer_mobile = inspection.get("customer_mobile", "")
+    package_name = inspection.get("package_name", inspection.get("package_type", "Inspection"))
+    car_info = f"{inspection.get('car_make', '')} {inspection.get('car_model', '')} ({inspection.get('car_number', '')})".strip()
+    
+    # Send WhatsApp notification
+    whatsapp_sent = False
+    if request_data.send_whatsapp and customer_mobile:
+        twilio = get_twilio_service()
+        if twilio.is_configured():
+            message = f"""✅ *Inspection Report Published*
+
+Dear {customer_name},
+
+Your vehicle inspection report has been published!
+
+🚗 *Vehicle:* {car_info}
+📦 *Package:* {package_name}
+
+📄 *View Report:* {short_url}
+
+Thank you for choosing Wisedrive for your vehicle inspection!
+
+For any queries, please contact us."""
+            
+            whatsapp_result = await twilio.send_message(customer_mobile, message)
+            whatsapp_sent = whatsapp_result.get("success", False)
+    
+    # Update inspection with publish info
+    publish_count = inspection.get("publish_count", 0) + 1
+    await db.inspections.update_one(
+        {"id": inspection_id},
+        {"$set": {
+            "report_published": True,
+            "last_published_at": datetime.now(timezone.utc).isoformat(),
+            "publish_count": publish_count,
+            "short_url": short_url,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    return {
+        "success": True,
+        "publish_id": publish_entry["id"],
+        "publish_count": publish_count,
+        "whatsapp_sent": whatsapp_sent,
+        "changes_logged": len(changes),
+        "report_url": short_url
+    }
+
+
+@api_router.get("/inspections/{inspection_id}/publish-history")
+async def get_publish_history(
+    inspection_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get publish history for an inspection report"""
+    inspection = await db.inspections.find_one({"id": inspection_id}, {"_id": 0, "id": 1})
+    if not inspection:
+        raise HTTPException(status_code=404, detail="Inspection not found")
+    
+    # Get all publish history entries, sorted by newest first
+    history = await db.report_publish_history.find(
+        {"inspection_id": inspection_id},
+        {"_id": 0, "state_snapshot": 0}  # Exclude large snapshot data
+    ).sort("published_at", -1).to_list(100)
+    
+    return {
+        "inspection_id": inspection_id,
+        "total_publishes": len(history),
+        "history": history
+    }
 
 
 # ==================== MECHANICS ROUTES ====================
